@@ -6,7 +6,8 @@ import type { SearchSuggestion } from "@/lib/search/api/elasticsearch";
 import { searchSuggestions } from "@/lib/search/api/elasticsearch";
 import { normalizeForApi } from "@/lib/search/formatting/input-formatter";
 import type { GenomicBuild } from "@/lib/stores/search-store";
-import type { HistoryItem } from "./use-search-history";
+import type { HistoryItem } from "@/lib/hooks/use-search-history";
+import type { SavedSearchItem } from "@/lib/hooks/use-saved-searches";
 
 const SEARCH_EXAMPLES: SearchSuggestion[] = [
   {
@@ -41,7 +42,7 @@ export interface UseSearchSuggestionsProps {
   query: string;
   shouldShowSuggestions: boolean;
   selectedGenome: GenomicBuild;
-  recentSearches: HistoryItem[];
+  recentSearches: (HistoryItem | SavedSearchItem)[];
 }
 
 export function useSearchSuggestions({

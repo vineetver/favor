@@ -9,7 +9,9 @@ export interface HistoryItem {
   id: string;
   value: string;
   type: "history";
-  data: Record<string, never>;
+  data: {
+    timestamp?: number;
+  };
   score: number;
 }
 
@@ -34,13 +36,20 @@ export function useSearchHistory() {
     if (!query.trim()) return;
 
     setHistory((prev) => {
-      const exists = prev.some(
-        (item) => item.toLowerCase() === query.toLowerCase(),
+      const queryLower = query.toLowerCase();
+      const existingIndex = prev.findIndex(
+        (item) => item.toLowerCase() === queryLower,
       );
 
-      if (exists) return prev;
+      let newHistory: string[];
+      
+      if (existingIndex !== -1) {
+        newHistory = [query, ...prev.filter((_, index) => index !== existingIndex)];
+      } else {
+        newHistory = [query, ...prev];
+      }
 
-      const newHistory = [query, ...prev].slice(0, MAX_HISTORY_ITEMS);
+      newHistory = newHistory.slice(0, MAX_HISTORY_ITEMS);
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
@@ -77,13 +86,15 @@ export function useSearchHistory() {
     });
   }, []);
 
-  const getRecentSearches = useCallback((): HistoryItem[] => {
-    return history.slice(0, 3).map((search, index) => ({
+  const getRecentSearches = useCallback((limit: number = 5): HistoryItem[] => {
+    return history.slice(0, limit).map((search, index) => ({
       id: `history-${index}`,
       value: search,
       type: "history" as const,
-      data: {},
-      score: 0.9 - index * 0.1,
+      data: {
+        timestamp: Date.now() - index * 1000 * 60,
+      },
+      score: 0.9 - index * 0.05,
     }));
   }, [history]);
 

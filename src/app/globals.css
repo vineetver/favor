@@ -129,4 +129,8 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
   }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }

@@ -1,9 +1,16 @@
 "use client";
 
-import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+} from "@headlessui/react";
 import { ChevronsUpDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils/general";
+import { Button } from "@/components/ui/button";
 
 export interface AutocompleteOption {
   id: string;
@@ -23,6 +30,7 @@ interface AutocompleteProps {
   disabled?: boolean;
   isLoading?: boolean;
   startContent?: React.ReactNode;
+  endContent?: React.ReactNode;
   onInputChange?: (value: string) => void;
   children?: (item: AutocompleteOption) => React.ReactNode;
   onSubmit?: (e: React.FormEvent) => void;
@@ -38,6 +46,7 @@ export function Autocomplete({
   disabled,
   isLoading,
   startContent,
+  endContent,
   onInputChange,
   children,
   onSubmit,
@@ -79,42 +88,42 @@ export function Autocomplete({
         <div className="relative">
           <div
             className={cn(
-              "flex h-11 w-full rounded-2xl border border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-lg transition-all duration-300 hover:shadow-xl focus-within:border-primary/50 focus-within:shadow-primary/10 items-center",
-              startContent && "pl-4"
+              "flex h-12 w-full rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-lg transition-all duration-300 hover:shadow-xl focus-within:border-primary/50 focus-within:shadow-primary/10 items-center",
+              startContent && "pl-2",
+              endContent 
             )}
           >
-            {startContent && (
-              <div className="shrink-0">{startContent}</div>
-            )}
+            {startContent && <div className="shrink-0">{startContent}</div>}
             <ComboboxInput
-              className="border-none bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 h-full flex-1"
+              className="border-none bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 h-full flex-1"
               displayValue={() => selectedValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={disabled}
+              autoComplete="off"
+              spellCheck={false}
             />
-            <ComboboxButton className="shrink-0 mr-2 h-4 w-4 opacity-50 hover:opacity-100 p-0">
-              <ChevronsUpDown className="h-4 w-4" />
-            </ComboboxButton>
+            {endContent && <div className="shrink-0">{endContent}</div>}
+              <ComboboxButton className="h-8 w-8 mr-2 shrink-0 rounded-full hover:bg-accent/50 flex items-center justify-center transition">
+                <ChevronsUpDown className="h-4 w-4" />
+              </ComboboxButton>
           </div>
 
-          <ComboboxOptions 
-            className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-white/95 backdrop-blur-xs border border-slate-200 shadow-2xl py-1 text-base focus:outline-hidden sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0"
-          >
+          <ComboboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-background/95 backdrop-blur-sm border shadow-lg py-1 text-base focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">
             {isLoading ? (
-              <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+              <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
                 Loading...
               </div>
             ) : options.length === 0 && query !== "" ? (
-              <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+              <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
                 {emptyMessage}
               </div>
             ) : (
               options.map((option) => (
                 <ComboboxOption
                   key={option.id}
-                  className="relative cursor-pointer select-none mb-0.5 last:mb-0 rounded-lg mx-1 transition-all duration-200 data-focus:bg-primary/8 data-focus:border-primary/30 text-gray-900"
+                  className="relative cursor-pointer select-none mb-0.5 last:mb-0 rounded-lg mx-1 transition-all duration-200 data-focus:bg-accent data-focus:text-accent-foreground"
                   value={option}
                 >
                   {children ? (

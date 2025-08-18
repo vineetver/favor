@@ -1,7 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { HeroPattern } from "@/components/layout/hero-pattern";
-import { Search } from "@/components/features/search/genomic-search";
+import { GenomicSearch } from "@/components/features/search/genomic-search";
 import { Button } from "@/components/ui/button"
 import { WhatsNewBanner } from "@/components/ui/whats-new-banner";
 
@@ -29,7 +29,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold tracking-tight mb-4 mt-5">
             Start Exploring
           </h1>
-          <Search />
+          <GenomicSearch />
 
           <div className="relative mt-8 md:mt-12">
             <div className="absolute inset-0 flex items-center">

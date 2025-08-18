@@ -1,4 +1,4 @@
-import { GridPattern } from "./grid-pattern";
+import { GridPattern } from "@/components/layout/grid-pattern";
 
 export function HeroPattern() {
   return (
