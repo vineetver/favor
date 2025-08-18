@@ -20,8 +20,6 @@ import {
   metasvmPredCCode,
   polyphenCCode,
 } from "@/lib/utils/colors";
-// import type { CV2FTissueScore } from "@/lib/variant/tissue/helpers";
-// import { ccreAnnotationMap } from "@/components/features/ccre/lib/annotations";
 
 export const variantSummaryColumns: VariantColumnsType[] = [
   {

@@ -110,7 +110,7 @@ export function AncestryDisplay({
               yLabel="Allele Frequency"
               xLabel=""
               height={550}
-              margin={{ top: 5, right: 10, bottom: 80, left: 10 }}
+              margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
               colors={ancestryColors}
               showLegend={true}
             />

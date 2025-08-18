@@ -44,6 +44,7 @@ interface BarChartProps extends BaseChartProps {
   maxBarSize?: number;
   onBarClick?: (data: any, index: number) => void;
   showDataLabels?: boolean;
+  borderRadius?: number | [number, number, number, number];
 }
 
 export function BarChart({
@@ -68,7 +69,7 @@ export function BarChart({
   groupedBars = true,
   barSize,
   barGap = 4,
-  categoryGap = "20%",
+  categoryGap = 20,
   responsive = true,
   formatXAxis,
   formatYAxis = formatAlleleFrequency,
@@ -77,6 +78,7 @@ export function BarChart({
   maxBarSize = 50,
   onBarClick,
   showDataLabels = false,
+  borderRadius = 6,
 }: BarChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartColors = colors || generateColors(keys.length);
@@ -113,7 +115,7 @@ export function BarChart({
     if (!payload || !payload.length) return null;
 
     return (
-      <div className="flex flex-wrap justify-center gap-4 mt-4">
+      <div className="flex flex-wrap justify-center gap-4 mt-10">
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 text-sm">
             <div
@@ -127,13 +129,22 @@ export function BarChart({
     );
   };
 
+  const getBarRadius = (): [number, number, number, number] => {
+    if (typeof borderRadius === "number") {
+      return orientation === "vertical" 
+        ? [borderRadius, borderRadius, 0, 0] as [number, number, number, number]
+        : [0, borderRadius, borderRadius, 0] as [number, number, number, number];
+    }
+    return borderRadius || [6, 6, 0, 0];
+  };
+
   const renderBars = () => {
     return keys.map((key, index) => (
       <Bar
         key={key}
         dataKey={key}
         fill={chartColors[index]}
-        radius={[2, 2, 0, 0]}
+        radius={getBarRadius()}
         maxBarSize={maxBarSize}
         onClick={onBarClick ? (data, index) => onBarClick(data, index) : undefined}
         className={onBarClick ? "cursor-pointer" : undefined}

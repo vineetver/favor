@@ -233,7 +233,6 @@ export function cagePromoterCCode(value: string | number | undefined) {
   }
 }
 
-// TODO: Maybe ColorCode this later
 export function clinSigCCode(value: string) {
   switch (value) {
   }

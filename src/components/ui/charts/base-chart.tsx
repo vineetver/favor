@@ -16,7 +16,7 @@ import { validateChartData, type BaseChartProps } from "./utils";
 
 interface BaseChartWrapperProps extends Omit<BaseChartProps, "data"> {
   data: any[];
-  children: React.ReactNode;
+  children: React.ReactElement;
   onExport?: () => void;
   onFullscreen?: () => void;
   loading?: boolean;
