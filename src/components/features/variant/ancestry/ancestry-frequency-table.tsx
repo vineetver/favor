@@ -1,29 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-  type ColumnDef,
-} from "@tanstack/react-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { TablePagination } from "@/components/ui/pagination";
+import { type ColumnDef } from "@tanstack/react-table";
+import { DataGrid } from "@/components/ui/data-grid";
 import { createColumnHeader } from "@/components/ui/data-table-column-header";
-import { NoDataFound } from "@/components/ui/no-data-found";
-import { Download } from "lucide-react";
 
 interface AncestryFrequency {
   population_code: string;
@@ -99,34 +78,9 @@ const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
 ];
 
 export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-
-  const table = useReactTable({
-    data,
-    columns: ancestryColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 15,
-      },
-    },
-  });
-
-  const exportTSV = () => {
-    const headers = ancestryColumns.map((col) => {
-      if (typeof col.header === "string") return col.header;
-      if ("accessorKey" in col && col.accessorKey)
-        return col.accessorKey.toString();
-      return "column";
-    });
-
-    const rows = data.map((row) => [
+  const exportTSV = (filteredData: AncestryFrequency[]) => {
+    const headers = ["Population", "1000G Phase 3", "gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"];
+    const rows = filteredData.map((row) => [
       row.name,
       formatFrequency(row.g1000),
       formatFrequency(row.gnomad31),
@@ -134,9 +88,7 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
       formatFrequency(row.gnomad41_genome),
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
-      "\n",
-    );
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -146,72 +98,35 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
     URL.revokeObjectURL(url);
   };
 
-  if (!data || data.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <NoDataFound
-            title="No frequency data"
-            description="No ancestry-specific frequency data is available."
-            icon="database"
-            dataType="frequency data"
-            size="sm"
-          />
-        </CardContent>
-      </Card>
-    );
-  }
+  const facetedFilters = [
+    {
+      columnId: "name",
+      title: "Population",
+      options: Array.from(new Set(data.map(row => row.name))).map(name => ({
+        label: name,
+        value: name,
+      })),
+    },
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pl-2">
-          <div>
-            <CardTitle className="text-lg">Ancestry Allele Frequencies</CardTitle>
-          </div>
-          <Button variant="outline" size="sm" onClick={exportTSV}>
-            <Download className="h-4 w-4 mr-1" />
-            Export TSV
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="grid grid-cols-1">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="hover:bg-muted/50 transition-colors"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination table={table} />
-      </CardContent>
-    </Card>
+    <DataGrid
+      columns={ancestryColumns}
+      data={data}
+      title="Ancestry Allele Frequencies"
+      searchKey="name"
+      searchPlaceholder="Search populations..."
+      facetedFilters={facetedFilters}
+      onExport={exportTSV}
+      exportFilename="ancestry_allele_frequencies.tsv"
+      initialPageSize={15}
+      emptyState={{
+        title: "No frequency data",
+        description: "No ancestry-specific frequency data is available.",
+        icon: "database",
+        dataType: "frequency data",
+      }}
+    />
   );
 }
 
