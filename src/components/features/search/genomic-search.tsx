@@ -1,0 +1,203 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { type FormEvent, useCallback, useMemo } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Autocomplete } from "@/components/ui/autocomplete";
+import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useDebounce } from "@/lib/hooks/use-debounce";
+import { useSearchHistory } from "@/lib/hooks/use-search-history";
+import { useSearchSuggestions } from "@/lib/hooks/use-search-suggestions";
+import {
+  formatSearchInput,
+  getPlaceholderText,
+  type InputFormatResult,
+} from "@/lib/search/formatting/input-formatter";
+import { validateAndNavigate } from "@/lib/search/navigation";
+import { validateQuery } from "@/lib/search/validation";
+import {
+  type GenomicBuild,
+  useSearchActions,
+  useSearchAlert,
+  useSearchInput,
+} from "@/lib/stores/search-store";
+
+export function Search() {
+  const { inputValue, selectedGenome } = useSearchInput();
+  const { showAlert, alertMessage } = useSearchAlert();
+  const { setInputValue, setSelectedGenome, showError } = useSearchActions();
+  const router = useRouter();
+  const { addToHistory, getRecentSearches } = useSearchHistory();
+
+  const debouncedInput = useDebounce(inputValue.trim(), 300);
+  const inputFormat: InputFormatResult = useMemo(
+    () => formatSearchInput(debouncedInput),
+    [debouncedInput],
+  );
+  const { suggestions, isLoading, hasError } = useSearchSuggestions({
+    query: debouncedInput,
+    shouldShowSuggestions: inputFormat.shouldShowSuggestions,
+    selectedGenome,
+    recentSearches: getRecentSearches(),
+  });
+
+  const handleInputChange = useCallback(
+    (value: string) => {
+      const formatted = formatSearchInput(value);
+      setInputValue(formatted.formattedValue);
+    },
+    [setInputValue],
+  );
+
+  const handleSubmit = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault();
+      const query = inputValue.trim();
+      if (!query) {
+        showError("Please enter a search query");
+        return;
+      }
+
+      const validation = validateQuery(query);
+      if (!validation.isValid || !validation.type) {
+        showError(validation.error || "Invalid search format");
+        return;
+      }
+
+      const navigation = validateAndNavigate(
+        query,
+        validation.type,
+        selectedGenome,
+      );
+      if (!navigation.success) {
+        showError(navigation.error || "Navigation failed");
+        return;
+      }
+      addToHistory(query);
+      if (navigation.path) {
+        router.push(navigation.path);
+      }
+    },
+    [inputValue, selectedGenome, addToHistory, router, showError],
+  );
+
+  const handleGenomeChange = useCallback(
+    (value: string | undefined) => {
+      if (value) {
+        setSelectedGenome(value as GenomicBuild);
+      }
+    },
+    [setSelectedGenome],
+  );
+
+  const placeholderText = useMemo(() => getPlaceholderText(), []);
+
+  if (hasError) {
+    console.warn("Search suggestions API error");
+  }
+
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col items-center">
+        <div className="max-w-[520px] w-full mx-auto">
+          <Autocomplete
+            options={suggestions}
+            value={inputValue}
+            onValueChange={setInputValue}
+            onInputChange={handleInputChange}
+            placeholder={placeholderText}
+            isLoading={isLoading}
+            onSubmit={handleSubmit}
+            className="w-full"
+            startContent={
+              <div className="flex space-x-1.5">
+                <ToggleGroup
+                  type="single"
+                  value={selectedGenome}
+                  onValueChange={handleGenomeChange}
+                >
+                  <ToggleGroupItem
+                    value="hg38"
+                    className="data-[state=on]:bg-primary rounded-md data-[state=on]:text-background font-mono mr-1 text-xs"
+                  >
+                    HG38
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="hg19"
+                    className="data-[state=on]:bg-primary rounded-md data-[state=on]:text-background font-mono text-xs"
+                    disabled
+                  >
+                    HG19
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <div className="w-px h-8 bg-slate-200 my-auto mx-0.5" />
+              </div>
+            }
+          >
+            {item => (
+              <div className="p-3">
+                <div className="w-full text-left">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-primary truncate text-sm">
+                      {item.value}
+                    </span>
+                  </div>
+
+                  {item.type === "rsid" && (
+                    <div className="text-xs text-slate-500 space-x-2">
+                      {item.data?.variant_vcf && (
+                        <span className="font-mono">
+                          {item.data.variant_vcf}
+                        </span>
+                      )}
+                      {item.data?.snp_type && (
+                        <span>
+                          {item.data.snp_type === "SNV" ? "SNV" : "InDel"}
+                        </span>
+                      )}
+                      {item.data?.clnsig && (
+                        <span className="text-slate-400">
+                          {item.data.clnsig}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {item.type === "variant" && item.data?.snp_type && (
+                    <div className="text-xs text-slate-500">
+                      {item.data.snp_type}
+                    </div>
+                  )}
+
+                  {item.type === "gene" && item.data?.chromosome && (
+                    <div className="text-xs text-slate-500">
+                      {item.data.chromosome}
+                      {item.data.position && ` • ${item.data.position}`}
+                    </div>
+                  )}
+
+                  {item.type === "history" && (
+                    <div className="text-xs text-slate-400 italic">
+                      Recent search
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Autocomplete>
+        </div>
+
+        {showAlert && (
+          <Alert variant="destructive" className="max-w-lg mt-4">
+            <AlertDescription>{alertMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        <Button type="submit" className="mt-8" variant="default">
+          Submit
+        </Button>
+      </form>
+    </div>
+  );
+}
