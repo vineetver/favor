@@ -7,6 +7,7 @@ import { BarChart } from "@/components/ui/charts/bar-chart";
 import { NoDataState } from "@/components/ui/error-states";
 import { FemaleFrequencyTable } from "./female-frequency-table";
 import { buildFemaleFrequencies } from "@/lib/variant/gnomad/utils";
+import { FEMALE_CHART_CONFIG } from "@/lib/variant/gender/table-columns";
 import type { Variant } from "@/lib/variant/api";
 import type { GnomadData } from "@/lib/variant/gnomad/api";
 
@@ -37,23 +38,17 @@ export function FemaleDataDisplay({
     return validFrequencies
       .map((freq) => ({
         population: freq.name,
-        "gnomAD v3.1": freq.female31 || 0,
-        "gnomAD v4.1 Exome": freq.female41_exome || 0,
-        "gnomAD v4.1 Genome": freq.female41_genome || 0,
+        [FEMALE_CHART_CONFIG.keys[0]]: freq.female31 || 0,
+        [FEMALE_CHART_CONFIG.keys[1]]: freq.female41_exome || 0,
+        [FEMALE_CHART_CONFIG.keys[2]]: freq.female41_genome || 0,
       }))
       .filter(
         (item) =>
-          item["gnomAD v3.1"] > 0 ||
-          item["gnomAD v4.1 Exome"] > 0 || 
-          item["gnomAD v4.1 Genome"] > 0,
+          (item[FEMALE_CHART_CONFIG.keys[0]] as number) > 0 ||
+          (item[FEMALE_CHART_CONFIG.keys[1]] as number) > 0 || 
+          (item[FEMALE_CHART_CONFIG.keys[2]] as number) > 0,
       );
   }, [validFrequencies]);
-
-  const femaleColors = [
-    "#ec4899", // pink-500 for v3.1
-    "#be185d", // pink-700 for v4.1 Exome 
-    "#831843", // pink-800 for v4.1 Genome
-  ];
 
   if (validFrequencies.length === 0) {
     return (
@@ -95,15 +90,15 @@ export function FemaleDataDisplay({
           {chartData.length > 0 && (
             <BarChart
               data={chartData}
-              keys={["gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"]}
+              keys={FEMALE_CHART_CONFIG.keys}
               indexBy="population"
-              title="Female Allele Frequencies by Population"
-              subtitle="XX chromosome allele frequencies across different populations"
+              title={FEMALE_CHART_CONFIG.title}
+              subtitle={FEMALE_CHART_CONFIG.subtitle}
               yLabel="Allele Frequency"
               xLabel=""
               height={550}
               margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
-              colors={femaleColors}
+              colors={FEMALE_CHART_CONFIG.colors}
               showLegend={true}
               borderRadius={8}
             />

@@ -1,23 +1,22 @@
 "use client";
 
 import { DataGrid } from "@/components/ui/data-grid";
-import { ancestryColumns } from "@/lib/variant/ancestry/table-columns";
+import { maleColumns } from "@/lib/variant/gender/table-columns";
 import { formatFrequency } from "@/lib/utils/general";
-import type { AncestryFrequency } from "@/lib/variant/gnomad/utils";
+import type { MaleFrequency } from "@/lib/variant/gnomad/utils";
 
-interface AncestryFrequencyTableProps {
-  data: AncestryFrequency[];
+interface MaleFrequencyTableProps {
+  data: MaleFrequency[];
 }
 
-export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
-  const exportTSV = (filteredData: AncestryFrequency[]) => {
-    const headers = ["Population", "1000G Phase 3", "gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"];
+export function MaleFrequencyTable({ data }: MaleFrequencyTableProps) {
+  const exportTSV = (filteredData: MaleFrequency[]) => {
+    const headers = ["Population", "gnomAD v3.1 (Male)", "gnomAD v4.1 Exome (Male)", "gnomAD v4.1 Genome (Male)"];
     const rows = filteredData.map((row) => [
       row.name,
-      formatFrequency(row.g1000),
-      formatFrequency(row.gnomad31),
-      formatFrequency(row.gnomad41_exome),
-      formatFrequency(row.gnomad41_genome),
+      formatFrequency(row.male31),
+      formatFrequency(row.male41_exome),
+      formatFrequency(row.male41_genome),
     ]);
 
     const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
@@ -25,7 +24,7 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ancestry_allele_frequencies.tsv";
+    a.download = "male_allele_frequencies.tsv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -43,18 +42,18 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
 
   return (
     <DataGrid
-      columns={ancestryColumns}
+      columns={maleColumns}
       data={data}
-      title="Ancestry Allele Frequencies"
+      title="Male Allele Frequencies"
       searchKey="name"
       searchPlaceholder="Search populations..."
       facetedFilters={facetedFilters}
       onExport={exportTSV}
-      exportFilename="ancestry_allele_frequencies.tsv"
+      exportFilename="male_allele_frequencies.tsv"
       initialPageSize={15}
       emptyState={{
         title: "No frequency data",
-        description: "No ancestry-specific frequency data is available.",
+        description: "No male-specific frequency data is available.",
         icon: "database",
         dataType: "frequency data",
       }}
