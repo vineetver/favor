@@ -30,7 +30,7 @@ import {
 import { TablePagination } from "@/components/ui/pagination";
 import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle";
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter";
-import { NoDataFound } from "@/components/ui/no-data-found";
+import { NoDataState } from "@/components/ui/error-states";
 
 interface DataGridProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -152,12 +152,10 @@ export function DataGrid<TData, TValue>({
     return (
       <Card>
         <CardContent className="p-6">
-          <NoDataFound
+          <NoDataState
             title={emptyState?.title || "No data found"}
             description={emptyState?.description || "No data is available."}
-            icon={emptyState?.icon || "database"}
-            dataType={emptyState?.dataType || "data"}
-            size="sm"
+            categoryName={emptyState?.dataType || "data"}
           />
         </CardContent>
       </Card>
@@ -235,9 +233,7 @@ export function DataGrid<TData, TValue>({
         </CardHeader>
       )}
 
-      <CardContent>
-        <div className="space-y-4">
-          <div className="rounded-md border">
+      <CardContent className="grid grid-cols-1">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -285,10 +281,8 @@ export function DataGrid<TData, TValue>({
                 )}
               </TableBody>
             </Table>
-          </div>
           
           <TablePagination table={table} />
-        </div>
       </CardContent>
     </Card>
   );

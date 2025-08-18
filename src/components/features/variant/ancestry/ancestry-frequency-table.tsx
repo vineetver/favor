@@ -30,50 +30,62 @@ const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
     cell: ({ row }) => (
       <div className="font-medium">{row.getValue("name")}</div>
     ),
+    enableSorting: false,
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
   },
   {
     accessorKey: "g1000",
     header: createColumnHeader("1000G Phase 3", {
       tooltip: "Allele frequency from 1000 Genomes Phase 3",
+      sortable: true,
     }),
     cell: ({ row }) => (
       <div className="font-mono text-blue-600">
         {formatFrequency(row.getValue("g1000"))}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "gnomad31",
     header: createColumnHeader("gnomAD v3.1", {
       tooltip: "Allele frequency from gnomAD v3.1 database",
+      sortable: true,
     }),
     cell: ({ row }) => (
       <div className="font-mono text-green-600">
         {formatFrequency(row.getValue("gnomad31"))}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "gnomad41_exome",
     header: createColumnHeader("gnomAD v4.1 Exome", {
       tooltip: "Allele frequency from gnomAD v4.1 Exome dataset",
+      sortable: true,
     }),
     cell: ({ row }) => (
       <div className="font-mono text-purple-600">
         {formatFrequency(row.getValue("gnomad41_exome"))}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "gnomad41_genome",
     header: createColumnHeader("gnomAD v4.1 Genome", {
       tooltip: "Allele frequency from gnomAD v4.1 Genome dataset",
+      sortable: true,
     }),
     cell: ({ row }) => (
-      <div className="font-mono text-orange-600">
+      <div className="font-mono text-purple-500">
         {formatFrequency(row.getValue("gnomad41_genome"))}
       </div>
     ),
+    enableSorting: true,
   },
 ];
 

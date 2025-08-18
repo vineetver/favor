@@ -22,6 +22,15 @@ interface TablePaginationProps<TData> {
 export function TablePagination<TData>({
   table,
 }: TablePaginationProps<TData>) {
+  // Hide pagination if there's only one page or no data
+  const totalRows = table.getFilteredRowModel().rows.length;
+  const pageSize = table.getState().pagination.pageSize;
+  const shouldShowPagination = totalRows > pageSize;
+
+  if (!shouldShowPagination) {
+    return null;
+  }
+
   return (
     <div className="flex items-center justify-between px-2 py-4">
       <div className="flex-1 text-sm text-muted-foreground">

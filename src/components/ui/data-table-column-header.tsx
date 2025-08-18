@@ -40,13 +40,15 @@ export function DataTableColumnHeader<TData, TValue>({
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column || !sortable) {
     return (
-      <div className={cn("flex items-center space-x-2", className)}>
-        <span className="font-medium">{title}</span>
+      <div className={cn("flex items-center justify-between w-full", className)}>
+        <span className="font-bold truncate pr-1">{title}</span>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger>
-                <span className="cursor-help text-muted-foreground">?</span>
+              <TooltipTrigger asChild>
+                <div className="cursor-help text-muted-foreground hover:text-foreground transition-colors w-4 h-4 rounded-full border border-muted-foreground hover:border-foreground flex items-center justify-center text-xs flex-shrink-0 ml-1">
+                  ?
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-md">{tooltip}</p>
@@ -59,22 +61,44 @@ export function DataTableColumnHeader<TData, TValue>({
   }
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn("w-full", className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent"
+            className="-ml-3 h-8 data-[state=open]:bg-accent group w-full justify-between px-3 min-w-0"
           >
-            <span className="font-medium">{title}</span>
-            {column.getIsSorted() === "desc" ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : column.getIsSorted() === "asc" ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="ml-2 h-4 w-4" />
-            )}
+            <div className="flex items-center justify-between w-full min-w-0">
+              <span className="font-bold truncate pr-2">
+                {title}
+              </span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {tooltip && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="cursor-help text-muted-foreground hover:text-foreground transition-colors w-4 h-4 rounded-full border border-muted-foreground hover:border-foreground flex items-center justify-center text-xs">
+                          ?
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-md">{tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {column.getIsSorted() === "desc" ? (
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  ) : column.getIsSorted() === "asc" ? (
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronsUpDown className="h-3.5 w-3.5" />
+                  )}
+                </div>
+              </div>
+            </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -93,18 +117,6 @@ export function DataTableColumnHeader<TData, TValue>({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {tooltip && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <span className="cursor-help text-muted-foreground">?</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-md">{tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
     </div>
   );
 }
@@ -122,21 +134,26 @@ export function createColumnHeader<TData, TValue>(
 ) {
   const { 
     tooltip, 
-    sortable = true, 
+    sortable = false, // Changed default to false
     align = "left",
     className,
     enableHiding = true,
     enableFiltering = false 
   } = options || {};
 
-  return ({ column }: { column?: Column<TData, TValue> }) => (
-    <div className={className} style={{ textAlign: align }}>
-      <DataTableColumnHeader
-        column={column}
-        title={title}
-        tooltip={tooltip}
-        sortable={sortable}
-      />
-    </div>
-  );
+  return ({ column }: { column?: Column<TData, TValue> }) => {
+    // Check if the column itself has sorting enabled
+    const canSort = column?.getCanSort() && sortable;
+    
+    return (
+      <div className={className} style={{ textAlign: align }}>
+        <DataTableColumnHeader
+          column={column}
+          title={title}
+          tooltip={tooltip}
+          sortable={canSort}
+        />
+      </div>
+    );
+  };
 }

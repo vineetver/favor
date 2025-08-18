@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart } from "@/components/ui/bar-chart";
+import { BarChart } from "@/components/ui/charts/bar-chart";
 import { NoDataState } from "@/components/ui/error-states";
 import { AncestryFrequencyTable } from "./ancestry-frequency-table";
 import { buildAncestryFrequencies } from "@/lib/variant/gnomad/utils";
@@ -55,8 +55,8 @@ export function AncestryDisplay({
   const ancestryColors = [
     "#3b82f6", // blue for 1000G
     "#10b981", // green for gnomAD v3.1
-    "#8b5cf6", // purple for gnomAD v4.1 Exome
-    "#f59e0b", // orange for gnomAD v4.1 Genome
+    "#8b5cf6", // purple-600 for gnomAD v4.1 Exome
+    "#a855f7", // purple-500 for gnomAD v4.1 Genome
   ];
 
   if (validFrequencies.length === 0) {
