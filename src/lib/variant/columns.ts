@@ -1,6 +1,6 @@
-import { variantDetailedColumns } from "@/components/features/variant/annotations/variant-detailed-annotations";
-import { variantSingleCellColumns } from "@/components/features/variant/annotations/variant-single-cell-annotations";
-import { variantSummaryColumns } from "@/components/features/variant/annotations/variant-summary-annotations";
+import { variantDetailedColumns } from "@/lib/variant/columns/detailed";
+import { variantSingleCellColumns } from "@/lib/variant/columns/single-cell";
+import { variantSummaryColumns } from "@/lib/variant/columns/summary";
 import type { VariantColumnsType } from "@/lib/annotations/types";
 
 export type ColumnCategory =

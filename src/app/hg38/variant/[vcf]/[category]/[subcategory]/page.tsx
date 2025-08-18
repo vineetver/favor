@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AnnotationTable } from "@/components/features/variant/annotations/annotation-table";
+import { AnnotationTable } from "@/components/data-display/annotation-table";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { fetchVariant } from "@/lib/variant/api";

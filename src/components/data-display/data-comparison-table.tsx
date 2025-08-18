@@ -7,9 +7,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { NoDataState } from "@/components/ui/error-states";
 import type { FilteredItem } from "@/lib/annotations/types";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 
 export type ColumnType = "value" | "activity" | "percentile" | "proportion" | "biologicalContext";
 
