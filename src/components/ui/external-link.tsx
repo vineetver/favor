@@ -6,17 +6,20 @@ export const ExternalLink = React.forwardRef<
   React.ComponentProps<"a"> & {
     children: React.ReactNode;
     href: string;
+    iconSize?: "sm" | "md";
   }
->(({ children, href, className, ...props }, ref) => {
+>(({ children, href, className, iconSize = "md", ...props }, ref) => {
+  const iconClass = iconSize === "sm" ? "h-3 w-3" : "h-4 w-4";
+  
   return (
     <a
       ref={ref}
       href={href}
-      className={`inline-flex gap-x-2 hover:underline hover:text-primary ${className || ""}`}
+      className={`inline-flex items-center gap-x-1 hover:underline hover:text-primary ${className || ""}`}
       {...props}
     >
       {children}
-      <ExternalLinkIcon className="h-5 w-5" />
+      <ExternalLinkIcon className={iconClass} />
     </a>
   );
 });

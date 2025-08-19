@@ -1,4 +1,4 @@
-
+import { CatlasDisplay } from "@/components/features/variant/abc/catlas-display";
 import { fetchABCPeaks, fetchABCScores } from "@/lib/variant/abc/api";
 
 interface CatlasPageProps {
@@ -15,4 +15,5 @@ export default async function CatlasPage({ params }: CatlasPageProps) {
     fetchABCScores(vcf),
   ]);
 
+  return <CatlasDisplay peaks={peaks} scores={scores} />;
 }
