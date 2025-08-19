@@ -67,7 +67,6 @@ export function CatlasDisplay({ peaks, scores }: CatlasDisplayProps) {
           data={peaks}
           title="ABC Peaks"
           description="Enhancer peaks with ABC activity predictions"
-          searchKey="tissue"
           searchPlaceholder="Search by tissue..."
           facetedFilters={[
             {
@@ -135,7 +134,6 @@ export function CatlasDisplay({ peaks, scores }: CatlasDisplayProps) {
           data={scores}
           title="ABC Links"
           description="Enhancer-promoter links with ABC scores"
-          searchKey="gene_name"
           searchPlaceholder="Search by gene name..."
           facetedFilters={[
             {

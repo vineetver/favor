@@ -40,13 +40,13 @@ export function DataTableColumnHeader<TData, TValue>({
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column || !sortable) {
     return (
-      <div className={cn("flex items-center justify-between w-full", className)}>
-        <span className="font-bold truncate pr-1">{title}</span>
+      <div className={cn("flex items-center w-full gap-2", className)}>
+        <span className="font-bold truncate">{title}</span>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="cursor-help text-muted-foreground hover:text-foreground transition-colors w-4 h-4 rounded-full border border-muted-foreground hover:border-foreground flex items-center justify-center text-xs flex-shrink-0 ml-1">
+                <div className="cursor-help text-muted-foreground hover:text-foreground transition-colors w-4 h-4 rounded-full border border-muted-foreground hover:border-foreground flex items-center justify-center text-xs flex-shrink-0">
                   ?
                 </div>
               </TooltipTrigger>
@@ -69,8 +69,8 @@ export function DataTableColumnHeader<TData, TValue>({
             size="sm"
             className="-ml-3 h-8 data-[state=open]:bg-accent group w-full justify-between px-3 min-w-0"
           >
-            <div className="flex items-center justify-between w-full min-w-0">
-              <span className="font-bold truncate pr-2">
+            <div className="flex items-center w-full min-w-0 gap-2">
+              <span className="font-bold truncate">
                 {title}
               </span>
               <div className="flex items-center gap-1 flex-shrink-0">

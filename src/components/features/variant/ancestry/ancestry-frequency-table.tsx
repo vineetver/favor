@@ -46,7 +46,6 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
       columns={ancestryColumns}
       data={data}
       title="Ancestry Allele Frequencies"
-      searchKey="name"
       searchPlaceholder="Search populations..."
       facetedFilters={facetedFilters}
       onExport={exportTSV}

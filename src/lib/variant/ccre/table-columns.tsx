@@ -19,9 +19,7 @@ import { createColumnHeader } from "@/components/ui/data-table-column-header";
 
 export const ccreColumns: ColumnDef<CCRE>[] = [
   {
-    header: createColumnHeader("Regulatory Element", {
-      tooltip: "ENCODE cCRE accession identifier"
-    }),
+    header: createColumnHeader("Regulatory Element"),
     accessorKey: "accession",
     cell: ({ row }) => (
       <div className="font-mono text-sm">
@@ -30,9 +28,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     ),
   },
   {
-    header: createColumnHeader("Functional Class", {
-      tooltip: "Predicted regulatory function based on chromatin signatures"
-    }),
+    header: createColumnHeader("Functional Class"),
     accessorKey: "annotations",
     cell: ({ row }) => {
       const annotation = row.original.annotations;
@@ -65,9 +61,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     },
   },
   {
-    header: createColumnHeader("Genomic Location", {
-      tooltip: "Chromosome coordinates (GRCh38/hg38)"
-    }),
+    header: createColumnHeader("Genomic Location"),
     accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
@@ -140,79 +134,137 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
   },
 ];
 
+const formatSignalValue = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return "—";
+  if (value === 0) return "0";
+  return value.toFixed(2);
+};
+
+const getSignalStrength = (value: number | null | undefined) => {
+  if (value === null || value === undefined || value === 0) return "none";
+  if (value < 1) return "weak";
+  if (value < 5) return "moderate";
+  if (value < 10) return "strong";
+  return "very-strong";
+};
+
+const SignalIndicator = ({ value, label }: { value: number | null | undefined, label: string }) => {
+  const strength = getSignalStrength(value);
+  const colorMap = {
+    "none": "bg-gray-100 text-gray-400",
+    "weak": "bg-yellow-100 text-yellow-700",
+    "moderate": "bg-orange-100 text-orange-700", 
+    "strong": "bg-red-100 text-red-700",
+    "very-strong": "bg-red-200 text-red-800"
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className={cn(
+        "px-2 py-0.5 rounded-full text-xs font-medium min-w-[3rem] text-center",
+        colorMap[strength]
+      )}>
+        {formatSignalValue(value)}
+      </div>
+    </div>
+  );
+};
+
 export const tissueColumns: ColumnDef<CCRETissue>[] = [
   {
-    header: createColumnHeader("Accession"),
+    header: createColumnHeader("Regulatory Element"),
     accessorKey: "accession",
-    cell: ({ row }) => {
-      const formatted = row.original.accession;
-      return formatted;
-    },
+    cell: ({ row }) => (
+      <div className="font-mono text-sm">
+        {row.original.accession}
+      </div>
+    ),
   },
   {
-    header: createColumnHeader("Region"),
-    accessorKey: "score",
+    header: createColumnHeader("Genomic Location"),
+    accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
-      const start = row.original.start_position;
-      const end = row.original.end_position;
-      const region = `${chrom}-${start}-${end}`;
+      const start = row.original.start_position.toLocaleString();
+      const end = row.original.end_position.toLocaleString();
+      const size = ((row.original.end_position - row.original.start_position) / 1000).toFixed(1);
+      const region = `${chrom}-${row.original.start_position}-${row.original.end_position}`;
+      
       return (
-        <div className="min-w-0">
+        <div className="space-y-1">
           <ExternalLink
             href={`https://favor.genohub.org/hg38/region/${region}/SNV-summary/allele-distribution`}
-            className="text-sm truncate"
+            className="font-mono text-sm font-medium hover:text-primary"
           >
-            {region}
+            {chrom}:{start}-{end}
           </ExternalLink>
+          <div className="text-xs text-muted-foreground">
+            {size} kb
+          </div>
         </div>
       );
     },
   },
   {
-    header: createColumnHeader("Class"),
+    header: createColumnHeader("Element Type"),
     accessorKey: "datatype",
     cell: ({ row }) => {
-      const formatted = row.original.datatype;
-      return formatted;
+      const type = row.original.datatype;
+      const typeMap = {
+        "Promoter": "🎯 Promoter",
+        "Enhancer": "⚡ Enhancer", 
+        "Insulator": "🛡️ Insulator",
+        "Silencer": "🔽 Silencer"
+      };
+      
+      return (
+        <div className="text-sm font-medium">
+          {typeMap[type as keyof typeof typeMap] || type}
+        </div>
+      );
     },
   },
   {
     header: createColumnHeader("Chromatin Accessibility"),
     id: "accessibility",
     cell: ({ row }) => (
-      <div className="space-y-1 text-xs">
-        <div>
-          <span className="font-medium">DNase:</span>{" "}
-          {row.original.dnase || "N/A"}
-        </div>
-        <div>
-          <span className="font-medium">ATAC:</span>{" "}
-          {row.original.atac || "N/A"}
-        </div>
+      <div className="space-y-2 min-w-[120px]">
+        <SignalIndicator value={row.original.dnase} label="DNase" />
+        <SignalIndicator value={row.original.atac} label="ATAC" />
       </div>
     ),
   },
   {
-    header: createColumnHeader("Histone Marks"),
+    header: createColumnHeader("Histone Modifications"),
     id: "histones",
     cell: ({ row }) => (
-      <div className="space-y-1 text-xs">
-        <div>
-          <span className="font-medium">H3K27ac:</span>{" "}
-          {row.original.h3k27ac || "N/A"}
-        </div>
-        <div>
-          <span className="font-medium">H3K4me3:</span>{" "}
-          {row.original.h3k4me3 || "N/A"}
-        </div>
+      <div className="space-y-2 min-w-[130px]">
+        <SignalIndicator value={row.original.h3k27ac} label="H3K27ac" />
+        <SignalIndicator value={row.original.h3k4me3} label="H3K4me3" />
       </div>
     ),
   },
   {
-    header: createColumnHeader("CTCF"),
+    header: createColumnHeader("CTCF Binding"),
     accessorKey: "ctcf",
-    cell: ({ row }) => row.original.ctcf || "N/A",
+    cell: ({ row }) => {
+      const ctcf = row.original.ctcf;
+      const strength = getSignalStrength(ctcf);
+      const colorMap = {
+        "none": "text-gray-400",
+        "weak": "text-blue-500",
+        "moderate": "text-blue-600", 
+        "strong": "text-blue-700",
+        "very-strong": "text-blue-800"
+      };
+      
+      return (
+        <div className={cn("font-mono font-semibold", colorMap[strength])}>
+          {formatSignalValue(ctcf)}
+        </div>
+      );
+    },
   },
   {
     header: createColumnHeader("Linked Genes", {

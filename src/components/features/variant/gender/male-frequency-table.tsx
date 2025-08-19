@@ -45,7 +45,6 @@ export function MaleFrequencyTable({ data }: MaleFrequencyTableProps) {
       columns={maleColumns}
       data={data}
       title="Male Allele Frequencies"
-      searchKey="name"
       searchPlaceholder="Search populations..."
       facetedFilters={facetedFilters}
       onExport={exportTSV}
