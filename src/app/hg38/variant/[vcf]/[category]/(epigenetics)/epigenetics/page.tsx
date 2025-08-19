@@ -29,7 +29,7 @@ export default async function EpigeneticsPage({
 
   return (
     <div className="space-y-6">
-      <EpigeneticsDisplay items={validItems} variant={variant} />
+      <EpigeneticsDisplay items={validItems}  />
     </div>
   );
 }
