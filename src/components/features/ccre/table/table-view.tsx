@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DataGrid } from "@/components/ui/data-grid";
 import { RuntimeError } from "@/components/ui/error-states";
@@ -19,22 +19,17 @@ interface CCRETableViewProps {
   isCCRELoading: boolean;
 }
 
-export function CCRETableView({
+const CCRETableViewImpl = ({
   vcf,
   region,
   searchDistance,
   debouncedSearchDistance,
   cCREsData,
   isCCRELoading,
-}: CCRETableViewProps) {
+}: CCRETableViewProps) => {
   const { selectedTissue, selectedSubtissue } = useTissueStore();
 
-  const {
-    data: tissueData,
-    isLoading: isTissueLoading,
-    error: tissueError,
-    refetch: refetchTissue,
-  } = useQuery({
+  const tissueQueryConfig = useMemo(() => ({
     queryKey: [
       "ccre-tissue",
       vcf || region,
@@ -64,7 +59,14 @@ export function CCRETableView({
       return Promise.resolve([]);
     },
     enabled: Boolean((vcf || region) && selectedTissue && selectedSubtissue),
-  });
+  }), [vcf, region, debouncedSearchDistance, selectedTissue, selectedSubtissue]);
+
+  const {
+    data: tissueData,
+    isLoading: isTissueLoading,
+    error: tissueError,
+    refetch: refetchTissue,
+  } = useQuery(tissueQueryConfig);
 
   const displayData = useMemo(() => {
     if (selectedTissue && selectedSubtissue && tissueData) {
@@ -73,26 +75,26 @@ export function CCRETableView({
     return cCREsData || [];
   }, [selectedTissue, selectedSubtissue, tissueData, cCREsData]);
 
-  const showTissueColumns = Boolean(selectedTissue && selectedSubtissue);
-  const isLoading = showTissueColumns ? isTissueLoading : isCCRELoading;
-  const columns = showTissueColumns ? tissueColumns : ccreColumns;
-
-  if (showTissueColumns && tissueError) {
-    return (
-      <RuntimeError
-        error={tissueError as Error}
-        reset={() => refetchTissue()}
-        categoryName="Tissue-specific cCRE Data"
-        description="We encountered an error while loading tissue-specific cCRE data. This could be due to a network issue or a temporary server problem."
-      />
-    );
-  }
-
-  const renderExpandedRow = (row: CCRE | CCRETissue) => (
-    <LinkedGenesPanel accession={row.accession} />
+  const showTissueColumns = useMemo(() => 
+    Boolean(selectedTissue && selectedSubtissue), 
+    [selectedTissue, selectedSubtissue]
   );
 
-  const exportData = (data: (CCRE | CCRETissue)[]) => {
+  const isLoading = useMemo(() => 
+    showTissueColumns ? isTissueLoading : isCCRELoading,
+    [showTissueColumns, isTissueLoading, isCCRELoading]
+  );
+
+  const columns = useMemo(() => 
+    showTissueColumns ? tissueColumns : ccreColumns,
+    [showTissueColumns]
+  );
+
+  const renderExpandedRow = useCallback((row: CCRE | CCRETissue) => (
+    <LinkedGenesPanel accession={row.accession} />
+  ), []);
+
+  const exportData = useCallback((data: (CCRE | CCRETissue)[]) => {
     const headers = showTissueColumns 
       ? ["Accession", "Chromosome", "Start", "End", "Class", "DNase", "ATAC", "H3K27ac", "H3K4me3", "CTCF"]
       : ["Accession", "Annotations", "Chromosome", "Start", "End"];
@@ -132,26 +134,53 @@ export function CCRETableView({
     a.download = `ccre_data_${searchDistance[0]}bp.tsv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [showTissueColumns, searchDistance]);
+
+  const refetchTissueCallback = useCallback(() => refetchTissue(), [refetchTissue]);
+
+  if (showTissueColumns && tissueError) {
+    return (
+      <RuntimeError
+        error={tissueError as Error}
+        reset={refetchTissueCallback}
+        categoryName="Tissue-specific cCRE Data"
+        description="We encountered an error while loading tissue-specific cCRE data. This could be due to a network issue or a temporary server problem."
+      />
+    );
+  }
+
+  const tableTitle = useMemo(() => 
+    `cCREs within ${searchDistance[0].toLocaleString()}bp of ${vcf || "variant"}`,
+    [searchDistance, vcf]
+  );
+
+  const exportFilename = useMemo(() => 
+    `ccre_data_${searchDistance[0]}bp.tsv`,
+    [searchDistance]
+  );
+
+  const emptyState = useMemo(() => ({
+    title: "No cCRE data found",
+    description: "No cCRE data is available for this variant at the current distance.",
+    dataType: "cCRE data",
+  }), []);
 
   return (
     <DataGrid
       columns={columns as any}
       data={displayData || []}
-      title={`cCREs within ${searchDistance[0].toLocaleString()}bp of ${vcf || "variant"}`}
+      title={tableTitle}
       showSearch={false}
       expandable={true}
       renderExpandedRow={renderExpandedRow}
       pinnedColumns={{ right: ["gene-links"] }}
       onExport={exportData}
-      exportFilename={`ccre_data_${searchDistance[0]}bp.tsv`}
+      exportFilename={exportFilename}
       initialPageSize={10}
       isLoading={isLoading}
-      emptyState={{
-        title: "No cCRE data found",
-        description: "No cCRE data is available for this variant at the current distance.",
-        dataType: "cCRE data",
-      }}
+      emptyState={emptyState}
     />
   );
-}
+};
+
+export const CCRETableView = memo(CCRETableViewImpl);

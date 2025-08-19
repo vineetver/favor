@@ -4,17 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCallback, useMemo, memo } from "react";
 
 interface DistanceSliderProps {
   searchDistance: number[];
   onDistanceChange: (distance: number[]) => void;
 }
 
-export function DistanceSlider({
+const DistanceSliderImpl = ({
   searchDistance,
   onDistanceChange,
-}: DistanceSliderProps) {
-  const formatDistance = (distance: number) => {
+}: DistanceSliderProps) => {
+  const formatDistance = useCallback((distance: number) => {
     if (distance >= 1000000) {
       return `${(distance / 1000000).toFixed(1)}Mb`;
     }
@@ -22,7 +23,18 @@ export function DistanceSlider({
       return `${(distance / 1000).toFixed(0)}kb`;
     }
     return `${distance}bp`;
-  };
+  }, []);
+
+  const distanceOptions = useMemo(() => [0, 1000, 5000, 10000], []);
+
+  const handleQuickSelect = useCallback((distance: number) => {
+    onDistanceChange([distance]);
+  }, [onDistanceChange]);
+
+  const formattedCurrentDistance = useMemo(() => 
+    formatDistance(searchDistance[0]),
+    [searchDistance, formatDistance]
+  );
 
   return (
     <Card>
@@ -30,7 +42,7 @@ export function DistanceSlider({
         <CardTitle className="text-sm font-medium flex items-center justify-between">
           Search Distance
           <Badge variant="secondary" className="ml-2 font-mono">
-            {formatDistance(searchDistance[0])}
+            {formattedCurrentDistance}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -53,12 +65,11 @@ export function DistanceSlider({
             </div>
           </div>
 
-          {/* Quick distance buttons */}
           <div className="grid grid-cols-4 gap-2">
-            {[0, 1000, 5000, 10000].map((distance) => (
+            {distanceOptions.map((distance) => (
               <Button
                 key={distance}
-                onClick={() => onDistanceChange([distance])}
+                onClick={() => handleQuickSelect(distance)}
                 variant={searchDistance[0] === distance ? "default" : "outline"}
                 size="sm"
                 className="text-xs h-8"
@@ -71,4 +82,6 @@ export function DistanceSlider({
       </CardContent>
     </Card>
   );
-}
+};
+
+export const DistanceSlider = memo(DistanceSliderImpl);

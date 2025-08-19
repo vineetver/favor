@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
 import { TrackSelector } from "@/components/features/browser/genome-browser/track-selector";
 import { GoslingCore } from "@/components/features/browser/genome-browser/gosling-core";
 import { GenomeBrowserControls } from "@/components/features/browser/genome-browser/genome-browser-controls";
@@ -14,31 +14,35 @@ interface GenomeBrowserProps {
   initialTracks?: string[];
 }
 
-export function GenomeBrowser({
+const GenomeBrowserImpl = ({
   vcfParam,
   regionParam,
   initialTracks = [],
-}: GenomeBrowserProps) {
+}: GenomeBrowserProps) => {
   const [enabledTrackIds, setEnabledTrackIds] =
     useState<string[]>(initialTracks);
 
-  // Get actual track metadata from IDs
-  const enabledTracks = enabledTrackIds
-    .map((trackId) => COMPREHENSIVE_TRACK_REGISTRY[trackId])
-    .filter(Boolean);
+  const enabledTracks = useMemo(() =>
+    enabledTrackIds
+      .map((trackId) => COMPREHENSIVE_TRACK_REGISTRY[trackId])
+      .filter(Boolean),
+    [enabledTrackIds]
+  );
 
-  // Domain management
-  const domainManager = useDomainManager({
+  const domainManagerConfig = useMemo(() => ({
     vcfParam,
     regionParam,
     trackTypes: enabledTrackIds,
-  });
+  }), [vcfParam, regionParam, enabledTrackIds]);
 
-  // Gosling spec generation
-  const goslingSpec = useGoslingSpec({
+  const domainManager = useDomainManager(domainManagerConfig);
+
+  const goslingSpecConfig = useMemo(() => ({
     enabledTracks,
     domain: domainManager.domain,
-  });
+  }), [enabledTracks, domainManager.domain]);
+
+  const goslingSpec = useGoslingSpec(goslingSpecConfig);
 
   const handleTrackToggle = useCallback((trackId: string) => {
     setEnabledTrackIds((prev) =>
@@ -52,7 +56,6 @@ export function GenomeBrowser({
     (trackIds: string[], enabled: boolean) => {
       setEnabledTrackIds((prev) => {
         if (enabled) {
-          // Add new tracks to the end, avoiding duplicates
           const newTracks = trackIds.filter((id) => !prev.includes(id));
           return [...prev, ...newTracks];
         } else {
@@ -67,19 +70,21 @@ export function GenomeBrowser({
     setEnabledTrackIds([]);
   }, []);
 
+  const controlsClassName = useMemo(() => 
+    enabledTracks.length > 0 ? "mb-4" : "",
+    [enabledTracks.length]
+  );
+
   return (
     <div className="w-full h-full flex flex-col md:flex-row">
-      {/* Track Selector - Responsive */}
       <TrackSelector
         enabledTracks={enabledTrackIds}
         onTrackToggle={handleTrackToggle}
         onCollectionToggle={handleCollectionToggle}
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden px-4 sm:px-6 lg:px-8">
         <div className="flex-1 flex flex-col">
-          {/* Controls - only show when tracks are enabled */}
           <GenomeBrowserControls
             domain={domainManager.domain}
             enabledTracks={enabledTracks}
@@ -87,10 +92,9 @@ export function GenomeBrowser({
             onZoom={domainManager.zoom}
             onPresetChange={domainManager.applyPreset}
             onClearAllTracks={handleClearAllTracks}
-            className={enabledTracks.length > 0 ? "mb-4" : ""}
+            className={controlsClassName}
           />
 
-          {/* Genome Browser Visualization */}
           <div className="flex-1">
             <GoslingCore spec={goslingSpec} />
           </div>
@@ -98,4 +102,6 @@ export function GenomeBrowser({
       </div>
     </div>
   );
-}
+};
+
+export const GenomeBrowser = memo(GenomeBrowserImpl);

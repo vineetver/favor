@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { X, Search } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useTissueStore } from "@/lib/stores/tissue-store";
 import { getSubtissueOptions, getTissueOptions } from "@/lib/variant/ccre/tissue-config";
@@ -23,7 +23,7 @@ interface SubtissueMetadata {
   displayName: string;
 }
 
-export function TissueFilter() {
+const TissueFilterImpl = () => {
   const {
     selectedTissue,
     selectedSubtissue,
@@ -33,31 +33,31 @@ export function TissueFilter() {
   } = useTissueStore();
   const [subtissueSearch, setSubtissueSearch] = useState("");
 
-  const tissues = getTissueOptions();
-  const subtissues = selectedTissue ? getSubtissueOptions(selectedTissue) : [];
+  const tissues = useMemo(() => getTissueOptions(), []);
+  const subtissues = useMemo(() => 
+    selectedTissue ? getSubtissueOptions(selectedTissue) : [],
+    [selectedTissue]
+  );
 
-  const getTruncatedName = (name: string) => {
-    // Take the first part before comma and capitalize
+  const getTruncatedName = useCallback((name: string) => {
     const firstPart = name.split(",")[0];
     return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
-  };
+  }, []);
 
-  const parseSubtissueMetadata = (name: string): SubtissueMetadata => {
+  const parseSubtissueMetadata = useCallback((name: string): SubtissueMetadata => {
     const metadata: SubtissueMetadata = { displayName: name };
 
-    // Extract sex/gender
     if (name.includes("male") && !name.includes("female")) {
       metadata.sex = "M";
     } else if (name.includes("female")) {
       metadata.sex = "F";
     }
 
-    // Extract age information - handle various formats
     const agePatterns = [
-      /\((\d+(?:\s*or\s*above)?\s*years?)\)/, // (89 years)
-      /\((\d+\s*days?)\)/, // (112 days)
-      /(\d+(?:\s*or\s*above)?\s*years?)/, // 89 years
-      /(\d+\s*days?)/, // 112 days
+      /\((\d+(?:\s*or\s*above)?\s*years?)\)/,
+      /\((\d+\s*days?)\)/,
+      /(\d+(?:\s*or\s*above)?\s*years?)/,
+      /(\d+\s*days?)/,
     ];
 
     for (const pattern of agePatterns) {
@@ -74,7 +74,6 @@ export function TissueFilter() {
       }
     }
 
-    // Extract condition
     if (name.includes("mild cognitive impairment")) {
       metadata.condition = "MCI";
     } else if (name.includes("alzheimer")) {
@@ -84,7 +83,7 @@ export function TissueFilter() {
     }
 
     return metadata;
-  };
+  }, []);
 
   const filteredSubtissues = useMemo(() => {
     if (!subtissueSearch) return subtissues;
@@ -97,18 +96,22 @@ export function TissueFilter() {
     );
   }, [subtissues, subtissueSearch]);
 
-  const handleTissueChange = (tissue: string) => {
+  const handleTissueChange = useCallback((tissue: string) => {
     setSelectedTissue(tissue);
     setSelectedSubtissue("");
-  };
+  }, [setSelectedTissue, setSelectedSubtissue]);
 
-  const handleSubtissueChange = (subtissueName: string) => {
+  const handleSubtissueChange = useCallback((subtissueName: string) => {
     setSelectedSubtissue(subtissueName);
-  };
+  }, [setSelectedSubtissue]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     reset();
-  };
+  }, [reset]);
+
+  const handleSubtissueSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSubtissueSearch(e.target.value);
+  }, []);
 
   return (
     <Card>
@@ -153,7 +156,7 @@ export function TissueFilter() {
                 <Input
                   placeholder="Search samples..."
                   value={subtissueSearch}
-                  onChange={(e) => setSubtissueSearch(e.target.value)}
+                  onChange={handleSubtissueSearchChange}
                   className="pl-10"
                 />
               </div>
@@ -234,4 +237,6 @@ export function TissueFilter() {
       </CardContent>
     </Card>
   );
-}
+};
+
+export const TissueFilter = memo(TissueFilterImpl);

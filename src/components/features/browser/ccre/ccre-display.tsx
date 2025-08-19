@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect, useMemo, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
-import { RuntimeError } from "@/components/ui/error-states";
-import { DistanceSlider } from "@/components/features/ccre/filters/distance-slider";
-import { CCRETableView } from "@/components/features/ccre/table/table-view";
 import { getCCREByRegion, getCCREByVCF } from "@/lib/variant/ccre/api";
 import type { CCRE } from "@/lib/variant/ccre/types";
 import dynamic from "next/dynamic";
+import { RuntimeError } from "@/components/ui/error-states";
+import { DistanceSlider } from "@/components/features/ccre/filters/distance-slider";
+import { CCRETableView } from "@/components/features/ccre/table/table-view";
 import { TissueFilter } from "@/components/features/ccre/filters/tissue-filter";
 
 interface CCREDisplayProps {
@@ -21,11 +21,11 @@ const CCREBrowser = dynamic(
   () => import("./ccre-browser").then((mod) => ({ default: mod.CCREBrowser })),
   {
     ssr: false,
+    loading: () => <div className="min-h-[800px] animate-pulse bg-gray-100 rounded" />,
   },
 );
 
-
-export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
+const CCREDisplayImpl = ({ vcf, region, initialData }: CCREDisplayProps) => {
   const [searchDistance, setSearchDistance] = useState([0]);
   const [debouncedSearchDistance, setDebouncedSearchDistance] = useState([0]);
 
@@ -54,12 +54,7 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
     };
   }, []);
 
-  const {
-    data: cCREsData,
-    isLoading: isCCRELoading,
-    error: cCREError,
-    refetch: refetchCCRE,
-  } = useQuery({
+  const queryConfig = useMemo(() => ({
     queryKey: ["ccre", vcf || region, debouncedSearchDistance[0]],
     queryFn: () => {
       if (!vcf && !region) return Promise.resolve(initialData || []);
@@ -70,18 +65,24 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
       }
       return Promise.resolve(initialData || []);
     },
-  });
+  }), [vcf, region, debouncedSearchDistance, initialData]);
 
-  const sharedProps = {
+  const {
+    data: cCREsData,
+    isLoading: isCCRELoading,
+    error: cCREError,
+    refetch: refetchCCRE,
+  } = useQuery(queryConfig);
+
+  const sharedProps = useMemo(() => ({
     vcf,
     region,
     searchDistance,
     debouncedSearchDistance,
     cCREsData,
     isCCRELoading,
-  };
+  }), [vcf, region, searchDistance, debouncedSearchDistance, cCREsData, isCCRELoading]);
 
-  // Handle error state
   if (cCREError) {
     return (
       <div className="flex flex-col lg:flex-row gap-6">
@@ -103,7 +104,17 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
     );
   }
 
-  const tabsData = [
+  const browserInitialTracks = useMemo(() => [
+    "other_gene_annotation",
+    "single_cell_tissue_ccres",
+    "single_cell_tissue_atac_seq_chromatin_accessibility",
+    "single_cell_tissue_dnase_seq_chromatin_accessibility",
+    "single_cell_tissue_ctcf_binding",
+    "single_cell_tissue_h3k4me3_active_promoters",
+    "single_cell_tissue_h3k27ac_enhancer_activity",
+  ], []);
+
+  const tabsData = useMemo(() => [
     {
       id: "table",
       value: "table",
@@ -116,7 +127,7 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
               onDistanceChange={handleSearchDistanceChange}
             />
             <TissueFilter />
-            </div>
+          </div>
           <div className="flex-1 min-w-0">
             <CCRETableView {...sharedProps} />
           </div>
@@ -130,27 +141,21 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
       content: (
         <div className="min-h-[800px]">
           <CCREBrowser
-              vcfParam={vcf}
-              regionParam={region}
-              initialTracks={[
-                "other_gene_annotation",
-                "single_cell_tissue_ccres",
-                "single_cell_tissue_atac_seq_chromatin_accessibility",
-                "single_cell_tissue_dnase_seq_chromatin_accessibility",
-                "single_cell_tissue_ctcf_binding",
-                "single_cell_tissue_h3k4me3_active_promoters",
-                "single_cell_tissue_h3k27ac_enhancer_activity",
-              ]}
-            />
+            vcfParam={vcf}
+            regionParam={region}
+            initialTracks={browserInitialTracks}
+          />
         </div>
       ),
     },
-  ];
+  ], [vcf, region, searchDistance, debouncedSearchDistance, cCREsData, isCCRELoading, handleSearchDistanceChange, browserInitialTracks]);
 
   return (
-      <ResponsiveTabs
-        defaultValue="table"
-        tabs={tabsData}
-      />
+    <ResponsiveTabs
+      defaultValue="table"
+      tabs={tabsData}
+    />
   );
-}
+};
+
+export const CCREDisplay = memo(CCREDisplayImpl);

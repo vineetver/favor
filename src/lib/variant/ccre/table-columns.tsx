@@ -19,55 +19,74 @@ import { createColumnHeader } from "@/components/ui/data-table-column-header";
 
 export const ccreColumns: ColumnDef<CCRE>[] = [
   {
-    header: createColumnHeader("Accession"),
+    header: createColumnHeader("Regulatory Element", {
+      tooltip: "ENCODE cCRE accession identifier"
+    }),
     accessorKey: "accession",
-    cell: ({ row }) => {
-      const formatted = row.original.accession;
-      return formatted;
-    },
+    cell: ({ row }) => (
+      <div className="font-mono text-sm">
+        {row.original.accession}
+      </div>
+    ),
   },
   {
-    header: createColumnHeader("Annotations"),
+    header: createColumnHeader("Functional Class", {
+      tooltip: "Predicted regulatory function based on chromatin signatures"
+    }),
     accessorKey: "annotations",
     cell: ({ row }) => {
-      const formatted = row.original.annotations;
+      const annotation = row.original.annotations;
       return (
-        <div className="normal-case cursor-pointer">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <div className="flex items-center gap-2">
-                  {ccreAnnotationCCode(formatted, formatted)}
-                  <span className="text-sm text-muted-foreground">
-                    {ccreAnnotationMap[formatted] || formatted}
-                  </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                {ccreAnnotationCCode(annotation, annotation)}
+                <span className="text-sm font-medium">
+                  {ccreAnnotationMap[annotation] || annotation}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <div className="space-y-1">
+                <div className="font-semibold">{ccreAnnotationMap[annotation]}</div>
+                <div className="text-xs text-muted-foreground">
+                  {annotation === "PLS" && "Active promoter-like signatures"}
+                  {annotation === "pELS" && "Proximal enhancer-like signatures"}
+                  {annotation === "dELS" && "Distal enhancer-like signatures"}
+                  {annotation === "DNase-H3K4me3" && "Promoter chromatin accessibility"}
+                  {annotation === "CTCF-only" && "Insulator/boundary elements"}
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{formatted}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
   },
   {
-    header: createColumnHeader("cCRE Region"),
+    header: createColumnHeader("Genomic Location", {
+      tooltip: "Chromosome coordinates (GRCh38/hg38)"
+    }),
     accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
-      const start = row.original.start_position;
-      const end = row.original.end_position;
-      const region = `${chrom}-${start}-${end}`;
+      const start = row.original.start_position.toLocaleString();
+      const end = row.original.end_position.toLocaleString();
+      const size = ((row.original.end_position - row.original.start_position) / 1000).toFixed(1);
+      const region = `${chrom}-${row.original.start_position}-${row.original.end_position}`;
+      
       return (
-        <div className="min-w-0">
+        <div className="space-y-1">
           <ExternalLink
             href={`https://favor.genohub.org/hg38/region/${region}/SNV-summary/allele-distribution`}
-            className="text-sm font-mono truncate"
+            className="font-mono text-sm font-medium hover:text-primary"
           >
-            {region}
+            {chrom}:{start}-{end}
           </ExternalLink>
+          <div className="text-xs text-muted-foreground">
+            {size} kb region
+          </div>
         </div>
       );
     },
