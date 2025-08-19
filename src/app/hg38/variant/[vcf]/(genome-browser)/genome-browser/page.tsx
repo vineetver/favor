@@ -1,11 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { GenomeBrowserErrorBoundary } from "@/components/features/genome-browser/error-boundary";
+import { GenomeBrowserErrorBoundary } from "@/components/features/browser/genome-browser/error-boundary";
 
 const DynamicGenomeBrowser = dynamic(
   () =>
-    import("@/components/features/genome-browser/genome-browser").then(
+    import("@/components/features/browser/genome-browser/genome-browser").then(
       (mod) => ({ default: mod.GenomeBrowser }),
     ),
   {

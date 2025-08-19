@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { CCRETrackSelector } from "./ccre-track-selector";
-import { GoslingCore } from "@/components/features/genome-browser/gosling-core";
-import { GenomeBrowserControls } from "@/components/features/genome-browser/genome-browser-controls";
+import { GoslingCore } from "@/components/features/browser/genome-browser/gosling-core";
+import { GenomeBrowserControls } from "@/components/features/browser/genome-browser/genome-browser-controls";
 import { useDomainManager } from "@/lib/hooks/use-domain-manager";
 import { useGoslingSpec } from "@/lib/hooks/use-gosling-spec";
 import { COMPREHENSIVE_TRACK_REGISTRY } from "@/lib/tracks/registry";

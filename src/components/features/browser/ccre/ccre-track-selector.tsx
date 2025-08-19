@@ -13,7 +13,7 @@ import {
 import { COMPREHENSIVE_TRACK_REGISTRY } from "@/lib/tracks/registry";
 import type { TrackMetadata } from "@/lib/tracks/types";
 import type { DynamicTrack } from "@/lib/tracks/dynamic-track-generator";
-import { TrackDetailsModal } from "@/components/features/genome-browser/track-details-modal";
+import { TrackDetailsModal } from "@/components/features/browser/genome-browser/track-details-modal";
 
 interface CCRETrackSelectorProps {
   enabledTracks: string[];

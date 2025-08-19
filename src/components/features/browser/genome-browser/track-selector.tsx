@@ -19,7 +19,7 @@ import {
   COMPREHENSIVE_TRACK_COLLECTIONS,
 } from "@/lib/tracks/registry";
 import type { TrackMetadata } from "@/lib/tracks/types";
-import { TrackDetailsModal } from "@/components/features/genome-browser/track-details-modal";
+import { TrackDetailsModal } from "@/components/features/browser/genome-browser/track-details-modal";
 
 // Category color mapping
 const getCategoryColor = (categoryId: string): string => {
@@ -394,13 +394,13 @@ function TrackSelectorContent({
               <TabsList className="grid w-full grid-cols-2 bg-background gap-1 border p-1 h-11">
                 <TabsTrigger
                   value="individual"
-                  className="text-sm font-medium data-[state=active]:bg-primary dark:data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:text-primary-foreground dark:data-[state=active]:border-transparent"
+                  className="text-sm font-medium data-[state=active]:bg-primary  data-[state=active]:text-primary-foreground"
                 >
                   Individual
                 </TabsTrigger>
                 <TabsTrigger
                   value="collections"
-                  className="text-sm font-medium data-[state=active]:bg-primary dark:data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:text-primary-foreground dark:data-[state=active]:border-transparent"
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 >
                   Collections
                 </TabsTrigger>

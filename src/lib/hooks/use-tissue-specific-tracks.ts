@@ -6,7 +6,7 @@ import {
   generateTissueSpecificTracks,
   type DynamicTrack,
 } from "@/lib/tracks/dynamic-track-generator";
-import { TissueConfig } from "../variant/ccre/tissue-config";
+import { TissueConfig } from "@/lib/variant/ccre/tissue-config";
 
 interface UseTissueSpecificTracksReturn {
   tissueSpecificTracks: DynamicTrack[];

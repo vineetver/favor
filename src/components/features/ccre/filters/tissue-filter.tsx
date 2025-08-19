@@ -10,14 +10,11 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Info, X, Search } from "lucide-react";
-import {
-  getTissueOptions,
-  getSubtissueOptions,
-} from "@/components/features/ccre/lib/tissue-config";
+import { X, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useTissueStore } from "@/lib/stores/tissue-store";
+import { getSubtissueOptions, getTissueOptions } from "@/lib/variant/ccre/tissue-config";
 
 interface SubtissueMetadata {
   sex?: string;

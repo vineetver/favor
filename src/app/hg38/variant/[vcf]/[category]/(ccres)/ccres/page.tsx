@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CCREDisplay } from "@/components/features/ccre/ccre-display";
+import { CCREDisplay } from "@/components/features/browser/ccre/ccre-display";
 import { getCCREByVCF } from "@/lib/variant/ccre/api";
 
 interface CCREPageProps {

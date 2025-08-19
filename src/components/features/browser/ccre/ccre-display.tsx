@@ -9,6 +9,7 @@ import { CCRETableView } from "@/components/features/ccre/table/table-view";
 import { getCCREByRegion, getCCREByVCF } from "@/lib/variant/ccre/api";
 import type { CCRE } from "@/lib/variant/ccre/types";
 import dynamic from "next/dynamic";
+import { TissueFilter } from "@/components/features/ccre/filters/tissue-filter";
 
 interface CCREDisplayProps {
   vcf?: string;
@@ -17,7 +18,7 @@ interface CCREDisplayProps {
 }
 
 const CCREBrowser = dynamic(
-  () => import("./browser").then((mod) => ({ default: mod.CCREBrowser })),
+  () => import("./ccre-browser").then((mod) => ({ default: mod.CCREBrowser })),
   {
     ssr: false,
   },
@@ -114,6 +115,7 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
               searchDistance={searchDistance}
               onDistanceChange={handleSearchDistanceChange}
             />
+            <TissueFilter />
             </div>
           <div className="flex-1 min-w-0">
             <CCRETableView {...sharedProps} />
