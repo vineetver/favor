@@ -2,11 +2,11 @@
 
 import { useMemo } from "react";
 import { useTissueStore } from "@/lib/stores/tissue-store";
-import { TissueConfig } from "@/components/features/ccre/lib/tissue-config";
 import {
   generateTissueSpecificTracks,
   type DynamicTrack,
 } from "@/lib/tracks/dynamic-track-generator";
+import { TissueConfig } from "../variant/ccre/tissue-config";
 
 interface UseTissueSpecificTracksReturn {
   tissueSpecificTracks: DynamicTrack[];

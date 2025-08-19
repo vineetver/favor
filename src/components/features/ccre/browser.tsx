@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { CCRETrackSelector } from "./ccre-track-selector";
 import { GoslingCore } from "@/components/features/genome-browser/gosling-core";
 import { GenomeBrowserControls } from "@/components/features/genome-browser/genome-browser-controls";
-import { useDomainManager } from "@/components/features/genome-browser/hooks/useDomainManager";
-import { useGoslingSpec } from "@/components/features/genome-browser/hooks/useGoslingSpec";
-import { useTissueSpecificTracks } from "./hooks/useTissueSpecificTracks";
+import { useDomainManager } from "@/lib/hooks/use-domain-manager";
+import { useGoslingSpec } from "@/lib/hooks/use-gosling-spec";
 import { COMPREHENSIVE_TRACK_REGISTRY } from "@/lib/tracks/registry";
 import type { DynamicTrack } from "@/lib/tracks/dynamic-track-generator";
+import { useTissueSpecificTracks } from "@/lib/hooks/use-tissue-specific-tracks";
 
 interface CCREBrowserProps {
   vcfParam?: string;

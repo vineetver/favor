@@ -8,12 +8,21 @@ import { DistanceSlider } from "@/components/features/ccre/filters/distance-slid
 import { CCRETableView } from "@/components/features/ccre/table/table-view";
 import { getCCREByRegion, getCCREByVCF } from "@/lib/variant/ccre/api";
 import type { CCRE } from "@/lib/variant/ccre/types";
+import dynamic from "next/dynamic";
 
 interface CCREDisplayProps {
   vcf?: string;
   region?: string;
   initialData?: CCRE[] | null;
 }
+
+const CCREBrowser = dynamic(
+  () => import("./browser").then((mod) => ({ default: mod.CCREBrowser })),
+  {
+    ssr: false,
+  },
+);
+
 
 export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
   const [searchDistance, setSearchDistance] = useState([0]);
@@ -118,7 +127,19 @@ export function CCREDisplay({ vcf, region, initialData }: CCREDisplayProps) {
       label: "Browser View",
       content: (
         <div className="min-h-[800px]">
-          {/* Browser implementation coming soon */}
+          <CCREBrowser
+              vcfParam={vcf}
+              regionParam={region}
+              initialTracks={[
+                "other_gene_annotation",
+                "single_cell_tissue_ccres",
+                "single_cell_tissue_atac_seq_chromatin_accessibility",
+                "single_cell_tissue_dnase_seq_chromatin_accessibility",
+                "single_cell_tissue_ctcf_binding",
+                "single_cell_tissue_h3k4me3_active_promoters",
+                "single_cell_tissue_h3k27ac_enhancer_activity",
+              ]}
+            />
         </div>
       ),
     },

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, ChevronDown, ChevronUp, Info, Layers } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ChevronDown, ChevronUp, Info, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
