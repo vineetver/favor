@@ -7,11 +7,14 @@ import {
   ColumnFiltersState,
   SortingState,
   VisibilityState,
+  ColumnPinningState,
+  ExpandedState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { Download, Search, X } from "lucide-react";
@@ -31,13 +34,14 @@ import { TablePagination } from "@/components/ui/pagination";
 import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle";
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter";
 import { NoDataState } from "@/components/ui/error-states";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils/general";
 
 interface DataGridProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   title?: string;
   description?: string;
-  searchKey?: keyof TData;
   searchPlaceholder?: string;
   facetedFilters?: Array<{
     columnId: string;
@@ -60,6 +64,13 @@ interface DataGridProps<TData, TValue> {
     icon?: string;
     dataType?: string;
   };
+  expandable?: boolean;
+  renderExpandedRow?: (row: TData) => React.ReactNode;
+  pinnedColumns?: {
+    left?: string[];
+    right?: string[];
+  };
+  isLoading?: boolean;
 }
 
 export function DataGrid<TData, TValue>({
@@ -67,7 +78,6 @@ export function DataGrid<TData, TValue>({
   data,
   title,
   description,
-  searchKey,
   searchPlaceholder = "Search...",
   facetedFilters = [],
   onExport,
@@ -77,12 +87,20 @@ export function DataGrid<TData, TValue>({
   showColumnToggle = true,
   showSearch = true,
   emptyState,
+  expandable = false,
+  renderExpandedRow,
+  pinnedColumns,
+  isLoading = false,
 }: DataGridProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
+  const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
+    pinnedColumns ? pinnedColumns : {}
+  );
 
   const table = useReactTable({
     data,
@@ -93,16 +111,22 @@ export function DataGrid<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getExpandedRowModel: expandable ? getExpandedRowModel() : undefined,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    onExpandedChange: expandable ? setExpanded : undefined,
+    onColumnPinningChange: setColumnPinning,
     globalFilterFn: "includesString",
+    getRowCanExpand: expandable ? () => true : undefined,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
       globalFilter,
+      expanded: expandable ? expanded : {},
+      columnPinning,
     },
     initialState: {
       pagination: {
@@ -147,6 +171,59 @@ export function DataGrid<TData, TValue>({
     link.click();
     document.body.removeChild(link);
   };
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <Card>
+        {(title || description || showSearch || showExport || showColumnToggle) && (
+          <CardHeader>
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div className="space-y-1">
+                {title && <CardTitle className="text-lg">{title}</CardTitle>}
+                {description && <p className="text-sm text-muted-foreground">{description}</p>}
+              </div>
+              <div className="flex items-center space-x-2">
+                {showExport && (
+                  <Button variant="outline" size="sm" disabled>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                )}
+                {showColumnToggle && <DataTableColumnToggle table={table} />}
+              </div>
+            </div>
+          </CardHeader>
+        )}
+        <CardContent className="grid grid-cols-1">
+          <div className="overflow-x-auto">
+            <Table className="table-auto">
+              <TableHeader>
+                <TableRow>
+                  {columns.map((_, index) => (
+                    <TableHead key={index}>
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: Math.min(initialPageSize, 5) }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {columns.map((_, colIndex) => (
+                      <TableCell key={colIndex}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!data || data.length === 0) {
     return (
@@ -234,12 +311,23 @@ export function DataGrid<TData, TValue>({
       )}
 
       <CardContent className="grid grid-cols-1">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+        <div className="overflow-x-auto">
+          <Table className="table-auto">
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    const isPinned = header.column.getIsPinned();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          isPinned === "left" &&
+                            "sticky left-0 bg-card z-10 border-r border-border/50",
+                          isPinned === "right" &&
+                            "sticky right-0 bg-card z-10 border-l border-border/50"
+                        )}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -247,40 +335,64 @@ export function DataGrid<TData, TValue>({
                               header.getContext()
                             )}
                       </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <React.Fragment key={row.id}>
                     <TableRow
-                      key={row.id}
                       data-state={row.getIsSelected() && "selected"}
                       className="hover:bg-muted/50 transition-colors"
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const isPinned = cell.column.getIsPinned();
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              isPinned === "left" &&
+                                "sticky left-0 bg-card z-10 border-r border-border/50",
+                              isPinned === "right" &&
+                                "sticky right-0 bg-card z-10 border-l border-border/50"
+                            )}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    {expandable && row.getIsExpanded() && renderExpandedRow && (
+                      <TableRow key={`${row.id}-expanded`}>
+                        <TableCell
+                          colSpan={row.getVisibleCells().length}
+                          className="bg-muted/10 p-6"
+                        >
+                          {renderExpandedRow(row.original)}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
           
           <TablePagination table={table} />
       </CardContent>
