@@ -11,7 +11,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { MoreHorizontal, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { Entex } from "@/lib/variant/entex/api";
-import { createColumnHeader } from "@/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { cn } from "@/lib/utils/general";
 
 const formatTissue = (tissue: string) => {
@@ -99,9 +99,13 @@ const PValueDisplay = ({ pValue }: { pValue: number }) => {
 export const entexColumns: ColumnDef<Entex>[] = [
   {
     accessorKey: "tissue",
-    header: createColumnHeader("Tissue", {
-      tooltip: "Tissue or cell type where allelic imbalance was measured"
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Tissue" 
+        tooltip="Tissue or cell type where allelic imbalance was measured"
+      />
+    ),
     cell: ({ row }) => {
       const tissue = row.original.tissue;
       const formatted = formatTissue(tissue);
@@ -112,10 +116,14 @@ export const entexColumns: ColumnDef<Entex>[] = [
   },
   {
     id: "allele_counts",
-    header: createColumnHeader("Read Coverage", {
-      tooltip: "Number of sequencing reads supporting each nucleotide (A, C, G, T)",
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Read Coverage" 
+        tooltip="Number of sequencing reads supporting each nucleotide (A, C, G, T)"
+        sortable={false}
+      />
+    ),
     cell: ({ row }) => {
       const { ca, cc, cg, ct } = row.original;
       return <ReadCountsDisplay ca={ca} cc={cc} cg={cg} ct={ct} />;
@@ -124,10 +132,14 @@ export const entexColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "ref_allele_ratio",
-    header: createColumnHeader("Allelic Balance", {
-      tooltip: "Reference allele ratio: 0.5 = balanced, >0.5 = ref-biased, <0.5 = alt-biased",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Allelic Balance" 
+        tooltip="Reference allele ratio: 0.5 = balanced, >0.5 = ref-biased, <0.5 = alt-biased"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => {
       const ratio = Number(row.original.ref_allele_ratio);
       return <ImbalanceIndicator ratio={ratio} />;
@@ -135,10 +147,14 @@ export const entexColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "p_betabinom",
-    header: createColumnHeader("P-value", {
-      tooltip: "p-value calculated from the beta-binomial test",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="P-value" 
+        tooltip="p-value calculated from the beta-binomial test"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => {
       const pValue = Number(row.original.p_betabinom);
       return <PValueDisplay pValue={pValue} />;
@@ -146,11 +162,14 @@ export const entexColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "imbalance_significance",
-    header: createColumnHeader("Significance", {
-      tooltip:
-        'Indicates if the site passes the FDR10% threshold ("1" for significant, "0" otherwise)',
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Significance" 
+        tooltip='Indicates if the site passes the FDR10% threshold ("1" for significant, "0" otherwise)'
+        sortable={false}
+      />
+    ),
     cell: ({ row }) => {
       const value = row.original.imbalance_significance;
       const isSignificant = value === 1;
@@ -222,10 +241,14 @@ export const entexColumns: ColumnDef<Entex>[] = [
 export const entexPooledColumns: ColumnDef<Entex>[] = [
   {
     id: "allele_counts",
-    header: createColumnHeader("Read Coverage", {
-      tooltip: "Pooled sequencing reads across all tissues (A, C, G, T)",
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Read Coverage" 
+        tooltip="Pooled sequencing reads across all tissues (A, C, G, T)"
+        sortable={false}
+      />
+    ),
     cell: ({ row }) => {
       const { ca, cc, cg, ct } = row.original;
       return <ReadCountsDisplay ca={ca} cc={cc} cg={cg} ct={ct} />;
@@ -234,10 +257,14 @@ export const entexPooledColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "ref_allele_ratio",
-    header: createColumnHeader("Allelic Balance", {
-      tooltip: "Cross-tissue reference allele ratio: 0.5 = balanced, >0.5 = ref-biased, <0.5 = alt-biased",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Allelic Balance" 
+        tooltip="Cross-tissue reference allele ratio: 0.5 = balanced, >0.5 = ref-biased, <0.5 = alt-biased"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => {
       const ratio = Number(row.original.ref_allele_ratio);
       return <ImbalanceIndicator ratio={ratio} />;
@@ -245,10 +272,14 @@ export const entexPooledColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "p_betabinom",
-    header: createColumnHeader("P-value", {
-      tooltip: "p-value calculated from the beta-binomial test",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="P-value" 
+        tooltip="p-value calculated from the beta-binomial test"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => {
       const pValue = Number(row.original.p_betabinom);
       return <PValueDisplay pValue={pValue} />;
@@ -256,11 +287,14 @@ export const entexPooledColumns: ColumnDef<Entex>[] = [
   },
   {
     accessorKey: "imbalance_significance",
-    header: createColumnHeader("Significance", {
-      tooltip:
-        'Indicates if the site passes the FDR10% threshold ("1" for significant, "0" otherwise)',
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Significance" 
+        tooltip='Indicates if the site passes the FDR10% threshold ("1" for significant, "0" otherwise)'
+        sortable={false}
+      />
+    ),
     cell: ({ row }) => {
       const value = row.original.imbalance_significance;
       const isSignificant = value === 1;

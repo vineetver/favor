@@ -1,5 +1,5 @@
 import { type ColumnDef } from "@tanstack/react-table";
-import { createColumnHeader } from "@/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { formatFrequency } from "@/lib/utils/general";
 import type { FemaleFrequency, MaleFrequency } from "@/lib/variant/gnomad/utils";
 
@@ -17,9 +17,13 @@ const createFrequencySortingFn = (accessorKey: string) => (rowA: any, rowB: any)
 export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
   {
     accessorKey: "name",
-    header: createColumnHeader("Population", {
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Population" 
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-medium">{row.getValue("name")}</div>
     ),
@@ -30,10 +34,14 @@ export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
   },
   {
     accessorKey: "female31",
-    header: createColumnHeader("gnomAD v3.1 (Female)", {
-      tooltip: "Female allele frequency from gnomAD v3.1 database",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v3.1 (Female)" 
+        tooltip="Female allele frequency from gnomAD v3.1 database"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-pink-600">
         {formatFrequency(row.getValue("female31"))}
@@ -44,10 +52,14 @@ export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
   },
   {
     accessorKey: "female41_exome",
-    header: createColumnHeader("gnomAD v4.1 Exome (Female)", {
-      tooltip: "Female allele frequency from gnomAD v4.1 Exome dataset",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v4.1 Exome (Female)" 
+        tooltip="Female allele frequency from gnomAD v4.1 Exome dataset"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-pink-700">
         {formatFrequency(row.getValue("female41_exome"))}
@@ -58,10 +70,14 @@ export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
   },
   {
     accessorKey: "female41_genome",
-    header: createColumnHeader("gnomAD v4.1 Genome (Female)", {
-      tooltip: "Female allele frequency from gnomAD v4.1 Genome dataset",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v4.1 Genome (Female)" 
+        tooltip="Female allele frequency from gnomAD v4.1 Genome dataset"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-pink-800">
         {formatFrequency(row.getValue("female41_genome"))}
@@ -76,9 +92,13 @@ export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
 export const maleColumns: ColumnDef<MaleFrequency>[] = [
   {
     accessorKey: "name",
-    header: createColumnHeader("Population", {
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Population" 
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-medium">{row.getValue("name")}</div>
     ),
@@ -89,10 +109,14 @@ export const maleColumns: ColumnDef<MaleFrequency>[] = [
   },
   {
     accessorKey: "male31",
-    header: createColumnHeader("gnomAD v3.1 (Male)", {
-      tooltip: "Male allele frequency from gnomAD v3.1 database",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v3.1 (Male)" 
+        tooltip="Male allele frequency from gnomAD v3.1 database"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-blue-600">
         {formatFrequency(row.getValue("male31"))}
@@ -103,10 +127,14 @@ export const maleColumns: ColumnDef<MaleFrequency>[] = [
   },
   {
     accessorKey: "male41_exome",
-    header: createColumnHeader("gnomAD v4.1 Exome (Male)", {
-      tooltip: "Male allele frequency from gnomAD v4.1 Exome dataset",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v4.1 Exome (Male)" 
+        tooltip="Male allele frequency from gnomAD v4.1 Exome dataset"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-blue-700">
         {formatFrequency(row.getValue("male41_exome"))}
@@ -117,10 +145,14 @@ export const maleColumns: ColumnDef<MaleFrequency>[] = [
   },
   {
     accessorKey: "male41_genome",
-    header: createColumnHeader("gnomAD v4.1 Genome (Male)", {
-      tooltip: "Male allele frequency from gnomAD v4.1 Genome dataset",
-      sortable: true,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="gnomAD v4.1 Genome (Male)" 
+        tooltip="Male allele frequency from gnomAD v4.1 Genome dataset"
+        sortable={true}
+      />
+    ),
     cell: ({ row }) => (
       <div className="font-mono text-blue-800">
         {formatFrequency(row.getValue("male41_genome"))}

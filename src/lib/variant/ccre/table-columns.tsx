@@ -15,11 +15,17 @@ import {
 import { ccreAnnotationCCode } from "@/lib/utils/colors";
 import type { CCRE, CCRETissue } from "@/lib/variant/ccre/types";
 import { cn } from "@/lib/utils/general";
-import { createColumnHeader } from "@/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 
 export const ccreColumns: ColumnDef<CCRE>[] = [
   {
-    header: createColumnHeader("Regulatory Element"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Regulatory Element"
+        sortable={false}
+      />
+    ),
     accessorKey: "accession",
     cell: ({ row }) => (
       <div className="font-mono text-sm">
@@ -28,7 +34,13 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     ),
   },
   {
-    header: createColumnHeader("Functional Class"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Functional Class"
+        sortable={false}
+      />
+    ),
     accessorKey: "annotations",
     cell: ({ row }) => {
       const annotation = row.original.annotations;
@@ -61,7 +73,13 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     },
   },
   {
-    header: createColumnHeader("Genomic Location"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Genomic Location"
+        sortable={false}
+      />
+    ),
     accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
@@ -86,11 +104,14 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     },
   },
   {
-    header: createColumnHeader("Linked Genes", {
-      tooltip:
-        "Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data",
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Linked Genes" 
+        tooltip="Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data"
+        sortable={false}
+      />
+    ),
     id: "gene-links",
     meta: {
       pin: "right",
@@ -173,7 +194,13 @@ const SignalIndicator = ({ value, label }: { value: number | null | undefined, l
 
 export const tissueColumns: ColumnDef<CCRETissue>[] = [
   {
-    header: createColumnHeader("Regulatory Element"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Regulatory Element"
+        sortable={false}
+      />
+    ),
     accessorKey: "accession",
     cell: ({ row }) => (
       <div className="font-mono text-sm">
@@ -182,7 +209,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     ),
   },
   {
-    header: createColumnHeader("Genomic Location"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Genomic Location"
+        sortable={false}
+      />
+    ),
     accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
@@ -207,7 +240,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Element Type"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Element Type"
+        sortable={false}
+      />
+    ),
     accessorKey: "datatype",
     cell: ({ row }) => {
       const type = row.original.datatype;
@@ -226,7 +265,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Chromatin Accessibility"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Chromatin Accessibility"
+        sortable={false}
+      />
+    ),
     id: "accessibility",
     cell: ({ row }) => (
       <div className="space-y-2 min-w-[120px]">
@@ -236,7 +281,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     ),
   },
   {
-    header: createColumnHeader("Histone Modifications"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Histone Modifications"
+        sortable={false}
+      />
+    ),
     id: "histones",
     cell: ({ row }) => (
       <div className="space-y-2 min-w-[130px]">
@@ -246,7 +297,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     ),
   },
   {
-    header: createColumnHeader("CTCF Binding"),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="CTCF Binding"
+        sortable={false}
+      />
+    ),
     accessorKey: "ctcf",
     cell: ({ row }) => {
       const ctcf = row.original.ctcf;
@@ -267,11 +324,14 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Linked Genes", {
-      tooltip:
-        "Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data",
-      sortable: false,
-    }),
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Linked Genes" 
+        tooltip="Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data"
+        sortable={false}
+      />
+    ),
     id: "gene-links",
     meta: {
       pin: "right",

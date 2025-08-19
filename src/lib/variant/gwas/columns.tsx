@@ -148,13 +148,12 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     ),
     cell: ({ row }) => (
       <div
-        className="leading-tight text-left whitespace-normal"
+        className="leading-tight text-left whitespace-normal break-words max-w-lg"
         title={row.getValue("gwas_disease_trait")}
       >
         {row.getValue("gwas_disease_trait")}
       </div>
     ),
-    size: 200,
   },
   {
     accessorKey: "gwas_p_value",

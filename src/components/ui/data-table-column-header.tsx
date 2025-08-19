@@ -121,39 +121,3 @@ export function DataTableColumnHeader<TData, TValue>({
   );
 }
 
-export function createColumnHeader<TData, TValue>(
-  title: string,
-  options?: {
-    tooltip?: string;
-    sortable?: boolean;
-    align?: "left" | "center" | "right";
-    className?: string;
-    enableHiding?: boolean;
-    enableFiltering?: boolean;
-  },
-) {
-  const { 
-    tooltip, 
-    sortable = false, // Changed default to false
-    align = "left",
-    className,
-    enableHiding = true,
-    enableFiltering = false 
-  } = options || {};
-
-  return ({ column }: { column?: Column<TData, TValue> }) => {
-    // Check if the column itself has sorting enabled
-    const canSort = column?.getCanSort() && sortable;
-    
-    return (
-      <div className={className} style={{ textAlign: align }}>
-        <DataTableColumnHeader
-          column={column}
-          title={title}
-          tooltip={tooltip}
-          sortable={canSort}
-        />
-      </div>
-    );
-  };
-}
