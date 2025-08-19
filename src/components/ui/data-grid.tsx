@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -71,6 +71,10 @@ interface DataGridProps<TData, TValue> {
     right?: string[];
   };
   isLoading?: boolean;
+  onRowClick?: (row: TData) => void;
+  selectedRowId?: string | number | null;
+  getRowId?: (row: TData) => string | number;
+  scrollToSelected?: boolean;
 }
 
 export function DataGrid<TData, TValue>({
@@ -91,6 +95,10 @@ export function DataGrid<TData, TValue>({
   renderExpandedRow,
   pinnedColumns,
   isLoading = false,
+  onRowClick,
+  selectedRowId,
+  getRowId,
+  scrollToSelected = false,
 }: DataGridProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -101,6 +109,7 @@ export function DataGrid<TData, TValue>({
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
     pinnedColumns ? pinnedColumns : {}
   );
+  const selectedRowRef = useRef<HTMLTableRowElement>(null);
 
   const table = useReactTable({
     data,
@@ -134,6 +143,41 @@ export function DataGrid<TData, TValue>({
       },
     },
   });
+
+  // Navigate to page containing selected row and scroll to it
+  useEffect(() => {
+    if (selectedRowId !== undefined && getRowId) {
+      // Find the index of the selected row in the full dataset
+      const selectedRowIndex = data.findIndex(row => getRowId(row) === selectedRowId);
+      
+      if (selectedRowIndex !== -1) {
+        // Calculate which page the selected row is on
+        const currentPageSize = table.getState().pagination.pageSize;
+        const targetPage = Math.floor(selectedRowIndex / currentPageSize);
+        const currentPage = table.getState().pagination.pageIndex;
+        
+        // Navigate to the correct page if not already there
+        if (currentPage !== targetPage) {
+          table.setPageIndex(targetPage);
+        }
+      }
+    }
+  }, [selectedRowId, data, getRowId, table]);
+
+  // Scroll to selected row after page changes
+  useEffect(() => {
+    if (scrollToSelected && selectedRowId !== undefined && selectedRowRef.current) {
+      // Use a small delay to ensure the page change and DOM update have completed
+      const timeoutId = setTimeout(() => {
+        selectedRowRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 150);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [table.getState().pagination.pageIndex, selectedRowId, scrollToSelected]);
 
   const handleExport = () => {
     if (onExport) {
@@ -342,11 +386,19 @@ export function DataGrid<TData, TValue>({
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row) => {
+                  const rowId = getRowId ? getRowId(row.original) : row.id;
+                  const isSelected = selectedRowId !== undefined && rowId === selectedRowId;
+                  return (
                   <React.Fragment key={row.id}>
                     <TableRow
-                      data-state={row.getIsSelected() && "selected"}
-                      className="hover:bg-muted/50 transition-colors"
+                      ref={isSelected ? selectedRowRef : undefined}
+                      data-state={(row.getIsSelected() || isSelected) && "selected"}
+                      className={cn(
+                        "hover:bg-muted/50 transition-colors cursor-pointer",
+                        isSelected && "bg-blue-100 border-l-4 border-l-blue-500 shadow-md dark:bg-blue-900/40 dark:border-l-blue-400"
+                      )}
+                      onClick={() => onRowClick?.(row.original)}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isPinned = cell.column.getIsPinned();
@@ -379,7 +431,8 @@ export function DataGrid<TData, TValue>({
                       </TableRow>
                     )}
                   </React.Fragment>
-                ))
+                );
+                })
               ) : (
                 <TableRow>
                   <TableCell

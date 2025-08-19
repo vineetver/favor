@@ -41,7 +41,7 @@ export function DataTableColumnHeader<TData, TValue>({
   if (!column || !sortable) {
     return (
       <div className={cn("flex items-center w-full gap-2", className)}>
-        <span className="font-bold truncate">{title}</span>
+        <span className="font-bold">{title}</span>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
@@ -70,7 +70,7 @@ export function DataTableColumnHeader<TData, TValue>({
             className="-ml-3 h-8 data-[state=open]:bg-accent group w-full justify-between px-3 min-w-0"
           >
             <div className="flex items-center w-full min-w-0 gap-2">
-              <span className="font-bold truncate">
+              <span className="font-bold">
                 {title}
               </span>
               <div className="flex items-center gap-1 flex-shrink-0">

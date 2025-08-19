@@ -2,13 +2,15 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { createColumnHeader } from "@/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { TrendingUp } from "lucide-react";
 import type { Eqtl, Crispr, Chiapet } from "@/components/features/ccre/linked-genes/types";
 
 export const eqtlColumns: ColumnDef<Eqtl>[] = [
   {
-    header: createColumnHeader("Target Gene"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Target Gene" />
+    ),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
@@ -20,7 +22,9 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     ),
   },
   {
-    header: createColumnHeader("Effect Size"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Effect Size" />
+    ),
     accessorKey: "slope",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -46,7 +50,9 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     },
   },
   {
-    header: createColumnHeader("Statistical Significance"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Statistical Significance" />
+    ),
     accessorKey: "p_value",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -75,7 +81,9 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     },
   },
   {
-    header: createColumnHeader("Tissue"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Tissue" />
+    ),
     accessorKey: "tissue",
     cell: ({ row }) => (
       <div className="max-w-40 text-sm" title={row.original.tissue}>
@@ -87,7 +95,9 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
 
 export const crisprColumns: ColumnDef<Crispr>[] = [
   {
-    header: createColumnHeader("Target Gene"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Target Gene" />
+    ),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
@@ -99,7 +109,9 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     ),
   },
   {
-    header: createColumnHeader("Perturbation Effect"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Perturbation Effect" />
+    ),
     accessorKey: "effect_size",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -125,7 +137,9 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     },
   },
   {
-    header: createColumnHeader("Statistical Confidence"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Statistical Confidence" />
+    ),
     accessorKey: "p_value",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -154,7 +168,9 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     },
   },
   {
-    header: createColumnHeader("Biosample"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Biosample" />
+    ),
     accessorKey: "biosample",
     cell: ({ row }) => (
       <div className="text-sm truncate" title={row.original.biosample}>
@@ -166,7 +182,9 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
 
 export const chiapetColumns: ColumnDef<Chiapet>[] = [
   {
-    header: createColumnHeader("Connected Gene"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Connected Gene" />
+    ),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
@@ -178,7 +196,9 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     ),
   },
   {
-    header: createColumnHeader("Interaction Strength"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Interaction Strength" />
+    ),
     accessorKey: "score",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -216,7 +236,9 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     },
   },
   {
-    header: createColumnHeader("Statistical Evidence"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Statistical Evidence" />
+    ),
     accessorKey: "p_value",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -245,7 +267,9 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     },
   },
   {
-    header: createColumnHeader("Biosample"),
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Biosample" />
+    ),
     accessorKey: "biosample",
     cell: ({ row }) => (
       <div className="text-sm truncate" title={row.original.biosample}>

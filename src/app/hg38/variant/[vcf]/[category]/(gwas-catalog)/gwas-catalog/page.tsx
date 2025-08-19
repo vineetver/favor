@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { fetchVariant } from "@/lib/variant/api";
+import { fetchGWAS } from "@/lib/variant/gwas/api";
+import { GwasCatalogDataDisplay } from "@/components/features/variant/gwas/gwas-catalog-display";
 
 interface GwasCatalogPageProps {
   params: {
