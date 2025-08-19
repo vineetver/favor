@@ -232,10 +232,10 @@ export function ScatterChart({
             <Scatter
               key={group.name}
               name={group.name}
-              data={group.data}
+              data={group.data as any[]}
               fill={chartColors[groupIndex]}
             >
-              {group.data.map((entry: any, index: number) => (
+              {(group.data as any[]).map((entry: any, index: number) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={chartColors[groupIndex]}
