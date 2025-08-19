@@ -65,7 +65,6 @@ export function CrisprCard({ accession, data, isLoading = false }: CrisprCardPro
       columns={crisprColumns}
       data={sortedData}
       title={`CRISPR Links (${data.length})`}
-      description={`${data.length} links · ${uniqueGenes} unique genes · median p-value ${medianPValue.toExponential(1)}`}
       showSearch={false}
       showColumnToggle={false}
       onExport={exportData}

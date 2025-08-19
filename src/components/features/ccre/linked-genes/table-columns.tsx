@@ -7,18 +7,14 @@ import type { Eqtl, Crispr, Chiapet } from "@/components/features/ccre/linked-ge
 
 export const eqtlColumns: ColumnDef<Eqtl>[] = [
   {
-    header: createColumnHeader("Gene", {
-      tooltip: "Gene symbol",
-    }),
+    header: createColumnHeader("Gene"),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <span className="font-medium text-xs">{row.original.gene_name}</span>
     ),
   },
   {
-    header: createColumnHeader("Type", {
-      tooltip: "Gene type",
-    }),
+    header: createColumnHeader("Type"),
     accessorKey: "gene_type",
     cell: ({ row }) => (
       <Badge variant="secondary" className="text-xs">
@@ -27,9 +23,7 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     ),
   },
   {
-    header: createColumnHeader("P-value", {
-      tooltip: "Statistical significance",
-    }),
+    header: createColumnHeader("P-value"),
     accessorKey: "p_value",
     cell: ({ row }) => (
       <Badge
@@ -41,9 +35,7 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     ),
   },
   {
-    header: createColumnHeader("Tissue", {
-      tooltip: "Tissue or cell type",
-    }),
+    header: createColumnHeader("Tissue"),
     accessorKey: "tissue",
     cell: ({ row }) => (
       <div className="max-w-32 truncate text-xs" title={row.original.tissue}>
@@ -52,18 +44,14 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     ),
   },
   {
-    header: createColumnHeader("Effect", {
-      tooltip: "Effect size (slope)",
-    }),
+    header: createColumnHeader("Effect"),
     accessorKey: "slope",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.slope.toFixed(3)}</span>
     ),
   },
   {
-    header: createColumnHeader("Source", {
-      tooltip: "Data source",
-    }),
+    header: createColumnHeader("Source"),
     accessorKey: "source",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.source}</span>
@@ -73,18 +61,14 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
 
 export const crisprColumns: ColumnDef<Crispr>[] = [
   {
-    header: createColumnHeader("Gene", {
-      tooltip: "Gene symbol",
-    }),
+    header: createColumnHeader("Gene"),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <span className="font-medium text-xs">{row.original.gene_name}</span>
     ),
   },
   {
-    header: createColumnHeader("Type", {
-      tooltip: "Gene type",
-    }),
+    header: createColumnHeader("Type"),
     accessorKey: "gene_type",
     cell: ({ row }) => (
       <Badge variant="secondary" className="text-xs">
@@ -93,9 +77,7 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     ),
   },
   {
-    header: createColumnHeader("P-value", {
-      tooltip: "Statistical significance",
-    }),
+    header: createColumnHeader("P-value"),
     accessorKey: "p_value",
     cell: ({ row }) => (
       <Badge
@@ -107,9 +89,7 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     ),
   },
   {
-    header: createColumnHeader("Assay", {
-      tooltip: "Assay type",
-    }),
+    header: createColumnHeader("Assay"),
     accessorKey: "assay_type",
     cell: ({ row }) => (
       <div
@@ -121,9 +101,7 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     ),
   },
   {
-    header: createColumnHeader("Biosample", {
-      tooltip: "Biological sample",
-    }),
+    header: createColumnHeader("Biosample"),
     accessorKey: "biosample",
     cell: ({ row }) => (
       <div className="max-w-32 truncate text-xs" title={row.original.biosample}>
@@ -132,18 +110,14 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     ),
   },
   {
-    header: createColumnHeader("Effect", {
-      tooltip: "Effect size",
-    }),
+    header: createColumnHeader("Effect"),
     accessorKey: "effect_size",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.effect_size}</span>
     ),
   },
   {
-    header: createColumnHeader("gRNA", {
-      tooltip: "Guide RNA identifier",
-    }),
+    header: createColumnHeader("gRNA"),
     accessorKey: "grna_id",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.grna_id}</span>
@@ -153,18 +127,14 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
 
 export const chiapetColumns: ColumnDef<Chiapet>[] = [
   {
-    header: createColumnHeader("Gene", {
-      tooltip: "Gene symbol",
-    }),
+    header: createColumnHeader("Gene"),
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <span className="font-medium text-xs">{row.original.gene_name}</span>
     ),
   },
   {
-    header: createColumnHeader("Type", {
-      tooltip: "Gene type",
-    }),
+    header: createColumnHeader("Type"),
     accessorKey: "gene_type",
     cell: ({ row }) => (
       <Badge variant="secondary" className="text-xs">
@@ -173,9 +143,7 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     ),
   },
   {
-    header: createColumnHeader("Score", {
-      tooltip: "Interaction score",
-    }),
+    header: createColumnHeader("Score"),
     accessorKey: "score",
     cell: ({ row }) => {
       const score = parseFloat(row.original.score) || 0;
@@ -190,9 +158,7 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     },
   },
   {
-    header: createColumnHeader("Biosample", {
-      tooltip: "Biological sample",
-    }),
+    header: createColumnHeader("Biosample"),
     accessorKey: "biosample",
     cell: ({ row }) => (
       <div className="max-w-32 truncate text-xs" title={row.original.biosample}>
@@ -201,18 +167,14 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     ),
   },
   {
-    header: createColumnHeader("P-value", {
-      tooltip: "Statistical significance",
-    }),
+    header: createColumnHeader("P-value"),
     accessorKey: "p_value",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.p_value}</span>
     ),
   },
   {
-    header: createColumnHeader("Experiment", {
-      tooltip: "Experiment identifier",
-    }),
+    header: createColumnHeader("Experiment"),
     accessorKey: "experiment_id",
     cell: ({ row }) => (
       <span className="text-xs">{row.original.experiment_id}</span>

@@ -64,7 +64,6 @@ export function EqtlCard({ accession, data, isLoading = false }: EqtlCardProps) 
       columns={eqtlColumns}
       data={sortedData}
       title={`eQTL Links (${data.length})`}
-      description={`${data.length} links · ${uniqueGenes} unique genes · median p-value ${medianPValue.toExponential(1)}`}
       showSearch={false}
       showColumnToggle={false}
       onExport={exportData}

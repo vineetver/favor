@@ -68,7 +68,6 @@ export function RNAPIIChiapetCard({ accession, data, isLoading = false }: RNAPII
       columns={chiapetColumns}
       data={sortedData}
       title={`RNAPII ChIA-PET Links (${data.length})`}
-      description={`${data.length} links · ${uniqueGenes} unique genes · median score ${medianScore.toFixed(1)}`}
       showSearch={false}
       showColumnToggle={false}
       onExport={exportData}

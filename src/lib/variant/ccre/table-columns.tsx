@@ -19,9 +19,7 @@ import { createColumnHeader } from "@/components/ui/data-table-column-header";
 
 export const ccreColumns: ColumnDef<CCRE>[] = [
   {
-    header: createColumnHeader("Accession", {
-      tooltip: "cCRE identifier",
-    }),
+    header: createColumnHeader("Accession"),
     accessorKey: "accession",
     cell: ({ row }) => {
       const formatted = row.original.accession;
@@ -29,9 +27,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     },
   },
   {
-    header: createColumnHeader("Annotations", {
-      tooltip: "Functional annotations for this cCRE",
-    }),
+    header: createColumnHeader("Annotations"),
     accessorKey: "annotations",
     cell: ({ row }) => {
       const formatted = row.original.annotations;
@@ -57,9 +53,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
     },
   },
   {
-    header: createColumnHeader("cCRE Region", {
-      tooltip: "Genomic coordinates of the cCRE",
-    }),
+    header: createColumnHeader("cCRE Region"),
     accessorKey: "chromosome",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
@@ -97,7 +91,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
           aria-expanded={isExpanded}
           aria-controls={`expanded-content-${row.id}`}
           className={cn(
-            "inline-flex items-center w-full cursor-pointer rounded-md px-3 py-2 transition-colors",
+            "inline-flex items-center w-full cursor-pointer rounded-md px-3 py-2 transition-colors border-l-2 border-l-border",
             "hover:bg-muted/50 border border-border/50 hover:border-border",
             isExpanded && "bg-primary/10 border-primary/30",
           )}
@@ -129,9 +123,7 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
 
 export const tissueColumns: ColumnDef<CCRETissue>[] = [
   {
-    header: createColumnHeader("Accession", {
-      tooltip: "cCRE identifier",
-    }),
+    header: createColumnHeader("Accession"),
     accessorKey: "accession",
     cell: ({ row }) => {
       const formatted = row.original.accession;
@@ -139,9 +131,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Region", {
-      tooltip: "Genomic coordinates of the cCRE",
-    }),
+    header: createColumnHeader("Region"),
     accessorKey: "score",
     cell: ({ row }) => {
       const chrom = row.original.chromosome;
@@ -161,9 +151,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Class", {
-      tooltip: "cCRE classification type",
-    }),
+    header: createColumnHeader("Class"),
     accessorKey: "datatype",
     cell: ({ row }) => {
       const formatted = row.original.datatype;
@@ -171,9 +159,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     },
   },
   {
-    header: createColumnHeader("Chromatin Accessibility", {
-      tooltip: "DNase and ATAC-seq signals",
-    }),
+    header: createColumnHeader("Chromatin Accessibility"),
     id: "accessibility",
     cell: ({ row }) => (
       <div className="space-y-1 text-xs">
@@ -189,9 +175,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     ),
   },
   {
-    header: createColumnHeader("Histone Marks", {
-      tooltip: "H3K27ac and H3K4me3 histone modification signals",
-    }),
+    header: createColumnHeader("Histone Marks"),
     id: "histones",
     cell: ({ row }) => (
       <div className="space-y-1 text-xs">
@@ -207,9 +191,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     ),
   },
   {
-    header: createColumnHeader("CTCF", {
-      tooltip: "CTCF binding signal",
-    }),
+    header: createColumnHeader("CTCF"),
     accessorKey: "ctcf",
     cell: ({ row }) => row.original.ctcf || "N/A",
   },
@@ -232,7 +214,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
           aria-expanded={isExpanded}
           aria-controls={`expanded-content-${row.id}`}
           className={cn(
-            "inline-flex items-center w-full cursor-pointer rounded-md px-3 py-2 transition-colors",
+            "inline-flex items-center w-full cursor-pointer rounded-md px-3 py-2 transition-colors border-l-2 border-l-border",
             "hover:bg-muted/50 border border-border/50 hover:border-border",
             isExpanded && "bg-primary/10 border-primary/30",
           )}

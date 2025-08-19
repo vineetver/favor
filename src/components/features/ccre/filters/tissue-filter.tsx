@@ -163,24 +163,23 @@ export function TissueFilter() {
               value={selectedSubtissue}
               onValueChange={handleSubtissueChange}
             >
-              <SelectTrigger className="w-full min-w-0 px-3 py-2">
+              <SelectTrigger className="w-full min-w-0 px-3 py-2 max-w-80">
                 <SelectValue
                   placeholder="Select specific sample"
                   className="truncate"
                 >
                   {selectedSubtissue ? (
-                    <div className="relative flex-1 min-w-0">
-                      <span className="block truncate pr-1">
+                    <div className="flex-1 min-w-0">
+                      <span className="block truncate text-sm" title={selectedSubtissue}>
                         {selectedSubtissue}
                       </span>
-                      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
                     </div>
                   ) : (
                     "Select specific sample"
                   )}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="max-h-72 w-full min-w-[calc(100vw-2rem)] sm:min-w-0 sm:w-auto">
+              <SelectContent className="max-h-72 max-w-96 w-full min-w-80">
                 {filteredSubtissues.map((subtissue) => {
                   const metadata = parseSubtissueMetadata(subtissue.name);
                   return (
@@ -189,9 +188,12 @@ export function TissueFilter() {
                       value={subtissue.name}
                       className="py-3 px-3"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between w-full gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between w-full gap-2 min-w-0">
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm leading-tight break-words">
+                          <div 
+                            className="font-medium text-sm leading-tight break-words pr-2" 
+                            title={subtissue.displayName || subtissue.name}
+                          >
                             {subtissue.displayName || subtissue.name}
                           </div>
                         </div>
