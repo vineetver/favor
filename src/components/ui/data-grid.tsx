@@ -55,6 +55,7 @@ interface DataGridProps<TData, TValue> {
   onExport?: (data: TData[], filename?: string) => void;
   exportFilename?: string;
   initialPageSize?: number;
+  initialSorting?: SortingState;
   showExport?: boolean;
   showColumnToggle?: boolean;
   showSearch?: boolean;
@@ -87,6 +88,7 @@ export function DataGrid<TData, TValue>({
   onExport,
   exportFilename = "data.csv",
   initialPageSize = 20,
+  initialSorting = [],
   showExport = true,
   showColumnToggle = true,
   showSearch = true,
@@ -100,7 +102,7 @@ export function DataGrid<TData, TValue>({
   getRowId,
   scrollToSelected = false,
 }: DataGridProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});

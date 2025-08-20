@@ -20,6 +20,8 @@ import {
   metasvmPredCCode,
   polyphenCCode,
 } from "@/lib/utils/colors";
+import { ccreAnnotationMap } from "@/lib/variant/ccre/annotations";
+import type { CV2FTissueScore } from "@/lib/variant/tissue/helpers";
 
 export const variantSummaryColumns: VariantColumnsType[] = [
   {
@@ -2147,360 +2149,324 @@ export const variantSummaryColumns: VariantColumnsType[] = [
       },
     ],
   },
-  // {
-  //   name: "Tissue-Specific",
-  //   slug: "tissue-specific",
-  //   items: [
-  //     {
-  //       key: 1,
-  //       header: "cCRE Element Types",
-  //       accessor: "ccre_regulatory_types",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (types: string[]) => {
-  //             if (!types || types.length === 0) return undefined;
-  //             return (
-  //               <div className="space-y-1">
-  //                 {types.map((type, idx) => (
-  //                   <div key={idx} className="flex items-center gap-2">
-  //                     {ccreAnnotationCCode(type, type)}
-  //                     <span>
-  //                       {ccreAnnotationMap[type] || type}
-  //                     </span>
-  //                   </div>
-  //                 ))}
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is string[] => 
-  //             Array.isArray(value) && value.every(t => typeof t === 'string'),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>cCRE Regulatory Types:</strong> Types of candidate cis-regulatory elements this variant overlaps with.
-  //           </p>
-  //           <div className="space-y-1 text-xs">
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-red-400 rounded"></span>
-  //               <strong>PLS:</strong> Promoter-like signatures
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-orange-400 rounded"></span>
-  //               <strong>pELS:</strong> Proximal enhancer-like signatures
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-yellow-400 rounded"></span>
-  //               <strong>dELS:</strong> Distal enhancer-like signatures
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-blue-400 rounded"></span>
-  //               <strong>CA-CTCF:</strong> Chromatin accessible with CTCF
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-green-400 rounded"></span>
-  //               <strong>CA:</strong> Chromatin accessible only
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-purple-400 rounded"></span>
-  //               <strong>CA-TF:</strong> Chromatin accessible with TF binding
-  //             </div>
-  //             <div className="flex items-center gap-2">
-  //               <span className="w-3 h-3 bg-pink-400 rounded"></span>
-  //               <strong>TF:</strong> Transcription factor binding only
-  //             </div>
-  //           </div>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 3,
-  //       header: "ABC Target Genes",
-  //       accessor: "abc_target_genes",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (genes: string[]) => {
-  //             if (!genes || genes.length === 0) return undefined;
-  //             const display = genes.slice(0, 3).join(", ");
-  //             const extra = genes.length > 3 ? ` (+${genes.length - 3} more)` : "";
-  //             return (
-  //               <div className="space-y-1">
-  //                 <div className="font-mono">
-  //                   <span>{display}</span>
-  //                   {extra && (
-  //                     <span className="text-xs text-muted-foreground ml-1">
-  //                       {extra}
-  //                     </span>
-  //                   )}
-  //                 </div>
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is string[] => 
-  //             Array.isArray(value) && value.every(g => typeof g === 'string'),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>ABC Gene Targets:</strong> High-confidence enhancer-gene regulatory predictions from the Activity-by-Contact (ABC) model.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>ABC Score ≥ 0.1:</strong> Detectable regulatory interactions</li>
-  //             <li><strong>Predictions:</strong> Based on chromatin accessibility, histone marks, and 3D chromatin contacts</li>
-  //             <li><strong>Gene targets:</strong> Genes likely regulated by this variant's position</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 4,
-  //       header: "Max ABC Score",
-  //       accessor: "abc_max_score",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (score: number) => {
-  //             if (score < 0.1) return undefined;
-  //             let colorClass = "bg-gray-100 text-gray-800";
-  //             if (score >= 0.75) colorClass = "bg-red-100 text-red-800";
-  //             else if (score >= 0.5) colorClass = "bg-orange-100 text-orange-800";
-  //             else if (score >= 0.25) colorClass = "bg-yellow-100 text-yellow-800";
-  //             else if (score >= 0.1) colorClass = "bg-blue-100 text-blue-800";
+  {
+    name: "Tissue-Specific",
+    slug: "tissue-specific",
+    items: [
+      {
+        key: 1,
+        header: "cCRE Element Types",
+        accessor: "ccre_regulatory_types",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (types: string[]) => {
+              if (!types || types.length === 0) return undefined;
+              return (
+                <div className="space-y-1">
+                  {types.map((type, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      {ccreAnnotationCCode(type, type)}
+                      <span>
+                        {ccreAnnotationMap[type] || type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            },
+            (value: unknown): value is string[] => 
+              Array.isArray(value) && value.every(t => typeof t === 'string'),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>cCRE Regulatory Types:</strong> Types of candidate cis-regulatory elements this variant overlaps with.
+            </p>
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-400 rounded"></span>
+                <strong>PLS:</strong> Promoter-like signatures
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-orange-400 rounded"></span>
+                <strong>pELS:</strong> Proximal enhancer-like signatures
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-yellow-400 rounded"></span>
+                <strong>dELS:</strong> Distal enhancer-like signatures
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-blue-400 rounded"></span>
+                <strong>CA-CTCF:</strong> Chromatin accessible with CTCF
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-green-400 rounded"></span>
+                <strong>CA:</strong> Chromatin accessible only
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-purple-400 rounded"></span>
+                <strong>CA-TF:</strong> Chromatin accessible with TF binding
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-pink-400 rounded"></span>
+                <strong>TF:</strong> Transcription factor binding only
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 3,
+        header: "ABC Target Genes",
+        accessor: "abc_target_genes",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (genes: string[]) => {
+              if (!genes || genes.length === 0) return undefined;
+              const display = genes.slice(0, 3).join(", ");
+              const extra = genes.length > 3 ? ` (+${genes.length - 3} more)` : "";
+              return (
+                <div className="space-y-1">
+                  <div className="font-mono">
+                    <span>{display}</span>
+                    {extra && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {extra}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            },
+            (value: unknown): value is string[] => 
+              Array.isArray(value) && value.every(g => typeof g === 'string'),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>ABC Gene Targets:</strong> High-confidence enhancer-gene regulatory predictions from the Activity-by-Contact (ABC) model.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>ABC Score ≥ 0.02:</strong> Detectable regulatory interactions</li>
+              <li><strong>Predictions:</strong> Based on chromatin accessibility, histone marks, and 3D chromatin contacts</li>
+              <li><strong>Gene targets:</strong> Genes likely regulated by this variant's position</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 4,
+        header: "Max ABC Score",
+        accessor: "abc_max_score",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (score: number) => {
+              if (score < 0.02) return undefined;
+              let colorClass = "bg-gray-100 text-gray-800";
+              if (score >= 0.75) colorClass = "bg-red-100 text-red-800";
+              else if (score >= 0.5) colorClass = "bg-orange-100 text-orange-800";
+              else if (score >= 0.25) colorClass = "bg-yellow-100 text-yellow-800";
+              else if (score >= 0.02) colorClass = "bg-blue-100 text-blue-800";
               
-  //             return (
-  //               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-  //                 {score.toFixed(3)}
-  //               </span>
-  //             );
-  //           },
-  //           isValidNumber,
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>Maximum ABC Score:</strong> Highest Activity-by-Contact regulatory prediction score for this variant.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>≥ 0.75:</strong> Very high confidence regulatory interaction</li>
-  //             <li><strong>0.5-0.74:</strong> High confidence regulatory interaction</li>
-  //             <li><strong>0.25-0.49:</strong> Moderate confidence regulatory interaction</li>
-  //             <li><strong>0.1-0.24:</strong> Low confidence regulatory interaction</li>
-  //             <li><strong>&lt; 0.1:</strong> Not shown</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 5,
-  //       header: "CV2F Active Tissues",
-  //       accessor: "cv2f_significant_tissues",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (tissues: CV2FTissueScore[]) => {
-  //             if (!tissues || tissues.length === 0) return undefined;
-  //             return (
-  //               <div className="space-y-1">
-  //                 {tissues.slice(0, 2).map((t, idx) => (
-  //                   <div key={idx} className="flex items-center justify-between">
-  //                     <span className="font-medium text-green-700">{t.tissue}</span>
-  //                     <span className="font-mono text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
-  //                       {t.score.toFixed(2)}
-  //                     </span>
-  //                   </div>
-  //                 ))}
-  //                 {tissues.length > 2 && (
-  //                   <div className="text-xs text-muted-foreground pl-2">
-  //                     +{tissues.length - 2} more tissues
-  //                   </div>
-  //                 )}
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is CV2FTissueScore[] => 
-  //             Array.isArray(value) && value.every(t => 
-  //               typeof t === 'object' && 
-  //               t !== null && 
-  //               'tissue' in t && 
-  //               'score' in t
-  //             ),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>CV2F (ChromVar2 Factor):</strong> Tissue-specific regulatory activity scores measuring chromatin accessibility and transcription factor activity.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>Scores ≥ 0.1:</strong> Detectable tissue-specific regulatory activity</li>
-  //             <li><strong>Higher scores:</strong> Stronger regulatory potential in specific tissues</li>
-  //             <li><strong>Tissues:</strong> Liver, Brain, Blood, GM12878, K562, HepG2</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 6,
-  //       header: "ENTEx Imbalanced Tissues",
-  //       accessor: "entex_imbalanced_tissues",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (tissues: string[]) => {
-  //             if (!tissues || tissues.length === 0) return undefined;
-  //             return (
-  //               <div className="space-y-1">
-  //                 <div className="flex flex-wrap gap-1">
-  //                   {tissues.slice(0, 2).map((tissue, idx) => (
-  //                     <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-  //                       {tissue.replace(/_/g, ' ')}
-  //                     </span>
-  //                   ))}
-  //                 </div>
-  //                 {tissues.length > 2 && (
-  //                   <div className="text-xs text-muted-foreground">
-  //                     +{tissues.length - 2} more tissues
-  //                   </div>
-  //                 )}
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is string[] => 
-  //             Array.isArray(value) && value.every(t => typeof t === 'string'),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>ENTEx Allelic Imbalance:</strong> Tissues showing significant allelic expression imbalance for this variant.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>Criteria:</strong> Imbalance significance ≥ 0.5 or p-value ≤ 0.05</li>
-  //             <li><strong>Indicates:</strong> Differential allelic expression in specific tissues</li>
-  //             <li><strong>Relevance:</strong> May affect gene dosage and tissue-specific function</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 7,
-  //       header: "SCENT Tissues",
-  //       accessor: "scent_tissue_count",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (count: number) => {
-  //             if (count === 0) return undefined;
-  //             return (
-  //               <div className="flex items-center gap-2">
-  //                 <span className="font-mono text-lg font-bold text-blue-700">{count}</span>
-  //                 <span className="text-xs text-muted-foreground">
-  //                   {count === 1 ? 'tissue' : 'tissues'}
-  //                 </span>
-  //               </div>
-  //             );
-  //           },
-  //           isValidNumber,
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>SCENT Tissue Count:</strong> Number of tissues where this variant shows single-cell expression neighborhood effects.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>SCENT:</strong> Single-Cell Expression Neighborhoods in Tissues</li>
-  //             <li><strong>Higher counts:</strong> Broader tissue-specific regulatory effects</li>
-  //             <li><strong>Application:</strong> Cell-type specific gene regulation</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 8,
-  //       header: "PGBoost High-Confidence Genes",
-  //       accessor: "pgboost_high_confidence_genes",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (genes: string[]) => {
-  //             if (!genes || genes.length === 0) return undefined;
-  //             const display = genes.slice(0, 3).join(", ");
-  //             const extra = genes.length > 3 ? ` (+${genes.length - 3} more)` : "";
-  //             return (
-  //               <div className="font-medium text-green-700">
-  //                 <span>{display}</span>
-  //                 {extra && (
-  //                   <span className="text-xs text-muted-foreground ml-1">
-  //                     {extra}
-  //                   </span>
-  //                 )}
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is string[] => 
-  //             Array.isArray(value) && value.every(g => typeof g === 'string'),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>PGBoost High-Confidence Genes:</strong> Genes with top 10% polygenic boosting scores indicating strong regulatory effects.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>Threshold:</strong> PGBoost percentile ≥ 90th percentile</li>
-  //             <li><strong>Methods:</strong> Combines SCENT, Signac, ArchR, and Cicero predictions</li>
-  //             <li><strong>Confidence:</strong> High-confidence regulatory gene targets</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //     {
-  //       key: 9,
-  //       header: "GWAS Disease Traits",
-  //       accessor: "gwas_significant_traits",
-  //       Cell: (value) => {
-  //         return safeCellRenderer(
-  //           value,
-  //           (traits: string[]) => {
-  //             if (!traits || traits.length === 0) return undefined;
-  //             return (
-  //               <div className="space-y-1">
-  //                 {traits.slice(0, 2).map((trait, idx) => (
-  //                   <div key={idx} className="text-xs px-2 py-1 rounded">
-  //                     {trait.length > 30 ? `${trait.substring(0, 30)}...` : trait}
-  //                   </div>
-  //                 ))}
-  //                 {traits.length > 2 && (
-  //                   <div className="text-xs text-muted-foreground">
-  //                     +{traits.length - 2} more traits
-  //                   </div>
-  //                 )}
-  //               </div>
-  //             );
-  //           },
-  //           (value: unknown): value is string[] => 
-  //             Array.isArray(value) && value.every(t => typeof t === 'string'),
-  //         );
-  //       },
-  //       tooltip: (
-  //         <div className="space-y-2 text-left">
-  //           <p>
-  //             <strong>GWAS Disease Traits:</strong> Genome-wide significant disease/trait associations for this variant.
-  //           </p>
-  //           <ul className="list-disc list-inside space-y-1 text-xs">
-  //             <li><strong>Significance:</strong> p-value ≤ 5×10^-8 (genome-wide significance)</li>
-  //             <li><strong>Source:</strong> GWAS Catalog curated associations</li>
-  //             <li><strong>Clinical relevance:</strong> Established disease/trait associations</li>
-  //           </ul>
-  //         </div>
-  //       ),
-  //     },
-  //   ],
-  // },
+              return (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+                  {score.toFixed(3)}
+                </span>
+              );
+            },
+            isValidNumber,
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>Maximum ABC Score:</strong> Highest Activity-by-Contact regulatory prediction score for this variant.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>≥ 0.75:</strong> Very high confidence regulatory interaction</li>
+              <li><strong>0.5-0.74:</strong> High confidence regulatory interaction</li>
+              <li><strong>0.25-0.49:</strong> Moderate confidence regulatory interaction</li>
+              <li><strong>0.02-0.24:</strong> Low confidence regulatory interaction</li>
+              <li><strong>&lt; 0.02:</strong> Not shown</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 5,
+        header: "CV2F Active Tissues",
+        accessor: "cv2f_significant_tissues",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (tissues: CV2FTissueScore[]) => {
+              if (!tissues || tissues.length === 0) return undefined;
+              return (
+                <div className="space-y-1">
+                  {tissues.slice(0, 2).map((t, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span className="font-medium text-green-700">{t.tissue}</span>
+                      <span className="font-mono text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                        {t.score.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  {tissues.length > 2 && (
+                    <div className="text-xs text-muted-foreground pl-2">
+                      +{tissues.length - 2} more tissues
+                    </div>
+                  )}
+                </div>
+              );
+            },
+            (value: unknown): value is CV2FTissueScore[] => 
+              Array.isArray(value) && value.every(t => 
+                typeof t === 'object' && 
+                t !== null && 
+                'tissue' in t && 
+                'score' in t
+              ),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>CV2F (ChromVar2 Factor):</strong> Tissue-specific regulatory activity scores measuring chromatin accessibility and transcription factor activity.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>Scores ≥ 0.1:</strong> Detectable tissue-specific regulatory activity</li>
+              <li><strong>Higher scores:</strong> Stronger regulatory potential in specific tissues</li>
+              <li><strong>Tissues:</strong> Liver, Brain, Blood, GM12878, K562, HepG2</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 6,
+        header: "ENTEx Imbalanced Tissues",
+        accessor: "entex_imbalanced_tissues",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (tissues: string[]) => {
+              if (!tissues || tissues.length === 0) return undefined;
+              const display = tissues.slice(0, 3).map(t => t.replace(/_/g, ' ')).join(", ");
+              const extra = tissues.length > 3 ? ` (+${tissues.length - 3} more)` : "";
+              return (
+                <div className="space-y-1">
+                  <div className="font-medium">
+                    <span>{display}</span>
+                    {extra && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {extra}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            },
+            (value: unknown): value is string[] => 
+              Array.isArray(value) && value.every(t => typeof t === 'string'),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>ENTEx Allelic Imbalance:</strong> Tissues showing significant allelic expression imbalance for this variant.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>Criteria:</strong> Imbalance significance ≥ 0.5 or p-value ≤ 0.05</li>
+              <li><strong>Indicates:</strong> Differential allelic expression in specific tissues</li>
+              <li><strong>Relevance:</strong> May affect gene dosage and tissue-specific function</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 7,
+        header: "SCENT Tissues",
+        accessor: "scent_tissues",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (tissues: string[]) => {
+              if (!tissues || tissues.length === 0) return undefined;
+              const display = tissues.slice(0, 3).join(", ");
+              const extra = tissues.length > 3 ? ` (+${tissues.length - 3} more)` : "";
+              return (
+                <div className="space-y-1">
+                  <div className="font-medium">
+                    <span>{display}</span>
+                    {extra && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {extra}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            },
+            (value: unknown): value is string[] => 
+              Array.isArray(value) && value.every(t => typeof t === 'string'),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>SCENT Tissues:</strong> Tissues where this variant shows single-cell expression neighborhood effects.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>SCENT:</strong> Single-Cell Expression Neighborhoods in Tissues</li>
+              <li><strong>More tissues:</strong> Broader tissue-specific regulatory effects</li>
+              <li><strong>Application:</strong> Cell-type specific gene regulation</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 8,
+        header: "PGBoost High-Confidence Genes",
+        accessor: "pgboost_high_confidence_genes",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (genes: string[]) => {
+              if (!genes || genes.length === 0) return undefined;
+              const display = genes.slice(0, 3).join(", ");
+              const extra = genes.length > 3 ? ` (+${genes.length - 3} more)` : "";
+              return (
+                <div className="font-medium text-green-700">
+                  <span>{display}</span>
+                  {extra && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {extra}
+                    </span>
+                  )}
+                </div>
+              );
+            },
+            (value: unknown): value is string[] => 
+              Array.isArray(value) && value.every(g => typeof g === 'string'),
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>PGBoost High-Confidence Genes:</strong> Genes with top 10% polygenic boosting scores indicating strong regulatory effects.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>Threshold:</strong> PGBoost percentile ≥ 90th percentile</li>
+              <li><strong>Methods:</strong> Combines SCENT, Signac, ArchR, and Cicero predictions</li>
+              <li><strong>Confidence:</strong> High-confidence regulatory gene targets</li>
+            </ul>
+          </div>
+        ),
+      },
+    ],
+  },
 ];

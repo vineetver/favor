@@ -2318,7 +2318,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         ),
         Cell: (value) => {
           return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-medium px-2 py-1 font-medium ring-1 ring-inset ring-border">
+            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
               <svg className="h-2 w-2 mr-2 fill-red-500" viewBox="0 0 6 6">
                 <title>TssA (Active TSS)</title>
                 <circle cx={3} cy={3} r={3} />

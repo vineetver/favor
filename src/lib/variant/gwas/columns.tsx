@@ -34,7 +34,6 @@ const PValueCell = ({ value }: { value: string }) => {
   );
 };
 
-
 const EffectSizeCell = ({ value }: { value: string | null }) => {
   const { formattedValue, colorClass, isHighEffect } = useMemo(() => {
     if (!value) return { formattedValue: "—", colorClass: "text-muted-foreground text-left", isHighEffect: false };
@@ -136,25 +135,7 @@ const StudyCell = ({ author }: { author: string }) => {
 };
 
 export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
-  {
-    accessorKey: "gwas_disease_trait",
-    header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Trait" 
-        tooltip="Disease or phenotypic trait associated with this genetic variant"
-        sortable={false}
-      />
-    ),
-    cell: ({ row }) => (
-      <div
-        className="leading-tight text-left whitespace-normal break-words max-w-lg"
-        title={row.getValue("gwas_disease_trait")}
-      >
-        {row.getValue("gwas_disease_trait")}
-      </div>
-    ),
-  },
+  // Most important: Statistical significance
   {
     accessorKey: "gwas_p_value",
     header: ({ column }) => (
@@ -172,6 +153,7 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
       return a - b;
     },
   },
+  // Second most important: Effect magnitude  
   {
     accessorKey: "gwas_or_or_beta",
     header: ({ column }) => (
@@ -197,6 +179,64 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     },
     enableSorting: true,
   },
+  // Third: What trait/disease this affects
+  {
+    accessorKey: "gwas_disease_trait",
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Trait" 
+        tooltip="Disease or phenotypic trait associated with this genetic variant"
+        sortable={false}
+      />
+    ),
+    cell: ({ row }) => (
+      <div
+        className="leading-tight text-left whitespace-normal break-words max-w-lg"
+        title={row.getValue("gwas_disease_trait")}
+      >
+        {row.getValue("gwas_disease_trait")}
+      </div>
+    ),
+  },
+  // Fourth: Allele details
+  {
+    accessorKey: "gwas_strongest_snp_risk_allele",
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Risk Allele" 
+        tooltip="The allele associated with increased risk or trait value"
+        sortable={false}
+      />
+    ),
+    cell: ({ row }) => (
+      <div className="font-mono text-left bg-muted/50 rounded px-2 py-1 inline-block">
+        {row.getValue("gwas_strongest_snp_risk_allele")}
+      </div>
+    ),
+    size: 80,
+  },
+  // Fifth: Allele frequency
+  {
+    accessorKey: "gwas_risk_allele_frequency",
+    header: ({ column }) => (
+      <DataTableColumnHeader 
+        column={column} 
+        title="Allele Freq" 
+        tooltip="Frequency of the risk allele in the study population (0.0-1.0)"
+      />
+    ),
+    cell: ({ row }) => <AlleleFreqCell value={row.getValue("gwas_risk_allele_frequency") as string} />,
+    size: 80,
+    sortingFn: (rowA, rowB) => {
+      const a = parseFloat(rowA.getValue("gwas_risk_allele_frequency") as string);
+      const b = parseFloat(rowB.getValue("gwas_risk_allele_frequency") as string);
+      return a - b;
+    },
+    enableSorting: true,
+  },
+  // Less important: Confidence interval
   {
     accessorKey: "gwas_95_ci_text",
     header: ({ column }) => (
@@ -217,41 +257,7 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     },
     size: 110,
   },
-  {
-    accessorKey: "gwas_risk_allele_frequency",
-    header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Allele Freq" 
-        tooltip="Frequency of the risk allele in the study population (0.0-1.0)"
-      />
-    ),
-    cell: ({ row }) => <AlleleFreqCell value={row.getValue("gwas_risk_allele_frequency") as string} />,
-    size: 80,
-    sortingFn: (rowA, rowB) => {
-      const a = parseFloat(rowA.getValue("gwas_risk_allele_frequency") as string);
-      const b = parseFloat(rowB.getValue("gwas_risk_allele_frequency") as string);
-      return a - b;
-    },
-    enableSorting: true,
-  },
-  {
-    accessorKey: "gwas_strongest_snp_risk_allele",
-    header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Risk Allele" 
-        tooltip="The allele associated with increased risk or trait value"
-        sortable={false}
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="font-mono text-left bg-muted/50 rounded px-2 py-1 inline-block">
-        {row.getValue("gwas_strongest_snp_risk_allele")}
-      </div>
-    ),
-    size: 80,
-  },
+  // Study metadata (least critical for interpretation)
   {
     accessorKey: "gwas_first_author",
     header: ({ column }) => (

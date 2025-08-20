@@ -27,7 +27,7 @@ interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
   column?: Column<TData, TValue>;
   title: string;
-  tooltip?: string;
+  tooltip?: string | React.ReactNode;
   sortable?: boolean;
 }
 
@@ -51,7 +51,11 @@ export function DataTableColumnHeader<TData, TValue>({
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="max-w-md">{tooltip}</p>
+                {typeof tooltip === 'string' ? (
+                  <p className="max-w-md">{tooltip}</p>
+                ) : (
+                  <div className="max-w-md">{tooltip}</div>
+                )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -83,7 +87,11 @@ export function DataTableColumnHeader<TData, TValue>({
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-md">{tooltip}</p>
+                        {typeof tooltip === 'string' ? (
+                          <p className="max-w-md">{tooltip}</p>
+                        ) : (
+                          <div className="max-w-md">{tooltip}</div>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
