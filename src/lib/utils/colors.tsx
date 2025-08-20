@@ -217,6 +217,45 @@ export function metasvmPredCCode(value: string) {
   }
 }
 
+export function siftCategoryCCode(value: string) {
+  if (value.match(/(deleterious)/i)) {
+    return getSpanElement(value, "red");
+  } else if (value.match(/(tolerated)/i)) {
+    return getSpanElement(value, "green");
+  } else {
+    return getSpanElement(value, "gray");
+  }
+}
+
+export function filterStatusCCode(value: string) {
+  switch (value.toUpperCase()) {
+    case "PASS":
+      return getSpanElement("Pass", "green");
+    case "FAIL":
+      return getSpanElement("Fail", "red");
+    case "SVM":
+      return getSpanElement("SVM", "orange");
+    default:
+      return getSpanElement(value, "gray");
+  }
+}
+
+export function clinicalSignificanceCCode(value: string) {
+  const cleanValue = value.toLowerCase().replace(/_/g, " ");
+  
+  if (cleanValue.match(/(pathogenic|likely pathogenic)/)) {
+    return getSpanElement(value.replace(/_/g, " "), "red");
+  } else if (cleanValue.match(/(benign|likely benign)/)) {
+    return getSpanElement(value.replace(/_/g, " "), "green");
+  } else if (cleanValue.match(/(uncertain significance|conflicting|drug response)/)) {
+    return getSpanElement(value.replace(/_/g, " "), "orange");
+  } else if (cleanValue.match(/(not provided|no interpretation|other)/)) {
+    return getSpanElement(value.replace(/_/g, " "), "gray");
+  } else {
+    return getSpanElement(value.replace(/_/g, " "), "blue");
+  }
+}
+
 export function cageEnhancerCCode(value: string | number | undefined) {
   if (value !== "") {
     return getSpanElement("Yes", "green");

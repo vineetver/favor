@@ -141,6 +141,7 @@ export async function fetchRegionTableData(
 
   const url = `${baseUrl(region)}?${params.toString()}`;
 
+  console.log("fetching region from URL", url)
   try {
     const response = await fetch(url);
 
