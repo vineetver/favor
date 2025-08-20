@@ -355,3 +355,13 @@ export function filterValueCCode(value: string) {
       return getSpanElement(value, "gray");
   }
 }
+
+export function booleanStatusCCode(value: string | boolean, trueLabel: string = "Yes", falseLabel: string = "No") {
+  const isTrue = value === true || value === "y" || value === "yes" || value === "true" || value === "1";
+  
+  if (isTrue) {
+    return getSpanElement(trueLabel, "green");
+  } else {
+    return getSpanElement(falseLabel, "red");
+  }
+}
