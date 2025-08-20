@@ -45,9 +45,24 @@ export default async function PGBoostRsidPage({
 
   const pgboostData = variant.rsid ? await fetchPGBoost(variant.rsid) : null;
 
+  const hasValidData = (data: any[]): boolean => {
+    return data.some(
+      (row) =>
+        row &&
+        row.gene &&
+        row.pg_boost != null &&
+        row.pg_boost !== -1 &&
+        row.pg_boost !== 1e-100 &&
+        row.pg_boost_percentile != null,
+    );
+  };
+
+  const filteredData =
+    pgboostData && hasValidData(pgboostData) ? pgboostData : [];
+
   return (
     <PGBoostTable
-      data={pgboostData || []}
+      data={filteredData}
       title="PGBoost Variant-Gene Link Predictions"
       description="Gradient boosting model predictions for variant-gene associations using single-cell ATAC peak-gene linking scores"
     />

@@ -109,7 +109,7 @@ export function DataGrid<TData, TValue>({
   const [globalFilter, setGlobalFilter] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
-    pinnedColumns ? pinnedColumns : {}
+    pinnedColumns ? pinnedColumns : {},
   );
   const selectedRowRef = useRef<HTMLTableRowElement>(null);
 
@@ -150,14 +150,16 @@ export function DataGrid<TData, TValue>({
   useEffect(() => {
     if (selectedRowId !== undefined && getRowId) {
       // Find the index of the selected row in the full dataset
-      const selectedRowIndex = data.findIndex(row => getRowId(row) === selectedRowId);
-      
+      const selectedRowIndex = data.findIndex(
+        (row) => getRowId(row) === selectedRowId,
+      );
+
       if (selectedRowIndex !== -1) {
         // Calculate which page the selected row is on
         const currentPageSize = table.getState().pagination.pageSize;
         const targetPage = Math.floor(selectedRowIndex / currentPageSize);
         const currentPage = table.getState().pagination.pageIndex;
-        
+
         // Navigate to the correct page if not already there
         if (currentPage !== targetPage) {
           table.setPageIndex(targetPage);
@@ -168,22 +170,28 @@ export function DataGrid<TData, TValue>({
 
   // Scroll to selected row after page changes
   useEffect(() => {
-    if (scrollToSelected && selectedRowId !== undefined && selectedRowRef.current) {
+    if (
+      scrollToSelected &&
+      selectedRowId !== undefined &&
+      selectedRowRef.current
+    ) {
       // Use a small delay to ensure the page change and DOM update have completed
       const timeoutId = setTimeout(() => {
-        selectedRowRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        selectedRowRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
         });
       }, 150);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [table.getState().pagination.pageIndex, selectedRowId, scrollToSelected]);
 
   const handleExport = () => {
     if (onExport) {
-      const filteredData = table.getFilteredRowModel().rows.map((row) => row.original);
+      const filteredData = table
+        .getFilteredRowModel()
+        .rows.map((row) => row.original);
       onExport(filteredData, exportFilename);
       return;
     }
@@ -191,20 +199,20 @@ export function DataGrid<TData, TValue>({
     const headers = columns
       .filter((col) => col.header && typeof col.header === "string")
       .map((col) => col.header as string);
-    
-    const rows = table.getFilteredRowModel().rows.map((row) => 
+
+    const rows = table.getFilteredRowModel().rows.map((row) =>
       columns.map((col) => {
         if ("accessorKey" in col && col.accessorKey) {
           const value = row.getValue(col.accessorKey as string);
           return value?.toString() || "";
         }
         return "";
-      })
+      }),
     );
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -222,12 +230,18 @@ export function DataGrid<TData, TValue>({
   if (isLoading) {
     return (
       <Card>
-        {(title || description || showSearch || showExport || showColumnToggle) && (
+        {(title ||
+          description ||
+          showSearch ||
+          showExport ||
+          showColumnToggle) && (
           <CardHeader>
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <div className="space-y-1">
                 {title && <CardTitle className="text-lg">{title}</CardTitle>}
-                {description && <p className="text-sm text-muted-foreground">{description}</p>}
+                {description && (
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                )}
               </div>
               <div className="flex items-center space-x-2">
                 {showExport && (
@@ -254,15 +268,17 @@ export function DataGrid<TData, TValue>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.from({ length: Math.min(initialPageSize, 5) }).map((_, rowIndex) => (
-                  <TableRow key={rowIndex}>
-                    {columns.map((_, colIndex) => (
-                      <TableCell key={colIndex}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {Array.from({ length: Math.min(initialPageSize, 5) }).map(
+                  (_, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {columns.map((_, colIndex) => (
+                        <TableCell key={colIndex}>
+                          <Skeleton className="h-4 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ),
+                )}
               </TableBody>
             </Table>
           </div>
@@ -287,12 +303,18 @@ export function DataGrid<TData, TValue>({
 
   return (
     <Card>
-      {(title || description || showSearch || showExport || showColumnToggle) && (
+      {(title ||
+        description ||
+        showSearch ||
+        showExport ||
+        showColumnToggle) && (
         <CardHeader>
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="space-y-1">
               {title && <CardTitle className="text-lg">{title}</CardTitle>}
-              {description && <p className="text-sm text-muted-foreground">{description}</p>}
+              {description && (
+                <p className="text-sm text-muted-foreground">{description}</p>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               {showExport && (
@@ -304,7 +326,7 @@ export function DataGrid<TData, TValue>({
               {showColumnToggle && <DataTableColumnToggle table={table} />}
             </div>
           </div>
-          
+
           {(showSearch || facetedFilters.length > 0) && (
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
               {showSearch && (
@@ -328,7 +350,7 @@ export function DataGrid<TData, TValue>({
                   )}
                 </div>
               )}
-              
+
               {facetedFilters.length > 0 && (
                 <div className="flex flex-wrap items-center space-x-2">
                   {facetedFilters.map((filter) => (
@@ -371,14 +393,14 @@ export function DataGrid<TData, TValue>({
                           isPinned === "left" &&
                             "sticky left-0 bg-card z-10 border-r border-border/50",
                           isPinned === "right" &&
-                            "sticky right-0 bg-card z-10 border-l border-border/50"
+                            "sticky right-0 bg-card z-10 border-l border-border/50",
                         )}
                       >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     );
@@ -390,50 +412,56 @@ export function DataGrid<TData, TValue>({
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => {
                   const rowId = getRowId ? getRowId(row.original) : row.id;
-                  const isSelected = selectedRowId !== undefined && rowId === selectedRowId;
+                  const isSelected =
+                    selectedRowId !== undefined && rowId === selectedRowId;
                   return (
-                  <React.Fragment key={row.id}>
-                    <TableRow
-                      ref={isSelected ? selectedRowRef : undefined}
-                      data-state={(row.getIsSelected() || isSelected) && "selected"}
-                      className={cn(
-                        "hover:bg-muted/50 transition-colors cursor-pointer",
-                        isSelected && "bg-blue-100 border-l-4 border-l-blue-500 shadow-md dark:bg-blue-900/40 dark:border-l-blue-400"
-                      )}
-                      onClick={() => onRowClick?.(row.original)}
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const isPinned = cell.column.getIsPinned();
-                        return (
-                          <TableCell
-                            key={cell.id}
-                            className={cn(
-                              isPinned === "left" &&
-                                "sticky left-0 bg-card z-10 border-r border-border/50",
-                              isPinned === "right" &&
-                                "sticky right-0 bg-card z-10 border-l border-border/50"
-                            )}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                    {expandable && row.getIsExpanded() && renderExpandedRow && (
-                      <TableRow key={`${row.id}-expanded`}>
-                        <TableCell
-                          colSpan={row.getVisibleCells().length}
-                          className="bg-muted/10 p-6"
-                        >
-                          {renderExpandedRow(row.original)}
-                        </TableCell>
+                    <React.Fragment key={row.id}>
+                      <TableRow
+                        ref={isSelected ? selectedRowRef : undefined}
+                        data-state={
+                          (row.getIsSelected() || isSelected) && "selected"
+                        }
+                        className={cn(
+                          "hover:bg-muted/50 transition-colors cursor-pointer",
+                          isSelected &&
+                            "bg-blue-100 border-l-4 border-l-blue-500 shadow-md dark:bg-blue-900/40 dark:border-l-blue-400",
+                        )}
+                        onClick={() => onRowClick?.(row.original)}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const isPinned = cell.column.getIsPinned();
+                          return (
+                            <TableCell
+                              key={cell.id}
+                              className={cn(
+                                isPinned === "left" &&
+                                  "sticky left-0 bg-card z-10 border-r border-border/50",
+                                isPinned === "right" &&
+                                  "sticky right-0 bg-card z-10 border-l border-border/50",
+                              )}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
-                    )}
-                  </React.Fragment>
-                );
+                      {expandable &&
+                        row.getIsExpanded() &&
+                        renderExpandedRow && (
+                          <TableRow key={`${row.id}-expanded`}>
+                            <TableCell
+                              colSpan={row.getVisibleCells().length}
+                              className="bg-muted/10 p-6"
+                            >
+                              {renderExpandedRow(row.original)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                    </React.Fragment>
+                  );
                 })
               ) : (
                 <TableRow>
@@ -448,8 +476,8 @@ export function DataGrid<TData, TValue>({
             </TableBody>
           </Table>
         </div>
-          
-          <TablePagination table={table} />
+
+        <TablePagination table={table} />
       </CardContent>
     </Card>
   );

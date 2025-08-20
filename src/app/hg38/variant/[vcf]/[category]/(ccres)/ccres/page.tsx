@@ -18,10 +18,5 @@ export default async function CCREPage({ params }: CCREPageProps) {
 
   const initialData = await getCCREByVCF(vcf, 0);
 
-  return (
-      <CCREDisplay
-        vcf={vcf}
-        initialData={initialData}
-      />
-  );
+  return <CCREDisplay vcf={vcf} initialData={initialData} />;
 }

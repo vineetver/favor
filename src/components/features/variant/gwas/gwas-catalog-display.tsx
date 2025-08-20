@@ -14,11 +14,10 @@ interface GwasCatalogDataDisplayProps {
   gwas: GWAS[] | null;
 }
 
-
 function GwasTable({ data }: { data: GWAS[] }) {
   const exportTSV = (filteredData: GWAS[]) => {
     const headers = [
-      "Disease/Trait", 
+      "Disease/Trait",
       "Risk Allele",
       "P-value",
       "-log10(P)",
@@ -27,7 +26,7 @@ function GwasTable({ data }: { data: GWAS[] }) {
       "95% CI",
       "Mapped Gene",
       "First Author",
-      "PubMed ID"
+      "PubMed ID",
     ];
     const rows = filteredData.map((row) => [
       row.gwas_disease_trait,
@@ -39,9 +38,11 @@ function GwasTable({ data }: { data: GWAS[] }) {
       row.gwas_95_ci_text || "",
       row.gwas_mapped_gene,
       row.gwas_first_author,
-      row.gwas_pubmedid
+      row.gwas_pubmedid,
     ]);
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -66,8 +67,9 @@ function GwasTable({ data }: { data: GWAS[] }) {
       initialPageSize={25}
       emptyState={{
         title: "No GWAS data found",
-        description: "No GWAS catalog associations are available for this variant.",
-        dataType: "GWAS Catalog Data"
+        description:
+          "No GWAS catalog associations are available for this variant.",
+        dataType: "GWAS Catalog Data",
       }}
     />
   );
@@ -81,29 +83,28 @@ export function GwasCatalogDataDisplay({ gwas }: GwasCatalogDataDisplayProps) {
     return <NoDataState categoryName="GWAS Catalog Data" />;
   }
 
-  const tabs = useMemo(() => [
-    {
-      id: "table",
-      label: "Table View",
-      shortLabel: "Table",
-      count: gwas.length,
-      content: <MemoizedGwasTable data={gwas} />
-    },
-    {
-      id: "visualization", 
-      label: "Visualization",
-      shortLabel: "Chart",
-      content: <MemoizedGwasScatterChart data={gwas} />
-    }
-  ], [gwas]);
+  const tabs = useMemo(
+    () => [
+      {
+        id: "table",
+        label: "Table View",
+        shortLabel: "Table",
+        count: gwas.length,
+        content: <MemoizedGwasTable data={gwas} />,
+      },
+      {
+        id: "visualization",
+        label: "Visualization",
+        shortLabel: "Chart",
+        content: <MemoizedGwasScatterChart data={gwas} />,
+      },
+    ],
+    [gwas],
+  );
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs 
-        tabs={tabs}
-        defaultValue="table"
-        variant="flat"
-      />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" variant="flat" />
     </div>
   );
 }

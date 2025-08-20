@@ -66,7 +66,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "other_gene_annotation",
         name: "Gene Annotation",
-        description: "Comprehensive gene annotations showing gene boundaries, exons, and strand information from GENCODE. Essential for understanding genomic context and variant impact assessment.",
+        description:
+          "Comprehensive gene annotations showing gene boundaries, exons, and strand information from GENCODE. Essential for understanding genomic context and variant impact assessment.",
         spec: geneTrack,
         category: "Other",
         visible: true,
@@ -74,7 +75,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "other_gennochi",
         name: "Gennochi",
-        description: "Specialized genomic analysis tool providing advanced pattern recognition and computational insights for research applications.",
+        description:
+          "Specialized genomic analysis tool providing advanced pattern recognition and computational insights for research applications.",
         spec: gennochiTrack,
         category: "Other",
         visible: false,
@@ -82,7 +84,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "other_jarvis",
         name: "JARVIS",
-        description: "Joint Analysis of Regulatory Variants in Single-cell data. Provides cell-type-specific regulatory analysis and variant interpretation.",
+        description:
+          "Joint Analysis of Regulatory Variants in Single-cell data. Provides cell-type-specific regulatory analysis and variant interpretation.",
         spec: jarvisTrack,
         category: "Other",
         visible: false,
@@ -103,7 +106,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_atac_seq_chromatin_accessibility",
         name: "ATAC-seq (Chromatin Accessibility)",
-        description: "Assay for Transposase-Accessible Chromatin sequencing data showing open chromatin regions across different cell types and tissues.",
+        description:
+          "Assay for Transposase-Accessible Chromatin sequencing data showing open chromatin regions across different cell types and tissues.",
         spec: atacTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -111,7 +115,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_dnase_seq_chromatin_accessibility",
         name: "DNase-seq (Chromatin Accessibility)",
-        description: "DNase hypersensitive sites revealing chromatin accessibility and active regulatory elements across multiple cell types.",
+        description:
+          "DNase hypersensitive sites revealing chromatin accessibility and active regulatory elements across multiple cell types.",
         spec: dnaseTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -119,7 +124,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_ctcf_binding",
         name: "CTCF Binding",
-        description: "CTCF transcription factor binding sites showing chromatin organization and topological domain boundaries that regulate gene expression.",
+        description:
+          "CTCF transcription factor binding sites showing chromatin organization and topological domain boundaries that regulate gene expression.",
         spec: ctcfTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -127,7 +133,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_h3k4me3_active_promoters",
         name: "H3K4me3 (Active Promoters)",
-        description: "Histone H3 lysine 4 trimethylation marks indicating active promoter regions and transcriptional start sites across cell types.",
+        description:
+          "Histone H3 lysine 4 trimethylation marks indicating active promoter regions and transcriptional start sites across cell types.",
         spec: h3k4me3Track,
         category: "Single Cell/Tissue",
         visible: false,
@@ -135,7 +142,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_h3k27ac_enhancer_activity",
         name: "H3K27ac (Enhancer Activity)",
-        description: "Histone H3 lysine 27 acetylation marking active enhancers and promoters, indicating regulatory element activity levels.",
+        description:
+          "Histone H3 lysine 27 acetylation marking active enhancers and promoters, indicating regulatory element activity levels.",
         spec: h3k27acTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -143,7 +151,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_eqtls_arc_link",
         name: "eQTLs (Arc Link)",
-        description: "Expression quantitative trait loci showing genetic variants that influence gene expression levels, displayed as arc connections.",
+        description:
+          "Expression quantitative trait loci showing genetic variants that influence gene expression levels, displayed as arc connections.",
         spec: eQTLTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -151,7 +160,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_eqtls_overlay_link",
         name: "eQTLs (Overlay Link)",
-        description: "Comprehensive eQTL visualization with regulatory elements and gene links in overlay format showing complete regulatory context.",
+        description:
+          "Comprehensive eQTL visualization with regulatory elements and gene links in overlay format showing complete regulatory context.",
         spec: eQTLTrack2,
         category: "Single Cell/Tissue",
         visible: false,
@@ -159,7 +169,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_crispr_arc_link",
         name: "CRISPR (Arc Link)",
-        description: "CRISPR screen results showing functional validation of regulatory elements and their target genes through experimental perturbation.",
+        description:
+          "CRISPR screen results showing functional validation of regulatory elements and their target genes through experimental perturbation.",
         spec: crisprTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -167,7 +178,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_crispr_overlay_link",
         name: "CRISPR (Overlay Link)",
-        description: "Comprehensive CRISPR functional validation data in overlay format showing regulatory element functionality with experimental evidence.",
+        description:
+          "Comprehensive CRISPR functional validation data in overlay format showing regulatory element functionality with experimental evidence.",
         spec: crisprTrack2,
         category: "Single Cell/Tissue",
         visible: false,
@@ -175,7 +187,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_chromatin_arc_link",
         name: "Chromatin (Arc Link)",
-        description: "Chromatin interaction data showing 3D genome organization and long-range regulatory connections between genomic elements.",
+        description:
+          "Chromatin interaction data showing 3D genome organization and long-range regulatory connections between genomic elements.",
         spec: chromatinTrack,
         category: "Single Cell/Tissue",
         visible: false,
@@ -183,7 +196,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "single_cell_tissue_chromatin_overlay_link",
         name: "Chromatin (Overlay Link)",
-        description: "Comprehensive chromatin organization data showing 3D genome structure and spatial regulatory relationships in overlay format.",
+        description:
+          "Comprehensive chromatin organization data showing 3D genome structure and spatial regulatory relationships in overlay format.",
         spec: chromatinTrack2,
         category: "Single Cell/Tissue",
         visible: false,
@@ -196,7 +210,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "clinvar_clinvar",
         name: "Clinvar",
-        description: "Clinical significance annotations for genetic variants from laboratories worldwide. Essential for clinical variant interpretation and pathogenicity assessment.",
+        description:
+          "Clinical significance annotations for genetic variants from laboratories worldwide. Essential for clinical variant interpretation and pathogenicity assessment.",
         spec: clinvarTrack,
         category: "Clinvar",
         visible: false,
@@ -209,7 +224,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k24_bismap",
         name: "Mappability (k24) Bismap",
-        description: "Genomic mappability scores using 24-mer analysis with Bismap algorithm for assessing sequencing alignment reliability and uniqueness.",
+        description:
+          "Genomic mappability scores using 24-mer analysis with Bismap algorithm for assessing sequencing alignment reliability and uniqueness.",
         spec: mappabilityk24BismapTrack,
         category: "Mappability",
         visible: false,
@@ -217,7 +233,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k24_umap",
         name: "Mappability (k24) Umap",
-        description: "Genomic mappability scores using 24-mer analysis with Umap algorithm for evaluating sequence uniqueness and alignment quality.",
+        description:
+          "Genomic mappability scores using 24-mer analysis with Umap algorithm for evaluating sequence uniqueness and alignment quality.",
         spec: mappabilityk24UmapTrack,
         category: "Mappability",
         visible: false,
@@ -225,7 +242,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k36_bismap",
         name: "Mappability (k36) Bismap",
-        description: "Genomic mappability scores using 36-mer analysis with Bismap algorithm for higher-resolution alignment reliability assessment.",
+        description:
+          "Genomic mappability scores using 36-mer analysis with Bismap algorithm for higher-resolution alignment reliability assessment.",
         spec: mappabilityk36BismapTrack,
         category: "Mappability",
         visible: false,
@@ -233,7 +251,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k36_umap",
         name: "Mappability (k36) Umap",
-        description: "Genomic mappability scores using 36-mer analysis with Umap algorithm for enhanced sequence uniqueness evaluation.",
+        description:
+          "Genomic mappability scores using 36-mer analysis with Umap algorithm for enhanced sequence uniqueness evaluation.",
         spec: mappabilityk36UmapTrack,
         category: "Mappability",
         visible: false,
@@ -241,7 +260,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k50_bismap",
         name: "Mappability (k50) Bismap",
-        description: "Genomic mappability scores using 50-mer analysis with Bismap algorithm for long-read sequencing alignment assessment.",
+        description:
+          "Genomic mappability scores using 50-mer analysis with Bismap algorithm for long-read sequencing alignment assessment.",
         spec: mappabilityk50BismapTrack,
         category: "Mappability",
         visible: false,
@@ -249,7 +269,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k50_umap",
         name: "Mappability (k50) Umap",
-        description: "Genomic mappability scores using 50-mer analysis with Umap algorithm for comprehensive sequence uniqueness assessment.",
+        description:
+          "Genomic mappability scores using 50-mer analysis with Umap algorithm for comprehensive sequence uniqueness assessment.",
         spec: mappabilityk50UmapTrack,
         category: "Mappability",
         visible: false,
@@ -257,7 +278,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k100_bismap",
         name: "Mappability (k100) Bismap",
-        description: "Genomic mappability scores using 100-mer analysis with Bismap algorithm for maximum-resolution alignment reliability evaluation.",
+        description:
+          "Genomic mappability scores using 100-mer analysis with Bismap algorithm for maximum-resolution alignment reliability evaluation.",
         spec: mappabilityk100BismapTrack,
         category: "Mappability",
         visible: false,
@@ -265,7 +287,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "mappability_k100_umap",
         name: "Mappability (k100) Umap",
-        description: "Genomic mappability scores using 100-mer analysis with Umap algorithm for highest-precision sequence uniqueness analysis.",
+        description:
+          "Genomic mappability scores using 100-mer analysis with Umap algorithm for highest-precision sequence uniqueness analysis.",
         spec: mappabilityk100UmapTrack,
         category: "Mappability",
         visible: false,
@@ -278,7 +301,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "local_nucleotide_diversity_recombination_rate_1000g_avg",
         name: "Recombination Rate (1000G) Avg",
-        description: "Average recombination rates from 1000 Genomes Project showing genetic diversity patterns and hotspots across populations.",
+        description:
+          "Average recombination rates from 1000 Genomes Project showing genetic diversity patterns and hotspots across populations.",
         spec: recomb1000gAvgTrack,
         category: "Local Nucleotide Diversity",
         visible: false,
@@ -286,7 +310,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "local_nucleotide_diversity_recombination_rate_avg",
         name: "Recombination Rate Avg",
-        description: "Population-averaged recombination rates showing genome-wide patterns of genetic recombination and linkage disequilibrium.",
+        description:
+          "Population-averaged recombination rates showing genome-wide patterns of genetic recombination and linkage disequilibrium.",
         spec: recombAvgTrack,
         category: "Local Nucleotide Diversity",
         visible: false,
@@ -294,7 +319,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "local_nucleotide_diversity_recombination_rate_maternal",
         name: "Recombination Rate Maternal",
-        description: "Sex-specific recombination rates in female meiosis showing maternal inheritance patterns and crossover frequency.",
+        description:
+          "Sex-specific recombination rates in female meiosis showing maternal inheritance patterns and crossover frequency.",
         spec: recombMatTrack,
         category: "Local Nucleotide Diversity",
         visible: false,
@@ -302,7 +328,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "local_nucleotide_diversity_recombination_rate_paternal",
         name: "Recombination Rate Paternal",
-        description: "Sex-specific recombination rates in male meiosis showing paternal inheritance patterns and crossover distribution.",
+        description:
+          "Sex-specific recombination rates in male meiosis showing paternal inheritance patterns and crossover distribution.",
         spec: recombPatTrack,
         category: "Local Nucleotide Diversity",
         visible: false,
@@ -315,7 +342,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "conservation_gerpn",
         name: "GerpN",
-        description: "GERP neutral evolution scores measuring conservation constraint across mammalian species for variant pathogenicity assessment.",
+        description:
+          "GERP neutral evolution scores measuring conservation constraint across mammalian species for variant pathogenicity assessment.",
         spec: gerpNTrack,
         category: "Conservation",
         visible: false,
@@ -323,7 +351,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "conservation_gerpr",
         name: "GerpR",
-        description: "GERP rejected substitution scores indicating evolutionary constraint and conservation pressure at genomic positions.",
+        description:
+          "GERP rejected substitution scores indicating evolutionary constraint and conservation pressure at genomic positions.",
         spec: gerpRTrack,
         category: "Conservation",
         visible: false,
@@ -336,7 +365,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "integrative_cadd_1_7_mutation_a",
         name: "CADD 1.7 (Mutation A)",
-        description: "CADD pathogenicity predictions for A>X mutations using machine learning integration of genomic annotations and conservation scores.",
+        description:
+          "CADD pathogenicity predictions for A>X mutations using machine learning integration of genomic annotations and conservation scores.",
         spec: caddATrack,
         category: "Integrative",
         visible: false,
@@ -344,7 +374,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "integrative_cadd_1_7_mutation_c",
         name: "CADD 1.7 (Mutation C)",
-        description: "CADD pathogenicity predictions for C>X mutations using comprehensive variant annotation and deleteriousness scoring.",
+        description:
+          "CADD pathogenicity predictions for C>X mutations using comprehensive variant annotation and deleteriousness scoring.",
         spec: caddCTrack,
         category: "Integrative",
         visible: false,
@@ -352,7 +383,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "integrative_cadd_1_7_mutation_g",
         name: "CADD 1.7 (Mutation G)",
-        description: "CADD pathogenicity predictions for G>X mutations with integrated functional annotations and evolutionary constraints.",
+        description:
+          "CADD pathogenicity predictions for G>X mutations with integrated functional annotations and evolutionary constraints.",
         spec: caddGTrack,
         category: "Integrative",
         visible: false,
@@ -360,7 +392,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "integrative_cadd_1_7_mutation_t",
         name: "CADD 1.7 (Mutation T)",
-        description: "CADD pathogenicity predictions for T>X mutations combining multiple genomic features for variant deleteriousness assessment.",
+        description:
+          "CADD pathogenicity predictions for T>X mutations combining multiple genomic features for variant deleteriousness assessment.",
         spec: caddTTrack,
         category: "Integrative",
         visible: false,
@@ -373,7 +406,8 @@ const allCategoriesData: CategoryData[] = [
       {
         id: "gwas_gwas_p_value_manhattan_plot",
         name: "GWAS P-Value Manhattan Plot",
-        description: "Genome-wide association study results showing statistical significance of trait-associated variants across chromosomes.",
+        description:
+          "Genome-wide association study results showing statistical significance of trait-associated variants across chromosomes.",
         spec: gwasPValueTrack,
         category: "GWAS",
         visible: false,
@@ -1089,7 +1123,11 @@ const TRACK_DOCUMENTATION: Record<
     ],
     version: "1.0.0",
     authors: ["Mappability Analysis Team"],
-    performance: { renderTime: "fast", memoryUsage: "medium", dataSize: "~190MB" },
+    performance: {
+      renderTime: "fast",
+      memoryUsage: "medium",
+      dataSize: "~190MB",
+    },
     interactions: {
       supportedViewTypes: ["linear", "stack"],
       linkingSupported: false,
@@ -1115,7 +1153,11 @@ const TRACK_DOCUMENTATION: Record<
     ],
     version: "1.0.0",
     authors: ["Mappability Analysis Team"],
-    performance: { renderTime: "fast", memoryUsage: "medium", dataSize: "~190MB" },
+    performance: {
+      renderTime: "fast",
+      memoryUsage: "medium",
+      dataSize: "~190MB",
+    },
     interactions: {
       supportedViewTypes: ["linear", "stack"],
       linkingSupported: false,
@@ -1141,7 +1183,11 @@ const TRACK_DOCUMENTATION: Record<
     ],
     version: "1.0.0",
     authors: ["Mappability Analysis Team"],
-    performance: { renderTime: "medium", memoryUsage: "medium", dataSize: "~220MB" },
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~220MB",
+    },
     interactions: {
       supportedViewTypes: ["linear", "stack"],
       linkingSupported: false,
@@ -1167,7 +1213,11 @@ const TRACK_DOCUMENTATION: Record<
     ],
     version: "1.0.0",
     authors: ["Mappability Analysis Team"],
-    performance: { renderTime: "medium", memoryUsage: "medium", dataSize: "~220MB" },
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~220MB",
+    },
     interactions: {
       supportedViewTypes: ["linear", "stack"],
       linkingSupported: false,

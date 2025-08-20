@@ -4,23 +4,24 @@ import { formatFrequency } from "@/lib/utils/general";
 import type { AncestryFrequency } from "@/lib/variant/gnomad/utils";
 
 // Custom sorting function for frequency values
-const createFrequencySortingFn = (accessorKey: string) => (rowA: any, rowB: any) => {
-  const a = rowA.getValue(accessorKey) as number | undefined;
-  const b = rowB.getValue(accessorKey) as number | undefined;
-  if (a === undefined && b === undefined) return 0;
-  if (a === undefined) return 1;
-  if (b === undefined) return -1;
-  return a - b;
-};
+const createFrequencySortingFn =
+  (accessorKey: string) => (rowA: any, rowB: any) => {
+    const a = rowA.getValue(accessorKey) as number | undefined;
+    const b = rowB.getValue(accessorKey) as number | undefined;
+    if (a === undefined && b === undefined) return 0;
+    if (a === undefined) return 1;
+    if (b === undefined) return -1;
+    return a - b;
+  };
 
 // Ancestry frequency table columns
 export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Population" 
+      <DataTableColumnHeader
+        column={column}
+        title="Population"
         sortable={true}
       />
     ),
@@ -35,9 +36,9 @@ export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
   {
     accessorKey: "g1000",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="1000G Phase 3" 
+      <DataTableColumnHeader
+        column={column}
+        title="1000G Phase 3"
         tooltip="Allele frequency from 1000 Genomes Phase 3 database"
         sortable={true}
       />
@@ -53,9 +54,9 @@ export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
   {
     accessorKey: "gnomad31",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="gnomAD v3.1" 
+      <DataTableColumnHeader
+        column={column}
+        title="gnomAD v3.1"
         tooltip="Allele frequency from gnomAD v3.1 database"
         sortable={true}
       />
@@ -71,9 +72,9 @@ export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
   {
     accessorKey: "gnomad41_exome",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="gnomAD v4.1 Exome" 
+      <DataTableColumnHeader
+        column={column}
+        title="gnomAD v4.1 Exome"
         tooltip="Allele frequency from gnomAD v4.1 Exome dataset"
         sortable={true}
       />
@@ -89,9 +90,9 @@ export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
   {
     accessorKey: "gnomad41_genome",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="gnomAD v4.1 Genome" 
+      <DataTableColumnHeader
+        column={column}
+        title="gnomAD v4.1 Genome"
         tooltip="Allele frequency from gnomAD v4.1 Genome dataset"
         sortable={true}
       />
@@ -109,8 +110,14 @@ export const ancestryColumns: ColumnDef<AncestryFrequency>[] = [
 // Chart data configuration for ancestry
 export const ANCESTRY_CHART_CONFIG = {
   title: "Ancestry Allele Frequencies",
-  subtitle: "Population-specific allele frequencies across different genomic datasets",
-  keys: ["1000G Phase 3", "gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"] as string[],
+  subtitle:
+    "Population-specific allele frequencies across different genomic datasets",
+  keys: [
+    "1000G Phase 3",
+    "gnomAD v3.1",
+    "gnomAD v4.1 Exome",
+    "gnomAD v4.1 Genome",
+  ] as string[],
   colors: [
     "#3b82f6", // blue for 1000G
     "#10b981", // green for gnomAD v3.1

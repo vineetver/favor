@@ -212,7 +212,10 @@ export function TrackDetailsModal({
                   style={{ backgroundColor: track.color }}
                 />
                 <span className="truncate">{track.name}</span>
-                <Badge variant="outline" className="text-xs font-medium flex-shrink-0">
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium flex-shrink-0"
+                >
                   v{track.version}
                 </Badge>
               </DialogTitle>
@@ -275,14 +278,18 @@ export function TrackDetailsModal({
             <TabsContent value="overview" className="space-y-6 mt-6">
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold">Track Overview</CardTitle>
+                  <CardTitle className="text-xl font-semibold">
+                    Track Overview
+                  </CardTitle>
                   <CardDescription className="text-sm">
                     Understanding what this track shows and how to interpret it
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-base text-foreground">What it shows</h4>
+                    <h4 className="font-semibold text-base text-foreground">
+                      What it shows
+                    </h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {track.documentation.overview}
                     </p>
@@ -291,7 +298,9 @@ export function TrackDetailsModal({
                   <Separator className="my-6" />
 
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-base text-foreground">How to interpret</h4>
+                    <h4 className="font-semibold text-base text-foreground">
+                      How to interpret
+                    </h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {track.documentation.interpretation}
                     </p>
@@ -310,7 +319,9 @@ export function TrackDetailsModal({
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-base mb-3">Rendering Details</h4>
+                      <h4 className="font-semibold text-base mb-3">
+                        Rendering Details
+                      </h4>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
@@ -374,7 +385,9 @@ export function TrackDetailsModal({
 
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold">Methodology</CardTitle>
+                  <CardTitle className="text-xl font-semibold">
+                    Methodology
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -472,7 +485,9 @@ export function TrackDetailsModal({
                   <Separator className="my-6" />
 
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-base">Contributing Authors</h4>
+                    <h4 className="font-semibold text-base">
+                      Contributing Authors
+                    </h4>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">

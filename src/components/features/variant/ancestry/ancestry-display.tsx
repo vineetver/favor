@@ -67,29 +67,30 @@ export function AncestryDisplay({
       label: "Frequency Table",
       shortLabel: "Table",
       count: validFrequencies.length,
-      content: <AncestryFrequencyTable data={validFrequencies} />
+      content: <AncestryFrequencyTable data={validFrequencies} />,
     },
     {
-      id: "visualization", 
+      id: "visualization",
       label: "Visualization",
       shortLabel: "Chart",
-      content: chartData.length > 0 ? (
-        <BarChart
-          data={chartData}
-          keys={ANCESTRY_CHART_CONFIG.keys}
-          indexBy="population"
-          title={ANCESTRY_CHART_CONFIG.title}
-          subtitle={ANCESTRY_CHART_CONFIG.subtitle}
-          yLabel="Allele Frequency"
-          xLabel=""
-          height={550}
-          margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
-          colors={ANCESTRY_CHART_CONFIG.colors}
-          showLegend={true}
-          borderRadius={8}
-        />
-      ) : null
-    }
+      content:
+        chartData.length > 0 ? (
+          <BarChart
+            data={chartData}
+            keys={ANCESTRY_CHART_CONFIG.keys}
+            indexBy="population"
+            title={ANCESTRY_CHART_CONFIG.title}
+            subtitle={ANCESTRY_CHART_CONFIG.subtitle}
+            yLabel="Allele Frequency"
+            xLabel=""
+            height={550}
+            margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
+            colors={ANCESTRY_CHART_CONFIG.colors}
+            showLegend={true}
+            borderRadius={8}
+          />
+        ) : null,
+    },
   ];
 
   return (

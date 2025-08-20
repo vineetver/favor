@@ -11,8 +11,11 @@ interface IntactHicCardProps {
   isLoading?: boolean;
 }
 
-export function IntactHicCard({ accession, data, isLoading = false }: IntactHicCardProps) {
-
+export function IntactHicCard({
+  accession,
+  data,
+  isLoading = false,
+}: IntactHicCardProps) {
   const sortedData = useMemo(() => {
     if (!data) return [];
     return [...data].sort((a, b) => {
@@ -43,7 +46,14 @@ export function IntactHicCard({ accession, data, isLoading = false }: IntactHicC
   }
 
   const exportData = (filteredData: Chiapet[]) => {
-    const headers = ["Gene", "Type", "Score", "Biosample", "P-value", "Experiment"];
+    const headers = [
+      "Gene",
+      "Type",
+      "Score",
+      "Biosample",
+      "P-value",
+      "Experiment",
+    ];
     const rows = filteredData.map((row) => [
       row.gene_name,
       row.gene_type,
@@ -53,7 +63,9 @@ export function IntactHicCard({ accession, data, isLoading = false }: IntactHicC
       row.experiment_id,
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

@@ -28,7 +28,9 @@ export function GoslingCore({
         className={`w-full h-96 flex items-center justify-center bg-accent/10 rounded-lg border border-dashed border-border ${className}`}
       >
         <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">No genome data to display</p>
+          <p className="text-sm text-muted-foreground">
+            No genome data to display
+          </p>
           <p className="text-sm text-muted-foreground">
             Provide a valid Gosling specification to view the genome browser
           </p>

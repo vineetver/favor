@@ -10,7 +10,7 @@ export const ExternalLink = React.forwardRef<
   }
 >(({ children, href, className, iconSize = "md", ...props }, ref) => {
   const iconClass = iconSize === "sm" ? "h-3 w-3" : "h-4 w-4";
-  
+
   return (
     <a
       ref={ref}

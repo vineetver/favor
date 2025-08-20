@@ -12,12 +12,11 @@ interface GwasScatterTableProps {
   selectedRowId?: string | null;
 }
 
-
 export const GwasScatterTable = React.memo<GwasScatterTableProps>(
   function GwasScatterTable({ data, title, onRowClick, selectedRowId }) {
     const exportTSV = (filteredData: ProcessedGwasData[]) => {
       const headers = [
-        "Disease/Trait", 
+        "Disease/Trait",
         "Risk Allele",
         "P-value",
         "-log10(P)",
@@ -26,7 +25,7 @@ export const GwasScatterTable = React.memo<GwasScatterTableProps>(
         "95% CI",
         "Mapped Gene",
         "First Author",
-        "PubMed ID"
+        "PubMed ID",
       ];
       const rows = filteredData.map((row) => [
         row.gwas_disease_trait,
@@ -38,9 +37,12 @@ export const GwasScatterTable = React.memo<GwasScatterTableProps>(
         row.gwas_95_ci_text || "",
         row.gwas_mapped_gene,
         row.gwas_first_author,
-        row.gwas_pubmedid
+        row.gwas_pubmedid,
       ]);
-      const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+      const tsv = [
+        headers.join("\t"),
+        ...rows.map((row) => row.join("\t")),
+      ].join("\n");
       const blob = new Blob([tsv], { type: "text/tab-separated-values" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -51,25 +53,25 @@ export const GwasScatterTable = React.memo<GwasScatterTableProps>(
     };
 
     return (
-        <DataGrid
-          columns={gwasColumns as any}
-          data={data}
-          title={title}
-          searchPlaceholder="Search by trait, gene, author..."
-          onExport={exportTSV}
-          exportFilename="gwas_category_data.tsv"
-          showExport={true}
-          showColumnToggle={true}
-          initialPageSize={25}
-          onRowClick={onRowClick}
-          selectedRowId={selectedRowId || undefined}
-          getRowId={(row) => row.uniqueKey}
-          emptyState={{
-            title: "No GWAS data found",
-            description: "No GWAS scatter data is available.",
-            dataType: "GWAS Data"
-          }}
-        />
+      <DataGrid
+        columns={gwasColumns as any}
+        data={data}
+        title={title}
+        searchPlaceholder="Search by trait, gene, author..."
+        onExport={exportTSV}
+        exportFilename="gwas_category_data.tsv"
+        showExport={true}
+        showColumnToggle={true}
+        initialPageSize={25}
+        onRowClick={onRowClick}
+        selectedRowId={selectedRowId || undefined}
+        getRowId={(row) => row.uniqueKey}
+        emptyState={{
+          title: "No GWAS data found",
+          description: "No GWAS scatter data is available.",
+          dataType: "GWAS Data",
+        }}
+      />
     );
   },
 );

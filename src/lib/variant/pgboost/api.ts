@@ -22,7 +22,9 @@ export async function fetchPGBoost(rsid: string): Promise<PGBoost[] | null> {
   }
 }
 
-export async function fetchPGBoostByGene(gene: string): Promise<PGBoost[] | null> {
+export async function fetchPGBoostByGene(
+  gene: string,
+): Promise<PGBoost[] | null> {
   try {
     const response = await fetch(`${PGBOOST_GENE_URL}/${gene}`);
 

@@ -42,9 +42,12 @@ export function useSearchHistory() {
       );
 
       let newHistory: string[];
-      
+
       if (existingIndex !== -1) {
-        newHistory = [query, ...prev.filter((_, index) => index !== existingIndex)];
+        newHistory = [
+          query,
+          ...prev.filter((_, index) => index !== existingIndex),
+        ];
       } else {
         newHistory = [query, ...prev];
       }
@@ -86,17 +89,20 @@ export function useSearchHistory() {
     });
   }, []);
 
-  const getRecentSearches = useCallback((limit: number = 5): HistoryItem[] => {
-    return history.slice(0, limit).map((search, index) => ({
-      id: `history-${index}`,
-      value: search,
-      type: "history" as const,
-      data: {
-        timestamp: Date.now() - index * 1000 * 60,
-      },
-      score: 0.9 - index * 0.05,
-    }));
-  }, [history]);
+  const getRecentSearches = useCallback(
+    (limit: number = 5): HistoryItem[] => {
+      return history.slice(0, limit).map((search, index) => ({
+        id: `history-${index}`,
+        value: search,
+        type: "history" as const,
+        data: {
+          timestamp: Date.now() - index * 1000 * 60,
+        },
+        score: 0.9 - index * 0.05,
+      }));
+    },
+    [history],
+  );
 
   return {
     history,

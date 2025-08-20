@@ -19,7 +19,9 @@ interface TissueSpecificPageProps {
   };
 }
 
-export default async function TissueSpecificPage({ params }: TissueSpecificPageProps) {
+export default async function TissueSpecificPage({
+  params,
+}: TissueSpecificPageProps) {
   const { vcf, category } = params;
 
   const variant = await fetchVariant(vcf);
@@ -29,36 +31,32 @@ export default async function TissueSpecificPage({ params }: TissueSpecificPageP
   }
 
   // Fetch all tissue-specific data sources in parallel (excluding GWAS - not tissue-specific)
-  const [
-    ccreData,
-    abcScores,
-    abcPeaks,
-    entexData,
-    scentData,
-    pgboostData,
-  ] = await Promise.allSettled([
-    getCCREByVCF(vcf, 0).then(data => data || []),
-    fetchABCScores(vcf).then(data => data || []),
-    fetchABCPeaks(vcf).then(data => data || []),
-    fetchEntexDefault(vcf).then(data => data || []),
-    fetchScentTissueByVCF(vcf, 0).then(data => data || []),
-    variant.rsid ? fetchPGBoost(variant.rsid).then(data => data || []) : Promise.resolve([]),
-  ]);
+  const [ccreData, abcScores, abcPeaks, entexData, scentData, pgboostData] =
+    await Promise.allSettled([
+      getCCREByVCF(vcf, 0).then((data) => data || []),
+      fetchABCScores(vcf).then((data) => data || []),
+      fetchABCPeaks(vcf).then((data) => data || []),
+      fetchEntexDefault(vcf).then((data) => data || []),
+      fetchScentTissueByVCF(vcf, 0).then((data) => data || []),
+      variant.rsid
+        ? fetchPGBoost(variant.rsid).then((data) => data || [])
+        : Promise.resolve([]),
+    ]);
 
   // Extract resolved values, defaulting to empty arrays for rejected promises
   const tissueData = {
-    ccre: ccreData.status === 'fulfilled' ? ccreData.value : [],
-    abcScores: abcScores.status === 'fulfilled' ? abcScores.value : [],
-    abcPeaks: abcPeaks.status === 'fulfilled' ? abcPeaks.value : [],
-    entex: entexData.status === 'fulfilled' ? entexData.value : [],
-    scent: scentData.status === 'fulfilled' ? scentData.value : [],
-    pgboost: pgboostData.status === 'fulfilled' ? pgboostData.value : [],
+    ccre: ccreData.status === "fulfilled" ? ccreData.value : [],
+    abcScores: abcScores.status === "fulfilled" ? abcScores.value : [],
+    abcPeaks: abcPeaks.status === "fulfilled" ? abcPeaks.value : [],
+    entex: entexData.status === "fulfilled" ? entexData.value : [],
+    scent: scentData.status === "fulfilled" ? scentData.value : [],
+    pgboost: pgboostData.status === "fulfilled" ? pgboostData.value : [],
   };
 
   const processedTissueData = processTissueSpecificData(
     variant,
     tissueData.ccre,
-    [], 
+    [],
     tissueData.abcScores,
     tissueData.abcPeaks,
     tissueData.entex,
@@ -70,7 +68,7 @@ export default async function TissueSpecificPage({ params }: TissueSpecificPageP
     ...variant,
     ...processedTissueData,
   };
-  
+
   const columns = getVariantColumns(category, "tissue-specific");
   if (!columns) {
     notFound();
@@ -78,7 +76,7 @@ export default async function TissueSpecificPage({ params }: TissueSpecificPageP
 
   const filteredItems = getFilteredItems(columns, enrichedVariant);
   const validItems = filteredItems || [];
-  
+
   return (
     <div className="space-y-6">
       <AnnotationTable items={validItems} />

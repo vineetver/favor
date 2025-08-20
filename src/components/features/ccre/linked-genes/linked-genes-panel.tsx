@@ -52,10 +52,10 @@ export function LinkedGenesPanel({ accession }: LinkedGenesPanelProps) {
 
   const { rnapiiData, intactHicData } = useMemo(() => {
     if (!chiapetData) return { rnapiiData: [], intactHicData: [] };
-    
+
     const rnapii: Chiapet[] = [];
     const intactHic: Chiapet[] = [];
-    
+
     // Single pass filtering for performance
     chiapetData.forEach((item) => {
       if (item.assay_type === "RNAPII-ChIAPET") {
@@ -64,7 +64,7 @@ export function LinkedGenesPanel({ accession }: LinkedGenesPanelProps) {
         intactHic.push(item);
       }
     });
-    
+
     return { rnapiiData: rnapii, intactHicData: intactHic };
   }, [chiapetData]);
 
@@ -92,30 +92,30 @@ export function LinkedGenesPanel({ accession }: LinkedGenesPanelProps) {
   return (
     <div className="space-y-4">
       {showEqtl && (
-        <EqtlCard 
-          accession={accession} 
-          data={eqtlData} 
+        <EqtlCard
+          accession={accession}
+          data={eqtlData}
           isLoading={isEqtlLoading}
         />
       )}
       {showRnapii && (
-        <RNAPIIChiapetCard 
-          accession={accession} 
-          data={rnapiiData} 
+        <RNAPIIChiapetCard
+          accession={accession}
+          data={rnapiiData}
           isLoading={isChiapetLoading}
         />
       )}
       {showIntactHic && (
-        <IntactHicCard 
-          accession={accession} 
-          data={intactHicData} 
+        <IntactHicCard
+          accession={accession}
+          data={intactHicData}
           isLoading={isChiapetLoading}
         />
       )}
       {showCrispr && (
-        <CrisprCard 
-          accession={accession} 
-          data={crisprData} 
+        <CrisprCard
+          accession={accession}
+          data={crisprData}
           isLoading={isCrisprLoading}
         />
       )}

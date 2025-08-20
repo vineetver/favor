@@ -22,7 +22,5 @@ export default async function AncestryAfPage({ params }: AncestryAfPageProps) {
     notFound();
   }
 
-  return (
-    <AncestryDisplay variant={variant} exome={exome} genome={genome} />
-  );
+  return <AncestryDisplay variant={variant} exome={exome} genome={genome} />;
 }

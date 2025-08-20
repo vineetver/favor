@@ -11,7 +11,10 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { BaseChartWrapper, exportChartAsPNG } from "@/components/ui/charts/base-chart";
+import {
+  BaseChartWrapper,
+  exportChartAsPNG,
+} from "@/components/ui/charts/base-chart";
 import {
   generateColors,
   formatAlleleFrequency,
@@ -84,7 +87,10 @@ export function BarChart({
   const chartColors = colors || generateColors(keys.length);
 
   const handleExport = () => {
-    exportChartAsPNG(chartRef, title?.toLowerCase().replace(/\s+/g, "-") || "bar-chart");
+    exportChartAsPNG(
+      chartRef,
+      title?.toLowerCase().replace(/\s+/g, "-") || "bar-chart",
+    );
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -131,9 +137,19 @@ export function BarChart({
 
   const getBarRadius = (): [number, number, number, number] => {
     if (typeof borderRadius === "number") {
-      return orientation === "vertical" 
-        ? [borderRadius, borderRadius, 0, 0] as [number, number, number, number]
-        : [0, borderRadius, borderRadius, 0] as [number, number, number, number];
+      return orientation === "vertical"
+        ? ([borderRadius, borderRadius, 0, 0] as [
+            number,
+            number,
+            number,
+            number,
+          ])
+        : ([0, borderRadius, borderRadius, 0] as [
+            number,
+            number,
+            number,
+            number,
+          ]);
     }
     return borderRadius || [6, 6, 0, 0];
   };
@@ -146,103 +162,107 @@ export function BarChart({
         fill={chartColors[index]}
         radius={getBarRadius()}
         maxBarSize={maxBarSize}
-        onClick={onBarClick ? (data, index) => onBarClick(data, index) : undefined}
+        onClick={
+          onBarClick ? (data, index) => onBarClick(data, index) : undefined
+        }
         className={onBarClick ? "cursor-pointer" : undefined}
       >
-        {!stackedBars && data.map((entry, entryIndex) => (
-          <Cell 
-            key={`cell-${entryIndex}`} 
-            fill={chartColors[index]}
-            className={onBarClick ? "hover:opacity-80" : undefined}
-          />
-        ))}
+        {!stackedBars &&
+          data.map((entry, entryIndex) => (
+            <Cell
+              key={`cell-${entryIndex}`}
+              fill={chartColors[index]}
+              className={onBarClick ? "hover:opacity-80" : undefined}
+            />
+          ))}
       </Bar>
     ));
   };
 
-  const chart = orientation === "vertical" ? (
-    <RechartsBarChart
-      data={data}
-      margin={margin}
-      barCategoryGap={categoryGap}
-      barGap={barGap}
-    >
-      {showGrid && (
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke={CHART_THEME.grid.stroke}
-          strokeWidth={CHART_THEME.grid.strokeWidth}
-        />
-      )}
-      {showXAxis && (
-        <XAxis
-          dataKey={indexBy}
-          tick={{ fontSize: CHART_THEME.axis.fontSize }}
-          stroke={CHART_THEME.axis.stroke}
-          tickFormatter={(value) => {
-            const formatted = formatXAxis ? formatXAxis(value) : value;
-            return trimLabel(formatted, 12); // Limit to 12 characters
-          }}
-          angle={tickAngle}
-          textAnchor={tickAngle < 0 ? "end" : "start"}
-          height={Math.abs(tickAngle) > 45 ? 60 : 40}
-        />
-      )}
-      {showYAxis && (
-        <YAxis
-          tick={{ fontSize: CHART_THEME.axis.fontSize }}
-          stroke={CHART_THEME.axis.stroke}
-          tickFormatter={formatYAxis}
-          domain={["dataMin", "dataMax"]}
-        />
-      )}
-      <Tooltip content={<CustomTooltip />} />
-      {showLegend && <Legend content={<CustomLegend />} />}
-      {renderBars()}
-    </RechartsBarChart>
-  ) : (
-    // Horizontal orientation - swap X and Y
-    <RechartsBarChart
-      layout="horizontal"
-      data={data}
-      margin={margin}
-      barCategoryGap={categoryGap}
-      barGap={barGap}
-    >
-      {showGrid && (
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke={CHART_THEME.grid.stroke}
-          strokeWidth={CHART_THEME.grid.strokeWidth}
-        />
-      )}
-      {showXAxis && (
-        <XAxis
-          type="number"
-          tick={{ fontSize: CHART_THEME.axis.fontSize }}
-          stroke={CHART_THEME.axis.stroke}
-          tickFormatter={formatYAxis}
-          domain={["dataMin", "dataMax"]}
-        />
-      )}
-      {showYAxis && (
-        <YAxis
-          type="category"
-          dataKey={indexBy}
-          tick={{ fontSize: CHART_THEME.axis.fontSize }}
-          stroke={CHART_THEME.axis.stroke}
-          tickFormatter={(value) => {
-            const formatted = formatXAxis ? formatXAxis(value) : value;
-            return trimLabel(formatted, 15); // Slightly longer for Y-axis
-          }}
-          width={120}
-        />
-      )}
-      <Tooltip content={<CustomTooltip />} />
-      {showLegend && <Legend content={<CustomLegend />} />}
-      {renderBars()}
-    </RechartsBarChart>
-  );
+  const chart =
+    orientation === "vertical" ? (
+      <RechartsBarChart
+        data={data}
+        margin={margin}
+        barCategoryGap={categoryGap}
+        barGap={barGap}
+      >
+        {showGrid && (
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={CHART_THEME.grid.stroke}
+            strokeWidth={CHART_THEME.grid.strokeWidth}
+          />
+        )}
+        {showXAxis && (
+          <XAxis
+            dataKey={indexBy}
+            tick={{ fontSize: CHART_THEME.axis.fontSize }}
+            stroke={CHART_THEME.axis.stroke}
+            tickFormatter={(value) => {
+              const formatted = formatXAxis ? formatXAxis(value) : value;
+              return trimLabel(formatted, 12); // Limit to 12 characters
+            }}
+            angle={tickAngle}
+            textAnchor={tickAngle < 0 ? "end" : "start"}
+            height={Math.abs(tickAngle) > 45 ? 60 : 40}
+          />
+        )}
+        {showYAxis && (
+          <YAxis
+            tick={{ fontSize: CHART_THEME.axis.fontSize }}
+            stroke={CHART_THEME.axis.stroke}
+            tickFormatter={formatYAxis}
+            domain={["dataMin", "dataMax"]}
+          />
+        )}
+        <Tooltip content={<CustomTooltip />} />
+        {showLegend && <Legend content={<CustomLegend />} />}
+        {renderBars()}
+      </RechartsBarChart>
+    ) : (
+      // Horizontal orientation - swap X and Y
+      <RechartsBarChart
+        layout="horizontal"
+        data={data}
+        margin={margin}
+        barCategoryGap={categoryGap}
+        barGap={barGap}
+      >
+        {showGrid && (
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={CHART_THEME.grid.stroke}
+            strokeWidth={CHART_THEME.grid.strokeWidth}
+          />
+        )}
+        {showXAxis && (
+          <XAxis
+            type="number"
+            tick={{ fontSize: CHART_THEME.axis.fontSize }}
+            stroke={CHART_THEME.axis.stroke}
+            tickFormatter={formatYAxis}
+            domain={["dataMin", "dataMax"]}
+          />
+        )}
+        {showYAxis && (
+          <YAxis
+            type="category"
+            dataKey={indexBy}
+            tick={{ fontSize: CHART_THEME.axis.fontSize }}
+            stroke={CHART_THEME.axis.stroke}
+            tickFormatter={(value) => {
+              const formatted = formatXAxis ? formatXAxis(value) : value;
+              return trimLabel(formatted, 15); // Slightly longer for Y-axis
+            }}
+            width={120}
+          />
+        )}
+        <Tooltip content={<CustomTooltip />} />
+        {showLegend && <Legend content={<CustomLegend />} />}
+        {renderBars()}
+      </RechartsBarChart>
+    );
 
   return (
     <div ref={chartRef}>

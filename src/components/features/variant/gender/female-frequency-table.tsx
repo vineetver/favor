@@ -11,7 +11,12 @@ interface FemaleFrequencyTableProps {
 
 export function FemaleFrequencyTable({ data }: FemaleFrequencyTableProps) {
   const exportTSV = (filteredData: FemaleFrequency[]) => {
-    const headers = ["Population", "gnomAD v3.1 (Female)", "gnomAD v4.1 Exome (Female)", "gnomAD v4.1 Genome (Female)"];
+    const headers = [
+      "Population",
+      "gnomAD v3.1 (Female)",
+      "gnomAD v4.1 Exome (Female)",
+      "gnomAD v4.1 Genome (Female)",
+    ];
     const rows = filteredData.map((row) => [
       row.name,
       formatFrequency(row.female31),
@@ -19,7 +24,9 @@ export function FemaleFrequencyTable({ data }: FemaleFrequencyTableProps) {
       formatFrequency(row.female41_genome),
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -33,7 +40,7 @@ export function FemaleFrequencyTable({ data }: FemaleFrequencyTableProps) {
     {
       columnId: "name",
       title: "Population",
-      options: Array.from(new Set(data.map(row => row.name))).map(name => ({
+      options: Array.from(new Set(data.map((row) => row.name))).map((name) => ({
         label: name,
         value: name,
       })),

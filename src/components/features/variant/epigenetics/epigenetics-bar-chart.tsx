@@ -16,7 +16,11 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NoDataState } from "@/components/ui/error-states";
-import { CHART_THEME, CHART_MARGINS, trimLabel } from "@/components/ui/charts/utils";
+import {
+  CHART_THEME,
+  CHART_MARGINS,
+  trimLabel,
+} from "@/components/ui/charts/utils";
 import { cn } from "@/lib/utils/general";
 import type { FilteredItem } from "@/lib/annotations/types";
 
@@ -53,9 +57,9 @@ function getActivityColor(activity: any): string {
   }
 
   const className = activity.props.className || "";
-  
+
   if (className.includes("bg-green")) return "#4ade80";
-  if (className.includes("bg-amber")) return "#fbbf24";  
+  if (className.includes("bg-amber")) return "#fbbf24";
   if (className.includes("bg-indigo")) return "#818cf8";
   if (className.includes("bg-red")) return "#f87171";
   if (className.includes("bg-purple")) return "#c084fc";
@@ -63,7 +67,10 @@ function getActivityColor(activity: any): string {
   return "#9ca3af";
 }
 
-const exportChartAsPNG = (chartRef: React.RefObject<HTMLDivElement>, filename: string) => {
+const exportChartAsPNG = (
+  chartRef: React.RefObject<HTMLDivElement>,
+  filename: string,
+) => {
   if (!chartRef.current) return;
 
   const svgElement = chartRef.current.querySelector("svg");
@@ -80,7 +87,9 @@ const exportChartAsPNG = (chartRef: React.RefObject<HTMLDivElement>, filename: s
     ctx.scale(2, 2);
 
     const svgData = new XMLSerializer().serializeToString(svgElement);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
     const url = URL.createObjectURL(svgBlob);
 
     const img = new Image();
@@ -104,7 +113,7 @@ const exportChartAsPNG = (chartRef: React.RefObject<HTMLDivElement>, filename: s
 
 export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
-  
+
   const processedData = useMemo(() => {
     if (!items || items.length === 0) {
       return { chartData: null, legendData: [] };
@@ -115,27 +124,30 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
         name: item.header,
         value: extractNumericValue(item.value),
         fill: getActivityColor(item.activity),
-        activity: typeof item.activity === "object" && item.activity?.props?.children 
-          ? String(item.activity.props.children) 
-          : typeof item.activity === "string" 
-            ? item.activity 
-            : "Unknown"
+        activity:
+          typeof item.activity === "object" && item.activity?.props?.children
+            ? String(item.activity.props.children)
+            : typeof item.activity === "string"
+              ? item.activity
+              : "Unknown",
       }))
       .sort((a, b) => b.value - a.value);
 
     // Create legend data from unique activities
     const activityMap = new Map<string, string>();
-    chartData.forEach(item => {
+    chartData.forEach((item) => {
       if (!activityMap.has(item.activity)) {
         activityMap.set(item.activity, item.fill);
       }
     });
 
-    const legendData = Array.from(activityMap.entries()).map(([activity, color]) => ({
-      value: activity,
-      type: 'rect' as const,
-      color: color,
-    }));
+    const legendData = Array.from(activityMap.entries()).map(
+      ([activity, color]) => ({
+        value: activity,
+        type: "rect" as const,
+        color: color,
+      }),
+    );
 
     return { chartData, legendData };
   }, [items]);
@@ -158,8 +170,10 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-xl max-w-xs">
         <div className="space-y-2">
-          <p className="font-semibold text-sm text-gray-900 leading-tight">{label}</p>
-          
+          <p className="font-semibold text-sm text-gray-900 leading-tight">
+            {label}
+          </p>
+
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
@@ -169,7 +183,7 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
               {data?.activity}
             </span>
           </div>
-          
+
           <div className="pt-1 border-t border-gray-100">
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-600">Chromatin Score:</span>
@@ -232,15 +246,15 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
               <YAxis
                 tick={{ fontSize: CHART_THEME.axis.fontSize }}
                 stroke={CHART_THEME.axis.stroke}
-                label={{ 
-                  value: 'PHRED Epigenetics Score', 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  style: { 
-                    textAnchor: 'middle', 
-                    fontSize: CHART_THEME.axis.fontSize, 
-                    fill: CHART_THEME.axis.stroke 
-                  }
+                label={{
+                  value: "PHRED Epigenetics Score",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: {
+                    textAnchor: "middle",
+                    fontSize: CHART_THEME.axis.fontSize,
+                    fill: CHART_THEME.axis.stroke,
+                  },
                 }}
               />
               <Tooltip content={<CustomTooltip />} />

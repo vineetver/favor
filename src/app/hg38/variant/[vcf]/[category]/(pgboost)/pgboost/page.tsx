@@ -21,17 +21,19 @@ export default async function PGBoostPage({ params }: PGBoostPageProps) {
   const pgboostData = variant.rsid ? await fetchPGBoost(variant.rsid) : null;
 
   const hasValidData = (data: any[]): boolean => {
-    return data.some(row => 
-      row && 
-      row.gene && 
-      row.pg_boost != null && 
-      row.pg_boost !== -1 && 
-      row.pg_boost !== 1e-100 &&
-      row.pg_boost_percentile != null
+    return data.some(
+      (row) =>
+        row &&
+        row.gene &&
+        row.pg_boost != null &&
+        row.pg_boost !== -1 &&
+        row.pg_boost !== 1e-100 &&
+        row.pg_boost_percentile != null,
     );
   };
 
-  const filteredData = pgboostData && hasValidData(pgboostData) ? pgboostData : [];
+  const filteredData =
+    pgboostData && hasValidData(pgboostData) ? pgboostData : [];
 
   return (
     <PGBoostTable

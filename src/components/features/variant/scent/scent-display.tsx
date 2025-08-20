@@ -3,7 +3,10 @@
 import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ScentTable } from "@/components/features/variant/scent/scent-table";
-import { fetchScentTissueByVCF, fetchScentTissueByRegion } from "@/lib/variant/scent/api";
+import {
+  fetchScentTissueByVCF,
+  fetchScentTissueByRegion,
+} from "@/lib/variant/scent/api";
 import type { ScentTissue } from "@/lib/variant/scent/types";
 import { DistanceSlider } from "@/components/features/ccre/filters/distance-slider";
 
@@ -38,7 +41,6 @@ export function ScentDisplay({ vcf, region, initialData }: ScentDisplayProps) {
     },
   });
 
-
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="lg:w-80 lg:flex-shrink-0">
@@ -48,7 +50,7 @@ export function ScentDisplay({ vcf, region, initialData }: ScentDisplayProps) {
         />
       </div>
       <div className="flex-1 min-w-0">
-        <ScentTable 
+        <ScentTable
           data={scentData || []}
           title="SCENT Tissue-Specific Regulatory Data"
           description="Single-cell gene regulatory network predictions showing tissue-specific variant-gene associations"

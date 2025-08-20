@@ -4,7 +4,11 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { TrendingUp } from "lucide-react";
-import type { Eqtl, Crispr, Chiapet } from "@/components/features/ccre/linked-genes/types";
+import type {
+  Eqtl,
+  Crispr,
+  Chiapet,
+} from "@/components/features/ccre/linked-genes/types";
 
 export const eqtlColumns: ColumnDef<Eqtl>[] = [
   {
@@ -14,7 +18,9 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
-        <span className="font-semibold text-sm text-primary">{row.original.gene_name}</span>
+        <span className="font-semibold text-sm text-primary">
+          {row.original.gene_name}
+        </span>
         <Badge variant="secondary" className="text-xs block w-fit">
           {row.original.gene_type}
         </Badge>
@@ -36,14 +42,16 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
       const slope = row.original.slope;
       const isPositive = slope > 0;
       const magnitude = Math.abs(slope);
-      
+
       return (
         <div className="flex items-center gap-2">
-          <div className={`text-sm font-mono font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {isPositive ? '↗' : '↘'} {magnitude.toFixed(3)}
+          <div
+            className={`text-sm font-mono font-bold ${isPositive ? "text-green-600" : "text-red-600"}`}
+          >
+            {isPositive ? "↗" : "↘"} {magnitude.toFixed(3)}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isPositive ? 'Activating' : 'Repressive'}
+            {isPositive ? "Activating" : "Repressive"}
           </div>
         </div>
       );
@@ -64,17 +72,27 @@ export const eqtlColumns: ColumnDef<Eqtl>[] = [
       const pValue = row.original.p_value;
       const isHighlySignificant = pValue < 1e-8;
       const isSignificant = pValue < 1e-5;
-      
+
       return (
         <div className="space-y-1">
           <Badge
-            variant={isHighlySignificant ? "default" : isSignificant ? "secondary" : "outline"}
+            variant={
+              isHighlySignificant
+                ? "default"
+                : isSignificant
+                  ? "secondary"
+                  : "outline"
+            }
             className="text-xs font-mono"
           >
             {pValue.toExponential(1)}
           </Badge>
           <div className="text-xs text-muted-foreground">
-            {isHighlySignificant ? 'Highly significant' : isSignificant ? 'Significant' : 'Nominal'}
+            {isHighlySignificant
+              ? "Highly significant"
+              : isSignificant
+                ? "Significant"
+                : "Nominal"}
           </div>
         </div>
       );
@@ -101,7 +119,9 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
-        <span className="font-semibold text-sm text-primary">{row.original.gene_name}</span>
+        <span className="font-semibold text-sm text-primary">
+          {row.original.gene_name}
+        </span>
         <Badge variant="secondary" className="text-xs block w-fit">
           {row.original.gene_type}
         </Badge>
@@ -115,22 +135,28 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
     accessorKey: "effect_size",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
-      const a = Math.abs(parseFloat(rowA.getValue("effect_size") as string) || 0);
-      const b = Math.abs(parseFloat(rowB.getValue("effect_size") as string) || 0);
+      const a = Math.abs(
+        parseFloat(rowA.getValue("effect_size") as string) || 0,
+      );
+      const b = Math.abs(
+        parseFloat(rowB.getValue("effect_size") as string) || 0,
+      );
       return a - b;
     },
     cell: ({ row }) => {
       const effectSize = parseFloat(row.original.effect_size) || 0;
       const isPositive = effectSize > 0;
       const magnitude = Math.abs(effectSize);
-      
+
       return (
         <div className="flex items-center gap-2">
-          <div className={`text-sm font-mono font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {isPositive ? '📈' : '📉'} {magnitude.toFixed(2)}
+          <div
+            className={`text-sm font-mono font-bold ${isPositive ? "text-green-600" : "text-red-600"}`}
+          >
+            {isPositive ? "📈" : "📉"} {magnitude.toFixed(2)}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isPositive ? 'Activation' : 'Repression'}
+            {isPositive ? "Activation" : "Repression"}
           </div>
         </div>
       );
@@ -151,17 +177,27 @@ export const crisprColumns: ColumnDef<Crispr>[] = [
       const pValue = row.original.p_value;
       const isHighlySignificant = pValue < 1e-6;
       const isSignificant = pValue < 1e-4;
-      
+
       return (
         <div className="space-y-1">
           <Badge
-            variant={isHighlySignificant ? "default" : isSignificant ? "secondary" : "outline"}
+            variant={
+              isHighlySignificant
+                ? "default"
+                : isSignificant
+                  ? "secondary"
+                  : "outline"
+            }
             className="text-xs font-mono"
           >
             {pValue.toExponential(1)}
           </Badge>
           <div className="text-xs text-muted-foreground">
-            {isHighlySignificant ? 'High confidence' : isSignificant ? 'Significant' : 'Low confidence'}
+            {isHighlySignificant
+              ? "High confidence"
+              : isSignificant
+                ? "Significant"
+                : "Low confidence"}
           </div>
         </div>
       );
@@ -188,7 +224,9 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     accessorKey: "gene_name",
     cell: ({ row }) => (
       <div className="space-y-1">
-        <span className="font-semibold text-sm text-primary">{row.original.gene_name}</span>
+        <span className="font-semibold text-sm text-primary">
+          {row.original.gene_name}
+        </span>
         <Badge variant="secondary" className="text-xs block w-fit">
           {row.original.gene_type}
         </Badge>
@@ -208,23 +246,32 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
     },
     cell: ({ row }) => {
       const score = parseFloat(row.original.score) || 0;
-      const strength = score > 50 ? 'very-strong' : score > 20 ? 'strong' : score > 5 ? 'moderate' : 'weak';
+      const strength =
+        score > 50
+          ? "very-strong"
+          : score > 20
+            ? "strong"
+            : score > 5
+              ? "moderate"
+              : "weak";
       const colorMap = {
-        'weak': 'text-yellow-600 bg-yellow-50',
-        'moderate': 'text-orange-600 bg-orange-50',
-        'strong': 'text-red-600 bg-red-50',
-        'very-strong': 'text-red-700 bg-red-100'
+        weak: "text-yellow-600 bg-yellow-50",
+        moderate: "text-orange-600 bg-orange-50",
+        strong: "text-red-600 bg-red-50",
+        "very-strong": "text-red-700 bg-red-100",
       };
       const strengthLabel = {
-        'weak': 'Weak',
-        'moderate': 'Moderate', 
-        'strong': 'Strong',
-        'very-strong': 'Very Strong'
+        weak: "Weak",
+        moderate: "Moderate",
+        strong: "Strong",
+        "very-strong": "Very Strong",
       };
-      
+
       return (
         <div className="space-y-1">
-          <div className={`px-2 py-1 rounded text-sm font-bold flex items-center gap-1 ${colorMap[strength]}`}>
+          <div
+            className={`px-2 py-1 rounded text-sm font-bold flex items-center gap-1 ${colorMap[strength]}`}
+          >
             <TrendingUp className="h-4 w-4 opacity-75" />
             {score.toFixed(1)}
           </div>
@@ -250,17 +297,27 @@ export const chiapetColumns: ColumnDef<Chiapet>[] = [
       const pValue = parseFloat(row.original.p_value) || 1;
       const isSignificant = pValue < 0.01;
       const isHighlySignificant = pValue < 0.001;
-      
+
       return (
         <div className="space-y-1">
           <Badge
-            variant={isHighlySignificant ? "default" : isSignificant ? "secondary" : "outline"}
+            variant={
+              isHighlySignificant
+                ? "default"
+                : isSignificant
+                  ? "secondary"
+                  : "outline"
+            }
             className="text-xs font-mono"
           >
             {pValue.toExponential(1)}
           </Badge>
           <div className="text-xs text-muted-foreground">
-            {isHighlySignificant ? 'Highly significant' : isSignificant ? 'Significant' : 'Nominal'}
+            {isHighlySignificant
+              ? "Highly significant"
+              : isSignificant
+                ? "Significant"
+                : "Nominal"}
           </div>
         </div>
       );

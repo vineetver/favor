@@ -28,8 +28,8 @@ export function MaleDataDisplay({
 
   const validFrequencies = maleFrequencies.filter(
     (freq) =>
-      freq.male31 !== undefined || 
-      freq.male41_exome !== undefined || 
+      freq.male31 !== undefined ||
+      freq.male41_exome !== undefined ||
       freq.male41_genome !== undefined,
   );
 
@@ -44,7 +44,7 @@ export function MaleDataDisplay({
       .filter(
         (item) =>
           (item[MALE_CHART_CONFIG.keys[0]] as number) > 0 ||
-          (item[MALE_CHART_CONFIG.keys[1]] as number) > 0 || 
+          (item[MALE_CHART_CONFIG.keys[1]] as number) > 0 ||
           (item[MALE_CHART_CONFIG.keys[2]] as number) > 0,
       );
   }, [validFrequencies]);
@@ -62,31 +62,32 @@ export function MaleDataDisplay({
     {
       id: "table",
       label: "Frequency Table",
-      shortLabel: "Table", 
+      shortLabel: "Table",
       count: validFrequencies.length,
-      content: <MaleFrequencyTable data={validFrequencies} />
+      content: <MaleFrequencyTable data={validFrequencies} />,
     },
     {
       id: "visualization",
       label: "Visualization",
       shortLabel: "Chart",
-      content: chartData.length > 0 ? (
-        <BarChart
-          data={chartData}
-          keys={MALE_CHART_CONFIG.keys}
-          indexBy="population"
-          title={MALE_CHART_CONFIG.title}
-          subtitle={MALE_CHART_CONFIG.subtitle}
-          yLabel="Allele Frequency"
-          xLabel=""
-          height={550}
-          margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
-          colors={MALE_CHART_CONFIG.colors}
-          showLegend={true}
-          borderRadius={8}
-        />
-      ) : null
-    }
+      content:
+        chartData.length > 0 ? (
+          <BarChart
+            data={chartData}
+            keys={MALE_CHART_CONFIG.keys}
+            indexBy="population"
+            title={MALE_CHART_CONFIG.title}
+            subtitle={MALE_CHART_CONFIG.subtitle}
+            yLabel="Allele Frequency"
+            xLabel=""
+            height={550}
+            margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
+            colors={MALE_CHART_CONFIG.colors}
+            showLegend={true}
+            borderRadius={8}
+          />
+        ) : null,
+    },
   ];
 
   return (

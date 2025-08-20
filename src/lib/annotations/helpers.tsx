@@ -202,9 +202,11 @@ export function getFilteredItems<T extends Record<string, unknown>>(
       value: processedValue,
       percentile:
         numericValue > 0
-          ? (PERCENTILE_CALCULATION.BASE ** (numericValue * PERCENTILE_CALCULATION.MULTIPLIER) * PERCENTILE_CALCULATION.PERCENTAGE).toFixed(
-              DECIMAL_PLACES.PERCENTILE,
-            )
+          ? (
+              PERCENTILE_CALCULATION.BASE **
+                (numericValue * PERCENTILE_CALCULATION.MULTIPLIER) *
+              PERCENTILE_CALCULATION.PERCENTAGE
+            ).toFixed(DECIMAL_PLACES.PERCENTILE)
           : "0.0",
       proportion: (numericValue / totalValue).toFixed(
         DECIMAL_PLACES.PROPORTION,

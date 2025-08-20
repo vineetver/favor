@@ -56,9 +56,9 @@ export default async function RsidGenomeBrowserPage({
 
   return (
     <GenomeBrowserErrorBoundary>
-      <DynamicGenomeBrowser 
-        vcfParam={selectedVariant.variant_vcf} 
-        initialTracks={[]} 
+      <DynamicGenomeBrowser
+        vcfParam={selectedVariant.variant_vcf}
+        initialTracks={[]}
       />
     </GenomeBrowserErrorBoundary>
   );

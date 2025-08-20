@@ -36,7 +36,5 @@ export default async function SpliceaiPage({ params }: SpliceaiPageProps) {
 
   const validItems: FilteredItem[] = filteredItems || [];
 
-  return (
-      <AnnotationTable items={validItems} />
-  );
+  return <AnnotationTable items={validItems} />;
 }

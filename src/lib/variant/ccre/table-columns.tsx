@@ -9,9 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ExternalLink } from "@/components/ui/external-link";
-import {
-  ccreAnnotationMap,
-} from "@/lib/variant/ccre/annotations";
+import { ccreAnnotationMap } from "@/lib/variant/ccre/annotations";
 import { ccreAnnotationCCode } from "@/lib/utils/colors";
 import type { CCRE, CCRETissue } from "@/lib/variant/ccre/types";
 import { cn } from "@/lib/utils/general";
@@ -20,23 +18,21 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 export const ccreColumns: ColumnDef<CCRE>[] = [
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Regulatory Element"
         sortable={false}
       />
     ),
     accessorKey: "accession",
     cell: ({ row }) => (
-      <div className="font-mono text-sm">
-        {row.original.accession}
-      </div>
+      <div className="font-mono text-sm">{row.original.accession}</div>
     ),
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Functional Class"
         sortable={false}
       />
@@ -57,12 +53,15 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <div className="space-y-1">
-                <div className="font-semibold">{ccreAnnotationMap[annotation]}</div>
+                <div className="font-semibold">
+                  {ccreAnnotationMap[annotation]}
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {annotation === "PLS" && "Active promoter-like signatures"}
                   {annotation === "pELS" && "Proximal enhancer-like signatures"}
                   {annotation === "dELS" && "Distal enhancer-like signatures"}
-                  {annotation === "DNase-H3K4me3" && "Promoter chromatin accessibility"}
+                  {annotation === "DNase-H3K4me3" &&
+                    "Promoter chromatin accessibility"}
                   {annotation === "CTCF-only" && "Insulator/boundary elements"}
                 </div>
               </div>
@@ -74,8 +73,8 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Genomic Location"
         sortable={false}
       />
@@ -85,9 +84,12 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
       const chrom = row.original.chromosome;
       const start = row.original.start_position.toLocaleString();
       const end = row.original.end_position.toLocaleString();
-      const size = ((row.original.end_position - row.original.start_position) / 1000).toFixed(1);
+      const size = (
+        (row.original.end_position - row.original.start_position) /
+        1000
+      ).toFixed(1);
       const region = `${chrom}-${row.original.start_position}-${row.original.end_position}`;
-      
+
       return (
         <div className="space-y-1">
           <ExternalLink
@@ -96,18 +98,16 @@ export const ccreColumns: ColumnDef<CCRE>[] = [
           >
             {chrom}:{start}-{end}
           </ExternalLink>
-          <div className="text-xs text-muted-foreground">
-            {size} kb region
-          </div>
+          <div className="text-xs text-muted-foreground">{size} kb region</div>
         </div>
       );
     },
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Linked Genes" 
+      <DataTableColumnHeader
+        column={column}
+        title="Linked Genes"
         tooltip="Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data"
         sortable={false}
       />
@@ -169,23 +169,31 @@ const getSignalStrength = (value: number | null | undefined) => {
   return "very-strong";
 };
 
-const SignalIndicator = ({ value, label }: { value: number | null | undefined, label: string }) => {
+const SignalIndicator = ({
+  value,
+  label,
+}: {
+  value: number | null | undefined;
+  label: string;
+}) => {
   const strength = getSignalStrength(value);
   const colorMap = {
-    "none": "bg-gray-100 text-gray-400",
-    "weak": "bg-yellow-100 text-yellow-700",
-    "moderate": "bg-orange-100 text-orange-700", 
-    "strong": "bg-red-100 text-red-700",
-    "very-strong": "bg-red-200 text-red-800"
+    none: "bg-gray-100 text-gray-400",
+    weak: "bg-yellow-100 text-yellow-700",
+    moderate: "bg-orange-100 text-orange-700",
+    strong: "bg-red-100 text-red-700",
+    "very-strong": "bg-red-200 text-red-800",
   };
 
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className={cn(
-        "px-2 py-0.5 rounded-full text-xs font-medium min-w-[3rem] text-center",
-        colorMap[strength]
-      )}>
+      <div
+        className={cn(
+          "px-2 py-0.5 rounded-full text-xs font-medium min-w-[3rem] text-center",
+          colorMap[strength],
+        )}
+      >
         {formatSignalValue(value)}
       </div>
     </div>
@@ -195,23 +203,21 @@ const SignalIndicator = ({ value, label }: { value: number | null | undefined, l
 export const tissueColumns: ColumnDef<CCRETissue>[] = [
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Regulatory Element"
         sortable={false}
       />
     ),
     accessorKey: "accession",
     cell: ({ row }) => (
-      <div className="font-mono text-sm">
-        {row.original.accession}
-      </div>
+      <div className="font-mono text-sm">{row.original.accession}</div>
     ),
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Genomic Location"
         sortable={false}
       />
@@ -221,9 +227,12 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
       const chrom = row.original.chromosome;
       const start = row.original.start_position.toLocaleString();
       const end = row.original.end_position.toLocaleString();
-      const size = ((row.original.end_position - row.original.start_position) / 1000).toFixed(1);
+      const size = (
+        (row.original.end_position - row.original.start_position) /
+        1000
+      ).toFixed(1);
       const region = `${chrom}-${row.original.start_position}-${row.original.end_position}`;
-      
+
       return (
         <div className="space-y-1">
           <ExternalLink
@@ -232,17 +241,15 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
           >
             {chrom}:{start}-{end}
           </ExternalLink>
-          <div className="text-xs text-muted-foreground">
-            {size} kb
-          </div>
+          <div className="text-xs text-muted-foreground">{size} kb</div>
         </div>
       );
     },
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Element Type"
         sortable={false}
       />
@@ -251,12 +258,12 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
     cell: ({ row }) => {
       const type = row.original.datatype;
       const typeMap = {
-        "Promoter": "🎯 Promoter",
-        "Enhancer": "⚡ Enhancer", 
-        "Insulator": "🛡️ Insulator",
-        "Silencer": "🔽 Silencer"
+        Promoter: "🎯 Promoter",
+        Enhancer: "⚡ Enhancer",
+        Insulator: "🛡️ Insulator",
+        Silencer: "🔽 Silencer",
       };
-      
+
       return (
         <div className="text-sm font-medium">
           {typeMap[type as keyof typeof typeMap] || type}
@@ -266,8 +273,8 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Chromatin Accessibility"
         sortable={false}
       />
@@ -282,8 +289,8 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Histone Modifications"
         sortable={false}
       />
@@ -298,8 +305,8 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="CTCF Binding"
         sortable={false}
       />
@@ -309,13 +316,13 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
       const ctcf = row.original.ctcf;
       const strength = getSignalStrength(ctcf);
       const colorMap = {
-        "none": "text-gray-400",
-        "weak": "text-blue-500",
-        "moderate": "text-blue-600", 
-        "strong": "text-blue-700",
-        "very-strong": "text-blue-800"
+        none: "text-gray-400",
+        weak: "text-blue-500",
+        moderate: "text-blue-600",
+        strong: "text-blue-700",
+        "very-strong": "text-blue-800",
       };
-      
+
       return (
         <div className={cn("font-mono font-semibold", colorMap[strength])}>
           {formatSignalValue(ctcf)}
@@ -325,9 +332,9 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
   },
   {
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Linked Genes" 
+      <DataTableColumnHeader
+        column={column}
+        title="Linked Genes"
         tooltip="Click to explore functional links: eQTL, ChIA-PET, Hi-C, CRISPR data"
         sortable={false}
       />

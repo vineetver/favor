@@ -28,8 +28,8 @@ export function FemaleDataDisplay({
 
   const validFrequencies = femaleFrequencies.filter(
     (freq) =>
-      freq.female31 !== undefined || 
-      freq.female41_exome !== undefined || 
+      freq.female31 !== undefined ||
+      freq.female41_exome !== undefined ||
       freq.female41_genome !== undefined,
   );
 
@@ -44,7 +44,7 @@ export function FemaleDataDisplay({
       .filter(
         (item) =>
           (item[FEMALE_CHART_CONFIG.keys[0]] as number) > 0 ||
-          (item[FEMALE_CHART_CONFIG.keys[1]] as number) > 0 || 
+          (item[FEMALE_CHART_CONFIG.keys[1]] as number) > 0 ||
           (item[FEMALE_CHART_CONFIG.keys[2]] as number) > 0,
       );
   }, [validFrequencies]);
@@ -64,29 +64,30 @@ export function FemaleDataDisplay({
       label: "Frequency Table",
       shortLabel: "Table",
       count: validFrequencies.length,
-      content: <FemaleFrequencyTable data={validFrequencies} />
+      content: <FemaleFrequencyTable data={validFrequencies} />,
     },
     {
       id: "visualization",
-      label: "Visualization", 
+      label: "Visualization",
       shortLabel: "Chart",
-      content: chartData.length > 0 ? (
-        <BarChart
-          data={chartData}
-          keys={FEMALE_CHART_CONFIG.keys}
-          indexBy="population"
-          title={FEMALE_CHART_CONFIG.title}
-          subtitle={FEMALE_CHART_CONFIG.subtitle}
-          yLabel="Allele Frequency"
-          xLabel=""
-          height={550}
-          margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
-          colors={FEMALE_CHART_CONFIG.colors}
-          showLegend={true}
-          borderRadius={8}
-        />
-      ) : null
-    }
+      content:
+        chartData.length > 0 ? (
+          <BarChart
+            data={chartData}
+            keys={FEMALE_CHART_CONFIG.keys}
+            indexBy="population"
+            title={FEMALE_CHART_CONFIG.title}
+            subtitle={FEMALE_CHART_CONFIG.subtitle}
+            yLabel="Allele Frequency"
+            xLabel=""
+            height={550}
+            margin={{ top: 5, right: 10, bottom: 30, left: 10 }}
+            colors={FEMALE_CHART_CONFIG.colors}
+            showLegend={true}
+            borderRadius={8}
+          />
+        ) : null,
+    },
   ];
 
   return (

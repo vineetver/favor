@@ -174,7 +174,11 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Identify whether variants cause protein coding changes using Gencode genes definition systems, it will label the gene name of the variants has impact, if it is intergenic region, the nearby gene name will be labeled in the annotation. (Frankish et al., 2018; Harrow et al., 2012)
+              Identify whether variants cause protein coding changes using
+              Gencode genes definition systems, it will label the gene name of
+              the variants has impact, if it is intergenic region, the nearby
+              gene name will be labeled in the annotation. (Frankish et al.,
+              2018; Harrow et al., 2012)
             </p>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
@@ -234,7 +238,10 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Identify variants impact using Gencode exonic definition, and only label exonic categorical information like, synonymous, non-synonymous, frame-shifts indels, etc. (Frankish et al., 2018; Harrow et al., 2012)
+              Identify variants impact using Gencode exonic definition, and only
+              label exonic categorical information like, synonymous,
+              non-synonymous, frame-shifts indels, etc. (Frankish et al., 2018;
+              Harrow et al., 2012)
             </p>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
@@ -255,27 +262,33 @@ export const variantDetailedColumns: VariantColumnsType[] = [
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-orange-300 rounded"></span>
-                <strong>Frameshift insertion:</strong> insertion causing frame shift
+                <strong>Frameshift insertion:</strong> insertion causing frame
+                shift
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-sky-300 rounded"></span>
-                <strong>Frameshift deletion:</strong> deletion causing frame shift
+                <strong>Frameshift deletion:</strong> deletion causing frame
+                shift
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-yellow-300 rounded"></span>
-                <strong>Frameshift substitution:</strong> substitution causing frame shift
+                <strong>Frameshift substitution:</strong> substitution causing
+                frame shift
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-teal-300 rounded"></span>
-                <strong>Nonframeshift insertion:</strong> insertion preserving frame
+                <strong>Nonframeshift insertion:</strong> insertion preserving
+                frame
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-cyan-300 rounded"></span>
-                <strong>Nonframeshift deletion:</strong> deletion preserving frame
+                <strong>Nonframeshift deletion:</strong> deletion preserving
+                frame
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-lime-300 rounded"></span>
-                <strong>Nonframeshift substitution:</strong> substitution preserving frame
+                <strong>Nonframeshift substitution:</strong> substitution
+                preserving frame
               </div>
             </div>
           </div>
@@ -288,16 +301,20 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Identify whether the variant is a disruptive missense variant, defined as "disruptive" by the ensemble MetaSVM annotation. (Dong et al., 2014)
+              Identify whether the variant is a disruptive missense variant,
+              defined as "disruptive" by the ensemble MetaSVM annotation. (Dong
+              et al., 2014)
             </p>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded"></span>
-                <strong>D (Deleterious):</strong> likely to affect protein function
+                <strong>D (Deleterious):</strong> likely to affect protein
+                function
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-green-300 rounded"></span>
-                <strong>T (Tolerated):</strong> unlikely to affect protein function
+                <strong>T (Tolerated):</strong> unlikely to affect protein
+                function
               </div>
             </div>
           </div>
@@ -324,7 +341,8 @@ export const variantDetailedColumns: VariantColumnsType[] = [
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded"></span>
-                <strong>No:</strong> variant does not overlap with CAGE promoter site
+                <strong>No:</strong> variant does not overlap with CAGE promoter
+                site
               </div>
             </div>
           </div>
@@ -352,7 +370,8 @@ export const variantDetailedColumns: VariantColumnsType[] = [
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded"></span>
-                <strong>No:</strong> variant does not overlap with CAGE enhancer site
+                <strong>No:</strong> variant does not overlap with CAGE enhancer
+                site
               </div>
             </div>
           </div>
@@ -718,11 +737,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>AFR 1000G AF:</strong> 1000 Genomes African population allele frequency.
+              <strong>AFR 1000G AF:</strong> 1000 Genomes African population
+              allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population context:</strong> Represents allele frequency in African ancestry samples</li>
-              <li><strong>Clinical relevance:</strong> Important for ancestry-specific variant interpretation</li>
+              <li>
+                <strong>Population context:</strong> Represents allele frequency
+                in African ancestry samples
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Important for
+                ancestry-specific variant interpretation
+              </li>
             </ul>
           </div>
         ),
@@ -741,11 +767,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>AMR 1000G AF:</strong> 1000 Genomes Admixed American population allele frequency.
+              <strong>AMR 1000G AF:</strong> 1000 Genomes Admixed American
+              population allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population context:</strong> Represents allele frequency in Admixed American ancestry samples</li>
-              <li><strong>Clinical relevance:</strong> Important for ancestry-specific variant interpretation</li>
+              <li>
+                <strong>Population context:</strong> Represents allele frequency
+                in Admixed American ancestry samples
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Important for
+                ancestry-specific variant interpretation
+              </li>
             </ul>
           </div>
         ),
@@ -764,11 +797,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EAS 1000G AF:</strong> 1000 Genomes East Asian population allele frequency.
+              <strong>EAS 1000G AF:</strong> 1000 Genomes East Asian population
+              allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population context:</strong> Represents allele frequency in East Asian ancestry samples</li>
-              <li><strong>Clinical relevance:</strong> Important for ancestry-specific variant interpretation</li>
+              <li>
+                <strong>Population context:</strong> Represents allele frequency
+                in East Asian ancestry samples
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Important for
+                ancestry-specific variant interpretation
+              </li>
             </ul>
           </div>
         ),
@@ -787,11 +827,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EUR 1000G AF:</strong> 1000 Genomes European population allele frequency.
+              <strong>EUR 1000G AF:</strong> 1000 Genomes European population
+              allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population context:</strong> Represents allele frequency in European ancestry samples</li>
-              <li><strong>Clinical relevance:</strong> Important for ancestry-specific variant interpretation</li>
+              <li>
+                <strong>Population context:</strong> Represents allele frequency
+                in European ancestry samples
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Important for
+                ancestry-specific variant interpretation
+              </li>
             </ul>
           </div>
         ),
@@ -817,11 +864,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>SAS 1000G AF:</strong> 1000 Genomes South Asian population allele frequency.
+              <strong>SAS 1000G AF:</strong> 1000 Genomes South Asian population
+              allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population context:</strong> Represents allele frequency in South Asian ancestry samples</li>
-              <li><strong>Clinical relevance:</strong> Important for ancestry-specific variant interpretation</li>
+              <li>
+                <strong>Population context:</strong> Represents allele frequency
+                in South Asian ancestry samples
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Important for
+                ancestry-specific variant interpretation
+              </li>
             </ul>
           </div>
         ),
@@ -1019,12 +1073,24 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Protein Function:</strong> Integrative score combining multiple protein function predictions (SIFT, PolyPhen, Grantham, PolyPhen2, MutationTaster, MutationAssessor) into a single PHRED-scaled score. Range: [2.974, 86.238]. (Li et al., 2020)
+              <strong>aPC-Protein Function:</strong> Integrative score combining
+              multiple protein function predictions (SIFT, PolyPhen, Grantham,
+              PolyPhen2, MutationTaster, MutationAssessor) into a single
+              PHRED-scaled score. Range: [2.974, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More likely to affect protein function</li>
-              <li><strong>Lower scores:</strong> Less likely to affect protein function</li>
-              <li><strong>PHRED scale:</strong> Higher values indicate stronger evidence</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More likely to affect
+                protein function
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less likely to affect protein
+                function
+              </li>
+              <li>
+                <strong>PHRED scale:</strong> Higher values indicate stronger
+                evidence
+              </li>
             </ul>
           </div>
         ),
@@ -1042,11 +1108,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Conservation annotation PC: the first PC of the standardized scores of "GerpN, GerpS, priPhCons, mamPhCons, verPhCons, priPhyloP, mamPhyloP, verPhyloP" in PHRED scale. Range: [0, 75.824]. (Li et al., 2020)
+              Conservation annotation PC: the first PC of the standardized
+              scores of "GerpN, GerpS, priPhCons, mamPhCons, verPhCons,
+              priPhyloP, mamPhyloP, verPhyloP" in PHRED scale. Range: [0,
+              75.824]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More evolutionarily conserved</li>
-              <li><strong>Lower scores:</strong> Less evolutionarily conserved</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More evolutionarily
+                conserved
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less evolutionarily conserved
+              </li>
             </ul>
           </div>
         ),
@@ -1064,15 +1138,27 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Active:</strong> Integrative score combining active chromatin marks (H3K4me1, H3K4me2, H3K4me3, H3K9ac, H3K27ac, H4K20me1, H2AFZ) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Active:</strong> Integrative score
+              combining active chromatin marks (H3K4me1, H3K4me2, H3K4me3,
+              H3K9ac, H3K27ac, H4K20me1, H2AFZ) into a single PHRED-scaled
+              score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Associated with gene expression and regulatory activity</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with gene expression and regulatory activity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More active chromatin state</li>
-              <li><strong>Lower scores:</strong> Less active chromatin state</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More active chromatin
+                state
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less active chromatin state
+              </li>
             </ul>
           </div>
         ),
@@ -1090,15 +1176,26 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Repressed:</strong> Integrative score combining repressive chromatin marks (H3K9me3, H3K27me3) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Repressed:</strong> Integrative score
+              combining repressive chromatin marks (H3K9me3, H3K27me3) into a
+              single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">Repressed</span>
-              <span className="text-xs text-muted-foreground">Associated with gene silencing and heterochromatin</span>
+              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">
+                Repressed
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with gene silencing and heterochromatin
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More repressed chromatin state</li>
-              <li><strong>Lower scores:</strong> Less repressed chromatin state</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More repressed
+                chromatin state
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less repressed chromatin state
+              </li>
             </ul>
           </div>
         ),
@@ -1116,15 +1213,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Transcription:</strong> Integrative score combining transcription-associated chromatin marks (H3K36me3, H3K79me2) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Transcription:</strong> Integrative score
+              combining transcription-associated chromatin marks (H3K36me3,
+              H3K79me2) into a single PHRED-scaled score. Range: [0, 86.238].
+              (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Transcription</span>
-              <span className="text-xs text-muted-foreground">Associated with active gene transcription</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Transcription
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with active gene transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More transcriptionally active chromatin</li>
-              <li><strong>Lower scores:</strong> Less transcriptionally active chromatin</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More transcriptionally
+                active chromatin
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less transcriptionally active
+                chromatin
+              </li>
             </ul>
           </div>
         ),
@@ -1142,12 +1252,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Local Nucleotide Diversity:</strong> Integrative score combining local genetic diversity measures (background selection statistic, recombination rate, nucleotide diversity) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Local Nucleotide Diversity:</strong> Integrative score
+              combining local genetic diversity measures (background selection
+              statistic, recombination rate, nucleotide diversity) into a single
+              PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Higher local genetic diversity</li>
-              <li><strong>Lower scores:</strong> Lower local genetic diversity</li>
-              <li><strong>Diversity context:</strong> Reflects evolutionary and recombination patterns</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Higher local genetic
+                diversity
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Lower local genetic diversity
+              </li>
+              <li>
+                <strong>Diversity context:</strong> Reflects evolutionary and
+                recombination patterns
+              </li>
             </ul>
           </div>
         ),
@@ -1165,12 +1286,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Mutation Density:</strong> Integrative score combining mutation densities at different scales (100bp, 1kb, 10kb windows) for common, rare, and singleton variants into a single PHRED-scaled score. Range: [0, 84.477]. (Li et al., 2020)
+              <strong>aPC-Mutation Density:</strong> Integrative score combining
+              mutation densities at different scales (100bp, 1kb, 10kb windows)
+              for common, rare, and singleton variants into a single
+              PHRED-scaled score. Range: [0, 84.477]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Higher local mutation density</li>
-              <li><strong>Lower scores:</strong> Lower local mutation density</li>
-              <li><strong>Density context:</strong> Reflects mutational burden in genomic region</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Higher local mutation
+                density
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Lower local mutation density
+              </li>
+              <li>
+                <strong>Density context:</strong> Reflects mutational burden in
+                genomic region
+              </li>
             </ul>
           </div>
         ),
@@ -1188,12 +1320,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Transcription Factor:</strong> Integrative score combining transcription factor binding evidence (ReMap TF overlap, ReMap cell line overlap) into a single PHRED-scaled score. Range: [1.185, 86.238]. (Li et al., 2020)
+              <strong>aPC-Transcription Factor:</strong> Integrative score
+              combining transcription factor binding evidence (ReMap TF overlap,
+              ReMap cell line overlap) into a single PHRED-scaled score. Range:
+              [1.185, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More transcription factor binding evidence</li>
-              <li><strong>Lower scores:</strong> Less transcription factor binding evidence</li>
-              <li><strong>TF binding:</strong> Indicates regulatory potential</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More transcription
+                factor binding evidence
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less transcription factor binding
+                evidence
+              </li>
+              <li>
+                <strong>TF binding:</strong> Indicates regulatory potential
+              </li>
             </ul>
           </div>
         ),
@@ -1211,12 +1354,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Mappability:</strong> Integrative score combining sequence mappability measures at different read lengths (k=24, 36, 50, 100) for unique and multi-mapping reads into a single PHRED-scaled score. Range: [0.007, 22.966]. (Li et al., 2020)
+              <strong>aPC-Mappability:</strong> Integrative score combining
+              sequence mappability measures at different read lengths (k=24, 36,
+              50, 100) for unique and multi-mapping reads into a single
+              PHRED-scaled score. Range: [0.007, 22.966]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Better sequence mappability</li>
-              <li><strong>Lower scores:</strong> Poorer sequence mappability</li>
-              <li><strong>Mappability:</strong> Affects sequencing read alignment quality</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Better sequence
+                mappability
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Poorer sequence mappability
+              </li>
+              <li>
+                <strong>Mappability:</strong> Affects sequencing read alignment
+                quality
+              </li>
             </ul>
           </div>
         ),
@@ -1234,11 +1388,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              The CADD score in PHRED scale (integrative score). A higher CADD score indicates more deleterious. Range: [0.001, 84]. (Kircher et al., 2014; Rentzsch et al., 2018)
+              The CADD score in PHRED scale (integrative score). A higher CADD
+              score indicates more deleterious. Range: [0.001, 84]. (Kircher et
+              al., 2014; Rentzsch et al., 2018)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More likely deleterious</li>
-              <li><strong>Lower scores:</strong> More likely benign</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More likely deleterious
+              </li>
+              <li>
+                <strong>Lower scores:</strong> More likely benign
+              </li>
             </ul>
           </div>
         ),
@@ -1256,11 +1416,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              The LINSIGHT score (integrative score). A higher LINSIGHT score indicates more functionality. Range: [0.033, 0.995]. (Huang et al., 2017)
+              The LINSIGHT score (integrative score). A higher LINSIGHT score
+              indicates more functionality. Range: [0.033, 0.995]. (Huang et
+              al., 2017)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.5):</strong> More likely functional</li>
-              <li><strong>Lower scores:</strong> Less likely functional</li>
+              <li>
+                <strong>Higher scores (&gt;0.5):</strong> More likely functional
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less likely functional
+              </li>
             </ul>
           </div>
         ),
@@ -1278,11 +1444,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              The FATHMM-XF score for coding variants (integrative score). A higher FATHMM-XF score indicates more functionality. Range: [0.001, 0.999]. (Rogers et al., 2017)
+              The FATHMM-XF score for coding variants (integrative score). A
+              higher FATHMM-XF score indicates more functionality. Range:
+              [0.001, 0.999]. (Rogers et al., 2017)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.5):</strong> More likely functional</li>
-              <li><strong>Lower scores:</strong> Less likely functional</li>
+              <li>
+                <strong>Higher scores (&gt;0.5):</strong> More likely functional
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less likely functional
+              </li>
             </ul>
           </div>
         ),
@@ -1306,12 +1478,24 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Protein Function:</strong> Integrative score combining multiple protein function predictions (SIFT, PolyPhen, Grantham, PolyPhen2, MutationTaster, MutationAssessor) into a single PHRED-scaled score. Range: [2.974, 86.238]. (Li et al., 2020)
+              <strong>aPC-Protein Function:</strong> Integrative score combining
+              multiple protein function predictions (SIFT, PolyPhen, Grantham,
+              PolyPhen2, MutationTaster, MutationAssessor) into a single
+              PHRED-scaled score. Range: [2.974, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More likely to affect protein function</li>
-              <li><strong>Lower scores:</strong> Less likely to affect protein function</li>
-              <li><strong>PHRED scale:</strong> Higher values indicate stronger evidence</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More likely to affect
+                protein function
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less likely to affect protein
+                function
+              </li>
+              <li>
+                <strong>PHRED scale:</strong> Higher values indicate stronger
+                evidence
+              </li>
             </ul>
           </div>
         ),
@@ -1332,7 +1516,8 @@ export const variantDetailedColumns: VariantColumnsType[] = [
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded"></span>
-                <strong>Probably Damaging:</strong> likely to affect protein function
+                <strong>Probably Damaging:</strong> likely to affect protein
+                function
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-amber-300 rounded"></span>
@@ -1365,11 +1550,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              PolyPhen score: It predicts the functional significance of an allele replacement from its individual features. Range: [0, 1] (default: 0). (Adzhubei et al., 2010)
+              PolyPhen score: It predicts the functional significance of an
+              allele replacement from its individual features. Range: [0, 1]
+              (default: 0). (Adzhubei et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.8):</strong> More likely damaging</li>
-              <li><strong>Lower scores:</strong> More likely benign</li>
+              <li>
+                <strong>Higher scores (&gt;0.8):</strong> More likely damaging
+              </li>
+              <li>
+                <strong>Lower scores:</strong> More likely benign
+              </li>
             </ul>
           </div>
         ),
@@ -1387,11 +1578,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PolyPhen2 HumDiv:</strong> Predicts amino acid substitution impact on protein structure and function. Trained on Mendelian disease variants vs. evolutionarily divergent variants from close mammalian species. Range: [0, 1] (default: 0). (Adzhubei et al., 2010)
+              <strong>PolyPhen2 HumDiv:</strong> Predicts amino acid
+              substitution impact on protein structure and function. Trained on
+              Mendelian disease variants vs. evolutionarily divergent variants
+              from close mammalian species. Range: [0, 1] (default: 0).
+              (Adzhubei et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.8):</strong> More likely damaging</li>
-              <li><strong>Lower scores:</strong> More likely benign</li>
+              <li>
+                <strong>Higher scores (&gt;0.8):</strong> More likely damaging
+              </li>
+              <li>
+                <strong>Lower scores:</strong> More likely benign
+              </li>
             </ul>
           </div>
         ),
@@ -1409,11 +1608,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PolyPhen2 HumVar:</strong> Predicts amino acid substitution impact on protein structure and function. Trained on human disease variants vs. common polymorphisms (MAF ≥1%) with no known disease association. Range: [0, 1] (default: 0). (Adzhubei et al., 2010)
+              <strong>PolyPhen2 HumVar:</strong> Predicts amino acid
+              substitution impact on protein structure and function. Trained on
+              human disease variants vs. common polymorphisms (MAF ≥1%) with no
+              known disease association. Range: [0, 1] (default: 0). (Adzhubei
+              et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.8):</strong> More likely damaging</li>
-              <li><strong>Lower scores:</strong> More likely benign</li>
+              <li>
+                <strong>Higher scores (&gt;0.8):</strong> More likely damaging
+              </li>
+              <li>
+                <strong>Lower scores:</strong> More likely benign
+              </li>
             </ul>
           </div>
         ),
@@ -1431,12 +1638,25 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Grantham Score:</strong> Measures evolutionary distance between original and new amino acids based on chemical properties (polarity, molecular volume, composition). Higher scores indicate greater chemical difference and potential functional impact. Range: [0, 215] (default: 0). (Grantham, 1974)
+              <strong>Grantham Score:</strong> Measures evolutionary distance
+              between original and new amino acids based on chemical properties
+              (polarity, molecular volume, composition). Higher scores indicate
+              greater chemical difference and potential functional impact.
+              Range: [0, 215] (default: 0). (Grantham, 1974)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;100):</strong> Greater chemical difference, more deleterious</li>
-              <li><strong>Lower scores:</strong> Less chemical difference, more tolerated</li>
-              <li><strong>Thresholds:</strong> Conservative (0-50), moderate (51-100), radical (&gt;100)</li>
+              <li>
+                <strong>Higher scores (&gt;100):</strong> Greater chemical
+                difference, more deleterious
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less chemical difference, more
+                tolerated
+              </li>
+              <li>
+                <strong>Thresholds:</strong> Conservative (0-50), moderate
+                (51-100), radical (&gt;100)
+              </li>
             </ul>
           </div>
         ),
@@ -1454,11 +1674,20 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              MutationTaster is a free web-based application to evaluate DNA sequence variants for their disease-causing potential. The software performs a battery of in silico tests to estimate the impact of the variant on the gene product/protein. Range: [0, 1] (default: 0). (Schwarz et al., 2014)
+              MutationTaster is a free web-based application to evaluate DNA
+              sequence variants for their disease-causing potential. The
+              software performs a battery of in silico tests to estimate the
+              impact of the variant on the gene product/protein. Range: [0, 1]
+              (default: 0). (Schwarz et al., 2014)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.8):</strong> More likely disease-causing</li>
-              <li><strong>Lower scores:</strong> More likely benign</li>
+              <li>
+                <strong>Higher scores (&gt;0.8):</strong> More likely
+                disease-causing
+              </li>
+              <li>
+                <strong>Lower scores:</strong> More likely benign
+              </li>
             </ul>
           </div>
         ),
@@ -1476,11 +1705,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Predicts the functional impact of amino-acid substitutions in proteins, such as mutations discovered in cancer or missense polymorphisms. Range: [-5.135, 6.125] (default: -5.545). (Reva et al., 2011)
+              Predicts the functional impact of amino-acid substitutions in
+              proteins, such as mutations discovered in cancer or missense
+              polymorphisms. Range: [-5.135, 6.125] (default: -5.545). (Reva et
+              al., 2011)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;3):</strong> More likely functional impact</li>
-              <li><strong>Lower scores:</strong> Less likely functional impact</li>
+              <li>
+                <strong>Higher scores (&gt;3):</strong> More likely functional
+                impact
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less likely functional impact
+              </li>
             </ul>
           </div>
         ),
@@ -1502,25 +1739,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
               <div className="flex items-start gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded mt-0.5 flex-shrink-0"></span>
                 <div>
-                  <strong>Deleterious:</strong> likely to affect protein function
+                  <strong>Deleterious:</strong> likely to affect protein
+                  function
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-3 h-3 bg-red-200 rounded mt-0.5 flex-shrink-0"></span>
                 <div>
-                  <strong>Deleterious (Low Confidence):</strong> may affect protein function
+                  <strong>Deleterious (Low Confidence):</strong> may affect
+                  protein function
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-3 h-3 bg-green-300 rounded mt-0.5 flex-shrink-0"></span>
                 <div>
-                  <strong>Tolerated:</strong> likely to have no functional impact
+                  <strong>Tolerated:</strong> likely to have no functional
+                  impact
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-3 h-3 bg-green-200 rounded mt-0.5 flex-shrink-0"></span>
                 <div>
-                  <strong>Tolerated (Low Confidence):</strong> may have no functional impact
+                  <strong>Tolerated (Low Confidence):</strong> may have no
+                  functional impact
                 </div>
               </div>
             </div>
@@ -1554,11 +1795,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              SIFT score, ranges from 0.0 (deleterious) to 1.0 (tolerated). Range: [0, 1] (default: 1). (Ng and Henikoff, 2003)
+              SIFT score, ranges from 0.0 (deleterious) to 1.0 (tolerated).
+              Range: [0, 1] (default: 1). (Ng and Henikoff, 2003)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Lower scores (0.0-0.05):</strong> More likely deleterious</li>
-              <li><strong>Higher scores (&gt;0.05):</strong> More likely tolerated</li>
+              <li>
+                <strong>Lower scores (0.0-0.05):</strong> More likely
+                deleterious
+              </li>
+              <li>
+                <strong>Higher scores (&gt;0.05):</strong> More likely tolerated
+              </li>
             </ul>
           </div>
         ),
@@ -1576,11 +1823,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Conservation annotation PC: the first PC of the standardized scores of "GerpN, GerpS, priPhCons, mamPhCons, verPhCons, priPhyloP, mamPhyloP, verPhyloP" in PHRED scale. Range: [0, 75.824]. (Li et al., 2020)
+              Conservation annotation PC: the first PC of the standardized
+              scores of "GerpN, GerpS, priPhCons, mamPhCons, verPhCons,
+              priPhyloP, mamPhyloP, verPhyloP" in PHRED scale. Range: [0,
+              75.824]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More evolutionarily conserved</li>
-              <li><strong>Lower scores:</strong> Less evolutionarily conserved</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More evolutionarily
+                conserved
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less evolutionarily conserved
+              </li>
             </ul>
           </div>
         ),
@@ -1592,11 +1847,24 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Mammalian phastCons conservation score (excl. human). A higher score means the region is more conserved. PhastCons considers n species rather than two. It considers the phylogeny by which these species are related, and instead of measuring similarity/divergence simply in terms of percent identity. It uses statistical models of nucleotide substitution that allow for multiple substitutions per site and for unequal rates of substitution between different pairs of bases. Range: [0, 1] (default: 0.0). (Siepel et al., 2005)
+              Mammalian phastCons conservation score (excl. human). A higher
+              score means the region is more conserved. PhastCons considers n
+              species rather than two. It considers the phylogeny by which these
+              species are related, and instead of measuring
+              similarity/divergence simply in terms of percent identity. It uses
+              statistical models of nucleotide substitution that allow for
+              multiple substitutions per site and for unequal rates of
+              substitution between different pairs of bases. Range: [0, 1]
+              (default: 0.0). (Siepel et al., 2005)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;0.8):</strong> More evolutionarily conserved</li>
-              <li><strong>Lower scores:</strong> Less evolutionarily conserved</li>
+              <li>
+                <strong>Higher scores (&gt;0.8):</strong> More evolutionarily
+                conserved
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less evolutionarily conserved
+              </li>
             </ul>
           </div>
         ),
@@ -1608,12 +1876,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Primate phastCons:</strong> Conservation score comparing primate species (excluding humans). Uses evolutionary models to identify conserved regions across multiple species. Range: [-10.761, 0.595] (default: -0.029). (Pollard et al., 2010)
+              <strong>Primate phastCons:</strong> Conservation score comparing
+              primate species (excluding humans). Uses evolutionary models to
+              identify conserved regions across multiple species. Range:
+              [-10.761, 0.595] (default: -0.029). (Pollard et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;0.3):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Faster evolution than expected</li>
-              <li><strong>phastCons:</strong> Models evolutionary pressure across species</li>
+              <li>
+                <strong>Higher positive scores (&gt;0.3):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Faster evolution than expected
+              </li>
+              <li>
+                <strong>phastCons:</strong> Models evolutionary pressure across
+                species
+              </li>
             </ul>
           </div>
         ),
@@ -1625,12 +1904,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Vertebrate phastCons:</strong> Conservation score comparing vertebrate species (excluding humans). Uses evolutionary models to identify conserved regions across vertebrates. Range: [-20, 11.295] (default: 0.042). (Pollard et al., 2010)
+              <strong>Vertebrate phastCons:</strong> Conservation score
+              comparing vertebrate species (excluding humans). Uses evolutionary
+              models to identify conserved regions across vertebrates. Range:
+              [-20, 11.295] (default: 0.042). (Pollard et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;2):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Faster evolution than expected</li>
-              <li><strong>phastCons:</strong> Models evolutionary pressure across species</li>
+              <li>
+                <strong>Higher positive scores (&gt;2):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Faster evolution than expected
+              </li>
+              <li>
+                <strong>phastCons:</strong> Models evolutionary pressure across
+                species
+              </li>
             </ul>
           </div>
         ),
@@ -1642,12 +1932,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Primate phyloP:</strong> Site-by-site conservation score comparing primate species (excluding humans). Measures evolutionary constraint at individual positions. Range: [-10.761, 0.595] (default: -0.029). (Pollard et al., 2010)
+              <strong>Primate phyloP:</strong> Site-by-site conservation score
+              comparing primate species (excluding humans). Measures
+              evolutionary constraint at individual positions. Range: [-10.761,
+              0.595] (default: -0.029). (Pollard et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;0.3):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Faster evolution than expected</li>
-              <li><strong>phyloP:</strong> Per-site evolutionary constraint analysis</li>
+              <li>
+                <strong>Higher positive scores (&gt;0.3):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Faster evolution than expected
+              </li>
+              <li>
+                <strong>phyloP:</strong> Per-site evolutionary constraint
+                analysis
+              </li>
             </ul>
           </div>
         ),
@@ -1659,12 +1960,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Mammalian phyloP:</strong> Site-by-site conservation score comparing mammalian species (excluding humans). Measures evolutionary constraint at individual positions. Range: [-20, 4.494] (default: -0.005). (Pollard et al., 2010)
+              <strong>Mammalian phyloP:</strong> Site-by-site conservation score
+              comparing mammalian species (excluding humans). Measures
+              evolutionary constraint at individual positions. Range: [-20,
+              4.494] (default: -0.005). (Pollard et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;3):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Faster evolution than expected</li>
-              <li><strong>phyloP:</strong> Per-site evolutionary constraint analysis</li>
+              <li>
+                <strong>Higher positive scores (&gt;3):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Faster evolution than expected
+              </li>
+              <li>
+                <strong>phyloP:</strong> Per-site evolutionary constraint
+                analysis
+              </li>
             </ul>
           </div>
         ),
@@ -1676,12 +1988,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Vertebrate phyloP:</strong> Site-by-site conservation score comparing vertebrate species (excluding humans). Measures evolutionary constraint at individual positions. Range: [-20, 11.295] (default: 0.042). (Pollard et al., 2010)
+              <strong>Vertebrate phyloP:</strong> Site-by-site conservation
+              score comparing vertebrate species (excluding humans). Measures
+              evolutionary constraint at individual positions. Range: [-20,
+              11.295] (default: 0.042). (Pollard et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;8):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Faster evolution than expected</li>
-              <li><strong>phyloP:</strong> Per-site evolutionary constraint analysis</li>
+              <li>
+                <strong>Higher positive scores (&gt;8):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Faster evolution than expected
+              </li>
+              <li>
+                <strong>phyloP:</strong> Per-site evolutionary constraint
+                analysis
+              </li>
             </ul>
           </div>
         ),
@@ -1693,11 +2016,18 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Neutral evolution score defined by GERP++. A higher score means the region is more conserved. Range: [0, 19.8] (default: 3.0). (Davydov et al., 2010)
+              Neutral evolution score defined by GERP++. A higher score means
+              the region is more conserved. Range: [0, 19.8] (default: 3.0).
+              (Davydov et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More evolutionarily conserved</li>
-              <li><strong>Lower scores:</strong> Less evolutionarily conserved</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More evolutionarily
+                conserved
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less evolutionarily conserved
+              </li>
             </ul>
           </div>
         ),
@@ -1709,11 +2039,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Rejected Substitution score defined by GERP++. A higher score means the region is more conserved. GERP (Genomic Evolutionary Rate Profiling) identifies constrained elements in multiple alignments by quantifying substitution deficits. These deficits represent substitutions that would have occurred if the element were neutral DNA, but did not occur because the element has been under functional constraint. These deficits are referred to as "Rejected Substitutions". Rejected substitutions are a natural measure of constraint that reflects the strength of past purifying selection on the element. GERP estimates constraint for each alignment column; elements are identified as excess aggregations of constrained columns. Positive scores (fewer than expected) indicate that a site is under evolutionary constraint. Negative scores may be weak evidence of accelerated rates of evolution. Range: [-39.5, 19.8] (default: -0.2). (Davydov et al., 2010)
+              Rejected Substitution score defined by GERP++. A higher score
+              means the region is more conserved. GERP (Genomic Evolutionary
+              Rate Profiling) identifies constrained elements in multiple
+              alignments by quantifying substitution deficits. These deficits
+              represent substitutions that would have occurred if the element
+              were neutral DNA, but did not occur because the element has been
+              under functional constraint. These deficits are referred to as
+              "Rejected Substitutions". Rejected substitutions are a natural
+              measure of constraint that reflects the strength of past purifying
+              selection on the element. GERP estimates constraint for each
+              alignment column; elements are identified as excess aggregations
+              of constrained columns. Positive scores (fewer than expected)
+              indicate that a site is under evolutionary constraint. Negative
+              scores may be weak evidence of accelerated rates of evolution.
+              Range: [-39.5, 19.8] (default: -0.2). (Davydov et al., 2010)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher positive scores (&gt;10):</strong> More evolutionarily conserved</li>
-              <li><strong>Negative scores:</strong> Accelerated evolution</li>
+              <li>
+                <strong>Higher positive scores (&gt;10):</strong> More
+                evolutionarily conserved
+              </li>
+              <li>
+                <strong>Negative scores:</strong> Accelerated evolution
+              </li>
             </ul>
           </div>
         ),
@@ -1732,15 +2081,27 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Active:</strong> Integrative score combining active chromatin marks (H3K4me1, H3K4me2, H3K4me3, H3K9ac, H3K27ac, H4K20me1, H2AFZ) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Active:</strong> Integrative score
+              combining active chromatin marks (H3K4me1, H3K4me2, H3K4me3,
+              H3K9ac, H3K27ac, H4K20me1, H2AFZ) into a single PHRED-scaled
+              score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Associated with gene expression and regulatory activity</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with gene expression and regulatory activity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More active chromatin state</li>
-              <li><strong>Lower scores:</strong> Less active chromatin state</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More active chromatin
+                state
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less active chromatin state
+              </li>
             </ul>
           </div>
         ),
@@ -1759,15 +2120,26 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Repressed:</strong> Integrative score combining repressive chromatin marks (H3K9me3, H3K27me3) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Repressed:</strong> Integrative score
+              combining repressive chromatin marks (H3K9me3, H3K27me3) into a
+              single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">Repressed</span>
-              <span className="text-xs text-muted-foreground">Associated with gene silencing and heterochromatin</span>
+              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">
+                Repressed
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with gene silencing and heterochromatin
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More repressed chromatin state</li>
-              <li><strong>Lower scores:</strong> Less repressed chromatin state</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More repressed
+                chromatin state
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less repressed chromatin state
+              </li>
             </ul>
           </div>
         ),
@@ -1786,15 +2158,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Epigenetics Transcription:</strong> Integrative score combining transcription-associated chromatin marks (H3K36me3, H3K79me2) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Epigenetics Transcription:</strong> Integrative score
+              combining transcription-associated chromatin marks (H3K36me3,
+              H3K79me2) into a single PHRED-scaled score. Range: [0, 86.238].
+              (Li et al., 2020)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Transcription</span>
-              <span className="text-xs text-muted-foreground">Associated with active gene transcription</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Transcription
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Associated with active gene transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More transcriptionally active chromatin</li>
-              <li><strong>Lower scores:</strong> Less transcriptionally active chromatin</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More transcriptionally
+                active chromatin
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less transcriptionally active
+                chromatin
+              </li>
             </ul>
           </div>
         ),
@@ -1813,16 +2198,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>DNase:</strong> DNase-seq measures chromatin accessibility by identifying regions where DNA is accessible to DNase I enzyme. Range: [0.001, 118672] (default: 0.0). (ENCODE Project Consortium, 2012)
+              <strong>DNase:</strong> DNase-seq measures chromatin accessibility
+              by identifying regions where DNA is accessible to DNase I enzyme.
+              Range: [0.001, 118672] (default: 0.0). (ENCODE Project Consortium,
+              2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Open chromatin regions</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Open chromatin regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥0.437):</strong> More accessible chromatin, likely regulatory regions</li>
-              <li><strong>Lower levels:</strong> Less accessible chromatin, compact chromatin structure</li>
-              <li><strong>Biological significance:</strong> DNase hypersensitivity indicates active regulatory elements</li>
+              <li>
+                <strong>Higher levels (≥0.437):</strong> More accessible
+                chromatin, likely regulatory regions
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less accessible chromatin,
+                compact chromatin structure
+              </li>
+              <li>
+                <strong>Biological significance:</strong> DNase hypersensitivity
+                indicates active regulatory elements
+              </li>
             </ul>
           </div>
         ),
@@ -1841,16 +2242,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K27ac:</strong> Histone H3 lysine 27 acetylation mark, a key indicator of active enhancers and promoters. Range: [0.013, 288.608] (default: 0.36). (ENCODE Project Consortium, 2012)
+              <strong>H3K27ac:</strong> Histone H3 lysine 27 acetylation mark, a
+              key indicator of active enhancers and promoters. Range: [0.013,
+              288.608] (default: 0.36). (ENCODE Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active enhancers and promoters</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active enhancers and promoters
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥7.82):</strong> Strong enhancer activity, active gene regulation</li>
-              <li><strong>Lower levels:</strong> Weaker enhancer activity or inactive regulatory regions</li>
-              <li><strong>Biological role:</strong> Distinguishes active enhancers from poised/inactive ones</li>
+              <li>
+                <strong>Higher levels (≥7.82):</strong> Strong enhancer
+                activity, active gene regulation
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Weaker enhancer activity or
+                inactive regulatory regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Distinguishes active enhancers
+                from poised/inactive ones
+              </li>
             </ul>
           </div>
         ),
@@ -1869,16 +2285,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K4me1:</strong> Histone H3 lysine 4 monomethylation mark, commonly found at enhancer regions and regulatory elements. Range: [0.015, 91.954] (default: 0.37). (ENCODE Project Consortium, 2012)
+              <strong>H3K4me1:</strong> Histone H3 lysine 4 monomethylation
+              mark, commonly found at enhancer regions and regulatory elements.
+              Range: [0.015, 91.954] (default: 0.37). (ENCODE Project
+              Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Enhancer regions</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Enhancer regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥5):</strong> Strong enhancer signature, active regulatory regions</li>
-              <li><strong>Lower levels:</strong> Weaker enhancer activity or non-regulatory regions</li>
-              <li><strong>Biological role:</strong> Marks both active and poised enhancers</li>
+              <li>
+                <strong>Higher levels (≥5):</strong> Strong enhancer signature,
+                active regulatory regions
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Weaker enhancer activity or
+                non-regulatory regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Marks both active and poised
+                enhancers
+              </li>
             </ul>
           </div>
         ),
@@ -1897,16 +2329,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K4me2:</strong> Histone H3 lysine 4 dimethylation mark, associated with active promoters and transcriptional start sites. Range: [0.024, 148.887] (default: 0.37). (ENCODE Project Consortium, 2012)
+              <strong>H3K4me2:</strong> Histone H3 lysine 4 dimethylation mark,
+              associated with active promoters and transcriptional start sites.
+              Range: [0.024, 148.887] (default: 0.37). (ENCODE Project
+              Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active promoters</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active promoters
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥3.543):</strong> Active promoter regions, ongoing transcription</li>
-              <li><strong>Lower levels:</strong> Inactive or weakly active promoters</li>
-              <li><strong>Biological role:</strong> Marks active transcriptional start sites</li>
+              <li>
+                <strong>Higher levels (≥3.543):</strong> Active promoter
+                regions, ongoing transcription
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Inactive or weakly active
+                promoters
+              </li>
+              <li>
+                <strong>Biological role:</strong> Marks active transcriptional
+                start sites
+              </li>
             </ul>
           </div>
         ),
@@ -1925,16 +2373,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K4me3:</strong> Histone H3 lysine 4 trimethylation mark, the classical marker of active promoters and transcriptional start sites. Range: [0.012, 239.512] (default: 0.38). (ENCODE Project Consortium, 2012)
+              <strong>H3K4me3:</strong> Histone H3 lysine 4 trimethylation mark,
+              the classical marker of active promoters and transcriptional start
+              sites. Range: [0.012, 239.512] (default: 0.38). (ENCODE Project
+              Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active promoters</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active promoters
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥3.77):</strong> Highly active promoters, strong transcriptional activity</li>
-              <li><strong>Lower levels:</strong> Inactive or weakly active promoters</li>
-              <li><strong>Biological role:</strong> Most reliable marker of active gene promoters</li>
+              <li>
+                <strong>Higher levels (≥3.77):</strong> Highly active promoters,
+                strong transcriptional activity
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Inactive or weakly active
+                promoters
+              </li>
+              <li>
+                <strong>Biological role:</strong> Most reliable marker of active
+                gene promoters
+              </li>
             </ul>
           </div>
         ),
@@ -1953,16 +2417,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K9ac:</strong> Histone H3 lysine 9 acetylation mark, associated with transcriptionally active chromatin and gene expression. Range: [0.019, 281.187] (default: 0.41). (ENCODE Project Consortium, 2012)
+              <strong>H3K9ac:</strong> Histone H3 lysine 9 acetylation mark,
+              associated with transcriptionally active chromatin and gene
+              expression. Range: [0.019, 281.187] (default: 0.41). (ENCODE
+              Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active transcription</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥3.13):</strong> Active transcriptional regions, open chromatin</li>
-              <li><strong>Lower levels:</strong> Transcriptionally inactive regions</li>
-              <li><strong>Biological role:</strong> Generally associated with active gene expression</li>
+              <li>
+                <strong>Higher levels (≥3.13):</strong> Active transcriptional
+                regions, open chromatin
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Transcriptionally inactive
+                regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Generally associated with
+                active gene expression
+              </li>
             </ul>
           </div>
         ),
@@ -1981,16 +2461,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H4K20me1:</strong> Histone H4 lysine 20 monomethylation mark, associated with active chromatin and transcriptional elongation. Range: [0.054, 73.230] (default: 0.47). (ENCODE Project Consortium, 2012)
+              <strong>H4K20me1:</strong> Histone H4 lysine 20 monomethylation
+              mark, associated with active chromatin and transcriptional
+              elongation. Range: [0.054, 73.230] (default: 0.47). (ENCODE
+              Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active chromatin</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active chromatin
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥2.6):</strong> Active chromatin regions, ongoing transcription</li>
-              <li><strong>Lower levels:</strong> Less active chromatin regions</li>
-              <li><strong>Biological role:</strong> Associated with gene bodies and active transcription</li>
+              <li>
+                <strong>Higher levels (≥2.6):</strong> Active chromatin regions,
+                ongoing transcription
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less active chromatin regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Associated with gene bodies
+                and active transcription
+              </li>
             </ul>
           </div>
         ),
@@ -2009,16 +2504,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H2AFZ:</strong> Histone variant H2A.Z associated with transcriptional regulation, nucleosome positioning, and active chromatin regions. Range: [0.031, 96.072] (default: 0.42). (ENCODE Project Consortium, 2012)
+              <strong>H2AFZ:</strong> Histone variant H2A.Z associated with
+              transcriptional regulation, nucleosome positioning, and active
+              chromatin regions. Range: [0.031, 96.072] (default: 0.42). (ENCODE
+              Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">Active</span>
-              <span className="text-xs text-muted-foreground">Active regulatory regions</span>
+              <span className="inline-flex rounded-full bg-green-300 px-2 py-1 text-xs font-medium text-green-900">
+                Active
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active regulatory regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥2.1):</strong> Active regulatory elements, promoters and enhancers</li>
-              <li><strong>Lower levels:</strong> Less active or inactive regulatory regions</li>
-              <li><strong>Biological role:</strong> Facilitates transcription factor binding and gene regulation</li>
+              <li>
+                <strong>Higher levels (≥2.1):</strong> Active regulatory
+                elements, promoters and enhancers
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less active or inactive
+                regulatory regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Facilitates transcription
+                factor binding and gene regulation
+              </li>
             </ul>
           </div>
         ),
@@ -2037,16 +2548,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K9me3:</strong> Histone H3 lysine 9 trimethylation mark, a key marker of constitutive heterochromatin and gene silencing. Range: [0.011, 58.712] (default: 0.38). (ENCODE Project Consortium, 2012)
+              <strong>H3K9me3:</strong> Histone H3 lysine 9 trimethylation mark,
+              a key marker of constitutive heterochromatin and gene silencing.
+              Range: [0.011, 58.712] (default: 0.38). (ENCODE Project
+              Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">Repressed</span>
-              <span className="text-xs text-muted-foreground">Heterochromatin and gene silencing</span>
+              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">
+                Repressed
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Heterochromatin and gene silencing
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥3.61):</strong> Strongly repressed regions, heterochromatin</li>
-              <li><strong>Lower levels:</strong> Less repressed or euchromatic regions</li>
-              <li><strong>Biological role:</strong> Maintains long-term gene silencing and chromosome structure</li>
+              <li>
+                <strong>Higher levels (≥3.61):</strong> Strongly repressed
+                regions, heterochromatin
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less repressed or euchromatic
+                regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Maintains long-term gene
+                silencing and chromosome structure
+              </li>
             </ul>
           </div>
         ),
@@ -2065,16 +2592,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K27me3:</strong> Histone H3 lysine 27 trimethylation mark, associated with facultative heterochromatin and Polycomb-mediated gene repression. Range: [0.014, 87.122] (default: 0.47). (ENCODE Project Consortium, 2012)
+              <strong>H3K27me3:</strong> Histone H3 lysine 27 trimethylation
+              mark, associated with facultative heterochromatin and
+              Polycomb-mediated gene repression. Range: [0.014, 87.122]
+              (default: 0.47). (ENCODE Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">Repressed</span>
-              <span className="text-xs text-muted-foreground">Polycomb repression</span>
+              <span className="inline-flex rounded-full bg-amber-300 px-2 py-1 text-xs font-medium text-amber-900">
+                Repressed
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Polycomb repression
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥3.69):</strong> Polycomb-repressed regions, poised developmental genes</li>
-              <li><strong>Lower levels:</strong> Less repressed or active regions</li>
-              <li><strong>Biological role:</strong> Maintains developmental gene silencing, can be reversed</li>
+              <li>
+                <strong>Higher levels (≥3.69):</strong> Polycomb-repressed
+                regions, poised developmental genes
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less repressed or active regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Maintains developmental gene
+                silencing, can be reversed
+              </li>
             </ul>
           </div>
         ),
@@ -2093,16 +2635,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K36me3:</strong> Histone H3 lysine 36 trimethylation mark, associated with actively transcribed gene bodies and transcriptional elongation. Range: [0.009, 56.176] (default: 0.39). (ENCODE Project Consortium, 2012)
+              <strong>H3K36me3:</strong> Histone H3 lysine 36 trimethylation
+              mark, associated with actively transcribed gene bodies and
+              transcriptional elongation. Range: [0.009, 56.176] (default:
+              0.39). (ENCODE Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Transcription</span>
-              <span className="text-xs text-muted-foreground">Active gene bodies</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Transcription
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active gene bodies
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥2.79):</strong> Actively transcribed gene bodies, ongoing elongation</li>
-              <li><strong>Lower levels:</strong> Less transcriptionally active regions</li>
-              <li><strong>Biological role:</strong> Marks regions of active transcriptional elongation</li>
+              <li>
+                <strong>Higher levels (≥2.79):</strong> Actively transcribed
+                gene bodies, ongoing elongation
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less transcriptionally active
+                regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Marks regions of active
+                transcriptional elongation
+              </li>
             </ul>
           </div>
         ),
@@ -2121,16 +2679,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>H3K79me2:</strong> Histone H3 lysine 79 dimethylation mark, associated with active transcription and transcriptional elongation. Range: [0.015, 118.706] (default: 0.34). (ENCODE Project Consortium, 2012)
+              <strong>H3K79me2:</strong> Histone H3 lysine 79 dimethylation
+              mark, associated with active transcription and transcriptional
+              elongation. Range: [0.015, 118.706] (default: 0.34). (ENCODE
+              Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Transcription</span>
-              <span className="text-xs text-muted-foreground">Active transcription</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Transcription
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Active transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥2.32):</strong> Actively transcribing regions, elongating RNA polymerase</li>
-              <li><strong>Lower levels:</strong> Less transcriptionally active regions</li>
-              <li><strong>Biological role:</strong> Marks active transcriptional elongation and chromatin dynamics</li>
+              <li>
+                <strong>Higher levels (≥2.32):</strong> Actively transcribing
+                regions, elongating RNA polymerase
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less transcriptionally active
+                regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Marks active transcriptional
+                elongation and chromatin dynamics
+              </li>
             </ul>
           </div>
         ),
@@ -2149,16 +2723,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Total RNA:</strong> RNA sequencing signal measuring total RNA expression levels across multiple cell lines. Range: [0, 92282.7] (default: 0.0). (ENCODE Project Consortium, 2012)
+              <strong>Total RNA:</strong> RNA sequencing signal measuring total
+              RNA expression levels across multiple cell lines. Range: [0,
+              92282.7] (default: 0.0). (ENCODE Project Consortium, 2012)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Transcription</span>
-              <span className="text-xs text-muted-foreground">RNA expression levels</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Transcription
+              </span>
+              <span className="text-xs text-muted-foreground">
+                RNA expression levels
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher levels (≥27.38):</strong> Highly transcribed regions, active gene expression</li>
-              <li><strong>Lower levels:</strong> Less transcriptionally active or silent regions</li>
-              <li><strong>Biological role:</strong> Direct measure of transcriptional activity</li>
+              <li>
+                <strong>Higher levels (≥27.38):</strong> Highly transcribed
+                regions, active gene expression
+              </li>
+              <li>
+                <strong>Lower levels:</strong> Less transcriptionally active or
+                silent regions
+              </li>
+              <li>
+                <strong>Biological role:</strong> Direct measure of
+                transcriptional activity
+              </li>
             </ul>
           </div>
         ),
@@ -2177,16 +2766,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>GC Content:</strong> Percentage of guanine and cytosine nucleotides in a 150bp window around the variant. Range: [0, 1] (default: 0.42)
+              <strong>GC Content:</strong> Percentage of guanine and cytosine
+              nucleotides in a 150bp window around the variant. Range: [0, 1]
+              (default: 0.42)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-slate-300 px-2 py-1 text-xs font-medium text-slate-900">Sequence Context</span>
-              <span className="text-xs text-muted-foreground">Nucleotide composition</span>
+              <span className="inline-flex rounded-full bg-slate-300 px-2 py-1 text-xs font-medium text-slate-900">
+                Sequence Context
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Nucleotide composition
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher GC content (&gt;0.6):</strong> GC-rich regions, often gene-dense areas</li>
-              <li><strong>Lower GC content (&lt;0.3):</strong> AT-rich regions, often heterochromatic</li>
-              <li><strong>Biological significance:</strong> Affects chromatin structure and mutation patterns</li>
+              <li>
+                <strong>Higher GC content (&gt;0.6):</strong> GC-rich regions,
+                often gene-dense areas
+              </li>
+              <li>
+                <strong>Lower GC content (&lt;0.3):</strong> AT-rich regions,
+                often heterochromatic
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Affects chromatin
+                structure and mutation patterns
+              </li>
             </ul>
           </div>
         ),
@@ -2205,16 +2809,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>CpG Content:</strong> Percentage of CpG dinucleotides in a 150bp window around the variant. Range: [0, 0.6] (default: 0.02)
+              <strong>CpG Content:</strong> Percentage of CpG dinucleotides in a
+              150bp window around the variant. Range: [0, 0.6] (default: 0.02)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-slate-300 px-2 py-1 text-xs font-medium text-slate-900">Sequence Context</span>
-              <span className="text-xs text-muted-foreground">DNA methylation context</span>
+              <span className="inline-flex rounded-full bg-slate-300 px-2 py-1 text-xs font-medium text-slate-900">
+                Sequence Context
+              </span>
+              <span className="text-xs text-muted-foreground">
+                DNA methylation context
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher CpG content (&gt;0.1):</strong> CpG islands, often unmethylated promoters</li>
-              <li><strong>Lower CpG content (&lt;0.05):</strong> CpG-poor regions, potentially methylated</li>
-              <li><strong>Biological significance:</strong> Relates to DNA methylation and gene regulation</li>
+              <li>
+                <strong>Higher CpG content (&gt;0.1):</strong> CpG islands,
+                often unmethylated promoters
+              </li>
+              <li>
+                <strong>Lower CpG content (&lt;0.05):</strong> CpG-poor regions,
+                potentially methylated
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Relates to DNA
+                methylation and gene regulation
+              </li>
             </ul>
           </div>
         ),
@@ -2238,12 +2856,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Transcription Factor:</strong> Integrative score combining transcription factor binding evidence (ReMap TF overlap, ReMap cell line overlap) into a single PHRED-scaled score. Range: [1.185, 86.238]. (Li et al., 2020)
+              <strong>aPC-Transcription Factor:</strong> Integrative score
+              combining transcription factor binding evidence (ReMap TF overlap,
+              ReMap cell line overlap) into a single PHRED-scaled score. Range:
+              [1.185, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> More transcription factor binding evidence</li>
-              <li><strong>Lower scores:</strong> Less transcription factor binding evidence</li>
-              <li><strong>TF binding:</strong> Indicates regulatory potential</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> More transcription
+                factor binding evidence
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Less transcription factor binding
+                evidence
+              </li>
+              <li>
+                <strong>TF binding:</strong> Indicates regulatory potential
+              </li>
             </ul>
           </div>
         ),
@@ -2255,16 +2884,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>ReMap TF Overlap:</strong> Number of different transcription factors that bind to this genomic region based on ChIP-seq data from the ReMap database. Range: [1, 350] (default: -0.5).
+              <strong>ReMap TF Overlap:</strong> Number of different
+              transcription factors that bind to this genomic region based on
+              ChIP-seq data from the ReMap database. Range: [1, 350] (default:
+              -0.5).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-blue-300 px-2 py-1 text-xs font-medium text-blue-900">TF Binding</span>
-              <span className="text-xs text-muted-foreground">Transcription factor diversity</span>
+              <span className="inline-flex rounded-full bg-blue-300 px-2 py-1 text-xs font-medium text-blue-900">
+                TF Binding
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Transcription factor diversity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 TFs):</strong> High regulatory complexity, multiple TF binding</li>
-              <li><strong>Lower counts (1-5 TFs):</strong> Simpler regulatory context, fewer TF interactions</li>
-              <li><strong>Biological significance:</strong> Indicates regulatory hotspots and complexity</li>
+              <li>
+                <strong>Higher counts (&gt;10 TFs):</strong> High regulatory
+                complexity, multiple TF binding
+              </li>
+              <li>
+                <strong>Lower counts (1-5 TFs):</strong> Simpler regulatory
+                context, fewer TF interactions
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Indicates regulatory
+                hotspots and complexity
+              </li>
             </ul>
           </div>
         ),
@@ -2276,16 +2921,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>ReMap Cell Line Overlap:</strong> Number of different transcription factor-cell line combinations that show binding to this genomic region. Represents context-specific TF binding across diverse cellular conditions. Range: [1, 1068] (default: -0.5).
+              <strong>ReMap Cell Line Overlap:</strong> Number of different
+              transcription factor-cell line combinations that show binding to
+              this genomic region. Represents context-specific TF binding across
+              diverse cellular conditions. Range: [1, 1068] (default: -0.5).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-blue-300 px-2 py-1 text-xs font-medium text-blue-900">TF Binding</span>
-              <span className="text-xs text-muted-foreground">Cell-type specific binding</span>
+              <span className="inline-flex rounded-full bg-blue-300 px-2 py-1 text-xs font-medium text-blue-900">
+                TF Binding
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Cell-type specific binding
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;50):</strong> Broad regulatory activity across cell types</li>
-              <li><strong>Lower counts (&lt;20):</strong> More cell-type specific or limited binding</li>
-              <li><strong>Biological significance:</strong> Indicates regulatory conservation across contexts</li>
+              <li>
+                <strong>Higher counts (&gt;50):</strong> Broad regulatory
+                activity across cell types
+              </li>
+              <li>
+                <strong>Lower counts (&lt;20):</strong> More cell-type specific
+                or limited binding
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Indicates regulatory
+                conservation across contexts
+              </li>
             </ul>
           </div>
         ),
@@ -2303,16 +2964,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TssA (Active TSS):</strong> Number of cell types (out of 48) where this region is in the Active Transcription Start Site chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TssA (Active TSS):</strong> Number of cell types (out of
+              48) where this region is in the Active Transcription Start Site
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Active promoter regions</span>
+              <span className="text-xs text-muted-foreground">
+                Active promoter regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly active promoter</li>
-              <li><strong>Lower counts:</strong> More cell-type specific activation</li>
-              <li><strong>Biological role:</strong> Active gene transcription initiation</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
+                active promoter
+              </li>
+              <li>
+                <strong>Lower counts:</strong> More cell-type specific
+                activation
+              </li>
+              <li>
+                <strong>Biological role:</strong> Active gene transcription
+                initiation
+              </li>
             </ul>
           </div>
         ),
@@ -2335,16 +3009,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PromU (Promoter Upstream TSS):</strong> Number of cell types (out of 48) where this region is in the Promoter Upstream TSS chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>PromU (Promoter Upstream TSS):</strong> Number of cell
+              types (out of 48) where this region is in the Promoter Upstream
+              TSS chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-amber-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Upstream promoter regions</span>
+              <span className="text-xs text-muted-foreground">
+                Upstream promoter regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly active upstream elements</li>
-              <li><strong>Lower counts:</strong> Cell-type specific upstream activity</li>
-              <li><strong>Biological role:</strong> Regulatory elements upstream of transcription start sites</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                active upstream elements
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific upstream
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Regulatory elements upstream
+                of transcription start sites
+              </li>
             </ul>
           </div>
         ),
@@ -2370,16 +3057,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PromD1 (Promoter Downstream TSS with DNase):</strong> Number of cell types (out of 48) where this region is in the Promoter Downstream TSS with DNase chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>PromD1 (Promoter Downstream TSS with DNase):</strong>{" "}
+              Number of cell types (out of 48) where this region is in the
+              Promoter Downstream TSS with DNase chromatin state. (default:
+              1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-amber-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Downstream promoter with accessibility</span>
+              <span className="text-xs text-muted-foreground">
+                Downstream promoter with accessibility
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly accessible downstream regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific downstream activity</li>
-              <li><strong>Biological role:</strong> Accessible regulatory elements downstream of TSS</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                accessible downstream regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific downstream
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Accessible regulatory elements
+                downstream of TSS
+              </li>
             </ul>
           </div>
         ),
@@ -2405,16 +3106,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PromD2 (Promoter Downstream TSS):</strong> Number of cell types (out of 48) where this region is in the Promoter Downstream TSS chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>PromD2 (Promoter Downstream TSS):</strong> Number of cell
+              types (out of 48) where this region is in the Promoter Downstream
+              TSS chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-amber-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Downstream promoter regions</span>
+              <span className="text-xs text-muted-foreground">
+                Downstream promoter regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly active downstream elements</li>
-              <li><strong>Lower counts:</strong> Cell-type specific downstream activity</li>
-              <li><strong>Biological role:</strong> Regulatory elements downstream of transcription start sites</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                active downstream elements
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific downstream
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Regulatory elements downstream
+                of transcription start sites
+              </li>
             </ul>
           </div>
         ),
@@ -2440,16 +3154,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Tx5' (Transcription 5'):</strong> Number of cell types (out of 48) where this region is in the Transcription 5' chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>Tx5' (Transcription 5'):</strong> Number of cell types
+              (out of 48) where this region is in the Transcription 5' chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-green-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">5' end transcription</span>
+              <span className="text-xs text-muted-foreground">
+                5' end transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;12 cell types):</strong> Broadly transcribed 5' regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific 5' transcription</li>
-              <li><strong>Biological role:</strong> Active transcription at gene 5' ends</li>
+              <li>
+                <strong>Higher counts (&gt;12 cell types):</strong> Broadly
+                transcribed 5' regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific 5'
+                transcription
+              </li>
+              <li>
+                <strong>Biological role:</strong> Active transcription at gene
+                5' ends
+              </li>
             </ul>
           </div>
         ),
@@ -2475,16 +3202,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Tx (Transcription):</strong> Number of cell types (out of 48) where this region is in the Transcription chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>Tx (Transcription):</strong> Number of cell types (out of
+              48) where this region is in the Transcription chromatin state.
+              (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-green-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Active gene body transcription</span>
+              <span className="text-xs text-muted-foreground">
+                Active gene body transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;15 cell types):</strong> Broadly transcribed gene body</li>
-              <li><strong>Lower counts:</strong> Cell-type specific transcription</li>
-              <li><strong>Biological role:</strong> Active transcriptional elongation</li>
+              <li>
+                <strong>Higher counts (&gt;15 cell types):</strong> Broadly
+                transcribed gene body
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific transcription
+              </li>
+              <li>
+                <strong>Biological role:</strong> Active transcriptional
+                elongation
+              </li>
             </ul>
           </div>
         ),
@@ -2510,16 +3249,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Tx3' (Transcription 3'):</strong> Number of cell types (out of 48) where this region is in the Transcription 3' chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>Tx3' (Transcription 3'):</strong> Number of cell types
+              (out of 48) where this region is in the Transcription 3' chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-green-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">3' end transcription</span>
+              <span className="text-xs text-muted-foreground">
+                3' end transcription
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;12 cell types):</strong> Broadly transcribed 3' regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific 3' transcription</li>
-              <li><strong>Biological role:</strong> Active transcription at gene 3' ends</li>
+              <li>
+                <strong>Higher counts (&gt;12 cell types):</strong> Broadly
+                transcribed 3' regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific 3'
+                transcription
+              </li>
+              <li>
+                <strong>Biological role:</strong> Active transcription at gene
+                3' ends
+              </li>
             </ul>
           </div>
         ),
@@ -2545,16 +3297,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TxWk (Transcription Weak):</strong> Number of cell types (out of 48) where this region is in the Transcription Weak chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TxWk (Transcription Weak):</strong> Number of cell types
+              (out of 48) where this region is in the Transcription Weak
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-green-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Weak transcriptional activity</span>
+              <span className="text-xs text-muted-foreground">
+                Weak transcriptional activity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;15 cell types):</strong> Broadly weak transcription</li>
-              <li><strong>Lower counts:</strong> Cell-type specific weak activity</li>
-              <li><strong>Biological role:</strong> Low-level transcriptional activity</li>
+              <li>
+                <strong>Higher counts (&gt;15 cell types):</strong> Broadly weak
+                transcription
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific weak activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Low-level transcriptional
+                activity
+              </li>
             </ul>
           </div>
         ),
@@ -2580,16 +3344,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TxReg (Transcription Regulatory):</strong> Number of cell types (out of 48) where this region is in the Transcription Regulatory chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TxReg (Transcription Regulatory):</strong> Number of cell
+              types (out of 48) where this region is in the Transcription
+              Regulatory chromatin state. (default: 1.92). (Ernst and Kellis,
+              2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-lime-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Transcriptional regulatory regions</span>
+              <span className="text-xs text-muted-foreground">
+                Transcriptional regulatory regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly regulatory transcription</li>
-              <li><strong>Lower counts:</strong> Cell-type specific regulatory activity</li>
-              <li><strong>Biological role:</strong> Regulatory elements within transcribed regions</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
+                regulatory transcription
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific regulatory
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Regulatory elements within
+                transcribed regions
+              </li>
             </ul>
           </div>
         ),
@@ -2615,16 +3393,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TxEnh5' (Transcription Enhancer 5'):</strong> Number of cell types (out of 48) where this region is in the Transcription Enhancer 5' chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TxEnh5' (Transcription Enhancer 5'):</strong> Number of
+              cell types (out of 48) where this region is in the Transcription
+              Enhancer 5' chromatin state. (default: 1.92). (Ernst and Kellis,
+              2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-lime-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">5' transcriptional enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                5' transcriptional enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly active 5' enhancers</li>
-              <li><strong>Lower counts:</strong> Cell-type specific 5' enhancer activity</li>
-              <li><strong>Biological role:</strong> Enhancer activity at 5' end of transcribed regions</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                active 5' enhancers
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific 5' enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Enhancer activity at 5' end of
+                transcribed regions
+              </li>
             </ul>
           </div>
         ),
@@ -2650,16 +3442,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TxEnh3' (Transcription Enhancer 3'):</strong> Number of cell types (out of 48) where this region is in the Transcription Enhancer 3' chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TxEnh3' (Transcription Enhancer 3'):</strong> Number of
+              cell types (out of 48) where this region is in the Transcription
+              Enhancer 3' chromatin state. (default: 1.92). (Ernst and Kellis,
+              2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-lime-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">3' transcriptional enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                3' transcriptional enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly active 3' enhancers</li>
-              <li><strong>Lower counts:</strong> Cell-type specific 3' enhancer activity</li>
-              <li><strong>Biological role:</strong> Enhancer activity at 3' end of transcribed regions</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                active 3' enhancers
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific 3' enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Enhancer activity at 3' end of
+                transcribed regions
+              </li>
             </ul>
           </div>
         ),
@@ -2685,16 +3491,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>TxEnhW (Transcription Enhancer Weak):</strong> Number of cell types (out of 48) where this region is in the Transcription Enhancer Weak chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>TxEnhW (Transcription Enhancer Weak):</strong> Number of
+              cell types (out of 48) where this region is in the Transcription
+              Enhancer Weak chromatin state. (default: 1.92). (Ernst and Kellis,
+              2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-lime-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Weak transcriptional enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                Weak transcriptional enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly weak enhancer activity</li>
-              <li><strong>Lower counts:</strong> Cell-type specific weak enhancers</li>
-              <li><strong>Biological role:</strong> Low-level enhancer activity in transcribed regions</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly weak
+                enhancer activity
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific weak enhancers
+              </li>
+              <li>
+                <strong>Biological role:</strong> Low-level enhancer activity in
+                transcribed regions
+              </li>
             </ul>
           </div>
         ),
@@ -2720,16 +3539,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhA1 (Active Enhancer 1):</strong> Number of cell types (out of 48) where this region is in the Active Enhancer 1 chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhA1 (Active Enhancer 1):</strong> Number of cell types
+              (out of 48) where this region is in the Active Enhancer 1
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-orange-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Strong active enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                Strong active enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly active enhancer</li>
-              <li><strong>Lower counts:</strong> Cell-type specific enhancer activity</li>
-              <li><strong>Biological role:</strong> Strong regulatory element activity</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
+                active enhancer
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Strong regulatory element
+                activity
+              </li>
             </ul>
           </div>
         ),
@@ -2755,16 +3587,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhA2 (Active Enhancer 2):</strong> Number of cell types (out of 48) where this region is in the Active Enhancer 2 chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhA2 (Active Enhancer 2):</strong> Number of cell types
+              (out of 48) where this region is in the Active Enhancer 2
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-orange-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Strong active enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                Strong active enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly active enhancer</li>
-              <li><strong>Lower counts:</strong> Cell-type specific enhancer activity</li>
-              <li><strong>Biological role:</strong> Strong distal regulatory element activity</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
+                active enhancer
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Strong distal regulatory
+                element activity
+              </li>
             </ul>
           </div>
         ),
@@ -2790,16 +3635,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhAF (Active Enhancer Flanking):</strong> Number of cell types (out of 48) where this region is in the Active Enhancer Flanking chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhAF (Active Enhancer Flanking):</strong> Number of cell
+              types (out of 48) where this region is in the Active Enhancer
+              Flanking chromatin state. (default: 1.92). (Ernst and Kellis,
+              2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-orange-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Flanking enhancer regions</span>
+              <span className="text-xs text-muted-foreground">
+                Flanking enhancer regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;8 cell types):</strong> Broadly active flanking regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific flanking activity</li>
-              <li><strong>Biological role:</strong> Regulatory activity flanking strong enhancers</li>
+              <li>
+                <strong>Higher counts (&gt;8 cell types):</strong> Broadly
+                active flanking regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific flanking
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Regulatory activity flanking
+                strong enhancers
+              </li>
             </ul>
           </div>
         ),
@@ -2825,16 +3684,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhW1 (Enhancer Weak 1):</strong> Number of cell types (out of 48) where this region is in the Enhancer Weak 1 chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhW1 (Enhancer Weak 1):</strong> Number of cell types
+              (out of 48) where this region is in the Enhancer Weak 1 chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Weak enhancer activity</span>
+              <span className="text-xs text-muted-foreground">
+                Weak enhancer activity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;12 cell types):</strong> Broadly weak enhancer</li>
-              <li><strong>Lower counts:</strong> Cell-type specific weak enhancer activity</li>
-              <li><strong>Biological role:</strong> Low-level distal regulatory element activity</li>
+              <li>
+                <strong>Higher counts (&gt;12 cell types):</strong> Broadly weak
+                enhancer
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific weak enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Low-level distal regulatory
+                element activity
+              </li>
             </ul>
           </div>
         ),
@@ -2860,16 +3732,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhW2 (Enhancer Weak 2):</strong> Number of cell types (out of 48) where this region is in the Enhancer Weak 2 chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhW2 (Enhancer Weak 2):</strong> Number of cell types
+              (out of 48) where this region is in the Enhancer Weak 2 chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Weak enhancer activity</span>
+              <span className="text-xs text-muted-foreground">
+                Weak enhancer activity
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;12 cell types):</strong> Broadly weak enhancer</li>
-              <li><strong>Lower counts:</strong> Cell-type specific weak enhancer activity</li>
-              <li><strong>Biological role:</strong> Low-level proximal regulatory element activity</li>
+              <li>
+                <strong>Higher counts (&gt;12 cell types):</strong> Broadly weak
+                enhancer
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific weak enhancer
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Low-level proximal regulatory
+                element activity
+              </li>
             </ul>
           </div>
         ),
@@ -2895,16 +3780,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>EnhAc (Enhancer Acetylation Only):</strong> Number of cell types (out of 48) where this region is in the Enhancer Acetylation Only chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>EnhAc (Enhancer Acetylation Only):</strong> Number of cell
+              types (out of 48) where this region is in the Enhancer Acetylation
+              Only chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Acetylation-marked enhancers</span>
+              <span className="text-xs text-muted-foreground">
+                Acetylation-marked enhancers
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10 cell types):</strong> Broadly acetylated enhancer regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific acetylation</li>
-              <li><strong>Biological role:</strong> Enhancers marked primarily by histone acetylation</li>
+              <li>
+                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
+                acetylated enhancer regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific acetylation
+              </li>
+              <li>
+                <strong>Biological role:</strong> Enhancers marked primarily by
+                histone acetylation
+              </li>
             </ul>
           </div>
         ),
@@ -2930,16 +3827,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>DNase (DNase Only):</strong> Number of cell types (out of 48) where this region is in the DNase Only chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>DNase (DNase Only):</strong> Number of cell types (out of
+              48) where this region is in the DNase Only chromatin state.
+              (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Accessible chromatin without histone marks</span>
+              <span className="text-xs text-muted-foreground">
+                Accessible chromatin without histone marks
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;15 cell types):</strong> Broadly accessible regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific accessibility</li>
-              <li><strong>Biological role:</strong> Chromatin accessibility without strong histone signatures</li>
+              <li>
+                <strong>Higher counts (&gt;15 cell types):</strong> Broadly
+                accessible regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific accessibility
+              </li>
+              <li>
+                <strong>Biological role:</strong> Chromatin accessibility
+                without strong histone signatures
+              </li>
             </ul>
           </div>
         ),
@@ -2965,16 +3874,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>ZNF/Rpts (ZNF Genes and Repeats):</strong> Number of cell types (out of 48) where this region is in the ZNF Genes and Repeats chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>ZNF/Rpts (ZNF Genes and Repeats):</strong> Number of cell
+              types (out of 48) where this region is in the ZNF Genes and
+              Repeats chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-emerald-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Zinc finger genes and repetitive elements</span>
+              <span className="text-xs text-muted-foreground">
+                Zinc finger genes and repetitive elements
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;20 cell types):</strong> Broadly active ZNF/repeat regions</li>
-              <li><strong>Lower counts:</strong> Cell-type specific ZNF/repeat activity</li>
-              <li><strong>Biological role:</strong> Zinc finger gene clusters and repetitive elements</li>
+              <li>
+                <strong>Higher counts (&gt;20 cell types):</strong> Broadly
+                active ZNF/repeat regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific ZNF/repeat
+                activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Zinc finger gene clusters and
+                repetitive elements
+              </li>
             </ul>
           </div>
         ),
@@ -3000,16 +3922,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Het (Heterochromatin):</strong> Number of cell types (out of 48) where this region is in the Heterochromatin chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>Het (Heterochromatin):</strong> Number of cell types (out
+              of 48) where this region is in the Heterochromatin chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-violet-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Constitutive heterochromatin</span>
+              <span className="text-xs text-muted-foreground">
+                Constitutive heterochromatin
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;30 cell types):</strong> Constitutively silenced regions</li>
-              <li><strong>Lower counts:</strong> Facultatively heterochromatic</li>
-              <li><strong>Biological role:</strong> Long-term gene silencing, repetitive elements</li>
+              <li>
+                <strong>Higher counts (&gt;30 cell types):</strong>{" "}
+                Constitutively silenced regions
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Facultatively heterochromatic
+              </li>
+              <li>
+                <strong>Biological role:</strong> Long-term gene silencing,
+                repetitive elements
+              </li>
             </ul>
           </div>
         ),
@@ -3035,16 +3969,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PromP (Poised Promoter):</strong> Number of cell types (out of 48) where this region is in the Poised Promoter chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>PromP (Poised Promoter):</strong> Number of cell types
+              (out of 48) where this region is in the Poised Promoter chromatin
+              state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-rose-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Poised developmental promoters</span>
+              <span className="text-xs text-muted-foreground">
+                Poised developmental promoters
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;12 cell types):</strong> Broadly poised promoters</li>
-              <li><strong>Lower counts:</strong> Cell-type specific poised states</li>
-              <li><strong>Biological role:</strong> Promoters ready for activation, often developmental genes</li>
+              <li>
+                <strong>Higher counts (&gt;12 cell types):</strong> Broadly
+                poised promoters
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific poised states
+              </li>
+              <li>
+                <strong>Biological role:</strong> Promoters ready for
+                activation, often developmental genes
+              </li>
             </ul>
           </div>
         ),
@@ -3070,16 +4016,29 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PromBiv (Bivalent Promoter):</strong> Number of cell types (out of 48) where this region is in the Bivalent Promoter chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>PromBiv (Bivalent Promoter):</strong> Number of cell types
+              (out of 48) where this region is in the Bivalent Promoter
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-purple-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Poised developmental promoters</span>
+              <span className="text-xs text-muted-foreground">
+                Poised developmental promoters
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;15 cell types):</strong> Broadly poised developmental genes</li>
-              <li><strong>Lower counts:</strong> Cell-type specific bivalent states</li>
-              <li><strong>Biological role:</strong> H3K4me3 + H3K27me3, ready for activation or repression</li>
+              <li>
+                <strong>Higher counts (&gt;15 cell types):</strong> Broadly
+                poised developmental genes
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific bivalent
+                states
+              </li>
+              <li>
+                <strong>Biological role:</strong> H3K4me3 + H3K27me3, ready for
+                activation or repression
+              </li>
             </ul>
           </div>
         ),
@@ -3105,16 +4064,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>ReprPC (Repressed PolyComb):</strong> Number of cell types (out of 48) where this region is in the Repressed PolyComb chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>ReprPC (Repressed PolyComb):</strong> Number of cell types
+              (out of 48) where this region is in the Repressed PolyComb
+              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-zinc-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Polycomb-repressed regions</span>
+              <span className="text-xs text-muted-foreground">
+                Polycomb-repressed regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;20 cell types):</strong> Broadly repressed across contexts</li>
-              <li><strong>Lower counts:</strong> Cell-type specific repression</li>
-              <li><strong>Biological role:</strong> Facultative heterochromatin, developmental gene silencing</li>
+              <li>
+                <strong>Higher counts (&gt;20 cell types):</strong> Broadly
+                repressed across contexts
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Cell-type specific repression
+              </li>
+              <li>
+                <strong>Biological role:</strong> Facultative heterochromatin,
+                developmental gene silencing
+              </li>
             </ul>
           </div>
         ),
@@ -3140,16 +4111,28 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Quies (Quiescent/Low):</strong> Number of cell types (out of 48) where this region is in the Quiescent/Low chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
+              <strong>Quies (Quiescent/Low):</strong> Number of cell types (out
+              of 48) where this region is in the Quiescent/Low chromatin state.
+              (default: 1.92). (Ernst and Kellis, 2015)
             </p>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-zinc-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">Low activity regions</span>
+              <span className="text-xs text-muted-foreground">
+                Low activity regions
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;35 cell types):</strong> Constitutively inactive</li>
-              <li><strong>Lower counts:</strong> Context-dependent activity</li>
-              <li><strong>Biological role:</strong> Background chromatin with minimal regulatory activity</li>
+              <li>
+                <strong>Higher counts (&gt;35 cell types):</strong>{" "}
+                Constitutively inactive
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Context-dependent activity
+              </li>
+              <li>
+                <strong>Biological role:</strong> Background chromatin with
+                minimal regulatory activity
+              </li>
             </ul>
           </div>
         ),
@@ -3181,12 +4164,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Local Nucleotide Diversity:</strong> Integrative score combining local genetic diversity measures (background selection statistic, recombination rate, nucleotide diversity) into a single PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
+              <strong>aPC-Local Nucleotide Diversity:</strong> Integrative score
+              combining local genetic diversity measures (background selection
+              statistic, recombination rate, nucleotide diversity) into a single
+              PHRED-scaled score. Range: [0, 86.238]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Higher local genetic diversity</li>
-              <li><strong>Lower scores:</strong> Lower local genetic diversity</li>
-              <li><strong>Diversity context:</strong> Reflects evolutionary and recombination patterns</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Higher local genetic
+                diversity
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Lower local genetic diversity
+              </li>
+              <li>
+                <strong>Diversity context:</strong> Reflects evolutionary and
+                recombination patterns
+              </li>
             </ul>
           </div>
         ),
@@ -3198,16 +4192,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Recombination Rate:</strong> Local recombination rate per base pair, indicating how frequently genetic recombination occurs in this genomic region during meiosis.
+              <strong>Recombination Rate:</strong> Local recombination rate per
+              base pair, indicating how frequently genetic recombination occurs
+              in this genomic region during meiosis.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Genetic Diversity</span>
-              <span className="text-xs text-muted-foreground">Crossover frequency</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Genetic Diversity
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Crossover frequency
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher rates (&gt;2 cM/Mb):</strong> Recombination hotspots, higher genetic diversity</li>
-              <li><strong>Lower rates (&lt;0.5 cM/Mb):</strong> Recombination coldspots, lower diversity</li>
-              <li><strong>Biological significance:</strong> Affects linkage disequilibrium and population genetics</li>
+              <li>
+                <strong>Higher rates (&gt;2 cM/Mb):</strong> Recombination
+                hotspots, higher genetic diversity
+              </li>
+              <li>
+                <strong>Lower rates (&lt;0.5 cM/Mb):</strong> Recombination
+                coldspots, lower diversity
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Affects linkage
+                disequilibrium and population genetics
+              </li>
             </ul>
           </div>
         ),
@@ -3219,16 +4228,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Nucleotide Diversity:</strong> Average number of nucleotide differences per site between randomly chosen DNA sequences from a population. A fundamental measure of genetic variation.
+              <strong>Nucleotide Diversity:</strong> Average number of
+              nucleotide differences per site between randomly chosen DNA
+              sequences from a population. A fundamental measure of genetic
+              variation.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Genetic Diversity</span>
-              <span className="text-xs text-muted-foreground">Population genetic variation</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Genetic Diversity
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Population genetic variation
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher diversity (&gt;0.001):</strong> More genetic variation, less selective constraint</li>
-              <li><strong>Lower diversity (&lt;0.0005):</strong> Less variation, stronger purifying selection</li>
-              <li><strong>Biological significance:</strong> Reflects mutation-selection-drift balance</li>
+              <li>
+                <strong>Higher diversity (&gt;0.001):</strong> More genetic
+                variation, less selective constraint
+              </li>
+              <li>
+                <strong>Lower diversity (&lt;0.0005):</strong> Less variation,
+                stronger purifying selection
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Reflects
+                mutation-selection-drift balance
+              </li>
             </ul>
           </div>
         ),
@@ -3240,16 +4265,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Background Selection Statistic (B):</strong> Measures the reduction in neutral diversity due to selection against deleterious mutations linked to the focal site. Higher values indicate stronger background selection effects.
+              <strong>Background Selection Statistic (B):</strong> Measures the
+              reduction in neutral diversity due to selection against
+              deleterious mutations linked to the focal site. Higher values
+              indicate stronger background selection effects.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Genetic Diversity</span>
-              <span className="text-xs text-muted-foreground">Selection against linked mutations</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Genetic Diversity
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Selection against linked mutations
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher B values (&gt;0.8):</strong> Strong background selection, reduced diversity</li>
-              <li><strong>Lower B values (&lt;0.5):</strong> Weak background selection, higher diversity</li>
-              <li><strong>Biological significance:</strong> Indicates local selective pressure on linked sites</li>
+              <li>
+                <strong>Higher B values (&gt;0.8):</strong> Strong background
+                selection, reduced diversity
+              </li>
+              <li>
+                <strong>Lower B values (&lt;0.5):</strong> Weak background
+                selection, higher diversity
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Indicates local
+                selective pressure on linked sites
+              </li>
             </ul>
           </div>
         ),
@@ -3267,12 +4308,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Mutation Density:</strong> Integrative score combining mutation densities at different scales (100bp, 1kb, 10kb windows) for common, rare, and singleton variants into a single PHRED-scaled score. Range: [0, 84.477]. (Li et al., 2020)
+              <strong>aPC-Mutation Density:</strong> Integrative score combining
+              mutation densities at different scales (100bp, 1kb, 10kb windows)
+              for common, rare, and singleton variants into a single
+              PHRED-scaled score. Range: [0, 84.477]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Higher local mutation density</li>
-              <li><strong>Lower scores:</strong> Lower local mutation density</li>
-              <li><strong>Density context:</strong> Reflects mutational burden in genomic region</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Higher local mutation
+                density
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Lower local mutation density
+              </li>
+              <li>
+                <strong>Density context:</strong> Reflects mutational burden in
+                genomic region
+              </li>
             </ul>
           </div>
         ),
@@ -3284,16 +4336,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Common100bp:</strong> Number of common variants (MAF &gt; 0.05) from BRAVO dataset within a 100bp window around the variant. Range: [0, 13] (default: 0).
+              <strong>Common100bp:</strong> Number of common variants (MAF &gt;
+              0.05) from BRAVO dataset within a 100bp window around the variant.
+              Range: [0, 13] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Common variants (MAF &gt; 5%)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Common variants (MAF &gt; 5%)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;3):</strong> Mutation-prone region for common variants</li>
-              <li><strong>Lower counts (0-1):</strong> Less mutated or more constrained region</li>
-              <li><strong>Biological significance:</strong> Indicates local mutational burden and tolerance</li>
+              <li>
+                <strong>Higher counts (&gt;3):</strong> Mutation-prone region
+                for common variants
+              </li>
+              <li>
+                <strong>Lower counts (0-1):</strong> Less mutated or more
+                constrained region
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Indicates local
+                mutational burden and tolerance
+              </li>
             </ul>
           </div>
         ),
@@ -3305,16 +4372,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Rare100bp:</strong> Number of rare variants (MAF &lt; 0.05) from BRAVO dataset within a 100bp window around the variant. Range: [0, 31] (default: 0).
+              <strong>Rare100bp:</strong> Number of rare variants (MAF &lt;
+              0.05) from BRAVO dataset within a 100bp window around the variant.
+              Range: [0, 31] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Rare variants (MAF &lt; 5%)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Rare variants (MAF &lt; 5%)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;5):</strong> High rare variant density, potential mutation hotspot</li>
-              <li><strong>Lower counts (0-2):</strong> Lower mutation rate or stronger selection against variants</li>
-              <li><strong>Biological significance:</strong> Reflects recent mutations and selective constraints</li>
+              <li>
+                <strong>Higher counts (&gt;5):</strong> High rare variant
+                density, potential mutation hotspot
+              </li>
+              <li>
+                <strong>Lower counts (0-2):</strong> Lower mutation rate or
+                stronger selection against variants
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Reflects recent
+                mutations and selective constraints
+              </li>
             </ul>
           </div>
         ),
@@ -3326,16 +4408,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Sngl100bp:</strong> Number of singleton variants (observed only once) from BRAVO dataset within a 100bp window around the variant. Range: [0, 99] (default: 0).
+              <strong>Sngl100bp:</strong> Number of singleton variants (observed
+              only once) from BRAVO dataset within a 100bp window around the
+              variant. Range: [0, 99] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Singleton variants (AC=1)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Singleton variants (AC=1)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;10):</strong> Very high recent mutation activity</li>
-              <li><strong>Lower counts (0-3):</strong> Lower mutation rate, potentially more constrained</li>
-              <li><strong>Biological significance:</strong> Indicates very recent mutational events</li>
+              <li>
+                <strong>Higher counts (&gt;10):</strong> Very high recent
+                mutation activity
+              </li>
+              <li>
+                <strong>Lower counts (0-3):</strong> Lower mutation rate,
+                potentially more constrained
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Indicates very recent
+                mutational events
+              </li>
             </ul>
           </div>
         ),
@@ -3347,16 +4444,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Common1000bp:</strong> Number of common variants (MAF &gt; 0.05) from BRAVO dataset within a 1000bp window around the variant. Range: [0, 73] (default: 0).
+              <strong>Common1000bp:</strong> Number of common variants (MAF &gt;
+              0.05) from BRAVO dataset within a 1000bp window around the
+              variant. Range: [0, 73] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Common variants (1kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Common variants (1kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;20):</strong> High mutation density in local region</li>
-              <li><strong>Lower counts (0-5):</strong> Lower regional mutation rate</li>
-              <li><strong>Biological significance:</strong> Regional mutational patterns and tolerance</li>
+              <li>
+                <strong>Higher counts (&gt;20):</strong> High mutation density
+                in local region
+              </li>
+              <li>
+                <strong>Lower counts (0-5):</strong> Lower regional mutation
+                rate
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Regional mutational
+                patterns and tolerance
+              </li>
             </ul>
           </div>
         ),
@@ -3368,16 +4480,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Rare1000bp:</strong> Number of rare variants (MAF &lt; 0.05) from BRAVO dataset within a 1000bp window around the variant. Range: [0, 74] (default: 0).
+              <strong>Rare1000bp:</strong> Number of rare variants (MAF &lt;
+              0.05) from BRAVO dataset within a 1000bp window around the
+              variant. Range: [0, 74] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Rare variants (1kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Rare variants (1kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;20):</strong> High rare variant density in region</li>
-              <li><strong>Lower counts (0-5):</strong> Lower regional rare variant burden</li>
-              <li><strong>Biological significance:</strong> Regional constraint against rare variants</li>
+              <li>
+                <strong>Higher counts (&gt;20):</strong> High rare variant
+                density in region
+              </li>
+              <li>
+                <strong>Lower counts (0-5):</strong> Lower regional rare variant
+                burden
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Regional constraint
+                against rare variants
+              </li>
             </ul>
           </div>
         ),
@@ -3389,16 +4516,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Sngl1000bp:</strong> Number of singleton variants (observed only once) from BRAVO dataset within a 1000bp window around the variant. Range: [0, 658] (default: 0).
+              <strong>Sngl1000bp:</strong> Number of singleton variants
+              (observed only once) from BRAVO dataset within a 1000bp window
+              around the variant. Range: [0, 658] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Singleton variants (1kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Singleton variants (1kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;50):</strong> Very high regional mutation activity</li>
-              <li><strong>Lower counts (0-10):</strong> Lower regional mutation rate</li>
-              <li><strong>Biological significance:</strong> Regional patterns of recent mutations</li>
+              <li>
+                <strong>Higher counts (&gt;50):</strong> Very high regional
+                mutation activity
+              </li>
+              <li>
+                <strong>Lower counts (0-10):</strong> Lower regional mutation
+                rate
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Regional patterns of
+                recent mutations
+              </li>
             </ul>
           </div>
         ),
@@ -3410,16 +4552,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Common10000bp:</strong> Number of common variants (MAF &gt; 0.05) from BRAVO dataset within a 10kb window around the variant. Range: [0, 443] (default: 0).
+              <strong>Common10000bp:</strong> Number of common variants (MAF
+              &gt; 0.05) from BRAVO dataset within a 10kb window around the
+              variant. Range: [0, 443] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Common variants (10kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Common variants (10kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;100):</strong> Very high regional mutation density</li>
-              <li><strong>Lower counts (0-20):</strong> Lower broad regional mutation rate</li>
-              <li><strong>Biological significance:</strong> Broad regional mutational landscape</li>
+              <li>
+                <strong>Higher counts (&gt;100):</strong> Very high regional
+                mutation density
+              </li>
+              <li>
+                <strong>Lower counts (0-20):</strong> Lower broad regional
+                mutation rate
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Broad regional
+                mutational landscape
+              </li>
             </ul>
           </div>
         ),
@@ -3431,16 +4588,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Rare10000bp:</strong> Number of rare variants (MAF &lt; 0.05) from BRAVO dataset within a 10kb window around the variant. Range: [0, 355] (default: 0).
+              <strong>Rare10000bp:</strong> Number of rare variants (MAF &lt;
+              0.05) from BRAVO dataset within a 10kb window around the variant.
+              Range: [0, 355] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Rare variants (10kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Rare variants (10kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;80):</strong> Very high regional rare variant density</li>
-              <li><strong>Lower counts (0-20):</strong> Lower broad regional rare variant burden</li>
-              <li><strong>Biological significance:</strong> Broad regional constraint patterns</li>
+              <li>
+                <strong>Higher counts (&gt;80):</strong> Very high regional rare
+                variant density
+              </li>
+              <li>
+                <strong>Lower counts (0-20):</strong> Lower broad regional rare
+                variant burden
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Broad regional
+                constraint patterns
+              </li>
             </ul>
           </div>
         ),
@@ -3452,16 +4624,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Sngl10000bp:</strong> Number of singleton variants (observed only once) from BRAVO dataset within a 10kb window around the variant. Range: [0, 4749] (default: 0).
+              <strong>Sngl10000bp:</strong> Number of singleton variants
+              (observed only once) from BRAVO dataset within a 10kb window
+              around the variant. Range: [0, 4749] (default: 0).
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">Mutation Density</span>
-              <span className="text-xs text-muted-foreground">Singleton variants (10kb window)</span>
+              <span className="inline-flex rounded-full bg-teal-300 px-2 py-1 text-xs font-medium text-teal-900">
+                Mutation Density
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Singleton variants (10kb window)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts (&gt;500):</strong> Extremely high broad regional mutation activity</li>
-              <li><strong>Lower counts (0-50):</strong> Lower broad regional mutation rate</li>
-              <li><strong>Biological significance:</strong> Regional patterns of very recent mutations</li>
+              <li>
+                <strong>Higher counts (&gt;500):</strong> Extremely high broad
+                regional mutation activity
+              </li>
+              <li>
+                <strong>Lower counts (0-50):</strong> Lower broad regional
+                mutation rate
+              </li>
+              <li>
+                <strong>Biological significance:</strong> Regional patterns of
+                very recent mutations
+              </li>
             </ul>
           </div>
         ),
@@ -3479,12 +4666,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>aPC-Mappability:</strong> Integrative score combining sequence mappability measures at different read lengths (k=24, 36, 50, 100) for unique and multi-mapping reads into a single PHRED-scaled score. Range: [0.007, 22.966]. (Li et al., 2020)
+              <strong>aPC-Mappability:</strong> Integrative score combining
+              sequence mappability measures at different read lengths (k=24, 36,
+              50, 100) for unique and multi-mapping reads into a single
+              PHRED-scaled score. Range: [0.007, 22.966]. (Li et al., 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (&gt;10):</strong> Better sequence mappability</li>
-              <li><strong>Lower scores:</strong> Poorer sequence mappability</li>
-              <li><strong>Mappability:</strong> Affects sequencing read alignment quality</li>
+              <li>
+                <strong>Higher scores (&gt;10):</strong> Better sequence
+                mappability
+              </li>
+              <li>
+                <strong>Lower scores:</strong> Poorer sequence mappability
+              </li>
+              <li>
+                <strong>Mappability:</strong> Affects sequencing read alignment
+                quality
+              </li>
             </ul>
           </div>
         ),
@@ -3496,16 +4694,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Umap k100:</strong> Mappability of unconverted genome using 100bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Umap k100:</strong> Mappability of unconverted genome
+              using 100bp reads. Measures the extent to which a position can be
+              uniquely mapped by sequence reads. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Unconverted genome (100bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Unconverted genome (100bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Unique, reliable mapping region</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Repetitive regions, unreliable estimates</li>
-              <li><strong>Technical impact:</strong> Lower values increase susceptibility to spurious mapping</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Unique, reliable
+                mapping region
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Repetitive regions,
+                unreliable estimates
+              </li>
+              <li>
+                <strong>Technical impact:</strong> Lower values increase
+                susceptibility to spurious mapping
+              </li>
             </ul>
           </div>
         ),
@@ -3517,16 +4731,33 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Bismap k100:</strong> Mappability of the bisulfite-converted genome using 100bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Bismap k100:</strong> Mappability of the
+              bisulfite-converted genome using 100bp reads. Identifies unique
+              mapping regions for bisulfite sequencing, which introduces
+              complexity due to C-to-T conversion. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Bisulfite-converted genome (100bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Bisulfite-converted genome (100bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Reliable for methylation analysis</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Ambiguous methylation calls, multi-mapping reads</li>
-              <li><strong>Bisulfite context:</strong> C-to-T conversion reduces sequence complexity</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Reliable for
+                methylation analysis
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Ambiguous
+                methylation calls, multi-mapping reads
+              </li>
+              <li>
+                <strong>Bisulfite context:</strong> C-to-T conversion reduces
+                sequence complexity
+              </li>
             </ul>
           </div>
         ),
@@ -3538,16 +4769,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Umap k50:</strong> Mappability of unconverted genome using 50bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Umap k50:</strong> Mappability of unconverted genome using
+              50bp reads. Measures the extent to which a position can be
+              uniquely mapped by sequence reads. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Unconverted genome (50bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Unconverted genome (50bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Unique, reliable mapping region</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Repetitive regions, unreliable estimates</li>
-              <li><strong>Read length impact:</strong> Shorter reads (50bp) have lower mappability than longer reads</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Unique, reliable
+                mapping region
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Repetitive regions,
+                unreliable estimates
+              </li>
+              <li>
+                <strong>Read length impact:</strong> Shorter reads (50bp) have
+                lower mappability than longer reads
+              </li>
             </ul>
           </div>
         ),
@@ -3559,16 +4806,33 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Bismap k50:</strong> Mappability of the bisulfite-converted genome using 50bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Bismap k50:</strong> Mappability of the
+              bisulfite-converted genome using 50bp reads. Identifies unique
+              mapping regions for bisulfite sequencing, which introduces
+              complexity due to C-to-T conversion. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Bisulfite-converted genome (50bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Bisulfite-converted genome (50bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Reliable for methylation analysis</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Ambiguous methylation calls, multi-mapping reads</li>
-              <li><strong>Combined effects:</strong> Both shorter reads and bisulfite conversion reduce mappability</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Reliable for
+                methylation analysis
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Ambiguous
+                methylation calls, multi-mapping reads
+              </li>
+              <li>
+                <strong>Combined effects:</strong> Both shorter reads and
+                bisulfite conversion reduce mappability
+              </li>
             </ul>
           </div>
         ),
@@ -3580,16 +4844,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Umap k36:</strong> Mappability of unconverted genome using 36bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Umap k36:</strong> Mappability of unconverted genome using
+              36bp reads. Measures the extent to which a position can be
+              uniquely mapped by sequence reads. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Unconverted genome (36bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Unconverted genome (36bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Unique, reliable mapping region</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Repetitive regions, unreliable estimates</li>
-              <li><strong>Short reads:</strong> 36bp reads have more mapping ambiguity than longer reads</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Unique, reliable
+                mapping region
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Repetitive regions,
+                unreliable estimates
+              </li>
+              <li>
+                <strong>Short reads:</strong> 36bp reads have more mapping
+                ambiguity than longer reads
+              </li>
             </ul>
           </div>
         ),
@@ -3601,16 +4881,33 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Bismap k36:</strong> Mappability of the bisulfite-converted genome using 36bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Bismap k36:</strong> Mappability of the
+              bisulfite-converted genome using 36bp reads. Identifies unique
+              mapping regions for bisulfite sequencing, which introduces
+              complexity due to C-to-T conversion. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Bisulfite-converted genome (36bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Bisulfite-converted genome (36bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Reliable for methylation analysis</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Ambiguous methylation calls, multi-mapping reads</li>
-              <li><strong>High complexity:</strong> Shortest read length with bisulfite conversion challenges</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Reliable for
+                methylation analysis
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Ambiguous
+                methylation calls, multi-mapping reads
+              </li>
+              <li>
+                <strong>High complexity:</strong> Shortest read length with
+                bisulfite conversion challenges
+              </li>
             </ul>
           </div>
         ),
@@ -3622,16 +4919,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Umap k24:</strong> Mappability of unconverted genome using 24bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Umap k24:</strong> Mappability of unconverted genome using
+              24bp reads. Measures the extent to which a position can be
+              uniquely mapped by sequence reads. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Unconverted genome (24bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Unconverted genome (24bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Unique, reliable mapping region</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Repetitive regions, unreliable estimates</li>
-              <li><strong>Shortest reads:</strong> 24bp reads have highest mapping ambiguity</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Unique, reliable
+                mapping region
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Repetitive regions,
+                unreliable estimates
+              </li>
+              <li>
+                <strong>Shortest reads:</strong> 24bp reads have highest mapping
+                ambiguity
+              </li>
             </ul>
           </div>
         ),
@@ -3643,16 +4956,33 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Bismap k24:</strong> Mappability of the bisulfite-converted genome using 24bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion. Range: [0, 1] (default: 0). (Karimzadeh et al., 2018)
+              <strong>Bismap k24:</strong> Mappability of the
+              bisulfite-converted genome using 24bp reads. Identifies unique
+              mapping regions for bisulfite sequencing, which introduces
+              complexity due to C-to-T conversion. Range: [0, 1] (default: 0).
+              (Karimzadeh et al., 2018)
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">Mappability</span>
-              <span className="text-xs text-muted-foreground">Bisulfite-converted genome (24bp reads)</span>
+              <span className="inline-flex rounded-full bg-purple-300 px-2 py-1 text-xs font-medium text-purple-900">
+                Mappability
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Bisulfite-converted genome (24bp reads)
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>High mappability (≥0.8):</strong> Reliable for methylation analysis</li>
-              <li><strong>Low mappability (&lt;0.5):</strong> Ambiguous methylation calls, multi-mapping reads</li>
-              <li><strong>Maximum complexity:</strong> Shortest reads with maximum bisulfite mapping challenges</li>
+              <li>
+                <strong>High mappability (≥0.8):</strong> Reliable for
+                methylation analysis
+              </li>
+              <li>
+                <strong>Low mappability (&lt;0.5):</strong> Ambiguous
+                methylation calls, multi-mapping reads
+              </li>
+              <li>
+                <strong>Maximum complexity:</strong> Shortest reads with maximum
+                bisulfite mapping challenges
+              </li>
             </ul>
           </div>
         ),
@@ -3677,14 +5007,17 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-3 text-left">
             <p>
-              <strong>Filter Value:</strong> Quality assessment categories for genomic regions based on various sequencing and genomic metrics.
+              <strong>Filter Value:</strong> Quality assessment categories for
+              genomic regions based on various sequencing and genomic metrics.
             </p>
             <div className="space-y-3 text-xs">
               <div className="flex items-start gap-3">
                 <span className="w-3 h-3 bg-red-300 rounded flex-shrink-0 mt-0.5"></span>
                 <div>
                   <strong>Low:</strong>
-                  <div className="mt-1">Low quality regions determined by gnomAD sequencing metrics:</div>
+                  <div className="mt-1">
+                    Low quality regions determined by gnomAD sequencing metrics:
+                  </div>
                   <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
                     <li>Mappability &lt; 0.5</li>
                     <li>Overlap with &gt;50nt simple repeat</li>
@@ -3697,14 +5030,22 @@ export const variantDetailedColumns: VariantColumnsType[] = [
                 <span className="w-3 h-3 bg-amber-300 rounded flex-shrink-0 mt-0.5"></span>
                 <div>
                   <strong>SFS_bump:</strong>
-                  <div className="mt-1">Pentamer context with abnormal site frequency spectrum (SFS). High-frequency SNVs [0.0005 &lt; MAF ≤ 0.2] exceed 1.5× mutation rate controlled average. Often repetitive contexts.</div>
+                  <div className="mt-1">
+                    Pentamer context with abnormal site frequency spectrum
+                    (SFS). High-frequency SNVs [0.0005 &lt; MAF ≤ 0.2] exceed
+                    1.5× mutation rate controlled average. Often repetitive
+                    contexts.
+                  </div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <span className="w-3 h-3 bg-blue-300 rounded flex-shrink-0 mt-0.5"></span>
                 <div>
                   <strong>TFBS:</strong>
-                  <div className="mt-1">Transcription factor binding site determined by overlap with ChIP-seq peaks</div>
+                  <div className="mt-1">
+                    Transcription factor binding site determined by overlap with
+                    ChIP-seq peaks
+                  </div>
                 </div>
               </div>
             </div>
@@ -3725,11 +5066,19 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>PN (Pentanucleotide):</strong> The 5-nucleotide sequence context surrounding the variant position, important for understanding mutation patterns and rates.
+              <strong>PN (Pentanucleotide):</strong> The 5-nucleotide sequence
+              context surrounding the variant position, important for
+              understanding mutation patterns and rates.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Context dependency:</strong> Mutation rates vary significantly based on surrounding nucleotide sequence</li>
-              <li><strong>Format:</strong> 5-base sequence with variant position in center</li>
+              <li>
+                <strong>Context dependency:</strong> Mutation rates vary
+                significantly based on surrounding nucleotide sequence
+              </li>
+              <li>
+                <strong>Format:</strong> 5-base sequence with variant position
+                in center
+              </li>
             </ul>
           </div>
         ),
@@ -3741,12 +5090,20 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>MR (Mutation Rate):</strong> Roulette mutation rate estimate based on sequence context and evolutionary patterns.
+              <strong>MR (Mutation Rate):</strong> Roulette mutation rate
+              estimate based on sequence context and evolutionary patterns.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher rates:</strong> More mutagenic sequence contexts</li>
-              <li><strong>Lower rates:</strong> More stable sequence contexts</li>
-              <li><strong>Application:</strong> Helps distinguish pathogenic variants from benign polymorphisms</li>
+              <li>
+                <strong>Higher rates:</strong> More mutagenic sequence contexts
+              </li>
+              <li>
+                <strong>Lower rates:</strong> More stable sequence contexts
+              </li>
+              <li>
+                <strong>Application:</strong> Helps distinguish pathogenic
+                variants from benign polymorphisms
+              </li>
             </ul>
           </div>
         ),
@@ -3764,12 +5121,22 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>AR (Adjusted Rate):</strong> Adjusted Roulette mutation rate estimate that accounts for additional genomic factors beyond basic sequence context.
+              <strong>AR (Adjusted Rate):</strong> Adjusted Roulette mutation
+              rate estimate that accounts for additional genomic factors beyond
+              basic sequence context.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher rates:</strong> Contexts prone to higher mutation frequency</li>
-              <li><strong>Lower rates:</strong> More evolutionarily stable regions</li>
-              <li><strong>Adjustment factors:</strong> Incorporates chromatin structure and replication timing</li>
+              <li>
+                <strong>Higher rates:</strong> Contexts prone to higher mutation
+                frequency
+              </li>
+              <li>
+                <strong>Lower rates:</strong> More evolutionarily stable regions
+              </li>
+              <li>
+                <strong>Adjustment factors:</strong> Incorporates chromatin
+                structure and replication timing
+              </li>
             </ul>
           </div>
         ),
@@ -3787,12 +5154,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>MG (gnomAD Rate):</strong> Mutation rate estimate from the gnomAD consortium based on large-scale population genomic data. (Karczewski et al. 2020)
+              <strong>MG (gnomAD Rate):</strong> Mutation rate estimate from the
+              gnomAD consortium based on large-scale population genomic data.
+              (Karczewski et al. 2020)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Population-based:</strong> Derived from analysis of &gt;140,000 genomes and exomes</li>
-              <li><strong>Higher rates:</strong> Regions with elevated mutation burden</li>
-              <li><strong>Clinical relevance:</strong> Helps calibrate variant interpretation frameworks</li>
+              <li>
+                <strong>Population-based:</strong> Derived from analysis of
+                &gt;140,000 genomes and exomes
+              </li>
+              <li>
+                <strong>Higher rates:</strong> Regions with elevated mutation
+                burden
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Helps calibrate variant
+                interpretation frameworks
+              </li>
             </ul>
           </div>
         ),
@@ -3810,12 +5188,23 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>MC (Carlson Rate):</strong> Mutation rate estimate from Carlson et al. based on de novo mutation patterns in families. (Carlson et al. 2018)
+              <strong>MC (Carlson Rate):</strong> Mutation rate estimate from
+              Carlson et al. based on de novo mutation patterns in families.
+              (Carlson et al. 2018)
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>De novo focus:</strong> Based on analysis of new mutations in parent-offspring trios</li>
-              <li><strong>Higher rates:</strong> Sequence contexts with increased de novo mutation frequency</li>
-              <li><strong>Complementary approach:</strong> Provides independent validation of mutation rate patterns</li>
+              <li>
+                <strong>De novo focus:</strong> Based on analysis of new
+                mutations in parent-offspring trios
+              </li>
+              <li>
+                <strong>Higher rates:</strong> Sequence contexts with increased
+                de novo mutation frequency
+              </li>
+              <li>
+                <strong>Complementary approach:</strong> Provides independent
+                validation of mutation rate patterns
+              </li>
             </ul>
           </div>
         ),
@@ -3839,23 +5228,27 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Amino acid change induced by the alternative allele, in the format:
+              Amino acid change induced by the alternative allele, in the
+              format:
             </p>
             <p className="font-mono bg-muted/30 px-2 py-1 rounded">
               {"<Reference amino acid><Position><Alternative amino acid>"}
             </p>
             <p>
-              <strong>Example:</strong> V2L means Valine at position 2 changed to Leucine
+              <strong>Example:</strong> V2L means Valine at position 2 changed
+              to Leucine
             </p>
-            <p>
-              Position is 1-based within the protein amino acid sequence.
-            </p>
+            <p>Position is 1-based within the protein amino acid sequence.</p>
           </div>
         ),
         Cell: (value) => {
           return safeCellRenderer(
             value,
-            (str) => <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">{str}</span>,
+            (str) => (
+              <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">
+                {str}
+              </span>
+            ),
             isValidString,
           );
         },
@@ -3867,10 +5260,12 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Calibrated AlphaMissense pathogenicity scores ranging between 0 and 1.
+              Calibrated AlphaMissense pathogenicity scores ranging between 0
+              and 1.
             </p>
             <p>
-              <strong>Interpretation:</strong> Can be interpreted as the predicted probability of a variant being clinically pathogenic.
+              <strong>Interpretation:</strong> Can be interpreted as the
+              predicted probability of a variant being clinically pathogenic.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>Higher scores = more likely pathogenic</li>
@@ -3893,7 +5288,8 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              Classification of the protein variant into three discrete categories:
+              Classification of the protein variant into three discrete
+              categories:
             </p>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
@@ -3954,16 +5350,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Mutation (Amino Acid):</strong> The change that has occurred in the peptide sequence as a result of the mutation. Syntax follows Human Genome Variation Society recommendations.
+              <strong>Mutation (Amino Acid):</strong> The change that has
+              occurred in the peptide sequence as a result of the mutation.
+              Syntax follows Human Genome Variation Society recommendations.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">COSMIC</span>
-              <span className="text-xs text-muted-foreground">Cancer somatic mutations</span>
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                COSMIC
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Cancer somatic mutations
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Format:</strong> HGVS protein notation (e.g., p.V600E)</li>
-              <li><strong>Mutation type:</strong> Shown in brackets after mutation string</li>
-              <li><strong>Clinical relevance:</strong> Links to cancer phenotypes and drug responses</li>
+              <li>
+                <strong>Format:</strong> HGVS protein notation (e.g., p.V600E)
+              </li>
+              <li>
+                <strong>Mutation type:</strong> Shown in brackets after mutation
+                string
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Links to cancer phenotypes
+                and drug responses
+              </li>
             </ul>
           </div>
         ),
@@ -3971,7 +5381,11 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         Cell: (value) => {
           return safeCellRenderer(
             value,
-            (str) => <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">{str}</span>,
+            (str) => (
+              <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">
+                {str}
+              </span>
+            ),
             isValidString,
           );
         },
@@ -3982,38 +5396,59 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Mutation (CDS):</strong> The change that has occurred in the nucleotide sequence as a result of the mutation. Syntax follows HGVS recommendations for coding sequence notation.
+              <strong>Mutation (CDS):</strong> The change that has occurred in
+              the nucleotide sequence as a result of the mutation. Syntax
+              follows HGVS recommendations for coding sequence notation.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">COSMIC</span>
-              <span className="text-xs text-muted-foreground">Coding sequence changes</span>
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                COSMIC
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Coding sequence changes
+              </span>
             </div>
             <div className="space-y-2">
               <p className="font-semibold text-xs">Mutation Types:</p>
               <div className="space-y-2 text-xs">
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Nonsense:</strong> Substitution creating stop codon, truncating protein</div>
+                  <div>
+                    <strong>Nonsense:</strong> Substitution creating stop codon,
+                    truncating protein
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-amber-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Missense:</strong> Substitution changing amino acid</div>
+                  <div>
+                    <strong>Missense:</strong> Substitution changing amino acid
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Coding silent:</strong> Synonymous substitution, same amino acid</div>
+                  <div>
+                    <strong>Coding silent:</strong> Synonymous substitution,
+                    same amino acid
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Intronic:</strong> Non-coding region mutation</div>
+                  <div>
+                    <strong>Intronic:</strong> Non-coding region mutation
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Complex:</strong> Multiple insertions, deletions, substitutions</div>
+                  <div>
+                    <strong>Complex:</strong> Multiple insertions, deletions,
+                    substitutions
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-gray-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <div><strong>Unknown:</strong> Insufficient mutation details</div>
+                  <div>
+                    <strong>Unknown:</strong> Insufficient mutation details
+                  </div>
                 </div>
               </div>
             </div>
@@ -4027,16 +5462,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Genome Screen Sample Count:</strong> The number of samples in which this variant has been observed across COSMIC's cancer genome screens.
+              <strong>Genome Screen Sample Count:</strong> The number of samples
+              in which this variant has been observed across COSMIC's cancer
+              genome screens.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">COSMIC</span>
-              <span className="text-xs text-muted-foreground">Sample frequency</span>
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                COSMIC
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Sample frequency
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher counts:</strong> More frequently observed in cancer samples</li>
-              <li><strong>Lower counts:</strong> Rare or novel cancer mutations</li>
-              <li><strong>Clinical utility:</strong> Frequency informs therapeutic targeting strategies</li>
+              <li>
+                <strong>Higher counts:</strong> More frequently observed in
+                cancer samples
+              </li>
+              <li>
+                <strong>Lower counts:</strong> Rare or novel cancer mutations
+              </li>
+              <li>
+                <strong>Clinical utility:</strong> Frequency informs therapeutic
+                targeting strategies
+              </li>
             </ul>
           </div>
         ),
@@ -4048,23 +5497,32 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Is Canonical:</strong> Indicates whether this mutation affects the Ensembl canonical transcript for the gene.
+              <strong>Is Canonical:</strong> Indicates whether this mutation
+              affects the Ensembl canonical transcript for the gene.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">COSMIC</span>
-              <span className="text-xs text-muted-foreground">Transcript annotation</span>
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                COSMIC
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Transcript annotation
+              </span>
             </div>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-green-300 rounded"></span>
-                <strong>Yes:</strong> Affects canonical transcript (most biologically relevant)
+                <strong>Yes:</strong> Affects canonical transcript (most
+                biologically relevant)
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-300 rounded"></span>
                 <strong>No:</strong> Affects alternative transcript
               </div>
             </div>
-            <p className="text-xs mt-2">Canonical transcripts are most conserved, highly expressed, and longest coding sequences.</p>
+            <p className="text-xs mt-2">
+              Canonical transcripts are most conserved, highly expressed, and
+              longest coding sequences.
+            </p>
           </div>
         ),
         accessor: "is_canonical",
@@ -4099,16 +5557,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Pangolin (Exome):</strong> Pangolin's largest delta score across splicing consequences using exome training data. Reflects probability of variant affecting splicing.
+              <strong>Pangolin (Exome):</strong> Pangolin's largest delta score
+              across splicing consequences using exome training data. Reflects
+              probability of variant affecting splicing.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Splicing</span>
-              <span className="text-xs text-muted-foreground">Exome-trained model</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Splicing
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Exome-trained model
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (≥0.2):</strong> More likely splice-altering</li>
-              <li><strong>Lower scores (&lt;0.1):</strong> Less likely splice-altering</li>
-              <li><strong>Model type:</strong> Deep learning on exome sequencing data</li>
+              <li>
+                <strong>Higher scores (≥0.2):</strong> More likely
+                splice-altering
+              </li>
+              <li>
+                <strong>Lower scores (&lt;0.1):</strong> Less likely
+                splice-altering
+              </li>
+              <li>
+                <strong>Model type:</strong> Deep learning on exome sequencing
+                data
+              </li>
             </ul>
           </div>
         ),
@@ -4137,16 +5610,30 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>Pangolin (Genome):</strong> Pangolin's largest delta score across splicing consequences using genome-wide training data. Reflects probability of variant affecting splicing.
+              <strong>Pangolin (Genome):</strong> Pangolin's largest delta score
+              across splicing consequences using genome-wide training data.
+              Reflects probability of variant affecting splicing.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Splicing</span>
-              <span className="text-xs text-muted-foreground">Genome-trained model</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Splicing
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Genome-trained model
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (≥0.2):</strong> More likely splice-altering</li>
-              <li><strong>Lower scores (&lt;0.1):</strong> Less likely splice-altering</li>
-              <li><strong>Model type:</strong> Deep learning on whole genome data</li>
+              <li>
+                <strong>Higher scores (≥0.2):</strong> More likely
+                splice-altering
+              </li>
+              <li>
+                <strong>Lower scores (&lt;0.1):</strong> Less likely
+                splice-altering
+              </li>
+              <li>
+                <strong>Model type:</strong> Deep learning on whole genome data
+              </li>
             </ul>
           </div>
         ),
@@ -4175,16 +5662,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>SpliceAI (Exome):</strong> Illumina's SpliceAI maximum delta score using exome training data. Interpreted as probability of splice-altering effects.
+              <strong>SpliceAI (Exome):</strong> Illumina's SpliceAI maximum
+              delta score using exome training data. Interpreted as probability
+              of splice-altering effects.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Splicing</span>
-              <span className="text-xs text-muted-foreground">SpliceAI exome model</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Splicing
+              </span>
+              <span className="text-xs text-muted-foreground">
+                SpliceAI exome model
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (≥0.5):</strong> High confidence splice-altering</li>
-              <li><strong>Medium scores (0.2-0.5):</strong> Moderate splice-altering potential</li>
-              <li><strong>Lower scores (&lt;0.2):</strong> Unlikely to affect splicing</li>
+              <li>
+                <strong>Higher scores (≥0.5):</strong> High confidence
+                splice-altering
+              </li>
+              <li>
+                <strong>Medium scores (0.2-0.5):</strong> Moderate
+                splice-altering potential
+              </li>
+              <li>
+                <strong>Lower scores (&lt;0.2):</strong> Unlikely to affect
+                splicing
+              </li>
             </ul>
           </div>
         ),
@@ -4213,16 +5715,31 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>SpliceAI (Genome):</strong> Illumina's SpliceAI maximum delta score using genome-wide training data. Interpreted as probability of splice-altering effects.
+              <strong>SpliceAI (Genome):</strong> Illumina's SpliceAI maximum
+              delta score using genome-wide training data. Interpreted as
+              probability of splice-altering effects.
             </p>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">Splicing</span>
-              <span className="text-xs text-muted-foreground">SpliceAI genome model</span>
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                Splicing
+              </span>
+              <span className="text-xs text-muted-foreground">
+                SpliceAI genome model
+              </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li><strong>Higher scores (≥0.5):</strong> High confidence splice-altering</li>
-              <li><strong>Medium scores (0.2-0.5):</strong> Moderate splice-altering potential</li>
-              <li><strong>Lower scores (&lt;0.2):</strong> Unlikely to affect splicing</li>
+              <li>
+                <strong>Higher scores (≥0.5):</strong> High confidence
+                splice-altering
+              </li>
+              <li>
+                <strong>Medium scores (0.2-0.5):</strong> Moderate
+                splice-altering potential
+              </li>
+              <li>
+                <strong>Lower scores (&lt;0.2):</strong> Unlikely to affect
+                splicing
+              </li>
             </ul>
           </div>
         ),

@@ -22,25 +22,32 @@ const GenomeBrowserImpl = ({
   const [enabledTrackIds, setEnabledTrackIds] =
     useState<string[]>(initialTracks);
 
-  const enabledTracks = useMemo(() =>
-    enabledTrackIds
-      .map((trackId) => COMPREHENSIVE_TRACK_REGISTRY[trackId])
-      .filter(Boolean),
-    [enabledTrackIds]
+  const enabledTracks = useMemo(
+    () =>
+      enabledTrackIds
+        .map((trackId) => COMPREHENSIVE_TRACK_REGISTRY[trackId])
+        .filter(Boolean),
+    [enabledTrackIds],
   );
 
-  const domainManagerConfig = useMemo(() => ({
-    vcfParam,
-    regionParam,
-    trackTypes: enabledTrackIds,
-  }), [vcfParam, regionParam, enabledTrackIds]);
+  const domainManagerConfig = useMemo(
+    () => ({
+      vcfParam,
+      regionParam,
+      trackTypes: enabledTrackIds,
+    }),
+    [vcfParam, regionParam, enabledTrackIds],
+  );
 
   const domainManager = useDomainManager(domainManagerConfig);
 
-  const goslingSpecConfig = useMemo(() => ({
-    enabledTracks,
-    domain: domainManager.domain,
-  }), [enabledTracks, domainManager.domain]);
+  const goslingSpecConfig = useMemo(
+    () => ({
+      enabledTracks,
+      domain: domainManager.domain,
+    }),
+    [enabledTracks, domainManager.domain],
+  );
 
   const goslingSpec = useGoslingSpec(goslingSpecConfig);
 
@@ -70,9 +77,9 @@ const GenomeBrowserImpl = ({
     setEnabledTrackIds([]);
   }, []);
 
-  const controlsClassName = useMemo(() => 
-    enabledTracks.length > 0 ? "mb-4" : "",
-    [enabledTracks.length]
+  const controlsClassName = useMemo(
+    () => (enabledTracks.length > 0 ? "mb-4" : ""),
+    [enabledTracks.length],
   );
 
   return (

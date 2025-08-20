@@ -9,67 +9,69 @@ import { Badge } from "@/components/ui/badge";
 
 interface NERCStatus {
   page: {
-    name: string
-    url: string
-    status: 'UP' | 'HASISSUES' | 'UNDERMAINTENANCE'
-  }
+    name: string;
+    url: string;
+    status: "UP" | "HASISSUES" | "UNDERMAINTENANCE";
+  };
   activeIncidents?: Array<{
-    id: string
-    name: string
-    started: string
-    status: string
-    impact: string
-    url: string
-  }>
+    id: string;
+    name: string;
+    started: string;
+    status: string;
+    impact: string;
+    url: string;
+  }>;
   activeMaintenances?: Array<{
-    id: string
-    name: string
-    start: string
-    status: string
-    duration: string
-    url: string
-  }>
+    id: string;
+    name: string;
+    start: string;
+    status: string;
+    duration: string;
+    url: string;
+  }>;
 }
 
 interface WhatsNewBannerProps {
-  className?: string
+  className?: string;
 }
 
 export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
-  const [isVisible, setIsVisible] = useState(true)
-  const [nercStatus, setNercStatus] = useState<NERCStatus | null>(null)
+  const [isVisible, setIsVisible] = useState(true);
+  const [nercStatus, setNercStatus] = useState<NERCStatus | null>(null);
 
   useEffect(() => {
     const fetchNercStatus = async () => {
       try {
-        const response = await fetch('https://nerc.instatus.com/summary.json')
+        const response = await fetch("https://nerc.instatus.com/summary.json");
         if (response.ok) {
-          const data = await response.json()
-          setNercStatus(data)
+          const data = await response.json();
+          setNercStatus(data);
         }
       } catch (err) {
         // Fail silently - NERC status is not critical
       }
-    }
+    };
 
-    fetchNercStatus()
-  }, [])
+    fetchNercStatus();
+  }, []);
 
   if (!isVisible) {
-    return null
+    return null;
   }
 
-  const hasNercIssues = nercStatus && (
-    nercStatus.page.status !== 'UP' || 
-    (nercStatus.activeIncidents?.length || 0) > 0 || 
-    (nercStatus.activeMaintenances?.length || 0) > 0
-  )
+  const hasNercIssues =
+    nercStatus &&
+    (nercStatus.page.status !== "UP" ||
+      (nercStatus.activeIncidents?.length || 0) > 0 ||
+      (nercStatus.activeMaintenances?.length || 0) > 0);
 
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-lg bg-background border border-border",
-      className
-    )}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg bg-background border border-border",
+        className,
+      )}
+    >
       <Button
         variant="ghost"
         size="sm"
@@ -78,7 +80,7 @@ export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
       >
         <X className="h-4 w-4" />
       </Button>
-      
+
       <div className="p-4 space-y-3">
         {/* NERC Status - Only show if there are issues */}
         {hasNercIssues && (
@@ -87,11 +89,14 @@ export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <span className="text-sm font-medium">Service Notice</span>
             </div>
-            
+
             {(nercStatus.activeMaintenances || []).map((maintenance) => (
               <div key={maintenance.id} className="text-sm">
                 <span className="font-medium">
-                  {maintenance.name.replace(/Upcoming NERC system maintenance and upgrade/g, 'FAVOR data center maintenance')} {' '}
+                  {maintenance.name.replace(
+                    /Upcoming NERC system maintenance and upgrade/g,
+                    "FAVOR data center maintenance",
+                  )}{" "}
                   <a
                     href={maintenance.url}
                     target="_blank"
@@ -103,12 +108,12 @@ export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
                 </span>
               </div>
             ))}
-            
+
             {(nercStatus.activeIncidents || []).map((incident) => (
               <div key={incident.id} className="text-sm">
                 <span className="font-medium">{incident.name}</span>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Service impact: {incident.impact} • {' '}
+                  Service impact: {incident.impact} •{" "}
                   <a
                     href={incident.url}
                     target="_blank"
@@ -124,11 +129,18 @@ export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
         )}
 
         {/* What's New - Always show but smaller when NERC issues present */}
-        <div className={cn("flex items-center justify-between pr-8", hasNercIssues && "pt-2 border-t")}>
+        <div
+          className={cn(
+            "flex items-center justify-between pr-8",
+            hasNercIssues && "pt-2 border-t",
+          )}
+        >
           <div className="flex items-center gap-3">
             <Sparkles className="h-4 w-4 text-primary" />
             <div className="flex items-center gap-2">
-              <span className={cn("font-medium", hasNercIssues ? "text-sm" : "")}>
+              <span
+                className={cn("font-medium", hasNercIssues ? "text-sm" : "")}
+              >
                 What's New
               </span>
               <Badge variant="secondary" className="text-xs">
@@ -136,14 +148,20 @@ export function WhatsNewBanner({ className }: WhatsNewBannerProps) {
               </Badge>
             </div>
           </div>
-          
-          <Button variant="ghost" size="sm" asChild className={cn("text-primary hover:underline", hasNercIssues ? "text-xs" : "text-sm")}>
-            <Link href="/whats-new">
-              View Updates
-            </Link>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className={cn(
+              "text-primary hover:underline",
+              hasNercIssues ? "text-xs" : "text-sm",
+            )}
+          >
+            <Link href="/whats-new">View Updates</Link>
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

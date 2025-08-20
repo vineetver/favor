@@ -10,9 +10,9 @@ export const scentColumns: ColumnDef<ScentTissue>[] = [
   {
     accessorKey: "region",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="SCENT Region" 
+      <DataTableColumnHeader
+        column={column}
+        title="SCENT Region"
         sortable={true}
       />
     ),
@@ -34,9 +34,9 @@ export const scentColumns: ColumnDef<ScentTissue>[] = [
   {
     accessorKey: "gene",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Associated Gene" 
+      <DataTableColumnHeader
+        column={column}
+        title="Associated Gene"
         sortable={true}
       />
     ),
@@ -58,11 +58,7 @@ export const scentColumns: ColumnDef<ScentTissue>[] = [
   {
     accessorKey: "tissue",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Tissue" 
-        sortable={true}
-      />
+      <DataTableColumnHeader column={column} title="Tissue" sortable={true} />
     ),
     cell: ({ row }) => (
       <div className="text-left">
@@ -76,9 +72,9 @@ export const scentColumns: ColumnDef<ScentTissue>[] = [
   {
     accessorKey: "sub_tissue",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Sub Tissue" 
+      <DataTableColumnHeader
+        column={column}
+        title="Sub Tissue"
         sortable={true}
       />
     ),

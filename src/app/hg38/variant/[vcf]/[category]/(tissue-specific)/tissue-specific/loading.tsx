@@ -16,7 +16,7 @@ export default function TissueSpecificLoading() {
           <Skeleton className="h-6 w-16" />
           <Skeleton className="h-4 w-80" />
         </div>
-        
+
         <div className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <div className="space-y-1">

@@ -6,7 +6,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSearchHistory } from "@/lib/hooks/use-search-history";
 import { useSearchSuggestions } from "@/lib/hooks/use-search-suggestions";
@@ -31,9 +35,10 @@ export function GenomicSearch() {
   const { showAlert, alertMessage } = useSearchAlert();
   const { setInputValue, setSelectedGenome, showError } = useSearchActions();
   const router = useRouter();
-  const { addToHistory, getRecentSearches, removeFromHistory } = useSearchHistory();
-  const { saveSearch, getSavedSearchItems, deleteSavedSearch } = useSavedSearches();
-
+  const { addToHistory, getRecentSearches, removeFromHistory } =
+    useSearchHistory();
+  const { saveSearch, getSavedSearchItems, deleteSavedSearch } =
+    useSavedSearches();
 
   const debouncedInput = useDebounce(inputValue.trim(), 300);
   const inputFormat: InputFormatResult = useMemo(
@@ -98,10 +103,12 @@ export function GenomicSearch() {
 
   const placeholderText = useMemo(() => getPlaceholderText(), []);
 
-  const handleSaveSearch = useCallback((name: string, description?: string) => {
-    saveSearch(inputValue, name, selectedGenome, description);
-  }, [inputValue, selectedGenome, saveSearch]);
-
+  const handleSaveSearch = useCallback(
+    (name: string, description?: string) => {
+      saveSearch(inputValue, name, selectedGenome, description);
+    },
+    [inputValue, selectedGenome, saveSearch],
+  );
 
   if (hasError) {
     console.warn("Search suggestions API error");
@@ -144,9 +151,7 @@ export function GenomicSearch() {
                         HG19
                       </ToggleGroupItem>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      HG19 support coming soon
-                    </TooltipContent>
+                    <TooltipContent>HG19 support coming soon</TooltipContent>
                   </Tooltip>
                 </ToggleGroup>
                 <div className="w-px h-6 bg-slate-300 my-auto" />
@@ -162,7 +167,7 @@ export function GenomicSearch() {
               ) : undefined
             }
           >
-            {item => (
+            {(item) => (
               <div className="p-3 group">
                 <div className="w-full text-left">
                   <div className="flex items-center gap-2 mb-1">

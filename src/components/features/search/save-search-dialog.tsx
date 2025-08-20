@@ -21,11 +21,11 @@ interface SaveSearchDialogProps {
   disabled?: boolean;
 }
 
-export function SaveSearchDialog({ 
-  query, 
-  genomicBuild, 
-  onSave, 
-  disabled 
+export function SaveSearchDialog({
+  query,
+  genomicBuild,
+  onSave,
+  disabled,
 }: SaveSearchDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -67,7 +67,7 @@ export function SaveSearchDialog({
           <Bookmark className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save Search</DialogTitle>
@@ -83,7 +83,7 @@ export function SaveSearchDialog({
               {query}
             </div>
           </div>
-          
+
           <div>
             <Label className="text-sm font-medium">Genome Build</Label>
             <div className="mt-1 text-sm bg-muted p-3 rounded-md font-mono">
@@ -115,16 +115,10 @@ export function SaveSearchDialog({
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-            >
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!name.trim() || isLoading}
-            >
+            <Button onClick={handleSave} disabled={!name.trim() || isLoading}>
               {isLoading ? "Saving..." : "Save Search"}
             </Button>
           </div>

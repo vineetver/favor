@@ -46,5 +46,7 @@ export default async function GenderAfMalePage({
     fetchGnomadGenome(selectedVariant.variant_vcf),
   ]);
 
-  return <MaleDataDisplay variant={selectedVariant} exome={exome} genome={genome} />;
+  return (
+    <MaleDataDisplay variant={selectedVariant} exome={exome} genome={genome} />
+  );
 }

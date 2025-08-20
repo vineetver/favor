@@ -32,7 +32,5 @@ export default async function OverallAfPage({ params }: OverallAfPageProps) {
 
   const validItems = filteredItems || [];
 
-  return (
-      <AnnotationTable items={validItems} />
-  );
+  return <AnnotationTable items={validItems} />;
 }

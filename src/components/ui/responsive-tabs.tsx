@@ -34,23 +34,23 @@ export function ResponsiveTabs({
   tabGroups,
   defaultValue,
   className,
-  variant = "simple"
+  variant = "simple",
 }: ResponsiveTabsProps) {
   // For flat variant - flatten all tabs into one list
   const flatTabs = React.useMemo(() => {
     if (!tabGroups) return tabs || [];
-    
-    return tabGroups.flatMap(group => 
-      group.tabs.map(tab => ({
+
+    return tabGroups.flatMap((group) =>
+      group.tabs.map((tab) => ({
         ...tab,
         id: `${group.id}-${tab.id}`,
         label: `${group.label} ${tab.label}`,
-        shortLabel: `${group.shortLabel || group.label.slice(0, 2)}${tab.shortLabel || tab.label.slice(0, 1)}`
-      }))
+        shortLabel: `${group.shortLabel || group.label.slice(0, 2)}${tab.shortLabel || tab.label.slice(0, 1)}`,
+      })),
     );
   }, [tabGroups, tabs]);
 
-  const allTabs = variant === "flat" ? flatTabs : (tabs || []);
+  const allTabs = variant === "flat" ? flatTabs : tabs || [];
 
   // Calculate grid columns based on number of tabs
   const getGridCols = (count: number) => {
@@ -63,18 +63,28 @@ export function ResponsiveTabs({
 
   if (variant === "flat" || tabs) {
     return (
-      <Tabs defaultValue={defaultValue || allTabs[0]?.id} className={cn("w-full", className)}>
-        <TabsList className={cn("grid w-full h-auto", getGridCols(allTabs.length))}>
+      <Tabs
+        defaultValue={defaultValue || allTabs[0]?.id}
+        className={cn("w-full", className)}
+      >
+        <TabsList
+          className={cn("grid w-full h-auto", getGridCols(allTabs.length))}
+        >
           {allTabs.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
+            <TabsTrigger
+              key={tab.id}
               value={tab.id}
               className="flex items-center gap-1 text-sm px-2 py-2"
             >
               <span className="hidden sm:inline truncate">{tab.label}</span>
-              <span className="sm:hidden">{tab.shortLabel || tab.label.slice(0, 2)}</span>
+              <span className="sm:hidden">
+                {tab.shortLabel || tab.label.slice(0, 2)}
+              </span>
               {tab.count !== undefined && tab.count > 0 && (
-                <Badge variant="secondary" className="text-xs font-mono ml-1 flex-shrink-0">
+                <Badge
+                  variant="secondary"
+                  className="text-xs font-mono ml-1 flex-shrink-0"
+                >
                   {tab.count}
                 </Badge>
               )}
@@ -95,22 +105,30 @@ export function ResponsiveTabs({
   if (tabGroups) {
     const defaultGroup = tabGroups[0];
     const defaultTab = defaultGroup?.tabs[0];
-    const computedDefaultValue = defaultValue || `${defaultGroup?.id}-${defaultTab?.id}`;
+    const computedDefaultValue =
+      defaultValue || `${defaultGroup?.id}-${defaultTab?.id}`;
 
     return (
       <div className={cn("w-full space-y-4", className)}>
         <Tabs defaultValue={computedDefaultValue}>
-          <TabsList className={cn("grid w-full h-auto", getGridCols(tabGroups.length))}>
+          <TabsList
+            className={cn("grid w-full h-auto", getGridCols(tabGroups.length))}
+          >
             {tabGroups.map((group) => (
-              <TabsTrigger 
+              <TabsTrigger
                 key={group.id}
                 value={`${group.id}-${group.tabs[0]?.id}`}
                 className="flex items-center gap-1 text-sm px-2 py-2"
               >
                 <span className="hidden sm:inline truncate">{group.label}</span>
-                <span className="sm:hidden">{group.shortLabel || group.label.slice(0, 2)}</span>
+                <span className="sm:hidden">
+                  {group.shortLabel || group.label.slice(0, 2)}
+                </span>
                 {group.count !== undefined && group.count > 0 && (
-                  <Badge variant="secondary" className="text-xs font-mono ml-1 flex-shrink-0">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs font-mono ml-1 flex-shrink-0"
+                  >
                     {group.count}
                   </Badge>
                 )}
@@ -119,19 +137,35 @@ export function ResponsiveTabs({
           </TabsList>
 
           {tabGroups.map((group) => (
-            <TabsContent key={group.id} value={`${group.id}-${group.tabs[0]?.id}`} className="mt-4">
+            <TabsContent
+              key={group.id}
+              value={`${group.id}-${group.tabs[0]?.id}`}
+              className="mt-4"
+            >
               <Tabs defaultValue={group.tabs[0]?.id}>
-                <TabsList className={cn("grid w-full h-auto", getGridCols(group.tabs.length))}>
+                <TabsList
+                  className={cn(
+                    "grid w-full h-auto",
+                    getGridCols(group.tabs.length),
+                  )}
+                >
                   {group.tabs.map((tab) => (
-                    <TabsTrigger 
+                    <TabsTrigger
                       key={tab.id}
                       value={tab.id}
                       className="flex items-center gap-1 text-sm px-2 py-2"
                     >
-                      <span className="hidden sm:inline truncate">{tab.label}</span>
-                      <span className="sm:hidden">{tab.shortLabel || tab.label.slice(0, 1)}</span>
+                      <span className="hidden sm:inline truncate">
+                        {tab.label}
+                      </span>
+                      <span className="sm:hidden">
+                        {tab.shortLabel || tab.label.slice(0, 1)}
+                      </span>
                       {tab.count !== undefined && tab.count > 0 && (
-                        <Badge variant="secondary" className="text-xs font-mono ml-1 flex-shrink-0">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-mono ml-1 flex-shrink-0"
+                        >
                           {tab.count}
                         </Badge>
                       )}

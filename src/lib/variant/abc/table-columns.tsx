@@ -25,7 +25,7 @@ export const abcPeaksColumns: ColumnDef<ABCPeaks>[] = [
       const { chromosome, start_position, end_position } = row.original;
       const regionStr = formatRegion(chromosome, start_position, end_position);
       const href = formatRegionLink(chromosome, start_position, end_position);
-      
+
       return (
         <ExternalLink href={href} className="font-mono text-sm" iconSize="sm">
           {regionStr}
@@ -103,15 +103,31 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
     id: "relationship",
     header: "ABC Relationship",
     cell: ({ row }) => {
-      const { gene_name, chromosome, start_position, end_position, promotor_chromosome, promotor_start_position, promotor_end_position } = row.original;
-      const enhancerRegion = formatRegion(chromosome, start_position, end_position);
-      const promoterRegion = formatRegion(promotor_chromosome, promotor_start_position, promotor_end_position);
-      
+      const {
+        gene_name,
+        chromosome,
+        start_position,
+        end_position,
+        promotor_chromosome,
+        promotor_start_position,
+        promotor_end_position,
+      } = row.original;
+      const enhancerRegion = formatRegion(
+        chromosome,
+        start_position,
+        end_position,
+      );
+      const promoterRegion = formatRegion(
+        promotor_chromosome,
+        promotor_start_position,
+        promotor_end_position,
+      );
+
       return (
         <div className="space-y-1">
           <div className="font-medium text-sm">{gene_name}</div>
           <div className="text-xs text-muted-foreground">
-            <ExternalLink 
+            <ExternalLink
               href={formatRegionLink(chromosome, start_position, end_position)}
               className="font-mono hover:text-primary text-xs"
               iconSize="sm"
@@ -119,8 +135,12 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
               {enhancerRegion}
             </ExternalLink>
             <span className="mx-1">→</span>
-            <ExternalLink 
-              href={formatRegionLink(promotor_chromosome, promotor_start_position, promotor_end_position)}
+            <ExternalLink
+              href={formatRegionLink(
+                promotor_chromosome,
+                promotor_start_position,
+                promotor_end_position,
+              )}
               className="font-mono hover:text-primary text-xs"
               iconSize="sm"
             >
@@ -153,10 +173,9 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
       const distanceKb = distance / 1000;
       return (
         <span className="font-mono pl-1">
-          {distanceKb > 1000 
-            ? `${(distanceKb / 1000).toFixed(1)}M bp` 
-            : `${distanceKb.toFixed(0)}K bp`
-          }
+          {distanceKb > 1000
+            ? `${(distanceKb / 1000).toFixed(1)}M bp`
+            : `${distanceKb.toFixed(0)}K bp`}
         </span>
       );
     },

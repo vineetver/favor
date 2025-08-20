@@ -1,7 +1,9 @@
 const ENTEX_DEFAULT_URL = "https://api.genohub.org/v1/entex/default";
 const ENTEX_POOLED_URL = "https://api.genohub.org/v1/entex/pooled";
-const ENTEX_DEFAULT_REGION_URL = "https://api.genohub.org/v1/entex/default/region";
-const ENTEX_POOLED_REGION_URL = "https://api.genohub.org/v1/entex/pooled/region";
+const ENTEX_DEFAULT_REGION_URL =
+  "https://api.genohub.org/v1/entex/default/region";
+const ENTEX_POOLED_REGION_URL =
+  "https://api.genohub.org/v1/entex/pooled/region";
 
 async function fetchEntexData(
   vcf: string,
@@ -40,7 +42,8 @@ async function fetchEntexDataByRegion(
   region: string,
   type: "default" | "pooled",
 ): Promise<Entex[] | null> {
-  const url = type === "default" ? ENTEX_DEFAULT_REGION_URL : ENTEX_POOLED_REGION_URL;
+  const url =
+    type === "default" ? ENTEX_DEFAULT_REGION_URL : ENTEX_POOLED_REGION_URL;
 
   try {
     const response = await fetch(`${url}/${region}`);
@@ -61,11 +64,15 @@ async function fetchEntexDataByRegion(
   }
 }
 
-export async function fetchEntexDefaultByRegion(region: string): Promise<Entex[] | null> {
+export async function fetchEntexDefaultByRegion(
+  region: string,
+): Promise<Entex[] | null> {
   return fetchEntexDataByRegion(region, "default");
 }
 
-export async function fetchEntexPooledByRegion(region: string): Promise<Entex[] | null> {
+export async function fetchEntexPooledByRegion(
+  region: string,
+): Promise<Entex[] | null> {
   return fetchEntexDataByRegion(region, "pooled");
 }
 

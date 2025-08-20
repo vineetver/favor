@@ -40,7 +40,9 @@ export const POPULATION_COLORS = [
 ];
 
 // Format scientific notation for allele frequencies
-export const formatAlleleFrequency = (value: number | undefined | null): string => {
+export const formatAlleleFrequency = (
+  value: number | undefined | null,
+): string => {
   if (value === undefined || value === null) return "N/A";
   if (value === 0) return "0";
   if (value >= 0.001) return value.toFixed(4);
@@ -55,11 +57,14 @@ export const formatNumber = (value: number, precision: number = 2): string => {
 };
 
 // Generate color array for given number of series
-export const generateColors = (count: number, palette: string[] = ACCESSIBLE_COLORS): string[] => {
+export const generateColors = (
+  count: number,
+  palette: string[] = ACCESSIBLE_COLORS,
+): string[] => {
   if (count <= palette.length) {
     return palette.slice(0, count);
   }
-  
+
   // If we need more colors, cycle through the palette
   const colors: string[] = [];
   for (let i = 0; i < count; i++) {
@@ -103,13 +108,13 @@ export const CHART_MARGINS = {
 // Custom tooltip formatter for genomics data
 export const createTooltipFormatter = (
   formatValue?: (value: any) => string,
-  showLabel: boolean = true
+  showLabel: boolean = true,
 ) => {
   return (value: any, name: string) => {
     const formattedValue = formatValue ? formatValue(value) : value;
-    
+
     if (!showLabel) return [formattedValue];
-    
+
     return [formattedValue, name];
   };
 };
@@ -123,11 +128,11 @@ export const trimLabel = (label: string, maxLength: number = 15): string => {
 // Label formatter for better readability
 export const createLabelFormatter = (
   formatter?: (value: any) => string,
-  maxLength: number = 15
+  maxLength: number = 15,
 ) => {
   return (label: string) => {
     let formattedLabel = label;
-    
+
     if (formatter) {
       formattedLabel = formatter(label);
     } else {
@@ -136,15 +141,17 @@ export const createLabelFormatter = (
         .replace(/_/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase());
     }
-    
+
     return trimLabel(formattedLabel, maxLength);
   };
 };
 
 // Data validation for charts
 export const validateChartData = (data: any[]): boolean => {
-  return Array.isArray(data) && data.length > 0 && data.every(item => 
-    typeof item === "object" && item !== null
+  return (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    data.every((item) => typeof item === "object" && item !== null)
   );
 };
 

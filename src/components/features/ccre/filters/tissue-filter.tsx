@@ -14,7 +14,10 @@ import { X, Search } from "lucide-react";
 import { useState, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useTissueStore } from "@/lib/stores/tissue-store";
-import { getSubtissueOptions, getTissueOptions } from "@/lib/variant/ccre/tissue-config";
+import {
+  getSubtissueOptions,
+  getTissueOptions,
+} from "@/lib/variant/ccre/tissue-config";
 
 interface SubtissueMetadata {
   sex?: string;
@@ -34,9 +37,9 @@ const TissueFilterImpl = () => {
   const [subtissueSearch, setSubtissueSearch] = useState("");
 
   const tissues = useMemo(() => getTissueOptions(), []);
-  const subtissues = useMemo(() => 
-    selectedTissue ? getSubtissueOptions(selectedTissue) : [],
-    [selectedTissue]
+  const subtissues = useMemo(
+    () => (selectedTissue ? getSubtissueOptions(selectedTissue) : []),
+    [selectedTissue],
   );
 
   const getTruncatedName = useCallback((name: string) => {
@@ -44,46 +47,49 @@ const TissueFilterImpl = () => {
     return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
   }, []);
 
-  const parseSubtissueMetadata = useCallback((name: string): SubtissueMetadata => {
-    const metadata: SubtissueMetadata = { displayName: name };
+  const parseSubtissueMetadata = useCallback(
+    (name: string): SubtissueMetadata => {
+      const metadata: SubtissueMetadata = { displayName: name };
 
-    if (name.includes("male") && !name.includes("female")) {
-      metadata.sex = "M";
-    } else if (name.includes("female")) {
-      metadata.sex = "F";
-    }
-
-    const agePatterns = [
-      /\((\d+(?:\s*or\s*above)?\s*years?)\)/,
-      /\((\d+\s*days?)\)/,
-      /(\d+(?:\s*or\s*above)?\s*years?)/,
-      /(\d+\s*days?)/,
-    ];
-
-    for (const pattern of agePatterns) {
-      const match = name.match(pattern);
-      if (match) {
-        let age = match[1];
-        if (age.includes("days")) {
-          age = age.replace("days", "d").replace("day", "d");
-        } else {
-          age = age.replace("years", "y").replace("year", "y");
-        }
-        metadata.age = age.trim();
-        break;
+      if (name.includes("male") && !name.includes("female")) {
+        metadata.sex = "M";
+      } else if (name.includes("female")) {
+        metadata.sex = "F";
       }
-    }
 
-    if (name.includes("mild cognitive impairment")) {
-      metadata.condition = "MCI";
-    } else if (name.includes("alzheimer")) {
-      metadata.condition = "AD";
-    } else if (name.includes("embryo")) {
-      metadata.condition = "Embryo";
-    }
+      const agePatterns = [
+        /\((\d+(?:\s*or\s*above)?\s*years?)\)/,
+        /\((\d+\s*days?)\)/,
+        /(\d+(?:\s*or\s*above)?\s*years?)/,
+        /(\d+\s*days?)/,
+      ];
 
-    return metadata;
-  }, []);
+      for (const pattern of agePatterns) {
+        const match = name.match(pattern);
+        if (match) {
+          let age = match[1];
+          if (age.includes("days")) {
+            age = age.replace("days", "d").replace("day", "d");
+          } else {
+            age = age.replace("years", "y").replace("year", "y");
+          }
+          metadata.age = age.trim();
+          break;
+        }
+      }
+
+      if (name.includes("mild cognitive impairment")) {
+        metadata.condition = "MCI";
+      } else if (name.includes("alzheimer")) {
+        metadata.condition = "AD";
+      } else if (name.includes("embryo")) {
+        metadata.condition = "Embryo";
+      }
+
+      return metadata;
+    },
+    [],
+  );
 
   const filteredSubtissues = useMemo(() => {
     if (!subtissueSearch) return subtissues;
@@ -96,22 +102,31 @@ const TissueFilterImpl = () => {
     );
   }, [subtissues, subtissueSearch]);
 
-  const handleTissueChange = useCallback((tissue: string) => {
-    setSelectedTissue(tissue);
-    setSelectedSubtissue("");
-  }, [setSelectedTissue, setSelectedSubtissue]);
+  const handleTissueChange = useCallback(
+    (tissue: string) => {
+      setSelectedTissue(tissue);
+      setSelectedSubtissue("");
+    },
+    [setSelectedTissue, setSelectedSubtissue],
+  );
 
-  const handleSubtissueChange = useCallback((subtissueName: string) => {
-    setSelectedSubtissue(subtissueName);
-  }, [setSelectedSubtissue]);
+  const handleSubtissueChange = useCallback(
+    (subtissueName: string) => {
+      setSelectedSubtissue(subtissueName);
+    },
+    [setSelectedSubtissue],
+  );
 
   const handleReset = useCallback(() => {
     reset();
   }, [reset]);
 
-  const handleSubtissueSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSubtissueSearch(e.target.value);
-  }, []);
+  const handleSubtissueSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSubtissueSearch(e.target.value);
+    },
+    [],
+  );
 
   return (
     <Card>
@@ -173,7 +188,10 @@ const TissueFilterImpl = () => {
                 >
                   {selectedSubtissue ? (
                     <div className="flex-1 min-w-0">
-                      <span className="block truncate text-sm" title={selectedSubtissue}>
+                      <span
+                        className="block truncate text-sm"
+                        title={selectedSubtissue}
+                      >
                         {selectedSubtissue}
                       </span>
                     </div>
@@ -193,8 +211,8 @@ const TissueFilterImpl = () => {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between w-full gap-2 min-w-0">
                         <div className="flex-1 min-w-0">
-                          <div 
-                            className="font-medium text-sm leading-tight break-words pr-2" 
+                          <div
+                            className="font-medium text-sm leading-tight break-words pr-2"
                             title={subtissue.displayName || subtissue.name}
                           >
                             {subtissue.displayName || subtissue.name}

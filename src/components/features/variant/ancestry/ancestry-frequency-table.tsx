@@ -11,7 +11,13 @@ interface AncestryFrequencyTableProps {
 
 export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
   const exportTSV = (filteredData: AncestryFrequency[]) => {
-    const headers = ["Population", "1000G Phase 3", "gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"];
+    const headers = [
+      "Population",
+      "1000G Phase 3",
+      "gnomAD v3.1",
+      "gnomAD v4.1 Exome",
+      "gnomAD v4.1 Genome",
+    ];
     const rows = filteredData.map((row) => [
       row.name,
       formatFrequency(row.g1000),
@@ -20,7 +26,9 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
       formatFrequency(row.gnomad41_genome),
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -34,7 +42,7 @@ export function AncestryFrequencyTable({ data }: AncestryFrequencyTableProps) {
     {
       columnId: "name",
       title: "Population",
-      options: Array.from(new Set(data.map(row => row.name))).map(name => ({
+      options: Array.from(new Set(data.map((row) => row.name))).map((name) => ({
         label: name,
         value: name,
       })),

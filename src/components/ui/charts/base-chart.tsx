@@ -12,7 +12,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/general";
-import { validateChartData, type BaseChartProps } from "@/components/ui/charts/utils";
+import {
+  validateChartData,
+  type BaseChartProps,
+} from "@/components/ui/charts/utils";
 
 interface BaseChartWrapperProps extends Omit<BaseChartProps, "data"> {
   data: any[];
@@ -43,7 +46,7 @@ export function BaseChartWrapper({
 }: BaseChartWrapperProps) {
   // Validate data
   const isValidData = validateChartData(data);
-  
+
   // Handle different states
   if (loading) {
     return (
@@ -124,7 +127,9 @@ export function BaseChartWrapper({
           >
             <div className="text-center space-y-2">
               <div className="text-muted-foreground font-medium">No Data</div>
-              <div className="text-sm text-muted-foreground">{emptyMessage}</div>
+              <div className="text-sm text-muted-foreground">
+                {emptyMessage}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -161,7 +166,11 @@ export function BaseChartWrapper({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={onFullscreen}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onFullscreen}
+                      >
                         <Maximize2 className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -179,9 +188,7 @@ export function BaseChartWrapper({
             {children}
           </ResponsiveContainer>
         ) : (
-          <div style={{ width: width || "100%", height }}>
-            {children}
-          </div>
+          <div style={{ width: width || "100%", height }}>{children}</div>
         )}
       </CardContent>
     </Card>
@@ -191,7 +198,7 @@ export function BaseChartWrapper({
 // Export function to download chart as PNG
 export const exportChartAsPNG = (
   chartRef: React.RefObject<any>,
-  filename: string = "chart"
+  filename: string = "chart",
 ) => {
   if (!chartRef.current) {
     console.error("Chart ref is null");
@@ -200,10 +207,12 @@ export const exportChartAsPNG = (
 
   // Get the SVG element - search more thoroughly
   let svgElement = chartRef.current.querySelector("svg");
-  
+
   // If not found directly, search in nested elements
   if (!svgElement) {
-    const containers = chartRef.current.querySelectorAll(".recharts-wrapper, .recharts-surface");
+    const containers = chartRef.current.querySelectorAll(
+      ".recharts-wrapper, .recharts-surface",
+    );
     for (const container of containers) {
       svgElement = container.querySelector("svg");
       if (svgElement) break;

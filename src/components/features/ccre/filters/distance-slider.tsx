@@ -27,13 +27,16 @@ const DistanceSliderImpl = ({
 
   const distanceOptions = useMemo(() => [0, 1000, 5000, 10000], []);
 
-  const handleQuickSelect = useCallback((distance: number) => {
-    onDistanceChange([distance]);
-  }, [onDistanceChange]);
+  const handleQuickSelect = useCallback(
+    (distance: number) => {
+      onDistanceChange([distance]);
+    },
+    [onDistanceChange],
+  );
 
-  const formattedCurrentDistance = useMemo(() => 
-    formatDistance(searchDistance[0]),
-    [searchDistance, formatDistance]
+  const formattedCurrentDistance = useMemo(
+    () => formatDistance(searchDistance[0]),
+    [searchDistance, formatDistance],
   );
 
   return (

@@ -90,7 +90,7 @@ export function Autocomplete({
             className={cn(
               "flex h-12 w-full rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-lg transition-all duration-300 hover:shadow-xl focus-within:border-primary/50 focus-within:shadow-primary/10 items-center",
               startContent && "pl-2",
-              endContent 
+              endContent,
             )}
           >
             {startContent && <div className="shrink-0">{startContent}</div>}
@@ -105,9 +105,9 @@ export function Autocomplete({
               spellCheck={false}
             />
             {endContent && <div className="shrink-0">{endContent}</div>}
-              <ComboboxButton className="h-8 w-8 mr-2 shrink-0 rounded-full hover:bg-accent/50 flex items-center justify-center transition">
-                <ChevronsUpDown className="h-4 w-4" />
-              </ComboboxButton>
+            <ComboboxButton className="h-8 w-8 mr-2 shrink-0 rounded-full hover:bg-accent/50 flex items-center justify-center transition">
+              <ChevronsUpDown className="h-4 w-4" />
+            </ComboboxButton>
           </div>
 
           <ComboboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-background/95 backdrop-blur-sm border shadow-lg py-1 text-base focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">

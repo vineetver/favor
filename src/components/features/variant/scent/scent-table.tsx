@@ -12,23 +12,25 @@ type ScentTableProps = {
   isLoading?: boolean;
 };
 
-export function ScentTable({ data, title, description, isLoading = false }: ScentTableProps) {
+export function ScentTable({
+  data,
+  title,
+  description,
+  isLoading = false,
+}: ScentTableProps) {
   const exportData = (data: ScentTissue[]) => {
-    const headers = [
-      "SCENT Region",
-      "Associated Gene", 
-      "Tissue",
-      "Sub Tissue"
-    ];
+    const headers = ["SCENT Region", "Associated Gene", "Tissue", "Sub Tissue"];
 
     const rows = data.map((row) => [
       row.region || "N/A",
       row.gene || "N/A",
       row.tissue || "N/A",
-      row.sub_tissue || "N/A"
+      row.sub_tissue || "N/A",
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -38,18 +40,21 @@ export function ScentTable({ data, title, description, isLoading = false }: Scen
     URL.revokeObjectURL(url);
   };
 
-  const facetedFilters = useMemo(() => [
-    {
-      columnId: "tissue",
-      title: "Tissue Type",
-      options: Array.from(new Set(data.map(item => item.tissue)))
-        .filter(Boolean)
-        .map(tissue => ({ label: tissue, value: tissue })),
-      filterFn: (row: ScentTissue, _columnId: string, value: string) => {
-        return row.tissue === value;
-      }
-    }
-  ], [data]);
+  const facetedFilters = useMemo(
+    () => [
+      {
+        columnId: "tissue",
+        title: "Tissue Type",
+        options: Array.from(new Set(data.map((item) => item.tissue)))
+          .filter(Boolean)
+          .map((tissue) => ({ label: tissue, value: tissue })),
+        filterFn: (row: ScentTissue, _columnId: string, value: string) => {
+          return row.tissue === value;
+        },
+      },
+    ],
+    [data],
+  );
 
   return (
     <DataGrid
@@ -65,8 +70,9 @@ export function ScentTable({ data, title, description, isLoading = false }: Scen
       isLoading={isLoading}
       emptyState={{
         title: "No SCENT Data",
-        description: "No SCENT tissue-specific regulatory data available for this variant.",
-        dataType: "SCENT Data"
+        description:
+          "No SCENT tissue-specific regulatory data available for this variant.",
+        dataType: "SCENT Data",
       }}
     />
   );

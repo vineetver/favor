@@ -18,10 +18,15 @@ interface CCREDisplayProps {
 }
 
 const CCREBrowser = dynamic(
-  () => import("@/components/features/browser/ccre/ccre-browser").then((mod) => ({ default: mod.CCREBrowser })),
+  () =>
+    import("@/components/features/browser/ccre/ccre-browser").then((mod) => ({
+      default: mod.CCREBrowser,
+    })),
   {
     ssr: false,
-    loading: () => <div className="min-h-[800px] animate-pulse bg-gray-100 rounded" />,
+    loading: () => (
+      <div className="min-h-[800px] animate-pulse bg-gray-100 rounded" />
+    ),
   },
 );
 
@@ -33,12 +38,12 @@ const CCREDisplayImpl = ({ vcf, region, initialData }: CCREDisplayProps) => {
 
   const handleSearchDistanceChange = useCallback((distance: number[]) => {
     setSearchDistance(distance);
-    
+
     // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     // Set new timeout
     timeoutRef.current = setTimeout(() => {
       setDebouncedSearchDistance(distance);
@@ -54,18 +59,21 @@ const CCREDisplayImpl = ({ vcf, region, initialData }: CCREDisplayProps) => {
     };
   }, []);
 
-  const queryConfig = useMemo(() => ({
-    queryKey: ["ccre", vcf || region, debouncedSearchDistance[0]],
-    queryFn: () => {
-      if (!vcf && !region) return Promise.resolve(initialData || []);
-      if (vcf) {
-        return getCCREByVCF(vcf, debouncedSearchDistance[0]);
-      } else if (region) {
-        return getCCREByRegion(region, debouncedSearchDistance[0]);
-      }
-      return Promise.resolve(initialData || []);
-    },
-  }), [vcf, region, debouncedSearchDistance, initialData]);
+  const queryConfig = useMemo(
+    () => ({
+      queryKey: ["ccre", vcf || region, debouncedSearchDistance[0]],
+      queryFn: () => {
+        if (!vcf && !region) return Promise.resolve(initialData || []);
+        if (vcf) {
+          return getCCREByVCF(vcf, debouncedSearchDistance[0]);
+        } else if (region) {
+          return getCCREByRegion(region, debouncedSearchDistance[0]);
+        }
+        return Promise.resolve(initialData || []);
+      },
+    }),
+    [vcf, region, debouncedSearchDistance, initialData],
+  );
 
   const {
     data: cCREsData,
@@ -74,14 +82,24 @@ const CCREDisplayImpl = ({ vcf, region, initialData }: CCREDisplayProps) => {
     refetch: refetchCCRE,
   } = useQuery(queryConfig);
 
-  const sharedProps = useMemo(() => ({
-    vcf,
-    region,
-    searchDistance,
-    debouncedSearchDistance,
-    cCREsData,
-    isCCRELoading,
-  }), [vcf, region, searchDistance, debouncedSearchDistance, cCREsData, isCCRELoading]);
+  const sharedProps = useMemo(
+    () => ({
+      vcf,
+      region,
+      searchDistance,
+      debouncedSearchDistance,
+      cCREsData,
+      isCCRELoading,
+    }),
+    [
+      vcf,
+      region,
+      searchDistance,
+      debouncedSearchDistance,
+      cCREsData,
+      isCCRELoading,
+    ],
+  );
 
   if (cCREError) {
     return (
@@ -104,58 +122,68 @@ const CCREDisplayImpl = ({ vcf, region, initialData }: CCREDisplayProps) => {
     );
   }
 
-  const browserInitialTracks = useMemo(() => [
-    "other_gene_annotation",
-    "single_cell_tissue_ccres",
-    "single_cell_tissue_atac_seq_chromatin_accessibility",
-    "single_cell_tissue_dnase_seq_chromatin_accessibility",
-    "single_cell_tissue_ctcf_binding",
-    "single_cell_tissue_h3k4me3_active_promoters",
-    "single_cell_tissue_h3k27ac_enhancer_activity",
-  ], []);
-
-  const tabsData = useMemo(() => [
-    {
-      id: "table",
-      value: "table",
-      label: "Table View",
-      content: (
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="lg:w-80 lg:flex-shrink-0 space-y-4">
-            <DistanceSlider
-              searchDistance={searchDistance}
-              onDistanceChange={handleSearchDistanceChange}
-            />
-            <TissueFilter />
-          </div>
-          <div className="flex-1 min-w-0">
-            <CCRETableView {...sharedProps} />
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "browser",
-      value: "browser",
-      label: "Browser View",
-      content: (
-        <div className="min-h-[800px]">
-          <CCREBrowser
-            vcfParam={vcf}
-            regionParam={region}
-            initialTracks={browserInitialTracks}
-          />
-        </div>
-      ),
-    },
-  ], [vcf, region, searchDistance, debouncedSearchDistance, cCREsData, isCCRELoading, handleSearchDistanceChange, browserInitialTracks]);
-
-  return (
-    <ResponsiveTabs
-      defaultValue="table"
-      tabs={tabsData}
-    />
+  const browserInitialTracks = useMemo(
+    () => [
+      "other_gene_annotation",
+      "single_cell_tissue_ccres",
+      "single_cell_tissue_atac_seq_chromatin_accessibility",
+      "single_cell_tissue_dnase_seq_chromatin_accessibility",
+      "single_cell_tissue_ctcf_binding",
+      "single_cell_tissue_h3k4me3_active_promoters",
+      "single_cell_tissue_h3k27ac_enhancer_activity",
+    ],
+    [],
   );
+
+  const tabsData = useMemo(
+    () => [
+      {
+        id: "table",
+        value: "table",
+        label: "Table View",
+        content: (
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="lg:w-80 lg:flex-shrink-0 space-y-4">
+              <DistanceSlider
+                searchDistance={searchDistance}
+                onDistanceChange={handleSearchDistanceChange}
+              />
+              <TissueFilter />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CCRETableView {...sharedProps} />
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "browser",
+        value: "browser",
+        label: "Browser View",
+        content: (
+          <div className="min-h-[800px]">
+            <CCREBrowser
+              vcfParam={vcf}
+              regionParam={region}
+              initialTracks={browserInitialTracks}
+            />
+          </div>
+        ),
+      },
+    ],
+    [
+      vcf,
+      region,
+      searchDistance,
+      debouncedSearchDistance,
+      cCREsData,
+      isCCRELoading,
+      handleSearchDistanceChange,
+      browserInitialTracks,
+    ],
+  );
+
+  return <ResponsiveTabs defaultValue="table" tabs={tabsData} />;
 };
 
 export const CCREDisplay = memo(CCREDisplayImpl);

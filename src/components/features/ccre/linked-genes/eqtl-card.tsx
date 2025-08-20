@@ -11,8 +11,11 @@ interface EqtlCardProps {
   isLoading?: boolean;
 }
 
-export function EqtlCard({ accession, data, isLoading = false }: EqtlCardProps) {
-
+export function EqtlCard({
+  accession,
+  data,
+  isLoading = false,
+}: EqtlCardProps) {
   const sortedData = useMemo(() => {
     if (!data) return [];
     return [...data].sort((a, b) => a.p_value - b.p_value);
@@ -49,7 +52,9 @@ export function EqtlCard({ accession, data, isLoading = false }: EqtlCardProps) 
       row.source,
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

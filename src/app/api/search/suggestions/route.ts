@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import type { ElasticsearchResponse } from "@/lib/search/api/elasticsearch";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const ES_HOST = process.env.ES_HOST;
 const ES_USER = process.env.ES_USER;

@@ -53,7 +53,8 @@ export function DataTableSingleSelectFilter({
                 variant="secondary"
                 className="rounded-sm px-1 font-normal"
               >
-                {options.find(option => option.value === selectedValue)?.label || selectedValue}
+                {options.find((option) => option.value === selectedValue)
+                  ?.label || selectedValue}
               </Badge>
             </>
           )}
@@ -71,7 +72,9 @@ export function DataTableSingleSelectFilter({
                   <CommandItem
                     key={option.value}
                     onSelect={() => {
-                      column?.setFilterValue(isSelected ? undefined : option.value);
+                      column?.setFilterValue(
+                        isSelected ? undefined : option.value,
+                      );
                     }}
                   >
                     <div

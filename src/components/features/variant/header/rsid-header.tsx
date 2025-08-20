@@ -59,7 +59,10 @@ export function RsidHeader({
         <div>
           <div className="flex items-center space-x-3">
             <h3 className="text-2xl font-semibold mt-2">{rsid}</h3>
-            <Tabs value={optimisticVariantVcf} onValueChange={handleVariantChange}>
+            <Tabs
+              value={optimisticVariantVcf}
+              onValueChange={handleVariantChange}
+            >
               <TabsList className="h-8 p-1 bg-primary/5 border border-border/50 rounded-lg w-fit">
                 {variants.map((variant) => (
                   <TabsTrigger

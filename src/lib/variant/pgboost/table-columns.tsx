@@ -6,9 +6,6 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { Progress } from "@/components/ui/progress";
 import type { PGBoost } from "@/lib/variant/pgboost/types";
 
-
-
-
 const formatPGBoostScore = (num: number | null | undefined) => {
   if (num == null || num === -1 || num === 1e-100) return "N/A";
   return num.toFixed(num < 0.01 ? 6 : 4);
@@ -18,9 +15,9 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
   {
     accessorKey: "gene",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Variant-gene link predictions" 
+      <DataTableColumnHeader
+        column={column}
+        title="Variant-gene link predictions"
         sortable={true}
       />
     ),
@@ -45,18 +42,18 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
   {
     accessorKey: "pg_boost",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="pgBoost" 
+      <DataTableColumnHeader
+        column={column}
+        title="pgBoost"
         className="justify-center"
         sortable={true}
         tooltip={
           <div className="text-sm">
-            pgBoost (Dorans et al. medRxiv) is a gradient boosting model
-            that trains a non-linear combination of existing single-cell
-            ATAC peak-gene linking scores (SCENT, Signac, Cicero) and
-            SNP-gene distance on fine-mapped eSNP-eGene pairs from GTEx to
-            assign a probabilistic score to each candidate SNP-gene link.
+            pgBoost (Dorans et al. medRxiv) is a gradient boosting model that
+            trains a non-linear combination of existing single-cell ATAC
+            peak-gene linking scores (SCENT, Signac, Cicero) and SNP-gene
+            distance on fine-mapped eSNP-eGene pairs from GTEx to assign a
+            probabilistic score to each candidate SNP-gene link.
           </div>
         }
       />
@@ -72,15 +69,15 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
   {
     accessorKey: "pg_boost_percentile",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="pgBoost Percentile" 
+      <DataTableColumnHeader
+        column={column}
+        title="pgBoost Percentile"
         className="justify-center"
         sortable={true}
         tooltip={
           <div className="text-sm">
-            Percentile score of the methods pgBoost. Higher percentiles
-            indicate stronger variant-gene associations.
+            Percentile score of the methods pgBoost. Higher percentiles indicate
+            stronger variant-gene associations.
           </div>
         }
       />
@@ -109,45 +106,51 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
   {
     accessorKey: "scent",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="SCENT" 
-        className="justify-center" 
+      <DataTableColumnHeader
+        column={column}
+        title="SCENT"
+        className="justify-center"
         sortable={true}
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">{formatPGBoostScore(row.original?.scent)}</div>
+      <div className="text-left font-mono">
+        {formatPGBoostScore(row.original?.scent)}
+      </div>
     ),
     enableSorting: true,
   },
   {
     accessorKey: "signac",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Signac" 
-        className="justify-center" 
+      <DataTableColumnHeader
+        column={column}
+        title="Signac"
+        className="justify-center"
         sortable={true}
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">{formatPGBoostScore(row.original?.signac)}</div>
+      <div className="text-left font-mono">
+        {formatPGBoostScore(row.original?.signac)}
+      </div>
     ),
     enableSorting: true,
   },
   {
     accessorKey: "cicero",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
-        title="Cicero" 
-        className="justify-center" 
+      <DataTableColumnHeader
+        column={column}
+        title="Cicero"
+        className="justify-center"
         sortable={true}
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">{formatPGBoostScore(row.original?.cicero)}</div>
+      <div className="text-left font-mono">
+        {formatPGBoostScore(row.original?.cicero)}
+      </div>
     ),
     enableSorting: true,
   },

@@ -11,8 +11,11 @@ interface RNAPIIChiapetCardProps {
   isLoading?: boolean;
 }
 
-export function RNAPIIChiapetCard({ accession, data, isLoading = false }: RNAPIIChiapetCardProps) {
-
+export function RNAPIIChiapetCard({
+  accession,
+  data,
+  isLoading = false,
+}: RNAPIIChiapetCardProps) {
   const sortedData = useMemo(() => {
     if (!data) return [];
     return [...data].sort((a, b) => {
@@ -43,7 +46,14 @@ export function RNAPIIChiapetCard({ accession, data, isLoading = false }: RNAPII
   }
 
   const exportData = (filteredData: Chiapet[]) => {
-    const headers = ["Gene", "Type", "Score", "Biosample", "P-value", "Experiment"];
+    const headers = [
+      "Gene",
+      "Type",
+      "Score",
+      "Biosample",
+      "P-value",
+      "Experiment",
+    ];
     const rows = filteredData.map((row) => [
       row.gene_name,
       row.gene_type,
@@ -53,7 +63,9 @@ export function RNAPIIChiapetCard({ accession, data, isLoading = false }: RNAPII
       row.experiment_id,
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -76,7 +88,8 @@ export function RNAPIIChiapetCard({ accession, data, isLoading = false }: RNAPII
       isLoading={isLoading}
       emptyState={{
         title: "No RNAPII ChIA-PET links found",
-        description: "No RNAPII ChIA-PET linkage data is available for this cCRE.",
+        description:
+          "No RNAPII ChIA-PET linkage data is available for this cCRE.",
         dataType: "ChIA-PET data",
       }}
     />

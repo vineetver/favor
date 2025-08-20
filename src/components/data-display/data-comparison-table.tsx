@@ -11,7 +11,12 @@ import { NoDataState } from "@/components/ui/error-states";
 import type { FilteredItem } from "@/lib/annotations/types";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 
-export type ColumnType = "value" | "activity" | "percentile" | "proportion" | "biologicalContext";
+export type ColumnType =
+  | "value"
+  | "activity"
+  | "percentile"
+  | "proportion"
+  | "biologicalContext";
 
 interface ColumnConfig {
   type: ColumnType;
@@ -49,14 +54,19 @@ export function DataComparisonTable({
   // Use flexible columns if provided, otherwise fall back to legacy 3-column layout
   const columnConfigs: ColumnConfig[] = columns || [
     { type: leftColumn, header: leftColumnHeader, tooltip: leftColumnTooltip },
-    { type: rightColumn, header: rightColumnHeader, tooltip: rightColumnTooltip }
+    {
+      type: rightColumn,
+      header: rightColumnHeader,
+      tooltip: rightColumnTooltip,
+    },
   ];
 
   const getColumnValue = (item: FilteredItem, columnType: ColumnType) => {
     switch (columnType) {
       case "value":
         // Handle JSX elements or raw values
-        if (typeof item.value === "object" &&
+        if (
+          typeof item.value === "object" &&
           item.value &&
           "props" in item.value
         ) {
@@ -132,10 +142,10 @@ export function DataComparisonTable({
     <div className="rounded-lg border border-border/50 bg-card shadow-md overflow-hidden text-sm">
       {/* Desktop Header Row - Hidden on mobile */}
       <div className="hidden md:block bg-muted/30 px-4 py-3 sm:px-6 border-b border-border/40">
-        <div 
+        <div
           className="grid gap-4 lg:gap-6 items-center"
           style={{
-            gridTemplateColumns: `minmax(200px, 1fr) repeat(${columnConfigs.length}, minmax(120px, 1fr))`
+            gridTemplateColumns: `minmax(200px, 1fr) repeat(${columnConfigs.length}, minmax(120px, 1fr))`,
           }}
         >
           <div className="font-semibold text-foreground text-left">
@@ -183,7 +193,11 @@ export function DataComparisonTable({
                   {columnConfigs.map((config, colIndex) => (
                     <div key={colIndex} className="flex flex-col space-y-1">
                       <div className="font-medium text-muted-foreground">
-                        {renderColumnHeader(config.type, config.header, config.tooltip)}
+                        {renderColumnHeader(
+                          config.type,
+                          config.header,
+                          config.tooltip,
+                        )}
                       </div>
                       <div className="text-foreground break-all">
                         {getColumnValue(item, config.type)}
@@ -195,10 +209,10 @@ export function DataComparisonTable({
 
               {/* Desktop Layout - Grid */}
               <div className="hidden md:block">
-                <div 
+                <div
                   className="grid gap-4 lg:gap-6 items-start"
                   style={{
-                    gridTemplateColumns: `minmax(200px, 1fr) repeat(${columnConfigs.length}, minmax(120px, 1fr))`
+                    gridTemplateColumns: `minmax(200px, 1fr) repeat(${columnConfigs.length}, minmax(120px, 1fr))`,
                   }}
                 >
                   {/* Annotation Column */}
@@ -220,7 +234,10 @@ export function DataComparisonTable({
 
                   {/* Data Columns */}
                   {columnConfigs.map((config, colIndex) => (
-                    <div key={colIndex} className="flex items-start justify-center text-center min-w-0">
+                    <div
+                      key={colIndex}
+                      className="flex items-start justify-center text-center min-w-0"
+                    >
                       <div className="text-muted-foreground break-all">
                         {getColumnValue(item, config.type)}
                       </div>

@@ -42,32 +42,30 @@ export default async function IntegrativePage({
             {
               type: "value" as const,
               header: "Integrative Score",
-              tooltip: "Combined functional impact score integrating multiple prediction algorithms and conservation metrics"
+              tooltip:
+                "Combined functional impact score integrating multiple prediction algorithms and conservation metrics",
             },
             {
               type: "percentile" as const,
               header: "Percentile",
-              tooltip: "Score transformed to percentile scale using formula: 10^(score * -0.1) * 100. Higher scores result in lower percentiles, indicating greater functional impact or statistical significance."
-            }
+              tooltip:
+                "Score transformed to percentile scale using formula: 10^(score * -0.1) * 100. Higher scores result in lower percentiles, indicating greater functional impact or statistical significance.",
+            },
           ]}
         />
-      )
+      ),
     },
     {
       id: "visualization",
       label: "Data Visualization",
       shortLabel: "Chart",
-      content: <IntegrativeDisplay items={validItems} />
-    }
+      content: <IntegrativeDisplay items={validItems} />,
+    },
   ];
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs
-        tabs={tabs}
-        defaultValue="table"
-        variant="simple"
-      />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" variant="simple" />
     </div>
   );
 }

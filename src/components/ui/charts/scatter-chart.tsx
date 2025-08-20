@@ -11,7 +11,10 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { BaseChartWrapper, exportChartAsPNG } from "@/components/ui/charts/base-chart";
+import {
+  BaseChartWrapper,
+  exportChartAsPNG,
+} from "@/components/ui/charts/base-chart";
 import {
   generateColors,
   CHART_THEME,
@@ -80,12 +83,15 @@ export function ScatterChart({
   const processedData = React.useMemo(() => {
     if (!colorByKey) return [{ name: "data", data }];
 
-    const grouped = data.reduce((acc, item) => {
-      const group = item[colorByKey];
-      if (!acc[group]) acc[group] = [];
-      acc[group].push(item);
-      return acc;
-    }, {} as Record<string, any[]>);
+    const grouped = data.reduce(
+      (acc, item) => {
+        const group = item[colorByKey];
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(item);
+        return acc;
+      },
+      {} as Record<string, any[]>,
+    );
 
     return Object.entries(grouped).map(([name, items]) => ({
       name,
@@ -98,14 +104,17 @@ export function ScatterChart({
   const getSizeValue = (item: any): number => {
     if (!sizeKey || !item[sizeKey]) return dotSize;
     const value = item[sizeKey];
-    const max = Math.max(...data.map(d => d[sizeKey] || 0));
-    const min = Math.min(...data.map(d => d[sizeKey] || 0));
+    const max = Math.max(...data.map((d) => d[sizeKey] || 0));
+    const min = Math.min(...data.map((d) => d[sizeKey] || 0));
     const normalized = (value - min) / (max - min);
     return minDotSize + (maxDotSize - minDotSize) * normalized;
   };
 
   const handleExport = () => {
-    exportChartAsPNG(chartRef, title?.toLowerCase().replace(/\s+/g, "-") || "scatter-chart");
+    exportChartAsPNG(
+      chartRef,
+      title?.toLowerCase().replace(/\s+/g, "-") || "scatter-chart",
+    );
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -128,25 +137,27 @@ export function ScatterChart({
           )}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-muted-foreground">{xLabel || xDataKey}:</span>
+              <span className="text-muted-foreground">
+                {xLabel || xDataKey}:
+              </span>
               <div className="font-mono font-medium">
-                {formatTooltipValue 
+                {formatTooltipValue
                   ? formatTooltipValue(data[xDataKey], xDataKey)
-                  : formatXAxis 
-                  ? formatXAxis(data[xDataKey])
-                  : data[xDataKey]
-                }
+                  : formatXAxis
+                    ? formatXAxis(data[xDataKey])
+                    : data[xDataKey]}
               </div>
             </div>
             <div>
-              <span className="text-muted-foreground">{yLabel || yDataKey}:</span>
+              <span className="text-muted-foreground">
+                {yLabel || yDataKey}:
+              </span>
               <div className="font-mono font-medium">
-                {formatTooltipValue 
+                {formatTooltipValue
                   ? formatTooltipValue(data[yDataKey], yDataKey)
-                  : formatYAxis 
-                  ? formatYAxis(data[yDataKey])
-                  : data[yDataKey]
-                }
+                  : formatYAxis
+                    ? formatYAxis(data[yDataKey])
+                    : data[yDataKey]}
               </div>
             </div>
           </div>
@@ -154,10 +165,9 @@ export function ScatterChart({
             <div className="text-xs">
               <span className="text-muted-foreground">{sizeKey}:</span>
               <span className="font-mono font-medium ml-1">
-                {formatTooltipValue 
+                {formatTooltipValue
                   ? formatTooltipValue(data[sizeKey], sizeKey)
-                  : data[sizeKey]
-                }
+                  : data[sizeKey]}
               </span>
             </div>
           )}
@@ -177,7 +187,9 @@ export function ScatterChart({
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-muted-foreground capitalize">{entry.value}</span>
+            <span className="text-muted-foreground capitalize">
+              {entry.value}
+            </span>
           </div>
         ))}
       </div>
@@ -240,8 +252,12 @@ export function ScatterChart({
                   key={`cell-${index}`}
                   fill={chartColors[groupIndex]}
                   r={getSizeValue(entry)}
-                  className={onDotClick ? "cursor-pointer hover:opacity-80" : ""}
-                  onClick={onDotClick ? () => onDotClick(entry, index) : undefined}
+                  className={
+                    onDotClick ? "cursor-pointer hover:opacity-80" : ""
+                  }
+                  onClick={
+                    onDotClick ? () => onDotClick(entry, index) : undefined
+                  }
                 />
               ))}
             </Scatter>

@@ -43,32 +43,45 @@ interface TooltipData {
   visible: boolean;
 }
 
-function CustomTooltip({ tooltip, tissueColor }: { tooltip: TooltipData; tissueColor: (tissue: string, isSignificant: boolean) => string }) {
+function CustomTooltip({
+  tooltip,
+  tissueColor,
+}: {
+  tooltip: TooltipData;
+  tissueColor: (tissue: string, isSignificant: boolean) => string;
+}) {
   if (!tooltip.visible) return null;
 
   return (
-    <div 
+    <div
       className="absolute pointer-events-none z-50 bg-background border border-border rounded-lg shadow-lg p-4 ml-6 mb-4"
-      style={{ 
-        left: tooltip.x, 
+      style={{
+        left: tooltip.x,
         top: tooltip.y,
-        transform: 'translate(-50%, -100%)'
+        transform: "translate(-50%, -100%)",
       }}
     >
       <div className="space-y-3 max-w-xs">
         <div className="flex items-center gap-3 text-sm">
           <div
             className="w-4 h-4 rounded-full border border-white"
-            style={{ 
-              backgroundColor: tissueColor(tooltip.point.tissue, tooltip.point.isSignificant)
+            style={{
+              backgroundColor: tissueColor(
+                tooltip.point.tissue,
+                tooltip.point.isSignificant,
+              ),
             }}
           />
-          <span className="font-semibold capitalize">{tooltip.point.tissue}</span>
+          <span className="font-semibold capitalize">
+            {tooltip.point.tissue}
+          </span>
         </div>
         <div className="grid grid-cols-1 gap-3 text-sm">
           <div>
             <span className="text-muted-foreground text-xs">Gene:</span>
-            <div className="font-semibold text-foreground">{tooltip.point.item.gene_name}</div>
+            <div className="font-semibold text-foreground">
+              {tooltip.point.item.gene_name}
+            </div>
           </div>
           <div>
             <span className="text-muted-foreground text-xs">ABC Score:</span>
@@ -84,12 +97,12 @@ function CustomTooltip({ tooltip, tissueColor }: { tooltip: TooltipData; tissueC
           </div>
           <div>
             <span className="text-muted-foreground text-xs">Status:</span>
-            <div className={`font-semibold ${
-              tooltip.point.isSignificant 
-                ? 'text-red-600' 
-                : 'text-gray-500'
-            }`}>
-              {tooltip.point.isSignificant ? 'Significant' : 'Not significant'}
+            <div
+              className={`font-semibold ${
+                tooltip.point.isSignificant ? "text-red-600" : "text-gray-500"
+              }`}
+            >
+              {tooltip.point.isSignificant ? "Significant" : "Not significant"}
             </div>
           </div>
         </div>
@@ -103,7 +116,7 @@ function BeeswarmVisualization({
   tissues,
   height,
   maxScore,
-  significanceThreshold
+  significanceThreshold,
 }: BeeswarmVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800);
@@ -111,30 +124,30 @@ function BeeswarmVisualization({
     x: 0,
     y: 0,
     point: {} as BeeswarmPoint,
-    visible: false
+    visible: false,
   });
-  
+
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
         setWidth(containerRef.current.clientWidth);
       }
     };
-    
+
     updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
   // Responsive margins based on screen width
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
-  
+
   const margin = {
     top: isMobile ? 10 : 40,
     right: isMobile ? 10 : isTablet ? 100 : 120,
     bottom: isMobile ? 10 : isTablet ? 100 : 120,
-    left: isMobile ? 10 : isTablet ? 80 : 100
+    left: isMobile ? 10 : isTablet ? 80 : 100,
   };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
@@ -142,12 +155,12 @@ function BeeswarmVisualization({
   const xScale = scaleBand({
     range: [0, innerWidth],
     domain: tissues,
-    padding: 0.1
+    padding: 0.1,
   });
 
   const yScale = scaleLinear({
     range: [innerHeight, 0],
-    domain: [0, maxScore]
+    domain: [0, maxScore],
   });
 
   const significanceY = yScale(significanceThreshold);
@@ -156,14 +169,14 @@ function BeeswarmVisualization({
   const tissueColors = [
     "#3b82f6", // blue
     "#ef4444", // red
-    "#10b981", // emerald  
+    "#10b981", // emerald
     "#f59e0b", // amber
     "#8b5cf6", // violet
     "#06b6d4", // cyan
     "#84cc16", // lime
     "#f97316", // orange
     "#ec4899", // pink
-    "#6b7280"  // gray (fallback)
+    "#6b7280", // gray (fallback)
   ];
 
   const getTissueColor = (tissue: string, isSignificant: boolean) => {
@@ -172,20 +185,23 @@ function BeeswarmVisualization({
     return tissueColors[index % tissueColors.length];
   };
 
-  const handleMouseEnter = (point: BeeswarmPoint, event: React.MouseEvent<SVGCircleElement>) => {
+  const handleMouseEnter = (
+    point: BeeswarmPoint,
+    event: React.MouseEvent<SVGCircleElement>,
+  ) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
       setTooltip({
         x: event.clientX - rect.left,
         y: event.clientY - rect.top,
         point,
-        visible: true
+        visible: true,
       });
     }
   };
 
   const handleMouseLeave = () => {
-    setTooltip(prev => ({ ...prev, visible: false }));
+    setTooltip((prev) => ({ ...prev, visible: false }));
   };
 
   return (
@@ -193,7 +209,7 @@ function BeeswarmVisualization({
       <svg width="100%" height={height} className="bg-transparent">
         <Group left={margin.left} top={margin.top}>
           {/* Grid lines */}
-          {yScale.ticks(8).map(tick => (
+          {yScale.ticks(8).map((tick) => (
             <line
               key={tick}
               x1={0}
@@ -215,7 +231,7 @@ function BeeswarmVisualization({
             strokeWidth={2}
             strokeDasharray="5,5"
           />
-          
+
           {/* Significance label - hide on mobile */}
           {!isMobile && (
             <text
@@ -236,11 +252,18 @@ function BeeswarmVisualization({
             const tissueIndex = tissues.indexOf(point.tissue);
             const bandWidth = xScale.bandwidth();
             const centerX = (xScale(point.tissue) || 0) + bandWidth / 2;
-            const jitteredX = centerX + (point.x - tissueIndex) * bandWidth * 0.9;
-            
+            const jitteredX =
+              centerX + (point.x - tissueIndex) * bandWidth * 0.9;
+
             // Simple fixed sizing
-            const radius = point.isSignificant ? (isMobile ? 4 : 5) : (isMobile ? 3.5 : 4.5);
-            
+            const radius = point.isSignificant
+              ? isMobile
+                ? 4
+                : 5
+              : isMobile
+                ? 3.5
+                : 4.5;
+
             return (
               <Circle
                 key={index}
@@ -257,104 +280,116 @@ function BeeswarmVisualization({
             );
           })}
 
-            {/* Axes - hide labels on mobile */}
-            {!isMobile && (
-              <AxisLeft
-                scale={yScale}
-                tickFormat={(value) => Number(value).toFixed(3)}
-                tickLabelProps={{
-                  fontSize: 11,
-                  fill: "#6b7280",
-                  fontFamily: "ui-monospace, monospace"
-                }}
-                stroke="#e5e7eb"
-              />
-            )}
-            
-            {!isMobile && (
-              <AxisBottom
-                top={innerHeight}
-                scale={xScale}
-                tickLabelProps={{
-                  fontSize: 11,
-                  fill: "#374151",
-                  fontWeight: 500,
-                  angle: -45,
-                  textAnchor: "end"
-                }}
-                tickFormat={(value) => {
-                  const str = String(value);
-                  return str.length > 12 ? str.substring(0, 10) + '...' : str;
-                }}
-                stroke="#e5e7eb"
-              />
-            )}
+          {/* Axes - hide labels on mobile */}
+          {!isMobile && (
+            <AxisLeft
+              scale={yScale}
+              tickFormat={(value) => Number(value).toFixed(3)}
+              tickLabelProps={{
+                fontSize: 11,
+                fill: "#6b7280",
+                fontFamily: "ui-monospace, monospace",
+              }}
+              stroke="#e5e7eb"
+            />
+          )}
 
-            {/* Axis labels - hide on mobile */}
-            {!isMobile && (
-              <>
-                <text
-                  x={innerWidth / 2}
-                  y={innerHeight + 95}
-                  textAnchor="middle"
-                  fontSize="13"
-                  fill="#374151"
-                  fontWeight="600"
-                  className="font-semibold"
-                >
-                  Tissue Types
-                </text>
-                
-                <text
-                  x={-70}
-                  y={innerHeight / 2}
-                  textAnchor="middle"
-                  fontSize="13"
-                  fill="#374151"
-                  fontWeight="600"
-                  className="font-semibold"
-                  transform={`rotate(-90, -70, ${innerHeight / 2})`}
-                >
-                  ABC Score
-                </text>
-              </>
-            )}
-          </Group>
-        </svg>
-        
-        {/* Custom React Tooltip */}
-        <CustomTooltip tooltip={tooltip} tissueColor={getTissueColor} />
-      </div>
-  
+          {!isMobile && (
+            <AxisBottom
+              top={innerHeight}
+              scale={xScale}
+              tickLabelProps={{
+                fontSize: 11,
+                fill: "#374151",
+                fontWeight: 500,
+                angle: -45,
+                textAnchor: "end",
+              }}
+              tickFormat={(value) => {
+                const str = String(value);
+                return str.length > 12 ? str.substring(0, 10) + "..." : str;
+              }}
+              stroke="#e5e7eb"
+            />
+          )}
+
+          {/* Axis labels - hide on mobile */}
+          {!isMobile && (
+            <>
+              <text
+                x={innerWidth / 2}
+                y={innerHeight + 95}
+                textAnchor="middle"
+                fontSize="13"
+                fill="#374151"
+                fontWeight="600"
+                className="font-semibold"
+              >
+                Tissue Types
+              </text>
+
+              <text
+                x={-70}
+                y={innerHeight / 2}
+                textAnchor="middle"
+                fontSize="13"
+                fill="#374151"
+                fontWeight="600"
+                className="font-semibold"
+                transform={`rotate(-90, -70, ${innerHeight / 2})`}
+              >
+                ABC Score
+              </text>
+            </>
+          )}
+        </Group>
+      </svg>
+
+      {/* Custom React Tooltip */}
+      <CustomTooltip tooltip={tooltip} tissueColor={getTissueColor} />
+    </div>
   );
 }
 
-export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBeeswarmProps) {
+export function ABCBeeswarm({
+  data,
+  title = "ABC Links",
+  height = 600,
+}: ABCBeeswarmProps) {
   const [searchGene, setSearchGene] = useState("");
   const [selectedTissues, setSelectedTissues] = useState<string[]>([]);
-  const [scoreRange, setScoreRange] = useState<[number, number] | undefined>(undefined);
-  const [selectedThreshold, setSelectedThreshold] = useState<string | undefined>("0.02");
+  const [scoreRange, setScoreRange] = useState<[number, number] | undefined>(
+    undefined,
+  );
+  const [selectedThreshold, setSelectedThreshold] = useState<
+    string | undefined
+  >("0.02");
   const [maxTissues] = useState(8);
 
   const allTissues = useMemo(() => {
-    const tissueCounts = data.reduce((acc, d) => {
-      acc[d.tissue] = (acc[d.tissue] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+    const tissueCounts = data.reduce(
+      (acc, d) => {
+        acc[d.tissue] = (acc[d.tissue] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     return Object.entries(tissueCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .map(([tissue, count]) => ({ name: tissue, count }));
   }, [data]);
 
-  const minScore = Math.min(...data.map(d => d.abc_score));
-  const maxScore = Math.max(...data.map(d => d.abc_score));
+  const minScore = Math.min(...data.map((d) => d.abc_score));
+  const maxScore = Math.max(...data.map((d) => d.abc_score));
 
-  const tissueOptions = useMemo(() => 
-    allTissues.map(tissue => ({
-      label: `${tissue.name} (${tissue.count})`,
-      value: tissue.name
-    })), [allTissues]
+  const tissueOptions = useMemo(
+    () =>
+      allTissues.map((tissue) => ({
+        label: `${tissue.name} (${tissue.count})`,
+        value: tissue.name,
+      })),
+    [allTissues],
   );
 
   const thresholdOptions = useMemo(() => {
@@ -363,48 +398,55 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
     for (let i = 0.075; i <= Math.max(maxScore + 0.05, 0.2); i += 0.025) {
       additionalOptions.push(parseFloat(i.toFixed(3)));
     }
-    
-    const allOptions = [...baseOptions, ...additionalOptions].sort((a, b) => a - b);
-    return allOptions.map(value => ({
+
+    const allOptions = [...baseOptions, ...additionalOptions].sort(
+      (a, b) => a - b,
+    );
+    return allOptions.map((value) => ({
       label: value.toString(),
-      value: value.toString()
+      value: value.toString(),
     }));
   }, [maxScore]);
 
-  const significanceThreshold = selectedThreshold 
-    ? parseFloat(selectedThreshold) 
+  const significanceThreshold = selectedThreshold
+    ? parseFloat(selectedThreshold)
     : 0.02;
 
   const displayTissues = useMemo(() => {
     if (selectedTissues.length > 0) {
-      return allTissues.filter(t => selectedTissues.includes(t.name));
+      return allTissues.filter((t) => selectedTissues.includes(t.name));
     }
     return allTissues.slice(0, maxTissues);
   }, [allTissues, selectedTissues, maxTissues]);
 
   const plotData = useMemo(() => {
-    const tissueNames = selectedTissues.length > 0 ? selectedTissues : displayTissues.map(t => t.name);
-    let filtered = data.filter(d => tissueNames.includes(d.tissue));
-    
+    const tissueNames =
+      selectedTissues.length > 0
+        ? selectedTissues
+        : displayTissues.map((t) => t.name);
+    let filtered = data.filter((d) => tissueNames.includes(d.tissue));
+
     if (searchGene) {
-      filtered = filtered.filter(d => 
-        d.gene_name.toLowerCase().includes(searchGene.toLowerCase())
+      filtered = filtered.filter((d) =>
+        d.gene_name.toLowerCase().includes(searchGene.toLowerCase()),
       );
     }
 
     if (scoreRange) {
-      filtered = filtered.filter(d => d.abc_score >= scoreRange[0] && d.abc_score <= scoreRange[1]);
+      filtered = filtered.filter(
+        (d) => d.abc_score >= scoreRange[0] && d.abc_score <= scoreRange[1],
+      );
     }
 
     // Group by tissue and limit per tissue
     const tissueGroups: Record<string, ABCScore[]> = {};
-    filtered.forEach(item => {
+    filtered.forEach((item) => {
       if (!tissueGroups[item.tissue]) tissueGroups[item.tissue] = [];
       tissueGroups[item.tissue].push(item);
     });
 
     // Limit points per tissue and sort by significance
-    Object.keys(tissueGroups).forEach(tissue => {
+    Object.keys(tissueGroups).forEach((tissue) => {
       if (tissueGroups[tissue].length > 100) {
         tissueGroups[tissue] = tissueGroups[tissue]
           .sort((a, b) => b.abc_score - a.abc_score)
@@ -421,50 +463,56 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
 
     displayTissues.forEach((tissue, tissueIndex) => {
       const tissueData = plotData[tissue.name] || [];
-      
+
       if (tissueData.length === 0) return;
-      
+
       // Apply jittering similar to GWAS example
       const tissuePoints: BeeswarmPoint[] = tissueData.map((item) => {
         // Create deterministic but pseudo-random jitter based on item properties
-        const seed = (item.gene_name + item.abc_score.toString()).split('').reduce((a, b) => {
-          a = ((a << 5) - a) + b.charCodeAt(0);
-          return a & a;
-        }, 0);
-        
+        const seed = (item.gene_name + item.abc_score.toString())
+          .split("")
+          .reduce((a, b) => {
+            a = (a << 5) - a + b.charCodeAt(0);
+            return a & a;
+          }, 0);
+
         // Use seeded random for consistent positioning
         const random1 = Math.abs(Math.sin(seed * 12.9898)) % 1;
         const random2 = Math.abs(Math.sin(seed * 78.233)) % 1;
-        
+
         // Apply jittering with controlled spread
         const xSpread = 0.35; // Maximum horizontal spread
         const ySpread = Math.max(0.002, maxScore * 0.008); // Adaptive Y spread based on data range
-        
+
         const xJitter = (random1 - 0.5) * xSpread;
         const yJitter = (random2 - 0.5) * ySpread;
-        
+
         return {
           x: tissueIndex + xJitter,
           y: item.abc_score + yJitter,
           tissue: tissue.name,
           item,
-          isSignificant: item.abc_score >= significanceThreshold
+          isSignificant: item.abc_score >= significanceThreshold,
         };
       });
 
       allPoints.push(...tissuePoints);
     });
-    
+
     return allPoints;
   }, [plotData, displayTissues, significanceThreshold, maxScore]);
 
   const TissueFilter = () => (
     <DataTableFacetedFilter
-      column={{
-        getFilterValue: () => selectedTissues,
-        setFilterValue: (value: string[] | undefined) => setSelectedTissues(value || []),
-        getFacetedUniqueValues: () => new Map(allTissues.map(t => [t.name, t.count]))
-      } as any}
+      column={
+        {
+          getFilterValue: () => selectedTissues,
+          setFilterValue: (value: string[] | undefined) =>
+            setSelectedTissues(value || []),
+          getFacetedUniqueValues: () =>
+            new Map(allTissues.map((t) => [t.name, t.count])),
+        } as any
+      }
       title="Tissues"
       options={tissueOptions}
     />
@@ -474,7 +522,8 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
     <DataTableSingleSelectFilter
       column={{
         getFilterValue: () => selectedThreshold,
-        setFilterValue: (value: string | undefined) => setSelectedThreshold(value || "0.02")
+        setFilterValue: (value: string | undefined) =>
+          setSelectedThreshold(value || "0.02"),
       }}
       title="Threshold"
       options={thresholdOptions}
@@ -483,11 +532,15 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
 
   const scoreRangeColumn = {
     getFilterValue: () => scoreRange,
-    setFilterValue: (value: [number, number] | undefined) => setScoreRange(value)
+    setFilterValue: (value: [number, number] | undefined) =>
+      setScoreRange(value),
   };
 
-  const hasActiveFilters = selectedTissues.length > 0 || scoreRange !== undefined || selectedThreshold !== "0.02";
-  
+  const hasActiveFilters =
+    selectedTissues.length > 0 ||
+    scoreRange !== undefined ||
+    selectedThreshold !== "0.02";
+
   const resetFilters = () => {
     setSelectedTissues([]);
     setScoreRange(undefined);
@@ -500,10 +553,11 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">{title}</h3>
           <div className="text-sm text-muted-foreground">
-            {beeswarmData.length} connections across {displayTissues.length} tissues
+            {beeswarmData.length} connections across {displayTissues.length}{" "}
+            tissues
           </div>
         </div>
-        
+
         <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -524,7 +578,7 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
               </Button>
             )}
           </div>
-          
+
           <div className="flex flex-wrap items-center space-x-2">
             <TissueFilter />
             <DataTableRangeFilter
@@ -556,19 +610,19 @@ export function ABCBeeswarm({ data, title = "ABC Links", height = 600 }: ABCBees
       </CardHeader>
 
       <CardContent>
-          {beeswarmData.length > 0 ? (
-            <BeeswarmVisualization 
-              data={beeswarmData}
-              tissues={displayTissues.map(t => t.name)}
-              height={height}
-              maxScore={Math.max(maxScore, 0.2)}
-              significanceThreshold={significanceThreshold}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              No data to display
-            </div>
-          )}
+        {beeswarmData.length > 0 ? (
+          <BeeswarmVisualization
+            data={beeswarmData}
+            tissues={displayTissues.map((t) => t.name)}
+            height={height}
+            maxScore={Math.max(maxScore, 0.2)}
+            significanceThreshold={significanceThreshold}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            No data to display
+          </div>
+        )}
       </CardContent>
     </Card>
   );

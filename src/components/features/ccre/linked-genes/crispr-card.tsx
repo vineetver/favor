@@ -11,8 +11,11 @@ interface CrisprCardProps {
   isLoading?: boolean;
 }
 
-export function CrisprCard({ accession, data, isLoading = false }: CrisprCardProps) {
-
+export function CrisprCard({
+  accession,
+  data,
+  isLoading = false,
+}: CrisprCardProps) {
   const sortedData = useMemo(() => {
     if (!data) return [];
     return [...data].sort((a, b) => a.p_value - b.p_value);
@@ -39,7 +42,15 @@ export function CrisprCard({ accession, data, isLoading = false }: CrisprCardPro
   }
 
   const exportData = (filteredData: Crispr[]) => {
-    const headers = ["Gene", "Type", "P-value", "Assay", "Biosample", "Effect", "gRNA"];
+    const headers = [
+      "Gene",
+      "Type",
+      "P-value",
+      "Assay",
+      "Biosample",
+      "Effect",
+      "gRNA",
+    ];
     const rows = filteredData.map((row) => [
       row.gene_name,
       row.gene_type,
@@ -50,7 +61,9 @@ export function CrisprCard({ accession, data, isLoading = false }: CrisprCardPro
       row.grna_id,
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

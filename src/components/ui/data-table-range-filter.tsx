@@ -36,19 +36,26 @@ export function DataTableRangeFilter({
 }: DataTableRangeFilterProps) {
   const currentRange = column?.getFilterValue();
   const [localRange, setLocalRange] = useState<[number, number]>([min, max]);
-  const [localInputs, setLocalInputs] = useState<[string, string]>([min.toString(), max.toString()]);
-  
+  const [localInputs, setLocalInputs] = useState<[string, string]>([
+    min.toString(),
+    max.toString(),
+  ]);
+
   React.useEffect(() => {
     if (currentRange) {
       setLocalRange(currentRange);
-      setLocalInputs([formatInputValue(currentRange[0]), formatInputValue(currentRange[1])]);
+      setLocalInputs([
+        formatInputValue(currentRange[0]),
+        formatInputValue(currentRange[1]),
+      ]);
     } else {
       setLocalRange([min, max]);
       setLocalInputs([formatInputValue(min), formatInputValue(max)]);
     }
   }, [currentRange, min, max]);
 
-  const isFiltered = currentRange && (currentRange[0] !== min || currentRange[1] !== max);
+  const isFiltered =
+    currentRange && (currentRange[0] !== min || currentRange[1] !== max);
 
   const parseInputValue = (input: string, fallback: number): number => {
     const value = parseFloat(input);
@@ -69,9 +76,9 @@ export function DataTableRangeFilter({
     const maxVal = parseInputValue(localInputs[1], max);
     const finalRange: [number, number] = [
       Math.max(min, Math.min(minVal, maxVal)),
-      Math.min(max, Math.max(minVal, maxVal))
+      Math.min(max, Math.max(minVal, maxVal)),
     ];
-    
+
     if (finalRange[0] === min && finalRange[1] === max) {
       column?.setFilterValue(undefined);
     } else {
@@ -122,7 +129,10 @@ export function DataTableRangeFilter({
                   onBlur={() => {
                     const value = parseInputValue(localInputs[0], min);
                     const clampedValue = Math.max(min, Math.min(value, max));
-                    setLocalInputs([formatInputValue(clampedValue), localInputs[1]]);
+                    setLocalInputs([
+                      formatInputValue(clampedValue),
+                      localInputs[1],
+                    ]);
                   }}
                   placeholder={formatInputValue(min)}
                   className="h-8 font-mono text-sm"
@@ -140,7 +150,10 @@ export function DataTableRangeFilter({
                   onBlur={() => {
                     const value = parseInputValue(localInputs[1], max);
                     const clampedValue = Math.min(max, Math.max(value, min));
-                    setLocalInputs([localInputs[0], formatInputValue(clampedValue)]);
+                    setLocalInputs([
+                      localInputs[0],
+                      formatInputValue(clampedValue),
+                    ]);
                   }}
                   placeholder={formatInputValue(max)}
                   className="h-8 font-mono text-sm"
@@ -148,7 +161,7 @@ export function DataTableRangeFilter({
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
@@ -158,11 +171,7 @@ export function DataTableRangeFilter({
             >
               Reset
             </Button>
-            <Button
-              size="sm"
-              onClick={applyFilter}
-              className="h-7 px-3"
-            >
+            <Button size="sm" onClick={applyFilter} className="h-7 px-3">
               Apply
             </Button>
           </div>

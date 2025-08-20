@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronsUpDown,
-  EyeOff,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -51,7 +46,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                {typeof tooltip === 'string' ? (
+                {typeof tooltip === "string" ? (
                   <p className="max-w-md">{tooltip}</p>
                 ) : (
                   <div className="max-w-md">{tooltip}</div>
@@ -74,9 +69,7 @@ export function DataTableColumnHeader<TData, TValue>({
             className="-ml-3 h-8 data-[state=open]:bg-accent group w-full justify-between px-3 min-w-0"
           >
             <div className="flex items-center w-full min-w-0 gap-2">
-              <span className="font-bold">
-                {title}
-              </span>
+              <span className="font-bold">{title}</span>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {tooltip && (
                   <TooltipProvider>
@@ -87,7 +80,7 @@ export function DataTableColumnHeader<TData, TValue>({
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {typeof tooltip === 'string' ? (
+                        {typeof tooltip === "string" ? (
                           <p className="max-w-md">{tooltip}</p>
                         ) : (
                           <div className="max-w-md">{tooltip}</div>
@@ -128,4 +121,3 @@ export function DataTableColumnHeader<TData, TValue>({
     </div>
   );
 }
-

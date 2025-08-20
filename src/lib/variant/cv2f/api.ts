@@ -26,7 +26,9 @@ export async function fetchCV2F(rsid: string): Promise<CV2F | null> {
   }
 }
 
-export async function fetchCV2FByRegion(region: string): Promise<CV2F[] | null> {
+export async function fetchCV2FByRegion(
+  region: string,
+): Promise<CV2F[] | null> {
   try {
     const response = await fetch(`${CV2F_REGION_URL}/${region}`);
 

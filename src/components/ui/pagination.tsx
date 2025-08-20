@@ -19,9 +19,7 @@ interface TablePaginationProps<TData> {
   table: Table<TData>;
 }
 
-export function TablePagination<TData>({
-  table,
-}: TablePaginationProps<TData>) {
+export function TablePagination<TData>({ table }: TablePaginationProps<TData>) {
   // Hide pagination if there's only one page or no data
   const totalRows = table.getFilteredRowModel().rows.length;
   const pageSize = table.getState().pagination.pageSize;

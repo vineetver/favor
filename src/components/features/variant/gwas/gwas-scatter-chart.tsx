@@ -47,11 +47,9 @@ interface TooltipProps {
   payload?: Array<{ payload: GwasTooltipData }>;
 }
 
-const CustomTooltip = React.memo<TooltipProps & { significanceThreshold: number }>(function CustomTooltip({
-  active,
-  payload,
-  significanceThreshold,
-}) {
+const CustomTooltip = React.memo<
+  TooltipProps & { significanceThreshold: number }
+>(function CustomTooltip({ active, payload, significanceThreshold }) {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -110,7 +108,11 @@ const CustomTooltip = React.memo<TooltipProps & { significanceThreshold: number 
   );
 });
 
-const ChartLegend = React.memo(function ChartLegend({ threshold }: { threshold: number }) {
+const ChartLegend = React.memo(function ChartLegend({
+  threshold,
+}: {
+  threshold: number;
+}) {
   return (
     <div className="bg-muted/20 rounded-lg p-3 border">
       <div className="flex items-center justify-between text-sm">
@@ -160,8 +162,11 @@ export function GwasScatterChart({
 
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [pValueRange, setPValueRange] = useState<[number, number] | undefined>(undefined);
-  const [selectedSignificanceThreshold, setSelectedSignificanceThreshold] = useState<string | undefined>("7.3");
+  const [pValueRange, setPValueRange] = useState<[number, number] | undefined>(
+    undefined,
+  );
+  const [selectedSignificanceThreshold, setSelectedSignificanceThreshold] =
+    useState<string | undefined>("7.3");
 
   const chartDimensions: ChartDimensions = {
     width: "100%",
@@ -185,12 +190,14 @@ export function GwasScatterChart({
 
     // Category filter
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(d => selectedCategories.includes(d.category));
+      filtered = filtered.filter((d) =>
+        selectedCategories.includes(d.category),
+      );
     }
 
     // P-value range filter (on -log10P values)
     if (pValueRange) {
-      filtered = filtered.filter(d => {
+      filtered = filtered.filter((d) => {
         const mlogP = parseFloat(d.gwas_p_value_mlog);
         return mlogP >= pValueRange[0] && mlogP <= pValueRange[1];
       });
@@ -223,14 +230,14 @@ export function GwasScatterChart({
     dynamicCategories.forEach((category) => {
       const categoryColor = getCategoryColor(category);
       styles.set(category, {
-        backgroundColor: selectedCategory === category ? categoryColor : "transparent",
+        backgroundColor:
+          selectedCategory === category ? categoryColor : "transparent",
         borderColor: categoryColor,
         color: selectedCategory === category ? "white" : categoryColor,
       });
     });
     return styles;
   }, [dynamicCategories, selectedCategory]);
-
 
   const handleCategoryClick = useCallback(
     (categoryIndex: number) => {
@@ -249,43 +256,54 @@ export function GwasScatterChart({
     [dynamicCategories],
   );
 
-
   const handlePointHover = useCallback((key: string | null) => {
     setHoveredPoint(key);
   }, []);
 
   // Filter options and utilities
   const allCategories = useMemo(() => {
-    const categoryCounts = chartDataMemo.processed.reduce((acc, d) => {
-      acc[d.category] = (acc[d.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+    const categoryCounts = chartDataMemo.processed.reduce(
+      (acc, d) => {
+        acc[d.category] = (acc[d.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     return Object.entries(categoryCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .map(([category, count]) => ({ name: category, count }));
   }, [chartDataMemo.processed]);
 
-  const minMLogP = Math.min(...chartDataMemo.processed.map(d => parseFloat(d.gwas_p_value_mlog)));
-  const maxMLogP = Math.max(...chartDataMemo.processed.map(d => parseFloat(d.gwas_p_value_mlog)));
+  const minMLogP = Math.min(
+    ...chartDataMemo.processed.map((d) => parseFloat(d.gwas_p_value_mlog)),
+  );
+  const maxMLogP = Math.max(
+    ...chartDataMemo.processed.map((d) => parseFloat(d.gwas_p_value_mlog)),
+  );
 
-  const categoryOptions = useMemo(() => 
-    allCategories.map(cat => ({
-      label: `${cat.name} (${cat.count})`,
-      value: cat.name
-    })), [allCategories]
+  const categoryOptions = useMemo(
+    () =>
+      allCategories.map((cat) => ({
+        label: `${cat.name} (${cat.count})`,
+        value: cat.name,
+      })),
+    [allCategories],
   );
 
   const thresholdOptions = useMemo(() => {
     const options = [5, 7.3, 10, 15, 20, 30, 50, 80];
-    return options.map(value => ({
+    return options.map((value) => ({
       label: value.toString(),
-      value: value.toString()
+      value: value.toString(),
     }));
   }, []);
 
-  const hasActiveFilters = selectedCategories.length > 0 || pValueRange !== undefined || selectedSignificanceThreshold !== "7.3";
-  
+  const hasActiveFilters =
+    selectedCategories.length > 0 ||
+    pValueRange !== undefined ||
+    selectedSignificanceThreshold !== "7.3";
+
   const resetFilters = () => {
     setSelectedCategories([]);
     setPValueRange(undefined);
@@ -294,9 +312,14 @@ export function GwasScatterChart({
 
   return (
     <div className="space-y-3 lg:space-y-4 relative">
-      
       {/* Chart Legend */}
-      <ChartLegend threshold={selectedSignificanceThreshold ? parseFloat(selectedSignificanceThreshold) : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD} />
+      <ChartLegend
+        threshold={
+          selectedSignificanceThreshold
+            ? parseFloat(selectedSignificanceThreshold)
+            : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD
+        }
+      />
 
       {/* Filter Controls */}
       <Card>
@@ -304,25 +327,33 @@ export function GwasScatterChart({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Filters</h3>
             <div className="text-sm text-muted-foreground">
-              {chartData.length} of {chartDataMemo.processed.length} associations
+              {chartData.length} of {chartDataMemo.processed.length}{" "}
+              associations
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center space-x-2">
             <DataTableFacetedFilter
-              column={{
-                getFilterValue: () => selectedCategories,
-                setFilterValue: (value: string[] | undefined) => setSelectedCategories(value || []),
-                getFacetedUniqueValues: () => new Map(allCategories.map(c => [c.name, c.count]))
-              } as any}
+              column={
+                {
+                  getFilterValue: () => selectedCategories,
+                  setFilterValue: (value: string[] | undefined) =>
+                    setSelectedCategories(value || []),
+                  getFacetedUniqueValues: () =>
+                    new Map(allCategories.map((c) => [c.name, c.count])),
+                } as any
+              }
               title="Categories"
               options={categoryOptions}
             />
             <DataTableRangeFilter
-              column={{
-                getFilterValue: () => pValueRange,
-                setFilterValue: (value: [number, number] | undefined) => setPValueRange(value)
-              } as any}
+              column={
+                {
+                  getFilterValue: () => pValueRange,
+                  setFilterValue: (value: [number, number] | undefined) =>
+                    setPValueRange(value),
+                } as any
+              }
               title="-log₁₀P"
               min={minMLogP}
               max={maxMLogP}
@@ -330,10 +361,13 @@ export function GwasScatterChart({
               formatValue={(v) => v.toFixed(1)}
             />
             <DataTableSingleSelectFilter
-              column={{
-                getFilterValue: () => selectedSignificanceThreshold,
-                setFilterValue: (value: string | undefined) => setSelectedSignificanceThreshold(value || "7.3")
-              } as any}
+              column={
+                {
+                  getFilterValue: () => selectedSignificanceThreshold,
+                  setFilterValue: (value: string | undefined) =>
+                    setSelectedSignificanceThreshold(value || "7.3"),
+                } as any
+              }
               title="Threshold"
               options={thresholdOptions}
             />
@@ -356,12 +390,14 @@ export function GwasScatterChart({
         height={chartDimensions.height}
         className="outline-none"
       >
-        <ScatterChart
-          margin={chartDimensions.margin}
-        >
+        <ScatterChart margin={chartDimensions.margin}>
           {/* Significance threshold line */}
           <ReferenceLine
-            y={selectedSignificanceThreshold ? parseFloat(selectedSignificanceThreshold) : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD}
+            y={
+              selectedSignificanceThreshold
+                ? parseFloat(selectedSignificanceThreshold)
+                : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD
+            }
             stroke={GWAS_CONSTANTS.COLORS.GENOME_WIDE_SIGNIFICANT}
             strokeDasharray="4 4"
             strokeWidth={2}
@@ -412,15 +448,29 @@ export function GwasScatterChart({
               style: { textAnchor: "middle", fontSize: 10, fill: "#666" },
             }}
           />
-          <Tooltip content={<CustomTooltip significanceThreshold={selectedSignificanceThreshold ? parseFloat(selectedSignificanceThreshold) : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD} />} />
+          <Tooltip
+            content={
+              <CustomTooltip
+                significanceThreshold={
+                  selectedSignificanceThreshold
+                    ? parseFloat(selectedSignificanceThreshold)
+                    : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD
+                }
+              />
+            }
+          />
           <Scatter
             name="GWAS Data"
             data={chartData}
             shape={(props: any) => {
               const { cx, cy, payload } = props;
-              const currentThreshold = selectedSignificanceThreshold ? parseFloat(selectedSignificanceThreshold) : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD;
+              const currentThreshold = selectedSignificanceThreshold
+                ? parseFloat(selectedSignificanceThreshold)
+                : GWAS_CONSTANTS.GENOME_WIDE_SIGNIFICANCE_THRESHOLD;
               const isBelowThreshold = payload.yValue < currentThreshold;
-              const categoryColor = isBelowThreshold ? "#9ca3af" : getCategoryColor(payload.category);
+              const categoryColor = isBelowThreshold
+                ? "#9ca3af"
+                : getCategoryColor(payload.category);
 
               const isHovered =
                 hoveredPoint === payload.uniqueKey ||
@@ -431,7 +481,9 @@ export function GwasScatterChart({
 
               const sharedProps = {
                 onClick: () => {
-                  const categoryIndex = dynamicCategories.indexOf(payload.category);
+                  const categoryIndex = dynamicCategories.indexOf(
+                    payload.category,
+                  );
                   if (categoryIndex !== -1) {
                     handlePointClick(categoryIndex, payload.uniqueKey);
                   }
@@ -440,7 +492,8 @@ export function GwasScatterChart({
                 onMouseLeave: () => handlePointHover(null),
               };
 
-              const getStroke = () => isSelected ? "#000" : isHovered ? "#666" : "#fff";
+              const getStroke = () =>
+                isSelected ? "#000" : isHovered ? "#666" : "#fff";
               const getStrokeWidth = (isAboveCutoff: boolean) => {
                 if (isSelected) return isAboveCutoff ? 3 : 4;
                 if (isHovered) return isAboveCutoff ? 1.5 : 2;
@@ -451,11 +504,12 @@ export function GwasScatterChart({
                 if (selectedPoint && !isSelected) return 0.3;
                 return payload.isAboveCutoff ? 0.8 : 0.6;
               };
-              const getFilter = () => isSelected
-                ? "drop-shadow(0 0 6px rgba(0,0,0,0.5))"
-                : isHovered
-                  ? "drop-shadow(0 0 4px rgba(0,0,0,0.3))"
-                  : "none";
+              const getFilter = () =>
+                isSelected
+                  ? "drop-shadow(0 0 6px rgba(0,0,0,0.5))"
+                  : isHovered
+                    ? "drop-shadow(0 0 4px rgba(0,0,0,0.3))"
+                    : "none";
 
               const commonStyle = {
                 cursor: "pointer",
@@ -532,9 +586,9 @@ export function GwasScatterChart({
       </div>
 
       {selectedCategory && selectedCategoryData.length > 0 && (
-        <GwasScatterTable 
-          data={selectedCategoryData} 
-          title={`${selectedCategoryData.length} variant${selectedCategoryData.length !== 1 ? 's' : ''} in ${selectedCategory}`}
+        <GwasScatterTable
+          data={selectedCategoryData}
+          title={`${selectedCategoryData.length} variant${selectedCategoryData.length !== 1 ? "s" : ""} in ${selectedCategory}`}
           selectedRowId={selectedPoint}
           onRowClick={(row) => {
             setSelectedPoint(row.uniqueKey);

@@ -22,7 +22,9 @@ interface TissueSpecificPageProps {
   };
 }
 
-export default async function TissueSpecificPage({ params }: TissueSpecificPageProps) {
+export default async function TissueSpecificPage({
+  params,
+}: TissueSpecificPageProps) {
   const { rsid, category } = params;
 
   const cookieStore = cookies();
@@ -49,14 +51,15 @@ export default async function TissueSpecificPage({ params }: TissueSpecificPageP
     notFound();
   }
 
-  const [ccreElements, abcScores, abcPeaks, entexData, scentData, pgboostData] = await Promise.all([
-    getCCREByVCF(selectedVariant.variant_vcf).catch(() => []),
-    fetchABCScores(selectedVariant.variant_vcf).catch(() => []),
-    fetchABCPeaks(selectedVariant.variant_vcf).catch(() => []),
-    fetchEntexDefault(selectedVariant.variant_vcf).catch(() => []),
-    fetchScentTissueByVCF(selectedVariant.variant_vcf).catch(() => []),
-    fetchPGBoost(rsid).catch(() => []), // PGBoost uses RSID directly
-  ]);
+  const [ccreElements, abcScores, abcPeaks, entexData, scentData, pgboostData] =
+    await Promise.all([
+      getCCREByVCF(selectedVariant.variant_vcf).catch(() => []),
+      fetchABCScores(selectedVariant.variant_vcf).catch(() => []),
+      fetchABCPeaks(selectedVariant.variant_vcf).catch(() => []),
+      fetchEntexDefault(selectedVariant.variant_vcf).catch(() => []),
+      fetchScentTissueByVCF(selectedVariant.variant_vcf).catch(() => []),
+      fetchPGBoost(rsid).catch(() => []), // PGBoost uses RSID directly
+    ]);
 
   const processedTissueData = processTissueSpecificData(
     selectedVariant,
