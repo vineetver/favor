@@ -117,7 +117,7 @@ export function IntegrativeDisplay({ items }: IntegrativeDisplayProps) {
       xLabel=""
       showLegend={false}
       height={430}
-      margin={{ top: 5, right: 10, bottom: 80, left: 60 }}
+      margin={{ top: 5, right: 10, bottom: 80, left: 90 }}
     />
   );
 }

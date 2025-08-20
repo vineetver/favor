@@ -171,7 +171,7 @@ export function BarChart({
           data.map((entry, entryIndex) => (
             <Cell
               key={`cell-${entryIndex}`}
-              fill={chartColors[index]}
+              fill={entry.color || chartColors[index] || chartColors[entryIndex % chartColors.length]}
               className={onBarClick ? "hover:opacity-80" : undefined}
             />
           ))}
@@ -214,6 +214,9 @@ export function BarChart({
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
             domain={["dataMin", "dataMax"]}
+            allowDecimals={false}
+            tickCount={6}
+            label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: -10 }}
           />
         )}
         <Tooltip content={<CustomTooltip />} />
@@ -243,6 +246,8 @@ export function BarChart({
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
             domain={["dataMin", "dataMax"]}
+            allowDecimals={false}
+            tickCount={6}
           />
         )}
         {showYAxis && (

@@ -2,12 +2,12 @@ export interface CV2F {
   Chromosome: number;
   Position: number;
   Rsid: string;
-  Cm: number;
-  Cv2f: number;
-  LiverCv2f: number;
-  BloodCv2f: number;
-  BrainCv2f: number;
-  Gm12878Cv2f: number;
-  K562Cv2f: number;
-  HepG2CV2F: number;
+  Cm: number | string;
+  Cv2f: number | string;
+  LiverCv2f: number | string;
+  BloodCv2f: number | string;
+  BrainCv2f: number | string;
+  Gm12878Cv2f: number | string;
+  K562Cv2f: number | string;
+  HepG2CV2F: number | string;
 }
