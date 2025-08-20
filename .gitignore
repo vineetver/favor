@@ -9,6 +9,11 @@
 # testing
 /coverage
 
+src/components/chatbot/
+src/lib/ai
+src/app/api/(chat)/
+ai-chat-bot-components/
+
 # next.js
 /.next/
 /out/
