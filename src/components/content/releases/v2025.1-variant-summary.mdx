@@ -1,60 +1,39 @@
 ---
 id: variant-summary-enhancement
-title: Enhanced Variant Summary with Tissue-Specific Data
-description: Revolutionary summary interface with new tissue-specific category integrating multi-dimensional genomic data for comprehensive variant analysis
+title: New Tissue-Specific Summary
+description: All tissue data in one place. See how variants affect different organs and cell types without switching tabs.
 status: new
 icon: FileText
-category: analysis
+category: genomics
 date: 2025-01-28
-version: 2.5.0
+version: v2025.1
 impact: high
 users: 1800
-demo: hg38/rsid/rs4645958/summary/tissue-specific
+demo: /hg38/rsid/rs4645958/summary/tissue-specific
 ---
 
-## Key Improvements
+## What's New
 
-- **New Tissue-Specific Summary Category**: Integrated view of tissue-specific regulatory data previously scattered across multiple tabs
-- **Multi-Dataset Aggregation**: Combines CV2F scores, cCRE elements, ABC predictions, ENTEX, SCENT, and PGBoost data
-- **Intelligent Data Processing**: Smart aggregation with confidence thresholds and significance filtering
-- **Unified Summary Interface**: Single location to understand variant impact across all tissue contexts
+- **All tissue data in one view** - No more jumping between 8 different tabs
+- **Smart filtering** - Only shows high-confidence results (scores above 0.1)
+- **Organized by importance** - Most significant findings appear first
+- **Easy to scan** - Clear sections for each data type
 
-<video width="600" height="500" preload="none" autoPlay loop muted>
-  <source src="public/videos/tissue-summary.mov" type="video/mp4">
-  Tissue-Specific Summary Category
+<video>
+  <source src="/videos/tissue-summary.mov" type="video/mp4">
+  Tissue-specific summary demo
 </video>
 
-## Integrated Data Sources
+## What You'll See
 
-- **CV2F Tissue Scores**: Chromatin accessibility changes across liver, brain, blood, and cell lines
-- **cCRE Regulatory Elements**: Candidate regulatory element overlaps with tissue activity patterns
-- **ABC Gene Predictions**: Activity-by-contact predictions for target genes across tissues
-- **ENTEX Allelic Imbalance**: Tissue-specific expression imbalance detection
-- **SCENT Tissue Data**: Single-cell expression and tissue-specific effects
-- **PGBoost Predictions**: Polygenic boost scores for high-confidence gene associations
-- **GWAS Associations**: Genome-wide significant trait associations
+- **Tissue activity scores** - How active this variant is in liver, brain, blood
+- **Regulatory elements** - Which DNA control regions this variant affects
+- **Gene connections** - Which genes this variant might influence
+- **Disease links** - Known connections to traits and diseases
 
-<video controls width="100%">
-  <source src="placeholder-summary-integration.mp4" type="video/mp4">
-  Tissue-specific summary category demonstration
-</video>
+## Before vs Now
 
-## Smart Data Processing
+**Before:** Check 8 separate tabs to understand tissue effects
+**Now:** See everything in one organized summary
 
-- **Confidence Thresholds**: Intelligent filtering for high-quality predictions (CV2F ≥ 0.1, ABC ≥ 0.1)
-- **Significance Detection**: Automated identification of genome-wide significant associations
-- **Tissue Aggregation**: Smart grouping of tissue-specific effects with deduplication
-
-## Impact on Research Workflow
-
-**Previous Workflow:**
-1. Navigate to basic summary for variant information
-2. Check individual tabs: CV2F, cCRE, ABC, ENTEX, SCENT, PGBoost, GWAS
-3. Manually correlate tissue-specific findings across datasets
-4. Synthesize information from 8+ separate views
-
-**Enhanced Workflow:**
-1. Navigate to basic summary for variant information
-2. Switch to tissue-specific summary for comprehensive regulatory impact
-3. Access all tissue-specific insights in organized, prioritized format
-4. Make informed decisions with complete context
+This saves time and makes it easier to understand how variants work across the body.

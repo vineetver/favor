@@ -1,55 +1,48 @@
 ---
 id: ppi-network
-title: Advanced PPI Network Visualization
-description: Dual visualization system with interactive network graphs and chord diagrams for exploring thousands of protein-protein interactions
+title: Better Protein Network Charts
+description: See how proteins connect to each other. Two chart types and smart filtering for large datasets.
 status: new
 icon: Network
 category: visualization
 date: 2025-01-22
-version: 2.3.0
+version: v2025.1
 impact: high
 users: 1200
 demo: /hg38/gene/BRCA1/gene-level-annotation/protein-protein-interactions
 ---
 
-## Key Improvements
+## What's New
 
-- **Intelligent Network Layouts**: Multiple layout algorithms (Cose-Bilkent, Cola, Circle) for optimal cluster visualization
-- **Chord Diagram Integration**: Circular layout revealing interaction patterns and hub proteins
-- **Advanced Filtering System**: Filter by detection method, interaction type, and evidence strength
-- **Smart Performance Optimization**: Handles 1000+ interactions with intelligent data limiting
+- **Two chart types** - Network view and circular chord diagram
+- **Smart layouts** - Charts organize themselves to show connections clearly
+- **Filter by evidence** - Show only high-confidence connections
+- **Handles big datasets** - Works smoothly with 1000+ protein connections
 
-## Interactive Features
-
-- **Click-to-Table Integration**: Click any node to view detailed interactions in the table below
-- **Evidence-Based Styling**: Visual encoding of interaction confidence through line thickness and color
-- **Hub Protein Detection**: Automatic identification and highlighting of highly connected proteins
-- **Cross-Visualization Sync**: Synchronized selection between network, chord, and table views
-
-<video width="600" height="500" preload="none" autoPlay loop muted>
-  <source src="public/videos/ppi-demo.mov" type="video/mp4">
-  Interactive PPI network exploration demo
+<video>
+  <source src="/videos/ppi-demo.mov" type="video/mp4">
+  Protein network demo
 </video>
 
-## Advanced Filtering
+## How to Use
 
-- **Method-Based Filtering**: Filter by experimental detection methods (Y2H, Co-IP, etc.)
-- **Interaction Type Selection**: Focus on specific interaction types (direct, complex, etc.)
-- **Evidence Strength Filtering**: Prioritize high-confidence interactions with multiple studies
-- **Smart Relaxation**: Automatic filter adjustment when no matches found
+- **Click any protein** - See its connections in the table below
+- **Filter connections** - Choose by experiment type or confidence level
+- **Switch views** - Network chart or circular diagram
+- **Find hub proteins** - Highly connected proteins are highlighted
 
-<video width="600" height="500" preload="none" autoPlay loop muted>
-  <source src="public/videos/ppi-filtering.mov" type="video/mp4">
+<video>
+  <source src="/videos/ppi-filtering.mov" type="video/mp4">
+  Filtering demo
 </video>
 
-## Chord Diagram Features
+## Circular Diagram
 
-- **Circular Interaction View**: Alternative visualization showing interaction density patterns
-- **Proportional Arc Sizing**: Arc size reflects total interaction count per protein
-- **Interactive Ribbons**: Hover and click ribbons to explore specific interactions
-- **Hub Protein Emphasis**: Visual highlighting of central network nodes
+Shows the same data in a circle format. Great for spotting connection patterns and hub proteins.
 
-<video width="600" height="500" preload="none" autoPlay loop muted>
-  <source src="public/videos/ppi-chord.mov" type="video/mp4">
-  Chord Diagram Visualization
+<video>
+  <source src="/videos/ppi-chord.mov" type="video/mp4">
+  Circular chart demo
 </video>
+
+Perfect for understanding which proteins work together and identifying key players in biological pathways.

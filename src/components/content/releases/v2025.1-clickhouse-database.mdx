@@ -1,65 +1,33 @@
 ---
 id: clickhouse-database
-title: ClickHouse Database Architecture Revolution
-description: Next-generation database implementation enabling lightning-fast 10M+ variant joins and advanced genomic aggregations in seconds
+title: Faster Database
+description: Queries that used to take minutes now take seconds. Handles millions of variants without slowing down.
 status: new
 icon: Database
 category: infrastructure
 date: 2025-02-01
-version: 3.0.0
+version: v2025.1
 impact: critical
 users: 3200
 ---
 
-## Performance Breakthrough
+## What Changed
 
-- **10M+ Variant Joins**: Execute complex joins across millions of variants in under 3 seconds
-- **Real-Time Aggregations**: Gene-level rollups and tissue-specific aggregations in milliseconds
-- **Columnar Performance**: 100x faster analytical queries compared to traditional row-based systems
-- **Concurrent User Support**: Handle 1000+ simultaneous complex queries without degradation
+- **Much faster searches** - Complex queries now take 3 seconds instead of 5-30 minutes
+- **Handles more users** - 1000+ people can search at the same time
+- **Bigger analysis** - Work with millions of variants at once
+- **Better connections** - Link different data types seamlessly
 
-## What This Means for Research
+## Real Impact
 
-### Instant Results
-- **Single Variant Lookups**: Get complete annotations in milliseconds
-- **Gene-Wide Analysis**: See all variants in a gene instantly  
-- **Population Studies**: Analyze millions of samples in seconds
-- **Cross-Dataset Queries**: Connect different data types seamlessly
+**Before:** Wait 5-30 minutes for gene analysis, only 10-20 people could use it at once
+**Now:** Get results in seconds, supports 1000+ simultaneous users
 
-### Real-Time Discovery
-- **Pattern Recognition**: Spot trends across massive datasets immediately
-- **Hypothesis Testing**: Test ideas with instant feedback
-- **Interactive Exploration**: Follow research leads without waiting
-- **Collaborative Analysis**: Multiple researchers can work simultaneously
+## What This Means
 
-## Impact on Research Workflows
+- **Test ideas faster** - Get instant feedback when exploring data
+- **Work with bigger datasets** - Analyze entire populations, not just small samples
+- **No more waiting** - Follow research leads immediately
+- **Collaborate better** - Multiple researchers can work at the same time
 
-### Before ClickHouse Implementation
-- **Large Queries**: 5-30 minutes for gene-level aggregations
-- **Concurrent Limits**: 10-20 simultaneous users maximum
-- **Analysis Scope**: Limited to small sample sizes due to performance
-- **Query Complexity**: Simple queries only, no real-time aggregations
-
-### After ClickHouse Implementation
-- **Lightning Speed**: Sub-second to few-second query times
-- **Massive Scalability**: 1000+ concurrent users supported
-- **Population-Scale**: Full 8.9B variant analysis in real-time
-- **Advanced Analytics**: Complex multi-dimensional queries enabled
-
-## New Research Possibilities
-
-### Population Genomics Studies
-- **Real-time cohort analysis** across millions of individuals
-- **Dynamic stratification** by ancestry, geography, and phenotype
-- **Instant variant burden testing** across gene sets and pathways
-
-### Functional Genomics Integration
-- **Cross-dataset correlations** between variant effects and expression
-- **Tissue-specific impact assessment** across hundreds of conditions
-- **Regulatory network analysis** with real-time pathway enrichment
-
-### Clinical Genomics Applications
-- **Instant pathogenicity scoring** across multiple prediction algorithms
-- **Real-time variant interpretation** for clinical decision support
-- **Population frequency analysis** for rare disease research
-
+Makes the platform feel instant instead of slow, especially for large-scale genomic studies.

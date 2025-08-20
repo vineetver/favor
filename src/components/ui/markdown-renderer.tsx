@@ -4,12 +4,10 @@ import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
-import rehypeSlug from 'rehype-slug'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings'
-import rehypeHighlight from 'rehype-highlight'
 import rehypeStringify from 'rehype-stringify'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils/general'
+import { VideoPlayer } from './video-player'
 
 interface MarkdownRendererProps {
   content: string
@@ -23,44 +21,97 @@ interface ImageRendererProps {
 }
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
-  const processedContent = useMemo(() => {
-    return unified()
+  const { processedContent, videos } = useMemo(() => {
+    let processedMarkdown = content
+    const foundVideos: Array<{ src: string; title?: string; placeholder: string }> = []
+    
+    // Find and extract video tags
+    processedMarkdown = processedMarkdown.replace(
+      /<video[^>]*>[\s\S]*?<source\s+src="([^"]+)"[^>]*>[\s\S]*?<\/video>/gi,
+      (match, src) => {
+        // Extract title from the content between source and closing video tag
+        const titleMatch = match.match(/<source[^>]*>[\s\S]*?([^<]+?)[\s\S]*?<\/video>/i)
+        const title = titleMatch?.[1]?.trim()
+        
+        const placeholder = `VIDEO_PLACEHOLDER_${foundVideos.length}`
+        foundVideos.push({ src, title, placeholder })
+        return placeholder
+      }
+    )
+    
+    const htmlContent = unified()
       .use(remarkParse)
       .use(remarkGfm)
       .use(remarkRehype)
-      .use(rehypeSlug)
-      .use(rehypeAutolinkHeadings, {
-        behavior: 'wrap',
-        properties: {
-          className: ['anchor-link']
-        }
-      })
-      .use(rehypeHighlight)
       .use(rehypeStringify)
-      .processSync(content)
+      .processSync(processedMarkdown)
       .toString()
+    
+    return { processedContent: htmlContent, videos: foundVideos }
   }, [content])
 
+  const renderContentWithVideos = () => {
+    let html = processedContent
+    const elements: React.ReactNode[] = []
+    
+    videos.forEach((video, index) => {
+      const parts = html.split(video.placeholder)
+      if (parts.length > 1) {
+        elements.push(
+          <div
+            key={`content-${index}`}
+            className={cn(
+              'prose prose-sm prose-slate max-w-none',
+              'prose-p:text-base prose-p:leading-7 prose-p:my-4',
+              'prose-li:text-base prose-li:leading-7',
+              'prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-6',
+              'prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-4',
+              'prose-ul:my-6 prose-ol:my-6',
+              'prose-strong:font-semibold',
+              '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+            )}
+            dangerouslySetInnerHTML={{ __html: parts[0] }}
+          />
+        )
+        
+        elements.push(
+          <VideoPlayer 
+            key={`video-${index}`}
+            src={video.src} 
+            title={video.title}
+          />
+        )
+        
+        html = parts[1]
+      }
+    })
+    
+    if (html) {
+      elements.push(
+        <div
+          key="final-content"
+          className={cn(
+            'prose prose-sm prose-slate max-w-none',
+            'prose-p:text-base prose-p:leading-7 prose-p:my-4',
+            'prose-li:text-base prose-li:leading-7',
+            'prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-6',
+            'prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-4',
+            'prose-ul:my-6 prose-ol:my-6',
+            'prose-strong:font-semibold',
+            '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+          )}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )
+    }
+    
+    return elements
+  }
+
   return (
-    <div 
-      className={cn(
-        'prose prose-sm prose-slate dark:prose-invert max-w-none',
-        'prose-headings:scroll-mt-24 prose-headings:font-semibold',
-        'prose-h1:text-2xl prose-h1:mb-6 prose-h1:mt-8',
-        'prose-h2:text-xl prose-h2:mb-4 prose-h2:mt-8 prose-h2:border-b prose-h2:border-border prose-h2:pb-2',
-        'prose-h3:text-lg prose-h3:mb-3 prose-h3:mt-6',
-        'prose-p:leading-7 prose-p:mb-4',
-        'prose-ul:my-4 prose-ul:space-y-2',
-        'prose-li:my-1',
-        'prose-strong:font-semibold prose-strong:text-foreground',
-        'prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none',
-        'prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto',
-        'prose-blockquote:border-l-4 prose-blockquote:border-border prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-muted-foreground',
-        'prose-a:text-primary prose-a:underline prose-a:decoration-primary/30 hover:prose-a:decoration-primary',
-        className
-      )}
-      dangerouslySetInnerHTML={{ __html: processedContent }}
-    />
+    <div className={cn('space-y-6', className)}>
+      {renderContentWithVideos()}
+    </div>
   )
 }
 

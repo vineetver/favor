@@ -40,7 +40,7 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
         return (
           <code className={cn(
             "px-2 py-1 rounded text-sm font-semibold",
-            isHighlighted ? "bg-blue-100 dark:bg-blue-900/30" : "bg-muted"
+            isHighlighted ? "bg-blue-100" : "bg-muted"
           )}>
             {geneA}
           </code>
@@ -56,7 +56,7 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
         return (
           <code className={cn(
             "px-2 py-1 rounded text-sm font-semibold",
-            isHighlighted ? "bg-blue-100 dark:bg-blue-900/30" : "bg-muted"
+            isHighlighted ? "bg-blue-100" : "bg-muted"
           )}>
             {geneB}
           </code>

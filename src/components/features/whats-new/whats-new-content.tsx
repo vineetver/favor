@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import type { ReleaseFeature } from '@/lib/mdx'
 
-
 const statusConfig = {
   new: { label: 'New', variant: 'default' as const, color: 'bg-green-500' },
   improved: { label: 'Updated', variant: 'secondary' as const, color: 'bg-blue-500' },
@@ -23,14 +22,12 @@ interface WhatsNewContentProps {
 }
 
 function getDefaultReleaseDate(version: string): string {
-  // Extract year from version for better default dates
   const versionMatch = version.match(/v(\d{4})/)
   const year = versionMatch ? versionMatch[1] : '2025'
   return `January ${year}`
 }
 
 export function WhatsNewContent({ features }: WhatsNewContentProps) {
-  // Group features by version/date for sidebar
   const groupedFeatures = features.reduce((acc, feature) => {
     const version = feature.version || 'v2025.1'
     if (!acc[version]) {
@@ -40,18 +37,14 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
     return acc
   }, {} as Record<string, ReleaseFeature[]>)
 
-  // Sort versions properly (newest first)
   const versions = Object.keys(groupedFeatures).sort((a, b) => {
     const parseVersion = (version: string) => {
       const cleaned = version.replace(/^v/, '')
       const parts = cleaned.split('.').map(part => parseInt(part, 10) || 0)
       
-      // Handle different version formats
       if (parts[0] >= 2025) {
-        // New format: v2025.1 -> [2025, 1, 0]
         return [parts[0], parts[1] || 0, parts[2] || 0]
       } else {
-        // Old format: v2.1.0 -> [2, 1, 0] but adjust major version for proper sorting
         return [parts[0] + 2023, parts[1] || 0, parts[2] || 0]
       }
     }
@@ -59,7 +52,6 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
     const [majorA, minorA, patchA] = parseVersion(a)
     const [majorB, minorB, patchB] = parseVersion(b)
     
-    // Compare versions (newest first)
     if (majorA !== majorB) return majorB - majorA
     if (minorA !== minorB) return minorB - minorA
     return patchB - patchA
@@ -67,9 +59,8 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
 
   return (
     <div className="flex gap-12">
-      {/* Sidebar Navigation */}
-      <div className="w-80 flex-shrink-0">
-        <div className="sticky top-25">
+      <div className="w-80 flex-shrink-0 hidden lg:block">
+        <div className="sticky top-24">
           <div className="bg-muted/30 rounded-xl p-6 border">
             <h3 className="font-semibold text-lg mb-6">Table of Contents</h3>
             <div className="space-y-4">
@@ -111,13 +102,12 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 space-y-20">
         {versions.map(version => (
           <section key={version} id={version} className="space-y-12">
             <div className="border-b border-border pb-8">
-              <h2 className="text-2xl font-bold tracking-tight mb-4">{version}</h2>
-              <p className="text-base leading-7 text-muted-foreground">
+              <h2 className="text-3xl font-bold tracking-tight mb-4">{version}</h2>
+              <p className="text-lg leading-7 text-muted-foreground">
                 Released {groupedFeatures[version][0]?.date ? 
                   new Date(groupedFeatures[version][0].date).toLocaleDateString('en-US', { 
                     year: 'numeric', 
@@ -127,23 +117,23 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
               </p>
             </div>
 
-            <div className="space-y-16">
+            <div className="space-y-20">
               {groupedFeatures[version].map(feature => (
                 <article key={feature.id} id={feature.id} className="space-y-8">
                   <header className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <h3 className="text-xl font-bold tracking-tight">{feature.title}</h3>
+                      <h3 className="text-2xl font-bold tracking-tight">{feature.title}</h3>
                       <Badge variant={statusConfig[feature.status].variant} className="text-sm">
                         {statusConfig[feature.status].label}
                       </Badge>
                     </div>
-                    <p className="text-base leading-7 text-muted-foreground max-w-4xl">
+                    <p className="text-lg leading-8 text-muted-foreground max-w-4xl">
                       {feature.description}
                     </p>
                   </header>
 
                   {feature.image && (
-                    <div className="my-8">
+                    <div className="my-10 max-w-3xl">
                       <ImageRenderer 
                         src={feature.image} 
                         alt={`${feature.title} screenshot`}
@@ -153,7 +143,7 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
                   )}
 
                   {feature.content && (
-                    <div className="prose prose-lg prose-gray dark:prose-invert max-w-none">
+                    <div className="max-w-none my-8">
                       <MarkdownRenderer content={feature.content} />
                     </div>
                   )}
@@ -173,17 +163,17 @@ export function WhatsNewContent({ features }: WhatsNewContentProps) {
             </div>
           </section>
         ))}
+
+        {features.length === 0 && (
+          <Card className="p-8 text-center">
+            <div className="text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No features found</h3>
+              <p className="text-sm">No release features available.</p>
+            </div>
+          </Card>
+        )}
       </div>
-      
-      {features.length === 0 && (
-        <Card className="p-8 text-center">
-          <div className="text-muted-foreground">
-            <Search className="h-8 w-8 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No features found</h3>
-            <p className="text-sm">No release features available.</p>
-          </div>
-        </Card>
-      )}
     </div>
   )
 }

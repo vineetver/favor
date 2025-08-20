@@ -424,7 +424,7 @@ export function DataGrid<TData, TValue>({
                         className={cn(
                           "hover:bg-muted/50 transition-colors cursor-pointer",
                           isSelected &&
-                            "bg-blue-100 border-l-4 border-l-blue-500 shadow-md dark:bg-blue-900/40 dark:border-l-blue-400",
+                            "bg-blue-100 border-l-4 border-l-blue-500 shadow-md",
                         )}
                         onClick={() => onRowClick?.(row.original)}
                       >
