@@ -7,11 +7,11 @@ export default function IntegrativeLoading() {
     <Card>
       <CardHeader>
         <CardTitle>
-          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-6 w-56" />
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <TableSkeleton rows={10} />
+        <TableSkeleton rows={12} />
       </CardContent>
     </Card>
   );

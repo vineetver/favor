@@ -11,13 +11,13 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { BaseChartWrapper, exportChartAsPNG } from "./base-chart";
+import { BaseChartWrapper, exportChartAsPNG } from "@/components/ui/charts/base-chart";
 import {
   generateColors,
   CHART_THEME,
   CHART_MARGINS,
   type BaseChartProps,
-} from "./utils";
+} from "@/components/ui/charts/utils";
 
 interface ScatterChartProps extends BaseChartProps {
   xDataKey: string;

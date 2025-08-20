@@ -1,4 +1,4 @@
-import type { ScentTissue } from "./types";
+import type { ScentTissue } from "@/lib/variant/scent/types";
 
 const SCENTissue = "https://api.genohub.org/v1/tissues/scent";
 

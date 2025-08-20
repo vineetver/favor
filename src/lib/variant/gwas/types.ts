@@ -1,4 +1,4 @@
-import type { GWAS, EfoNode } from "./api";
+import type { GWAS, EfoNode } from "@/lib/variant/gwas/api";
 
 export interface ProcessedGwasData extends GWAS {
   category: string;

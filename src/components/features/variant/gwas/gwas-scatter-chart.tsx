@@ -10,7 +10,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { GwasScatterTable } from "./gwas-scatter-table";
+import { GwasScatterTable } from "@/components/features/variant/gwas/gwas-scatter-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter";

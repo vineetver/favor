@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "@/components/ui/external-link";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import type { ABCPeaks, ABCScore } from "./api";
+import type { ABCPeaks, ABCScore } from "@/lib/variant/abc/api";
 
 const formatRegion = (chromosome: string, start: number, end: number) => {
   return `${chromosome}-${start.toLocaleString()}-${end.toLocaleString()}`;

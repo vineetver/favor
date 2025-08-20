@@ -1,4 +1,4 @@
-import type { Variant } from "../api";
+import type { Variant } from "@/lib/variant/api";
 
 export function selectVariantFromList(
   variants: Variant[],

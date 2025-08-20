@@ -1,4 +1,4 @@
-import type { CV2F } from "./types";
+import type { CV2F } from "@/lib/variant/cv2f/types";
 
 const CV2F_URL = "https://api.genohub.org/v1/cv2f";
 const CV2F_REGION_URL = "https://api.genohub.org/v1/cv2f/regions";

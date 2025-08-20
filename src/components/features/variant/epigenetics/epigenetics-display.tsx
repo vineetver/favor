@@ -3,7 +3,7 @@
 import { ResponsiveTabs, type TabConfig } from "@/components/ui/responsive-tabs";
 import { DataComparisonTable } from "@/components/data-display/data-comparison-table";
 import type { FilteredItem } from "@/lib/annotations/types";
-import { EpigeneticsBarChart } from "./epigenetics-bar-chart";
+import { EpigeneticsBarChart } from "@/components/features/variant/epigenetics/epigenetics-bar-chart";
 
 interface EpigeneticsDisplayProps {
   items: FilteredItem[];

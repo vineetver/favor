@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Progress } from "@/components/ui/progress";
-import type { PGBoost } from "./types";
+import type { PGBoost } from "@/lib/variant/pgboost/types";
 
 
 

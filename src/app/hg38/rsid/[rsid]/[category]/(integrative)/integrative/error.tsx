@@ -14,7 +14,7 @@ export default function Error({
       error={error}
       reset={reset}
       categoryName="Integrative Data"
-      description="We encountered an error while loading the integrative data. This could be due to a network issue or a temporary server problem."
+      description="We encountered an error while loading the integrative annotation scores. This could be due to a network issue or a temporary server problem."
     />
   );
 }

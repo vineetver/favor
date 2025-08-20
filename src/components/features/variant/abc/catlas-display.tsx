@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
 import { DataGrid } from "@/components/ui/data-grid";
 import { ScatterChart } from "@/components/ui/charts/scatter-chart";
-import { ABCBeeswarm } from "./abc-beeswarm";
+import { ABCBeeswarm } from "@/components/features/variant/abc/abc-beeswarm";
 import { NoDataState } from "@/components/ui/error-states";
 import { abcPeaksColumns, abcScoreColumns } from "@/lib/variant/abc/table-columns";
 import type { ABCPeaks, ABCScore } from "@/lib/variant/abc/api";

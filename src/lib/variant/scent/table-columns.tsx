@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { ExternalLink } from "@/components/ui/external-link";
-import type { ScentTissue } from "./types";
+import type { ScentTissue } from "@/lib/variant/scent/types";
 
 export const scentColumns: ColumnDef<ScentTissue>[] = [
   {

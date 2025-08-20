@@ -1,4 +1,4 @@
-import type { PGBoost } from "./types";
+import type { PGBoost } from "@/lib/variant/pgboost/types";
 
 const PGBOOST = "https://api.genohub.org/v1/tissues/pgboost";
 const PGBOOST_GENE_URL = "https://api.genohub.org/v1/tissues/pgboost/gene";

@@ -1,6 +1,6 @@
 // Import track types
 import type { Track, OverlaidTracks } from "@/components/gosling";
-import type { TrackMetadata, TrackCategoryId } from "./types";
+import type { TrackMetadata, TrackCategoryId } from "@/lib/tracks/types";
 
 // Import all track specifications
 import { geneTrack } from "@/components/tracks/gene_anno";

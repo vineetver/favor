@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
 import { BarChart } from "@/components/ui/charts/bar-chart";
 import { NoDataState } from "@/components/ui/error-states";
-import { FemaleFrequencyTable } from "./female-frequency-table";
+import { FemaleFrequencyTable } from "@/components/features/variant/gender/female-frequency-table";
 import { buildFemaleFrequencies } from "@/lib/variant/gnomad/utils";
 import { FEMALE_CHART_CONFIG } from "@/lib/variant/gender/table-columns";
 import type { Variant } from "@/lib/variant/api";

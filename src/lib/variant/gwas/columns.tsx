@@ -1,8 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { ExternalLink } from "@/components/ui/external-link";
-import type { GWAS } from "./api";
-import type { ProcessedGwasData } from "./types";
+import type { GWAS } from "@/lib/variant/gwas/api";
+import type { ProcessedGwasData } from "@/lib/variant/gwas/types";
 import { useMemo } from "react";
 
 const formatPValue = (value: string): string => {

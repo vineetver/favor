@@ -18,7 +18,7 @@ interface CCREDisplayProps {
 }
 
 const CCREBrowser = dynamic(
-  () => import("./ccre-browser").then((mod) => ({ default: mod.CCREBrowser })),
+  () => import("@/components/features/browser/ccre/ccre-browser").then((mod) => ({ default: mod.CCREBrowser })),
   {
     ssr: false,
     loading: () => <div className="min-h-[800px] animate-pulse bg-gray-100 rounded" />,

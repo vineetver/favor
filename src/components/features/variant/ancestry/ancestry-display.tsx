@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
 import { BarChart } from "@/components/ui/charts/bar-chart";
 import { NoDataState } from "@/components/ui/error-states";
-import { AncestryFrequencyTable } from "./ancestry-frequency-table";
+import { AncestryFrequencyTable } from "@/components/features/variant/ancestry/ancestry-frequency-table";
 import { buildAncestryFrequencies } from "@/lib/variant/gnomad/utils";
 import { ANCESTRY_CHART_CONFIG } from "@/lib/variant/ancestry/table-columns";
 import type { Variant } from "@/lib/variant/api";

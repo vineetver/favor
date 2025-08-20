@@ -1,4 +1,4 @@
-import type { CCRE, CCRETissue } from "./types";
+import type { CCRE, CCRETissue } from "@/lib/variant/ccre/types";
 
 const CCRE_BASE_URL = "https://api.genohub.org/v1/tissues/ccre";
 const CCRE_TISSUE_URL = "https://api.genohub.org/v1/tissues/ccre/tissue";

@@ -1,14 +1,14 @@
-import type { GWAS, EfoNode } from "./api";
+import type { GWAS, EfoNode } from "@/lib/variant/gwas/api";
 import type {
   ProcessedGwasData,
   CategoryProcessingResult,
   JitterConfig,
-} from "./types";
+} from "@/lib/variant/gwas/types";
 import {
   GWAS_CONSTANTS,
   KEYWORD_PATTERNS,
   CATEGORY_COLOR_MAP,
-} from "./constants";
+} from "@/lib/variant/gwas/constants";
 
 export function getKeywordCategory(trait: string): string {
   for (const [category, pattern] of Object.entries(KEYWORD_PATTERNS)) {

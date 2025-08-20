@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/general";
-import { validateChartData, type BaseChartProps } from "./utils";
+import { validateChartData, type BaseChartProps } from "@/components/ui/charts/utils";
 
 interface BaseChartWrapperProps extends Omit<BaseChartProps, "data"> {
   data: any[];
