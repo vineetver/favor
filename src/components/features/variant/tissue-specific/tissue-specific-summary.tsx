@@ -35,7 +35,8 @@ export function TissueSpecificSummary({ variant, data }: TissueSpecificSummaryPr
     const activeCCREs = data.ccre.filter(item => 
       item.annotations === 'PLS' || item.annotations === 'pELS' || item.annotations === 'dELS'
     );
-    const ccreTypes = [...new Set(activeCCREs.map(item => item.annotations))];
+    const ccreTypesSet = new Set(activeCCREs.map(item => item.annotations));
+    const ccreTypes = Array.from(ccreTypesSet);
     const ccreSummary = activeCCREs.length > 0 
       ? `${activeCCREs.length} regulatory elements (${ccreTypes.join(', ')})` 
       : null;
@@ -52,19 +53,22 @@ export function TissueSpecificSummary({ variant, data }: TissueSpecificSummaryPr
     const strongLinks = data.abcScores.filter(item => 
       item && item.abc_score != null && item.abc_score > 0.02
     );
-    const targetGenes = [...new Set(strongLinks.map(item => item.target_gene).filter(Boolean))];
+    const targetGenesSet = new Set(strongLinks.map(item => item.gene_name).filter(Boolean));
+    const targetGenes = Array.from(targetGenesSet);
     const scoresSummary = strongLinks.length > 0 
       ? `${strongLinks.length} enhancer-gene links (${targetGenes.slice(0, 3).join(', ')}${targetGenes.length > 3 ? ` +${targetGenes.length - 3} more` : ''})` 
       : null;
 
     // ENTEx - Show tissue expression patterns with tissue names
-    const tissuesWithExpression = [...new Set(data.entex.map(item => item?.tissue).filter(Boolean))];
+    const tissuesWithExpressionSet = new Set(data.entex.map(item => item?.tissue).filter(Boolean));
+    const tissuesWithExpression = Array.from(tissuesWithExpressionSet);
     const entexSummary = tissuesWithExpression.length > 0 
       ? `Expression in ${tissuesWithExpression.length} tissues (${tissuesWithExpression.slice(0, 3).join(', ')}${tissuesWithExpression.length > 3 ? ` +${tissuesWithExpression.length - 3} more` : ''})` 
       : null;
 
     // SCENT - Show regulatory network predictions with tissue names
-    const tissuesWithRegulation = [...new Set(data.scent.map(item => item?.tissue).filter(Boolean))];
+    const tissuesWithRegulationSet = new Set(data.scent.map(item => item?.tissue).filter(Boolean));
+    const tissuesWithRegulation = Array.from(tissuesWithRegulationSet);
     const scentSummary = tissuesWithRegulation.length > 0 
       ? `Regulatory activity in ${tissuesWithRegulation.length} tissues (${tissuesWithRegulation.slice(0, 3).join(', ')}${tissuesWithRegulation.length > 3 ? ` +${tissuesWithRegulation.length - 3} more` : ''})` 
       : null;

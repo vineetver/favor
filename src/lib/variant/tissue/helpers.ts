@@ -1,4 +1,4 @@
-import type { Variant } from "@/lib/variant/types";
+import type { Variant } from "@/lib/variant/api";
 import type { CCRE } from "@/lib/variant/ccre/types";
 import type { ABCScore, ABCPeaks } from "@/lib/variant/abc/api";
 import type { Entex } from "@/lib/variant/entex/api";
@@ -21,19 +21,21 @@ export function processTissueSpecificData(
   pgboostData: PGBoost[],
 ) {
   // Process cCRE regulatory types
-  const ccre_regulatory_types = [...new Set(
+  const ccre_regulatory_types_set = new Set(
     ccreElements
       .filter(item => item.annotations === 'PLS' || item.annotations === 'pELS' || item.annotations === 'dELS')
       .map(item => item.annotations)
-  )];
+  );
+  const ccre_regulatory_types = Array.from(ccre_regulatory_types_set);
 
   // Process ABC target genes and max score
-  const abc_target_genes = [...new Set(
+  const abc_target_genes_set = new Set(
     abcScores
       .filter(item => item && item.abc_score != null && item.abc_score > 0.02)
-      .map(item => item.target_gene)
+      .map(item => item.gene_name)
       .filter(Boolean)
-  )];
+  );
+  const abc_target_genes = Array.from(abc_target_genes_set);
 
   const abc_max_score = Math.max(
     0,
@@ -43,17 +45,19 @@ export function processTissueSpecificData(
   );
 
   // Process ENTEx imbalanced tissues
-  const entex_imbalanced_tissues = [...new Set(
+  const entex_imbalanced_tissues_set = new Set(
     entexData
       .filter(item => item && (item.imbalance_significance >= 0.5 || (item.p_betabinom && item.p_betabinom <= 0.05)))
       .map(item => item.tissue)
       .filter(Boolean)
-  )];
+  );
+  const entex_imbalanced_tissues = Array.from(entex_imbalanced_tissues_set);
 
   // Process SCENT tissues
-  const scent_tissues = [...new Set(
+  const scent_tissues_set = new Set(
     scentData.map(item => item?.tissue).filter(Boolean)
-  )];
+  );
+  const scent_tissues = Array.from(scent_tissues_set);
 
   // Process PGBoost high-confidence genes (top 10% = 90th percentile)
   const pgboost_high_confidence_genes = pgboostData
