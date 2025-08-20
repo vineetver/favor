@@ -1,4 +1,4 @@
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import type { GnomadData } from "@/lib/variant/gnomad/api";
 
 export interface PopulationFrequency {

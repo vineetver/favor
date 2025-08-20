@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { fetchABCPeaksByRegion, fetchABCScoresByRegion } from "@/lib/region/abc/api";
 import { CatlasDisplay } from "@/components/features/variant/abc/catlas-display";
 

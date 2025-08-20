@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ResponsiveTabs, TabConfig } from "@/components/ui/responsive-tabs";
-import { fetchRegionSummary } from "@/lib/region/api";
+import { fetchRegionSummary } from "@/lib/region/summary/api";
 import { GENE_SUMMARY_COLUMNS_MAP } from "@/lib/gene/summary/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { DataComparisonTable } from "@/components/data-display/data-comparison-table";

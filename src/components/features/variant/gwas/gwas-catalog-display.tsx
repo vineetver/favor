@@ -5,7 +5,7 @@ import { NoDataState } from "@/components/ui/error-states";
 import { DataGrid } from "@/components/ui/data-grid";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
 import { GwasScatterChart } from "@/components/features/variant/gwas/gwas-scatter-chart";
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import type { GWAS } from "@/lib/variant/gwas/api";
 import { gwasColumns } from "@/lib/variant/gwas/columns";
 

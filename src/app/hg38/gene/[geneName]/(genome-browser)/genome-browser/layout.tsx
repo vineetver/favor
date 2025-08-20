@@ -3,7 +3,7 @@ import { GeneHeader } from "@/components/features/gene/gene-header";
 import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigation";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
 import { GENE_NAVIGATION } from "@/lib/gene/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneLayoutProps {
   children: React.ReactNode;

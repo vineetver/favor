@@ -1,68 +1,4 @@
-import type { GeneLevelAnnotation, GeneSummary, Summary, Gene } from "./types";
-
-export const GENE_ANNOTATION_URL = "https://api.genohub.org/v1/annotations";
-export const GENE_SUMMARY_URLS = (geneName: string) =>
-  `https://api.genohub.org/v1/genes/${geneName}/summary`;
-export const COSMIC_GENE_URL = "https://api.genohub.org/v1/cosmic/genes";
-
-export async function fetchGeneAnnotation(
-  geneName: string,
-): Promise<GeneLevelAnnotation | null> {
-  try {
-    const response = await fetch(`${GENE_ANNOTATION_URL}/${geneName}`);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(
-        `Failed to fetch gene annotation: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return data as GeneLevelAnnotation;
-  } catch (error) {
-    console.error("Error fetching gene annotation:", error);
-    return null;
-  }
-}
-
-export async function fetchGeneSummary(
-  geneName: string,
-): Promise<GeneSummary | null> {
-  try {
-    const response = await fetch(GENE_SUMMARY_URLS(geneName));
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`Failed to fetch gene summary: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data as GeneSummary;
-  } catch (error) {
-    console.error("Error fetching gene summary:", error);
-    return null;
-  }
-}
-
-export function getSummaryByCategory(
-  geneSummary: GeneSummary,
-  categorySlug: string,
-): Summary {
-  if (categorySlug === "SNV-summary") {
-    return geneSummary.snv_summary;
-  }
-
-  if (categorySlug === "InDel-summary") {
-    return geneSummary.indel_summary;
-  }
-
-  return geneSummary.total_summary;
-}
+import type { Gene } from "../types";
 
 const GENE_TABLE_URLS: {
   [category: string]: (geneName: string) => string;
@@ -152,26 +88,5 @@ export async function fetchGeneTableData(
   } catch (error) {
     console.error("Error fetching gene table data:", error);
     throw error;
-  }
-}
-
-export async function fetchCosmicByGene(
-  geneName: string,
-): Promise<any[] | null> {
-  try {
-    const response = await fetch(`${COSMIC_GENE_URL}/${geneName}`);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return [];
-      }
-      throw new Error(`Failed to fetch COSMIC data: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data || [];
-  } catch (error) {
-    console.error("Error fetching COSMIC data:", error);
-    return null;
   }
 }

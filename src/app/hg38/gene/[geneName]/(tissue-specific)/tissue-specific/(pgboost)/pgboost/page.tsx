@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchPGBoostByGene } from "@/lib/variant/pgboost/api";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { PGBoostDisplay } from "@/lib/shared/pgboost/display";
 
 interface GenePGBoostPageProps {

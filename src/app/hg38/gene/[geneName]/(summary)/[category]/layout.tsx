@@ -4,7 +4,7 @@ import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigati
 import { NavigationSidebar } from "@/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
 import { GENE_NAVIGATION } from "@/lib/gene/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneLayoutProps {
   children: React.ReactNode;

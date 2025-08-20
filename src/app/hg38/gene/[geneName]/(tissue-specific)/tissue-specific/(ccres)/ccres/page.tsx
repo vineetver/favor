@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { getCCREByRegion } from "@/lib/variant/ccre/api";
 import { CCREDisplay } from "@/components/features/browser/ccre/ccre-display";
 

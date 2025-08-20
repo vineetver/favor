@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { fetchEpimapByRegion } from "@/lib/region/epimap/api";
 import { EpimapDisplay } from "@/components/features/region/epimap/epimap-display";
 

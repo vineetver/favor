@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { EntexDisplay } from "@/components/features/variant/entex/entex-display";
 import { fetchEntexDefaultByRegion, fetchEntexPooledByRegion } from "@/lib/variant/entex/api";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneEntexPageProps {
   params: {

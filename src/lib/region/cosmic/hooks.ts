@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchCosmicByRegion } from "@/lib/region/api";
+import { fetchCosmicByRegion } from "@/lib/region/cosmic/api";
 import type { Cosmic } from "./columns";
 
 export function useCosmicData(region: string) {

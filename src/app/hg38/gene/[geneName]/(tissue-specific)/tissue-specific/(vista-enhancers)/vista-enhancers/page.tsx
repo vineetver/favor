@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { VistaEnhancerDisplay } from "@/components/features/region/vista-enhancer/vista-enhancer-display";
 
 interface GeneVistaEnhancerPageProps {

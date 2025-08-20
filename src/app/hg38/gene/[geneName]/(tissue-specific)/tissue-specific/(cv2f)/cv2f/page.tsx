@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CV2FDisplay } from "@/components/features/variant/cv2f/cv2f-display";
 import { fetchCV2FByRegion } from "@/lib/variant/cv2f/api";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneCV2FPageProps {
   params: {

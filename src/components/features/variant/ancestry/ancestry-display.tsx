@@ -7,7 +7,7 @@ import { NoDataState } from "@/components/ui/error-states";
 import { AncestryFrequencyTable } from "@/components/features/variant/ancestry/ancestry-frequency-table";
 import { buildAncestryFrequencies } from "@/lib/variant/gnomad/utils";
 import { ANCESTRY_CHART_CONFIG } from "@/lib/variant/ancestry/table-columns";
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import type { GnomadData } from "@/lib/variant/gnomad/api";
 
 interface AncestryDisplayProps {

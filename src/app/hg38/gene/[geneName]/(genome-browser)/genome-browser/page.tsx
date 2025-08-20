@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { GenomeBrowserErrorBoundary } from "@/components/features/browser/genome-browser/error-boundary";
 
 const DynamicGenomeBrowser = dynamic(

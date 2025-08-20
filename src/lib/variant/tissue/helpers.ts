@@ -1,4 +1,4 @@
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import type { CCRE } from "@/lib/variant/ccre/types";
 import type { ABCScore, ABCPeaks } from "@/lib/variant/abc/api";
 import type { Entex } from "@/lib/variant/entex/api";

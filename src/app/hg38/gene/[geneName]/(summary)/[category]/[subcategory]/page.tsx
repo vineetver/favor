@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ResponsiveTabs, TabConfig } from "@/components/ui/responsive-tabs";
-import { fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/api";
+import { fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/summary/api";
 import { GENE_SUMMARY_COLUMNS_MAP } from "@/lib/gene/summary/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { SummaryDashboard } from "@/components/features/shared/summary-dashboard";

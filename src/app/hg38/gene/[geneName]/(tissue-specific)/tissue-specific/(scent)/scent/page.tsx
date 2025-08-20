@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ScentDisplay } from "@/components/features/variant/scent/scent-display";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneScentPageProps {
   params: {

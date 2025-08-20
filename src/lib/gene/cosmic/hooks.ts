@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchCosmicByGene } from "@/lib/gene/api";
+import { fetchCosmicByGene } from "@/lib/gene/cosmic/api";
 import type { Cosmic } from "./columns";
 
 export function useCosmicData(geneName: string) {

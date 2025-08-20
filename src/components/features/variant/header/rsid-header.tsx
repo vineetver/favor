@@ -3,7 +3,7 @@
 import { useOptimistic, useTransition } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils/general";
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import { setRsidVariantCookie } from "@/lib/variant/actions";
 
 interface RsidHeaderProps {

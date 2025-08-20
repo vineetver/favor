@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchGeneAnnotation } from "@/lib/gene/api";
+import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { GENE_COLUMNS_MAP } from "@/lib/gene/annotations/columns";
 import { ExpressionDisplay } from "@/components/features/gene/expression/expression-display";

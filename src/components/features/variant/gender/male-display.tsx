@@ -7,7 +7,7 @@ import { NoDataState } from "@/components/ui/error-states";
 import { MaleFrequencyTable } from "@/components/features/variant/gender/male-frequency-table";
 import { buildMaleFrequencies } from "@/lib/variant/gnomad/utils";
 import { MALE_CHART_CONFIG } from "@/lib/variant/gender/table-columns";
-import type { Variant } from "@/lib/variant/api";
+import type { Variant } from "@/lib/variant/types";
 import type { GnomadData } from "@/lib/variant/gnomad/api";
 
 interface MaleDataDisplayProps {

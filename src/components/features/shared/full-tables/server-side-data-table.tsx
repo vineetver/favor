@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { ServerSideDataGrid } from "./server-side-data-grid";
 import { VariantTableColumns } from "./table-columns";
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
-import { fetchRegionTableData, fetchRegionSummary } from "@/lib/region/api";
-import { fetchGeneTableData, fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/api";
+import { fetchRegionTableData } from "@/lib/region/table/api";
+import { fetchRegionSummary } from "@/lib/region/summary/api";
+import { fetchGeneTableData } from "@/lib/gene/table/api";
+import { fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/summary/api";
 import { buildFiltersQuery, buildSortingQuery } from "@/lib/utils/query";
 import { genecodeCategory, clinsig, exonic_category, siftcat } from "@/lib/gene/full-tables/constants";
 
