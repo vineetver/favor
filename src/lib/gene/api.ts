@@ -3,6 +3,7 @@ import type { GeneLevelAnnotation, GeneSummary, Summary, Gene } from "./types";
 export const GENE_ANNOTATION_URL = "https://api.genohub.org/v1/annotations";
 export const GENE_SUMMARY_URLS = (geneName: string) =>
   `https://api.genohub.org/v1/genes/${geneName}/summary`;
+export const COSMIC_GENE_URL = "https://api.genohub.org/v1/cosmic/genes";
 
 export async function fetchGeneAnnotation(
   geneName: string,
@@ -151,5 +152,26 @@ export async function fetchGeneTableData(
   } catch (error) {
     console.error("Error fetching gene table data:", error);
     throw error;
+  }
+}
+
+export async function fetchCosmicByGene(
+  geneName: string,
+): Promise<any[] | null> {
+  try {
+    const response = await fetch(`${COSMIC_GENE_URL}/${geneName}`);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error(`Failed to fetch COSMIC data: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching COSMIC data:", error);
+    return null;
   }
 }

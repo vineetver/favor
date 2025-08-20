@@ -233,11 +233,28 @@ export class GenomicDomainManager {
     config: DomainConfig = {},
   ): DomainChrInterval {
     const {
+      windowSize = this.DEFAULT_WINDOW_SIZE,
       padding = this.DEFAULT_PADDING,
       minSize = this.MIN_WINDOW_SIZE,
       maxSize = this.MAX_WINDOW_SIZE,
+      centerOnVariant = false,
     } = config;
 
+    // If windowSize is specified and different from default, use it
+    if (windowSize && windowSize !== this.DEFAULT_WINDOW_SIZE) {
+      const regionCenter = Math.floor((region.start + region.end) / 2);
+      const halfWindow = Math.floor(windowSize / 2);
+      
+      const start = Math.max(1, regionCenter - halfWindow);
+      const end = regionCenter + halfWindow;
+      
+      return {
+        chromosome: region.chromosome,
+        interval: [start, end],
+      };
+    }
+
+    // For initial view, show the actual region bounds with padding
     const regionSize = region.end - region.start;
     const paddingSize = Math.floor(regionSize * padding);
 

@@ -78,6 +78,14 @@ export function useDomainManager({
     const inputParam = regionParam || vcfParam;
     if (!inputParam) return null;
 
+    // For initial load (no customWindowSize and selectedPreset is default), show the region bounds
+    if (!customWindowSize && selectedPreset === initialPreset && regionParam) {
+      return GenomicDomainManager.createAdaptiveDomain(inputParam, trackTypes, {
+        centerOnVariant: false, // Use region bounds, not centered window
+      });
+    }
+
+    // For preset changes or custom window sizes, use specified window size
     const windowSize =
       customWindowSize ||
       DOMAIN_PRESETS.find((p) => p.name === selectedPreset)?.windowSize ||
@@ -85,9 +93,9 @@ export function useDomainManager({
 
     return GenomicDomainManager.createAdaptiveDomain(inputParam, trackTypes, {
       windowSize,
-      centerOnVariant: regionParam ? false : true, // Center on variant for VCF, use region bounds for region
+      centerOnVariant: !!vcfParam, // Only center on variant for VCF params, not region params
     });
-  }, [vcfParam, regionParam, trackTypes, selectedPreset, customWindowSize]);
+  }, [vcfParam, regionParam, trackTypes, selectedPreset, customWindowSize, initialPreset]);
 
   // Update domain when initialDomain changes
   useMemo(() => {
@@ -128,7 +136,7 @@ export function useDomainManager({
           trackTypes,
           {
             windowSize: preset.windowSize,
-            centerOnVariant: regionParam ? false : true,
+            centerOnVariant: !!vcfParam,
           },
         );
         setDomain(newDomain);

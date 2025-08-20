@@ -5,6 +5,7 @@ import { ServerSideDataGrid } from "./server-side-data-grid";
 import { VariantTableColumns } from "./table-columns";
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { fetchRegionTableData, fetchRegionSummary } from "@/lib/region/api";
+import { fetchGeneTableData, fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/api";
 import { buildFiltersQuery, buildSortingQuery } from "@/lib/utils/query";
 import { genecodeCategory, clinsig, exonic_category, siftcat } from "@/lib/gene/full-tables/constants";
 
@@ -167,9 +168,25 @@ export function ServerSideDataTable({
         // Uncomment for debugging:
         // console.log("Filter Debug - summary data:", summary);
         // console.log("Filter Debug - table data sample:", result.data?.slice(0, 2));
+      } else if (type === "gene") {
+        // Fetch both table data and summary data in parallel
+        const [tableResult, summaryResult] = await Promise.all([
+          fetchGeneTableData(entityId, {
+            subcategory,
+            filtersQuery,
+            sortingQuery, 
+            pageSize: serverState.pageSize,
+            cursor: resetPagination ? undefined : (serverState.pageIndex > 0 ? serverState.nextCursor : undefined),
+          }),
+          // Fetch summary for the same subcategory to get filter counts
+          fetchGeneSummary(entityId)
+        ]);
+        
+        result = tableResult;
+        // Extract summary for this subcategory
+        summary = summaryResult ? getSummaryByCategory(summaryResult, subcategory.replace('-table', '-summary')) : undefined;
       } else {
-        // For now, just handle regions - genes can be added later with similar API
-        throw new Error("Gene table not yet implemented with unified component");
+        throw new Error(`Unsupported table type: ${type}`);
       }
 
       setServerState(prev => ({
