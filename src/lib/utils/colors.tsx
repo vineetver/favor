@@ -233,10 +233,6 @@ export function cagePromoterCCode(value: string | number | undefined) {
   }
 }
 
-export function clinSigCCode(value: string) {
-  switch (value) {
-  }
-}
 
 export function epigeneticsCCode(value: string) {
   switch (value) {

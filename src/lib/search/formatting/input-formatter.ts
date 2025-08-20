@@ -91,12 +91,6 @@ export function formatSearchInput(input: string): InputFormatResult {
   };
 }
 
-/**
- * Gets appropriate placeholder text based on input
- */
-export function getPlaceholderText(): string {
-  return "Search for genes, variants, or regions";
-}
 
 /**
  * Normalizes input for API queries (case-insensitive search)

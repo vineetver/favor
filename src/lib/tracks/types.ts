@@ -21,20 +21,6 @@ export type ZoomBehavior = "adaptive" | "fixed" | "scalable";
 // Union type for track data
 export type TrackData = Track | Track[] | OverlaidTracks | OverlaidTracks[];
 
-// Type guard for single track
-export function isSingleTrack(track: TrackData): track is Track {
-  return !Array.isArray(track) && !("tracks" in track);
-}
-
-// Type guard for track array
-export function isTrackArray(track: TrackData): track is Track[] {
-  return Array.isArray(track) && track.length > 0 && !("tracks" in track[0]);
-}
-
-// Type guard for overlaid tracks
-export function isOverlaidTracks(track: TrackData): track is OverlaidTracks {
-  return !Array.isArray(track) && "tracks" in track;
-}
 
 export interface TrackCategory {
   id: string;
