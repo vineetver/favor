@@ -40,7 +40,7 @@ export const abcPeaksColumns: ColumnDef<ABCPeaks>[] = [
       <DataTableColumnHeader column={column} title="Signal Value" />
     ),
     cell: ({ row }) => (
-      <span className="font-mono">
+      <span className="font-mono text-sm">
         {row.getValue<number>("signal_value").toFixed(3)}
       </span>
     ),
@@ -79,7 +79,7 @@ export const abcPeaksColumns: ColumnDef<ABCPeaks>[] = [
       <DataTableColumnHeader column={column} title="Peak" />
     ),
     cell: ({ row }) => (
-      <span className="font-mono">{row.getValue<number>("peak")}</span>
+      <span className="font-mono text-sm">{row.getValue<number>("peak")}</span>
     ),
   },
   {
@@ -88,7 +88,7 @@ export const abcPeaksColumns: ColumnDef<ABCPeaks>[] = [
       <DataTableColumnHeader column={column} title="Tissue" />
     ),
     cell: ({ row }) => (
-      <Badge variant="secondary" className="capitalize">
+      <Badge variant="secondary" className="capitalize text-sm font-medium">
         {row.getValue<string>("tissue")}
       </Badge>
     ),
@@ -129,7 +129,7 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
           <div className="text-xs text-muted-foreground">
             <ExternalLink
               href={formatRegionLink(chromosome, start_position, end_position)}
-              className="font-mono hover:text-primary text-xs"
+              className="font-mono hover:text-primary text-sm"
               iconSize="sm"
             >
               {enhancerRegion}
@@ -141,7 +141,7 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
                 promotor_start_position,
                 promotor_end_position,
               )}
-              className="font-mono hover:text-primary text-xs"
+              className="font-mono hover:text-primary text-sm"
               iconSize="sm"
             >
               {promoterRegion}
@@ -158,7 +158,7 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
       <DataTableColumnHeader column={column} title="ABC Score" />
     ),
     cell: ({ row }) => (
-      <span className="font-mono font-medium pl-1">
+      <span className="font-mono font-medium pl-1 text-sm">
         {row.getValue<number>("abc_score").toFixed(3)}
       </span>
     ),
@@ -172,7 +172,7 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
       const distance = row.getValue<number>("distance");
       const distanceKb = distance / 1000;
       return (
-        <span className="font-mono pl-1">
+        <span className="font-mono pl-1 text-sm">
           {distanceKb > 1000
             ? `${(distanceKb / 1000).toFixed(1)}M bp`
             : `${distanceKb.toFixed(0)}K bp`}
@@ -186,7 +186,7 @@ export const abcScoreColumns: ColumnDef<ABCScore>[] = [
       <DataTableColumnHeader column={column} title="Tissue" />
     ),
     cell: ({ row }) => (
-      <Badge variant="secondary" className="capitalize">
+      <Badge variant="secondary" className="capitalize text-sm font-medium">
         {row.getValue<string>("tissue")}
       </Badge>
     ),

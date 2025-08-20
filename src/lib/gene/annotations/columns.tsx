@@ -3,7 +3,7 @@ import { ExternalLink } from "@/components/ui/external-link";
 import {
   splitText,
   cleanText,
-  Round,
+  roundNumber,
   safeCellRenderer,
   isValidString,
   isValidNumber,
@@ -1350,7 +1350,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1364,7 +1364,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1408,7 +1408,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1422,7 +1422,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1436,7 +1436,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1450,7 +1450,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1464,7 +1464,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1478,7 +1478,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1492,7 +1492,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <div>{Round(num)}</div>,
+          (num) => <div>{roundNumber(num)}</div>,
           isValidNumber,
         );
       },
@@ -1506,7 +1506,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <div>{Round(num)}</div>,
+          (num) => <div>{roundNumber(num)}</div>,
           isValidNumber,
         );
       },
@@ -1520,7 +1520,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <div>{Round(num)}</div>,
+          (num) => <div>{roundNumber(num)}</div>,
           isValidNumber,
         );
       },
@@ -1534,7 +1534,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1548,7 +1548,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1562,7 +1562,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1576,7 +1576,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1589,7 +1589,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1603,7 +1603,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },
@@ -1617,7 +1617,7 @@ export const GENE_CONSTRAINTS_COLUMNS: ColumnsType = {
       Cell: (value) => {
         return safeCellRenderer(
           value,
-          (num) => <span>{Round(num)}</span>,
+          (num) => <span>{roundNumber(num)}</span>,
           isValidNumber,
         );
       },

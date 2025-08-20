@@ -365,3 +365,22 @@ export function booleanStatusCCode(value: string | boolean, trueLabel: string = 
     return getSpanElement(falseLabel, "red");
   }
 }
+
+export function cosmicMutationTypeCCode(value: string) {
+  switch (value.toLowerCase()) {
+    case "snv":
+      return getSpanElement(value, "blue");
+    case "insertion":
+      return getSpanElement(value, "green");
+    case "deletion":
+      return getSpanElement(value, "red");
+    case "complex":
+      return getSpanElement(value, "purple");
+    default:
+      return getSpanElement(value, "gray");
+  }
+}
+
+export function cosmicCanonicalCCode(value: string) {
+  return booleanStatusCCode(value, "Yes", "No");
+}

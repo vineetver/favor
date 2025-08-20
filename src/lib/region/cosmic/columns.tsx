@@ -1,6 +1,8 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
+import { ExternalLink } from "@/components/ui/external-link";
 import { safeCellRenderer, isValidString, isValidNumber } from "@/lib/annotations/helpers";
+import { cosmicMutationTypeCCode, cosmicCanonicalCCode } from "@/lib/utils/colors";
 
 export interface Cosmic {
   variant_vcf: string;
@@ -26,7 +28,14 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
       const value = row.original.variant_vcf;
       return safeCellRenderer(
         value,
-        (str: string) => <span className="font-mono text-sm">{str}</span>,
+        (str: string) => (
+          <ExternalLink
+            href={`/hg38/variant/${encodeURIComponent(str)}/summary/basic`}
+            className="font-mono text-sm hover:text-primary"
+          >
+            {str}
+          </ExternalLink>
+        ),
         isValidString,
       );
     },
@@ -78,7 +87,7 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
           if (str === "p.?") {
             return <span className="font-mono text-sm text-muted-foreground">{str}</span>;
           }
-          return <span className="font-mono text-sm bg-muted/20">{str}</span>;
+          return <span className="font-mono text-sm bg-black/20 px-2 py-1 rounded">{str}</span>;
         },
         isValidString,
       );
@@ -103,26 +112,18 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
       const value = row.original.so_term;
       return safeCellRenderer(
         value,
-        (str: string) => {
-          const typeColors = {
-            "SNV": "bg-blue-100 text-blue-800",
-            "insertion": "bg-green-100 text-green-800",
-            "deletion": "bg-red-100 text-red-800",
-            "complex": "bg-purple-100 text-purple-800"
-          };
-          const colorClass = typeColors[str as keyof typeof typeColors] || "bg-gray-100 text-gray-800";
-          return (
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${colorClass}`}>
-              {str}
-            </span>
-          );
-        },
+        (str: string) => cosmicMutationTypeCCode(str),
         isValidString,
       );
     },
     enableSorting: true,
     filterFn: (row, id, value) => {
-      return row.getValue(id) === value;
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      const cellValue = row.getValue(id) as string;
+      if (Array.isArray(value)) {
+        return value.includes(cellValue);
+      }
+      return cellValue === value;
     },
   },
   {
@@ -139,30 +140,18 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
       const value = row.original.is_canonical;
       return safeCellRenderer(
         value,
-        (str: string) => {
-          switch (str) {
-            case "y":
-              return (
-                <span className="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">
-                  Yes
-                </span>
-              );
-            case "n":
-              return (
-                <span className="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
-                  No
-                </span>
-              );
-            default:
-              return undefined;
-          }
-        },
+        (str: string) => cosmicCanonicalCCode(str),
         isValidString,
       );
     },
     enableSorting: true,
     filterFn: (row, id, value) => {
-      return row.getValue(id) === value;
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      const cellValue = row.getValue(id) as string;
+      if (Array.isArray(value)) {
+        return value.includes(cellValue);
+      }
+      return cellValue === value;
     },
   },
   {
@@ -184,26 +173,30 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
       );
     },
     enableSorting: true,
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      const count = row.getValue(id) as number;
+      
+      const checkValue = (val: string) => {
+        switch (val) {
+          case "1":
+            return count === 1;
+          case "2-5":
+            return count >= 2 && count <= 5;
+          case "6-10":
+            return count >= 6 && count <= 10;
+          case "11+":
+            return count >= 11;
+          default:
+            return false;
+        }
+      };
+      
+      if (Array.isArray(value)) {
+        return value.some(checkValue);
+      }
+      return checkValue(value);
+    },
   },
 ];
 
-export const cosmicFacetedFilters = [
-  {
-    columnId: "is_canonical",
-    title: "Canonical Transcript",
-    options: [
-      { label: "Yes", value: "y" },
-      { label: "No", value: "n" },
-    ],
-  },
-  {
-    columnId: "so_term",
-    title: "Mutation Type",
-    options: [
-      { label: "SNV", value: "SNV" },
-      { label: "Insertion", value: "insertion" },
-      { label: "Deletion", value: "deletion" },
-      { label: "Complex", value: "complex" },
-    ],
-  },
-];

@@ -95,7 +95,7 @@ const ReadCountsDisplay = ({
   ct: number;
 }) => {
   return (
-    <div className="grid grid-cols-2 text-xs font-mono">
+    <div className="grid grid-cols-2 text-sm font-mono">
       <span className="text-blue-600">A:{ca}</span>
       <span className="text-green-600">C:{cc}</span>
       <span className="text-orange-600">G:{cg}</span>
@@ -191,7 +191,7 @@ export const entexColumns: ColumnDef<Entex>[] = [
       const text = isSignificant ? "Significant" : "Not Significant";
       const variant = isSignificant ? "default" : "secondary";
       return (
-        <Badge variant={variant} className="text-xs">
+        <Badge variant={variant} className="text-sm font-medium">
           {text}
         </Badge>
       );
@@ -328,7 +328,7 @@ export const entexPooledColumns: ColumnDef<Entex>[] = [
       const text = isSignificant ? "Significant" : "Not Significant";
       const variant = isSignificant ? "default" : "secondary";
       return (
-        <Badge variant={variant} className="text-xs">
+        <Badge variant={variant} className="text-sm font-medium">
           {text}
         </Badge>
       );

@@ -61,7 +61,7 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
     cell: ({ row }) => {
       const num = row.original?.pg_boost;
       return (
-        <div className="text-left font-mono">{formatPGBoostScore(num)}</div>
+        <div className="text-left font-mono text-sm">{formatPGBoostScore(num)}</div>
       );
     },
     enableSorting: true,
@@ -114,7 +114,7 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">
+      <div className="text-left font-mono text-sm">
         {formatPGBoostScore(row.original?.scent)}
       </div>
     ),
@@ -131,7 +131,7 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">
+      <div className="text-left font-mono text-sm">
         {formatPGBoostScore(row.original?.signac)}
       </div>
     ),
@@ -148,7 +148,7 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-left font-mono">
+      <div className="text-left font-mono text-sm">
         {formatPGBoostScore(row.original?.cicero)}
       </div>
     ),

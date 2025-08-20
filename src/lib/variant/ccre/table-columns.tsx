@@ -187,7 +187,7 @@ const SignalIndicator = ({
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
       <div
         className={cn(
           "px-2 py-0.5 rounded-full text-xs font-medium min-w-[3rem] text-center",
@@ -324,7 +324,7 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
       };
 
       return (
-        <div className={cn("font-mono font-semibold", colorMap[strength])}>
+        <div className={cn("font-mono font-semibold text-sm", colorMap[strength])}>
           {formatSignalValue(ctcf)}
         </div>
       );
