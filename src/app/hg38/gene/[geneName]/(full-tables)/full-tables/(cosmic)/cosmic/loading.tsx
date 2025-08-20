@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataGridSkeleton } from "@/components/ui/skeleton-layouts";
 
-export default function PgboostLoading() {
+export default function CosmicLoading() {
   return (
     <Card>
       <CardHeader>

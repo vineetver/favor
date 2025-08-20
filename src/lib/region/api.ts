@@ -167,5 +167,6 @@ export async function fetchRegionTableData(
   }
 }
 
+
 // Reuse gene summary helper
 export { getSummaryByCategory } from "@/lib/gene/api";
