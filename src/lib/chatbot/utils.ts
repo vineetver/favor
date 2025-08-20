@@ -24,15 +24,27 @@ export async function fetchWithErrorHandlers(
   init?: RequestInit,
 ) {
   try {
+    console.log('[fetchWithErrorHandlers] Making request to:', input, 'with init:', init);
     const response = await fetch(input, init);
+    console.log('[fetchWithErrorHandlers] Response status:', response.status, response.statusText);
 
     if (!response.ok) {
-      const { code, cause } = await response.json();
-      throw new ChatSDKError(code as ErrorCode, cause);
+      const errorText = await response.text();
+      console.error('[fetchWithErrorHandlers] Error response:', errorText);
+      
+      try {
+        const { code, cause } = JSON.parse(errorText);
+        throw new ChatSDKError(code as ErrorCode, cause);
+      } catch (parseError) {
+        // If we can't parse the error as JSON, create a generic error
+        throw new ChatSDKError('api_error' as ErrorCode, errorText);
+      }
     }
 
     return response;
   } catch (error: unknown) {
+    console.error('[fetchWithErrorHandlers] Caught error:', error);
+    
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       throw new ChatSDKError('offline:chat');
     }

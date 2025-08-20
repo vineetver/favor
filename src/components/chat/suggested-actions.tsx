@@ -31,11 +31,9 @@ const suggestedActions = [
 
 function PureSuggestedActions({
   sendMessage,
-  chatId,
   selectedVisibilityType,
 }: {
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
-  chatId: string;
   selectedVisibilityType: VisibilityType;
 }) {
   return (
@@ -51,7 +49,6 @@ function PureSuggestedActions({
           <Button
             variant="ghost"
             onClick={() => {
-              window.history.replaceState({}, '', `/chat/${chatId}`);
               sendMessage({
                 role: 'user',
                 parts: [{ type: 'text', text: action.action }],

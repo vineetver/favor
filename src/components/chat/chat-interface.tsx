@@ -15,12 +15,13 @@ import {
 import FABButton from "@/components/ui/fab";
 import React from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
-import { DataStreamProvider } from "@/components/chatbot/data-stream-provider";
+import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { buttonVariants } from "@/lib/design-system/chat-variants";
+import { chatAnimations } from "@/lib/design-system/chat-theme";
 
 export function ChatInterface({ selectedModelId }: { selectedModelId: string }) {
-  const id = generateUUID();
   const { isMobile } = useWindowSize();
 
   const CloseButton = ({ onClick }: { onClick?: () => void }) => (
@@ -28,9 +29,10 @@ export function ChatInterface({ selectedModelId }: { selectedModelId: string }) 
       onClick={onClick}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
-      className="flex-none self-end"
+      transition={chatAnimations.spring.snappy}
+      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
     >
-      <X className="h-5 w-5 font-normal" />
+      <X className="h-4 w-4" />
     </motion.button>
   );
 
@@ -42,18 +44,18 @@ export function ChatInterface({ selectedModelId }: { selectedModelId: string }) 
             className="inline-block"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            transition={chatAnimations.spring.snappy}
           >
-            <FABButton className="font-semibold bg-gradient-to-r from-primary to-pink text-on-primary shadow-lg hover:shadow-xl transform transition-all duration-300">
+            <FABButton className={buttonVariants({ variant: 'fab', size: 'fab' })}>
               Chat with FAVOR-GPT
             </FABButton>
           </motion.div>
         </SheetTrigger>
-        <SheetContent className="bg-secondary-container text-on-secondary-container w-full p-0">
+        <SheetContent className="bg-background text-foreground w-full p-0 border-l border-border">
           <DataStreamProvider>
             <Chat
-              key={id}
-              id={id}
+              key="mobile-chat"
+              id="mobile-chat"
               initialMessages={[]}
               selectedModelId={selectedModelId}
               isReadonly={false}
@@ -76,18 +78,18 @@ export function ChatInterface({ selectedModelId }: { selectedModelId: string }) 
           className="inline-block"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          transition={chatAnimations.spring.snappy}
         >
-          <FABButton className="font-semibold bg-gradient-to-r from-primary to-pink text-on-primary shadow-lg hover:shadow-xl transform transition-all duration-300">
+          <FABButton className={buttonVariants({ variant: 'fab', size: 'fab' })}>
             Chat with FAVOR-GPT
           </FABButton>
         </motion.div>
       </PopoverTrigger>
-      <PopoverContent className="bg-secondary-container text-on-secondary-container md:m-4 md:h-[610px] md:w-[650px] p-0">
+      <PopoverContent className="bg-background text-foreground md:m-4 md:h-[610px] md:w-[650px] p-0 border border-border shadow-xl">
         <DataStreamProvider>
           <Chat
-            key={id}
-            id={id}
+            key="desktop-chat"
+            id="desktop-chat"
             initialMessages={[]}
             selectedModelId={selectedModelId}
             isReadonly={false}

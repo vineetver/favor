@@ -75,7 +75,7 @@ export const createPathwayGenesColumns = (highlightData?: HighlightData): Column
         <code
           className={cn(
             "px-2 py-1 rounded text-sm",
-            isHighlighted ? "bg-blue-100 dark:bg-blue-900/30" : "bg-muted",
+            isHighlighted ? "bg-blue-100" : "bg-muted",
           )}
         >
           {geneName}
@@ -184,7 +184,7 @@ export const createPathwayInteractionsColumns = (highlightData?: HighlightData):
         <code
           className={cn(
             "px-2 py-1 rounded text-sm",
-            isHighlighted ? "bg-blue-100 dark:bg-blue-900/30" : "bg-muted",
+            isHighlighted ? "bg-blue-100" : "bg-muted",
           )}
         >
           {geneName}
@@ -209,7 +209,7 @@ export const createPathwayInteractionsColumns = (highlightData?: HighlightData):
           className={cn(
             "px-2 py-1 rounded text-sm",
             isHighlighted
-              ? "bg-blue-100 dark:bg-blue-900/30"
+              ? "bg-blue-100"
               : "bg-muted",
           )}
         >

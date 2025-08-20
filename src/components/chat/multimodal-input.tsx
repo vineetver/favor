@@ -1,6 +1,5 @@
 'use client';
 
-import type { UIMessage } from 'ai';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -18,7 +17,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWindowSize } from '@/hooks/use-window-size';
 
 import { ArrowUp, Paperclip, Square } from 'lucide-react';
-import { PreviewAttachment } from '@/components/chatbot/preview-attachment';
+import { PreviewAttachment } from '@/components/chat/preview-attachment';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SuggestedActions } from './suggested-actions';
@@ -28,6 +27,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { Attachment, ChatMessage, VisibilityType } from '@/lib/chatbot/types';
+import { buttonVariants, inputVariants } from '@/lib/design-system/chat-variants';
+import { chatAnimations } from '@/lib/design-system/chat-theme';
 
 function PureMultimodalInput({
   chatId,
@@ -50,7 +51,7 @@ function PureMultimodalInput({
   stop: () => void;
   attachments: Array<Attachment>;
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<UIMessage>;
+  messages: Array<ChatMessage>;
   setMessages: UseChatHelpers<ChatMessage>['setMessages'];
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
   className?: string;
@@ -106,23 +107,24 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
   const submitForm = useCallback(() => {
-    window.history.replaceState({}, '', `/chat/${chatId}`);
-
-    sendMessage({
-      role: 'user',
+    const messageToSend = {
+      role: 'user' as const,
       parts: [
         ...attachments.map((attachment) => ({
           type: 'file' as const,
           url: attachment.url,
-          name: attachment.name,
+          filename: attachment.name,
           mediaType: attachment.contentType,
         })),
         {
-          type: 'text',
+          type: 'text' as const,
           text: input,
         },
       ],
-    });
+    };
+    
+    console.log('[MultimodalInput] Sending message:', messageToSend);
+    sendMessage(messageToSend);
 
     setAttachments([]);
     setLocalStorageInput('');
@@ -217,15 +219,13 @@ function PureMultimodalInput({
           >
             <Button
               data-testid="scroll-to-bottom-button"
-              className="rounded-full"
-              size="icon"
-              variant="outline"
+              className={buttonVariants({ variant: 'outline', size: 'icon' })}
               onClick={(event) => {
                 event.preventDefault();
                 scrollToBottom();
               }}
             >
-              <ArrowDown />
+              <ArrowDown size={16} />
             </Button>
           </motion.div>
         )}
@@ -236,7 +236,6 @@ function PureMultimodalInput({
         uploadQueue.length === 0 && (
           <SuggestedActions
             sendMessage={sendMessage}
-            chatId={chatId}
             selectedVisibilityType={selectedVisibilityType}
           />
         )}
@@ -280,7 +279,8 @@ function PureMultimodalInput({
         value={input}
         onChange={handleInput}
         className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
+          inputVariants({ variant: 'elevated' }),
+          'min-h-[60px] max-h-[calc(75dvh)] overflow-hidden resize-none pb-12',
           className,
         )}
         rows={2}
@@ -344,15 +344,14 @@ function PureAttachmentsButton({
   return (
     <Button
       data-testid="attachments-button"
-      className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
+      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
       onClick={(event) => {
         event.preventDefault();
         fileInputRef.current?.click();
       }}
       disabled={status !== 'ready'}
-      variant="ghost"
     >
-      <Paperclip size={14} />
+      <Paperclip size={16} />
     </Button>
   );
 }
@@ -369,14 +368,14 @@ function PureStopButton({
   return (
     <Button
       data-testid="stop-button"
-      className="rounded-full p-1.5 h-fit border dark:border-zinc-600"
+      className={buttonVariants({ variant: 'outline', size: 'icon' })}
       onClick={(event) => {
         event.preventDefault();
         stop();
         setMessages((messages) => messages);
       }}
     >
-      <Square size={14} />
+      <Square size={16} />
     </Button>
   );
 }
@@ -395,14 +394,14 @@ function PureSendButton({
   return (
     <Button
       data-testid="send-button"
-      className="rounded-full p-1.5 h-fit border dark:border-zinc-600"
+      className={buttonVariants({ variant: 'default', size: 'icon' })}
       onClick={(event) => {
         event.preventDefault();
         submitForm();
       }}
       disabled={input.length === 0 || uploadQueue.length > 0}
     >
-      <ArrowUp size={14} />
+      <ArrowUp size={16} />
     </Button>
   );
 }

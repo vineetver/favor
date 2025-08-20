@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { UIMessage } from 'ai';
+import type { UIMessage, InferUITool } from 'ai';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -8,6 +8,16 @@ export const messageMetadataSchema = z.object({
 });
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
+
+// Define tool types for genomics tools
+export type GenomicsTools = {
+  getVariantInfo: InferUITool<any>;
+  getGeneExpression: InferUITool<any>;
+  analyzePathways: InferUITool<any>;
+  getProteinInteractions: InferUITool<any>;
+  findClinicalTrials: InferUITool<any>;
+  analyzeSequence: InferUITool<any>;
+};
 
 export type CustomUIDataTypes = {
   textDelta: string;
@@ -20,11 +30,33 @@ export type CustomUIDataTypes = {
   kind: string;
   clear: null;
   finish: null;
+  // Add genomics-specific data types
+  variantAnnotation: {
+    rsid: string;
+    chromosome: string;
+    position: number;
+    refAllele: string;
+    altAllele: string;
+    functionalImpact: string;
+  };
+  geneExpression: {
+    geneSymbol: string;
+    tissueType: string;
+    expressionLevel: number;
+    pValue: number;
+  };
+  pathwayAnalysis: {
+    pathwayId: string;
+    pathwayName: string;
+    genes: string[];
+    enrichmentScore: number;
+  };
 };
 
 export type ChatMessage = UIMessage<
   MessageMetadata,
-  CustomUIDataTypes
+  CustomUIDataTypes,
+  GenomicsTools
 >;
 
 export interface Attachment {
@@ -34,31 +66,3 @@ export interface Attachment {
 }
 
 export type VisibilityType = 'public' | 'private';
-
-// Request schema for chat API
-const textPartSchema = z.object({
-  type: z.enum(['text']),
-  text: z.string().min(1).max(2000),
-});
-
-const filePartSchema = z.object({
-  type: z.enum(['file']),
-  mediaType: z.enum(['image/jpeg', 'image/png']),
-  name: z.string().min(1).max(100),
-  url: z.string().url(),
-});
-
-const partSchema = z.union([textPartSchema, filePartSchema]);
-
-export const postRequestBodySchema = z.object({
-  id: z.string().uuid(),
-  message: z.object({
-    id: z.string().uuid(),
-    role: z.enum(['user']),
-    parts: z.array(partSchema),
-  }),
-  selectedChatModel: z.string(),
-  selectedVisibilityType: z.enum(['public', 'private']),
-});
-
-export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

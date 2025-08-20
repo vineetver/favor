@@ -1,32 +1,31 @@
-import { PreviewMessage, ThinkingMessage } from "@/components/chatbot/message";
-import { Greeting } from '@/components/chatbot/greeting';
+import { PreviewMessage, ThinkingMessage } from "@/components/chat/message";
+import { Greeting } from '@/components/chat/greeting';
 import { memo } from "react";
 import equal from "fast-deep-equal";
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { motion } from 'framer-motion';
 import { useMessages } from '@/hooks/use-messages';
 import type { ChatMessage } from '@/lib/chatbot/types';
-import { useDataStream } from '@/components/chatbot/data-stream-provider';
+import { useDataStream } from '@/components/chat/data-stream-provider';
+import { containerVariants } from '@/lib/design-system/chat-variants';
 
 interface MessagesProps {
   chatId: string;
   status: UseChatHelpers<ChatMessage>['status'];
-  votes: Array<any> | undefined;
   messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
   regenerate: UseChatHelpers<ChatMessage>['regenerate'];
   isReadonly: boolean;
   isArtifactVisible: boolean;
+  selectedModelId: string;
 }
 
 function PureMessages({
   chatId,
   status,
-  votes,
   messages,
-  setMessages,
   regenerate,
   isReadonly,
+  selectedModelId,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -41,50 +40,38 @@ function PureMessages({
 
   useDataStream();
 
+  // Debug logging (can be removed in production)
+  // console.log('[Messages] Rendering with:', {
+  //   messagesCount: messages.length,
+  //   messages: messages,
+  //   status: status,
+  //   chatId: chatId
+  // });
+
   return (
     <div
       ref={messagesContainerRef}
-      className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 relative"
+      className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-auto pt-4 relative bg-background"
     >
       {messages.length === 0 && <Greeting />}
 
       {messages.map((message, index) => (
-        <motion.div
+        <PreviewMessage
           key={message.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-        >
-          <PreviewMessage
-            chatId={chatId}
-            message={message}
-            isLoading={status === 'streaming' && messages.length - 1 === index}
-            vote={
-              votes
-                ? votes.find((vote) => vote.messageId === message.id)
-                : undefined
-            }
-            setMessages={setMessages}
-            regenerate={regenerate}
-            isReadonly={isReadonly}
-            requiresScrollPadding={
-              hasSentMessage && index === messages.length - 1
-            }
-          />
-        </motion.div>
+          chatId={chatId}
+          message={message}
+          isLoading={status === 'streaming' && messages.length - 1 === index}
+          regenerate={regenerate}
+          isReadonly={isReadonly}
+          requiresScrollPadding={
+            hasSentMessage && index === messages.length - 1
+          }
+        />
       ))}
 
       {status === 'submitted' &&
         messages.length > 0 &&
-        messages[messages.length - 1].role === 'user' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <ThinkingMessage />
-          </motion.div>
-        )}
+        messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
       <motion.div
         ref={messagesEndRef}
@@ -97,12 +84,21 @@ function PureMessages({
 }
 
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
-  if (prevProps.isArtifactVisible && nextProps.isArtifactVisible) return true;
-
+  // If status changed, we need to re-render
   if (prevProps.status !== nextProps.status) return false;
+  
+  // If message count changed, we need to re-render
   if (prevProps.messages.length !== nextProps.messages.length) return false;
+  
+  // If messages content changed, we need to re-render
   if (!equal(prevProps.messages, nextProps.messages)) return false;
-  if (!equal(prevProps.votes, nextProps.votes)) return false;
+  
+  // If other props changed, we need to re-render
+  if (prevProps.chatId !== nextProps.chatId) return false;
+  if (prevProps.isReadonly !== nextProps.isReadonly) return false;
+  if (prevProps.isArtifactVisible !== nextProps.isArtifactVisible) return false;
+  if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
 
-  return false;
+  // If all relevant props are the same, skip re-render
+  return true;
 });

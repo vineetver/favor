@@ -10,6 +10,8 @@
     "pretty": "prettier --write ."
   },
   "dependencies": {
+    "@ai-sdk/deepseek": "^1.0.10",
+    "@ai-sdk/openai": "^2.0.17",
     "@ai-sdk/react": "^2.0.19",
     "@headlessui/react": "^2.2.7",
     "@mdx-js/react": "^3.1.0",
@@ -33,6 +35,7 @@
     "@tanstack/react-query": "^5.85.3",
     "@tanstack/react-query-devtools": "^5.85.3",
     "@tanstack/react-table": "^8.21.3",
+    "@vercel/blob": "^1.1.1",
     "@visx/axis": "^3.12.0",
     "@visx/group": "^3.12.0",
     "@visx/scale": "^3.12.0",
@@ -58,6 +61,7 @@
     "prettier": "^3.6.2",
     "react": "^18",
     "react-dom": "^18",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.1.2",
     "rehype": "^13.0.2",
     "rehype-autolink-headings": "^7.1.0",
