@@ -107,7 +107,7 @@ export function CatlasDisplay({ peaks, scores }: CatlasDisplayProps) {
             colorByKey="tissue"
             title={`ABC Peaks: Signal Strength vs Significance${peaks.length > 1000 ? ` (top 1,000 of ${peaks.length})` : ""}`}
             xLabel="Signal Value"
-            yLabel="-log₁₀(P-value)"
+            yLabel="Significance (-log₁₀ P-value)"
             height={500}
             formatXAxis={formatScore}
             formatYAxis={(value) => value.toFixed(1)}

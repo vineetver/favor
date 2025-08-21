@@ -83,6 +83,7 @@
     "unist-util-visit": "^5.0.0",
     "usehooks-ts": "^3.1.1",
     "vaul": "^1.1.2",
+    "weaviate-client": "^3.8.0",
     "zod": "^3.25.76",
     "zustand": "^5.0.7"
   },

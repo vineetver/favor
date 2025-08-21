@@ -153,11 +153,11 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
   }, [items]);
 
   const handleExport = () => {
-    exportChartAsPNG(chartRef, "chromatin-landscape");
+    exportChartAsPNG(chartRef, "epigenetic-profile");
   };
 
   if (!processedData.chartData) {
-    return <NoDataState categoryName="Chromatin Data" />;
+    return <NoDataState categoryName="Epigenetic Data" />;
   }
 
   const { chartData, legendData } = processedData;
@@ -220,7 +220,7 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
       <Card className={cn("w-full")}>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Chromatin Landscape</CardTitle>
+            <CardTitle className="text-lg">Epigenetic Profile</CardTitle>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4" />
             </Button>

@@ -1,5 +1,5 @@
 // Variant Analysis Tools
-export * from './variant';
+export * from './variantAnalysis'; // New comprehensive variant analysis
 
 // Gene Analysis Tools  
 export * from './gene';
@@ -25,8 +25,7 @@ export * from './advanced-utilities';
 // Enhanced Visualization
 export * from './enhanced-visualization';
 
-// Import all tools for convenience
-import { getVariantInfo, getCCREData } from './variant';
+import { getVariantAnalysis, getVariantVisualization, getStandaloneVariantVisualization } from './variantAnalysis';
 import { getGeneSummary, getGeneAnnotation, getGeneVariants } from './gene';
 import { getRegionSummary, getRegionVariants } from './region';
 import { getBiogridInteractions, getIntactInteractions, getHuriInteractions, getPathwayPairs, getPathwayGenes } from './interactions';
@@ -37,10 +36,8 @@ import { getCRISPRData, getChiaPetData, getEQTLData } from './experimental';
 import { 
   getComprehensiveGeneSummary, getGeneAnnotationData, getGeneVariantData, 
   getGenePathwayInteractions, getGenePathwayGenes, getGeneCosmicData, getGeneProteinInteractions,
-  getVariantInformation, getVariantsByRsid, getGnomadData, getVariantABCData, 
-  getVariantFunctionalScores, getVariantGWASData, getVariantRegulatoryData,
   getRegionSummaryData, getRegionVariantData, getRegionABCData, getRegionAnnotationData,
-  getRegionRegulatoryData, getRegionCosmicData
+  getRegionRegulatoryData, getRegionCosmicData, getRegionVistaEnhancers
 } from './comprehensive';
 
 // Advanced utilities
@@ -57,9 +54,10 @@ import {
 
 // Export all tools in one object - static definitions for AI SDK 5 compatibility
 export const tools = {
-  // Basic Variant tools
-  getVariant: getVariantInfo(),
-  ccreTool: getCCREData(),
+  // Modern Variant Analysis Tools
+  variantAnalysis: getVariantAnalysis(),
+  variantVisualization: getVariantVisualization(),
+  standaloneVariantVisualization: getStandaloneVariantVisualization(),
   
   // Basic Gene tools
   getGeneSummary: getGeneSummary(),
@@ -95,15 +93,6 @@ export const tools = {
   geneCosmicData: getGeneCosmicData(),
   geneProteinInteractions: getGeneProteinInteractions(),
   
-  // Comprehensive Variant Analysis
-  variantInformation: getVariantInformation(),
-  variantsByRsid: getVariantsByRsid(),
-  gnomadData: getGnomadData(),
-  variantABCData: getVariantABCData(),
-  variantFunctionalScores: getVariantFunctionalScores(),
-  variantGWASData: getVariantGWASData(),
-  variantRegulatoryData: getVariantRegulatoryData(),
-  
   // Comprehensive Region Analysis
   regionSummaryData: getRegionSummaryData(),
   regionVariantData: getRegionVariantData(),
@@ -111,6 +100,7 @@ export const tools = {
   regionAnnotationData: getRegionAnnotationData(),
   regionRegulatoryData: getRegionRegulatoryData(),
   regionCosmicData: getRegionCosmicData(),
+  regionVistaEnhancers: getRegionVistaEnhancers(),
   
   // Advanced Data Utilities
   analyzeDistribution: analyzeDataDistribution(),

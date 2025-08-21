@@ -37,21 +37,13 @@ export const displayBarChart = () =>
 
 export const getFieldDescription = () =>
   tool({
-    description: "Returns the description of a scientific field or term e.g. bravo an, cadd, Allele Origin, GNOMAD Total AF, etc.",
+    description: "Returns the description of a scientific field or term e.g. bravo an, cadd, Allele Origin, GNOMAD Total AF, etc. Uses fuzzy matching to find similar field names.",
     inputSchema: z.object({
       field: z.string().describe("The scientific field or term to describe"),
     }),
     execute: async ({ field }) => {
-      const descriptions: Record<string, string> = {
-        "bravo an": "BraVO Allele Number - Total number of alleles in samples",
-        "cadd": "Combined Annotation Dependent Depletion - Pathogenicity prediction score",
-        "allele origin": "Origin of the allele (germline, somatic, etc.)",
-        "gnomad total af": "gnomAD Total Allele Frequency - Population frequency from Genome Aggregation Database"
-      };
-      
-      const description = descriptions[field.toLowerCase()] || 
-        `Description for "${field}" is not available in our database.`;
-      
+      const { fetchFieldDescription } = await import('./description');
+      const description = await fetchFieldDescription(field);
       return { description };
     },
   });
