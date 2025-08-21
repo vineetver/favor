@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWindowSize } from '@/hooks/use-window-size';
 
-import { ArrowUp, Paperclip, Square } from 'lucide-react';
+import { ArrowUp, Paperclip, Square, RotateCcw } from 'lucide-react';
 import { PreviewAttachment } from '@/components/chat/preview-attachment';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,7 @@ function PureMultimodalInput({
   setMessages,
   sendMessage,
   className,
+  onReset,
 }: {
   chatId: string;
   input: string;
@@ -52,6 +53,7 @@ function PureMultimodalInput({
   setMessages: UseChatHelpers<ChatMessage>['setMessages'];
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
   className?: string;
+  onReset?: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isMobile } = useWindowSize();
@@ -262,12 +264,15 @@ function PureMultimodalInput({
       />
 
       <div className="absolute bottom-0 left-0 p-3">
-        <AttachmentsButton fileInputRef={fileInputRef} status={status} />
+        {onReset && messages.length > 0 && (
+          <ResetButton onReset={onReset} status={status} />
+        )}
       </div>
 
-      <div className="absolute bottom-0 right-0 p-3">
+      <div className="absolute bottom-0 right-0 p-3 flex items-center gap-2">
+        <AttachmentsButton fileInputRef={fileInputRef} status={status} />
         {status === 'submitted' ? (
-          <StopButton stop={stop} setMessages={setMessages} />
+          <StopButton stop={stop} />
         ) : (
           <SendButton
             input={input}
@@ -286,6 +291,8 @@ export const MultimodalInput = memo(
     if (prevProps.input !== nextProps.input) return false;
     if (prevProps.status !== nextProps.status) return false;
     if (!equal(prevProps.attachments, nextProps.attachments)) return false;
+    if (prevProps.onReset !== nextProps.onReset) return false;
+    if (prevProps.messages.length !== nextProps.messages.length) return false;
 
     return true;
   },
@@ -319,10 +326,8 @@ const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureStopButton({
   stop,
-  setMessages,
 }: {
   stop: () => void;
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
 }) {
   return (
     <Button
@@ -333,7 +338,6 @@ function PureStopButton({
       onClick={(event) => {
         event.preventDefault();
         stop();
-        setMessages((messages) => messages);
       }}
     >
       <Square size={16} />
@@ -381,3 +385,35 @@ const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
   if (prevProps.input !== nextProps.input) return false;
   return true;
 });
+
+function PureResetButton({
+  onReset,
+  status,
+}: {
+  onReset: () => void;
+  status: UseChatHelpers<ChatMessage>['status'];
+}) {
+  const isStreaming = status === 'submitted' || status === 'streaming';
+  
+  return (
+    <Button
+      data-testid="reset-button"
+      variant="ghost"
+      size="icon"
+      className={`h-8 w-8 transition-colors ${
+        isStreaming 
+          ? 'text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20' 
+          : 'text-muted-foreground hover:text-foreground hover:bg-accent/80'
+      }`}
+      onClick={(event) => {
+        event.preventDefault();
+        onReset();
+      }}
+      title={isStreaming ? "Stop and reset chat" : "Reset chat"}
+    >
+      <RotateCcw size={16} className={isStreaming ? 'animate-pulse' : ''} />
+    </Button>
+  );
+}
+
+const ResetButton = memo(PureResetButton);

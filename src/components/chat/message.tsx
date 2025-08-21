@@ -8,6 +8,7 @@ import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils/general';
 import { MessageReasoning } from './message-reasoning';
 import { ToolCallErrorBoundary } from './tool-call-error-boundary';
+import { GenomicsToolResult } from './genomics-tool-result';
 import { Dna } from 'lucide-react';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { ChatMessage } from '@/lib/chatbot/types';
@@ -66,8 +67,8 @@ const PurePreviewMessage = ({
           'justify-start': message.role === 'assistant',
         })}>
           {message.role === 'assistant' && (
-            <div className={avatarVariants({ variant: 'assistant', size: 'sm' })}>
-              <Dna size={12} className="text-primary" />
+            <div className={cn(avatarVariants({ variant: 'assistant', size: 'md' }), 'mt-2')}>
+              <Dna size={14} className="text-primary" />
             </div>
           )}
 
@@ -297,41 +298,15 @@ const PurePreviewMessage = ({
                           return (
                             <motion.div 
                               key={`${toolCallId}-success`}
-                              className={messageVariants({ variant: 'genomics', role: 'assistant' })}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={chatAnimations.transition.normal}
                             >
-                              <div className="flex items-center gap-2 text-sm font-medium text-primary border-b border-primary/20 pb-2">
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 300 }}
-                                >
-                                  <div className="p-1 bg-primary/10 rounded-full">
-                                    <Dna size={12} className="text-primary" />
-                                  </div>
-                                </motion.div>
-                                <span>{toolDisplayName} Results</span>
-                                <motion.div
-                                  className="ml-auto text-xs text-muted-foreground"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ delay: 0.3 }}
-                                >
-                                  ✓ Complete
-                                </motion.div>
-                              </div>
-                              <motion.div 
-                                className="text-sm mt-2"
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                              >
-                                <pre className="whitespace-pre-wrap font-mono text-xs bg-muted/50 p-3 rounded-lg max-h-60 overflow-auto">
-                                  {JSON.stringify(output, null, 2)}
-                                </pre>
-                              </motion.div>
+                              <GenomicsToolResult
+                                toolName={toolDisplayName}
+                                result={output}
+                                isError={false}
+                              />
                             </motion.div>
                           );
                         }

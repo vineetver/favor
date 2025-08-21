@@ -112,6 +112,21 @@ export function Chat({
     }
   }, [initialMessages, setMessages]);
 
+  const handleReset = () => {
+    if (status === 'submitted' || status === 'streaming') {
+      stop();
+      setTimeout(() => {
+        setMessages([]);
+        setInput('');
+        setAttachments([]);
+      }, 100);
+    } else {
+      setMessages([]);
+      setInput('');
+      setAttachments([]);
+    }
+  };
+
   return (
     <>
       <DataStreamHandler />
@@ -130,7 +145,7 @@ export function Chat({
         />
         
         <motion.form 
-          className="flex w-full px-4 pb-4 bg-background/95 backdrop-blur-sm border-t border-border/60"
+          className="flex w-full px-4 pb-4 bg-background/95 backdrop-blur-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={chatAnimations.transition.normal}
@@ -147,6 +162,7 @@ export function Chat({
               messages={messages}
               setMessages={setMessages}
               sendMessage={sendMessage}
+              onReset={handleReset}
             />
           )}
         </motion.form>

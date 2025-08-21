@@ -9,10 +9,29 @@ export const displayBarChart = () =>
         category: z.string(),
         value: z.number(),
       })).describe("The data to display in the bar chart"),
+      title: z.string().optional().describe("Chart title"),
+      xLabel: z.string().optional().describe("X-axis label"),
+      yLabel: z.string().optional().describe("Y-axis label"),
     }),
-    execute: async ({ data }) => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return { data };
+    execute: async ({ data, title, xLabel, yLabel }) => {
+      // Transform data to match BarChart component expectations
+      const chartData = data.map(item => ({
+        name: item.category,
+        value: item.value
+      }));
+
+      return {
+        type: 'chart',
+        chartType: 'bar',
+        data: chartData,
+        config: {
+          keys: ['value'],
+          title: title || 'Bar Chart',
+          xLabel: xLabel || 'Category',
+          yLabel: yLabel || 'Value',
+          indexBy: 'name'
+        }
+      };
     },
   });
 

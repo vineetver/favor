@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         const result = streamText({
           model: myProvider.languageModel(model.apiIdentifier),
           system: systemPrompt(model),
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(10),
           messages: convertToModelMessages(uiMessages),
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: tools && Object.keys(tools).length > 0 ? tools : undefined,

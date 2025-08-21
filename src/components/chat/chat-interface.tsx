@@ -7,6 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {
   Sheet,
   SheetContent,
@@ -25,15 +26,17 @@ export function ChatInterface({ selectedModelId }: { selectedModelId: string }) 
   const { isMobile } = useWindowSize();
 
   const CloseButton = ({ onClick }: { onClick?: () => void }) => (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      transition={chatAnimations.spring.snappy}
-      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
-    >
-      <X className="h-4 w-4" />
-    </motion.button>
+    <PopoverPrimitive.Close asChild>
+      <motion.button
+        onClick={onClick}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        transition={chatAnimations.spring.snappy}
+        className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+      >
+        <X className="h-4 w-4" />
+      </motion.button>
+    </PopoverPrimitive.Close>
   );
 
   if (isMobile) {
