@@ -43,7 +43,7 @@ export function Chat({
     error,
   }: UseChatHelpers<ChatMessage> = useChat<ChatMessage>({
     id,
-    experimental_throttle: 25,
+    experimental_throttle: 16,
     generateId: generateUUID,
     transport: new DefaultChatTransport({
       api: '/api/chat',
@@ -78,7 +78,45 @@ export function Chat({
         hasOutput: !!(toolCall as any).output,
         fullToolCall: toolCall
       });
-      // Tool calls are handled server-side, this is for logging
+      
+      // Immediately update the last message to show tool call progress
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages];
+        const lastMessage = newMessages[newMessages.length - 1];
+        
+        if (lastMessage && lastMessage.role === 'assistant') {
+          // Add a temporary tool call part to show immediate progress
+          const tempToolPart = {
+            type: `tool-${toolCall.toolName}` as any,
+            toolCallId: toolCall.toolCallId,
+            toolName: toolCall.toolName,
+            state: 'started',
+            input: (toolCall as any).input || (toolCall as any).args,
+          };
+          
+          lastMessage.parts = lastMessage.parts || [];
+          
+          // Check if this tool call already exists in parts
+          const existingIndex = lastMessage.parts.findIndex(
+            (part: any) => part.toolCallId === toolCall.toolCallId
+          );
+          
+          if (existingIndex === -1) {
+            // Add new tool call part
+            lastMessage.parts.push(tempToolPart);
+          } else {
+            // Update existing tool call part
+            lastMessage.parts[existingIndex] = {
+              ...lastMessage.parts[existingIndex],
+              ...tempToolPart
+            };
+          }
+        }
+        
+        return newMessages;
+      });
+      
+      // Tool calls are handled server-side
       return undefined;
     },
     onFinish: ({ message }) => {

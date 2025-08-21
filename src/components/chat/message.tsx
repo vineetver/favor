@@ -16,12 +16,9 @@ import { messageVariants, avatarVariants, containerVariants } from '@/lib/design
 import { chatAnimations } from '@/lib/design-system/chat-theme';
 
 const PurePreviewMessage = ({
-  chatId,
   message,
   isLoading,
   regenerate,
-  isReadonly,
-  requiresScrollPadding,
 }: {
   chatId: string;
   message: ChatMessage;
@@ -35,35 +32,58 @@ const PurePreviewMessage = ({
     (part) => part.type === 'file',
   ) || [];
 
-  // Function to sanitize message text
   const sanitizeText = (text: string) => {
     return text.replace('<has_function_call>', '');
   };
 
-  // Debug logging for message structure
-  console.log(`[Message] Rendering message:`, {
-    id: message.id?.slice(0, 8),
-    role: message.role,
-    hasContent: !!(message as any).content,
-    contentType: typeof (message as any).content,
-    contentLength: (message as any).content?.length || 0,
-    hasParts: !!(message.parts && message.parts.length > 0),
-    partsCount: message.parts?.length || 0,
-    isLoading,
-    messageKeys: Object.keys(message)
-  });
-
-  // Check if message contains genomics content
   const hasGenomicsContent = (text: string) => {
     const genomicsPatterns = [
-      /rs\d+/i, // SNP IDs
-      /chr\d+:/i, // Chromosome coordinates
-      /\b[A-Z]{3,6}\b/i, // Gene symbols
-      /p\.\w+\d+\w+/i, // Protein variants
-      /c\.\d+/i, // cDNA variants
+      /rs\d+/i, 
+      /chr\d+:/i, 
+      /\b[A-Z]{3,6}\b/i, 
+      /p\.\w+\d+\w+/i, 
+      /c\.\d+/i, 
     ];
     return genomicsPatterns.some(pattern => pattern.test(text));
   };
+
+  // Accumulate all text parts into a single text content
+  const textParts = message.parts?.filter(part => part.type === 'text') || [];
+  const accumulatedText = textParts.map(part => part.text || '').join('');
+
+  // Get all non-text parts (tool calls, data, etc.)
+  const nonTextParts = message.parts?.filter(part => part.type !== 'text') || [];
+
+  // Fallback to direct content field if no text parts exist
+  const directContent = (message as any).content || '';
+  const finalTextContent = accumulatedText || directContent;
+  const hasTextContent = finalTextContent.trim().length > 0;
+
+  // Check if we're actively streaming text (has text parts but they might be incomplete)
+  const isStreamingText = isLoading && message.role === 'assistant' && (textParts.length > 0 || directContent);
+
+  // Debug logging with more details about all parts
+  console.log(`[Message ${message.id?.slice(0, 8)}] Full message debug:`, {
+    hasTextContent,
+    finalTextContentLength: finalTextContent.length,
+    textPartsCount: textParts.length,
+    nonTextPartsCount: nonTextParts.length,
+    isLoading,
+    directContentLength: directContent.length,
+    accumulatedTextLength: accumulatedText.length,
+    totalPartsCount: message.parts?.length || 0,
+    messageRole: message.role,
+    allParts: message.parts?.map((part, i) => ({ 
+      index: i, 
+      type: part.type, 
+      hasText: !!(part as any).text,
+      hasInput: !!(part as any).input,
+      hasArgs: !!(part as any).args,
+      hasToolCallId: !!(part as any).toolCallId,
+      state: (part as any).state,
+      keys: Object.keys(part)
+    }))
+  });
 
   return (
     <AnimatePresence>
@@ -109,443 +129,200 @@ const PurePreviewMessage = ({
               </div>
             )}
 
-            {/* Handle direct content field from AI SDK */}
-            {(message as any).content && typeof (message as any).content === 'string' ? (
-              <div
-                data-testid="message-content-direct"
-                className={messageVariants({
-                  role: message.role,
-                  variant: hasGenomicsContent((message as any).content) && message.role === 'assistant' ? 'genomics' : 'default',
-                })}
-              >
-                <Markdown>{sanitizeText((message as any).content)}</Markdown>
-              </div>
-            ) : 
-            /* Render message parts or show loading state for empty assistant messages */
-            message.parts && message.parts.length > 0 ? (
-              message.parts.map((part, index) => {
-                const { type } = part;
-                const key = `message-${message.id}-part-${index}`;
+            {/* Render parts in chronological order as they arrive */}
+            {message.parts?.map((part, index) => {
+              const { type } = part;
+              const key = `message-${message.id}-part-${index}`;
 
-                // Debug logging for all message parts
-                console.log(`[Message] Processing part ${index}:`, {
-                  type,
-                  messageId: message.id?.slice(0, 8),
-                  messageRole: message.role,
-                  partKeys: Object.keys(part),
-                  isLoading
-                });
+              // Debug each part as it's processed
+              console.log(`[Message ${message.id?.slice(0, 8)}] Processing part ${index}:`, {
+                type,
+                keys: Object.keys(part),
+                toolCallId: (part as any).toolCallId?.slice(0, 8),
+                state: (part as any).state,
+                hasInput: !!(part as any).input,
+                hasOutput: !!(part as any).output
+              });
 
-                if (type === 'reasoning' && part.text?.trim().length > 0) {
-                  return (
-                    <MessageReasoning
-                      key={key}
-                      isLoading={isLoading}
-                      reasoning={part.text}
+              // Handle reasoning parts
+              if (type === 'reasoning' && part.text?.trim().length > 0) {
+                return (
+                  <MessageReasoning
+                    key={key}
+                    isLoading={isLoading}
+                    reasoning={part.text}
+                  />
+                );
+              }
+
+              // Handle text parts - show each text part as it arrives
+              if (type === 'text' && part.text?.trim()) {
+                return (
+                  <motion.div
+                    key={key}
+                    data-testid="message-content"
+                    className={messageVariants({
+                      role: message.role,
+                      variant: hasGenomicsContent(part.text) && message.role === 'assistant' ? 'genomics' : 'default',
+                    })}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={chatAnimations.transition.normal}
+                  >
+                    <Markdown>{sanitizeText(part.text)}</Markdown>
+                    {isStreamingText && (
+                      <motion.span 
+                        className="inline-block w-2 h-4 bg-primary/60 ml-1"
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+                    )}
+                  </motion.div>
+                );
+              }
+
+              // Handle data parts
+              if (type.startsWith('data-') && (part as any).data) {
+                return (
+                  <motion.div
+                    key={key}
+                    className={messageVariants({ variant: 'genomics', role: 'assistant' })}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={chatAnimations.transition.normal}
+                  >
+                    <GenomicsToolResult
+                      toolName="Data Stream"
+                      result={(part as any).data}
+                      isError={false}
                     />
-                  );
-                }
+                  </motion.div>
+                );
+              }
 
-                if (type === 'text') {
-                  const textContent = part.text || '';
-                  const isGenomicsContent = hasGenomicsContent(textContent);
+              // Handle tool calls
+              if (type?.startsWith('tool-')) {
+                const { toolName, state, input, output, args } = part as any;
+                const extractedToolName = type.replace('tool-', '');
+                const toolDisplayName = toolName || extractedToolName || 'Analysis';
 
-                  return (
-                    <div
-                      key={key}
-                      data-testid="message-content"
-                      className={messageVariants({
-                        role: message.role,
-                        variant: isGenomicsContent && message.role === 'assistant' ? 'genomics' : 'default',
-                      })}
-                    >
-                      <Markdown>{sanitizeText(textContent)}</Markdown>
-                    </div>
-                  );
-                }
-
-                // Handle AI SDK streaming delta parts and data parts
-                if (type && (type.includes('delta') || type === 'data')) {
-                  const deltaContent = (part as any).text || '';
-                  const dataContent = (part as any).data;
-                  
-                  // Handle structured data parts for genomics results
-                  if (type === 'data' && dataContent) {
-                    return (
-                      <motion.div
-                        key={key}
-                        className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={chatAnimations.transition.normal}
-                      >
-                        <GenomicsToolResult
-                          toolName="Data Stream"
-                          result={dataContent}
-                          isError={false}
-                        />
-                      </motion.div>
-                    );
-                  }
-                  
-                  // Handle text deltas
-                  if (deltaContent) {
-                    return (
-                      <div
-                        key={key}
-                        data-testid="message-content-delta"
-                        className={messageVariants({
-                          role: message.role,
-                          variant: hasGenomicsContent(deltaContent) && message.role === 'assistant' ? 'genomics' : 'default',
-                        })}
-                      >
-                        <Markdown>{sanitizeText(deltaContent)}</Markdown>
-                      </div>
-                    );
-                  }
-                  
-                  return null;
-                }
-
-                // Handle step-start parts (skip these as they're for AI SDK internal use)
-                if (type && type.includes('step-')) {
-                  return null;
-                }
-
-                // Handle all genomics tool calls with AI SDK 5 enhanced state management
-                if (type?.startsWith('tool-')) {
-                  const { toolCallId, toolName, state, input, output, args } = part as any;
-                  const extractedToolName = type.replace('tool-', '');
-                  const toolDisplayName = toolName || extractedToolName || 'Analysis';
-
-                  // Debug logging for all tool call states with enhanced info
-                  console.log(`[Message] Tool call state:`, {
-                    type,
-                    toolCallId: toolCallId?.slice(0, 8),
-                    toolName,
-                    state,
-                    hasInput: !!input,
-                    hasArgs: !!args,
-                    hasOutput: !!output,
-                    inputKeys: input ? Object.keys(input) : [],
-                    outputType: output ? typeof output : 'none',
-                    partKeys: Object.keys(part),
-                    fullPart: part
-                  });
-
-                  return (
-                    <ToolCallErrorBoundary 
-                      key={`${toolCallId}-boundary`} 
-                      toolName={toolDisplayName}
-                      onRetry={() => {
-                        regenerate?.();
-                      }}
-                    >
-                      {(() => {
-                        // PRIORITY: Handle completed tool calls first (output-available/completed)
-                        if (state === 'output-available' || state === 'completed') {
-                          // Handle error case
-                          if (output && 'error' in output) {
-                            return (
-                              <motion.div 
-                                key={`${toolCallId}-error`}
-                                className={messageVariants({ variant: 'error', role: 'assistant' })}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                              >
-                                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                                  <Dna size={14} />
-                                  <span>{toolDisplayName} Error</span>
-                                </div>
-                                <div className="text-sm text-destructive mt-1">
-                                  {String(output.error)}
-                                </div>
-                              </motion.div>
-                            );
-                          }
-
-                          // Handle successful output
+                return (
+                  <ToolCallErrorBoundary 
+                    key={key}
+                    toolName={toolDisplayName}
+                    onRetry={() => regenerate?.()}
+                  >
+                    {(() => {
+                      // Handle completed tool calls
+                      if (state === 'output-available' || state === 'completed') {
+                        if (output && 'error' in output) {
                           return (
                             <motion.div 
-                              key={`${toolCallId}-success`}
-                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ 
-                                duration: 0.4, 
-                                ease: "easeOut",
-                                type: "spring",
-                                stiffness: 300,
-                                damping: 30
-                              }}
-                            >
-                              <GenomicsToolResult
-                                toolName={toolDisplayName}
-                                result={output}
-                                isError={false}
-                              />
-                            </motion.div>
-                          );
-                        }
-
-                        // Handle initial tool call detection (any tool call with input but unclear state)
-                        if ((!state || state === undefined) && (input || args)) {
-                          const displayData = input || args;
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-preparing`}
-                              className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={chatAnimations.transition.normal}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                                >
-                                  <Dna size={14} />
-                                </motion.div>
-                                <span>Running {toolDisplayName}...</span>
-                                <motion.div 
-                                  className="ml-2 flex gap-1"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ delay: 0.5 }}
-                                >
-                                  {[0, 1, 2].map((i) => (
-                                    <motion.div
-                                      key={i}
-                                      className="w-1 h-1 bg-primary/60 rounded-full"
-                                      animate={{ scale: [1, 1.5, 1] }}
-                                      transition={{ 
-                                        duration: 1, 
-                                        repeat: Infinity, 
-                                        delay: i * 0.2 
-                                      }}
-                                    />
-                                  ))}
-                                </motion.div>
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                <div className="bg-muted/30 p-2 rounded text-xs">
-                                  <div className="font-medium mb-1">Query:</div>
-                                  <div className="truncate">{JSON.stringify(displayData).slice(0, 100)}...</div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        }
-
-                        // Handle any tool call that exists but doesn't match other states
-                        if (toolCallId && !state) {
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-initializing`}
-                              className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={chatAnimations.transition.normal}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                >
-                                  <Dna size={14} />
-                                </motion.div>
-                                <span>Executing {toolDisplayName}...</span>
-                              </div>
-                            </motion.div>
-                          );
-                        }
-
-                        // Tool call started - show preparation
-                        if (state === 'started' || state === 'input-available') {
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-executing`}
-                              className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={chatAnimations.transition.normal}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                >
-                                  <Dna size={14} />
-                                </motion.div>
-                                <span>Executing {toolDisplayName}...</span>
-                              </div>
-                              <div className="flex items-center gap-1 mt-2">
-                                <div className="h-1 w-8 bg-primary/20 rounded">
-                                  <motion.div 
-                                    className="h-full bg-primary rounded"
-                                    animate={{ width: ["0%", "100%"] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                  />
-                                </div>
-                                <span className="text-xs text-muted-foreground">Querying database...</span>
-                              </div>
-                            </motion.div>
-                          );
-                        }
-
-                        // Tool call streaming - show progress
-                        if (state === 'streaming' || state === 'partial-call') {
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-streaming`}
-                              className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                                <motion.div
-                                  animate={{ scale: [1, 1.2, 1] }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                >
-                                  <Dna size={14} />
-                                </motion.div>
-                                <span>Processing {toolDisplayName}...</span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                <div className="flex gap-1">
-                                  {[0, 1, 2].map((i) => (
-                                    <motion.div
-                                      key={i}
-                                      className="w-1 h-1 bg-primary rounded-full"
-                                      animate={{ opacity: [0.4, 1, 0.4] }}
-                                      transition={{ 
-                                        duration: 1.2, 
-                                        repeat: Infinity, 
-                                        delay: i * 0.3 
-                                      }}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="text-xs text-muted-foreground">Analyzing genomics data...</span>
-                              </div>
-                            </motion.div>
-                          );
-                        }
-
-
-                        // Tool call cancelled
-                        if (state === 'cancelled') {
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-cancelled`}
-                              className={messageVariants({ variant: 'default', role: 'assistant' })}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 0.6 }}
-                            >
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Dna size={14} />
-                                <span>{toolDisplayName} cancelled</span>
-                                <span className="text-xs">⊘</span>
-                              </div>
-                            </motion.div>
-                          );
-                        }
-
-                        // Tool call failed
-                        if (state === 'failed' || state === 'error') {
-                          return (
-                            <motion.div 
-                              key={`${toolCallId}-failed`}
                               className={messageVariants({ variant: 'error', role: 'assistant' })}
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                             >
                               <div className="flex items-center gap-2 text-sm font-medium text-destructive">
                                 <Dna size={14} />
-                                <span>{toolDisplayName} Failed</span>
-                                <span className="text-xs">✗</span>
+                                <span>{toolDisplayName} Error</span>
                               </div>
                               <div className="text-sm text-destructive mt-1">
-                                Tool execution failed. Please try again.
+                                {String(output.error)}
                               </div>
                             </motion.div>
                           );
                         }
 
-                        // Fallback for unknown/undefined states
                         return (
                           <motion.div 
-                            key={`${toolCallId}-unknown`}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ 
+                              duration: 0.4, 
+                              ease: "easeOut",
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 30
+                            }}
+                          >
+                            <GenomicsToolResult
+                              toolName={toolDisplayName}
+                              result={output}
+                              isError={false}
+                            />
+                          </motion.div>
+                        );
+                      }
+
+                      // Handle tool calls in progress
+                      if (state === 'started' || state === 'input-available' || state === 'streaming' || state === 'partial-call' || (!state && (input || args))) {
+                        return (
+                          <motion.div 
                             className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={chatAnimations.transition.normal}
                           >
                             <div className="flex items-center gap-2 text-sm font-medium text-primary">
                               <motion.div
                                 animate={{ rotate: 360 }}
-                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                               >
                                 <Dna size={14} />
                               </motion.div>
-                              <span>Initializing {toolDisplayName}...</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              State: {state || 'unknown'}
+                              <span>Running {toolDisplayName}...</span>
                             </div>
                           </motion.div>
                         );
-                      })()}
-                    </ToolCallErrorBoundary>
-                  );
-                }
+                      }
 
-                return null;
-              })
-            ) : (
-              // Handle empty assistant messages 
-              message.role === 'assistant' && isLoading ? (
-                <motion.div
-                  className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={chatAnimations.transition.normal}
-                >
-                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Dna size={14} />
-                    </motion.div>
-                    <span>Analyzing...</span>
-                  </div>
-                </motion.div>
-              ) : message.role === 'assistant' ? (
-                // Create an empty streamable container for assistant messages
-                <div
-                  data-testid="message-content-streaming"
-                  className={messageVariants({ 
-                    role: 'assistant',
-                    variant: 'default' 
-                  })}
-                >
-                  <div className="min-h-[1rem]">
-                    {/* Cursor indicator for streaming */}
-                    <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1" />
-                  </div>
+                      return null;
+                    })()}
+                  </ToolCallErrorBoundary>
+                );
+              }
+
+              return null;
+            })}
+
+            {/* Loading state for completely empty assistant messages - only show if truly no content */}
+            {!hasTextContent && nonTextParts.length === 0 && message.role === 'assistant' && isLoading && (
+              <motion.div
+                className={messageVariants({ variant: 'genomics', role: 'assistant' })}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={chatAnimations.transition.normal}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Dna size={14} />
+                  </motion.div>
+                  <span>Thinking...</span>
                 </div>
-              ) : (
-                // Fallback for user messages or other roles
-                <div
-                  data-testid="message-content-fallback"
-                  className={messageVariants({ role: message.role })}
-                >
-                  <div className="text-sm">
-                    {(message as any).content || 
-                     (message as any).text || 
-                     'Message content unavailable'}
-                  </div>
+              </motion.div>
+            )}
+
+            {/* Show additional loading indicator when text is done but tool calls are still running */}
+            {hasTextContent && nonTextParts.some((part: any) => part.type?.startsWith('tool-') && (!part.state || part.state === 'started' || part.state === 'input-available' || part.state === 'streaming')) && isLoading && (
+              <motion.div
+                className={messageVariants({ variant: 'genomics', role: 'assistant' })}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={chatAnimations.transition.normal}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-primary/70">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Dna size={12} />
+                  </motion.div>
+                  <span>Running analysis tools...</span>
                 </div>
-              )
+              </motion.div>
             )}
 
           </div>
@@ -557,7 +334,27 @@ const PurePreviewMessage = ({
 
 export const PreviewMessage = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.isLoading !== nextProps.isLoading) return false;
-  if (!equal(prevProps.message, nextProps.message)) return false;
+  if (prevProps.message.id !== nextProps.message.id) return false;
+  if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding) return false;
+  
+  // Check if text content has changed (accumulated from parts)
+  const prevText = prevProps.message.parts
+    ?.filter(part => part.type === 'text')
+    ?.map(part => part.text || '')
+    .join('') || (prevProps.message as any).content || '';
+  
+  const nextText = nextProps.message.parts
+    ?.filter(part => part.type === 'text')
+    ?.map(part => part.text || '')
+    .join('') || (nextProps.message as any).content || '';
+  
+  if (prevText !== nextText) return false;
+  
+  // Check if non-text parts have changed
+  const prevNonTextParts = prevProps.message.parts?.filter(part => part.type !== 'text') || [];
+  const nextNonTextParts = nextProps.message.parts?.filter(part => part.type !== 'text') || [];
+  
+  if (!equal(prevNonTextParts, nextNonTextParts)) return false;
 
   return true;
 });

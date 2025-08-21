@@ -1,13 +1,12 @@
 import { chord, ribbon } from "d3-chord";
 import { arc } from "d3-shape";
-import { scaleOrdinal } from "d3-scale";
 import type { ChordData, NetworkNode } from "@/components/features/gene/ppi/shared/types";
-import type { ChordConfig, ChordArc, ChordRibbon } from "@/components/features/gene/ppi/visualizations/chord/chord-types";
+import type { ChordConfig, ChordArc } from "@/components/features/gene/ppi/visualizations/chord/chord-types";
 
 export function createChordLayout(data: ChordData, config: ChordConfig) {
   const chordLayout = chord()
     .padAngle(config.padAngle)
-    .sortSubgroups((a, b) => b - a);
+    .sortSubgroups((a: number, b: number) => b - a);
 
   const chords = chordLayout(data.matrix);
 

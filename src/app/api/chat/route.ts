@@ -59,8 +59,8 @@ export async function POST(request: Request) {
           stopWhen: stepCountIs(10),
           messages: convertToModelMessages(uiMessages),
           experimental_transform: smoothStream({ 
-            chunking: 'word',
-            delayInMs: 10
+            chunking: 'line',
+            delayInMs: 30
           }),
           tools: tools && Object.keys(tools).length > 0 ? tools : undefined,
           experimental_telemetry: {
