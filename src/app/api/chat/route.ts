@@ -67,8 +67,6 @@ export async function POST(request: Request) {
           ...modelConfig,
         });
 
-        result.consumeStream();
-
         dataStream.merge(
           result.toUIMessageStream({
             sendReasoning: true,

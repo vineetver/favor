@@ -24,34 +24,34 @@ import { getBiogridInteractions, getIntactInteractions, getHuriInteractions, get
 import { displayBarChart, getFieldDescription } from './visualization';
 import { getCRISPRData, getChiaPetData, getEQTLData } from './experimental';
 
-// Export all tools in one object - lazy initialization to avoid circular dependencies
+// Export all tools in one object - static definitions for AI SDK 5 compatibility
 export const tools = {
   // Variant tools
-  get getVariant() { return getVariantInfo(); },
-  get ccreTool() { return getCCREData(); },
+  getVariant: getVariantInfo(),
+  ccreTool: getCCREData(),
   
   // Gene tools
-  get getGeneSummary() { return getGeneSummary(); },
-  get getGeneAnnotation() { return getGeneAnnotation(); },
-  get getGeneVariants() { return getGeneVariants(); },
+  getGeneSummary: getGeneSummary(),
+  getGeneAnnotation: getGeneAnnotation(),
+  getGeneVariants: getGeneVariants(),
   
   // Region tools
-  get getRegionSummary() { return getRegionSummary(); },
-  get getRegionVariants() { return getRegionVariants(); },
+  getRegionSummary: getRegionSummary(),
+  getRegionVariants: getRegionVariants(),
   
   // Interaction tools
-  get getBiogrid() { return getBiogridInteractions(); },
-  get getIntact() { return getIntactInteractions(); },
-  get getHuri() { return getHuriInteractions(); },
-  get getPathwayPairs() { return getPathwayPairs(); },
-  get getPathwayGenes() { return getPathwayGenes(); },
+  getBiogrid: getBiogridInteractions(),
+  getIntact: getIntactInteractions(),
+  getHuri: getHuriInteractions(),
+  getPathwayPairs: getPathwayPairs(),
+  getPathwayGenes: getPathwayGenes(),
   
   // Visualization tools
-  get displayBarChart() { return displayBarChart(); },
-  get getDescription() { return getFieldDescription(); },
+  displayBarChart: displayBarChart(),
+  getDescription: getFieldDescription(),
   
   // Experimental tools
-  get crisprLinksTool() { return getCRISPRData(); },
-  get chiaPetLinksTool() { return getChiaPetData(); },
-  get eqtlLinksTool() { return getEQTLData(); },
+  crisprLinksTool: getCRISPRData(),
+  chiaPetLinksTool: getChiaPetData(),
+  eqtlLinksTool: getEQTLData(),
 };

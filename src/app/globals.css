@@ -60,28 +60,6 @@
     0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
     0px 8px 10px -1px oklch(0 0 0 / 1% / 0.01);
   --shadow-2xl: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.03);
-
-  /* Chat-specific design tokens */
-  --chat-space-xs: 0.5rem;
-  --chat-space-sm: 0.75rem;
-  --chat-space-md: 1rem;
-  --chat-space-lg: 1.5rem;
-  --chat-space-xl: 2rem;
-  
-  --chat-radius-sm: 0.5rem;
-  --chat-radius-md: 0.75rem;
-  --chat-radius-lg: 1rem;
-  --chat-radius-xl: 1.25rem;
-  
-  --chat-container-sm: 20rem;
-  --chat-container-md: 28rem;
-  --chat-container-lg: 48rem;
-  --chat-container-xl: 56rem;
-  
-  --chat-alpha-subtle: 0.05;
-  --chat-alpha-muted: 0.1;
-  --chat-alpha-soft: 0.2;
-  --chat-alpha-medium: 0.5;
 }
 
 @theme inline {

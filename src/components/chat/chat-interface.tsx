@@ -85,7 +85,7 @@ export function ChatInterface({ selectedModelId }: { selectedModelId: string }) 
           </FABButton>
         </motion.div>
       </PopoverTrigger>
-      <PopoverContent className="bg-background text-foreground md:m-4 md:h-[610px] md:w-[650px] p-0 border border-border shadow-xl">
+      <PopoverContent className="bg-background text-foreground p-0 md:m-4 md:h-[580px] md:w-[850px] md:max-w-[90vw] md:max-h-[80vh]">
         <DataStreamProvider>
           <Chat
             key="desktop-chat"

@@ -26,33 +26,6 @@ export async function saveModelId(modelId: string) {
   return saveChatModelAsCookie(modelId);
 }
 
-export async function generateTitleFromUserMessage({
-  message,
-}: {
-  message: UIMessage;
-}) {
-  try {
-    const { text: title } = await generateText({
-      model: myProvider.languageModel('title-model'),
-      system: `Generate a concise title for this genomics/biology conversation:
-      - Maximum 60 characters
-      - Focus on the main biological concept (gene, variant, pathway, etc.)
-      - Use scientific terminology when appropriate
-      - No quotes or special characters`,
-      prompt: JSON.stringify(message),
-    });
-
-    return title;
-  } catch (error) {
-    console.error('Failed to generate title:', error);
-    // Fallback to a simple truncated version
-    const content = typeof message.content === 'string' 
-      ? message.content 
-      : JSON.stringify(message.content);
-    return content.substring(0, 50) + (content.length > 50 ? '...' : '');
-  }
-}
-
 export async function getChatModelFromCookie(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get('model-id')?.value || null;

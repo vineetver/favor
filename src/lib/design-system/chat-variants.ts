@@ -1,24 +1,24 @@
 import { cva } from 'class-variance-authority';
 
 export const messageVariants = cva(
-  'flex flex-col gap-3 rounded-xl p-4 max-w-2xl transition-all duration-200',
+  'flex flex-col gap-2 max-w-[85%] transition-all duration-200',
   {
     variants: {
       role: {
-        user: 'bg-primary text-primary-foreground ml-auto w-fit shadow-sm',
-        assistant: 'bg-card/60 border border-border/60 backdrop-blur-sm shadow-sm',
-        system: 'bg-muted/50 border border-muted-foreground/20 text-muted-foreground',
+        user: 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 ml-auto w-fit rounded-2xl rounded-br-md px-4 py-3 shadow-md',
+        assistant: 'bg-muted/50 border-0 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm',
+        system: 'bg-muted/50 border border-muted-foreground/20 text-muted-foreground rounded-xl px-3 py-2',
       },
       variant: {
         default: '',
-        genomics: 'bg-gradient-to-br from-primary/8 to-primary/12 border-primary/25',
-        error: 'bg-destructive/10 border-destructive/30 text-destructive-foreground',
+        genomics: 'bg-gradient-to-br from-primary/5 to-primary/8 border-l-4 border-primary/40 rounded-l-xl',
+        error: 'bg-destructive/5 border-l-4 border-destructive/60 text-destructive-foreground rounded-l-xl',
         loading: 'animate-pulse',
       },
       size: {
-        sm: 'p-3 text-sm',
-        md: 'p-4 text-base',
-        lg: 'p-5 text-lg',
+        sm: 'px-3 py-2 text-sm',
+        md: 'px-4 py-3 text-base',
+        lg: 'px-5 py-4 text-lg',
       },
     },
     defaultVariants: {

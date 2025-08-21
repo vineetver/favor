@@ -42,7 +42,7 @@ export function Chat({
     regenerate,
   } = useChat<ChatMessage>({
     id,
-    experimental_throttle: 100,
+    experimental_throttle: 200,
     generateId: generateUUID,
     transport: new DefaultChatTransport({
       api: '/api/chat',
@@ -63,6 +63,35 @@ export function Chat({
     onData: (dataPart) => {
       console.log('[Chat] Received data part:', dataPart);
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+    },
+    onToolCall: async ({ toolCall }) => {
+      console.log('[Chat] Tool call received:', {
+        toolCallId: toolCall.toolCallId?.slice(0, 8),
+        toolName: toolCall.toolName,
+        state: (toolCall as any).state,
+        hasInput: !!(toolCall as any).input,
+        hasOutput: !!(toolCall as any).output,
+        fullToolCall: toolCall
+      });
+      // Tool calls are handled server-side, this is for logging
+      return undefined;
+    },
+    onFinish: ({ message }) => {
+      console.log('[Chat] Message finished:', {
+        id: message.id?.slice(0, 8),
+        role: message.role,
+        partsCount: message.parts?.length || 0,
+        partTypes: message.parts?.map((p: any) => p.type) || [],
+        fullMessage: message
+      });
+      
+      // Filter out empty messages
+      if (message.role === 'assistant' && (!message.parts || message.parts.length === 0)) {
+        console.warn('[Chat] Received empty assistant message, filtering out');
+        setMessages((currentMessages) => 
+          currentMessages.filter(m => m.id !== message.id)
+        );
+      }
     },
     onError: (error) => {
       console.error('[Chat] useChat error:', error);
@@ -86,7 +115,7 @@ export function Chat({
   return (
     <>
       <DataStreamHandler />
-      <div className="flex flex-col min-w-0 h-full bg-background">
+      <div className="flex flex-col w-full h-full bg-background overflow-hidden">
         <ChatHeader selectedModelId={selectedModelId} onClose={onClose} Close={Close} />
         
         <Messages
@@ -97,10 +126,11 @@ export function Chat({
           isReadonly={isReadonly}
           isArtifactVisible={false}
           selectedModelId={selectedModelId}
+          setInput={setInput}
         />
         
         <motion.form 
-          className="flex mx-auto gap-2 w-full md:max-w-3xl px-4 pb-4 bg-background/95 backdrop-blur-sm border-t border-border/60"
+          className="flex w-full px-4 pb-4 bg-background/95 backdrop-blur-sm border-t border-border/60"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={chatAnimations.transition.normal}
@@ -117,7 +147,6 @@ export function Chat({
               messages={messages}
               setMessages={setMessages}
               sendMessage={sendMessage}
-              selectedVisibilityType="public"
             />
           )}
         </motion.form>

@@ -9,28 +9,41 @@ export const messageMetadataSchema = z.object({
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
 
-// Define tool types for genomics tools
+// Define tool types for genomics tools - matching actual tools from tools/index.ts
 export type GenomicsTools = {
-  getVariantInfo: InferUITool<any>;
-  getGeneExpression: InferUITool<any>;
-  analyzePathways: InferUITool<any>;
-  getProteinInteractions: InferUITool<any>;
-  findClinicalTrials: InferUITool<any>;
-  analyzeSequence: InferUITool<any>;
+  // Variant tools
+  getVariant: InferUITool<any>;
+  ccreTool: InferUITool<any>;
+  
+  // Gene tools
+  getGeneSummary: InferUITool<any>;
+  getGeneAnnotation: InferUITool<any>;
+  getGeneVariants: InferUITool<any>;
+  
+  // Region tools
+  getRegionSummary: InferUITool<any>;
+  getRegionVariants: InferUITool<any>;
+  
+  // Interaction tools
+  getBiogrid: InferUITool<any>;
+  getIntact: InferUITool<any>;
+  getHuri: InferUITool<any>;
+  getPathwayPairs: InferUITool<any>;
+  getPathwayGenes: InferUITool<any>;
+  
+  // Visualization tools
+  displayBarChart: InferUITool<any>;
+  getDescription: InferUITool<any>;
+  
+  // Experimental tools
+  crisprLinksTool: InferUITool<any>;
+  chiaPetLinksTool: InferUITool<any>;
+  eqtlLinksTool: InferUITool<any>;
 };
 
+// Custom UI data types for genomics-specific streaming data
 export type CustomUIDataTypes = {
-  textDelta: string;
-  imageDelta: string;
-  sheetDelta: string;
-  codeDelta: string;
-  appendMessage: string;
-  id: string;
-  title: string;
-  kind: string;
-  clear: null;
-  finish: null;
-  // Add genomics-specific data types
+  // Genomics data streaming types - these match what you use in data-stream-handler.tsx
   variantAnnotation: {
     rsid: string;
     chromosome: string;
@@ -51,6 +64,13 @@ export type CustomUIDataTypes = {
     genes: string[];
     enrichmentScore: number;
   };
+  interactionNetwork: {
+    sourceGene: string;
+    targetGene: string;
+    interactionType: string;
+    confidence: number;
+  };
+  chartData: any; // For visualization data
 };
 
 export type ChatMessage = UIMessage<

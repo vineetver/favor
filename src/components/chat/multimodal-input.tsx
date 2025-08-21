@@ -20,13 +20,11 @@ import { ArrowUp, Paperclip, Square } from 'lucide-react';
 import { PreviewAttachment } from '@/components/chat/preview-attachment';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
-import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
-import type { Attachment, ChatMessage, VisibilityType } from '@/lib/chatbot/types';
+import type { Attachment, ChatMessage } from '@/lib/chatbot/types';
 import { buttonVariants, inputVariants } from '@/lib/design-system/chat-variants';
 import { chatAnimations } from '@/lib/design-system/chat-theme';
 
@@ -42,7 +40,6 @@ function PureMultimodalInput({
   setMessages,
   sendMessage,
   className,
-  selectedVisibilityType,
 }: {
   chatId: string;
   input: string;
@@ -55,7 +52,6 @@ function PureMultimodalInput({
   setMessages: UseChatHelpers<ChatMessage>['setMessages'];
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
   className?: string;
-  selectedVisibilityType: VisibilityType;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isMobile } = useWindowSize();
@@ -198,47 +194,10 @@ function PureMultimodalInput({
     [setAttachments],
   );
 
-  const { isAtBottom, scrollToBottom } = useScrollToBottom();
-
-  useEffect(() => {
-    if (status === 'submitted') {
-      scrollToBottom();
-    }
-  }, [status, scrollToBottom]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">
-      <AnimatePresence>
-        {!isAtBottom && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="absolute left-1/2 bottom-28 -translate-x-1/2 z-50"
-          >
-            <Button
-              data-testid="scroll-to-bottom-button"
-              className={buttonVariants({ variant: 'outline', size: 'icon' })}
-              onClick={(event) => {
-                event.preventDefault();
-                scrollToBottom();
-              }}
-            >
-              <ArrowDown size={16} />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <SuggestedActions
-            sendMessage={sendMessage}
-            selectedVisibilityType={selectedVisibilityType}
-          />
-        )}
 
       <input
         type="file"
@@ -252,7 +211,7 @@ function PureMultimodalInput({
       {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div
           data-testid="attachments-preview"
-          className="flex flex-row gap-2 overflow-x-scroll items-end"
+          className="flex flex-row gap-2 overflow-x-auto items-end scrollbar-hide"
         >
           {attachments.map((attachment) => (
             <PreviewAttachment key={attachment.url} attachment={attachment} />
@@ -280,7 +239,7 @@ function PureMultimodalInput({
         onChange={handleInput}
         className={cx(
           inputVariants({ variant: 'elevated' }),
-          'min-h-[60px] max-h-[calc(75dvh)] overflow-hidden resize-none pb-12',
+          'min-h-[60px] max-h-[calc(75dvh)] overflow-hidden resize-none pl-12 pr-12 pb-3',
           className,
         )}
         rows={2}
@@ -302,11 +261,11 @@ function PureMultimodalInput({
         }}
       />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
+      <div className="absolute bottom-0 left-0 p-3">
         <AttachmentsButton fileInputRef={fileInputRef} status={status} />
       </div>
 
-      <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+      <div className="absolute bottom-0 right-0 p-3">
         {status === 'submitted' ? (
           <StopButton stop={stop} setMessages={setMessages} />
         ) : (
@@ -327,8 +286,6 @@ export const MultimodalInput = memo(
     if (prevProps.input !== nextProps.input) return false;
     if (prevProps.status !== nextProps.status) return false;
     if (!equal(prevProps.attachments, nextProps.attachments)) return false;
-    if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType)
-      return false;
 
     return true;
   },
@@ -344,7 +301,9 @@ function PureAttachmentsButton({
   return (
     <Button
       data-testid="attachments-button"
-      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
       onClick={(event) => {
         event.preventDefault();
         fileInputRef.current?.click();
@@ -368,7 +327,9 @@ function PureStopButton({
   return (
     <Button
       data-testid="stop-button"
-      className={buttonVariants({ variant: 'outline', size: 'icon' })}
+      variant="outline"
+      size="icon"
+      className="h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50"
       onClick={(event) => {
         event.preventDefault();
         stop();
@@ -391,15 +352,23 @@ function PureSendButton({
   input: string;
   uploadQueue: Array<string>;
 }) {
+  const isDisabled = input.length === 0 || uploadQueue.length > 0;
+  
   return (
     <Button
       data-testid="send-button"
-      className={buttonVariants({ variant: 'default', size: 'icon' })}
+      variant="default"
+      size="icon"
+      className={`h-8 w-8 ${
+        isDisabled 
+          ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+          : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
+      } transition-all duration-200`}
       onClick={(event) => {
         event.preventDefault();
         submitForm();
       }}
-      disabled={input.length === 0 || uploadQueue.length > 0}
+      disabled={isDisabled}
     >
       <ArrowUp size={16} />
     </Button>

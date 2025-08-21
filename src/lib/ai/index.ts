@@ -23,7 +23,10 @@ export const myProvider = customProvider({
   languageModels: {
     "gpt-4o-mini": openai("gpt-4o-mini"),
     "gpt-3.5-turbo": openai("gpt-3.5-turbo"),
-    "deepseek-chat": deepseek("deepseek-reasoner"),
+    "deepseek-chat": wrapLanguageModel({
+      model: deepseek("deepseek-reasoner"),
+      middleware: extractReasoningMiddleware({ tagName: 'think' }),
+    }),
   },
 });
 
