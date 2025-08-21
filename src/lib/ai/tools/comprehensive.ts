@@ -39,16 +39,6 @@ export function getComprehensiveGeneSummary() {
       geneName: z.string().describe('Gene name (e.g., BRCA1, TP53)'),
       category: z.enum(['SNV-summary', 'InDel-summary', 'total-summary']).optional().describe('Type of summary to retrieve')
     }),
-    outputSchema: z.object({
-      gene: z.string(),
-      summary: z.object({
-        total_variants: z.number().optional(),
-        clinvar_variants: z.number().optional(),
-        pathogenic_variants: z.number().optional(),
-        benign_variants: z.number().optional(),
-      }).optional(),
-      error: z.string().optional(),
-    }),
     execute: async ({ geneName, category = 'total-summary' }) => {
       const result = await fetchGeneSummary(geneName);
       if (!result) return { error: `No data found for gene ${geneName}` };
@@ -73,15 +63,6 @@ export function getGeneAnnotationData() {
     description: 'Get detailed gene-level annotations including functional information',
     inputSchema: z.object({
       geneName: z.string().describe('Gene name to get annotations for')
-    }),
-    outputSchema: z.object({
-      gene: z.string(),
-      annotation: z.any(),
-      metadata: z.object({
-        dataType: z.string(),
-        source: z.string(),
-      }),
-      error: z.string().optional(),
     }),
     execute: async ({ geneName }) => {
       const result = await fetchGeneAnnotation(geneName);

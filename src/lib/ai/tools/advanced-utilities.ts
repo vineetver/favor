@@ -70,10 +70,10 @@ export function filterAndSortData() {
           switch (filter.operator) {
             case 'eq': return value === filter.value;
             case 'ne': return value !== filter.value;
-            case 'gt': return value > filter.value;
-            case 'gte': return value >= filter.value;
-            case 'lt': return value < filter.value;
-            case 'lte': return value <= filter.value;
+            case 'gt': return (value as number) > (filter.value as number);
+            case 'gte': return (value as number) >= (filter.value as number);
+            case 'lt': return (value as number) < (filter.value as number);
+            case 'lte': return (value as number) <= (filter.value as number);
             case 'contains': return String(value).includes(String(filter.value));
             case 'startsWith': return String(value).startsWith(String(filter.value));
             case 'endsWith': return String(value).endsWith(String(filter.value));
@@ -85,8 +85,8 @@ export function filterAndSortData() {
       // Apply sorting
       if (sortBy) {
         result.sort((a, b) => {
-          const aVal = a[sortBy];
-          const bVal = b[sortBy];
+          const aVal = a[sortBy] as any;
+          const bVal = b[sortBy] as any;
           const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
           return sortOrder === 'desc' ? -comparison : comparison;
         });
@@ -126,9 +126,9 @@ export function aggregateData() {
     }),
     execute: async ({ data, groupBy, aggregations }) => {
       const groups = data.reduce((acc, item) => {
-        const key = item[groupBy];
+        const key = String((item as any)[groupBy]);
         if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
+        (acc[key] as any[]).push(item);
         return acc;
       }, {} as Record<string, any[]>);
       
@@ -137,17 +137,17 @@ export function aggregateData() {
         
         for (const agg of aggregations) {
           const alias = agg.alias || `${agg.function}_${agg.field}`;
-          const values = items.map(item => item[agg.field]).filter(v => v != null);
+          const values = (items as any[]).map((item: any) => item[agg.field]).filter((v: any) => v != null);
           
           switch (agg.function) {
             case 'count':
-              aggregated[alias] = items.length;
+              aggregated[alias] = (items as any[]).length;
               break;
             case 'sum':
-              aggregated[alias] = values.reduce((a, b) => a + b, 0);
+              aggregated[alias] = values.reduce((a: any, b: any) => a + b, 0);
               break;
             case 'avg':
-              aggregated[alias] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+              aggregated[alias] = values.length > 0 ? values.reduce((a: any, b: any) => a + b, 0) / values.length : 0;
               break;
             case 'min':
               aggregated[alias] = values.length > 0 ? Math.min(...values) : null;
@@ -157,7 +157,7 @@ export function aggregateData() {
               break;
             case 'median':
               if (values.length > 0) {
-                const sorted = values.sort((a, b) => a - b);
+                const sorted = values.sort((a: any, b: any) => a - b);
                 const mid = Math.floor(sorted.length / 2);
                 aggregated[alias] = sorted.length % 2 === 0 
                   ? (sorted[mid - 1] + sorted[mid]) / 2 
@@ -207,11 +207,11 @@ export function calculateCorrelation() {
       
       if (method === 'pearson') {
         const n = pairs.length;
-        const sumX = pairs.reduce((sum, [x]) => sum + x, 0);
-        const sumY = pairs.reduce((sum, [, y]) => sum + y, 0);
-        const sumXY = pairs.reduce((sum, [x, y]) => sum + x * y, 0);
-        const sumX2 = pairs.reduce((sum, [x]) => sum + x * x, 0);
-        const sumY2 = pairs.reduce((sum, [, y]) => sum + y * y, 0);
+        const sumX = pairs.reduce((sum, [x]) => sum + (x as number), 0);
+        const sumY = pairs.reduce((sum, [, y]) => sum + (y as number), 0);
+        const sumXY = pairs.reduce((sum, [x, y]) => sum + (x as number) * (y as number), 0);
+        const sumX2 = pairs.reduce((sum, [x]) => sum + (x as number) * (x as number), 0);
+        const sumY2 = pairs.reduce((sum, [, y]) => sum + (y as number) * (y as number), 0);
         
         const numerator = n * sumXY - sumX * sumY;
         const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
@@ -219,12 +219,12 @@ export function calculateCorrelation() {
         correlation = denominator === 0 ? 0 : numerator / denominator;
       } else {
         // Spearman rank correlation (simplified)
-        const ranks1 = pairs.map(([x]) => x).sort((a, b) => a - b);
-        const ranks2 = pairs.map(([, y]) => y).sort((a, b) => a - b);
+        const ranks1 = pairs.map(([x]) => x as number).sort((a, b) => a - b);
+        const ranks2 = pairs.map(([, y]) => y as number).sort((a, b) => a - b);
         
         const rankedPairs = pairs.map(([x, y]) => [
-          ranks1.indexOf(x) + 1,
-          ranks2.indexOf(y) + 1
+          ranks1.indexOf(x as number) + 1,
+          ranks2.indexOf(y as number) + 1
         ]);
         
         const n = rankedPairs.length;
@@ -288,10 +288,10 @@ export function generateDataSummary() {
           fieldSummary.dataType = dataType;
           
           if (dataType === 'number') {
-            const numericValues = values.filter(v => typeof v === 'number' && !isNaN(v));
+            const numericValues = values.filter(v => typeof v === 'number' && !isNaN(v)) as number[];
             if (numericValues.length > 0) {
-              const sorted = numericValues.sort((a, b) => a - b);
-              const sum = numericValues.reduce((a, b) => a + b, 0);
+              const sorted = [...numericValues].sort((a: number, b: number) => a - b);
+              const sum = numericValues.reduce((a: number, b: number) => a + b, 0);
               fieldSummary.statistics = {
                 min: sorted[0],
                 max: sorted[sorted.length - 1],
@@ -300,7 +300,7 @@ export function generateDataSummary() {
               };
             }
           } else if (dataType === 'string') {
-            const uniqueValues = [...new Set(values)];
+            const uniqueValues = Array.from(new Set(values));
             fieldSummary.uniqueCount = uniqueValues.length;
             fieldSummary.samples = uniqueValues.slice(0, 5);
           }
