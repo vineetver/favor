@@ -27,7 +27,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
 import { RotateCcw, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import type { IntactInteraction } from "@/lib/gene/ppi/constants";
 import {
@@ -272,252 +271,95 @@ export const IntactNetwork = React.memo(
 
     return (
       <Card className="overflow-hidden grid grid-cols-1">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center justify-between sm:justify-start">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">IntAct Network</span>
-                <Badge
-                  variant="outline"
-                  className="text-xs font-medium hidden sm:inline-flex"
-                >
-                  {cytoscapeElements.nodes.length} nodes,{" "}
-                  {cytoscapeElements.edges.length} edges
-                </Badge>
-              </div>
-              <Badge
-                variant="outline"
-                className="text-xs font-medium sm:hidden"
-              >
-                {cytoscapeElements.nodes.length}n,{" "}
-                {cytoscapeElements.edges.length}e
+        <CardHeader className="py-1 px-3">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium">IntAct</span>
+              <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                {cytoscapeElements.nodes.length}n/{cytoscapeElements.edges.length}e
               </Badge>
             </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap font-normal">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Layout:
-                </span>
-                <Select
-                  value={currentLayout}
-                  onValueChange={(value) =>
-                    handleLayoutChange(value as IntactLayoutType)
+            
+            <div className="flex items-center gap-1 flex-wrap">
+              <Select
+                value={showAllInteractions ? "all" : interactionLimit.toString()}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setShowAllInteractions(true);
+                  } else {
+                    setShowAllInteractions(false);
+                    setInteractionLimit(Number(value));
                   }
-                >
-                  <SelectTrigger className="w-24 sm:w-28 text-xs border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground">
+                }}
+              >
+                <SelectTrigger className="w-12 h-5 text-xs px-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {uniqueMethods.length > 1 && (
+                <Select value={filterByMethod} onValueChange={setFilterByMethod}>
+                  <SelectTrigger className="w-16 h-5 text-xs px-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(INTACT_LAYOUT_OPTIONS).map((layout) => (
-                      <SelectItem key={layout} value={layout}>
-                        {layout.charAt(0).toUpperCase() + layout.slice(1)}
+                    <SelectItem value="all">All</SelectItem>
+                    {uniqueMethods.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              )}
 
-              <div className="h-4 w-px bg-border hidden sm:block" />
+              {uniqueInteractionTypes.length > 1 && (
+                <Select value={filterByInteractionType} onValueChange={setFilterByInteractionType}>
+                  <SelectTrigger className="w-14 h-5 text-xs px-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {uniqueInteractionTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={handleZoomIn}
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={handleZoomOut}
-                >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={handleFit}
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={handleReset}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </CardTitle>
+              <Select value={currentLayout} onValueChange={(value) => handleLayoutChange(value as IntactLayoutType)}>
+                <SelectTrigger className="w-16 h-5 text-xs px-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(INTACT_LAYOUT_OPTIONS).map((layout) => (
+                    <SelectItem key={layout} value={layout}>
+                      {layout.charAt(0).toUpperCase() + layout.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <div className="border-t pt-3 mt-2">
-            <div className="flex flex-col gap-3">
-              <div className="text-sm font-medium text-muted-foreground">
-                Data Filters
-              </div>
-              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3 sm:gap-4">
-                <div className="flex flex-col gap-1">
-                  <Label
-                    htmlFor="intact-interaction-limit"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Interaction Limit
-                  </Label>
-                  <Select
-                    value={
-                      showAllInteractions ? "all" : interactionLimit.toString()
-                    }
-                    onValueChange={(value) => {
-                      if (value === "all") {
-                        setShowAllInteractions(true);
-                      } else {
-                        setShowAllInteractions(false);
-                        setInteractionLimit(Number(value));
-                      }
-                    }}
-                  >
-                    <SelectTrigger
-                      id="intact-interaction-limit"
-                      className="w-20 sm:w-24 h-8 text-xs"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="all">All</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {uniqueMethods.length > 1 && (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="intact-detection-method"
-                      className="text-xs text-muted-foreground"
-                    >
-                      Detection Method
-                    </Label>
-                    <Select
-                      value={filterByMethod}
-                      onValueChange={setFilterByMethod}
-                    >
-                      <SelectTrigger
-                        id="intact-detection-method"
-                        className="w-32 sm:w-36 h-8 text-xs"
-                      >
-                        <SelectValue placeholder="Method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Methods</SelectItem>
-                        {uniqueMethods.map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {method}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {uniqueInteractionTypes.length > 1 && (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="intact-interaction-type"
-                      className="text-xs text-muted-foreground"
-                    >
-                      Interaction Type
-                    </Label>
-                    <Select
-                      value={filterByInteractionType}
-                      onValueChange={setFilterByInteractionType}
-                    >
-                      <SelectTrigger
-                        id="intact-interaction-type"
-                        className="w-28 sm:w-32 h-8 text-xs"
-                      >
-                        <SelectValue placeholder="Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {uniqueInteractionTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {uniqueExpansionMethods.length > 1 && (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="intact-expansion-method"
-                      className="text-xs text-muted-foreground"
-                    >
-                      Expansion Method
-                    </Label>
-                    <Select
-                      value={filterByExpansionMethod}
-                      onValueChange={setFilterByExpansionMethod}
-                    >
-                      <SelectTrigger
-                        id="intact-expansion-method"
-                        className="w-32 sm:w-36 h-8 text-xs"
-                      >
-                        <SelectValue placeholder="Expansion" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Expansions</SelectItem>
-                        {uniqueExpansionMethods.map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {method}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {uniqueBiologicalRoles.length > 1 && (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="intact-biological-role"
-                      className="text-xs text-muted-foreground"
-                    >
-                      Biological Role
-                    </Label>
-                    <Select
-                      value={filterByBiologicalRole}
-                      onValueChange={setFilterByBiologicalRole}
-                    >
-                      <SelectTrigger
-                        id="intact-biological-role"
-                        className="w-28 sm:w-32 h-8 text-xs"
-                      >
-                        <SelectValue placeholder="Role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Roles</SelectItem>
-                        {uniqueBiologicalRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleZoomIn}>
+                <ZoomIn className="h-3 w-3" />
+              </Button>
+              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleZoomOut}>
+                <ZoomOut className="h-3 w-3" />
+              </Button>
+              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleFit}>
+                <Maximize2 className="h-3 w-3" />
+              </Button>
+              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleReset}>
+                <RotateCcw className="h-3 w-3" />
+              </Button>
             </div>
           </div>
         </CardHeader>

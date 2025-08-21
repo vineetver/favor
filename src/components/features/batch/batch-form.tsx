@@ -8,9 +8,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form";
-import { FieldInput } from "~/components/ui/field-input";
-import { Button } from "~/components/ui/button";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -18,15 +18,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Info, RotateCw, XIcon } from "lucide-react";
-import { sendBatchAnnotation } from "~/lib/data/batch";
+import { sendBatchAnnotation } from "@/lib/data/batch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
-import { Tooltip } from "~/components/ui/tooltip";
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const ACCEPTED_FILE_TYPES = [
   "text/plain",
@@ -112,7 +117,7 @@ export function BatchForm() {
           description: "We will email you when the results are ready.",
           classNames: {
             actionButton:
-              "group-[.toaster]:bg-green group-[.toaster]:text-on-green",
+              "group-[.toaster]:bg-green-600 group-[.toaster]:text-white",
           },
           action: {
             label: <XIcon className="h-4 w-4" />,
@@ -130,7 +135,7 @@ export function BatchForm() {
             "Sorry for the inconvenience. We are working to fix this.",
           classNames: {
             actionButton:
-              "group-[.toaster]:bg-red group-[.toaster]:text-on-red",
+              "group-[.toaster]:bg-red-600 group-[.toaster]:text-white",
           },
           action: {
             label: <XIcon className="h-4 w-4" />,
@@ -145,7 +150,7 @@ export function BatchForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="organization"
@@ -153,7 +158,7 @@ export function BatchForm() {
             <FormItem>
               <FormLabel>Organization</FormLabel>
               <FormControl>
-                <FieldInput
+                <Input
                   placeholder="Enter your organization name"
                   {...field}
                   className="max-w-xs"
@@ -170,13 +175,13 @@ export function BatchForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <FieldInput
+                <Input
                   placeholder="example@domain.com"
                   {...field}
                   className="max-w-xs"
                 />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-muted-foreground">
                 We will email you when the results are ready.
               </FormDescription>
               <FormMessage />
@@ -191,17 +196,21 @@ export function BatchForm() {
               <FormLabel>
                 <div className="flex items-center">
                   <p>Coordinate System</p>
-                  <Tooltip
-                    content={`Choose the coordinate system for the annotation type.
-                              Some formats are 0-based (e.g., BED, BAM, BCF) while others are 1-based (e.g.,
-                              GTF, GFF, SAM, VCF).
-                              For example, Ensembl uses a 1-based coordinate system, while UCSC uses a 0-based system. Additionally, some file formats like GFF, SAM, and VCF are 1-based, whereas others like BED and BAM are 0-based.
-                              In R, coordinate conversions happen automatically with some functions. Be
-                              mindful of this to avoid errors.
-                              `}
-                  >
-                    <Info className="ml-2 h-5 w-5 cursor-pointer fill-on-surface text-surface" />
-                  </Tooltip>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Choose the coordinate system for the annotation type.
+                        Some formats are 0-based (e.g., BED, BAM, BCF) while others are 1-based (e.g.,
+                        GTF, GFF, SAM, VCF).
+                        For example, Ensembl uses a 1-based coordinate system, while UCSC uses a 0-based system. Additionally, some file formats like GFF, SAM, and VCF are 1-based, whereas others like BED and BAM are 0-based.
+                        In R, coordinate conversions happen automatically with some functions. Be
+                        mindful of this to avoid errors.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </FormLabel>
               <FormControl>
@@ -210,10 +219,10 @@ export function BatchForm() {
                   onValueChange={field.onChange}
                   value={field.value.toString()}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select annotation type" />
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder="Select coordinate system" />
                   </SelectTrigger>
-                  <SelectContent className="w-full">
+                  <SelectContent>
                     <SelectItem value="1-base">1-Base</SelectItem>
                     <SelectItem value="0-base">0-Base</SelectItem>
                   </SelectContent>
@@ -231,13 +240,18 @@ export function BatchForm() {
               <FormLabel>
                 <div className="flex items-center">
                   <p>Left Normalization</p>
-                  <Tooltip
-                    content={`Left normalization shifts the start position of a variant to the left until it can no longer be shifted, ensuring consistency in variant representation.
-            VCF files often contain multi-allelic variants that should be split into separate lines and left-normalized for accurate annotation.
-            Use tools like bcftools norm for this process before annotating.`}
-                  >
-                    <Info className="ml-2 h-5 w-5 cursor-pointer fill-on-surface text-surface" />
-                  </Tooltip>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Left normalization shifts the start position of a variant to the left until it can no longer be shifted, ensuring consistency in variant representation.
+                        VCF files often contain multi-allelic variants that should be split into separate lines and left-normalized for accurate annotation.
+                        Use tools like bcftools norm for this process before annotating.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </FormLabel>
               <FormControl>
@@ -247,10 +261,10 @@ export function BatchForm() {
                   value={field.value.toString()}
                   disabled
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="max-w-xs">
                     <SelectValue placeholder="Select left normalization" />
                   </SelectTrigger>
-                  <SelectContent className="w-full">
+                  <SelectContent>
                     <SelectItem value="true">True</SelectItem>
                     <SelectItem value="false">False</SelectItem>
                   </SelectContent>
@@ -268,12 +282,17 @@ export function BatchForm() {
               <FormLabel>
                 <div className="flex items-center">
                   <p>Output Content Type</p>
-                  <Tooltip
-                    content={`Choose the output content type for the annotation results.
-                              The default output is text/csv, but you can choose text/json or text/tsv if needed.`}
-                  >
-                    <Info className="ml-2 h-5 w-5 cursor-pointer fill-on-surface text-surface" />
-                  </Tooltip>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Choose the output content type for the annotation results.
+                        The default output is text/csv, but you can choose text/json or text/tsv if needed.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </FormLabel>
               <FormControl>
@@ -282,10 +301,10 @@ export function BatchForm() {
                   onValueChange={field.onChange}
                   value={field.value.toString()}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select output content type" />
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder="Select output format" />
                   </SelectTrigger>
-                  <SelectContent className="w-full">
+                  <SelectContent>
                     <SelectItem value="text/csv">CSV</SelectItem>
                     <SelectItem value="application/json">JSON</SelectItem>
                     <SelectItem value="text/tsv">TSV</SelectItem>
@@ -303,7 +322,7 @@ export function BatchForm() {
             <FormItem>
               <FormLabel>Input File</FormLabel>
               <FormControl>
-                <motion.div className="mt-2 flex flex-col items-center justify-center rounded-large border border-dashed border-primary px-6 py-10 text-body-md">
+                <motion.div className="mt-2 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border px-6 py-12 text-sm hover:border-muted-foreground transition-colors">
                   <div className="text-center">
                     <div className="flex flex-row items-center leading-6">
                       {value ? (
@@ -314,32 +333,30 @@ export function BatchForm() {
                             exit={{ opacity: 0, y: -50 }}
                             transition={{ duration: 0.3 }}
                           >
-                            <div className="rounded-small p-4">
+                            <div className="rounded-md p-4">
                               <div className="flex">
                                 <div className="ml-3">
-                                  <div className="text-body-md font-medium text-primary">
+                                  <div className="text-sm font-medium text-foreground">
                                     {value.name}
                                   </div>
-                                  <div className="mt-2 text-body-md">
+                                  <div className="mt-2 text-sm text-muted-foreground">
                                     <p>
                                       Submit the file for annotation by clicking
                                       the submit button or choose a different
                                       file.
                                     </p>
                                   </div>
-                                  <div className="mt-8">
-                                    <div className="-mx-2 -my-1.5 flex">
-                                      <Button
-                                        type="button"
-                                        variant="elevated"
-                                        className="text-on-surface-variant"
-                                        onClick={() => {
-                                          onChange(undefined);
-                                        }}
-                                      >
-                                        Choose file
-                                      </Button>
-                                    </div>
+                                  <div className="mt-6">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        onChange(undefined);
+                                      }}
+                                    >
+                                      Choose different file
+                                    </Button>
                                   </div>
                                 </div>
                               </div>
@@ -347,8 +364,8 @@ export function BatchForm() {
                           </motion.div>
                         </div>
                       ) : (
-                        <label className="cursor-pointer">
-                          <span className="relative  rounded-large font-medium text-primary focus-within:outline-none  hover:opacity-[0.92]">
+                        <label className="cursor-pointer text-center">
+                          <span className="text-lg font-semibold text-primary hover:text-primary/80 transition-colors">
                             Upload a file
                           </span>
                           <input
@@ -363,9 +380,11 @@ export function BatchForm() {
                             }}
                             className="sr-only"
                           />
-                          <span className="pl-1.5">or drag and drop</span>
-                          <p className="pt-1.5 leading-5">
-                            TXT, GZ up to 35MB
+                          <p className="mt-2 text-muted-foreground">
+                            or drag and drop
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            TXT, CSV, TSV, VCF, GZ up to 35MB
                           </p>
                         </label>
                       )}
@@ -377,14 +396,14 @@ export function BatchForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" onClick={handleToast}>
+        <Button type="submit" size="lg" className="w-full sm:w-auto">
           {form.formState.isSubmitting ? (
             <>
               <RotateCw className="mr-2 h-4 w-4 animate-spin" />
-              Submitting
+              Submitting...
             </>
           ) : (
-            <>Submit</>
+            "Submit for Annotation"
           )}
         </Button>
       </form>

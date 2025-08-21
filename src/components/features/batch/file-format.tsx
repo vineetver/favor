@@ -1,12 +1,10 @@
-import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
 import { ChevronsUpDown, FileIcon } from "lucide-react";
-import { Note } from "~/components/ui/note";
-
-const Collapsible = CollapsiblePrimitive.Root;
-
-const CollapsibleTrigger = CollapsiblePrimitive.CollapsibleTrigger;
-
-const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent;
+import { Note } from "@/components/ui/note";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 
 export function FileFormat() {
   return (
@@ -14,12 +12,12 @@ export function FileFormat() {
       <Collapsible>
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center rounded-md bg-primary-container p-3">
-              <FileIcon className="h-6 w-6" />
+            <div className="flex items-center justify-center rounded-md bg-muted p-3">
+              <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-title-md">TSV (Tab-Separated Values)</h3>
-            <CollapsibleTrigger asChild>
-              <ChevronsUpDown className="h-5 w-5 cursor-pointer hover:text-on-surface-variant" />
+            <h3 className="text-lg font-semibold">TSV (Tab-Separated Values)</h3>
+            <CollapsibleTrigger className="ml-auto">
+              <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent>
@@ -37,7 +35,7 @@ export function FileFormat() {
               </ul>
 
               <p className="py-1 font-medium">Example TSV content:</p>
-              <pre className="rounded-medium bg-surface-container-highest p-4 font-mono">
+              <pre className="rounded-md bg-muted p-4 font-mono text-sm">
                 CHROM POS REF ALT{"\n"}1 1000 A T{"\n"}1 1001 G C
               </pre>
             </div>
@@ -47,12 +45,12 @@ export function FileFormat() {
       <Collapsible>
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center rounded-md bg-primary-container p-3">
-              <FileIcon className="h-6 w-6" />
+            <div className="flex items-center justify-center rounded-md bg-muted p-3">
+              <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-title-md">CSV (Comma-Separated Values)</h3>
-            <CollapsibleTrigger asChild>
-              <ChevronsUpDown className="h-5 w-5 cursor-pointer hover:text-on-surface-variant" />
+            <h3 className="text-lg font-semibold">CSV (Comma-Separated Values)</h3>
+            <CollapsibleTrigger className="ml-auto">
+              <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent>
@@ -69,7 +67,7 @@ export function FileFormat() {
               </ul>
 
               <p className="py-1 font-medium">Example CSV content:</p>
-              <pre className="rounded-medium bg-surface-container-highest p-4 font-mono">
+              <pre className="rounded-md bg-muted p-4 font-mono text-sm">
                 CHROM,POS,REF,ALT{"\n"}1,1000,A,T{"\n"}1,1001,G,C
               </pre>
             </div>
@@ -79,12 +77,12 @@ export function FileFormat() {
       <Collapsible>
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center rounded-md bg-primary-container p-3">
-              <FileIcon className="h-6 w-6" />
+            <div className="flex items-center justify-center rounded-md bg-muted p-3">
+              <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-title-md">VCF (Vcard)</h3>
-            <CollapsibleTrigger asChild>
-              <ChevronsUpDown className="h-5 w-5 cursor-pointer hover:text-on-surface-variant" />
+            <h3 className="text-lg font-semibold">VCF (Vcard)</h3>
+            <CollapsibleTrigger className="ml-auto">
+              <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent>
@@ -94,7 +92,7 @@ export function FileFormat() {
               standard VCF format.{" "}
               <a
                 href="https://samtools.github.io/hts-specs/VCFv4.2.pdf"
-                className="text-primary"
+                className="text-primary hover:underline"
               >
                 Learn more
               </a>
@@ -110,7 +108,7 @@ export function FileFormat() {
               </ul>
 
               <p className="py-1 font-medium">Example VCF content:</p>
-              <pre className="rounded-medium bg-surface-container-highest p-4 font-mono">
+              <pre className="rounded-md bg-muted p-4 font-mono text-sm">
                 {`##fileformat=VCFv4.2
 ##contig=<ID=chr1,length=249250621>
 #CHROM POS ID REF ALT QUAL FILTER INFO
@@ -129,12 +127,12 @@ export function FileFormat() {
       <Collapsible>
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center rounded-md bg-primary-container p-3">
-              <FileIcon className="h-6 w-6" />
+            <div className="flex items-center justify-center rounded-md bg-muted p-3">
+              <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-title-md">TXT (Plain Text)</h3>
-            <CollapsibleTrigger asChild>
-              <ChevronsUpDown className="h-5 w-5 cursor-pointer hover:text-on-surface-variant" />
+            <h3 className="text-lg font-semibold">TXT (Plain Text)</h3>
+            <CollapsibleTrigger className="ml-auto">
+              <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent>
@@ -151,7 +149,7 @@ export function FileFormat() {
                 <li>ALT</li>
               </ul>
               <p className="py-1 font-medium">Example TXT content:</p>
-              <pre className="rounded-medium bg-surface-container-highest p-4 font-mono">
+              <pre className="rounded-md bg-muted p-4 font-mono text-sm">
                 1-1000-A-T{"\n"}1-1001-G-C
               </pre>
             </div>
@@ -162,4 +160,3 @@ export function FileFormat() {
   );
 }
 
-export { Collapsible, CollapsibleTrigger, CollapsibleContent };

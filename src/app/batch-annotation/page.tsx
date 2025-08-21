@@ -1,7 +1,7 @@
 import React from "react";
-import { Note } from "~/components/ui/note";
-import { BatchForm } from "~/components/features/batch/batch-form";
-import { FileFormat } from "~/components/features/batch/file-format";
+import { Note } from "@/components/ui/note";
+import { BatchForm } from "@/components/features/batch/batch-form";
+import { FileFormat } from "@/components/features/batch/file-format";
 
 export default async function Page()  {
   return (
