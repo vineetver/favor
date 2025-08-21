@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { createColumnHeader } from "@/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { cn } from "@/lib/utils/general";
 import { ExternalLink } from "lucide-react";
 import type { UnifiedPPIInteraction } from "@/lib/gene/ppi/types";
@@ -33,7 +33,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
   return [
     {
       accessorKey: "gene_a",
-      header: createColumnHeader("Gene A"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Gene A"
+        />
+      ),
       cell: ({ row, getValue }) => {
         const geneA = getValue() as string;
         const isHighlighted = isRowHighlighted(row.original, selectedNode);
@@ -49,7 +54,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
     },
     {
       accessorKey: "gene_b",
-      header: createColumnHeader("Gene B"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Gene B"
+        />
+      ),
       cell: ({ row, getValue }) => {
         const geneB = getValue() as string;
         const isHighlighted = isRowHighlighted(row.original, selectedNode);
@@ -65,7 +75,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
     },
     {
       accessorKey: "method",
-      header: createColumnHeader("Method"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Method"
+        />
+      ),
       cell: ({ getValue }) => {
         const method = getValue() as string;
         return method ? (
@@ -77,7 +92,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
     },
     {
       accessorKey: "interaction_type",
-      header: createColumnHeader("Type"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Type"
+        />
+      ),
       cell: ({ getValue }) => {
         const type = getValue() as string;
         return type ? (
@@ -89,7 +109,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
     },
     {
       accessorKey: "confidence_numeric",
-      header: createColumnHeader("Confidence"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Confidence"
+        />
+      ),
       cell: ({ getValue }) => {
         const confidence = getValue() as number | undefined;
         return confidence !== undefined && confidence !== null && typeof confidence === 'number' ? (
@@ -105,7 +130,12 @@ export function createBasePPIColumns(selectedNode: string | null): ColumnDef<Uni
     },
     {
       accessorKey: "publication_identifiers",
-      header: createColumnHeader("PubMed"),
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="PubMed"
+        />
+      ),
       cell: ({ getValue }) => {
         const publicationIds = getValue() as string | undefined;
         const pubmedIds = extractPubMedIds(publicationIds);

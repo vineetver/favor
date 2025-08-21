@@ -58,11 +58,18 @@ export async function POST(request: Request) {
           system: systemPrompt(model),
           stopWhen: stepCountIs(10),
           messages: convertToModelMessages(uiMessages),
-          experimental_transform: smoothStream({ chunking: 'word' }),
+          experimental_transform: smoothStream({ 
+            chunking: 'word',
+            delayInMs: 10
+          }),
           tools: tools && Object.keys(tools).length > 0 ? tools : undefined,
           experimental_telemetry: {
             isEnabled: true,
             functionId: 'stream-text',
+            metadata: {
+              model: model.id,
+              toolsCount: tools ? Object.keys(tools).length : 0,
+            },
           },
           ...modelConfig,
         });
@@ -75,11 +82,17 @@ export async function POST(request: Request) {
       },
       generateId: generateUUID,
       onFinish: async ({ messages }) => {
-        console.log('[API] Stream finished with messages:', messages);
+        console.log('[API] Stream finished:', { 
+          messagesCount: messages.length, 
+          lastMessageId: messages[messages.length - 1]?.id?.slice(0, 8)
+        });
       },
       onError: (error) => {
         console.error('[API] Stream error:', error);
-        return 'Oops, an error occurred!';
+        if (error instanceof Error) {
+          return `Analysis failed: ${error.message}`;
+        }
+        return 'Analysis failed due to an unexpected error. Please try again.';
       },
     });
 

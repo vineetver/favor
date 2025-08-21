@@ -39,6 +39,16 @@ export function getComprehensiveGeneSummary() {
       geneName: z.string().describe('Gene name (e.g., BRCA1, TP53)'),
       category: z.enum(['SNV-summary', 'InDel-summary', 'total-summary']).optional().describe('Type of summary to retrieve')
     }),
+    outputSchema: z.object({
+      gene: z.string(),
+      summary: z.object({
+        total_variants: z.number().optional(),
+        clinvar_variants: z.number().optional(),
+        pathogenic_variants: z.number().optional(),
+        benign_variants: z.number().optional(),
+      }).optional(),
+      error: z.string().optional(),
+    }),
     execute: async ({ geneName, category = 'total-summary' }) => {
       const result = await fetchGeneSummary(geneName);
       if (!result) return { error: `No data found for gene ${geneName}` };
@@ -63,6 +73,15 @@ export function getGeneAnnotationData() {
     description: 'Get detailed gene-level annotations including functional information',
     inputSchema: z.object({
       geneName: z.string().describe('Gene name to get annotations for')
+    }),
+    outputSchema: z.object({
+      gene: z.string(),
+      annotation: z.any(),
+      metadata: z.object({
+        dataType: z.string(),
+        source: z.string(),
+      }),
+      error: z.string().optional(),
     }),
     execute: async ({ geneName }) => {
       const result = await fetchGeneAnnotation(geneName);
@@ -323,27 +342,76 @@ export function getVariantFunctionalScores() {
     description: 'Get functional prediction scores for variants (SCENT, CV2F, PGBoost)',
     inputSchema: z.object({
       vcf: z.string().describe('Variant in VCF format'),
+      rsid: z.string().optional().describe('Variant RSID (for CV2F and PGBoost)'),
       scoreType: z.enum(['scent', 'cv2f', 'pgboost', 'all']).optional().describe('Type of functional score to retrieve')
     }),
-    execute: async ({ vcf, scoreType = 'all' }) => {
+    execute: async ({ vcf, rsid, scoreType = 'all' }) => {
       const results: any = {};
+      const errors: string[] = [];
+      const successfullyFetched: string[] = [];
       
-      if (scoreType === 'all' || scoreType === 'scent') {
-        results.scent = await fetchScentTissueByVCF(vcf);
+      try {
+        if (scoreType === 'all' || scoreType === 'scent') {
+          const scentData = await fetchScentTissueByVCF(vcf);
+          if (scentData) {
+            results.scent = scentData;
+            successfullyFetched.push('SCENT tissue-specific scores');
+          }
+        }
+      } catch (error) {
+        errors.push(`SCENT: ${error instanceof Error ? error.message : String(error)}`);
       }
-      if (scoreType === 'all' || scoreType === 'cv2f') {
-        results.cv2f = await fetchCV2F(vcf);
-      }
-      if (scoreType === 'all' || scoreType === 'pgboost') {
-        results.pgboost = await fetchPGBoost(vcf);
+      
+      // CV2F and PGBoost require RSID, try to extract from VCF or use provided RSID
+      if (rsid || (scoreType === 'all' || scoreType === 'cv2f' || scoreType === 'pgboost')) {
+        const variantRsid = rsid || await extractRsidFromVcf(vcf);
+        
+        if (variantRsid) {
+          try {
+            if (scoreType === 'all' || scoreType === 'cv2f') {
+              const cv2fData = await fetchCV2F(variantRsid);
+              if (cv2fData) {
+                results.cv2f = cv2fData;
+                successfullyFetched.push('CV2F conservation scores');
+              }
+            }
+          } catch (error) {
+            errors.push(`CV2F: ${error instanceof Error ? error.message : String(error)}`);
+          }
+          
+          try {
+            if (scoreType === 'all' || scoreType === 'pgboost') {
+              const pgboostData = await fetchPGBoost(variantRsid);
+              if (pgboostData) {
+                results.pgboost = pgboostData;
+                successfullyFetched.push('PGBoost prediction scores');
+              }
+            }
+          } catch (error) {
+            errors.push(`PGBoost: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        } else {
+          if (scoreType === 'all' || scoreType === 'cv2f') {
+            errors.push('CV2F: No RSID available for this variant');
+          }
+          if (scoreType === 'all' || scoreType === 'pgboost') {
+            errors.push('PGBoost: No RSID available for this variant');
+          }
+        }
       }
       
       return {
         variant: vcf,
+        rsid: rsid,
         functionalScores: results,
+        errors: errors.length > 0 ? errors : undefined,
+        successfullyFetched: successfullyFetched.length > 0 ? 
+          `Successfully fetched ${successfullyFetched.join(', ')} for variant analysis.` : 
+          undefined,
         metadata: {
           dataType: 'functional_scores',
-          scoreType
+          scoreType,
+          note: 'CV2F and PGBoost require RSID format. SCENT uses VCF format.'
         }
       };
     }
@@ -381,17 +449,40 @@ export function getVariantRegulatoryData() {
     }),
     execute: async ({ vcf, dataType = 'both' }) => {
       const results: any = {};
+      const errors: string[] = [];
+      const successfullyFetched: string[] = [];
       
       if (dataType === 'both' || dataType === 'ccre') {
-        results.ccre = await getCCREByVCF(vcf);
+        try {
+          const ccreData = await getCCREByVCF(vcf);
+          if (ccreData) {
+            results.ccre = ccreData;
+            successfullyFetched.push('CCRE regulatory elements');
+          }
+        } catch (error) {
+          errors.push(`CCRE: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
+      
       if (dataType === 'both' || dataType === 'entex') {
-        results.entex = await fetchEntexDefault(vcf);
+        try {
+          const entexData = await fetchEntexDefault(vcf);
+          if (entexData) {
+            results.entex = entexData;
+            successfullyFetched.push('ENTEX regulatory annotations');
+          }
+        } catch (error) {
+          errors.push(`ENTEX: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       
       return {
         variant: vcf,
         regulatory: results,
+        errors: errors.length > 0 ? errors : undefined,
+        successfullyFetched: successfullyFetched.length > 0 ? 
+          `Successfully fetched ${successfullyFetched.join(', ')} for regulatory analysis.` : 
+          undefined,
         metadata: {
           dataType: 'regulatory_elements',
           source: dataType
@@ -560,4 +651,17 @@ export function getRegionCosmicData() {
       };
     }
   });
+}
+
+// ==== HELPER FUNCTIONS ====
+
+// Helper function to extract RSID from VCF by looking up variant data
+async function extractRsidFromVcf(vcf: string): Promise<string | null> {
+  try {
+    const variant = await fetchVariant(vcf);
+    return variant?.rsid || null;
+  } catch (error) {
+    console.error('Error extracting RSID from VCF:', error);
+    return null;
+  }
 }

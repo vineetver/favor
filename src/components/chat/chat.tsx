@@ -1,5 +1,5 @@
 import { DefaultChatTransport } from 'ai';
-import { useChat } from '@ai-sdk/react';
+import { useChat, type UseChatHelpers } from '@ai-sdk/react';
 import { useState, useEffect } from 'react';
 import { Messages } from "./messages";
 import { MultimodalInput } from "@/components/chat/multimodal-input";
@@ -40,9 +40,10 @@ export function Chat({
     status,
     stop,
     regenerate,
-  } = useChat<ChatMessage>({
+    error,
+  }: UseChatHelpers<ChatMessage> = useChat<ChatMessage>({
     id,
-    experimental_throttle: 200,
+    experimental_throttle: 25,
     generateId: generateUUID,
     transport: new DefaultChatTransport({
       api: '/api/chat',
@@ -61,8 +62,12 @@ export function Chat({
       },
     }),
     onData: (dataPart) => {
-      console.log('[Chat] Received data part:', dataPart);
-      setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+      console.log('[Chat] Received data part:', { 
+        type: dataPart.type, 
+        keys: Object.keys(dataPart),
+        hasData: !!(dataPart as any).data 
+      });
+      setDataStream((ds) => (ds ? [...ds, dataPart] : [dataPart]));
     },
     onToolCall: async ({ toolCall }) => {
       console.log('[Chat] Tool call received:', {
@@ -96,10 +101,13 @@ export function Chat({
     onError: (error) => {
       console.error('[Chat] useChat error:', error);
       if (error instanceof ChatSDKError) {
-        toast.error(error.message);
+        toast.error(`Analysis error: ${error.message}`);
         console.error('[Chat] ChatSDKError details:', error);
+      } else if (error instanceof Error) {
+        toast.error(`Chat error: ${error.message}`);
+        console.error('[Chat] Error:', error);
       } else {
-        toast.error(`Chat error: ${error.message || String(error)}`);
+        toast.error('An unexpected error occurred');
         console.error('[Chat] Unknown error:', error);
       }
     },
@@ -132,6 +140,17 @@ export function Chat({
       <DataStreamHandler />
       <div className="flex flex-col w-full h-full bg-background overflow-hidden">
         <ChatHeader selectedModelId={selectedModelId} onClose={onClose} Close={Close} />
+        
+        {error && (
+          <motion.div 
+            className="mx-4 mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="text-sm text-destructive font-medium">Connection Error</div>
+            <div className="text-xs text-destructive/80 mt-1">{error.message}</div>
+          </motion.div>
+        )}
         
         <Messages
           chatId={id}
