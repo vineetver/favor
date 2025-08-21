@@ -7,7 +7,7 @@ import { transformIntactData } from "./intact-transforms";
 import {
   createIntactColumns,
   createIntactFacetedFilters,
-} from "./intact-columns";
+} from "@/lib/gene/ppi/intact-columns";
 
 interface IntactTableProps {
   data: IntactInteraction[];

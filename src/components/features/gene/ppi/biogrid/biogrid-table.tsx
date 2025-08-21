@@ -1,48 +1,13 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  useReactTable,
-  type SortingState,
-} from "@tanstack/react-table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { TablePagination } from "@/components/ui/pagination";
-import { NoDataFound, NoSearchResults } from "@/components/ui/no-data-found";
-import { Download } from "lucide-react";
-import { cn } from "@/lib/utils/general";
-import { useFilters, UniversalDataTableToolbar } from "@/components/ui/universal-filter";
+import React, { useMemo } from "react";
+import { DataGrid } from "@/components/ui/data-grid";
 import type { BiogridInteraction } from "@/lib/gene/ppi/constants";
-import type { BiogridProcessedInteraction } from "@/components/features/gene/ppi/biogrid/biogrid-types";
-import {
-  transformBiogridData,
-  getBiogridUniqueValues,
-} from "@/components/features/gene/ppi/biogrid/biogrid-transforms";
+import { transformBiogridData } from "./biogrid-transforms";
 import {
   createBiogridColumns,
-  exportBiogridTableData,
-  filterBiogridTableData,
-} from "@/components/features/gene/ppi/biogrid/biogrid-columns";
+  createBiogridFacetedFilters,
+} from "@/lib/gene/ppi/biogrid-columns";
 
 interface BiogridTableProps {
   data: BiogridInteraction[];
