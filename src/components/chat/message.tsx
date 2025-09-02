@@ -62,28 +62,6 @@ const PurePreviewMessage = ({
   // Check if we're actively streaming text (has text parts but they might be incomplete)
   const isStreamingText = isLoading && message.role === 'assistant' && (textParts.length > 0 || directContent);
 
-  // Debug logging with more details about all parts
-  console.log(`[Message ${message.id?.slice(0, 8)}] Full message debug:`, {
-    hasTextContent,
-    finalTextContentLength: finalTextContent.length,
-    textPartsCount: textParts.length,
-    nonTextPartsCount: nonTextParts.length,
-    isLoading,
-    directContentLength: directContent.length,
-    accumulatedTextLength: accumulatedText.length,
-    totalPartsCount: message.parts?.length || 0,
-    messageRole: message.role,
-    allParts: message.parts?.map((part, i) => ({ 
-      index: i, 
-      type: part.type, 
-      hasText: !!(part as any).text,
-      hasInput: !!(part as any).input,
-      hasArgs: !!(part as any).args,
-      hasToolCallId: !!(part as any).toolCallId,
-      state: (part as any).state,
-      keys: Object.keys(part)
-    }))
-  });
 
   return (
     <AnimatePresence>
@@ -134,15 +112,6 @@ const PurePreviewMessage = ({
               const { type } = part;
               const key = `message-${message.id}-part-${index}`;
 
-              // Debug each part as it's processed
-              console.log(`[Message ${message.id?.slice(0, 8)}] Processing part ${index}:`, {
-                type,
-                keys: Object.keys(part),
-                toolCallId: (part as any).toolCallId?.slice(0, 8),
-                state: (part as any).state,
-                hasInput: !!(part as any).input,
-                hasOutput: !!(part as any).output
-              });
 
               // Handle reasoning parts
               if (type === 'reasoning' && part.text?.trim().length > 0) {

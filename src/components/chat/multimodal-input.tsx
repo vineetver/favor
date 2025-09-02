@@ -121,7 +121,6 @@ function PureMultimodalInput({
       ],
     };
     
-    console.log('[MultimodalInput] Sending message:', messageToSend);
     sendMessage(messageToSend);
 
     setAttachments([]);

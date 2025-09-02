@@ -2,6 +2,10 @@
 
 import { BarChart } from '@/components/ui/charts/bar-chart';
 import { ScatterChart } from '@/components/ui/charts/scatter-chart';
+import { LineChart } from '@/components/ui/charts/line-chart';
+import { AreaChart } from '@/components/ui/charts/area-chart';
+import { PieChart } from '@/components/ui/charts/pie-chart';
+import { Heatmap } from '@/components/ui/charts/heatmap';
 
 interface ChartRendererProps {
   type: 'chart';
@@ -12,9 +16,6 @@ interface ChartRendererProps {
 }
 
 export function ChartRenderer({ chartType, data, config, metadata }: ChartRendererProps) {
-  // Debug logging
-  console.log('ChartRenderer received:', { chartType, data, config, metadata });
-  
   const renderChart = () => {
     switch (chartType) {
       case 'bar':
@@ -54,28 +55,79 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
         );
       
       case 'line':
-        // For now, render as scatter plot with lines
+        const lineData = data.map((item: any) => ({
+          name: item.category || item.name || item.x,
+          value: item.value || item.y
+        }));
+        
         return (
-          <div className="p-4 border rounded bg-muted/10">
-            <h4 className="font-medium mb-2">{config.title}</h4>
-            <p className="text-sm text-muted-foreground">
-              Line chart visualization coming soon. Data points: {data.length}
-            </p>
-            <pre className="text-xs mt-2 bg-muted/50 p-2 rounded overflow-x-auto">
-              {JSON.stringify(data.slice(0, 3), null, 2)}
-              {data.length > 3 && `\n... and ${data.length - 3} more items`}
-            </pre>
-          </div>
+          <LineChart
+            data={lineData}
+            keys={['value']}
+            indexBy="name"
+            title={config.title}
+            xLabel={config.xLabel}
+            yLabel={config.yLabel}
+            width={config.width}
+            height={config.height || 400}
+            className="w-full"
+          />
+        );
+      
+      case 'area':
+        const areaData = data.map((item: any) => ({
+          name: item.category || item.name || item.x,
+          value: item.value || item.y
+        }));
+        
+        return (
+          <AreaChart
+            data={areaData}
+            keys={['value']}
+            indexBy="name"
+            title={config.title}
+            xLabel={config.xLabel}
+            yLabel={config.yLabel}
+            width={config.width}
+            height={config.height || 400}
+            className="w-full"
+            stacked={config.stacked}
+          />
+        );
+      
+      case 'pie':
+      case 'donut':
+        const pieData = data.map((item: any) => ({
+          name: item.category || item.name,
+          value: item.value
+        }));
+        
+        return (
+          <PieChart
+            data={pieData}
+            dataKey="value"
+            nameKey="name"
+            title={config.title}
+            width={config.width}
+            height={config.height || 400}
+            className="w-full"
+            innerRadius={config.chartType === 'donut' ? 60 : 0}
+          />
         );
       
       case 'heatmap':
         return (
-          <div className="p-4 border rounded bg-muted/10">
-            <h4 className="font-medium mb-2">{config.title}</h4>
-            <p className="text-sm text-muted-foreground">
-              Heatmap visualization coming soon. Dimensions: {metadata?.dimensions?.join(' x ') || 'Unknown'}
-            </p>
-          </div>
+          <Heatmap
+            data={data}
+            title={config.title}
+            width={config.width}
+            height={config.height || 400}
+            className="w-full"
+            xKey={config.xKey || 'x'}
+            yKey={config.yKey || 'y'}
+            valueKey={config.valueKey || 'value'}
+            colorScheme={config.colorScheme || 'blue'}
+          />
         );
       
       case 'network':

@@ -84,18 +84,6 @@ function PureMessages({
     scrollToBottom
   ]);
 
-  // Debug logging for messages flow
-  console.log('[Messages] Rendering with:', {
-    messagesCount: messages.length,
-    status: status,
-    chatId: chatId,
-    messages: messages.map(m => ({
-      id: m.id?.slice(0, 8),
-      role: m.role,
-      partsCount: m.parts?.length || 0,
-      partTypes: m.parts?.map(p => p.type) || []
-    }))
-  });
 
   return (
     <div

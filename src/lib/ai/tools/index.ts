@@ -25,7 +25,7 @@ export * from './advanced-utilities';
 // Enhanced Visualization
 export * from './enhanced-visualization';
 
-import { getVariantAnalysis, getVariantVisualization, getStandaloneVariantVisualization } from './variantAnalysis';
+import { getVariantAnalysis, getVariantVisualization } from './variantAnalysis';
 import { getGeneSummary, getGeneAnnotation, getGeneVariants } from './gene';
 import { getRegionSummary, getRegionVariants } from './region';
 import { getBiogridInteractions, getIntactInteractions, getHuriInteractions, getPathwayPairs, getPathwayGenes } from './interactions';
@@ -57,7 +57,6 @@ export const tools = {
   // Modern Variant Analysis Tools
   variantAnalysis: getVariantAnalysis(),
   variantVisualization: getVariantVisualization(),
-  standaloneVariantVisualization: getStandaloneVariantVisualization(),
   
   // Basic Gene tools
   getGeneSummary: getGeneSummary(),

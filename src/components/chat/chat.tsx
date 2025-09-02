@@ -62,22 +62,9 @@ export function Chat({
       },
     }),
     onData: (dataPart) => {
-      console.log('[Chat] Received data part:', { 
-        type: dataPart.type, 
-        keys: Object.keys(dataPart),
-        hasData: !!(dataPart as any).data 
-      });
       setDataStream((ds) => (ds ? [...ds, dataPart] : [dataPart]));
     },
     onToolCall: async ({ toolCall }) => {
-      console.log('[Chat] Tool call received:', {
-        toolCallId: toolCall.toolCallId?.slice(0, 8),
-        toolName: toolCall.toolName,
-        state: (toolCall as any).state,
-        hasInput: !!(toolCall as any).input,
-        hasOutput: !!(toolCall as any).output,
-        fullToolCall: toolCall
-      });
       
       // Immediately update the last message to show tool call progress
       setMessages((prevMessages) => {
@@ -120,13 +107,6 @@ export function Chat({
       return undefined;
     },
     onFinish: ({ message }) => {
-      console.log('[Chat] Message finished:', {
-        id: message.id?.slice(0, 8),
-        role: message.role,
-        partsCount: message.parts?.length || 0,
-        partTypes: message.parts?.map((p: any) => p.type) || [],
-        fullMessage: message
-      });
       
       // Filter out empty messages
       if (message.role === 'assistant' && (!message.parts || message.parts.length === 0)) {

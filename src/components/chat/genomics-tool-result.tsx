@@ -1,6 +1,6 @@
 'use client';
 
-import { Dna, ExternalLink, Copy, BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
+import { Dna, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { toast } from 'sonner';
