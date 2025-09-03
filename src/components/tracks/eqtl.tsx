@@ -33,7 +33,7 @@ export const eQTLTrack: Track = {
     {
       dataTransform: [{ type: "filter", field: "sig", oneOf: ["unknown"] }],
       mark: "withinLink",
-      x: { field: "start", type: "genomic" },
+      x: { field: "start", type: "genomic", linkingId: "link1" },
       x1: { field: "start2", type: "genomic" },
       x1e: { field: "end2", type: "genomic" },
       y: { flip: true },
@@ -49,7 +49,7 @@ export const eQTLTrack: Track = {
     {
       dataTransform: [{ type: "filter", field: "sig", oneOf: ["significant"] }],
       mark: "withinLink",
-      x: { field: "start", type: "genomic" },
+      x: { field: "start", type: "genomic", linkingId: "link1" },
       x1: { field: "start2", type: "genomic" },
       x1e: { field: "end2", type: "genomic" },
       y: { flip: true },
@@ -65,7 +65,7 @@ export const eQTLTrack: Track = {
         { type: "filter", field: "sig", oneOf: ["insignificant"] },
       ],
       mark: "withinLink",
-      x: { field: "start", type: "genomic" },
+      x: { field: "start", type: "genomic", linkingId: "link1" },
       x1: { field: "start2", type: "genomic" },
       x1e: { field: "end2", type: "genomic", linkingId: "link1" },
       y: { flip: true },

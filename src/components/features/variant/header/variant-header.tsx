@@ -1,7 +1,8 @@
 import type { Variant } from "@/lib/variant/types";
+import type { VariantHg19 } from "@/lib/hg19/variant/types";
 
 interface VariantHeaderProps {
-  variant: Variant;
+  variant: Variant | VariantHg19;
 }
 
 export function VariantHeader({ variant }: VariantHeaderProps) {

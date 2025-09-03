@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+.idea/
 
 # testing
 /coverage
@@ -23,6 +24,12 @@ ai-chat-bot-components/
 # misc
 .DS_Store
 *.pem
+
+# certificates
+/certs/
+*.crt
+*.key
+*.ca
 
 # debug
 npm-debug.log*

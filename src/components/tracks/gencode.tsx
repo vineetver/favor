@@ -65,7 +65,7 @@ export const gencodeTrack: Track = {
         },
       ],
       mark: "triangleRight",
-      x: { field: "start", type: "genomic" },
+      x: { field: "start", type: "genomic", linkingId: "link1" },
       size: { value: 15 },
       color: { value: "purple" },
       tooltip: [
@@ -116,7 +116,7 @@ export const gencodeTrack: Track = {
         },
       ],
       mark: "triangleLeft",
-      x: { field: "start", type: "genomic" },
+      x: { field: "start", type: "genomic", linkingId: "link1" },
       size: { value: 15 },
       color: { value: "purple" },
     },

@@ -6,11 +6,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSearchHistory } from "@/lib/hooks/use-search-history";
 import { useSearchSuggestions } from "@/lib/hooks/use-search-suggestions";
@@ -141,18 +136,12 @@ export function GenomicSearch() {
                   >
                     HG38
                   </ToggleGroupItem>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToggleGroupItem
-                        value="hg19"
-                        className="data-[state=on]:bg-primary rounded-lg data-[state=on]:text-background font-mono text-xs px-2 py-1"
-                        disabled
-                      >
-                        HG19
-                      </ToggleGroupItem>
-                    </TooltipTrigger>
-                    <TooltipContent>HG19 support coming soon</TooltipContent>
-                  </Tooltip>
+                  <ToggleGroupItem
+                    value="hg19"
+                    className="data-[state=on]:bg-primary rounded-lg data-[state=on]:text-background font-mono text-xs px-2 py-1"
+                  >
+                    HG19
+                  </ToggleGroupItem>
                 </ToggleGroup>
                 <div className="w-px h-6 bg-slate-300 my-auto" />
               </div>
