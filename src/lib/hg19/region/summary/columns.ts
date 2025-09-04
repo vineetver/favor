@@ -1,0 +1,1 @@
+export { getSummaryColumns, summaryHG19columns, type SummaryColumnsType } from "../../gene/summary/columns";

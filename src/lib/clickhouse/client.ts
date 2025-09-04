@@ -1,5 +1,4 @@
 import { createClient, ClickHouseClient } from '@clickhouse/client'
-import { certificateManager } from './certificates'
 
 export interface ClickHouseConfig {
   url: string
@@ -30,18 +29,12 @@ class SecureClickHouseClient {
       database: process.env.CLICKHOUSE_DATABASE || 'production'
     }
 
-    // Add TLS configuration for secure connections
+    // Add TLS configuration for secure connections (for encryption, not auth)
     if (baseConfig.url.startsWith('https://')) {
-      // Get certificates from certificate manager
-      const certificates = certificateManager.getCertificates()
-      
       baseConfig.tls = {
-        // For self-signed certificates, disable strict verification in development
         rejectUnauthorized: false,
-        ...certificates
+        ca: process.env.CLICKHOUSE_CA_CERT,
       }
-
-      // Certificate status logged in development mode only via setup utilities
     }
 
     return baseConfig
@@ -80,7 +73,7 @@ class SecureClickHouseClient {
     query: string
     query_params?: Record<string, any>
     format?: 'JSONEachRow' | 'JSON' | 'CSV' | 'TabSeparated'
-  }) {
+  }): Promise<T[]> {
     const client = this.getClient()
     try {
       const result = await client.query({
@@ -88,7 +81,16 @@ class SecureClickHouseClient {
         query_params: params.query_params,
         format: params.format || 'JSONEachRow',
       })
-      return await result.json<T[]>()
+      const data = await result.json<T[] | T[][]>()
+      if (!Array.isArray(data)) return []
+      if (data.length === 0) return []
+      
+      // Handle nested arrays by flattening
+      if (Array.isArray(data[0])) {
+        return (data as T[][]).flat()
+      }
+      
+      return data as T[]
     } catch (error) {
       console.error('ClickHouse query error:', error)
       throw error

@@ -3,7 +3,7 @@ import { clickHouseClient } from "@/lib/clickhouse/client";
 
 export async function fetchHg19VariantByRsid(rsid: string): Promise<VariantHg19 | null> {
   try {
-    // Use the exact optimized query without joins
+    // Optimized query with BETWEEN for better index usage
     const query = `
       WITH
         (SELECT chromosome  FROM production.rsid_lookup WHERE rsid = {rsid:String} LIMIT 1) AS chr_,
@@ -12,7 +12,7 @@ export async function fetchHg19VariantByRsid(rsid: string): Promise<VariantHg19 
       SELECT *
       FROM production.variants_hg19
       WHERE chromosome = chr_
-        AND position = pos_
+        AND position BETWEEN pos_ AND pos_
         AND variant_vcf = vcf_
       LIMIT 1
     `;
@@ -22,7 +22,7 @@ export async function fetchHg19VariantByRsid(rsid: string): Promise<VariantHg19 
       query_params: { rsid },
     });
 
-    return rows.length > 0 ? rows[0] : null;
+    return rows && rows.length > 0 ? rows[0] : null;
   } catch (error) {
     console.error('Error fetching HG19 variant by rsID from ClickHouse:', error);
     return null;
@@ -44,7 +44,7 @@ export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19
       query_params: { rsid },
     });
     
-    if (lookupRows.length === 0) {
+    if (!lookupRows || lookupRows.length === 0) {
       return [];
     }
 
@@ -56,7 +56,7 @@ export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19
         SELECT *
         FROM production.variants_hg19
         WHERE chromosome = {chromosome:String}
-          AND position = {position:UInt32}
+          AND position BETWEEN {position:UInt32} AND {position:UInt32}
           AND variant_vcf = {variant_vcf:String}
         LIMIT 1
       `;
@@ -70,7 +70,7 @@ export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19
         },
       });
 
-      if (variantRows.length > 0) {
+      if (variantRows && variantRows.length > 0) {
         variants.push(variantRows[0]);
       }
     }

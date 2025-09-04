@@ -50,9 +50,9 @@ async function fetchHg19Variant(vcf: string): Promise<VariantHg19 | null> {
 
     const query = `
       SELECT *
-      FROM variants_hg19
+      FROM production.variants_hg19
       WHERE chromosome = {chromosome:String}
-        AND position = {position:UInt32}
+        AND position BETWEEN {position:UInt32} AND {position:UInt32}
         AND variant_vcf = {vcf:String}
       LIMIT 1
     `;

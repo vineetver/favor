@@ -185,7 +185,7 @@ export function AreaChart({
               stroke={chartColors[index]}
               strokeWidth={strokeWidth}
               fillOpacity={fillOpacity}
-              type={curve}
+              type={curve as any}
               connectNulls={connectNulls}
               stackId={stacked ? "1" : undefined}
             />

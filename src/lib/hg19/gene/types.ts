@@ -1,0 +1,60 @@
+export interface Hg19GeneVariant {
+  variant_vcf: string;
+  chromosome: string;
+  position: number;
+  rsid: string | null;
+  ref: string;
+  alt: string;
+  genecode_comprehensive_info: string | null;
+  genecode_comprehensive_category: string | null;
+  genecode_comprehensive_exonic_category: string | null;
+  clnsig: string | null;
+  clnsigincl: string | null;
+  clndn: string | null;
+  clndnincl: string | null;
+  clnrevstat: string | null;
+  origin: number | null;
+  clndisdb: string | null;
+  clndisdbincl: string | null;
+  geneinfo: string | null;
+  sift_cat: string | null;
+  sift_score: number | null;
+  polyphen2_hdiv_pred: string | null;
+  polyphen2_hdiv_score: number | null;
+  polyphen2_hvar_pred: string | null;
+  polyphen2_hvar_score: number | null;
+  fathmm_pred: string | null;
+  fathmm_score: number | null;
+  am_pathogenicity: string | null;
+  am_class: string | null;
+  protein_variant: string | null;
+  cadd_rawscore: number | null;
+  cadd_phred: number | null;
+  apc_conservation_v2: number | null;
+  apc_epigenetics: number | null;
+  apc_protein_function_v3: number | null;
+  apc_transcription_factor: number | null;
+  apc_proximity_to_tss_tes: number | null;
+  apc_mutation_density: number | null;
+  tg_afr: number | null;
+  tg_all: number | null;
+  tg_amr: number | null;
+  tg_eas: number | null;
+  tg_eur: number | null;
+  tg_sas: number | null;
+  mutation_rate_filter: number | null;
+  pn: number | null;
+  mr: number | null;
+  ar: number | null;
+  mg: number | null;
+  mc: number | null;
+}
+
+export interface Hg19GeneVariantsResponse {
+  data: Hg19GeneVariant[];
+  total?: number;
+  hasNextPage: boolean;
+  nextCursor?: string;
+  pageIndex?: number;
+  pageSize?: number;
+}

@@ -4,12 +4,20 @@ import { useOptimistic, useTransition } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils/general";
 import type { Variant } from "@/lib/variant/types";
+import type { VariantHg19 } from "@/lib/hg19/variant/types";
 import { setRsidVariantCookie } from "@/lib/variant/actions";
+
+type BaseVariant = {
+  variant_vcf: string;
+  chromosome: string;
+  position: string | number;
+  rsid: string;
+};
 
 interface RsidHeaderProps {
   rsid: string;
-  variants: Variant[];
-  selectedVariant: Variant;
+  variants: BaseVariant[];
+  selectedVariant: BaseVariant;
 }
 
 export function RsidHeader({

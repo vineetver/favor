@@ -186,7 +186,7 @@ export function LineChart({
               dataKey={key}
               stroke={chartColors[index]}
               strokeWidth={strokeWidth}
-              type={curve}
+              type={curve as any}
               dot={showDots ? { r: dotSize } : false}
               connectNulls={connectNulls}
               strokeLinecap="round"

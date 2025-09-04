@@ -13,9 +13,9 @@ export async function fetchHg19Variant(vcf: string): Promise<VariantHg19 | null>
 
     const query = `
       SELECT *
-      FROM variants_hg19
+      FROM production.variants_hg19
       WHERE chromosome = {chromosome:String}
-        AND position = {position:UInt32}
+        AND position BETWEEN {position:UInt32} AND {position:UInt32}
         AND variant_vcf = {vcf:String}
       LIMIT 1
     `;
@@ -29,7 +29,7 @@ export async function fetchHg19Variant(vcf: string): Promise<VariantHg19 | null>
       },
     });
 
-    return rows.length > 0 ? rows[0] : null;
+    return rows && rows.length > 0 ? rows[0] : null;
   } catch (error) {
     console.error('Error fetching HG19 variant from ClickHouse:', error);
     return null;

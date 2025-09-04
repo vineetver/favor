@@ -6,15 +6,11 @@
  */
 
 import { clickHouseClient, testClickHouseConnection } from './client'
-import { certificateManager, setupOpenShiftCertificates } from './certificates'
 
 export async function setupClickHouse(): Promise<boolean> {
   console.log('🚀 Setting up ClickHouse secure connection...')
   
   try {
-    // Setup certificates for OpenShift
-    setupOpenShiftCertificates()
-    
     // Test the connection
     console.log('🔍 Testing ClickHouse connection...')
     const isConnected = await testClickHouseConnection()
@@ -27,11 +23,6 @@ export async function setupClickHouse(): Promise<boolean> {
       const result = await clickHouseClient.query<{version: string, timestamp: string}>({
         query: 'SELECT version() as version, now() as timestamp',
       })
-      
-      if (Array.isArray(result) && result.length > 0) {
-        console.log('📊 ClickHouse version:', result[0]?.version)
-        console.log('🕐 Server time:', result[0]?.timestamp)
-      }
       
       return true
     } else {
@@ -50,13 +41,9 @@ export function printConnectionInfo(): void {
   console.log(`   User: ${process.env.CLICKHOUSE_USER || 'default'}`)
   console.log(`   Database: ${process.env.CLICKHOUSE_DATABASE || 'production'}`)
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`)
-  
-  certificateManager.logStatus()
-  
-  console.log('\n🔧 OpenShift/Kubernetes Certificate Paths:')
-  console.log('   Service Account CA: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt')
-  console.log('   Mounted Certs: /etc/ssl/certs/clickhouse/, /etc/certs/clickhouse/')
-  console.log('   Custom Paths: Set CLICKHOUSE_*_CERT_PATH environment variables')
+  console.log(`   CA Cert: ${process.env.CLICKHOUSE_CA_CERT ? '✅ Set' : '❌ Not set'}`)
+  console.log(`   Client Cert: ${process.env.CLICKHOUSE_CLIENT_CERT ? '✅ Set' : '❌ Not set'}`)
+  console.log(`   Client Key: ${process.env.CLICKHOUSE_CLIENT_KEY ? '✅ Set' : '❌ Not set'}`)
 }
 
 export async function diagnoseConnection(): Promise<void> {

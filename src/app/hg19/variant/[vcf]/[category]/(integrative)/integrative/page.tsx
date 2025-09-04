@@ -19,7 +19,6 @@ export default async function IntegrativePage({
   const { vcf, category } = params;
 
   const variant = await fetchVariant(vcf);
-
   if (!variant) {
     notFound();
   }
