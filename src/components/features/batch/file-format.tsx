@@ -141,6 +141,9 @@ export function FileFormat() {
               separated by a &#39;-&#39;. This is our standard format for FAVOR and
               batch annotation. The first 4 fields in the TXT file MUST be:
             </p>
+            <p className="text-sm text-muted-foreground">
+              Note: When using HG19 assembly, RSID fields in uploaded files will be preserved in the results.
+            </p>
             <div className="grid gap-2 py-2">
               <ul className="list-disc space-y-0.5 pl-4">
                 <li>CHROM</li>

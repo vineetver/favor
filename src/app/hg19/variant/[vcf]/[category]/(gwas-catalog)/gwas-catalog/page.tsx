@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/lib/variant/api";
+import { fetchHg19Variant } from "@/lib/hg19/variant/api";
 import { fetchGWAS } from "@/lib/variant/gwas/api";
 import { GwasCatalogDataDisplay } from "@/components/features/variant/gwas/gwas-catalog-display";
 
@@ -15,7 +15,7 @@ export default async function GwasCatalogPage({
   const { vcf } = params;
 
   const [variant, gwas] = await Promise.all([
-    fetchVariant(vcf),
+    fetchHg19Variant(vcf),
     fetchGWAS(vcf),
   ]);
 

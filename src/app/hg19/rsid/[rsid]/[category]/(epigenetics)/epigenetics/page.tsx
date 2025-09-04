@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { fetchVariantsByRsid } from "@/lib/variant/api";
+import { fetchHg19VariantsByRsid } from "@/lib/hg19/rsid/api";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { EpigeneticsDisplay } from "@/components/features/variant/epigenetics/epigenetics-display";
@@ -26,7 +26,7 @@ export default async function EpigeneticsPage({
     `rsid-${rsid}-variant`,
   )?.value;
 
-  const variants = await fetchVariantsByRsid(rsid);
+  const variants = await fetchHg19VariantsByRsid(rsid);
   if (!variants || variants.length === 0) {
     notFound();
   }
@@ -45,7 +45,7 @@ export default async function EpigeneticsPage({
 
   const variant = selectedVariant;
 
-  const columns = getVariantColumns(category, "epigenetics");
+  const columns = getVariantColumns(category, "epigenetics", "hg19");
   const filteredItems = getFilteredItems(columns!, variant);
 
   const validItems = filteredItems || [];

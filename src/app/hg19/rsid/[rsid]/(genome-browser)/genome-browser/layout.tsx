@@ -4,7 +4,7 @@ import { RsidHeader } from "@/components/features/variant/header/rsid-header";
 import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigation";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
 import { VARIANT_NAVIGATION } from "@/lib/variant/navigation";
-import { fetchVariantsByRsid } from "@/lib/variant/api";
+import { fetchHg19VariantsByRsid } from "@/lib/hg19/rsid/api";
 import {
   selectVariantFromList,
   validateVariantForRsid,
@@ -38,7 +38,7 @@ export default async function RsidGenomeBrowserLayout({
     notFound();
   }
 
-  const variants = await fetchVariantsByRsid(rsid);
+  const variants = await fetchHg19VariantsByRsid(rsid);
 
   if (!variants || variants.length === 0) {
     notFound();

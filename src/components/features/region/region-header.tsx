@@ -1,11 +1,33 @@
 import { Badge } from "@/components/ui/badge";
-import type { RegionInfo } from "@/lib/region/types";
+
+interface RegionInfo {
+  chromosome: string;
+  start: number;
+  end: number;
+  size: number;
+}
 
 interface RegionHeaderProps {
   region: string;
 }
 
 function parseRegion(region: string): RegionInfo | null {
+  if (region.includes(':')) {
+    const [chromosome, positions] = region.split(':');
+    const [startStr, endStr] = positions.split('-');
+    const start = parseInt(startStr, 10);
+    const end = parseInt(endStr, 10);
+    
+    if (isNaN(start) || isNaN(end)) return null;
+    
+    return {
+      chromosome,
+      start,
+      end,
+      size: end - start + 1,
+    };
+  }
+  
   const parts = region.split('-');
   if (parts.length !== 3) return null;
   
@@ -65,6 +87,7 @@ export function RegionHeader({ region }: RegionHeaderProps) {
         </div>
       </div>
       <div className="mt-4 flex flex-col text-sm text-muted-foreground space-y-1">
+        <span>Chromosome: {regionInfo.chromosome}</span>
         <span>Start position: {regionInfo.start.toLocaleString()}</span>
         <span>End position: {regionInfo.end.toLocaleString()}</span>
       </div>

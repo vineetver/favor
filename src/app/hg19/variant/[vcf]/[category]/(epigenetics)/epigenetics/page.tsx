@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/lib/variant/api";
+import { fetchHg19Variant } from "@/lib/hg19/variant/api";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { EpigeneticsDisplay } from "@/components/features/variant/epigenetics/epigenetics-display";
@@ -16,13 +16,13 @@ export default async function EpigeneticsPage({
 }: EpigeneticsPageProps) {
   const { vcf, category } = params;
 
-  const variant = await fetchVariant(vcf);
+  const variant = await fetchHg19Variant(vcf);
 
   if (!variant) {
     notFound();
   }
 
-  const columns = getVariantColumns(category, "epigenetics");
+  const columns = getVariantColumns(category, "epigenetics", "hg19");
   const filteredItems = getFilteredItems(columns!, variant);
 
   const validItems = filteredItems || [];

@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Info, RotateCw, XIcon } from "lucide-react";
-import { sendBatchAnnotation } from "@/lib/data/batch";
+import { sendBatchAnnotation, sendHg19BatchAnnotation } from "@/lib/data/batch";
 import {
   Select,
   SelectContent,
@@ -61,6 +61,9 @@ const formSchema = z.object({
       invalid_type_error: "Email must be a string",
     })
     .email(),
+  genome: z.enum(["hg38", "hg19"], {
+    required_error: "Genome assembly is required",
+  }),
   coordinateSystem: z.string(),
   leftNormalization: z.boolean(),
   outputContentType: z.string({
@@ -86,6 +89,7 @@ export function BatchForm() {
     defaultValues: {
       organization: "",
       email: "",
+      genome: "hg38" as "hg38" | "hg19",
       file: undefined,
       coordinateSystem: "1-base",
       leftNormalization: false,
@@ -108,7 +112,44 @@ export function BatchForm() {
     formData.append("left-normalization", values.leftNormalization.toString());
     formData.append("coordinate-system", values.coordinateSystem);
 
-    const response = await sendBatchAnnotation(formData);
+    // Choose the appropriate API based on genome assembly
+    const response = values.genome === "hg19" 
+      ? await sendHg19BatchAnnotation(formData)
+      : await sendBatchAnnotation(formData);
+    
+    // Handle different response types
+    if (values.genome === "hg19" && response.ok) {
+      // For hg19, we get the file directly - download it
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename = contentDisposition?.match(/filename="(.+)"/)?.[1] || `batch_results.${values.outputContentType.includes('json') ? 'json' : values.outputContentType.includes('tsv') ? 'tsv' : 'csv'}`;
+      
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      return handleToast(
+        toast.success("Your file has been processed and downloaded", {
+          description: "The annotated results have been downloaded to your computer.",
+          classNames: {
+            actionButton:
+              "group-[.toaster]:bg-green-600 group-[.toaster]:text-white",
+          },
+          action: {
+            label: <XIcon className="h-4 w-4" />,
+            onClick: () => {
+              toast.dismiss();
+            },
+          },
+        }),
+      );
+    }
+    
     const data = await response.json();
 
     if (response.ok) {
@@ -184,6 +225,45 @@ export function BatchForm() {
               <FormDescription className="text-muted-foreground">
                 We will email you when the results are ready.
               </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="genome"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                <div className="flex items-center">
+                  <p>Genome Assembly</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Choose the genome assembly for annotation. HG38 uses the existing pipeline with email notification, while HG19 provides immediate results using ClickHouse for faster processing.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </FormLabel>
+              <FormControl>
+                <Select
+                  defaultValue="hg38"
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder="Select genome assembly" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hg38">HG38 (Email Results)</SelectItem>
+                    <SelectItem value="hg19">HG19 (Instant Download)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

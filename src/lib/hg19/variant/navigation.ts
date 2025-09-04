@@ -32,10 +32,7 @@ export const HG19_VARIANT_NAVIGATION: NavigationCategory[] = [
       { text: "Basic", slug: "basic" },
       { text: "Category", slug: "category" },
       { text: "Clinvar", slug: "clinvar" },
-      { text: "Overall AF", slug: "overall-af" },
       { text: "Ancestry Specific AF", slug: "ancestry-af" },
-      { text: "Gender AF Male", slug: "gender-af-male" },
-      { text: "Gender AF Female", slug: "gender-af-female" },
       { text: "Integrative Score", slug: "integrative" },
       { text: "Protein Function", slug: "protein-function" },
       { text: "Conservation", slug: "conservation" },
@@ -52,10 +49,5 @@ export const HG19_VARIANT_NAVIGATION: NavigationCategory[] = [
       { text: "Mutation Rate", slug: "mutation-rate" },
       { text: "Alphamissense", slug: "alphamissense" },
     ],
-  },
-  {
-    name: "Genome Browser",
-    slug: "genome-browser",
-    subCategories: [],
   },
 ];

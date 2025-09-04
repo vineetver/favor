@@ -5,7 +5,7 @@ import { DataComparisonTable } from "@/components/data-display/data-comparison-t
 import { IntegrativeDisplay } from "@/components/features/variant/integrative/integrative-display";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { getVariantColumns } from "@/lib/variant/columns";
-import { fetchVariantsByRsid } from "@/lib/variant/api";
+import { fetchHg19VariantsByRsid } from "@/lib/hg19/rsid/api";
 import {
   selectVariantFromList,
   validateVariantForRsid,
@@ -28,7 +28,7 @@ export default async function IntegrativeRsidPage({
     `rsid-${rsid}-variant`,
   )?.value;
 
-  const variants = await fetchVariantsByRsid(rsid);
+  const variants = await fetchHg19VariantsByRsid(rsid);
   if (!variants || variants.length === 0) {
     notFound();
   }
@@ -47,7 +47,7 @@ export default async function IntegrativeRsidPage({
 
   const variant = selectedVariant;
 
-  const columns = getVariantColumns(category, "integrative");
+  const columns = getVariantColumns(category, "integrative", "hg19");
   const filteredItems = getFilteredItems(columns!, variant);
 
   const validItems = filteredItems || [];

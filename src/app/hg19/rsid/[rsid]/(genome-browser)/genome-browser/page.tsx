@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { GenomeBrowserErrorBoundary } from "@/components/features/browser/genome-browser/error-boundary";
-import { fetchVariantsByRsid } from "@/lib/variant/api";
+import { fetchHg19VariantsByRsid } from "@/lib/hg19/rsid/api";
 import {
   selectVariantFromList,
   validateVariantForRsid,
@@ -34,7 +34,7 @@ export default async function RsidGenomeBrowserPage({
     `rsid-${rsid}-variant`,
   )?.value;
 
-  const variants = await fetchVariantsByRsid(rsid);
+  const variants = await fetchHg19VariantsByRsid(rsid);
 
   if (!variants || variants.length === 0) {
     notFound();

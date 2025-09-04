@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { GwasCatalogDataDisplay } from "@/components/features/variant/gwas/gwas-catalog-display";
-import { fetchVariantsByRsid } from "@/lib/variant/api";
+import { fetchHg19VariantsByRsid } from "@/lib/hg19/rsid/api";
 import { fetchGWAS } from "@/lib/variant/gwas/api";
 import {
   selectVariantFromList,
@@ -24,7 +24,7 @@ export default async function GwasCatalogPage({
     `rsid-${rsid}-variant`,
   )?.value;
 
-  const variants = await fetchVariantsByRsid(rsid);
+  const variants = await fetchHg19VariantsByRsid(rsid);
 
   if (!variants || variants.length === 0) {
     notFound();

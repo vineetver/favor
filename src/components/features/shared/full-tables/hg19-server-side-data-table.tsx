@@ -5,6 +5,7 @@ import { ServerSideDataGrid } from "./server-side-data-grid";
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 // API routes for server-side data fetching
 import { HG19GeneTableColumns } from "@/lib/hg19/gene/columns";
+import { HG19RegionTableColumns } from "@/lib/hg19/region/columns";
 import { hg19GenecodeCategory, hg19ExonicCategory, hg19SiftCategory, hg19ClinicalSignificance } from "@/lib/hg19/gene/full-tables/constants";
 
 type HG19ServerSideDataTableType = "hg19-gene" | "hg19-region";
@@ -55,8 +56,8 @@ export function HG19ServerSideDataTable({
   });
 
   const columns = useMemo(() => {
-    return HG19GeneTableColumns;
-  }, []);
+    return type === "hg19-gene" ? HG19GeneTableColumns : HG19RegionTableColumns;
+  }, [type]);
 
   const facetedFilters = useMemo(() => {
     const summary = serverState.summary;
@@ -177,13 +178,21 @@ export function HG19ServerSideDataTable({
         const sortField = sorting.length > 0 ? sorting[0].id : undefined;
         const sortDir = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : 'asc';
 
-        result = await fetch(`/api/hg19/region/${entityId}/variants?${new URLSearchParams({
-          subcategory,
-          pageSize: serverState.pageSize.toString(),
-          cursor: resetPagination ? '' : (serverState.nextCursor || ''),
-          sortingQuery: sortField ? `${sortField}:${sortDir}` : '',
-          filtersQuery: Object.entries(filters).map(([k, v]) => `${k}:${v}`).join(','),
-        })}`).then(res => res.json());
+        const [tableResult, summaryResult] = await Promise.all([
+          fetch(`/api/hg19/region/${entityId}/variants?${new URLSearchParams({
+            subcategory,
+            pageSize: serverState.pageSize.toString(),
+            cursor: resetPagination ? '' : (serverState.nextCursor || ''),
+            sortingQuery: sortField ? `${sortField}:${sortDir}` : '',
+            filtersQuery: Object.entries(filters).map(([k, v]) => `${k}:${v}`).join(','),
+          })}`).then(res => res.json()),
+          fetch(`/api/hg19/region/${entityId}/summary/${subcategory.replace('-table', '-summary')}`).then(res => res.json())
+        ]);
+        
+        result = tableResult;
+        // Region summary returns an object, not an array like genes
+        // Transform it to match the expected format for filter logic
+        summary = summaryResult || {};
       } else {
         throw new Error(`Unsupported table type: ${type}`);
       }

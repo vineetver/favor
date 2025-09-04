@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { ResponsiveTabs } from "@/components/ui/responsive-tabs";
 import { DataComparisonTable } from "@/components/data-display/data-comparison-table";
 import { IntegrativeDisplay } from "@/components/features/variant/integrative/integrative-display";
-import { fetchVariant } from "@/lib/variant/api";
+import { fetchHg19Variant } from "@/lib/hg19/variant/api";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 
@@ -18,12 +18,12 @@ export default async function IntegrativePage({
 }: IntegrativePageProps) {
   const { vcf, category } = params;
 
-  const variant = await fetchVariant(vcf);
+  const variant = await fetchHg19Variant(vcf);
   if (!variant) {
     notFound();
   }
 
-  const columns = getVariantColumns(category, "integrative");
+  const columns = getVariantColumns(category, "integrative", "hg19");
   const filteredItems = getFilteredItems(columns!, variant);
 
   const validItems = filteredItems || [];
