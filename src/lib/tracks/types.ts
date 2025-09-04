@@ -50,6 +50,33 @@ export interface TrackMetadata {
     interpretation: string;
     references: string[];
     lastUpdated: string;
+    colorLegend?: {
+      title: string;
+      description: string;
+      categories: {
+        label: string;
+        color: string;
+        description: string;
+        biologicalMeaning?: string;
+      }[];
+    };
+    visualElements?: {
+      shapes?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+      patterns?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+      indicators?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+    };
   };
   performance: {
     renderTime: RenderTime;

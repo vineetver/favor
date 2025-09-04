@@ -442,6 +442,33 @@ const TRACK_DOCUMENTATION: Record<
       heightAdjustable: boolean;
       filtersAvailable: string[];
     };
+    colorLegend?: {
+      title: string;
+      description: string;
+      categories: {
+        label: string;
+        color: string;
+        description: string;
+        biologicalMeaning?: string;
+      }[];
+    };
+    visualElements?: {
+      shapes?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+      patterns?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+      indicators?: {
+        name: string;
+        description: string;
+        meaning: string;
+      }[];
+    };
   }
 > = {
   // Gene Annotation
@@ -450,9 +477,9 @@ const TRACK_DOCUMENTATION: Record<
       "Comprehensive gene annotations showing gene boundaries, exons, and strand information from GENCODE. Essential for understanding genomic context and variant impact assessment.",
     dataSource: "GENCODE comprehensive gene annotation (hg38)",
     methodology:
-      "Genes displayed as horizontal bars with exons as filled rectangles. Strand information indicated by directional arrows - triangular markers pointing right for positive strand (+) and left for negative strand (-). Gene names displayed at appropriate zoom levels.",
+      "Genes displayed as horizontal bars with exons as filled rectangles. Strand information indicated by directional arrows and color coding. Gene names displayed at appropriate zoom levels with adaptive visibility based on view width.",
     interpretation:
-      "Use to identify genes of interest, understand gene boundaries for variant impact, and visualize coding sequence density. Color coding distinguishes positive (blue) and negative (red) strand genes.",
+      "Use strand colors to distinguish gene orientation: blue for forward strand (+), red for reverse strand (-). Directional arrows show transcription direction. Exon rectangles show coding regions. Essential for determining variant impact on gene structure and expression.",
     references: [
       "Frankish A, et al. GENCODE reference annotation for the human genome. Genome Res. 2019;29(4):710-718.",
       "Harrow J, et al. GENCODE: the reference human genome annotation. Genome Res. 2012;22(9):1760-74.",
@@ -470,6 +497,57 @@ const TRACK_DOCUMENTATION: Record<
       heightAdjustable: true,
       filtersAvailable: ["gene_type", "strand", "name_filter"],
     },
+    colorLegend: {
+      title: "Gene Strand Orientation",
+      description: "Color-coding for gene transcription direction on DNA strands",
+      categories: [
+        {
+          label: "Forward Strand (+)",
+          color: "#7585FF",
+          description: "Genes transcribed in 5' to 3' direction",
+          biologicalMeaning: "Genes on the forward DNA strand, transcribed from left to right in standard genome coordinates. Positive strand orientation."
+        },
+        {
+          label: "Reverse Strand (-)",
+          color: "#FF8A85", 
+          description: "Genes transcribed in 3' to 5' direction",
+          biologicalMeaning: "Genes on the reverse DNA strand, transcribed from right to left in standard genome coordinates. Negative strand orientation."
+        }
+      ]
+    },
+    visualElements: {
+      shapes: [
+        {
+          name: "Right-pointing triangles",
+          description: "Triangular markers at gene ends",
+          meaning: "Indicates forward strand (+) genes - transcription direction from 5' to 3'"
+        },
+        {
+          name: "Left-pointing triangles", 
+          description: "Triangular markers at gene starts",
+          meaning: "Indicates reverse strand (-) genes - transcription direction from 3' to 5'"
+        },
+        {
+          name: "Rectangles",
+          description: "Filled rectangular blocks within genes",
+          meaning: "Represent individual exons - coding sequences that remain after splicing"
+        }
+      ],
+      patterns: [
+        {
+          name: "Triangular line patterns",
+          description: "Directional patterns along gene bodies", 
+          meaning: "Show transcription direction - triangles point in direction of RNA synthesis"
+        }
+      ],
+      indicators: [
+        {
+          name: "Gene name labels",
+          description: "Text labels above or beside genes",
+          meaning: "Display gene symbols/names when zoom level allows sufficient space"
+        }
+      ]
+    }
   },
 
   // Clinical Variants
@@ -478,9 +556,9 @@ const TRACK_DOCUMENTATION: Record<
       "Clinical significance annotations for genetic variants from ClinVar database. Aggregates variant interpretations from clinical laboratories and research groups worldwide for clinical decision-making.",
     dataSource: "NCBI ClinVar database (monthly releases)",
     methodology:
-      "Variants colored by clinical significance: pathogenic (red), likely pathogenic (orange), uncertain significance (yellow), likely benign (light green), benign (green). Point mutations shown as vertical lines with height indicating confidence levels.",
+      "Variants displayed as points and bars colored by clinical significance. Multiple visualization layers show both individual variants and aggregate counts. Height indicates variant density at different zoom levels.",
     interpretation:
-      "Red variants require immediate clinical attention, green variants generally considered safe. Yellow variants of uncertain significance should be evaluated in clinical context. Review multiple submissions and evidence levels when available.",
+      "Use color legend to interpret clinical significance. Pathogenic (red/pink) variants require immediate clinical attention, benign (green) variants generally considered safe. Gray variants of uncertain significance should be evaluated in clinical context with additional evidence.",
     references: [
       "Landrum MJ, et al. ClinVar: improving access to variant interpretations and supporting evidence. Nucleic Acids Res. 2018;46(D1):D1062-D1067.",
       "Richards S, et al. Standards and guidelines for the interpretation of sequence variants. Genet Med. 2015;17(5):405-424.",
@@ -506,6 +584,54 @@ const TRACK_DOCUMENTATION: Record<
         "variant_type",
       ],
     },
+    colorLegend: {
+      title: "Clinical Significance",
+      description: "Color-coding for variant pathogenicity based on clinical evidence and ACMG guidelines",
+      categories: [
+        {
+          label: "Pathogenic",
+          color: "#CB3B8C",
+          description: "Established pathogenic variants",
+          biologicalMeaning: "Strong evidence for clinical significance. Variants are disease-causing and actionable for medical decision-making. Require immediate clinical attention."
+        },
+        {
+          label: "Pathogenic/Likely pathogenic",
+          color: "#CB71A3",
+          description: "Mixed pathogenic classifications",
+          biologicalMeaning: "Multiple submissions with pathogenic or likely pathogenic classifications. High confidence in clinical significance with potential medical action required."
+        },
+        {
+          label: "Likely pathogenic",
+          color: "#CB96B3", 
+          description: "Probable pathogenic variants",
+          biologicalMeaning: "Strong evidence suggesting pathogenicity but not definitively proven. May warrant clinical follow-up and genetic counseling."
+        },
+        {
+          label: "Uncertain significance",
+          color: "gray",
+          description: "Variants of uncertain significance (VUS)",
+          biologicalMeaning: "Insufficient evidence to determine pathogenicity. Requires additional functional studies, family segregation, or population data for classification."
+        },
+        {
+          label: "Likely benign", 
+          color: "#029F73",
+          description: "Probably benign variants",
+          biologicalMeaning: "Evidence suggests lack of pathogenicity but not definitively proven. Generally not clinically actionable but may require monitoring."
+        },
+        {
+          label: "Benign/Likely benign",
+          color: "#5A9F8C",
+          description: "Mixed benign classifications", 
+          biologicalMeaning: "Multiple submissions indicating benign or likely benign status. High confidence that variant is not disease-causing."
+        },
+        {
+          label: "Benign",
+          color: "#5A9F8C",
+          description: "Established benign variants",
+          biologicalMeaning: "Strong evidence for lack of pathogenicity. Variants are not disease-causing and generally not clinically actionable."
+        }
+      ]
+    }
   },
 
   // Epigenomic Tracks
@@ -514,9 +640,9 @@ const TRACK_DOCUMENTATION: Record<
       "Candidate cis-regulatory elements (cCREs) identified by ENCODE project. Cell-type specific regulatory elements including promoters, enhancers, and CTCF binding sites.",
     dataSource: "ENCODE Registry of cCREs (SCREEN database)",
     methodology:
-      "Elements classified by chromatin accessibility and histone modifications. Color-coded by type: promoters (red), proximal enhancers (orange), distal enhancers (yellow), CTCF sites (blue).",
+      "Elements classified by chromatin accessibility and histone modifications. Displayed as horizontal rectangles grouped by regulatory element type with distinct colors for each category.",
     interpretation:
-      "Overlap with variants suggests regulatory impact. Promoters affect gene expression directly, enhancers can act over long distances. CTCF sites involved in chromatin organization.",
+      "Overlap with variants suggests regulatory impact. Promoters affect gene expression directly, enhancers can act over long distances. CTCF sites involved in chromatin organization. Use color legend to identify element types and their regulatory roles.",
     references: [
       "ENCODE Project Consortium. Expanded encyclopaedias of DNA elements in the human and mouse genomes. Nature. 2020;583(7818):699-710.",
       "Moore JE, et al. Expanded encyclopaedias of DNA elements in the human and mouse genomes. Nature. 2020;583(7818):699-710.",
@@ -538,6 +664,60 @@ const TRACK_DOCUMENTATION: Record<
       heightAdjustable: true,
       filtersAvailable: ["ccre_type", "cell_type", "activity_level"],
     },
+    colorLegend: {
+      title: "cCRE Element Types",
+      description: "Color-coding for candidate cis-regulatory elements based on chromatin accessibility and histone modification patterns",
+      categories: [
+        {
+          label: "PLS (Promoter)",
+          color: "#dc2626",
+          description: "Promoter-like signature",
+          biologicalMeaning: "Active promoter regions with high H3K4me3 and chromatin accessibility. Directly regulate transcription start sites of genes."
+        },
+        {
+          label: "pELS (Proximal Enhancer)", 
+          color: "#ea580c",
+          description: "Proximal enhancer-like signature",
+          biologicalMeaning: "Active enhancers near (<2kb) gene promoters with H3K27ac marks. Boost nearby gene expression through close-range interactions."
+        },
+        {
+          label: "dELS (Distal Enhancer)",
+          color: "#fddc69", 
+          description: "Distal enhancer-like signature",
+          biologicalMeaning: "Active enhancers distant (>2kb) from promoters with H3K27ac marks. Can regulate genes across long distances through chromatin looping."
+        },
+        {
+          label: "CA-CTCF",
+          color: "#0053DB",
+          description: "Chromatin accessible with CTCF binding",
+          biologicalMeaning: "Insulator elements that organize chromatin into topological domains. CTCF binding creates boundaries that constrain regulatory interactions."
+        },
+        {
+          label: "CA-H3K4me3", 
+          color: "#ea580c",
+          description: "Chromatin accessible with H3K4me3",
+          biologicalMeaning: "Regions with active promoter marks but without strong enhancer activity. May represent bivalent or poised regulatory states."
+        },
+        {
+          label: "CA-TF",
+          color: "#9333ea",
+          description: "Chromatin accessible with transcription factor binding",
+          biologicalMeaning: "Open chromatin regions bound by transcription factors. Potential regulatory sites that may lack strong histone modification signals."
+        },
+        {
+          label: "CA (Chromatin Accessible)",
+          color: "#62DF7D", 
+          description: "Chromatin accessible only",
+          biologicalMeaning: "Open chromatin without strong regulatory marks. May represent weak regulatory elements or regions primed for activation."
+        },
+        {
+          label: "TF (Transcription Factor)",
+          color: "#ec4899",
+          description: "Transcription factor binding only", 
+          biologicalMeaning: "TF binding sites in closed chromatin. May represent repressed or context-specific regulatory elements."
+        }
+      ]
+    }
   },
 
   single_cell_tissue_atac_seq_chromatin_accessibility: {
@@ -701,9 +881,9 @@ const TRACK_DOCUMENTATION: Record<
       "Expression quantitative trait loci (eQTLs) showing genetic variants that influence gene expression levels, displayed as arc connections.",
     dataSource: "GTEx v8 and tissue-specific eQTL studies",
     methodology:
-      "Statistical associations between genetic variants and gene expression. Arc visualization connects variants to target genes. Color indicates effect size.",
+      "Statistical associations between genetic variants and gene expression. Arc visualization connects variants to target genes. Regulatory elements colored by cCRE types, genes by strand orientation.",
     interpretation:
-      "Strong eQTL signals indicate variants with substantial impact on gene expression. Arc connections show variant-gene relationships. Tissue-specific effects highlight regulatory differences.",
+      "Strong eQTL signals indicate variants with substantial impact on gene expression. Arc connections show variant-gene relationships. Use cCRE colors to identify regulatory element types and gene strand colors for orientation.",
     references: [
       "The GTEx Consortium. The GTEx Consortium atlas of genetic regulatory effects across human tissues. Science. 2020;369(6509):1318-1330.",
       "Aguet F, et al. Genetic effects on gene expression across human tissues. Nature. 2017;550(7675):204-213.",
@@ -730,6 +910,30 @@ const TRACK_DOCUMENTATION: Record<
         "distance_filter",
       ],
     },
+    colorLegend: {
+      title: "Regulatory Elements and Gene Strands",
+      description: "Combined color scheme showing cCRE element types for regulatory regions and strand orientation for genes",
+      categories: [
+        {
+          label: "cCRE Elements",
+          color: "varies",
+          description: "Regulatory elements use cCRE color scheme",
+          biologicalMeaning: "See cCRE track documentation for detailed color meanings - promoters (red), enhancers (orange/yellow), CTCF sites (blue), etc."
+        },
+        {
+          label: "Forward Strand Genes (+)",
+          color: "#7585FF",
+          description: "Target genes on positive strand",
+          biologicalMeaning: "Genes transcribed in forward direction, connected to eQTL variants by arc links"
+        },
+        {
+          label: "Reverse Strand Genes (-)",
+          color: "#FF8A85",
+          description: "Target genes on negative strand", 
+          biologicalMeaning: "Genes transcribed in reverse direction, connected to eQTL variants by arc links"
+        }
+      ]
+    }
   },
 
   single_cell_tissue_eqtls_overlay_link: {
@@ -737,9 +941,9 @@ const TRACK_DOCUMENTATION: Record<
       "Comprehensive eQTL visualization with regulatory elements, gene links, and tissue-specific effects in overlay format.",
     dataSource: "Integrated GTEx v8, ENCODE cCREs, and gene annotations",
     methodology:
-      "Multi-layer visualization combining cCREs, eQTL associations, and gene context. Overlay format shows regulatory mechanisms comprehensively.",
+      "Multi-layer visualization combining cCREs, eQTL associations, and gene context. Uses consistent color schemes across all overlay components.",
     interpretation:
-      "Use to understand regulatory mechanisms by examining cCRE overlap, eQTL connections, and distance effects. Provides complete regulatory context.",
+      "Use cCRE colors to identify regulatory element types, gene strand colors for orientation, and arc patterns for eQTL strength. Provides complete regulatory context for variant interpretation.",
     references: [
       "The GTEx Consortium. The GTEx Consortium atlas of genetic regulatory effects across human tissues. Science. 2020;369(6509):1318-1330.",
       "ENCODE Project Consortium. Expanded encyclopaedias of DNA elements in the human and mouse genomes. Nature. 2020;583(7818):699-710.",
@@ -766,6 +970,30 @@ const TRACK_DOCUMENTATION: Record<
         "distance_filter",
       ],
     },
+    colorLegend: {
+      title: "Integrated Regulatory Elements and Gene Strands",
+      description: "Comprehensive color scheme combining cCRE elements, gene orientations, and eQTL associations",
+      categories: [
+        {
+          label: "cCRE Regulatory Elements",
+          color: "varies",
+          description: "Regulatory elements follow cCRE color scheme",
+          biologicalMeaning: "Complete cCRE classification with promoters (red), enhancers (orange/yellow), CTCF sites (blue), accessible regions (green/purple/pink)"
+        },
+        {
+          label: "Forward Strand Genes (+)",
+          color: "#7585FF",
+          description: "Target genes on positive strand",
+          biologicalMeaning: "Genes transcribed 5' to 3', showing eQTL target relationships"
+        },
+        {
+          label: "Reverse Strand Genes (-)",
+          color: "#FF8A85",
+          description: "Target genes on negative strand",
+          biologicalMeaning: "Genes transcribed 3' to 5', showing eQTL target relationships"
+        }
+      ]
+    }
   },
 
   // CRISPR Tracks
@@ -842,9 +1070,9 @@ const TRACK_DOCUMENTATION: Record<
       "Chromatin interaction data showing 3D genome organization and long-range regulatory connections.",
     dataSource: "Hi-C and ChIA-PET interaction datasets",
     methodology:
-      "Arc visualization of chromatin loops and interactions. Arc strength indicates interaction frequency. Connects regulatory elements to target genes.",
+      "Arc visualization of chromatin loops and interactions. Different assay types shown in distinct colors. Arc strength indicates interaction frequency and statistical significance.",
     interpretation:
-      "Strong arcs indicate frequent chromatin interactions. Long-range arcs show distal regulation. Compare with regulatory tracks for mechanistic insights.",
+      "Strong arcs indicate frequent chromatin interactions. Red arcs show Hi-C data (general chromatin organization), blue arcs show ChIA-PET data (protein-mediated interactions). Long-range arcs reveal distal regulatory relationships.",
     references: [
       "Rao SS, et al. A 3D map of the human genome at kilobase resolution reveals principles of chromatin looping. Cell. 2014;159(7):1665-80.",
       "Tang Z, et al. CTCF-Mediated Human 3D Genome Architecture Reveals Chromatin Topology for Transcription. Cell. 2015;163(7):1611-27.",
@@ -870,6 +1098,45 @@ const TRACK_DOCUMENTATION: Record<
         "distance_filter",
       ],
     },
+    colorLegend: {
+      title: "Chromatin Interaction Assay Types",
+      description: "Color-coding for different experimental methods used to detect chromatin interactions",
+      categories: [
+        {
+          label: "Intact-HiC",
+          color: "red",
+          description: "Hi-C proximity ligation data",
+          biologicalMeaning: "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments."
+        },
+        {
+          label: "RNAPII-ChIAPET", 
+          color: "blue",
+          description: "RNA Polymerase II ChIA-PET data",
+          biologicalMeaning: "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks."
+        }
+      ]
+    },
+    visualElements: {
+      shapes: [
+        {
+          name: "Arc curves",
+          description: "Curved lines connecting genomic positions",
+          meaning: "Represent spatial proximity or functional interactions between distant genomic loci"
+        }
+      ],
+      indicators: [
+        {
+          name: "Arc thickness",
+          description: "Width of arc curves",
+          meaning: "Thicker arcs indicate stronger interaction signals or higher statistical confidence"
+        },
+        {
+          name: "Arc opacity",
+          description: "Transparency level of arc curves", 
+          meaning: "More opaque arcs represent higher interaction frequencies or significance scores"
+        }
+      ]
+    }
   },
 
   single_cell_tissue_chromatin_overlay_link: {
@@ -877,9 +1144,9 @@ const TRACK_DOCUMENTATION: Record<
       "Comprehensive chromatin organization data in overlay format showing 3D genome structure and regulatory relationships.",
     dataSource: "Integrated Hi-C, ChIA-PET, and regulatory element data",
     methodology:
-      "Multi-layer overlay combining chromatin interactions, regulatory elements, and gene annotations for complete 3D context.",
+      "Multi-layer overlay combining chromatin interactions, regulatory elements, and gene annotations. Uses same color scheme as arc link track for consistency.",
     interpretation:
-      "Provides comprehensive view of 3D genome organization. Use to understand spatial regulatory relationships and chromatin domain structure.",
+      "Provides comprehensive view of 3D genome organization with regulatory context. Red interactions show Hi-C data, blue shows ChIA-PET data. Overlay includes cCREs and gene annotations for complete regulatory landscape.",
     references: [
       "Rao SS, et al. A 3D map of the human genome at kilobase resolution. Cell. 2014;159(7):1665-80.",
       "Dekker J, et al. The 4D nucleome project. Nature. 2017;549(7671):219-226.",
@@ -906,6 +1173,24 @@ const TRACK_DOCUMENTATION: Record<
         "distance_filter",
       ],
     },
+    colorLegend: {
+      title: "Chromatin Interaction Assay Types",
+      description: "Color-coding for different experimental methods used to detect chromatin interactions (same as arc link track)",
+      categories: [
+        {
+          label: "Intact-HiC",
+          color: "red",
+          description: "Hi-C proximity ligation data",
+          biologicalMeaning: "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments."
+        },
+        {
+          label: "RNAPII-ChIAPET", 
+          color: "blue",
+          description: "RNA Polymerase II ChIA-PET data",
+          biologicalMeaning: "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks."
+        }
+      ]
+    }
   },
 
   // Mappability tracks - simplified documentation for similar tracks
@@ -1005,9 +1290,9 @@ const TRACK_DOCUMENTATION: Record<
       "Genome-wide association study (GWAS) p-values displayed as Manhattan plot showing trait-associated variants.",
     dataSource: "GWAS Catalog and large-scale association studies",
     methodology:
-      "Statistical association testing between genetic variants and traits. -log10(p-value) plotted by genomic position.",
+      "Statistical association testing between genetic variants and traits. Points colored by -log10(p-value) with quantitative color scale. Height corresponds to statistical significance.",
     interpretation:
-      "Higher peaks indicate stronger trait associations. Genome-wide significant threshold typically p<5e-8. Compare across traits and populations.",
+      "Higher points indicate stronger statistical associations with traits. Color intensity shows significance level - darker/warmer colors represent more significant p-values. Genome-wide significance threshold typically at -log10(p) ≥ 7.3 (p<5e-8).",
     references: [
       "Buniello A, et al. The NHGRI-EBI GWAS Catalog of published genome-wide association studies. Nucleic Acids Res. 2019;47(D1):D1005-D1012.",
       "MacArthur J, et al. The new NHGRI-EBI Catalog of published genome-wide association studies. Nucleic Acids Res. 2017;45(D1):D896-D901.",
@@ -1029,6 +1314,44 @@ const TRACK_DOCUMENTATION: Record<
       heightAdjustable: true,
       filtersAvailable: ["p_value_threshold", "trait_category", "population"],
     },
+    colorLegend: {
+      title: "GWAS Statistical Significance",
+      description: "Quantitative color scale representing -log10(p-value) for trait associations",
+      categories: [
+        {
+          label: "Low Significance",
+          color: "light colors",
+          description: "Lower -log10(p-value) scores",
+          biologicalMeaning: "Weak statistical evidence for trait association. May represent background variation or require additional validation."
+        },
+        {
+          label: "Moderate Significance", 
+          color: "medium colors",
+          description: "Intermediate -log10(p-value) scores",
+          biologicalMeaning: "Suggestive associations that may warrant follow-up studies. Below genome-wide significance threshold."
+        },
+        {
+          label: "High Significance",
+          color: "dark/warm colors", 
+          description: "High -log10(p-value) scores (≥7.3)",
+          biologicalMeaning: "Genome-wide significant associations (p<5e-8). Strong statistical evidence for trait association requiring functional validation."
+        }
+      ]
+    },
+    visualElements: {
+      indicators: [
+        {
+          name: "Point height",
+          description: "Vertical position of data points",
+          meaning: "Corresponds to -log10(p-value) - higher points have more significant p-values"
+        },
+        {
+          name: "Color intensity",
+          description: "Gradual color scale from light to dark/warm",
+          meaning: "Reflects statistical significance - more intense colors indicate stronger associations"
+        }
+      ]
+    }
   },
 
   // Mappability tracks (k24 variants)
@@ -1666,6 +1989,8 @@ export function createComprehensiveRegistry(): Record<string, TrackMetadata> {
             interpretation: documentation.interpretation,
             references: documentation.references,
             lastUpdated: "2024-12-01",
+            colorLegend: documentation.colorLegend,
+            visualElements: documentation.visualElements,
           },
           performance: documentation.performance,
           interactions: documentation.interactions,
