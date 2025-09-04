@@ -59,7 +59,7 @@ export async function queryHg19Variants(options: VariantQueryOptions): Promise<V
     
     // Handle nested arrays by flattening
     if (Array.isArray(data[0])) {
-      return (data as VariantHg19[][]).flat()
+      return (data as VariantHg19[]).flat()
     }
     
     return data as unknown as VariantHg19[];
