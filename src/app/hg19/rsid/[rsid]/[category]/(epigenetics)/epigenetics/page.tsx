@@ -7,7 +7,7 @@ import { EpigeneticsDisplay } from "@/components/features/variant/epigenetics/ep
 import {
   selectVariantFromList,
   validateVariantForRsid,
-} from "@/lib/variant/rsid/helpers";
+} from "@/lib/hg19/rsid/helpers";
 
 interface EpigeneticsPageProps {
   params: {
