@@ -14,7 +14,7 @@ import type { ChatMessage } from '@/lib/chatbot/types';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { generateUUID } from '@/lib/chatbot/utils';
 
-export const maxDuration = 60;
+export const maxDuration = 600;
 
 export async function POST(request: Request) {
   let requestBody: PostRequestBody;
