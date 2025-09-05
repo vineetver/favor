@@ -3,7 +3,7 @@ import { Track } from "@/components/gosling";
 export const gennochiTrack: Track = {
   alignment: "overlay",
   title:
-    "Genome Aggregation Database (gnomAD) non-coding constraint of haploinsufficient variation (Gennochi)",
+    "Gnocchi: Genome Aggregation Database (gnomAD) non-coding constraint of haploinsufficient variation",
   data: {
     url: "https://higlass.genohub.org/api/v1/tileset_info/?d=genocchi-hg38",
     type: "vector",
@@ -21,7 +21,7 @@ export const gennochiTrack: Track = {
       tooltip: [
         { field: "start", type: "genomic", alt: "Start Position" },
         { field: "end", type: "genomic", alt: "End Position" },
-        { field: "value", type: "quantitative", alt: "Gennochi Score" },
+        { field: "value", type: "quantitative", alt: "Gnocchi Score" },
       ],
     },
   ],
