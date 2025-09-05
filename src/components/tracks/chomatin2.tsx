@@ -41,7 +41,6 @@ export const chromatinTrack2: OverlaidTracks[] = [
           value: 6,
         },
         color: {
-          legend: true,
           field: "ccre_full",
           type: "nominal",
           domain: [
