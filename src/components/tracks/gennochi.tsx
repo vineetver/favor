@@ -1,6 +1,6 @@
 import { Track } from "@/components/gosling";
 
-export const gennochiTrack: Track = {
+export const gnocchiTrack: Track = {
   alignment: "overlay",
   title:
     "Gnocchi: Genome Aggregation Database (gnomAD) non-coding constraint of haploinsufficient variation",

@@ -4,7 +4,7 @@ import type { TrackMetadata, TrackCategoryId } from "@/lib/tracks/types";
 
 // Import all track specifications
 import { geneTrack } from "@/components/tracks/gene_anno";
-import { gennochiTrack } from "@/components/tracks/gennochi";
+import { gnocchiTrack } from "@/components/tracks/gennochi";
 import { jarvisTrack } from "@/components/tracks/jarvis";
 import { cCRETrack } from "@/components/tracks/ccre";
 import { atacTrack } from "@/components/tracks/atac";
@@ -73,11 +73,11 @@ const allCategoriesData: CategoryData[] = [
         visible: true,
       },
       {
-        id: "other_gennochi",
-        name: "Gennochi",
+        id: "other_gnocchi",
+        name: "Gnocchi",
         description:
           "Specialized genomic analysis tool providing advanced pattern recognition and computational insights for research applications.",
-        spec: gennochiTrack,
+        spec: gnocchiTrack,
         category: "Other",
         visible: false,
       },
@@ -1789,9 +1789,9 @@ const TRACK_DOCUMENTATION: Record<
   },
 
   // Research Tools
-  other_gennochi: {
+  other_gnocchi: {
     overview:
-      "Gennochi research tool providing specialized genomic analysis and visualization capabilities.",
+      "Gnocchi research tool providing specialized genomic analysis and visualization capabilities.",
     dataSource: "Custom research datasets and algorithms",
     methodology:
       "Specialized computational methods for genomic pattern recognition and analysis.",
