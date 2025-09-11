@@ -50,10 +50,17 @@ export function getComprehensiveGeneSummary() {
         // User wants list of variants in the gene
         const subcategory = subCategorySlug === 'Total-table' ? 'SNV-table' : subCategorySlug;
         
+        // Build sorting query in the format expected by the API (like ServerSideDataTable does)
+        let sortingQuery: string | undefined;
+        if (sortBy) {
+          // Convert sortBy format (e.g., "-position") to query format (e.g., "sort=-position")
+          sortingQuery = `sort=${sortBy}`;
+        }
+        
         const result = await fetchGeneTableData(geneName, {
           subcategory,
           filtersQuery,
-          sortingQuery: sortBy,
+          sortingQuery,
           numericFilters,
           pageSize,
           cursor
@@ -530,10 +537,17 @@ export function getRegionVariantData() {
       // Map Total-table to SNV-table for API compatibility
       const apiSubcategory = subcategory === 'Total-table' ? 'SNV-table' : subcategory;
       
+      // Build sorting query in the format expected by the API (like ServerSideDataTable does)
+      let sortingQuery: string | undefined;
+      if (sortBy) {
+        // Convert sortBy format (e.g., "-position") to query format (e.g., "sort=-position")
+        sortingQuery = `sort=${sortBy}`;
+      }
+      
       const result = await fetchRegionTableData(region, {
         subcategory: apiSubcategory,
         filtersQuery,
-        sortingQuery: sortBy,
+        sortingQuery,
         numericFilters,
         pageSize,
         cursor

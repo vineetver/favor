@@ -51,21 +51,27 @@ export function Chat({
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
         // Transform AI SDK messages to our schema format
-        const transformedMessages = messages.map((message) => {
-          // Handle different message formats from AI SDK
-          if (message.content && typeof message.content === 'string') {
+        const transformedMessages = messages.map((message: any) => {
+          // Helper function to truncate text to fit schema limit
+          const truncateText = (text: string, maxLength: number = 50000): string => {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength - 3) + '...';
+          };
+
+          // AI SDK UIMessage has content property (string or array)
+          if (typeof message.content === 'string') {
             // Simple text message
             return {
               id: message.id || generateUUID(),
               role: message.role,
-              parts: [{ type: 'text', text: message.content }]
+              parts: [{ type: 'text', text: truncateText(message.content) }]
             };
-          } else if (message.content && Array.isArray(message.content)) {
+          } else if (Array.isArray(message.content)) {
             // Multi-part message (text + attachments) - filter only valid types
             const validParts = message.content
               .map((part: any) => {
                 if (part.type === 'text' && part.text) {
-                  return { type: 'text', text: part.text };
+                  return { type: 'text', text: truncateText(part.text) };
                 } else if (part.type === 'file' && part.url) {
                   return {
                     type: 'file',
@@ -84,11 +90,11 @@ export function Chat({
               parts: validParts.length > 0 ? validParts : [{ type: 'text', text: '' }]
             };
           } else if (message.parts) {
-            // Already in our format - filter only valid types
+            // Our custom format - filter only valid types
             const validParts = message.parts
               .map((part: any) => {
                 if (part.type === 'text' && typeof part.text === 'string') {
-                  return { type: 'text', text: part.text };
+                  return { type: 'text', text: truncateText(part.text) };
                 } else if (part.type === 'file' && part.url) {
                   return {
                     type: 'file',
@@ -112,7 +118,7 @@ export function Chat({
             return {
               id: message.id || generateUUID(),
               role: message.role,
-              parts: [{ type: 'text', text: String(text) }]
+              parts: [{ type: 'text', text: truncateText(String(text)) }]
             };
           }
         });
