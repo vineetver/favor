@@ -39,6 +39,17 @@ const PurePreviewMessage = ({
     return text.replace('<has_function_call>', '');
   };
 
+  // Debug: Log message structure to understand why it's not showing
+  console.log('🔍 Message debug:', {
+    id: message.id,
+    role: message.role,
+    hasParts: !!message.parts,
+    partsLength: message.parts?.length,
+    hasContent: !!(message as any).content,
+    content: (message as any).content,
+    allKeys: Object.keys(message)
+  });
+
   return (
     <motion.div
       data-testid={`message-${message.role}`}
@@ -94,7 +105,8 @@ const PurePreviewMessage = ({
           )}
 
           {/* Render message parts in order */}
-          {message.parts?.map((part, index) => {
+          {/* First, try to render parts if they exist */}
+          {message.parts && message.parts.length > 0 ? message.parts.map((part, index) => {
             const key = `${message.id}-part-${index}`;
 
             // Handle reasoning parts
@@ -178,7 +190,73 @@ const PurePreviewMessage = ({
             }
 
             return null;
-          })}
+          }) : 
+          /* Fallback: Handle AI SDK content format if no parts */
+          (() => {
+            const msgContent = (message as any).content;
+            
+            // String content
+            if (typeof msgContent === 'string' && msgContent.trim()) {
+              return (
+                <div key={`${message.id}-content`}>
+                  <div
+                    data-testid="message-content"
+                    className={cn({
+                      'w-fit break-words rounded-2xl px-3 py-2 text-right bg-primary text-white [&>*]:text-white':
+                        message.role === 'user',
+                      'bg-transparent px-0 py-0 text-left':
+                        message.role === 'assistant',
+                    })}
+                  >
+                    <Markdown>{sanitizeText(msgContent)}</Markdown>
+                    {isLoading && message.role === 'assistant' && (
+                      <motion.span 
+                        className="inline-block w-0.5 h-4 bg-foreground ml-1"
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            
+            // Array content
+            if (Array.isArray(msgContent)) {
+              return msgContent.map((part, index) => {
+                const key = `${message.id}-content-${index}`;
+                
+                if (part.type === 'text' && part.text?.trim()) {
+                  return (
+                    <div key={key}>
+                      <div
+                        data-testid="message-content"
+                        className={cn({
+                          'w-fit break-words rounded-2xl px-3 py-2 text-right bg-primary text-white [&>*]:text-white':
+                            message.role === 'user',
+                          'bg-transparent px-0 py-2 text-left':
+                            message.role === 'assistant',
+                        })}
+                      >
+                        <Markdown>{sanitizeText(part.text)}</Markdown>
+                        {isLoading && message.role === 'assistant' && index === msgContent.length - 1 && (
+                          <motion.span 
+                            className="inline-block w-0.5 h-4 bg-foreground ml-1"
+                            animate={{ opacity: [0, 1, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return null;
+              }).filter(Boolean);
+            }
+            
+            return null;
+          })()}
 
           {/* Handle chart data from tool outputs */}
           {message.role === 'assistant' && message.parts?.map((part, index) => {
