@@ -324,3 +324,39 @@ export function createVolcanoPlot() {
     }
   });
 }
+
+export function createUniversalVisualization() {
+  return tool({
+    description: 'Universal visualization tool that can create any chart type (scatter, bar, line, heatmap, network, manhattan, volcano) based on data and requirements',
+    inputSchema: z.object({
+      chartType: z.enum(['scatter', 'bar', 'line', 'heatmap', 'network', 'manhattan', 'volcano']).describe('Type of chart to create'),
+      data: z.any().describe('Data for visualization - structure varies by chart type'),
+      title: z.string().describe('Chart title'),
+      xLabel: z.string().optional().describe('X-axis label'),
+      yLabel: z.string().optional().describe('Y-axis label'),
+      width: z.number().optional().describe('Chart width in pixels'),
+      height: z.number().optional().describe('Chart height in pixels'),
+      options: z.record(z.any()).optional().describe('Chart-specific configuration options')
+    }),
+    execute: async ({ chartType, data, title, xLabel, yLabel, width = 600, height = 400, options = {} }) => {
+      return {
+        type: 'chart',
+        chartType,
+        data,
+        config: {
+          title,
+          xLabel,
+          yLabel,
+          width,
+          height,
+          ...options
+        },
+        metadata: {
+          chartType,
+          dataPoints: Array.isArray(data) ? data.length : 0,
+          created: new Date().toISOString()
+        }
+      };
+    }
+  });
+}

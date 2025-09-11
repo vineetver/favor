@@ -2,7 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { customProvider, extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { AI_CONFIG } from './constants';
-import { models, getModelById } from './models';
+import { getModelById } from './models';
 import { tools } from './tools';
 
 const deepseek = createDeepSeek({
@@ -21,12 +21,9 @@ export function getModelConfig(modelId: string) {
 
 export const myProvider = customProvider({
   languageModels: {
-    "gpt-4o-mini": openai("gpt-4o-mini"),
+    "gpt-5-nano": openai("gpt-5-nano"),
     "gpt-3.5-turbo": openai("gpt-3.5-turbo"),
-    "deepseek-chat": wrapLanguageModel({
-      model: deepseek("deepseek-reasoner"),
-      middleware: extractReasoningMiddleware({ tagName: 'think' }),
-    }),
+    "deepseek-chat": deepseek("deepseek-reasoner"),
   },
 });
 

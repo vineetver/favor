@@ -74,4 +74,13 @@ export const VARIANT_NAVIGATION: NavigationCategory[] = [
     slug: "genome-browser",
     subCategories: [],
   },
+  {
+    name: "OpenTargets",
+    slug: "opentargets",
+    subCategories: [
+      { text: "GWAS Studies", slug: "gwas-studies" },
+      { text: "Variant Consequences", slug: "consequences" },
+      { text: "Credible Sets", slug: "credible-sets" },
+    ],
+  },
 ];

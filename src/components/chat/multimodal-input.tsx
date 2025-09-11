@@ -16,10 +16,16 @@ import { toast } from 'sonner';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWindowSize } from '@/hooks/use-window-size';
 
-import { ArrowUp, Paperclip, Square, RotateCcw } from 'lucide-react';
+import { ArrowUp, Paperclip, Square, RotateCcw, ChevronDown, Cpu } from 'lucide-react';
 import { PreviewAttachment } from '@/components/chat/preview-attachment';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -27,6 +33,9 @@ import { ArrowDown } from 'lucide-react';
 import type { Attachment, ChatMessage } from '@/lib/chatbot/types';
 import { buttonVariants, inputVariants } from '@/lib/design-system/chat-variants';
 import { chatAnimations } from '@/lib/design-system/chat-theme';
+import { models } from '@/lib/ai/models';
+import { saveChatModelAsCookie } from '@/app/(chat)/actions';
+import { startTransition } from 'react';
 
 function PureMultimodalInput({
   chatId,
@@ -39,6 +48,7 @@ function PureMultimodalInput({
   messages,
   setMessages,
   sendMessage,
+  selectedModelId,
   className,
   onReset,
 }: {
@@ -52,6 +62,7 @@ function PureMultimodalInput({
   messages: Array<ChatMessage>;
   setMessages: UseChatHelpers<ChatMessage>['setMessages'];
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
+  selectedModelId: string;
   className?: string;
   onReset?: () => void;
 }) {
@@ -292,6 +303,7 @@ export const MultimodalInput = memo(
     if (!equal(prevProps.attachments, nextProps.attachments)) return false;
     if (prevProps.onReset !== nextProps.onReset) return false;
     if (prevProps.messages.length !== nextProps.messages.length) return false;
+    if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
 
     return true;
   },
@@ -416,3 +428,51 @@ function PureResetButton({
 }
 
 const ResetButton = memo(PureResetButton);
+
+function PureCompactModelSelector({
+  selectedModelId,
+}: {
+  selectedModelId: string;
+}) {
+  const [optimisticModelId, setOptimisticModelId] = useState(selectedModelId);
+  
+  const availableModels = models.filter(model => !model.disabled);
+  const selectedModel = availableModels.find(model => model.id === optimisticModelId);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
+        >
+          <Cpu size={14} />
+          <span className="hidden sm:inline">{selectedModel?.label}</span>
+          <ChevronDown size={12} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[200px]">
+        {availableModels.map((model) => (
+          <DropdownMenuItem
+            key={model.id}
+            onSelect={() => {
+              setOptimisticModelId(model.id);
+              startTransition(() => {
+                saveChatModelAsCookie(model.id);
+              });
+            }}
+            className="text-xs"
+          >
+            <div className="flex flex-col gap-1">
+              <div className="font-medium">{model.label}</div>
+              <div className="text-muted-foreground">{model.description}</div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+const CompactModelSelector = memo(PureCompactModelSelector);

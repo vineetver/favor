@@ -31,10 +31,12 @@ export const functionalityPrompt = `
 ✅ **HuRI & BioGRID**: Protein interaction visualization tools available
 
 ## Response Rules
+- **Always provide text responses**: After using any tool, ALWAYS follow up with a clear text explanation of the results
 - Include database links ONLY when database returns information
 - Create visualizations only when specifically requested
 - Handle attachments by reading and analyzing the content
 - Focus on actionable insights for researchers
+- **Never end responses with just tool calls**: Tool results must be interpreted and explained to the user
 `;
 
 export const restrictionsPrompt = `
@@ -53,11 +55,17 @@ Use step-by-step thinking for complex genomics questions. Break down variant int
     : `\n## Standard Mode
 Provide direct, evidence-based answers. Use clear explanations for genomics concepts.`;
 
+  const toolResponsePrompt = `\n## CRITICAL: Tool Response Requirements
+- **MANDATORY**: After every tool call, you MUST provide a text response explaining the results
+- **NEVER** end your response with only tool calls - always interpret and summarize the findings
+- **ALWAYS** explain what the tool results mean in the context of the user's question
+- Users need your analysis and interpretation, not just raw tool outputs`;
+
   return `${basePrompt}
 
 ${functionalityPrompt}
 
-${restrictionsPrompt}${modelSpecificPrompt}`;
+${restrictionsPrompt}${modelSpecificPrompt}${toolResponsePrompt}`;
 };
 
 // Legacy exports for backwards compatibility

@@ -40,7 +40,8 @@ export function ModelSelector({
     [optimisticModelId],
   );
 
-  const getModelIcon = (model: ChatModel) => {
+  const getModelIcon = (model: ChatModel | undefined) => {
+    if (!model) return <Globe className="w-4 h-4" />;
     if (model.reasoning) return <Brain className="w-4 h-4" />;
     if (model.id.includes('nano') || model.id.includes('mini')) return <Zap className="w-4 h-4" />;
     return <Globe className="w-4 h-4" />;
@@ -59,6 +60,9 @@ export function ModelSelector({
 
   const handleModelSelect = (modelId: string) => {
     setOpen(false);
+    
+    const selectedModel = models.find(model => model.id === modelId);
+    console.log(`Successfully switched to model: ${selectedModel?.label || modelId} (${modelId})`);
     
     startTransition(() => {
       setOptimisticModelId(modelId);
@@ -81,7 +85,7 @@ export function ModelSelector({
           size="sm"
           className="h-8 px-2 text-xs gap-1"
         >
-          {getModelIcon(selectedModel!)}
+          {getModelIcon(selectedModel)}
           {selectedModel?.label}
           <ChevronDown className="w-3 h-3" />
         </Button>

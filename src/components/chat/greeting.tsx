@@ -31,7 +31,7 @@ const exampleMessages = [
 ];
 
 interface GreetingProps {
-  setInput: (input: string) => void;
+  setInput?: (input: string) => void;
 }
 
 export const Greeting = ({ setInput }: GreetingProps) => {
@@ -82,7 +82,7 @@ export const Greeting = ({ setInput }: GreetingProps) => {
               <Button
                 variant="ghost"
                 className="w-full h-auto p-3 text-left group hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-xl transition-all duration-200"
-                onClick={() => setInput(example.message)}
+                onClick={() => setInput?.(example.message)}
               >
                 <div className="flex items-start gap-2 w-full">
                   <ChevronRight className="w-3 h-3 text-primary mt-0.5 group-hover:translate-x-0.5 transition-transform duration-200" />

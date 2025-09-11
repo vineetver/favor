@@ -1,4 +1,4 @@
-export const DEFAULT_MODEL_NAME: string = 'gpt-4o-mini';
+export const DEFAULT_MODEL_NAME: string = 'gpt-5-nano';
 
 export interface ChatModel {
   id: string;
@@ -12,11 +12,11 @@ export interface ChatModel {
 
 export const models: Array<ChatModel> = [
   {
-    id: "gpt-4o-mini",
-    label: "GPT-4o Mini",
-    apiIdentifier: "gpt-4o-mini",
-    description: "Fast, cost-effective model for most tasks",
-    context: 128000,
+    id: "gpt-5-nano",
+    label: "GPT-5 Nano",
+    apiIdentifier: "gpt-5-nano",
+    description: "Ultra-fast GPT-5 model for quick responses",
+    context: 200000,
   },
   {
     id: "gpt-3.5-turbo",

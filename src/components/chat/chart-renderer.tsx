@@ -6,6 +6,7 @@ import { LineChart } from '@/components/ui/charts/line-chart';
 import { AreaChart } from '@/components/ui/charts/area-chart';
 import { PieChart } from '@/components/ui/charts/pie-chart';
 import { Heatmap } from '@/components/ui/charts/heatmap';
+import { transformChartData, validateChartData, getChartDataStats, type ChartType } from '@/lib/utils/chart-data-transforms';
 
 interface ChartRendererProps {
   type: 'chart';
@@ -16,19 +17,49 @@ interface ChartRendererProps {
 }
 
 export function ChartRenderer({ chartType, data, config, metadata }: ChartRendererProps) {
+  // Transform data using universal transformer
+  const transformedData = transformChartData(data, chartType as ChartType);
+  const isValidData = validateChartData(data, chartType as ChartType);
+  const dataStats = getChartDataStats(data, chartType as ChartType);
+
   const renderChart = () => {
+    if (!isValidData || !transformedData || transformedData.length === 0) {
+      return (
+        <div className="p-6 border border-dashed border-muted rounded-lg bg-muted/20">
+          <div className="text-center">
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">No Data Available</h4>
+            <p className="text-xs text-muted-foreground">
+              Unable to render {chartType} chart with the provided data structure.
+            </p>
+            <details className="mt-3 text-left">
+              <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">
+                Debug Information
+              </summary>
+              <div className="mt-2 p-2 bg-muted rounded text-xs font-mono">
+                <div><strong>Data Points:</strong> {dataStats.dataPoints}</div>
+                <div><strong>Chart Type:</strong> {chartType}</div>
+                <div><strong>Data Structure:</strong> {typeof data}</div>
+                <pre className="mt-2 overflow-x-auto whitespace-pre-wrap">
+                  {JSON.stringify(data, null, 2)}
+                </pre>
+              </div>
+            </details>
+          </div>
+        </div>
+      );
+    }
+
     switch (chartType) {
       case 'bar':
-        // Transform data to ensure it has the right structure
-        const barData = data.map((item: any) => ({
-          name: item.category || item.name,
-          value: item.value
-        }));
+        // Extract keys for grouped bars from transformed data
+        const firstItem = transformedData[0] || {};
+        const allKeys = Object.keys(firstItem).filter(key => key !== 'name' && typeof firstItem[key] === 'number');
+        const keys = allKeys.length > 0 ? allKeys : ['value'];
         
         return (
           <BarChart
-            data={barData}
-            keys={['value']}
+            data={transformedData}
+            keys={keys}
             indexBy="name"
             title={config.title}
             xLabel={config.xLabel}
@@ -42,7 +73,7 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
       case 'scatter':
         return (
           <ScatterChart
-            data={data}
+            data={transformedData}
             xDataKey="x"
             yDataKey="y"
             title={config.title}
@@ -54,15 +85,10 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
           />
         );
       
-      case 'line':
-        const lineData = data.map((item: any) => ({
-          name: item.category || item.name || item.x,
-          value: item.value || item.y
-        }));
-        
+      case 'line':        
         return (
           <LineChart
-            data={lineData}
+            data={transformedData}
             keys={['value']}
             indexBy="name"
             title={config.title}
@@ -74,15 +100,10 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
           />
         );
       
-      case 'area':
-        const areaData = data.map((item: any) => ({
-          name: item.category || item.name || item.x,
-          value: item.value || item.y
-        }));
-        
+      case 'area':        
         return (
           <AreaChart
-            data={areaData}
+            data={transformedData}
             keys={['value']}
             indexBy="name"
             title={config.title}
@@ -96,15 +117,10 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
         );
       
       case 'pie':
-      case 'donut':
-        const pieData = data.map((item: any) => ({
-          name: item.category || item.name,
-          value: item.value
-        }));
-        
+      case 'donut':        
         return (
           <PieChart
-            data={pieData}
+            data={transformedData}
             dataKey="value"
             nameKey="name"
             title={config.title}
@@ -118,7 +134,7 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
       case 'heatmap':
         return (
           <Heatmap
-            data={data}
+            data={transformedData}
             title={config.title}
             width={config.width}
             height={config.height || 400}
@@ -182,8 +198,29 @@ export function ChartRenderer({ chartType, data, config, metadata }: ChartRender
   };
 
   return (
-    <div className="my-4">
-      {renderChart()}
+    <div className="my-4 grid grid-cols-1 gap-4 w-full max-w-full overflow-hidden">
+      <div className="w-full overflow-hidden">
+        {renderChart()}
+      </div>
+      
+      {/* Debug view for chart data */}
+      <details className="mt-2">
+        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+          Debug: View Chart Data
+        </summary>
+        <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+          <div className="font-mono">
+            <div className="mb-1"><strong>Type:</strong> {chartType}</div>
+            <div className="mb-1"><strong>Data Points:</strong> {metadata?.dataPoints || (Array.isArray(data) ? data.length : 'N/A')}</div>
+            <details>
+              <summary className="cursor-pointer">Raw Data</summary>
+              <pre className="mt-1 overflow-x-auto">
+                {JSON.stringify({ data, config, metadata }, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

@@ -1,33 +1,36 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { memo } from 'react';
 import { Markdown } from './markdown';
 import { PreviewAttachment } from './preview-attachment';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils/general';
-import { MessageReasoning } from './message-reasoning';
-import { ToolCallErrorBoundary } from './tool-call-error-boundary';
-import { GenomicsToolResult } from './genomics-tool-result';
 import { Dna } from 'lucide-react';
-import type { UseChatHelpers } from '@ai-sdk/react';
 import type { ChatMessage } from '@/lib/chatbot/types';
-import { messageVariants, avatarVariants, containerVariants } from '@/lib/design-system/chat-variants';
-import { chatAnimations } from '@/lib/design-system/chat-theme';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
+import { ChartRenderer } from './chart-renderer';
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
 
 const PurePreviewMessage = ({
   message,
   isLoading,
-  regenerate,
+  requiresScrollPadding,
 }: {
-  chatId: string;
   message: ChatMessage;
   isLoading: boolean;
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
-  isReadonly: boolean;
   requiresScrollPadding: boolean;
 }) => {
-
   const attachmentsFromMessage = message.parts?.filter(
     (part) => part.type === 'file',
   ) || [];
@@ -36,297 +39,227 @@ const PurePreviewMessage = ({
     return text.replace('<has_function_call>', '');
   };
 
-  const hasGenomicsContent = (text: string) => {
-    const genomicsPatterns = [
-      /rs\d+/i, 
-      /chr\d+:/i, 
-      /\b[A-Z]{3,6}\b/i, 
-      /p\.\w+\d+\w+/i, 
-      /c\.\d+/i, 
-    ];
-    return genomicsPatterns.some(pattern => pattern.test(text));
-  };
-
-  // Accumulate all text parts into a single text content
-  const textParts = message.parts?.filter(part => part.type === 'text') || [];
-  const accumulatedText = textParts.map(part => part.text || '').join('');
-
-  // Get all non-text parts (tool calls, data, etc.)
-  const nonTextParts = message.parts?.filter(part => part.type !== 'text') || [];
-
-  // Fallback to direct content field if no text parts exist
-  const directContent = (message as any).content || '';
-  const finalTextContent = accumulatedText || directContent;
-  const hasTextContent = finalTextContent.trim().length > 0;
-
-  // Check if we're actively streaming text (has text parts but they might be incomplete)
-  const isStreamingText = isLoading && message.role === 'assistant' && (textParts.length > 0 || directContent);
-
-
   return (
-    <AnimatePresence>
-      <motion.div
-        data-testid={`message-${message.role}`}
-        className={containerVariants({ spacing: 'tight' })}
-        initial={{ y: 5, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={chatAnimations.transition.normal}
-        data-role={message.role}
-      >
-        <div className={cn('flex w-full', {
+    <motion.div
+      data-testid={`message-${message.role}`}
+      className="group/message w-full mb-4"
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      data-role={message.role}
+    >
+      <div
+        className={cn('flex w-full items-start gap-2 md:gap-3', {
           'justify-end': message.role === 'user',
           'justify-start': message.role === 'assistant',
-        })}>
-          {message.role === 'assistant' && (
-            <div className={cn(avatarVariants({ variant: 'assistant', size: 'md' }), 'mt-2')}>
-              <Dna size={14} className="text-primary" />
+        })}
+      >
+        {message.role === 'assistant' && (
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border mt-1">
+            <Dna size={14} className="text-primary" />
+          </div>
+        )}
+
+        <div
+          className={cn('flex flex-col', {
+            'gap-2 md:gap-4': message.parts?.some(
+              (p) => p.type === 'text' && p.text?.trim(),
+            ),
+            'min-h-96': message.role === 'assistant' && requiresScrollPadding,
+            'w-full':
+              message.role === 'assistant' &&
+              message.parts?.some(
+                (p) => p.type === 'text' && p.text?.trim(),
+              ),
+            'max-w-[calc(100%-2.5rem)] sm:max-w-[min(fit-content,80%)] ml-3':
+              message.role === 'user',
+          })}
+        >
+          {attachmentsFromMessage.length > 0 && (
+            <div
+              data-testid="message-attachments"
+              className="flex flex-row justify-end gap-2"
+            >
+              {attachmentsFromMessage.map((attachment) => (
+                <PreviewAttachment
+                  key={attachment.url}
+                  attachment={{
+                    name: attachment.filename ?? 'file',
+                    contentType: attachment.mediaType,
+                    url: attachment.url,
+                  }}
+                />
+              ))}
             </div>
           )}
 
-          <div
-            className={cn('flex flex-col gap-2 w-full', {
-              'ml-3': message.role === 'assistant',
-              'mr-0': message.role === 'user',
-            })}
-          >
-            {attachmentsFromMessage.length > 0 && (
-              <div
-                data-testid="message-attachments"
-                className="flex flex-row justify-end gap-2"
-              >
-                {attachmentsFromMessage.map((attachment) => (
-                  <PreviewAttachment
-                    key={attachment.url}
-                    attachment={{
-                      name: attachment.filename ?? 'file',
-                      contentType: attachment.mediaType,
-                      url: attachment.url,
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+          {/* Render message parts in order */}
+          {message.parts?.map((part, index) => {
+            const key = `${message.id}-part-${index}`;
 
-            {/* Render parts in chronological order as they arrive */}
-            {message.parts?.map((part, index) => {
-              const { type } = part;
-              const key = `message-${message.id}-part-${index}`;
+            // Handle reasoning parts
+            if (part.type === 'reasoning' && part.text?.trim()) {
+              return (
+                <Reasoning
+                  key={key}
+                  className="w-full"
+                  isStreaming={isLoading && index === message.parts!.length - 1}
+                >
+                  <ReasoningTrigger />
+                  <ReasoningContent>
+                    <Markdown>{sanitizeText(part.text)}</Markdown>
+                  </ReasoningContent>
+                </Reasoning>
+              );
+            }
 
-
-              // Handle reasoning parts
-              if (type === 'reasoning' && part.text?.trim().length > 0) {
-                return (
-                  <MessageReasoning
-                    key={key}
-                    isLoading={isLoading}
-                    reasoning={part.text}
-                  />
-                );
-              }
-
-              // Handle text parts - show each text part as it arrives
-              if (type === 'text' && part.text?.trim()) {
-                return (
-                  <motion.div
-                    key={key}
+            // Handle text parts
+            if (part.type === 'text' && part.text?.trim()) {
+              return (
+                <div key={key}>
+                  <div
                     data-testid="message-content"
-                    className={messageVariants({
-                      role: message.role,
-                      variant: hasGenomicsContent(part.text) && message.role === 'assistant' ? 'genomics' : 'default',
+                    className={cn({
+                      'w-fit break-words rounded-2xl px-3 py-2 text-right bg-primary text-white [&>*]:text-white':
+                        message.role === 'user',
+                      'bg-transparent px-0 py-0 text-left':
+                        message.role === 'assistant',
                     })}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={chatAnimations.transition.normal}
                   >
                     <Markdown>{sanitizeText(part.text)}</Markdown>
-                    {isStreamingText && (
+                    {isLoading && message.role === 'assistant' && index === message.parts!.length - 1 && (
                       <motion.span 
-                        className="inline-block w-2 h-4 bg-primary/60 ml-1"
+                        className="inline-block w-0.5 h-4 bg-foreground ml-1"
                         animate={{ opacity: [0, 1, 0] }}
                         transition={{ duration: 1, repeat: Infinity }}
                       />
                     )}
-                  </motion.div>
-                );
-              }
+                  </div>
+                </div>
+              );
+            }
 
-              // Handle data parts
-              if (type.startsWith('data-') && (part as any).data) {
-                return (
-                  <motion.div
-                    key={key}
-                    className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={chatAnimations.transition.normal}
-                  >
-                    <GenomicsToolResult
-                      toolName="Data Stream"
-                      result={(part as any).data}
-                      isError={false}
-                    />
-                  </motion.div>
-                );
-              }
+            // Handle tool calls
+            if (part.type?.startsWith('tool-')) {
+              const toolPart = part as any;
+              const defaultOpen = false;
 
-              // Handle tool calls
-              if (type?.startsWith('tool-')) {
-                const { toolName, state, input, output, args } = part as any;
-                const extractedToolName = type.replace('tool-', '');
-                const toolDisplayName = toolName || extractedToolName || 'Analysis';
-
-                return (
-                  <ToolCallErrorBoundary 
-                    key={key}
-                    toolName={toolDisplayName}
-                    onRetry={() => regenerate?.()}
-                  >
-                    {(() => {
-                      // Handle completed tool calls
-                      if (state === 'output-available' || state === 'completed') {
-                        if (output && 'error' in output) {
-                          return (
-                            <motion.div 
-                              className={messageVariants({ variant: 'error', role: 'assistant' })}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                                <Dna size={14} />
-                                <span>{toolDisplayName} Error</span>
-                              </div>
-                              <div className="text-sm text-destructive mt-1">
-                                {String(output.error)}
-                              </div>
-                            </motion.div>
-                          );
+              return (
+                <Tool key={key} defaultOpen={defaultOpen}>
+                  <ToolHeader type={part.type} state={toolPart.state || 'input-available'} />
+                  <ToolContent>
+                    {toolPart.input && (
+                      <ToolInput input={toolPart.input} />
+                    )}
+                    {(toolPart.state === 'output-available' || toolPart.state === 'output-error') && (
+                      <ToolOutput
+                        output={
+                          toolPart.output && typeof toolPart.output === 'object' ? (
+                            <>
+                              <details className="cursor-pointer">
+                                <summary className="text-xs font-medium text-muted-foreground mb-2">
+                                  View Raw Data
+                                </summary>
+                                <pre className="text-xs overflow-x-auto bg-muted/50 p-2 rounded">
+                                  <code>{JSON.stringify(toolPart.output, null, 2)}</code>
+                                </pre>
+                              </details>
+                            </>
+                          ) : (
+                            <Markdown>{String(toolPart.output || '')}</Markdown>
+                          )
                         }
+                        errorText={toolPart.errorText}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
 
-                        return (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ 
-                              duration: 0.4, 
-                              ease: "easeOut",
-                              type: "spring",
-                              stiffness: 300,
-                              damping: 30
-                            }}
-                          >
-                            <GenomicsToolResult
-                              toolName={toolDisplayName}
-                              result={output}
-                              isError={false}
-                            />
-                          </motion.div>
-                        );
-                      }
+            return null;
+          })}
 
-                      // Handle tool calls in progress
-                      if (state === 'started' || state === 'input-available' || state === 'streaming' || state === 'partial-call' || (!state && (input || args))) {
-                        return (
-                          <motion.div 
-                            className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={chatAnimations.transition.normal}
-                          >
-                            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                              >
-                                <Dna size={14} />
-                              </motion.div>
-                              <span>Running {toolDisplayName}...</span>
-                            </div>
-                          </motion.div>
-                        );
-                      }
+          {/* Handle chart data from tool outputs */}
+          {message.role === 'assistant' && message.parts?.map((part, index) => {
+            if (part.type?.startsWith('tool-') && (part as any).output?.type === 'chart') {
+              const toolPart = part as any;
+              return (
+                <ChartRenderer 
+                  key={`${message.id}-chart-${index}`}
+                  type={toolPart.output.type}
+                  chartType={toolPart.output.chartType}
+                  data={toolPart.output.data}
+                  config={toolPart.output.config}
+                  metadata={toolPart.output.metadata}
+                />
+              );
+            }
+            return null;
+          })}
 
-                      return null;
-                    })()}
-                  </ToolCallErrorBoundary>
-                );
-              }
-
-              return null;
-            })}
-
-            {/* Loading state for completely empty assistant messages - only show if truly no content */}
-            {!hasTextContent && nonTextParts.length === 0 && message.role === 'assistant' && isLoading && (
-              <motion.div
-                className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={chatAnimations.transition.normal}
-              >
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Dna size={14} />
-                  </motion.div>
-                  <span>Thinking...</span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Show additional loading indicator when text is done but tool calls are still running */}
-            {hasTextContent && nonTextParts.some((part: any) => part.type?.startsWith('tool-') && (!part.state || part.state === 'started' || part.state === 'input-available' || part.state === 'streaming')) && isLoading && (
-              <motion.div
-                className={messageVariants({ variant: 'genomics', role: 'assistant' })}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={chatAnimations.transition.normal}
-              >
-                <div className="flex items-center gap-2 text-sm font-medium text-primary/70">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Dna size={12} />
-                  </motion.div>
-                  <span>Running analysis tools...</span>
-                </div>
-              </motion.div>
-            )}
-
-          </div>
+          {/* Show loading state if no parts yet OR if only tools with no text response */}
+          {message.role === 'assistant' && isLoading && (
+            (!message.parts || message.parts.length === 0) ||
+            (message.parts && !message.parts.some((part: any) => part.type === 'text' && part.text?.trim()))
+          ) && (
+            <div className="bg-muted rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <Dna size={12} />
+                </motion.div>
+                <span>
+                  {message.parts?.some((part: any) => part.type?.startsWith('tool-')) 
+                    ? 'Processing results...' 
+                    : 'Thinking...'}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </motion.div>
   );
 };
 
-export const PreviewMessage = memo(PurePreviewMessage, (prevProps, nextProps) => {
-  if (prevProps.isLoading !== nextProps.isLoading) return false;
-  if (prevProps.message.id !== nextProps.message.id) return false;
-  if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding) return false;
-  
-  // Check if text content has changed (accumulated from parts)
-  const prevText = prevProps.message.parts
-    ?.filter(part => part.type === 'text')
-    ?.map(part => part.text || '')
-    .join('') || (prevProps.message as any).content || '';
-  
-  const nextText = nextProps.message.parts
-    ?.filter(part => part.type === 'text')
-    ?.map(part => part.text || '')
-    .join('') || (nextProps.message as any).content || '';
-  
-  if (prevText !== nextText) return false;
-  
-  // Check if non-text parts have changed
-  const prevNonTextParts = prevProps.message.parts?.filter(part => part.type !== 'text') || [];
-  const nextNonTextParts = nextProps.message.parts?.filter(part => part.type !== 'text') || [];
-  
-  if (!equal(prevNonTextParts, nextNonTextParts)) return false;
+export const PreviewMessage = memo(
+  PurePreviewMessage,
+  (prevProps, nextProps) => {
+    if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (prevProps.message.id !== nextProps.message.id) return false;
+    if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding)
+      return false;
+    if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
 
-  return true;
-});
+    return true;
+  },
+);
+
+const LoadingText = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <motion.div
+      animate={{ backgroundPosition: ['100% 50%', '-100% 50%'] }}
+      transition={{
+        duration: 1.5,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: 'linear',
+      }}
+      style={{
+        background:
+          'linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, hsl(var(--muted-foreground)) 35%, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)) 65%, hsl(var(--muted-foreground)) 100%)',
+        backgroundSize: '200% 100%',
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+      }}
+      className="flex items-center text-transparent"
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 export const ThinkingMessage = () => {
   const role = 'assistant';
@@ -334,22 +267,19 @@ export const ThinkingMessage = () => {
   return (
     <motion.div
       data-testid="message-assistant-loading"
-      className={containerVariants({ spacing: 'tight' })}
-      initial={{ y: 5, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ ...chatAnimations.transition.normal, delay: 1 }}
+      className="group/message w-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       data-role={role}
     >
-      <div className="flex justify-start w-full">
-        <div className={avatarVariants({ variant: 'loading', size: 'sm' })}>
-          <Dna size={12} className="text-primary animate-pulse" />
+      <div className="flex items-start justify-start gap-3">
+        <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
+          <Dna size={14} className="text-primary" />
         </div>
 
-        <div className="ml-3">
-          <div className={messageVariants({ role: 'assistant' })}>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
-              Thinking...
-            </div>
+        <div className="flex w-full flex-col gap-2 md:gap-4">
+          <div className="p-0 text-muted-foreground text-sm">
+            <LoadingText>Thinking...</LoadingText>
           </div>
         </div>
       </div>

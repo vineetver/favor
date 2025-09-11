@@ -14,13 +14,15 @@ const filePartSchema = z.object({
 
 const partSchema = z.union([textPartSchema, filePartSchema]);
 
+const messageSchema = z.object({
+  id: z.string().min(1),
+  role: z.enum(['user', 'assistant']),
+  parts: z.array(partSchema),
+});
+
 export const postRequestBodySchema = z.object({
   id: z.string().min(1),
-  message: z.object({
-    id: z.string().min(1),
-    role: z.enum(['user']),
-    parts: z.array(partSchema),
-  }),
+  messages: z.array(messageSchema),
   selectedChatModel: z.string().min(1),
   selectedVisibilityType: z.enum(['public', 'private']),
 });

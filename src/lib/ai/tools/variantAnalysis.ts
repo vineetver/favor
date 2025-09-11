@@ -10,11 +10,12 @@ import { fetchPGBoost } from '@/lib/variant/pgboost/api';
 import { fetchGWAS } from '@/lib/variant/gwas/api';
 import { getCCREByVCF } from '@/lib/variant/ccre/api';
 import { fetchEntexDefault } from '@/lib/variant/entex/api';
+import { fetchABCPeaks, fetchABCScores } from '@/lib/variant/abc/api';
 
 
 export function getVariantAnalysis() {
   return tool({
-    description: 'Comprehensive variant analysis tool that can analyze single or multiple variants using VCF format or rsID. Aggregates data from all major genomic databases including population frequencies, functional scores, regulatory elements, GWAS associations, and more. Provides intelligent summarization for large datasets.',
+    description: 'Analyze specific known variants by VCF ID (e.g., "19-44908822-C-T") or rsID (e.g., "rs429358"). Gets detailed information about individual variants including population frequencies, functional scores, regulatory elements, and GWAS associations. Do NOT use this for listing variants within genes or regions - use geneAnalysis or regionAnalysis tools instead.',
     inputSchema: z.object({
       variants: z.array(z.string()).optional().describe('Array of variant VCF strings (e.g., ["19-44908822-C-T", "1-100-A-G"]) or rsIDs (e.g., ["rs429358", "rs7412"])'),
       variant: z.string().optional().describe('Single variant in VCF format (chr:pos:ref:alt) or rsID (e.g., rs7412)'),
@@ -29,25 +30,25 @@ export function getVariantAnalysis() {
       aggregationLevel: z.enum(['summary', 'detailed', 'full']).optional().describe('Level of data aggregation - summary: key metrics only, detailed: expanded analysis, full: all available data'),
       
       // Population analysis
-      populationFocus: z.array(z.string()).optional().describe('Focus on specific populations (e.g., ["AFR", "EUR", "EAS"] for gnomAD ancestry groups)'),
+      populationFocus: z.array(z.string()).nullable().optional().describe('Focus on specific populations (e.g., ["AFR", "EUR", "EAS"] for gnomAD ancestry groups)'),
       includeGenderSpecific: z.boolean().optional().describe('Include gender-specific frequency data'),
       
       // Functional analysis  
-      functionalScoreTypes: z.array(z.enum(['scent', 'cv2f', 'pgboost', 'spliceai', 'all'])).optional().describe('Types of functional scores to include'),
-      minFunctionalScore: z.number().optional().describe('Minimum threshold for functional prediction scores'),
-      tissueFilter: z.array(z.string()).optional().describe('Filter SCENT and regulatory data by specific tissues'),
+      functionalScoreTypes: z.array(z.enum(['scent', 'cv2f', 'pgboost', 'spliceai', 'all'])).nullable().optional().describe('Types of functional scores to include'),
+      minFunctionalScore: z.number().nullable().optional().describe('Minimum threshold for functional prediction scores'),
+      tissueFilter: z.array(z.string()).nullable().optional().describe('Filter SCENT and regulatory data by specific tissues'),
       
       // GWAS filtering
-      maxPValue: z.number().optional().describe('Maximum p-value for GWAS associations (e.g., 5e-8)'),
-      gwasTraits: z.array(z.string()).optional().describe('Filter GWAS data by specific traits or diseases'),
-      minSampleSize: z.number().optional().describe('Minimum study sample size for GWAS associations'),
+      maxPValue: z.number().nullable().optional().describe('Maximum p-value for GWAS associations (e.g., 5e-8)'),
+      gwasTraits: z.array(z.string()).nullable().optional().describe('Filter GWAS data by specific traits or diseases'),
+      minSampleSize: z.number().nullable().optional().describe('Minimum study sample size for GWAS associations'),
       
       // Regulatory analysis
-      regulatoryDistance: z.number().optional().describe('Distance around variant to search for regulatory elements (default: 0)'),
-      regulatoryTypes: z.array(z.string()).optional().describe('Filter regulatory elements by type (e.g., ["pELS", "dELS", "PLS"])'),
+      regulatoryDistance: z.number().nullable().optional().describe('Distance around variant to search for regulatory elements (default: 0)'),
+      regulatoryTypes: z.array(z.string()).nullable().optional().describe('Filter regulatory elements by type (e.g., ["pELS", "dELS", "PLS"])'),
       
       // Output control
-      maxResultsPerSource: z.number().optional().describe('Maximum results to return per data source (useful for large datasets)'),
+      maxResultsPerSource: z.number().nullable().optional().describe('Maximum results to return per data source (useful for large datasets)'),
       prioritizeByRelevance: z.boolean().optional().describe('Prioritize results by clinical/functional relevance'),
       includeVisualizationData: z.boolean().optional().describe('Include data formatted for visualization components'),
       
@@ -58,7 +59,7 @@ export function getVariantAnalysis() {
     execute: async ({ 
       variants, 
       variant,
-      dataSources = ['basic', 'functional_scores', 'regulatory_elements'],
+      dataSources = ['basic'],
       aggregationLevel = 'detailed',
       populationFocus,
       includeGenderSpecific = false,
@@ -76,6 +77,19 @@ export function getVariantAnalysis() {
       performCrossAnalysis = false,
       identifySharedFeatures = false
     }) => {
+      // Normalize null values to undefined for arrays and numbers
+      const normalizedOptions = {
+        populationFocus: populationFocus || undefined,
+        functionalScoreTypes: functionalScoreTypes || ['scent', 'cv2f', 'pgboost'],
+        tissueFilter: tissueFilter || undefined,
+        gwasTraits: gwasTraits || undefined,
+        regulatoryTypes: regulatoryTypes || undefined,
+        maxPValue: maxPValue || undefined,
+        minFunctionalScore: minFunctionalScore || undefined,
+        minSampleSize: minSampleSize || undefined,
+        regulatoryDistance: regulatoryDistance ?? 0,
+        maxResultsPerSource: maxResultsPerSource || undefined
+      };
       // Normalize input to array of variants
       let variantList: string[] = [];
       if (variant) variantList = [variant];
@@ -99,17 +113,17 @@ export function getVariantAnalysis() {
           const variantData = await analyzeVariant(variantInput, {
             dataSources,
             aggregationLevel,
-            populationFocus,
+            populationFocus: normalizedOptions.populationFocus,
             includeGenderSpecific,
-            functionalScoreTypes,
-            minFunctionalScore,
-            tissueFilter,
-            maxPValue,
-            gwasTraits,
-            minSampleSize,
-            regulatoryDistance,
-            regulatoryTypes,
-            maxResultsPerSource,
+            functionalScoreTypes: normalizedOptions.functionalScoreTypes,
+            minFunctionalScore: normalizedOptions.minFunctionalScore,
+            tissueFilter: normalizedOptions.tissueFilter,
+            maxPValue: normalizedOptions.maxPValue,
+            gwasTraits: normalizedOptions.gwasTraits,
+            minSampleSize: normalizedOptions.minSampleSize,
+            regulatoryDistance: normalizedOptions.regulatoryDistance,
+            regulatoryTypes: normalizedOptions.regulatoryTypes,
+            maxResultsPerSource: normalizedOptions.maxResultsPerSource,
             prioritizeByRelevance,
             includeVisualizationData
           });
@@ -170,45 +184,58 @@ async function analyzeVariant(variantInput: string, options: any) {
     return { error: 'Could not resolve variant identifier' };
   }
 
-  // Basic variant information
+  // Parallel data fetching for all requested sources
+  const dataFetches: Promise<any>[] = [];
+  const fetchKeys: string[] = [];
+
   if (options.dataSources.includes('basic')) {
-    const basicInfo = await fetchVariant(variantId);
-    if (basicInfo) {
-      variantData.basic = aggregateBasicInfo(basicInfo, options.aggregationLevel);
-    }
+    dataFetches.push(fetchVariant(variantId));
+    fetchKeys.push('basic');
   }
 
-  // Population frequencies
   if (options.dataSources.includes('population_frequencies')) {
-    const [gnomadExome, gnomadGenome] = await Promise.all([
+    dataFetches.push(Promise.all([
       fetchGnomadExome(variantId),
       fetchGnomadGenome(variantId)
-    ]);
-    
-    variantData.populationFrequencies = aggregatePopulationData(
-      { exome: gnomadExome, genome: gnomadGenome },
-      options
-    );
+    ]));
+    fetchKeys.push('population_frequencies');
   }
 
-  // Functional scores
   if (options.dataSources.includes('functional_scores')) {
-    variantData.functionalScores = await aggregateFunctionalScores(
-      variantId, rsid, options
-    );
+    dataFetches.push(aggregateFunctionalScores(variantId, rsid, options));
+    fetchKeys.push('functional_scores');
   }
 
-  // Regulatory elements
   if (options.dataSources.includes('regulatory_elements')) {
-    variantData.regulatoryElements = await aggregateRegulatoryData(
-      variantId, options
-    );
+    dataFetches.push(aggregateRegulatoryData(variantId, options));
+    fetchKeys.push('regulatory_elements');
   }
 
-  // GWAS associations
   if (options.dataSources.includes('gwas_associations')) {
-    variantData.gwasAssociations = await aggregateGWASData(variantId, options);
+    dataFetches.push(aggregateGWASData(variantId, options));
+    fetchKeys.push('gwas_associations');
   }
+
+  // Execute all fetches in parallel
+  const results = await Promise.allSettled(dataFetches);
+  
+  // Process results
+  results.forEach((result, index) => {
+    const key = fetchKeys[index];
+    if (result.status === 'fulfilled' && result.value) {
+      if (key === 'basic') {
+        variantData.basic = aggregateBasicInfo(result.value, options.aggregationLevel);
+      } else if (key === 'population_frequencies') {
+        const [gnomadExome, gnomadGenome] = result.value;
+        variantData.populationFrequencies = aggregatePopulationData(
+          { exome: gnomadExome, genome: gnomadGenome },
+          options
+        );
+      } else {
+        variantData[key] = result.value;
+      }
+    }
+  });
 
   return variantData;
 }
@@ -481,6 +508,49 @@ async function aggregateRegulatoryData(variantId: string, options: any) {
     errors.push(`ENTEx: ${error instanceof Error ? error.message : String(error)}`);
   }
 
+  try {
+    // ABC data (Activity-by-Contact model predictions)
+    const [abcPeaks, abcScores] = await Promise.all([
+      fetchABCPeaks(variantId),
+      fetchABCScores(variantId)
+    ]);
+    
+    if (abcPeaks || abcScores) {
+      if (options.aggregationLevel === 'summary') {
+        const peakTissues = abcPeaks?.reduce((acc: any, item: any) => {
+          acc[item.tissue] = (acc[item.tissue] || 0) + 1;
+          return acc;
+        }, {}) || {};
+        
+        const scoreTissues = abcScores?.reduce((acc: any, item: any) => {
+          acc[item.tissue] = (acc[item.tissue] || 0) + 1;
+          return acc;
+        }, {}) || {};
+
+        regulatoryData.abc = {
+          peaks: {
+            total: abcPeaks?.length || 0,
+            tissueDistribution: peakTissues,
+            significantPeaks: abcPeaks?.filter((item: any) => item.q_value < 0.05).length || 0
+          },
+          scores: {
+            total: abcScores?.length || 0,
+            tissueDistribution: scoreTissues,
+            highScores: abcScores?.filter((item: any) => item.abc_score > 0.1).length || 0,
+            averageScore: abcScores?.length ? abcScores.reduce((sum: number, item: any) => sum + item.abc_score, 0) / abcScores.length : 0
+          }
+        };
+      } else {
+        regulatoryData.abc = {
+          peaks: abcPeaks?.slice(0, options.maxResultsPerSource || 50) || [],
+          scores: abcScores?.slice(0, options.maxResultsPerSource || 50) || []
+        };
+      }
+    }
+  } catch (error) {
+    errors.push(`ABC: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
   if (errors.length > 0) {
     regulatoryData.errors = errors;
   }
@@ -616,86 +686,8 @@ function generateAnalysisSummary(variantData: any, variantCount: number) {
   };
 }
 
-export function getVariantVisualization() {
-  return tool({
-    description: 'Generate visualization data for variant analysis results. IMPORTANT: This tool requires the output from getVariantAnalysis tool as input. Do not use this tool directly for variant identifiers.',
-    inputSchema: z.object({
-      variantAnalysisData: z.any().describe('REQUIRED: Output from getVariantAnalysis tool - must contain data property with variant analysis results'),
-      visualizationType: z.enum([
-        'population_frequencies', 'functional_scores_heatmap', 'gwas_manhattan', 
-        'regulatory_landscape', 'cross_variant_comparison', 'tissue_expression'
-      ]).describe('Type of visualization to generate data for'),
-      chartOptions: z.object({
-        width: z.number().optional(),
-        height: z.number().optional(),
-        colorScheme: z.string().optional(),
-        showLegend: z.boolean().optional()
-      }).optional().describe('Chart styling options')
-    }),
-    execute: async ({ variantAnalysisData, visualizationType, chartOptions = {} }) => {
-      // Strict validation to prevent infinite loops
-      if (!variantAnalysisData) {
-        return { 
-          error: 'variantAnalysisData is required. Please run getVariantAnalysis first, then pass the result to this tool.',
-          usage: 'This tool requires the complete output from getVariantAnalysis as input. It cannot analyze variants directly.'
-        };
-      }
-      
-      if (!variantAnalysisData.data || typeof variantAnalysisData.data !== 'object') {
-        return { 
-          error: 'Invalid variantAnalysisData format. Expected object with data property containing variant analysis results.',
-          received: typeof variantAnalysisData,
-          usage: 'Please ensure you pass the complete output from getVariantAnalysis tool.'
-        };
-      }
-
-      try {
-        let visualizationData: any = {};
-
-        switch (visualizationType) {
-          case 'population_frequencies':
-            visualizationData = generatePopulationFrequencyChart(variantAnalysisData.data);
-            break;
-          case 'functional_scores_heatmap':
-            visualizationData = generateFunctionalScoresHeatmap(variantAnalysisData.data);
-            break;
-          case 'gwas_manhattan':
-            visualizationData = generateGWASManhattanData(variantAnalysisData.data);
-            break;
-          case 'regulatory_landscape':
-            visualizationData = generateRegulatoryLandscape(variantAnalysisData.data);
-            break;
-          case 'cross_variant_comparison':
-            visualizationData = generateCrossVariantComparison(variantAnalysisData.data);
-            break;
-          case 'tissue_expression':
-            visualizationData = generateTissueExpressionChart(variantAnalysisData.data);
-            break;
-          default:
-            return { error: `Unsupported visualization type: ${visualizationType}` };
-        }
-
-        return {
-          type: visualizationType,
-          data: visualizationData,
-          options: {
-            ...chartOptions,
-            responsive: true,
-            maintainAspectRatio: false
-          },
-          metadata: {
-            generated: new Date().toISOString(),
-            variantCount: Object.keys(variantAnalysisData.data).length
-          }
-        };
-      } catch (error) {
-        return { 
-          error: `Failed to generate visualization: ${error instanceof Error ? error.message : String(error)}` 
-        };
-      }
-    }
-  });
-}
+// Variant visualization functionality moved to universal visualization tool
+// This prevents tool rerender issues and consolidates visualization logic
 
 function generatePopulationFrequencyChart(variantData: any) {
   const chartData: any = {

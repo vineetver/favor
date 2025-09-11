@@ -1,6 +1,6 @@
 import { DefaultChatTransport } from 'ai';
-import { useChat, type UseChatHelpers } from '@ai-sdk/react';
-import { useState, useEffect } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 import { Messages } from "./messages";
 import { MultimodalInput } from "@/components/chat/multimodal-input";
 import { motion } from "framer-motion";
@@ -41,19 +41,19 @@ export function Chat({
     stop,
     regenerate,
     error,
-  }: UseChatHelpers<ChatMessage> = useChat<ChatMessage>({
+  } = useChat<ChatMessage>({
     id,
-    experimental_throttle: 16,
+    messages: initialMessages,
+    experimental_throttle: 100,
     generateId: generateUUID,
     transport: new DefaultChatTransport({
       api: '/api/chat',
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
-        const lastMessage = messages[messages.length - 1];
         return {
           body: {
             id,
-            message: lastMessage,
+            messages: messages,
             selectedChatModel: selectedModelId,
             selectedVisibilityType: 'public',
             ...body,
@@ -64,79 +64,17 @@ export function Chat({
     onData: (dataPart) => {
       setDataStream((ds) => (ds ? [...ds, dataPart] : [dataPart]));
     },
-    onToolCall: async ({ toolCall }) => {
-      
-      // Immediately update the last message to show tool call progress
-      setMessages((prevMessages) => {
-        const newMessages = [...prevMessages];
-        const lastMessage = newMessages[newMessages.length - 1];
-        
-        if (lastMessage && lastMessage.role === 'assistant') {
-          // Add a temporary tool call part to show immediate progress
-          const tempToolPart = {
-            type: `tool-${toolCall.toolName}` as any,
-            toolCallId: toolCall.toolCallId,
-            toolName: toolCall.toolName,
-            state: 'started',
-            input: (toolCall as any).input || (toolCall as any).args,
-          };
-          
-          lastMessage.parts = lastMessage.parts || [];
-          
-          // Check if this tool call already exists in parts
-          const existingIndex = lastMessage.parts.findIndex(
-            (part: any) => part.toolCallId === toolCall.toolCallId
-          );
-          
-          if (existingIndex === -1) {
-            // Add new tool call part
-            lastMessage.parts.push(tempToolPart);
-          } else {
-            // Update existing tool call part
-            lastMessage.parts[existingIndex] = {
-              ...lastMessage.parts[existingIndex],
-              ...tempToolPart
-            };
-          }
-        }
-        
-        return newMessages;
-      });
-      
-      // Tool calls are handled server-side
-      return undefined;
-    },
-    onFinish: ({ message }) => {
-      
-      // Filter out empty messages
-      if (message.role === 'assistant' && (!message.parts || message.parts.length === 0)) {
-        console.warn('[Chat] Received empty assistant message, filtering out');
-        setMessages((currentMessages) => 
-          currentMessages.filter(m => m.id !== message.id)
-        );
-      }
+    onFinish: () => {
+      // Handle completion without filtering messages
     },
     onError: (error) => {
-      console.error('[Chat] useChat error:', error);
       if (error instanceof ChatSDKError) {
-        toast.error(`Analysis error: ${error.message}`);
-        console.error('[Chat] ChatSDKError details:', error);
-      } else if (error instanceof Error) {
-        toast.error(`Chat error: ${error.message}`);
-        console.error('[Chat] Error:', error);
-      } else {
-        toast.error('An unexpected error occurred');
-        console.error('[Chat] Unknown error:', error);
+        toast.error(error.message);
       }
     },
   });
 
 
-  useEffect(() => {
-    if (initialMessages.length > 0) {
-      setMessages(initialMessages);
-    }
-  }, [initialMessages, setMessages]);
 
   const handleReset = () => {
     if (status === 'submitted' || status === 'streaming') {
@@ -174,9 +112,6 @@ export function Chat({
           chatId={id}
           status={status}
           messages={messages}
-          regenerate={regenerate}
-          isReadonly={isReadonly}
-          isArtifactVisible={false}
           selectedModelId={selectedModelId}
           setInput={setInput}
         />
@@ -199,6 +134,7 @@ export function Chat({
               messages={messages}
               setMessages={setMessages}
               sendMessage={sendMessage}
+              selectedModelId={selectedModelId}
               onReset={handleReset}
             />
           )}
