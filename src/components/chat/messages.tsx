@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMessages } from '@/hooks/use-messages';
 import type { ChatMessage } from '@/lib/chatbot/types';
 import { useDataStream } from '@/components/chat/data-stream-provider';
-import { containerVariants, buttonVariants } from '@/lib/design-system/chat-variants';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import { Button } from '@/components/ui/button';
 import { ArrowDown } from 'lucide-react';
