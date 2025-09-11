@@ -20,6 +20,10 @@ export async function POST(request: Request) {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
   } catch (error) {
+    console.error('[API] Request validation error:', error);
+    if (error instanceof Error) {
+      console.error('[API] Error details:', error.message);
+    }
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
@@ -65,15 +69,17 @@ export async function POST(request: Request) {
   let lastToolResultTime: number | null = null;
   let responseStreamStartTime: number | null = null;
   
-  const result = streamText({
-    model: myProvider.languageModel(model.apiIdentifier),
-    providerOptions: {
-      openai: { reasoningEffort: 'minimal' },
-    },
-    system: systemPrompt(model),
-    stopWhen: stepCountIs(10),
-    messages: convertToModelMessages(uiMessages),
-    tools: tools && Object.keys(tools).length > 0 ? tools : undefined,
+  let result;
+  try {
+    result = streamText({
+      model: myProvider.languageModel(model.apiIdentifier),
+      providerOptions: {
+        openai: { reasoningEffort: 'minimal' },
+      },
+      system: systemPrompt(model),
+      stopWhen: stepCountIs(10),
+      messages: convertToModelMessages(uiMessages),
+      tools: tools && Object.keys(tools).length > 0 ? tools : undefined,
     onStepFinish: (step) => {
       const stepTime = performance.now();
       
@@ -110,7 +116,11 @@ export async function POST(request: Request) {
         console.log(`[TIMING SUMMARY] Query→Tool: ${(firstToolCallTime - startTime).toFixed(2)}ms | Tool→Response: ${(responseStreamStartTime - lastToolResultTime).toFixed(2)}ms | Total: ${totalTime.toFixed(2)}ms`);
       }
     },
-  });
+    });
+  } catch (error) {
+    console.error('[API] Error creating stream:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 
   return result.toUIMessageStreamResponse(
     {

@@ -50,10 +50,77 @@ export function Chat({
       api: '/api/chat',
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
+        // Transform AI SDK messages to our schema format
+        const transformedMessages = messages.map((message) => {
+          // Handle different message formats from AI SDK
+          if (message.content && typeof message.content === 'string') {
+            // Simple text message
+            return {
+              id: message.id || generateUUID(),
+              role: message.role,
+              parts: [{ type: 'text', text: message.content }]
+            };
+          } else if (message.content && Array.isArray(message.content)) {
+            // Multi-part message (text + attachments) - filter only valid types
+            const validParts = message.content
+              .map((part: any) => {
+                if (part.type === 'text' && part.text) {
+                  return { type: 'text', text: part.text };
+                } else if (part.type === 'file' && part.url) {
+                  return {
+                    type: 'file',
+                    mediaType: part.mediaType || part.mimeType || 'image/jpeg',
+                    name: part.name || part.filename || 'file',
+                    url: part.url
+                  };
+                }
+                return null; // Filter out invalid parts
+              })
+              .filter(Boolean); // Remove null values
+            
+            return {
+              id: message.id || generateUUID(),
+              role: message.role,
+              parts: validParts.length > 0 ? validParts : [{ type: 'text', text: '' }]
+            };
+          } else if (message.parts) {
+            // Already in our format - filter only valid types
+            const validParts = message.parts
+              .map((part: any) => {
+                if (part.type === 'text' && typeof part.text === 'string') {
+                  return { type: 'text', text: part.text };
+                } else if (part.type === 'file' && part.url) {
+                  return {
+                    type: 'file',
+                    mediaType: part.mediaType || 'image/jpeg',
+                    name: part.name || 'file',
+                    url: part.url
+                  };
+                }
+                return null; // Filter out AI SDK internal parts like step-start, reasoning, etc.
+              })
+              .filter(Boolean); // Remove null values
+            
+            return {
+              id: message.id || generateUUID(),
+              role: message.role,
+              parts: validParts.length > 0 ? validParts : [{ type: 'text', text: '' }]
+            };
+          } else {
+            // Fallback - extract text from any format
+            const text = message.text || message.content || '';
+            return {
+              id: message.id || generateUUID(),
+              role: message.role,
+              parts: [{ type: 'text', text: String(text) }]
+            };
+          }
+        });
+
         return {
           body: {
             id,
-            messages: messages,
+            messages: transformedMessages,
             selectedChatModel: selectedModelId,
             selectedVisibilityType: 'public',
             ...body,
