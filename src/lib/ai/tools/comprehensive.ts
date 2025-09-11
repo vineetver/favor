@@ -34,24 +34,24 @@ export function getComprehensiveGeneSummary() {
       
       // Variant listing options (when user wants list of variants in gene)
       getVariants: z.boolean().optional().describe('Set to true when user asks for variants IN the gene or variant counts with filters'),
-      subcategory: z.enum(['SNV-table', 'InDel-table', 'Total-table']).optional().describe('Type of variants to retrieve when listing variants'),
-      cursor: z.string().optional().describe('Cursor for pagination when listing variants'),
-      filtersQuery: z.string().optional().describe('Categorical filters for variants: genecode_comprehensive_category (exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr), clnsig (drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown)'),
+      subCategorySlug: z.enum(['SNV-table', 'InDel-table', 'Total-table']).optional().describe('The subcategory slug for the table to fetch variants from. Valid values are "SNV-table", "InDel-table" and "Total-table".'),
+      cursor: z.string().optional().describe('The cursor for pagination. Omit to fetch the first page.'),
+      filtersQuery: z.string().optional().describe('A filter query string ONLY for categorical filters. Do not include numeric filters. Available filters: - genecode_comprehensive_category (values: exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr) - clnsig (values: drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown) Format example: "genecode_comprehensive_category=exonic,utr&clnsig=pathogenic".'),
       numericFilters: z.array(z.object({
-        field: z.string().describe('Numeric field: position, bravo_an, bravo_ac, bravo_af, cadd_phred, linsight, fathmm_xf, apc_conservation_v2, etc.'),
-        operator: z.enum(['gt', 'lt', 'eq']).describe('Comparison operator'),
-        value: z.string().describe('Numeric value for comparison')
-      })).optional().describe('Numeric filters for variants (e.g., cadd_phred > 20)'),
-      sortBy: z.string().optional().describe('Field to sort variants by'),
-      pageSize: z.number().optional().describe('Number of variants per page (default: 20)')
+        field: z.string().describe('A filter query string ONLY for numeric filters. Do not include categorical filters. Valid fields: position, bravo_an, bravo_ac, bravo_af, cadd_phred, linsight, fathmm_xf, apc_conservation_v2, apc_epigenetics_active, apc_epigenetics_repressed, apc_epigenetics_transcription, apc_local_nucleotide_diversity_v3, apc_mappability, apc_mutation_density, apc_protein_function_v3, apc_transcription_factor, af_total, tg_all, af_eas, af_sas, af_afr, af_amr, af_eur.'),
+        operator: z.enum(['gt', 'lt', 'eq']).describe('The comparison operator: "gt" (greater than), "lt" (less than), or "eq" (equal to)'),
+        value: z.string().describe('The numeric value for the filter comparison')
+      })).optional().describe('An array of numeric filters. Each filter must specify a field, an operator, and a value. Example: [{ field: "fathmm_xf", operator: "gt", value: "10" }]'),
+      sortBy: z.string().optional().describe('The field by which to sort the variants. Valid values include the fields above, optionally prefixed with "-" to indicate descending order. For example: "position" (ascending) or "-position" (descending).'),
+      pageSize: z.number().optional().describe('Number of variants per page (default: 3)')
     }),
-    execute: async ({ geneName, category = 'total-summary', getVariants = false, subcategory = 'Total-table', cursor, filtersQuery, numericFilters, sortBy, pageSize = 20 }) => {
+    execute: async ({ geneName, category = 'total-summary', getVariants = false, subCategorySlug = 'Total-table', cursor, filtersQuery, numericFilters, sortBy, pageSize = 3 }) => {
       if (getVariants) {
         // User wants list of variants in the gene
-        const apiSubcategory = subcategory === 'Total-table' ? 'SNV-table' : subcategory;
+        const subcategory = subCategorySlug === 'Total-table' ? 'SNV-table' : subCategorySlug;
         
         const result = await fetchGeneTableData(geneName, {
-          subcategory: apiSubcategory,
+          subcategory,
           filtersQuery,
           sortingQuery: sortBy,
           numericFilters,
@@ -61,24 +61,28 @@ export function getComprehensiveGeneSummary() {
         
         if (!result) return { error: `No variant data found for gene ${geneName}` };
         
-        const urlMap = {
+        const urlMap: {
+          [key: string]: string;
+        } = {
           'SNV-table': 'SNV-table',
-          'InDel-table': 'InDel-table', 
+          'InDel-table': 'InDel-table',
           'Total-table': 'SNV-table'
         };
+        
+        const url = `https://favor.genohub.org/hg38/gene/${geneName}/full-tables/${urlMap[subCategorySlug]}`;
         
         return {
           gene: geneName,
           variants: result.data,
           hasNextPage: result.hasNextPage,
           nextCursor: result.nextCursor,
-          totalVariants: result.data.length,
-          url: `https://favor.genohub.org/hg38/gene/${geneName}/full-tables/${urlMap[subcategory]}`,
+          url,
           metadata: {
             dataType: 'gene_variants',
             source: 'genohub',
-            subcategory,
+            subCategorySlug,
             pageSize,
+            totalResults: result.data.length,
             filtersApplied: !!filtersQuery || !!numericFilters?.length,
             sortApplied: !!sortBy
           }
