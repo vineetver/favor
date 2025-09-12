@@ -116,12 +116,11 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
   const submitForm = useCallback(() => {
-    // Create message in format compatible with useChat
-    const messageContent = [
+    const messageParts = [
       ...attachments.map((attachment) => ({
         type: 'file' as const,
         url: attachment.url,
-        filename: attachment.name,
+        name: attachment.name,
         mediaType: attachment.contentType,
       })),
       {
@@ -132,7 +131,7 @@ function PureMultimodalInput({
 
     const messageToSend = {
       role: 'user' as const,
-      content: messageContent,  // Use content instead of parts for AI SDK
+      parts: messageParts,
     };
     
     sendMessage(messageToSend);
