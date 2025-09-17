@@ -21,9 +21,10 @@ export function getModelConfig(modelId: string) {
 
 export const myProvider = customProvider({
   languageModels: {
+    "gpt-4.1-nano": openai("gpt-4.1-nano"),
     "gpt-5-nano": openai("gpt-5-nano"),
-    "gpt-3.5-turbo": openai("gpt-3.5-turbo"),
-    "deepseek-chat": deepseek("deepseek-chat"),
+    "gpt-4o-mini": openai("gpt-4o-mini"),
+    "deepseek-chat": deepseek("deepseek-reasoner"),
   },
 });
 

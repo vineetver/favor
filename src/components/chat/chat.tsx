@@ -52,6 +52,7 @@ export const Chat = ({
   const { messages, sendMessage, status, regenerate, setMessages } = useChat(
     {
       onError: (error) => {
+        console.log("Error:", error);
       if (error instanceof ChatSDKError) {
         toast({
           type: 'error',
@@ -88,8 +89,8 @@ export const Chat = ({
     );
     setInput("");
   };
-  
-  console.log(messages)
+
+  console.log("status", status);
   return (
     <div className="max-w-4xl mx-auto relative size-full p-1">
       <div className="flex flex-col h-full">
@@ -187,25 +188,40 @@ export const Chat = ({
                 })}
 
                 {/* Handle chart data from tool outputs */}
-                {message.role === 'assistant' && message.parts?.map((part, index) => {
+                {message.role === 'assistant' && message.parts?.map(part => {
                   if (part.type?.startsWith('tool-') && (part as any).output?.type === 'chart') {
                     const toolPart = part as any;
+                    const { toolCallId } = toolPart
                     return (
-                      <ChartRenderer
-                        key={`${message.id}-chart-${index}`}
-                        type={toolPart.output.type}
-                        chartType={toolPart.output.chartType}
-                        data={toolPart.output.data}
-                        config={toolPart.output.config}
-                        metadata={toolPart.output.metadata}
-                      />
+                      <div key={toolCallId}>
+                        <ChartRenderer
+                          type={toolPart.output.type}
+                          chartType={toolPart.output.chartType}
+                          data={toolPart.output.data}
+                          config={toolPart.output.config}
+                          metadata={toolPart.output.metadata}
+                        />
+                      </div>
                     );
                   }
                   return null;
                 })}
               </div>
             ))}
-            {status === "submitted" && <Loader />}
+            {(status === "submitted" || status !== "ready") && status !== "error" && (
+              <div className="flex items-center gap-2 px-4 py-2 mt-2 text-sm text-muted-foreground">
+                <Loader />
+                <span>
+                  {status === "submitted" ? "Processing..." : "Waiting for response..."}
+                </span>
+              </div>
+            )}
+            {status === "error" && (
+              <div className="flex items-center gap-2 px-4 py-2 text-sm text-destructive bg-destructive/10 rounded-md mx-4">
+                <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                <span>An error occurred during the API request, preventing successful completion.</span>
+              </div>
+            )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>

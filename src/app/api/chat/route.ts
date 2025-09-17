@@ -1,5 +1,6 @@
 import { myProvider, tools } from "@/lib/ai";
 import { systemPrompt } from "@/lib/ai/prompts";
+import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
 // Allow streaming responses up to 30 seconds
@@ -18,8 +19,8 @@ export async function POST(req: Request) {
     model: myProvider.languageModel(model),
     providerOptions: {
       openai: {
-        reasoningEffort: 'low'
-      }
+        reasoningEffort: 'low',
+      } satisfies OpenAIResponsesProviderOptions,
     },
     messages: convertToModelMessages(messages),
     tools: tools,
