@@ -9,7 +9,12 @@ import { fetchRegionSummary } from "@/lib/region/summary/api";
 import { fetchGeneTableData } from "@/lib/gene/table/api";
 import { fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/summary/api";
 import { buildFiltersQuery, buildSortingQuery } from "@/lib/utils/query";
-import { genecodeCategory, clinsig, exonic_category, siftcat } from "@/lib/gene/full-tables/constants";
+import {
+  genecodeCategory,
+  clinsig,
+  exonic_category,
+  siftcat,
+} from "@/lib/gene/full-tables/constants";
 
 type ServerSideDataTableType = "region" | "gene";
 
@@ -64,18 +69,21 @@ export function ServerSideDataTable({
 
   const facetedFilters = useMemo(() => {
     const summary = serverState.summary;
-    
+
     // Only show filters that have data
     const filters = [];
-    
+
     // Category filter - show if has data
     const categoryOptions = genecodeCategory
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (categoryOptions.length > 0) {
       filters.push({
         columnId: "genecode_comprehensive_category",
@@ -83,47 +91,56 @@ export function ServerSideDataTable({
         options: categoryOptions,
       });
     }
-    
+
     // Exonic Category filter - show if has data
     const exonicOptions = exonic_category
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (exonicOptions.length > 0) {
       filters.push({
-        columnId: "genecode_comprehensive_exonic_category", 
+        columnId: "genecode_comprehensive_exonic_category",
         title: "Exonic Category",
         options: exonicOptions,
       });
     }
-    
+
     // SIFT Category filter - show if has data
     const siftOptions = siftcat
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (siftOptions.length > 0) {
       filters.push({
         columnId: "sift_cat",
-        title: "SIFT Category", 
+        title: "SIFT Category",
         options: siftOptions,
       });
     }
-    
+
     // Clinical Significance filter - show if has data
     const clinSigOptions = clinsig
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (clinSigOptions.length > 0) {
       filters.push({
         columnId: "clnsig_v2",
@@ -131,42 +148,49 @@ export function ServerSideDataTable({
         options: clinSigOptions,
       });
     }
-    
+
     return filters;
   }, [serverState.summary]);
 
   const fetchData = async (resetPagination = false) => {
-    setServerState(prev => ({ ...prev, loading: true, error: null }));
+    setServerState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const filtersQuery = buildFiltersQuery(columnFilters);
       const sortingQuery = buildSortingQuery(sorting);
 
-      // Uncomment for debugging: 
+      // Uncomment for debugging:
       // console.log("Filter Debug - columnFilters:", columnFilters);
       // console.log("Filter Debug - filtersQuery:", filtersQuery);
       // console.log("Filter Debug - sortingQuery:", sortingQuery);
 
       let result;
       let summary;
-      
+
       if (type === "region") {
         // Fetch both table data and summary data in parallel
         const [tableResult, summaryResult] = await Promise.all([
           fetchRegionTableData(entityId, {
             subcategory,
             filtersQuery,
-            sortingQuery, 
+            sortingQuery,
             pageSize: serverState.pageSize,
-            cursor: resetPagination ? undefined : (serverState.pageIndex > 0 ? serverState.nextCursor : undefined),
+            cursor: resetPagination
+              ? undefined
+              : serverState.pageIndex > 0
+                ? serverState.nextCursor
+                : undefined,
           }),
           // Fetch summary for the same subcategory to get filter counts
-          fetchRegionSummary(entityId, subcategory.replace('-table', '-summary'))
+          fetchRegionSummary(
+            entityId,
+            subcategory.replace("-table", "-summary"),
+          ),
         ]);
-        
+
         result = tableResult;
         summary = summaryResult;
-        
+
         // Uncomment for debugging:
         // console.log("Filter Debug - summary data:", summary);
         // console.log("Filter Debug - table data sample:", result.data?.slice(0, 2));
@@ -176,22 +200,31 @@ export function ServerSideDataTable({
           fetchGeneTableData(entityId, {
             subcategory,
             filtersQuery,
-            sortingQuery, 
+            sortingQuery,
             pageSize: serverState.pageSize,
-            cursor: resetPagination ? undefined : (serverState.pageIndex > 0 ? serverState.nextCursor : undefined),
+            cursor: resetPagination
+              ? undefined
+              : serverState.pageIndex > 0
+                ? serverState.nextCursor
+                : undefined,
           }),
           // Fetch summary for the same subcategory to get filter counts
-          fetchGeneSummary(entityId)
+          fetchGeneSummary(entityId),
         ]);
-        
+
         result = tableResult;
         // Extract summary for this subcategory
-        summary = summaryResult ? getSummaryByCategory(summaryResult, subcategory.replace('-table', '-summary')) : undefined;
+        summary = summaryResult
+          ? getSummaryByCategory(
+              summaryResult,
+              subcategory.replace("-table", "-summary"),
+            )
+          : undefined;
       } else {
         throw new Error(`Unsupported table type: ${type}`);
       }
 
-      setServerState(prev => ({
+      setServerState((prev) => ({
         ...prev,
         data: result.data,
         hasNextPage: result.hasNextPage,
@@ -202,7 +235,7 @@ export function ServerSideDataTable({
         pageIndex: resetPagination ? 0 : prev.pageIndex,
       }));
     } catch (err) {
-      setServerState(prev => ({
+      setServerState((prev) => ({
         ...prev,
         loading: false,
         error: err instanceof Error ? err.message : "Failed to fetch data",
@@ -214,13 +247,16 @@ export function ServerSideDataTable({
     }
   };
 
-  const handlePaginationChange = (newPageIndex: number, newPageSize: number) => {
-    setServerState(prev => ({
+  const handlePaginationChange = (
+    newPageIndex: number,
+    newPageSize: number,
+  ) => {
+    setServerState((prev) => ({
       ...prev,
       pageIndex: newPageIndex,
       pageSize: newPageSize,
     }));
-    
+
     // Fetch data for the new page
     setTimeout(() => fetchData(), 0);
   };
@@ -232,22 +268,26 @@ export function ServerSideDataTable({
 
   const handleExport = (data: any[], filename?: string) => {
     const headers = columns
-      .filter((col: any) => 'accessorKey' in col && col.accessorKey)
+      .filter((col: any) => "accessorKey" in col && col.accessorKey)
       .map((col: any) => col.accessorKey);
-    
+
     const rows = data.map((row) =>
       headers.map((header: any) => {
         const value = (row as any)[header];
-        return typeof value === 'string' ? value : String(value || '');
-      })
+        return typeof value === "string" ? value : String(value || "");
+      }),
     );
 
-    const tsv = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
-    const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
+    const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = filename || `${type}-variants-${entityId}-${new Date().toISOString().split('T')[0]}.tsv`;
+    a.download =
+      filename ||
+      `${type}-variants-${entityId}-${new Date().toISOString().split("T")[0]}.tsv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -256,7 +296,9 @@ export function ServerSideDataTable({
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Data</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Error Loading Data
+          </h1>
           <p className="text-muted-foreground">{serverState.error}</p>
         </div>
       </div>

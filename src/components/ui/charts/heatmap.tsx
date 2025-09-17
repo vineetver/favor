@@ -39,7 +39,7 @@ const getHeatmapColor = (
   value: number | null,
   min: number,
   max: number,
-  scheme: string = "blue"
+  scheme: string = "blue",
 ): string => {
   if (value === null || value === undefined || isNaN(value)) {
     return "bg-gray-100 text-gray-400";
@@ -123,22 +123,22 @@ export function Heatmap({
 
     // Handle different data formats
     let processedData = data;
-    
+
     // If data has variant/scoreType format (from SimpleHeatmap)
-    if (data.some(d => 'variant' in d && 'scoreType' in d)) {
-      processedData = data.map(d => ({
+    if (data.some((d) => "variant" in d && "scoreType" in d)) {
+      processedData = data.map((d) => ({
         x: d.variant,
         y: d.scoreType,
         value: d.score,
-        ...d
+        ...d,
       }));
-    } else if (data.some(d => 'name' in d && 'category' in d)) {
+    } else if (data.some((d) => "name" in d && "category" in d)) {
       // Generic name/category format
-      processedData = data.map(d => ({
+      processedData = data.map((d) => ({
         x: d.category || d.name,
         y: d.name || d.category,
         value: d.value,
-        ...d
+        ...d,
       }));
     }
 
@@ -358,11 +358,14 @@ export function Heatmap({
             {/* Hover info */}
             {hoveredCell && showTooltip && (
               <div className="p-2 bg-blue-50 rounded text-sm">
-                <strong>{hoveredCell.y}</strong> - {hoveredCell.x.replace("_", " ").toUpperCase()}
+                <strong>{hoveredCell.y}</strong> -{" "}
+                {hoveredCell.x.replace("_", " ").toUpperCase()}
                 {(() => {
                   const cell = matrix
                     .flat()
-                    .find((c) => c.x === hoveredCell.x && c.y === hoveredCell.y);
+                    .find(
+                      (c) => c.x === hoveredCell.x && c.y === hoveredCell.y,
+                    );
                   return cell && cell.value !== null
                     ? `: ${
                         formatValue

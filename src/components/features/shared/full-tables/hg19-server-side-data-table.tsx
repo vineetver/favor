@@ -6,7 +6,12 @@ import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 // API routes for server-side data fetching
 import { HG19GeneTableColumns } from "@/lib/hg19/gene/columns";
 import { HG19RegionTableColumns } from "@/lib/hg19/region/columns";
-import { hg19GenecodeCategory, hg19ExonicCategory, hg19SiftCategory, hg19ClinicalSignificance } from "@/lib/hg19/gene/full-tables/constants";
+import {
+  hg19GenecodeCategory,
+  hg19ExonicCategory,
+  hg19SiftCategory,
+  hg19ClinicalSignificance,
+} from "@/lib/hg19/gene/full-tables/constants";
 
 type HG19ServerSideDataTableType = "hg19-gene" | "hg19-region";
 
@@ -61,18 +66,21 @@ export function HG19ServerSideDataTable({
 
   const facetedFilters = useMemo(() => {
     const summary = serverState.summary;
-    
+
     // Only show filters that have data
     const filters = [];
-    
+
     // Category filter - show if has data
     const categoryOptions = hg19GenecodeCategory
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (categoryOptions.length > 0) {
       filters.push({
         columnId: "gencode_category",
@@ -80,15 +88,18 @@ export function HG19ServerSideDataTable({
         options: categoryOptions,
       });
     }
-    
+
     // Exonic Category filter - show if has data
     const exonicOptions = hg19ExonicCategory
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (exonicOptions.length > 0) {
       filters.push({
         columnId: "gencode_exonic_category",
@@ -96,15 +107,18 @@ export function HG19ServerSideDataTable({
         options: exonicOptions,
       });
     }
-    
+
     // SIFT Category filter - show if has data
     const siftOptions = hg19SiftCategory
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (siftOptions.length > 0) {
       filters.push({
         columnId: "sift_cat",
@@ -112,15 +126,18 @@ export function HG19ServerSideDataTable({
         options: siftOptions,
       });
     }
-    
+
     // Clinical Significance filter - show if has data
     const clinSigOptions = hg19ClinicalSignificance
-      .filter(option => summary && summary[option.value] && summary[option.value] > 0)
-      .map(option => ({
+      .filter(
+        (option) =>
+          summary && summary[option.value] && summary[option.value] > 0,
+      )
+      .map((option) => ({
         ...option,
         count: summary[option.value],
       }));
-    
+
     if (clinSigOptions.length > 0) {
       filters.push({
         columnId: "clnsig",
@@ -128,67 +145,90 @@ export function HG19ServerSideDataTable({
         options: clinSigOptions,
       });
     }
-    
+
     return filters;
   }, [serverState.summary]);
 
   const fetchData = async (resetPagination = false) => {
-    setServerState(prev => ({ ...prev, loading: true, error: null }));
+    setServerState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       let result: any;
       let summary: Record<string, number> = {};
-      
+
       if (type === "hg19-gene") {
         // Convert filter and sorting to hg19 format
-        const filters = columnFilters.reduce((acc, filter) => {
-          acc[filter.id] = filter.value;
-          return acc;
-        }, {} as Record<string, any>);
+        const filters = columnFilters.reduce(
+          (acc, filter) => {
+            acc[filter.id] = filter.value;
+            return acc;
+          },
+          {} as Record<string, any>,
+        );
 
         const sortField = sorting.length > 0 ? sorting[0].id : undefined;
-        const sortDir = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : 'asc';
+        const sortDir =
+          sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "asc";
 
         // Fetch both table data and summary data in parallel via API routes
         const [tableResult, summaryResult] = await Promise.all([
-          fetch(`/api/hg19/gene/${entityId}/variants?${new URLSearchParams({
-            subcategory,
-            pageSize: serverState.pageSize.toString(),
-            cursor: resetPagination ? '' : (serverState.nextCursor || ''),
-            sortingQuery: sortField ? `${sortField}:${sortDir}` : '',
-            filtersQuery: Object.entries(filters).map(([k, v]) => `${k}:${v}`).join(','),
-          })}`).then(res => res.json()),
+          fetch(
+            `/api/hg19/gene/${entityId}/variants?${new URLSearchParams({
+              subcategory,
+              pageSize: serverState.pageSize.toString(),
+              cursor: resetPagination ? "" : serverState.nextCursor || "",
+              sortingQuery: sortField ? `${sortField}:${sortDir}` : "",
+              filtersQuery: Object.entries(filters)
+                .map(([k, v]) => `${k}:${v}`)
+                .join(","),
+            })}`,
+          ).then((res) => res.json()),
           // Fetch summary for the same subcategory to get filter counts
-          fetch(`/api/hg19/gene/${entityId}/summary/${subcategory.replace('-table', '-summary')}`).then(res => res.json())
+          fetch(
+            `/api/hg19/gene/${entityId}/summary/${subcategory.replace("-table", "-summary")}`,
+          ).then((res) => res.json()),
         ]);
-        
+
         result = tableResult;
         // Transform summary array to object format for filter logic
-        summary = summaryResult.reduce((acc: Record<string, number>, item: any) => {
-          acc[item.gencode_category] = item.count;
-          return acc;
-        }, {});
+        summary = summaryResult.reduce(
+          (acc: Record<string, number>, item: any) => {
+            acc[item.gencode_category] = item.count;
+            return acc;
+          },
+          {},
+        );
       } else if (type === "hg19-region") {
         // Convert filter and sorting to hg19 format
-        const filters = columnFilters.reduce((acc, filter) => {
-          acc[filter.id] = filter.value;
-          return acc;
-        }, {} as Record<string, any>);
+        const filters = columnFilters.reduce(
+          (acc, filter) => {
+            acc[filter.id] = filter.value;
+            return acc;
+          },
+          {} as Record<string, any>,
+        );
 
         const sortField = sorting.length > 0 ? sorting[0].id : undefined;
-        const sortDir = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : 'asc';
+        const sortDir =
+          sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "asc";
 
         const [tableResult, summaryResult] = await Promise.all([
-          fetch(`/api/hg19/region/${entityId}/variants?${new URLSearchParams({
-            subcategory,
-            pageSize: serverState.pageSize.toString(),
-            cursor: resetPagination ? '' : (serverState.nextCursor || ''),
-            sortingQuery: sortField ? `${sortField}:${sortDir}` : '',
-            filtersQuery: Object.entries(filters).map(([k, v]) => `${k}:${v}`).join(','),
-          })}`).then(res => res.json()),
-          fetch(`/api/hg19/region/${entityId}/summary/${subcategory.replace('-table', '-summary')}`).then(res => res.json())
+          fetch(
+            `/api/hg19/region/${entityId}/variants?${new URLSearchParams({
+              subcategory,
+              pageSize: serverState.pageSize.toString(),
+              cursor: resetPagination ? "" : serverState.nextCursor || "",
+              sortingQuery: sortField ? `${sortField}:${sortDir}` : "",
+              filtersQuery: Object.entries(filters)
+                .map(([k, v]) => `${k}:${v}`)
+                .join(","),
+            })}`,
+          ).then((res) => res.json()),
+          fetch(
+            `/api/hg19/region/${entityId}/summary/${subcategory.replace("-table", "-summary")}`,
+          ).then((res) => res.json()),
         ]);
-        
+
         result = tableResult;
         // Region summary returns an object, not an array like genes
         // Transform it to match the expected format for filter logic
@@ -197,7 +237,7 @@ export function HG19ServerSideDataTable({
         throw new Error(`Unsupported table type: ${type}`);
       }
 
-      setServerState(prev => ({
+      setServerState((prev) => ({
         ...prev,
         data: result.data,
         hasNextPage: result.hasNextPage,
@@ -208,7 +248,7 @@ export function HG19ServerSideDataTable({
         pageIndex: resetPagination ? 0 : prev.pageIndex,
       }));
     } catch (err) {
-      setServerState(prev => ({
+      setServerState((prev) => ({
         ...prev,
         loading: false,
         error: err instanceof Error ? err.message : "Failed to fetch data",
@@ -220,13 +260,16 @@ export function HG19ServerSideDataTable({
     }
   };
 
-  const handlePaginationChange = (newPageIndex: number, newPageSize: number) => {
-    setServerState(prev => ({
+  const handlePaginationChange = (
+    newPageIndex: number,
+    newPageSize: number,
+  ) => {
+    setServerState((prev) => ({
       ...prev,
       pageIndex: newPageIndex,
       pageSize: newPageSize,
     }));
-    
+
     // Fetch data for the new page
     setTimeout(() => fetchData(), 0);
   };
@@ -238,22 +281,26 @@ export function HG19ServerSideDataTable({
 
   const handleExport = (data: any[], filename?: string) => {
     const headers = columns
-      .filter((col: any) => 'accessorKey' in col && col.accessorKey)
+      .filter((col: any) => "accessorKey" in col && col.accessorKey)
       .map((col: any) => col.accessorKey);
-    
+
     const rows = data.map((row) =>
       headers.map((header: any) => {
         const value = (row as any)[header];
-        return typeof value === 'string' ? value : String(value || '');
-      })
+        return typeof value === "string" ? value : String(value || "");
+      }),
     );
 
-    const tsv = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
-    const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
+    const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = filename || `${type}-variants-${entityId}-${new Date().toISOString().split('T')[0]}.tsv`;
+    a.download =
+      filename ||
+      `${type}-variants-${entityId}-${new Date().toISOString().split("T")[0]}.tsv`;
     a.click();
     URL.revokeObjectURL(url);
   };

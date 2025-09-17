@@ -1,5 +1,5 @@
-import { clickHouseClient } from '@/lib/clickhouse/client';
-import type { Hg19RegionVariantsResponse } from './types';
+import { clickHouseClient } from "@/lib/clickhouse/client";
+import type { Hg19RegionVariantsResponse } from "./types";
 
 interface FetchRegionVariantsParams {
   region: string;
@@ -7,32 +7,32 @@ interface FetchRegionVariantsParams {
   limit?: number;
   offset?: number;
   sort?: string;
-  sortDir?: 'asc' | 'desc';
+  sortDir?: "asc" | "desc";
   filters?: Record<string, any>;
 }
 
 export async function fetchHg19RegionVariants({
   region,
-  subcategory = 'SNV-table',
+  subcategory = "SNV-table",
   limit = 50,
   offset = 0,
   sort,
-  sortDir = 'asc',
+  sortDir = "asc",
   filters,
 }: FetchRegionVariantsParams): Promise<Hg19RegionVariantsResponse> {
   try {
-    const [chr, start, end] = region.split('-');
+    const [chr, start, end] = region.split("-");
     const startPos = Number(start);
     const endPos = Number(end);
 
-    let variantTypeFilter = '';
-    if (subcategory === 'SNV-table') {
-      variantTypeFilter = 'AND length(ref) = 1 AND length(alt) = 1';
-    } else if (subcategory === 'InDel-table') {
-      variantTypeFilter = 'AND (length(ref) > 1 OR length(alt) > 1)';
+    let variantTypeFilter = "";
+    if (subcategory === "SNV-table") {
+      variantTypeFilter = "AND length(ref) = 1 AND length(alt) = 1";
+    } else if (subcategory === "InDel-table") {
+      variantTypeFilter = "AND (length(ref) > 1 OR length(alt) > 1)";
     }
 
-    let filterClause = '';
+    let filterClause = "";
     const queryParams: Record<string, any> = {
       chr,
       start: startPos,
@@ -47,17 +47,17 @@ export async function fetchHg19RegionVariants({
     if (filters) {
       const filterConditions: string[] = [];
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'all') {
+        if (value && value !== "all") {
           filterConditions.push(`${key} = {${key}:String}`);
           queryParams[key] = value;
         }
       });
       if (filterConditions.length > 0) {
-        filterClause = ` AND ${filterConditions.join(' AND ')}`;
+        filterClause = ` AND ${filterConditions.join(" AND ")}`;
       }
     }
 
-    let orderClause = '';
+    let orderClause = "";
     if (sort) {
       orderClause = ` ORDER BY ${sort} ${sortDir.toUpperCase()}`;
     }
@@ -72,13 +72,13 @@ export async function fetchHg19RegionVariants({
         ${filterClause}
       ${orderClause}
       LIMIT {limit:UInt32}
-      ${offset > 0 ? 'OFFSET {offset:UInt32}' : ''}
+      ${offset > 0 ? "OFFSET {offset:UInt32}" : ""}
     `;
 
     const data = await clickHouseClient.query({
       query,
       query_params: queryParams,
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
     return {
@@ -87,24 +87,33 @@ export async function fetchHg19RegionVariants({
       nextCursor: data.length === limit ? String(offset + limit) : undefined,
     };
   } catch (error) {
-    console.error('Error fetching HG19 region variants from ClickHouse:', error);
+    console.error(
+      "Error fetching HG19 region variants from ClickHouse:",
+      error,
+    );
     throw error;
   }
 }
 
-export async function fetchHg19RegionSummaryClient(region: string, subcategory?: string) {
+export async function fetchHg19RegionSummaryClient(
+  region: string,
+  subcategory?: string,
+) {
   const searchParams = new URLSearchParams();
-  
+
   if (subcategory) {
-    searchParams.set('subcategory', subcategory);
+    searchParams.set("subcategory", subcategory);
   }
 
-  const response = await fetch(`/api/hg19/region/${region}/summary?${searchParams}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `/api/hg19/region/${region}/summary?${searchParams}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to fetch region summary: ${response.statusText}`);

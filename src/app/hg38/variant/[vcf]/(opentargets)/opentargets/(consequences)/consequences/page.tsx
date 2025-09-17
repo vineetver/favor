@@ -33,13 +33,8 @@ async function ConsequencesContent({ vcf }: { vcf: string }) {
 
   try {
     const { variant } = await getVariantConsequences(variantId);
-    
-    return (
-      <VariantConsequencesDisplay 
-        variant={variant} 
-        vcf={vcf}
-      />
-    );
+
+    return <VariantConsequencesDisplay variant={variant} vcf={vcf} />;
   } catch (error) {
     return (
       <div className="text-center py-8">
@@ -47,14 +42,16 @@ async function ConsequencesContent({ vcf }: { vcf: string }) {
           Failed to load variant consequences from OpenTargets
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          {error instanceof Error ? error.message : 'Unknown error'}
+          {error instanceof Error ? error.message : "Unknown error"}
         </p>
       </div>
     );
   }
 }
 
-export default async function ConsequencesPage({ params }: ConsequencesPageProps) {
+export default async function ConsequencesPage({
+  params,
+}: ConsequencesPageProps) {
   const { vcf } = params;
 
   return (
@@ -64,7 +61,8 @@ export default async function ConsequencesPage({ params }: ConsequencesPageProps
           Variant Consequences
         </h1>
         <p className="text-muted-foreground mt-2">
-          Functional consequences and transcript effects for variant {vcf} from OpenTargets Platform
+          Functional consequences and transcript effects for variant {vcf} from
+          OpenTargets Platform
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 import type { VariantHg19 } from "./types";
-import { clickHouseClient } from '@/lib/clickhouse/client';
+import { clickHouseClient } from "@/lib/clickhouse/client";
 
 export interface VariantQueryOptions {
   chromosome: string;
@@ -9,8 +9,9 @@ export interface VariantQueryOptions {
   limit?: number;
 }
 
-export async function queryHg19Variants(options: VariantQueryOptions): Promise<VariantHg19[]> {
-
+export async function queryHg19Variants(
+  options: VariantQueryOptions,
+): Promise<VariantHg19[]> {
   try {
     let query: string;
     let queryParams: Record<string, any>;
@@ -27,7 +28,7 @@ export async function queryHg19Variants(options: VariantQueryOptions): Promise<V
       queryParams = {
         chromosome: options.chromosome,
         position: options.position,
-        limit: options.limit || 1000
+        limit: options.limit || 1000,
       };
     } else if (options.startPosition && options.endPosition) {
       // Range query - optimal for genomic regions
@@ -43,36 +44,35 @@ export async function queryHg19Variants(options: VariantQueryOptions): Promise<V
         chromosome: options.chromosome,
         startPosition: options.startPosition,
         endPosition: options.endPosition,
-        limit: options.limit || 1000
+        limit: options.limit || 1000,
       };
     } else {
-      throw new Error('Must provide either exact position or position range');
+      throw new Error("Must provide either exact position or position range");
     }
 
     const data = await clickHouseClient.query<VariantHg19>({
       query,
       query_params: queryParams,
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
-    if (!Array.isArray(data)) return []
-    if (data.length === 0) return []
-    
+    if (!Array.isArray(data)) return [];
+    if (data.length === 0) return [];
+
     // Handle nested arrays by flattening
     if (Array.isArray(data[0])) {
-      return (data as VariantHg19[]).flat()
+      return (data as VariantHg19[]).flat();
     }
-    
+
     return data as unknown as VariantHg19[];
   } catch (error) {
-    console.error('Error querying HG19 variants from ClickHouse:', error);
+    console.error("Error querying HG19 variants from ClickHouse:", error);
     return [];
   }
 }
 
 export async function explainHg19Query(vcf: string): Promise<void> {
-
   try {
-    const [chromosome, positionStr] = vcf.split('-');
+    const [chromosome, positionStr] = vcf.split("-");
     const position = parseInt(positionStr);
 
     const explainQuery = `
@@ -87,17 +87,17 @@ export async function explainHg19Query(vcf: string): Promise<void> {
 
     const result = await clickHouseClient.query({
       query: explainQuery,
-      query_params: { 
+      query_params: {
         chromosome,
         position,
-        vcf 
+        vcf,
       },
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
     const explanation = JSON.stringify(result);
-    console.log('Query Plan:', explanation);
+    console.log("Query Plan:", explanation);
   } catch (error) {
-    console.error('Error explaining query:', error);
+    console.error("Error explaining query:", error);
   }
 }

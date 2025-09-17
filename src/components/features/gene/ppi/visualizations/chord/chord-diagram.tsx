@@ -16,8 +16,12 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { ChordDiagramProps, ChordArc } from "./chord-types";
-import { createChordLayout, getChordColors, getDefaultChordConfig, getNodeAtPosition } from "@/lib/gene/ppi/chord-utils";
-
+import {
+  createChordLayout,
+  getChordColors,
+  getDefaultChordConfig,
+  getNodeAtPosition,
+} from "@/lib/gene/ppi/chord-utils";
 
 const ChordLegend = memo(() => (
   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">

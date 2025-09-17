@@ -1,5 +1,5 @@
 import type { Hg19GeneSummary, Hg19Summary } from "./columns";
-import { clickHouseClient } from '@/lib/clickhouse/client';
+import { clickHouseClient } from "@/lib/clickhouse/client";
 
 export async function fetchHg19GeneSummary(
   geneName: string,
@@ -48,30 +48,33 @@ export async function fetchHg19GeneSummary(
       WHERE chromosome = chr_
         AND position BETWEEN start_ AND end_
         AND rsid != '' AND rsid IS NOT NULL
-        ${categorySlug === 'SNV-summary' ? 'AND length(ref) = 1 AND length(alt) = 1' : ''}
-        ${categorySlug === 'InDel-summary' ? 'AND (length(ref) > 1 OR length(alt) > 1)' : ''}
+        ${categorySlug === "SNV-summary" ? "AND length(ref) = 1 AND length(alt) = 1" : ""}
+        ${categorySlug === "InDel-summary" ? "AND (length(ref) > 1 OR length(alt) > 1)" : ""}
     `;
 
-    const result = await clickHouseClient.query({ 
+    const result = await clickHouseClient.query({
       query,
-      query_params: { geneName }
+      query_params: { geneName },
     });
-    
+
     if (result.length === 0) {
       return null;
     }
 
     const rawResult = result[0];
-    
+
     // Convert string values to numbers for proper calculations
     const convertedResult: any = {};
     for (const [key, value] of Object.entries(rawResult)) {
-      convertedResult[key] = typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : value;
+      convertedResult[key] =
+        typeof value === "string" && !isNaN(Number(value))
+          ? Number(value)
+          : value;
     }
-    
+
     return convertedResult as Hg19GeneSummary;
   } catch (error) {
-    console.error('Error fetching HG19 gene summary from ClickHouse:', error);
+    console.error("Error fetching HG19 gene summary from ClickHouse:", error);
     return null;
   }
 }

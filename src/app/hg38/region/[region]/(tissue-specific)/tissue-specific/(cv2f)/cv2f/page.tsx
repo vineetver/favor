@@ -1,4 +1,3 @@
-
 import { CV2FDisplay } from "@/components/features/variant/cv2f/cv2f-display";
 import { fetchCV2FByRegion } from "@/lib/variant/cv2f/api";
 

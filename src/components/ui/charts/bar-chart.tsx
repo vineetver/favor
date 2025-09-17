@@ -171,7 +171,11 @@ export function BarChart({
           data.map((entry, entryIndex) => (
             <Cell
               key={`cell-${entryIndex}`}
-              fill={entry.color || chartColors[index] || chartColors[entryIndex % chartColors.length]}
+              fill={
+                entry.color ||
+                chartColors[index] ||
+                chartColors[entryIndex % chartColors.length]
+              }
               className={onBarClick ? "hover:opacity-80" : undefined}
             />
           ))}
@@ -216,7 +220,12 @@ export function BarChart({
             domain={["dataMin", "dataMax"]}
             allowDecimals={false}
             tickCount={6}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: -10 }}
+            label={{
+              value: yLabel,
+              angle: -90,
+              position: "insideLeft",
+              offset: -10,
+            }}
           />
         )}
         <Tooltip content={<CustomTooltip />} />

@@ -12,14 +12,14 @@ interface RegionHeaderProps {
 }
 
 function parseRegion(region: string): RegionInfo | null {
-  if (region.includes(':')) {
-    const [chromosome, positions] = region.split(':');
-    const [startStr, endStr] = positions.split('-');
+  if (region.includes(":")) {
+    const [chromosome, positions] = region.split(":");
+    const [startStr, endStr] = positions.split("-");
     const start = parseInt(startStr, 10);
     const end = parseInt(endStr, 10);
-    
+
     if (isNaN(start) || isNaN(end)) return null;
-    
+
     return {
       chromosome,
       start,
@@ -27,16 +27,16 @@ function parseRegion(region: string): RegionInfo | null {
       size: end - start + 1,
     };
   }
-  
-  const parts = region.split('-');
+
+  const parts = region.split("-");
   if (parts.length !== 3) return null;
-  
+
   const [chromosome, startStr, endStr] = parts;
   const start = parseInt(startStr, 10);
   const end = parseInt(endStr, 10);
-  
+
   if (isNaN(start) || isNaN(end)) return null;
-  
+
   return {
     chromosome,
     start,
@@ -56,7 +56,7 @@ function formatNumber(num: number): string {
 
 export function RegionHeader({ region }: RegionHeaderProps) {
   const regionInfo = parseRegion(region);
-  
+
   if (!regionInfo) {
     return (
       <div className="py-6">

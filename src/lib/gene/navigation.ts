@@ -28,8 +28,6 @@ export const GENE_NAVIGATION: NavigationCategory[] = [
         text: "Constraints and Haploinsufficiency",
         slug: "constraints-and-heplo",
       },
-      { text: "Associated Diseases", slug: "diseases" },
-      { text: "Tractability", slug: "tractability" },
     ],
   },
   {

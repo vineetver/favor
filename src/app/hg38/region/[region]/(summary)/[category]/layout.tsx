@@ -19,7 +19,9 @@ export default async function RegionSummaryLayout({
 }: RegionLayoutProps) {
   const { region, category } = params;
 
-  const currentCategory = REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

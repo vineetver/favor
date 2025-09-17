@@ -1,9 +1,9 @@
 import { openai } from "@ai-sdk/openai";
-import { customProvider, extractReasoningMiddleware, wrapLanguageModel } from "ai";
+import { customProvider } from "ai";
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { AI_CONFIG } from './constants';
-import { getModelById } from './models';
-import { tools } from './tools';
+import { AI_CONFIG } from "./constants";
+import { getModelById } from "./models";
+import { tools } from "./tools";
 
 const deepseek = createDeepSeek({
   apiKey: process.env.DEEPSEEK_API_KEY ?? "",
@@ -23,7 +23,7 @@ export const myProvider = customProvider({
   languageModels: {
     "gpt-5-nano": openai("gpt-5-nano"),
     "gpt-3.5-turbo": openai("gpt-3.5-turbo"),
-    "deepseek-chat": deepseek("deepseek-reasoner"),
+    "deepseek-chat": deepseek("deepseek-chat"),
   },
 });
 

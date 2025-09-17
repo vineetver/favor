@@ -31,7 +31,7 @@ export const HG19_GENE_NAVIGATION: NavigationCategory[] = [
     ],
   },
   {
-    name: "SNV Summary", 
+    name: "SNV Summary",
     slug: "SNV-summary",
     subCategories: [
       { text: "Allele Distribution", slug: "allele-distribution" },
@@ -49,17 +49,17 @@ export const HG19_GENE_NAVIGATION: NavigationCategory[] = [
   },
   {
     name: "InDel Summary",
-    slug: "InDel-summary", 
+    slug: "InDel-summary",
     subCategories: [
       { text: "Allele Distribution", slug: "allele-distribution" },
       {
-        text: "Genecode Comprehensive Category", 
+        text: "Genecode Comprehensive Category",
         slug: "genecode-comprehensive-category",
       },
       { text: "Clinvar Clinical Significance", slug: "clinvar" },
       {
         text: "Functional Consequences",
-        slug: "functional-consequences", 
+        slug: "functional-consequences",
       },
     ],
   },
@@ -74,12 +74,17 @@ export const HG19_GENE_NAVIGATION: NavigationCategory[] = [
 ];
 
 // Helper function to get category by slug
-export function getHG19CategoryBySlug(slug: string): NavigationCategory | undefined {
-  return HG19_GENE_NAVIGATION.find(category => category.slug === slug);
+export function getHG19CategoryBySlug(
+  slug: string,
+): NavigationCategory | undefined {
+  return HG19_GENE_NAVIGATION.find((category) => category.slug === slug);
 }
 
-// Helper function to get subcategory by category and subcategory slug  
-export function getHG19SubCategoryBySlug(categorySlug: string, subCategorySlug: string): SubCategory | undefined {
+// Helper function to get subcategory by category and subcategory slug
+export function getHG19SubCategoryBySlug(
+  categorySlug: string,
+  subCategorySlug: string,
+): SubCategory | undefined {
   const category = getHG19CategoryBySlug(categorySlug);
-  return category?.subCategories.find(sub => sub.slug === subCategorySlug);
+  return category?.subCategories.find((sub) => sub.slug === subCategorySlug);
 }

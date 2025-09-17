@@ -33,13 +33,8 @@ async function GwasStudiesContent({ vcf }: { vcf: string }) {
 
   try {
     const { variant } = await getVariantStudies(variantId);
-    
-    return (
-      <VariantStudiesDisplay 
-        variant={variant} 
-        vcf={vcf}
-      />
-    );
+
+    return <VariantStudiesDisplay variant={variant} vcf={vcf} />;
   } catch (error) {
     return (
       <div className="text-center py-8">
@@ -47,24 +42,25 @@ async function GwasStudiesContent({ vcf }: { vcf: string }) {
           Failed to load GWAS studies from OpenTargets
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          {error instanceof Error ? error.message : 'Unknown error'}
+          {error instanceof Error ? error.message : "Unknown error"}
         </p>
       </div>
     );
   }
 }
 
-export default async function GwasStudiesPage({ params }: GwasStudiesPageProps) {
+export default async function GwasStudiesPage({
+  params,
+}: GwasStudiesPageProps) {
   const { vcf } = params;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          GWAS Studies
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">GWAS Studies</h1>
         <p className="text-muted-foreground mt-2">
-          Genome-wide association studies for variant {vcf} from OpenTargets Platform
+          Genome-wide association studies for variant {vcf} from OpenTargets
+          Platform
         </p>
       </div>
 

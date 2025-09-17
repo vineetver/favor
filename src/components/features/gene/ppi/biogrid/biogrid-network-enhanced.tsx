@@ -35,12 +35,23 @@ import {
   transformBiogridData,
   getBiogridUniqueValues,
 } from "@/components/features/gene/ppi/biogrid/biogrid-transforms";
-import { applyBiogridStyles, BIOGRID_LAYOUT_OPTIONS, biogridCytoscapeBaseStyle, BiogridLayoutType, createBiogridCytoscapeElements } from "@/lib/gene/ppi/biogrid-utils";
-import { NetworkData, NetworkEdge, NetworkNode, VISUALIZATION_CONFIG, VisualizationType } from "@/lib/gene/ppi/types";
+import {
+  applyBiogridStyles,
+  BIOGRID_LAYOUT_OPTIONS,
+  biogridCytoscapeBaseStyle,
+  BiogridLayoutType,
+  createBiogridCytoscapeElements,
+} from "@/lib/gene/ppi/biogrid-utils";
+import {
+  NetworkData,
+  NetworkEdge,
+  NetworkNode,
+  VISUALIZATION_CONFIG,
+  VisualizationType,
+} from "@/lib/gene/ppi/types";
 import { applyLayoutWithAdaptiveZoom } from "@/lib/gene/ppi/network-utils";
 import { VisualizationSelector } from "../visualization-selector";
 import { ChordWarning } from "../visualizations/chord/chord-warning";
-
 
 // Lazy import for ChordDiagram to reduce initial bundle size
 const ChordDiagram = React.lazy(() =>

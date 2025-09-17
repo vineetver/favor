@@ -1,4 +1,5 @@
-const OPENTARGETS_API_BASE = 'https://api.platform.opentargets.org/api/v4/graphql';
+const OPENTARGETS_API_BASE =
+  "https://api.platform.opentargets.org/api/v4/graphql";
 
 export interface OpenTargetsResponse<T> {
   data: T;
@@ -17,9 +18,9 @@ export class OpenTargetsClient {
 
   async query<T>(query: string, variables?: Record<string, any>): Promise<T> {
     const response = await fetch(this.baseUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         query,
@@ -28,13 +29,17 @@ export class OpenTargetsClient {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenTargets API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `OpenTargets API error: ${response.status} ${response.statusText}`,
+      );
     }
 
     const result: OpenTargetsResponse<T> = await response.json();
 
     if (result.errors && result.errors.length > 0) {
-      throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`);
+      throw new Error(
+        `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`,
+      );
     }
 
     return result.data;

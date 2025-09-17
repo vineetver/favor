@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { ResponsiveTabs, type TabConfig } from "@/components/ui/responsive-tabs";
+import {
+  ResponsiveTabs,
+  type TabConfig,
+} from "@/components/ui/responsive-tabs";
 import { NoDataState } from "@/components/ui/error-states";
 import { PathwayNetworkDisplay } from "./pathway-network-display";
 import { PathwayGenesTable } from "@/components/features/gene/pathways/pathway-genes-table";
@@ -32,8 +35,9 @@ export function PathwaysDashboard({ pathwayData }: PathwaysDashboardProps) {
   // Create source tabs for responsive tabs
   const sourceTabs: TabConfig[] = availableSources.map((sourceKey) => {
     const sourceData = pathwayData[sourceKey];
-    const sourceInfo = PATHWAY_SOURCES[sourceKey as keyof typeof PATHWAY_SOURCES];
-    
+    const sourceInfo =
+      PATHWAY_SOURCES[sourceKey as keyof typeof PATHWAY_SOURCES];
+
     // Create highlighting data for this source
     const highlightData = {
       selectedPathway,
@@ -46,9 +50,7 @@ export function PathwaysDashboard({ pathwayData }: PathwaysDashboardProps) {
           : [],
       pathwayInteractions:
         selectedPathway && sourceData
-          ? sourceData.interactions.filter(
-              (i) => i.pathway === selectedPathway,
-            )
+          ? sourceData.interactions.filter((i) => i.pathway === selectedPathway)
           : [],
     };
 
@@ -96,7 +98,7 @@ export function PathwaysDashboard({ pathwayData }: PathwaysDashboardProps) {
       },
       {
         id: "genes",
-        label: "Pathway Genes", 
+        label: "Pathway Genes",
         shortLabel: "Gen",
         count: sourceData.genes.length,
         content: (

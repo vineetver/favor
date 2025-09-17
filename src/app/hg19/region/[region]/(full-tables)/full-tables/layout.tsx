@@ -19,7 +19,9 @@ export default async function Hg19RegionLayout({
   const { region } = params;
   const category = "full-tables";
 
-  const currentCategory = HG19_REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = HG19_REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

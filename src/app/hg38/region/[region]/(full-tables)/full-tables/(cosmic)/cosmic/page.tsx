@@ -6,7 +6,6 @@ import { DataGrid } from "@/components/ui/data-grid";
 import { useCosmicData } from "@/lib/region/cosmic/hooks";
 import { cosmicColumns, type Cosmic } from "@/lib/region/cosmic/columns";
 
-
 export default function RegionCosmicPage() {
   const { region } = useParams();
   const { data, isLoading, error } = useCosmicData(region as string);
@@ -15,20 +14,26 @@ export default function RegionCosmicPage() {
     if (!data || data.length === 0) return [];
 
     // Get unique mutation types
-    const mutationTypes = Array.from(new Set(data.map(item => item.so_term).filter(Boolean))).sort();
-    
-    // Get unique canonical values  
-    const canonicalValues = Array.from(new Set(data.map(item => item.is_canonical).filter(Boolean))).sort();
-    
+    const mutationTypes = Array.from(
+      new Set(data.map((item) => item.so_term).filter(Boolean)),
+    ).sort();
+
+    // Get unique canonical values
+    const canonicalValues = Array.from(
+      new Set(data.map((item) => item.is_canonical).filter(Boolean)),
+    ).sort();
+
     // Calculate sample count ranges
-    const sampleCounts = data.map(item => item.genome_screen_sample_count).filter(Boolean);
+    const sampleCounts = data
+      .map((item) => item.genome_screen_sample_count)
+      .filter(Boolean);
     const maxCount = Math.max(...sampleCounts);
-    
+
     return [
       {
         columnId: "is_canonical",
         title: "Canonical Transcript",
-        options: canonicalValues.map(value => ({
+        options: canonicalValues.map((value) => ({
           label: value === "y" ? "Yes" : "No",
           value: value,
         })),
@@ -36,7 +41,7 @@ export default function RegionCosmicPage() {
       {
         columnId: "so_term",
         title: "Mutation Type",
-        options: mutationTypes.map(type => ({
+        options: mutationTypes.map((type) => ({
           label: type,
           value: type,
         })),
@@ -51,7 +56,7 @@ export default function RegionCosmicPage() {
           ...(maxCount > 10 ? [{ label: "11+ samples", value: "11+" }] : []),
         ],
       },
-    ].filter(filter => filter.options.length > 0);
+    ].filter((filter) => filter.options.length > 0);
   }, [data]);
 
   const handleExport = (filteredData: Cosmic[]) => {
@@ -71,12 +76,14 @@ export default function RegionCosmicPage() {
       }),
     );
 
-    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cosmic-region-${region}-${new Date().toISOString().split('T')[0]}.tsv`;
+    a.download = `cosmic-region-${region}-${new Date().toISOString().split("T")[0]}.tsv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -85,7 +92,9 @@ export default function RegionCosmicPage() {
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading COSMIC Data</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Error Loading COSMIC Data
+          </h1>
           <p className="text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -103,12 +112,12 @@ export default function RegionCosmicPage() {
         searchPlaceholder="Search mutations..."
         facetedFilters={facetedFilters}
         onExport={handleExport}
-        exportFilename={`cosmic-region-${region}-${new Date().toISOString().split('T')[0]}.tsv`}
+        exportFilename={`cosmic-region-${region}-${new Date().toISOString().split("T")[0]}.tsv`}
         initialPageSize={25}
         emptyState={{
           title: "No COSMIC data found",
           description: "No cancer mutations found for this region.",
-          dataType: "mutations"
+          dataType: "mutations",
         }}
       />
     </div>

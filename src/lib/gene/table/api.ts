@@ -73,7 +73,9 @@ export async function fetchGeneTableData(
       if (response.status === 404) {
         return { data: [], hasNextPage: false };
       }
-      throw new Error(`Failed to fetch gene table data: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch gene table data: ${response.statusText}`,
+      );
     }
 
     const responseData = await response.json();

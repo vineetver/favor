@@ -20,7 +20,9 @@ export default async function GeneLayout({
   const { geneName } = params;
   const category = "gene-level-annotation";
 
-  const currentCategory = HG19_GENE_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = HG19_GENE_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();
@@ -30,7 +32,6 @@ export default async function GeneLayout({
   if (!geneData) {
     notFound();
   }
-  
 
   return (
     <div className="min-h-screen bg-background">

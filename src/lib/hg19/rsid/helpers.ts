@@ -10,7 +10,7 @@ export function selectVariantFromList(
 
   // If a preferred variant is specified and found, return it
   if (preferredVcf) {
-    const preferred = variants.find(v => v.variant_vcf === preferredVcf);
+    const preferred = variants.find((v) => v.variant_vcf === preferredVcf);
     if (preferred) {
       return preferred;
     }
@@ -28,7 +28,7 @@ export function validateVariantForRsid(
     return null;
   }
 
-  const exists = variants.some(v => v.variant_vcf === variantVcf);
+  const exists = variants.some((v) => v.variant_vcf === variantVcf);
   return exists ? variantVcf : null;
 }
 

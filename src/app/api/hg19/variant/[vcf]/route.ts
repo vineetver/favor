@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { VariantHg19 } from '@/lib/hg19/variant/types';
-import { clickHouseClient } from '@/lib/clickhouse/client';
+import { NextRequest, NextResponse } from "next/server";
+import type { VariantHg19 } from "@/lib/hg19/variant/types";
+import { clickHouseClient } from "@/lib/clickhouse/client";
 
 interface RouteParams {
   params: {
@@ -13,27 +13,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   if (!vcf) {
     return NextResponse.json(
-      { error: 'VCF parameter is required' },
-      { status: 400 }
+      { error: "VCF parameter is required" },
+      { status: 400 },
     );
   }
 
   try {
     const variant = await fetchHg19Variant(vcf);
-    
+
     if (!variant) {
-      return NextResponse.json(
-        { error: 'Variant not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Variant not found" }, { status: 404 });
     }
 
     return NextResponse.json(variant);
   } catch (error) {
-    console.error('Error fetching HG19 variant:', error);
+    console.error("Error fetching HG19 variant:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -41,11 +38,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 async function fetchHg19Variant(vcf: string): Promise<VariantHg19 | null> {
   try {
     // Parse VCF format: chr-pos-ref-alt
-    const [chromosome, positionStr, ref, alt] = vcf.split('-');
+    const [chromosome, positionStr, ref, alt] = vcf.split("-");
     const position = parseInt(positionStr);
 
     if (!chromosome || !position || !ref || !alt) {
-      throw new Error('Invalid VCF format');
+      throw new Error("Invalid VCF format");
     }
 
     const query = `
@@ -59,16 +56,16 @@ async function fetchHg19Variant(vcf: string): Promise<VariantHg19 | null> {
 
     const rows = await clickHouseClient.query<VariantHg19>({
       query,
-      query_params: { 
+      query_params: {
         chromosome,
         position,
-        vcf 
+        vcf,
       },
     });
 
     return rows.length > 0 ? rows[0] : null;
   } catch (error) {
-    console.error('Error fetching HG19 variant from ClickHouse:', error);
+    console.error("Error fetching HG19 variant from ClickHouse:", error);
     return null;
   }
 }

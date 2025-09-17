@@ -3,9 +3,7 @@
 import React, { useMemo } from "react";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { HuriInteraction } from "@/lib/gene/ppi/constants";
-import {
-  createBasePPIColumns,
-} from "@/lib/gene/ppi/table-utils";
+import { createBasePPIColumns } from "@/lib/gene/ppi/table-utils";
 import { transformHuriToUnified } from "../data-transforms";
 
 interface HuriTableProps {
@@ -76,14 +74,21 @@ export function HuriTable({ data, selectedNode }: HuriTableProps) {
       selectedRowId={
         selectedNode
           ? transformedData.find(
-              (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
+              (row) =>
+                row.gene_a === selectedNode || row.gene_b === selectedNode,
             )
-              ? `${transformedData.find(
-                  (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-                )?.gene_a}-${transformedData.find(
-                  (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-                )?.gene_b}`
-              : null
+            ? `${
+                transformedData.find(
+                  (row) =>
+                    row.gene_a === selectedNode || row.gene_b === selectedNode,
+                )?.gene_a
+              }-${
+                transformedData.find(
+                  (row) =>
+                    row.gene_a === selectedNode || row.gene_b === selectedNode,
+                )?.gene_b
+              }`
+            : null
           : null
       }
     />

@@ -15,7 +15,9 @@ export function FileFormat() {
             <div className="flex items-center justify-center rounded-md bg-muted p-3">
               <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold">TSV (Tab-Separated Values)</h3>
+            <h3 className="text-lg font-semibold">
+              TSV (Tab-Separated Values)
+            </h3>
             <CollapsibleTrigger className="ml-auto">
               <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
@@ -48,7 +50,9 @@ export function FileFormat() {
             <div className="flex items-center justify-center rounded-md bg-muted p-3">
               <FileIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold">CSV (Comma-Separated Values)</h3>
+            <h3 className="text-lg font-semibold">
+              CSV (Comma-Separated Values)
+            </h3>
             <CollapsibleTrigger className="ml-auto">
               <ChevronsUpDown className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </CollapsibleTrigger>
@@ -138,11 +142,12 @@ export function FileFormat() {
           <CollapsibleContent>
             <p>
               You can upload a plain text file with one variant per row
-              separated by a &#39;-&#39;. This is our standard format for FAVOR and
-              batch annotation. The first 4 fields in the TXT file MUST be:
+              separated by a &#39;-&#39;. This is our standard format for FAVOR
+              and batch annotation. The first 4 fields in the TXT file MUST be:
             </p>
             <p className="text-sm text-muted-foreground">
-              Note: When using HG19 assembly, RSID fields in uploaded files will be preserved in the results.
+              Note: When using HG19 assembly, RSID fields in uploaded files will
+              be preserved in the results.
             </p>
             <div className="grid gap-2 py-2">
               <ul className="list-disc space-y-0.5 pl-4">
@@ -162,4 +167,3 @@ export function FileFormat() {
     </div>
   );
 }
-

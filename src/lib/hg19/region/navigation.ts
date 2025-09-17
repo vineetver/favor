@@ -11,7 +11,7 @@ export interface NavigationCategory {
 
 export const HG19_REGION_NAVIGATION: NavigationCategory[] = [
   {
-    name: "SNV Summary", 
+    name: "SNV Summary",
     slug: "SNV-summary",
     subCategories: [
       { text: "Allele Distribution", slug: "allele-distribution" },
@@ -29,17 +29,17 @@ export const HG19_REGION_NAVIGATION: NavigationCategory[] = [
   },
   {
     name: "InDel Summary",
-    slug: "InDel-summary", 
+    slug: "InDel-summary",
     subCategories: [
       { text: "Allele Distribution", slug: "allele-distribution" },
       {
-        text: "Genecode Comprehensive Category", 
+        text: "Genecode Comprehensive Category",
         slug: "genecode-comprehensive-category",
       },
       { text: "Clinvar Clinical Significance", slug: "clinvar" },
       {
         text: "Functional Consequences",
-        slug: "functional-consequences", 
+        slug: "functional-consequences",
       },
     ],
   },
@@ -53,11 +53,16 @@ export const HG19_REGION_NAVIGATION: NavigationCategory[] = [
   },
 ];
 
-export function getHG19RegionCategoryBySlug(slug: string): NavigationCategory | undefined {
-  return HG19_REGION_NAVIGATION.find(category => category.slug === slug);
+export function getHG19RegionCategoryBySlug(
+  slug: string,
+): NavigationCategory | undefined {
+  return HG19_REGION_NAVIGATION.find((category) => category.slug === slug);
 }
 
-export function getHG19RegionSubCategoryBySlug(categorySlug: string, subCategorySlug: string): SubCategory | undefined {
+export function getHG19RegionSubCategoryBySlug(
+  categorySlug: string,
+  subCategorySlug: string,
+): SubCategory | undefined {
   const category = getHG19RegionCategoryBySlug(categorySlug);
-  return category?.subCategories.find(sub => sub.slug === subCategorySlug);
+  return category?.subCategories.find((sub) => sub.slug === subCategorySlug);
 }

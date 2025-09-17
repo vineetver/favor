@@ -244,10 +244,10 @@ export class GenomicDomainManager {
     if (windowSize && windowSize !== this.DEFAULT_WINDOW_SIZE) {
       const regionCenter = Math.floor((region.start + region.end) / 2);
       const halfWindow = Math.floor(windowSize / 2);
-      
+
       const start = Math.max(1, regionCenter - halfWindow);
       const end = regionCenter + halfWindow;
-      
+
       return {
         chromosome: region.chromosome,
         interval: [start, end],

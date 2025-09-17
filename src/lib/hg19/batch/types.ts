@@ -12,8 +12,8 @@ export interface BatchAnnotationRequest {
   variants: BatchVariantInput[];
   email: string;
   organization: string;
-  coordinateSystem: '1-base' | '0-base';
-  outputFormat: 'csv' | 'json' | 'tsv';
+  coordinateSystem: "1-base" | "0-base";
+  outputFormat: "csv" | "json" | "tsv";
 }
 
 export interface BatchProcessingResult {

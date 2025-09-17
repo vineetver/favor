@@ -8,7 +8,7 @@ export default function VariantLoading() {
         <Skeleton className="h-8 w-16" />
         <Skeleton className="h-8 w-32" />
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>

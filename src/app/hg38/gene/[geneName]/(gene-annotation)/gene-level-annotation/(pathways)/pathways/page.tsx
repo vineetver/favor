@@ -73,7 +73,7 @@ export default async function PathwaysPage({ params }: PathwaysPageProps) {
   }
 
   return (
-    <Suspense 
+    <Suspense
       fallback={
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />

@@ -96,12 +96,18 @@ export function ServerSideDataGrid<TData, TValue>({
     data,
     columns,
     onSortingChange: (updaterOrValue) => {
-      const newSorting = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue;
+      const newSorting =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
       // console.log("Filter Debug - Sorting changed:", newSorting);
       onSortingChange(newSorting);
     },
     onColumnFiltersChange: (updaterOrValue) => {
-      const newFilters = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      const newFilters =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(columnFilters)
+          : updaterOrValue;
       // console.log("Filter Debug - Filters changed:", newFilters);
       onColumnFiltersChange(newFilters);
     },
@@ -133,14 +139,14 @@ export function ServerSideDataGrid<TData, TValue>({
 
     // Default export logic
     const headers = columns
-      .filter((col) => 'accessorKey' in col && col.accessorKey)
+      .filter((col) => "accessorKey" in col && col.accessorKey)
       .map((col) => (col as any).accessorKey);
 
     const rows = data.map((row) =>
       headers.map((header) => {
         const value = (row as any)[header];
         return value?.toString() || "";
-      })
+      }),
     );
 
     const csvContent = [
@@ -163,9 +169,7 @@ export function ServerSideDataGrid<TData, TValue>({
   if (isLoading) {
     return (
       <Card>
-        {(title ||
-          description ||
-          facetedFilters.length > 0) && (
+        {(title || description || facetedFilters.length > 0) && (
           <CardHeader>
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <div className="space-y-1">
@@ -230,9 +234,7 @@ export function ServerSideDataGrid<TData, TValue>({
 
   return (
     <Card>
-      {(title ||
-        description ||
-        facetedFilters.length > 0) && (
+      {(title || description || facetedFilters.length > 0) && (
         <CardHeader>
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="space-y-1">
@@ -350,7 +352,7 @@ export function ServerSideDataGrid<TData, TValue>({
           </Table>
         </div>
       </CardContent>
-      
+
       {/* Server-side Pagination */}
       <div className="flex items-center justify-between px-6 py-4 border-t">
         <div className="text-sm text-muted-foreground">
@@ -360,7 +362,9 @@ export function ServerSideDataGrid<TData, TValue>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onPaginationChange(Math.max(0, pageIndex - 1), pageSize)}
+            onClick={() =>
+              onPaginationChange(Math.max(0, pageIndex - 1), pageSize)
+            }
             disabled={pageIndex === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 let weaviate: any = null;
 let client: any = null;
@@ -7,12 +7,14 @@ async function getWeaviateClient() {
   if (!client) {
     try {
       // Dynamic import to avoid module resolution issues
-      weaviate = await import('weaviate-client');
-      
+      weaviate = await import("weaviate-client");
+
       client = await weaviate.default.connectToWeaviateCloud(
         process.env.WEAVIATE_CLUSTER_URL || "",
         {
-          authCredentials: new weaviate.default.ApiKey(process.env.WEAVIATE_API_KEY || ""),
+          authCredentials: new weaviate.default.ApiKey(
+            process.env.WEAVIATE_API_KEY || "",
+          ),
           headers: {
             "X-OpenAI-Api-Key": process.env.OPENAI_API_KEY || "",
           },
@@ -48,20 +50,20 @@ async function fetchGeneInfo(gene: string | undefined, query: string) {
 export async function POST(request: NextRequest) {
   try {
     const { gene, question } = await request.json();
-    
+
     if (!gene || !question) {
       return NextResponse.json(
-        { error: 'Gene symbol and question are required' },
-        { status: 400 }
+        { error: "Gene symbol and question are required" },
+        { status: 400 },
       );
     }
 
     const geneInfo = await fetchGeneInfo(gene, question);
-    
+
     if (!geneInfo) {
       return NextResponse.json(
         { error: `Gene annotation for ${gene} could not be found` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -69,14 +71,13 @@ export async function POST(request: NextRequest) {
       gene,
       question,
       annotation: geneInfo,
-      source: 'weaviate_ai'
+      source: "weaviate_ai",
     });
-
   } catch (error) {
-    console.error('API error:', error);
+    console.error("API error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

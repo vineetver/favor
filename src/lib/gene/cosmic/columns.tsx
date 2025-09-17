@@ -1,8 +1,15 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { ExternalLink } from "@/components/ui/external-link";
-import { safeCellRenderer, isValidString, isValidNumber } from "@/lib/annotations/helpers";
-import { cosmicMutationTypeCCode, cosmicCanonicalCCode } from "@/lib/utils/colors";
+import {
+  safeCellRenderer,
+  isValidString,
+  isValidNumber,
+} from "@/lib/annotations/helpers";
+import {
+  cosmicMutationTypeCCode,
+  cosmicCanonicalCCode,
+} from "@/lib/utils/colors";
 
 export interface Cosmic {
   variant_vcf: string;
@@ -17,8 +24,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "variant_vcf",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Variant"
         tooltip="VCF format variant notation representing genomic position and alleles"
         sortable={true}
@@ -48,8 +55,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "cds",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="CDS Change"
         tooltip="Coding sequence mutation following HGVS notation. Shows nucleotide changes in the coding region."
         sortable={true}
@@ -72,8 +79,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "aa",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Protein Change"
         tooltip="Amino acid change from the mutation. Format follows HGVS protein notation (e.g., p.V600E)."
         sortable={true}
@@ -85,9 +92,17 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
         value,
         (str: string) => {
           if (str === "p.?") {
-            return <span className="font-mono text-sm text-muted-foreground">{str}</span>;
+            return (
+              <span className="font-mono text-sm text-muted-foreground">
+                {str}
+              </span>
+            );
           }
-          return <span className="font-mono text-sm bg-black/20 px-2 py-1 rounded">{str}</span>;
+          return (
+            <span className="font-mono text-sm bg-black/20 px-2 py-1 rounded">
+              {str}
+            </span>
+          );
         },
         isValidString,
       );
@@ -101,8 +116,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "so_term",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Mutation Type"
         tooltip="Type of mutation (SNV, insertion, deletion, etc.)"
         sortable={true}
@@ -129,8 +144,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "is_canonical",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Canonical"
         tooltip="Whether this mutation affects the Ensembl canonical transcript"
         sortable={true}
@@ -157,8 +172,8 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
   {
     accessorKey: "genome_screen_sample_count",
     header: ({ column }) => (
-      <DataTableColumnHeader 
-        column={column} 
+      <DataTableColumnHeader
+        column={column}
         title="Sample Count"
         tooltip="Number of samples where this variant was observed in COSMIC cancer genome screens"
         sortable={true}
@@ -168,7 +183,11 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
       const value = row.original.genome_screen_sample_count;
       return safeCellRenderer(
         value,
-        (num: number) => <span className="font-medium tabular-nums">{num.toLocaleString()}</span>,
+        (num: number) => (
+          <span className="font-medium tabular-nums">
+            {num.toLocaleString()}
+          </span>
+        ),
         isValidNumber,
       );
     },
@@ -176,7 +195,7 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
     filterFn: (row, id, value) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return true;
       const count = row.getValue(id) as number;
-      
+
       const checkValue = (val: string) => {
         switch (val) {
           case "1":
@@ -191,7 +210,7 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
             return false;
         }
       };
-      
+
       if (Array.isArray(value)) {
         return value.some(checkValue);
       }

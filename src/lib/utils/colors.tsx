@@ -242,12 +242,14 @@ export function filterStatusCCode(value: string) {
 
 export function clinicalSignificanceCCode(value: string) {
   const cleanValue = value.toLowerCase().replace(/_/g, " ");
-  
+
   if (cleanValue.match(/(pathogenic|likely pathogenic)/)) {
     return getSpanElement(value.replace(/_/g, " "), "red");
   } else if (cleanValue.match(/(benign|likely benign)/)) {
     return getSpanElement(value.replace(/_/g, " "), "green");
-  } else if (cleanValue.match(/(uncertain significance|conflicting|drug response)/)) {
+  } else if (
+    cleanValue.match(/(uncertain significance|conflicting|drug response)/)
+  ) {
     return getSpanElement(value.replace(/_/g, " "), "orange");
   } else if (cleanValue.match(/(not provided|no interpretation|other)/)) {
     return getSpanElement(value.replace(/_/g, " "), "gray");
@@ -271,7 +273,6 @@ export function cagePromoterCCode(value: string | number | undefined) {
     return getSpanElement("No", "red");
   }
 }
-
 
 export function epigeneticsCCode(value: string) {
   switch (value) {
@@ -356,9 +357,18 @@ export function filterValueCCode(value: string) {
   }
 }
 
-export function booleanStatusCCode(value: string | boolean, trueLabel: string = "Yes", falseLabel: string = "No") {
-  const isTrue = value === true || value === "y" || value === "yes" || value === "true" || value === "1";
-  
+export function booleanStatusCCode(
+  value: string | boolean,
+  trueLabel: string = "Yes",
+  falseLabel: string = "No",
+) {
+  const isTrue =
+    value === true ||
+    value === "y" ||
+    value === "yes" ||
+    value === "true" ||
+    value === "1";
+
   if (isTrue) {
     return getSpanElement(trueLabel, "green");
   } else {

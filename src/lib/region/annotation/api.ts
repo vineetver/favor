@@ -1,4 +1,5 @@
-export const REGION_ANNOTATION_URL = "https://api.genohub.org/v1/annotations/regions";
+export const REGION_ANNOTATION_URL =
+  "https://api.genohub.org/v1/annotations/regions";
 
 export async function fetchRegionAnnotation(
   region: string,

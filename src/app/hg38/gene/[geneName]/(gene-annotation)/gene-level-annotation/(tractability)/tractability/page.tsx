@@ -13,7 +13,7 @@ interface TractabilityPageProps {
 
 async function TractabilityContent({ geneName }: { geneName: string }) {
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData?.ensembl_gene) {
     return (
       <div className="text-center py-8">
@@ -26,13 +26,8 @@ async function TractabilityContent({ geneName }: { geneName: string }) {
 
   try {
     const { target } = await getTargetTractability(geneData.ensembl_gene);
-    
-    return (
-      <TargetTractabilityDisplay 
-        target={target} 
-        geneName={geneName}
-      />
-    );
+
+    return <TargetTractabilityDisplay target={target} geneName={geneName} />;
   } catch (error) {
     return (
       <div className="text-center py-8">
@@ -40,19 +35,21 @@ async function TractabilityContent({ geneName }: { geneName: string }) {
           Failed to load tractability data from OpenTargets
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          {error instanceof Error ? error.message : 'Unknown error'}
+          {error instanceof Error ? error.message : "Unknown error"}
         </p>
       </div>
     );
   }
 }
 
-export default async function TractabilityPage({ params }: TractabilityPageProps) {
+export default async function TractabilityPage({
+  params,
+}: TractabilityPageProps) {
   const { geneName } = params;
 
   return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <TractabilityContent geneName={geneName} />
-      </Suspense>
+    <Suspense fallback={<LoadingSpinner />}>
+      <TractabilityContent geneName={geneName} />
+    </Suspense>
   );
 }

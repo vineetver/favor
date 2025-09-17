@@ -21,7 +21,7 @@ export function EpimapDisplay({ data }: EpimapDisplayProps) {
       "Category",
       "Type",
     ];
-    
+
     const rows = filteredData.map((row) => [
       row.state_full_name,
       row.chromosome,
@@ -46,40 +46,50 @@ export function EpimapDisplay({ data }: EpimapDisplayProps) {
     URL.revokeObjectURL(url);
   };
 
-  const facetedFilters = data ? [
-    {
-      columnId: "state_full_name",
-      title: "Chromatin State",
-      options: Array.from(new Set(data.map((row) => row.state_full_name))).map((state) => ({
-        label: state,
-        value: state,
-      })),
-    },
-    {
-      columnId: "sample_name",
-      title: "Sample/Tissue",
-      options: Array.from(new Set(data.map((row) => row.sample_name))).map((sample) => ({
-        label: sample,
-        value: sample,
-      })),
-    },
-    {
-      columnId: "lifestage",
-      title: "Developmental Stage",
-      options: Array.from(new Set(data.map((row) => row.lifestage))).map((stage) => ({
-        label: stage,
-        value: stage,
-      })),
-    },
-    {
-      columnId: "sex",
-      title: "Sex",
-      options: Array.from(new Set(data.map((row) => row.sex))).map((sex) => ({
-        label: sex,
-        value: sex,
-      })),
-    },
-  ] : [];
+  const facetedFilters = data
+    ? [
+        {
+          columnId: "state_full_name",
+          title: "Chromatin State",
+          options: Array.from(
+            new Set(data.map((row) => row.state_full_name)),
+          ).map((state) => ({
+            label: state,
+            value: state,
+          })),
+        },
+        {
+          columnId: "sample_name",
+          title: "Sample/Tissue",
+          options: Array.from(new Set(data.map((row) => row.sample_name))).map(
+            (sample) => ({
+              label: sample,
+              value: sample,
+            }),
+          ),
+        },
+        {
+          columnId: "lifestage",
+          title: "Developmental Stage",
+          options: Array.from(new Set(data.map((row) => row.lifestage))).map(
+            (stage) => ({
+              label: stage,
+              value: stage,
+            }),
+          ),
+        },
+        {
+          columnId: "sex",
+          title: "Sex",
+          options: Array.from(new Set(data.map((row) => row.sex))).map(
+            (sex) => ({
+              label: sex,
+              value: sex,
+            }),
+          ),
+        },
+      ]
+    : [];
 
   return (
     <DataGrid

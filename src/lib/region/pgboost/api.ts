@@ -1,5 +1,5 @@
-
-export const PGBOOST_REGION_URL = "https://api.genohub.org/v1/tissues/pgboost/region";
+export const PGBOOST_REGION_URL =
+  "https://api.genohub.org/v1/tissues/pgboost/region";
 
 export async function fetchPGBoostByRegion(
   region: string,

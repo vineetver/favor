@@ -20,7 +20,9 @@ export default async function RegionLayout({
   const { region, categorySlug } = params;
   const category = categorySlug;
 
-  const currentCategory = HG19_REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = HG19_REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

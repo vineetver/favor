@@ -1,4 +1,3 @@
-
 import { HeroPattern } from "@/components/layout/hero-pattern";
 import React from "react";
 

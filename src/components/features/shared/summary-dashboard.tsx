@@ -4,8 +4,17 @@ import { BarChart } from "@/components/ui/charts/bar-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FilteredItem } from "@/lib/annotations/types";
 import { cn } from "@/lib/utils/general";
-import { ACCESSIBLE_COLORS, generateColors, formatInteger, formatNumber as formatNumberUtil } from "@/components/ui/charts/utils";
-import { genecodeComprehensiveCategoryCCode, ccreAnnotationCCode, genecodeCompExonicCategoryCCode } from "@/lib/utils/colors";
+import {
+  ACCESSIBLE_COLORS,
+  generateColors,
+  formatInteger,
+  formatNumber as formatNumberUtil,
+} from "@/components/ui/charts/utils";
+import {
+  genecodeComprehensiveCategoryCCode,
+  ccreAnnotationCCode,
+  genecodeCompExonicCategoryCCode,
+} from "@/lib/utils/colors";
 
 interface SummaryDashboardProps {
   data: FilteredItem[];
@@ -20,13 +29,14 @@ export function SummaryDashboard({
   title = "Distribution Overview",
   className,
 }: SummaryDashboardProps) {
-  const totalVariants = passedTotal ?? 
+  const totalVariants =
+    passedTotal ??
     ((data?.find((item) => item.accessor === "total")?.value as number) || 0);
 
   // Convert Tailwind color names to hex values for charts
   const colorNameToHex: Record<string, string> = {
     blue: "#3b82f6",
-    red: "#ef4444", 
+    red: "#ef4444",
     green: "#10b981",
     indigo: "#6366f1",
     lime: "#84cc16",
@@ -49,20 +59,28 @@ export function SummaryDashboard({
   // Get category-specific color for known categories
   const getCategoryColor = (categoryName: string): string => {
     // Check for genecode comprehensive categories
-    if (categoryName.match(/(exonic|UTR|intronic|downstream|intergenic|upstream|splicing)/i)) {
-      const colorName = getCategoryColorName(categoryName, 'genecode');
+    if (
+      categoryName.match(
+        /(exonic|UTR|intronic|downstream|intergenic|upstream|splicing)/i,
+      )
+    ) {
+      const colorName = getCategoryColorName(categoryName, "genecode");
       return colorNameToHex[colorName] || ACCESSIBLE_COLORS[0];
     }
-    
+
     // Check for CCRE categories
     if (categoryName.match(/(PLS|pELS|dELS|DNase|CTCF|CA|TF)/i)) {
-      const colorName = getCategoryColorName(categoryName, 'ccre');
+      const colorName = getCategoryColorName(categoryName, "ccre");
       return colorNameToHex[colorName] || ACCESSIBLE_COLORS[0];
     }
 
     // Check for exonic subcategories
-    if (categoryName.match(/(stopgain|stoploss|frameshift|synonymous|nonsynonymous)/i)) {
-      const colorName = getCategoryColorName(categoryName, 'exonic');
+    if (
+      categoryName.match(
+        /(stopgain|stoploss|frameshift|synonymous|nonsynonymous)/i,
+      )
+    ) {
+      const colorName = getCategoryColorName(categoryName, "exonic");
       return colorNameToHex[colorName] || ACCESSIBLE_COLORS[0];
     }
 
@@ -74,7 +92,7 @@ export function SummaryDashboard({
 
   // Helper to extract color name from category functions
   const getCategoryColorName = (categoryName: string, type: string): string => {
-    if (type === 'genecode') {
+    if (type === "genecode") {
       if (categoryName.match(/(exonic)/i)) return "stone";
       if (categoryName.match(/(UTR)/i)) return "indigo";
       if (categoryName.match(/(intronic)/i)) return "lime";
@@ -84,8 +102,8 @@ export function SummaryDashboard({
       if (categoryName.match(/(splicing)/i)) return "yellow";
       return "amber";
     }
-    
-    if (type === 'ccre') {
+
+    if (type === "ccre") {
       if (categoryName.includes("PLS")) return "red";
       if (categoryName.includes("pELS")) return "orange";
       if (categoryName.includes("dELS")) return "yellow";
@@ -99,7 +117,7 @@ export function SummaryDashboard({
       return "amber";
     }
 
-    if (type === 'exonic') {
+    if (type === "exonic") {
       if (categoryName.includes("stopgain")) return "stone";
       if (categoryName.includes("stoploss")) return "rose";
       if (categoryName.includes("unknown")) return "indigo";
@@ -117,26 +135,27 @@ export function SummaryDashboard({
     return "blue";
   };
 
-  const filteredData = data?.filter(
-    (item) =>
-      typeof item.value === "number" &&
-      item.value > 0 &&
-      item.accessor !== "total",
-  ) || [];
+  const filteredData =
+    data?.filter(
+      (item) =>
+        typeof item.value === "number" &&
+        item.value > 0 &&
+        item.accessor !== "total",
+    ) || [];
 
   const chartData = filteredData.map((item, index) => ({
     name: item.header,
     value: item.value as number,
-    percentage: totalVariants > 0 ? ((item.value as number) / totalVariants * 100) : 0,
+    percentage:
+      totalVariants > 0 ? ((item.value as number) / totalVariants) * 100 : 0,
     tooltip: item.tooltip,
     color: getCategoryColor(item.header),
   }));
 
   // Create colors array for the chart component
-  const colors = chartData.map(item => item.color);
+  const colors = chartData.map((item) => item.color);
 
   const sortedData = chartData.sort((a, b) => b.percentage - a.percentage);
-
 
   const topCategories = sortedData.slice(0, 3);
 
@@ -155,19 +174,24 @@ export function SummaryDashboard({
         formatTooltipValue={formatInteger}
         tickAngle={-45}
       />
-      
+
       {/* Legend Card */}
       <Card className="border-0 shadow-sm">
         <CardContent className="pt-4">
           <div className="w-full max-w-full overflow-hidden">
             <div className="flex flex-wrap justify-center gap-3 px-2 mx-auto">
               {sortedData.map((category, index) => (
-                <div key={category.name} className="flex items-center gap-2 text-sm flex-shrink-0">
+                <div
+                  key={category.name}
+                  className="flex items-center gap-2 text-sm flex-shrink-0"
+                >
                   <div
                     className="w-3 h-3 rounded-sm flex-shrink-0"
                     style={{ backgroundColor: category.color }}
                   />
-                  <span className="text-muted-foreground truncate max-w-40">{category.name}</span>
+                  <span className="text-muted-foreground truncate max-w-40">
+                    {category.name}
+                  </span>
                 </div>
               ))}
             </div>

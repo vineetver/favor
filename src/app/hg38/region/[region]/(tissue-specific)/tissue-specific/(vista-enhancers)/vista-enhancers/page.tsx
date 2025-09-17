@@ -6,7 +6,9 @@ interface RegionVistaEnhancerPageProps {
   };
 }
 
-export default async function RegionVistaEnhancerPage({ params }: RegionVistaEnhancerPageProps) {
+export default async function RegionVistaEnhancerPage({
+  params,
+}: RegionVistaEnhancerPageProps) {
   const { region } = params;
 
   return <VistaEnhancerDisplay region={region} />;

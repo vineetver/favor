@@ -33,7 +33,9 @@ const sharedColumns: ColumnDef<PGBoost>[] = [
     cell: ({ row }) => {
       const num = row.original?.pg_boost;
       return (
-        <div className="text-left font-mono text-sm">{formatPGBoostScore(num)}</div>
+        <div className="text-left font-mono text-sm">
+          {formatPGBoostScore(num)}
+        </div>
       );
     },
     enableSorting: true,
@@ -77,7 +79,7 @@ const sharedColumns: ColumnDef<PGBoost>[] = [
     filterFn: (row, id, value) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return true;
       const percentile = row.getValue(id) as number;
-      
+
       const checkValue = (val: string) => {
         switch (val) {
           case "top10":
@@ -90,7 +92,7 @@ const sharedColumns: ColumnDef<PGBoost>[] = [
             return false;
         }
       };
-      
+
       if (Array.isArray(value)) {
         return value.some(checkValue);
       }

@@ -1,12 +1,12 @@
 import type { Hg19RegionSummary, Hg19Summary } from "./columns";
-import { clickHouseClient } from '@/lib/clickhouse/client';
+import { clickHouseClient } from "@/lib/clickhouse/client";
 
 export async function fetchHg19RegionSummary(
   region: string,
   categorySlug?: string,
 ): Promise<Hg19RegionSummary | null> {
   try {
-    const [chr, start, end] = region.split('-');
+    const [chr, start, end] = region.split("-");
     const query = `
       SELECT 
         count() as total,
@@ -45,29 +45,32 @@ export async function fetchHg19RegionSummary(
       WHERE chromosome = {chr:String}
         AND position BETWEEN {start:UInt32} AND {end:UInt32}
         AND rsid != '' AND rsid IS NOT NULL
-        ${categorySlug === 'SNV-summary' ? 'AND length(ref) = 1 AND length(alt) = 1' : ''}
-        ${categorySlug === 'InDel-summary' ? 'AND (length(ref) > 1 OR length(alt) > 1)' : ''}
+        ${categorySlug === "SNV-summary" ? "AND length(ref) = 1 AND length(alt) = 1" : ""}
+        ${categorySlug === "InDel-summary" ? "AND (length(ref) > 1 OR length(alt) > 1)" : ""}
     `;
 
-    const result = await clickHouseClient.query({ 
+    const result = await clickHouseClient.query({
       query,
-      query_params: { chr, start, end }
+      query_params: { chr, start, end },
     });
-    
+
     if (result.length === 0) {
       return null;
     }
 
     const rawResult = result[0];
-    
+
     const convertedResult: any = {};
     for (const [key, value] of Object.entries(rawResult)) {
-      convertedResult[key] = typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : value;
+      convertedResult[key] =
+        typeof value === "string" && !isNaN(Number(value))
+          ? Number(value)
+          : value;
     }
-    
+
     return convertedResult as Hg19RegionSummary;
   } catch (error) {
-    console.error('Error fetching HG19 region summary from ClickHouse:', error);
+    console.error("Error fetching HG19 region summary from ClickHouse:", error);
     return null;
   }
 }

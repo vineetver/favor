@@ -1,4 +1,4 @@
-export const DEFAULT_MODEL_NAME: string = 'gpt-5-nano';
+export const DEFAULT_MODEL_NAME: string = "gpt-5-nano";
 
 export interface ChatModel {
   id: string;
@@ -40,7 +40,7 @@ export interface Models extends ChatModel {}
 
 // Helper functions
 export function getModelById(id: string): ChatModel | undefined {
-  return models.find(model => model.id === id);
+  return models.find((model) => model.id === id);
 }
 
 export function getDefaultModel(): ChatModel {
@@ -48,11 +48,11 @@ export function getDefaultModel(): ChatModel {
 }
 
 export function getReasoningModels(): ChatModel[] {
-  return models.filter(model => model.reasoning);
+  return models.filter((model) => model.reasoning);
 }
 
 export function getStandardModels(): ChatModel[] {
-  return models.filter(model => !model.reasoning);
+  return models.filter((model) => !model.reasoning);
 }
 
 export function isReasoningModel(modelId: string): boolean {

@@ -19,7 +19,9 @@ export default async function RegionFullTablesLayout({
   const { region } = params;
   const category = "full-tables";
 
-  const currentCategory = REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

@@ -1,5 +1,5 @@
-import { clickHouseClient } from '@/lib/clickhouse/client';
-import type { Hg19GeneVariantsResponse } from './types';
+import { clickHouseClient } from "@/lib/clickhouse/client";
+import type { Hg19GeneVariantsResponse } from "./types";
 
 export async function fetchHg19GeneVariants(
   geneName: string,
@@ -9,10 +9,16 @@ export async function fetchHg19GeneVariants(
     subcategory?: string;
     pageSize?: number;
     cursor?: string;
-  }
+  },
 ): Promise<Hg19GeneVariantsResponse> {
   try {
-    const { subcategory = 'SNV-table', pageSize = 50, cursor = '', filtersQuery, sortingQuery } = params;
+    const {
+      subcategory = "SNV-table",
+      pageSize = 50,
+      cursor = "",
+      filtersQuery,
+      sortingQuery,
+    } = params;
     const limit = pageSize;
     const offset = cursor ? parseInt(cursor) : 0;
 
@@ -27,13 +33,13 @@ export async function fetchHg19GeneVariants(
     const geneResult = await clickHouseClient.query({
       query: geneQuery,
       query_params: { geneName },
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
-    console.log('Gene result for', geneName, ':', geneResult);
+    console.log("Gene result for", geneName, ":", geneResult);
 
     if (!geneResult.length) {
-      console.log('No gene found in gene_loci for:', geneName);
+      console.log("No gene found in gene_loci for:", geneName);
       return {
         data: [],
         hasNextPage: false,
@@ -42,18 +48,22 @@ export async function fetchHg19GeneVariants(
     }
 
     const { chromosome, start_position, end_position } = geneResult[0];
-    console.log('Gene coordinates:', { chromosome, start_position, end_position });
+    console.log("Gene coordinates:", {
+      chromosome,
+      start_position,
+      end_position,
+    });
 
     // Step 2: Build variant type filter based on subcategory
-    let variantTypeFilter = '';
-    if (subcategory === 'SNV-table') {
-      variantTypeFilter = 'AND length(ref) = 1 AND length(alt) = 1';
-    } else if (subcategory === 'InDel-table') {
-      variantTypeFilter = 'AND (length(ref) > 1 OR length(alt) > 1)';
+    let variantTypeFilter = "";
+    if (subcategory === "SNV-table") {
+      variantTypeFilter = "AND length(ref) = 1 AND length(alt) = 1";
+    } else if (subcategory === "InDel-table") {
+      variantTypeFilter = "AND (length(ref) > 1 OR length(alt) > 1)";
     }
 
     // Step 3: Build filter clauses for variants query
-    let filterClause = '';
+    let filterClause = "";
     const queryParams: Record<string, any> = {
       chromosome,
       start_position,
@@ -64,25 +74,25 @@ export async function fetchHg19GeneVariants(
     if (filtersQuery) {
       const filterConditions: string[] = [];
       // Simple parsing - expecting format like "key:value,key2:value2"
-      const pairs = filtersQuery.split(',');
-      pairs.forEach(pair => {
-        const [key, value] = pair.split(':');
-        if (key && value && value !== 'all') {
+      const pairs = filtersQuery.split(",");
+      pairs.forEach((pair) => {
+        const [key, value] = pair.split(":");
+        if (key && value && value !== "all") {
           filterConditions.push(`${key} = {${key}:String}`);
           queryParams[key] = value;
         }
       });
       if (filterConditions.length > 0) {
-        filterClause = ` AND ${filterConditions.join(' AND ')}`;
+        filterClause = ` AND ${filterConditions.join(" AND ")}`;
       }
     }
 
     // Step 3: Query variants in the gene region
-    let orderClause = '';
+    let orderClause = "";
     if (sortingQuery) {
-      const [sortField, sortDir] = sortingQuery.split(':');
+      const [sortField, sortDir] = sortingQuery.split(":");
       if (sortField) {
-        orderClause = ` ORDER BY ${sortField} ${sortDir || 'ASC'}`;
+        orderClause = ` ORDER BY ${sortField} ${sortDir || "ASC"}`;
       }
     }
 
@@ -96,7 +106,7 @@ export async function fetchHg19GeneVariants(
         ${filterClause}
       ${orderClause}
       LIMIT {limit:UInt32}
-      ${offset > 0 ? 'OFFSET {offset:UInt32}' : ''}
+      ${offset > 0 ? "OFFSET {offset:UInt32}" : ""}
     `;
 
     if (offset > 0) {
@@ -104,16 +114,16 @@ export async function fetchHg19GeneVariants(
     }
     queryParams.limit = limit;
 
-    console.log('Final query:', query);
-    console.log('Query params:', queryParams);
+    console.log("Final query:", query);
+    console.log("Query params:", queryParams);
 
     const data = await clickHouseClient.query({
       query,
       query_params: queryParams,
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
-    console.log('Query returned', data.length, 'results');
+    console.log("Query returned", data.length, "results");
 
     return {
       data,
@@ -121,12 +131,15 @@ export async function fetchHg19GeneVariants(
       nextCursor: data.length === limit ? String(offset + limit) : undefined,
     };
   } catch (error) {
-    console.error('Error fetching HG19 gene variants from ClickHouse:', error);
+    console.error("Error fetching HG19 gene variants from ClickHouse:", error);
     throw error;
   }
 }
 
-export async function fetchHg19GeneSummary(geneName: string, subcategory?: string) {
+export async function fetchHg19GeneSummary(
+  geneName: string,
+  subcategory?: string,
+) {
   try {
     // Step 1: Get gene coordinates
     const geneQuery = `
@@ -139,7 +152,7 @@ export async function fetchHg19GeneSummary(geneName: string, subcategory?: strin
     const geneResult = await clickHouseClient.query({
       query: geneQuery,
       query_params: { geneName },
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
     if (!geneResult.length) {
@@ -149,11 +162,11 @@ export async function fetchHg19GeneSummary(geneName: string, subcategory?: strin
     const { chromosome, start_position, end_position } = geneResult[0];
 
     // Step 2: Build variant type filter if subcategory specified
-    let variantTypeFilter = '';
-    if (subcategory === 'SNV-summary') {
-      variantTypeFilter = 'AND length(ref) = 1 AND length(alt) = 1';
-    } else if (subcategory === 'InDel-summary') {
-      variantTypeFilter = 'AND (length(ref) > 1 OR length(alt) > 1)';
+    let variantTypeFilter = "";
+    if (subcategory === "SNV-summary") {
+      variantTypeFilter = "AND length(ref) = 1 AND length(alt) = 1";
+    } else if (subcategory === "InDel-summary") {
+      variantTypeFilter = "AND (length(ref) > 1 OR length(alt) > 1)";
     }
 
     // Step 3: Query summary in the gene region
@@ -172,12 +185,12 @@ export async function fetchHg19GeneSummary(geneName: string, subcategory?: strin
     const data = await clickHouseClient.query({
       query,
       query_params: { chromosome, start_position, end_position },
-      format: 'JSONEachRow',
+      format: "JSONEachRow",
     });
 
     return data;
   } catch (error) {
-    console.error('Error fetching HG19 gene summary from ClickHouse:', error);
+    console.error("Error fetching HG19 gene summary from ClickHouse:", error);
     throw error;
   }
 }

@@ -4,7 +4,11 @@ import cytoscape, {
   EdgeSingular,
   NodeSingular,
 } from "cytoscape";
-import { CytoscapeEdgeData, CytoscapeNodeData, PPINetworkInteraction } from "./types";
+import {
+  CytoscapeEdgeData,
+  CytoscapeNodeData,
+  PPINetworkInteraction,
+} from "./types";
 
 export const LAYOUT_OPTIONS = {
   "cose-bilkent": {
@@ -277,9 +281,11 @@ export function createCytoscapeElements(
           .filter((c) => typeof c === "number" && !isNaN(c) && c >= 0);
         const avgConfidence =
           confidenceValues && confidenceValues.length > 0
-            // @ts-ignore - Checked for undefined above
-            ? confidenceValues.reduce((sum, conf) => (sum ?? 0) + (conf ?? 0), 0) /
-              confidenceValues.length
+            ? // @ts-ignore - Checked for undefined above
+              confidenceValues.reduce(
+                (sum, conf) => (sum ?? 0) + (conf ?? 0),
+                0,
+              ) / confidenceValues.length
             : 0.5;
 
         // Determine stroke pattern based on interaction type

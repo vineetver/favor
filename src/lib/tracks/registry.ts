@@ -499,55 +499,63 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Gene Strand Orientation",
-      description: "Color-coding for gene transcription direction on DNA strands",
+      description:
+        "Color-coding for gene transcription direction on DNA strands",
       categories: [
         {
           label: "Forward Strand (+)",
           color: "#7585FF",
           description: "Genes transcribed in 5' to 3' direction",
-          biologicalMeaning: "Genes on the forward DNA strand, transcribed from left to right in standard genome coordinates. Positive strand orientation."
+          biologicalMeaning:
+            "Genes on the forward DNA strand, transcribed from left to right in standard genome coordinates. Positive strand orientation.",
         },
         {
           label: "Reverse Strand (-)",
-          color: "#FF8A85", 
+          color: "#FF8A85",
           description: "Genes transcribed in 3' to 5' direction",
-          biologicalMeaning: "Genes on the reverse DNA strand, transcribed from right to left in standard genome coordinates. Negative strand orientation."
-        }
-      ]
+          biologicalMeaning:
+            "Genes on the reverse DNA strand, transcribed from right to left in standard genome coordinates. Negative strand orientation.",
+        },
+      ],
     },
     visualElements: {
       shapes: [
         {
           name: "Right-pointing triangles",
           description: "Triangular markers at gene ends",
-          meaning: "Indicates forward strand (+) genes - transcription direction from 5' to 3'"
+          meaning:
+            "Indicates forward strand (+) genes - transcription direction from 5' to 3'",
         },
         {
-          name: "Left-pointing triangles", 
+          name: "Left-pointing triangles",
           description: "Triangular markers at gene starts",
-          meaning: "Indicates reverse strand (-) genes - transcription direction from 3' to 5'"
+          meaning:
+            "Indicates reverse strand (-) genes - transcription direction from 3' to 5'",
         },
         {
           name: "Rectangles",
           description: "Filled rectangular blocks within genes",
-          meaning: "Represent individual exons - coding sequences that remain after splicing"
-        }
+          meaning:
+            "Represent individual exons - coding sequences that remain after splicing",
+        },
       ],
       patterns: [
         {
           name: "Triangular line patterns",
-          description: "Directional patterns along gene bodies", 
-          meaning: "Show transcription direction - triangles point in direction of RNA synthesis"
-        }
+          description: "Directional patterns along gene bodies",
+          meaning:
+            "Show transcription direction - triangles point in direction of RNA synthesis",
+        },
       ],
       indicators: [
         {
           name: "Gene name labels",
           description: "Text labels above or beside genes",
-          meaning: "Display gene symbols/names when zoom level allows sufficient space"
-        }
-      ]
-    }
+          meaning:
+            "Display gene symbols/names when zoom level allows sufficient space",
+        },
+      ],
+    },
   },
 
   // Clinical Variants
@@ -586,52 +594,60 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Clinical Significance",
-      description: "Color-coding for variant pathogenicity based on clinical evidence and ACMG guidelines",
+      description:
+        "Color-coding for variant pathogenicity based on clinical evidence and ACMG guidelines",
       categories: [
         {
           label: "Pathogenic",
           color: "#CB3B8C",
           description: "Established pathogenic variants",
-          biologicalMeaning: "Strong evidence for clinical significance. Variants are disease-causing and actionable for medical decision-making. Require immediate clinical attention."
+          biologicalMeaning:
+            "Strong evidence for clinical significance. Variants are disease-causing and actionable for medical decision-making. Require immediate clinical attention.",
         },
         {
           label: "Pathogenic/Likely pathogenic",
           color: "#CB71A3",
           description: "Mixed pathogenic classifications",
-          biologicalMeaning: "Multiple submissions with pathogenic or likely pathogenic classifications. High confidence in clinical significance with potential medical action required."
+          biologicalMeaning:
+            "Multiple submissions with pathogenic or likely pathogenic classifications. High confidence in clinical significance with potential medical action required.",
         },
         {
           label: "Likely pathogenic",
-          color: "#CB96B3", 
+          color: "#CB96B3",
           description: "Probable pathogenic variants",
-          biologicalMeaning: "Strong evidence suggesting pathogenicity but not definitively proven. May warrant clinical follow-up and genetic counseling."
+          biologicalMeaning:
+            "Strong evidence suggesting pathogenicity but not definitively proven. May warrant clinical follow-up and genetic counseling.",
         },
         {
           label: "Uncertain significance",
           color: "gray",
           description: "Variants of uncertain significance (VUS)",
-          biologicalMeaning: "Insufficient evidence to determine pathogenicity. Requires additional functional studies, family segregation, or population data for classification."
+          biologicalMeaning:
+            "Insufficient evidence to determine pathogenicity. Requires additional functional studies, family segregation, or population data for classification.",
         },
         {
-          label: "Likely benign", 
+          label: "Likely benign",
           color: "#029F73",
           description: "Probably benign variants",
-          biologicalMeaning: "Evidence suggests lack of pathogenicity but not definitively proven. Generally not clinically actionable but may require monitoring."
+          biologicalMeaning:
+            "Evidence suggests lack of pathogenicity but not definitively proven. Generally not clinically actionable but may require monitoring.",
         },
         {
           label: "Benign/Likely benign",
           color: "#5A9F8C",
-          description: "Mixed benign classifications", 
-          biologicalMeaning: "Multiple submissions indicating benign or likely benign status. High confidence that variant is not disease-causing."
+          description: "Mixed benign classifications",
+          biologicalMeaning:
+            "Multiple submissions indicating benign or likely benign status. High confidence that variant is not disease-causing.",
         },
         {
           label: "Benign",
           color: "#5A9F8C",
           description: "Established benign variants",
-          biologicalMeaning: "Strong evidence for lack of pathogenicity. Variants are not disease-causing and generally not clinically actionable."
-        }
-      ]
-    }
+          biologicalMeaning:
+            "Strong evidence for lack of pathogenicity. Variants are not disease-causing and generally not clinically actionable.",
+        },
+      ],
+    },
   },
 
   // Epigenomic Tracks
@@ -666,58 +682,67 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "cCRE Element Types",
-      description: "Color-coding for candidate cis-regulatory elements based on chromatin accessibility and histone modification patterns",
+      description:
+        "Color-coding for candidate cis-regulatory elements based on chromatin accessibility and histone modification patterns",
       categories: [
         {
           label: "PLS (Promoter)",
           color: "#dc2626",
           description: "Promoter-like signature",
-          biologicalMeaning: "Active promoter regions with high H3K4me3 and chromatin accessibility. Directly regulate transcription start sites of genes."
+          biologicalMeaning:
+            "Active promoter regions with high H3K4me3 and chromatin accessibility. Directly regulate transcription start sites of genes.",
         },
         {
-          label: "pELS (Proximal Enhancer)", 
+          label: "pELS (Proximal Enhancer)",
           color: "#ea580c",
           description: "Proximal enhancer-like signature",
-          biologicalMeaning: "Active enhancers near (<2kb) gene promoters with H3K27ac marks. Boost nearby gene expression through close-range interactions."
+          biologicalMeaning:
+            "Active enhancers near (<2kb) gene promoters with H3K27ac marks. Boost nearby gene expression through close-range interactions.",
         },
         {
           label: "dELS (Distal Enhancer)",
-          color: "#fddc69", 
+          color: "#fddc69",
           description: "Distal enhancer-like signature",
-          biologicalMeaning: "Active enhancers distant (>2kb) from promoters with H3K27ac marks. Can regulate genes across long distances through chromatin looping."
+          biologicalMeaning:
+            "Active enhancers distant (>2kb) from promoters with H3K27ac marks. Can regulate genes across long distances through chromatin looping.",
         },
         {
           label: "CA-CTCF",
           color: "#0053DB",
           description: "Chromatin accessible with CTCF binding",
-          biologicalMeaning: "Insulator elements that organize chromatin into topological domains. CTCF binding creates boundaries that constrain regulatory interactions."
+          biologicalMeaning:
+            "Insulator elements that organize chromatin into topological domains. CTCF binding creates boundaries that constrain regulatory interactions.",
         },
         {
-          label: "CA-H3K4me3", 
+          label: "CA-H3K4me3",
           color: "#ea580c",
           description: "Chromatin accessible with H3K4me3",
-          biologicalMeaning: "Regions with active promoter marks but without strong enhancer activity. May represent bivalent or poised regulatory states."
+          biologicalMeaning:
+            "Regions with active promoter marks but without strong enhancer activity. May represent bivalent or poised regulatory states.",
         },
         {
           label: "CA-TF",
           color: "#9333ea",
           description: "Chromatin accessible with transcription factor binding",
-          biologicalMeaning: "Open chromatin regions bound by transcription factors. Potential regulatory sites that may lack strong histone modification signals."
+          biologicalMeaning:
+            "Open chromatin regions bound by transcription factors. Potential regulatory sites that may lack strong histone modification signals.",
         },
         {
           label: "CA (Chromatin Accessible)",
-          color: "#62DF7D", 
+          color: "#62DF7D",
           description: "Chromatin accessible only",
-          biologicalMeaning: "Open chromatin without strong regulatory marks. May represent weak regulatory elements or regions primed for activation."
+          biologicalMeaning:
+            "Open chromatin without strong regulatory marks. May represent weak regulatory elements or regions primed for activation.",
         },
         {
           label: "TF (Transcription Factor)",
           color: "#ec4899",
-          description: "Transcription factor binding only", 
-          biologicalMeaning: "TF binding sites in closed chromatin. May represent repressed or context-specific regulatory elements."
-        }
-      ]
-    }
+          description: "Transcription factor binding only",
+          biologicalMeaning:
+            "TF binding sites in closed chromatin. May represent repressed or context-specific regulatory elements.",
+        },
+      ],
+    },
   },
 
   single_cell_tissue_atac_seq_chromatin_accessibility: {
@@ -912,28 +937,32 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Regulatory Elements and Gene Strands",
-      description: "Combined color scheme showing cCRE element types for regulatory regions and strand orientation for genes",
+      description:
+        "Combined color scheme showing cCRE element types for regulatory regions and strand orientation for genes",
       categories: [
         {
           label: "cCRE Elements",
           color: "varies",
           description: "Regulatory elements use cCRE color scheme",
-          biologicalMeaning: "See cCRE track documentation for detailed color meanings - promoters (red), enhancers (orange/yellow), CTCF sites (blue), etc."
+          biologicalMeaning:
+            "See cCRE track documentation for detailed color meanings - promoters (red), enhancers (orange/yellow), CTCF sites (blue), etc.",
         },
         {
           label: "Forward Strand Genes (+)",
           color: "#7585FF",
           description: "Target genes on positive strand",
-          biologicalMeaning: "Genes transcribed in forward direction, connected to eQTL variants by arc links"
+          biologicalMeaning:
+            "Genes transcribed in forward direction, connected to eQTL variants by arc links",
         },
         {
           label: "Reverse Strand Genes (-)",
           color: "#FF8A85",
-          description: "Target genes on negative strand", 
-          biologicalMeaning: "Genes transcribed in reverse direction, connected to eQTL variants by arc links"
-        }
-      ]
-    }
+          description: "Target genes on negative strand",
+          biologicalMeaning:
+            "Genes transcribed in reverse direction, connected to eQTL variants by arc links",
+        },
+      ],
+    },
   },
 
   single_cell_tissue_eqtls_overlay_link: {
@@ -972,28 +1001,32 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Integrated Regulatory Elements and Gene Strands",
-      description: "Comprehensive color scheme combining cCRE elements, gene orientations, and eQTL associations",
+      description:
+        "Comprehensive color scheme combining cCRE elements, gene orientations, and eQTL associations",
       categories: [
         {
           label: "cCRE Regulatory Elements",
           color: "varies",
           description: "Regulatory elements follow cCRE color scheme",
-          biologicalMeaning: "Complete cCRE classification with promoters (red), enhancers (orange/yellow), CTCF sites (blue), accessible regions (green/purple/pink)"
+          biologicalMeaning:
+            "Complete cCRE classification with promoters (red), enhancers (orange/yellow), CTCF sites (blue), accessible regions (green/purple/pink)",
         },
         {
           label: "Forward Strand Genes (+)",
           color: "#7585FF",
           description: "Target genes on positive strand",
-          biologicalMeaning: "Genes transcribed 5' to 3', showing eQTL target relationships"
+          biologicalMeaning:
+            "Genes transcribed 5' to 3', showing eQTL target relationships",
         },
         {
           label: "Reverse Strand Genes (-)",
           color: "#FF8A85",
           description: "Target genes on negative strand",
-          biologicalMeaning: "Genes transcribed 3' to 5', showing eQTL target relationships"
-        }
-      ]
-    }
+          biologicalMeaning:
+            "Genes transcribed 3' to 5', showing eQTL target relationships",
+        },
+      ],
+    },
   },
 
   // CRISPR Tracks
@@ -1100,43 +1133,49 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Chromatin Interaction Assay Types",
-      description: "Color-coding for different experimental methods used to detect chromatin interactions",
+      description:
+        "Color-coding for different experimental methods used to detect chromatin interactions",
       categories: [
         {
           label: "Intact-HiC",
           color: "red",
           description: "Hi-C proximity ligation data",
-          biologicalMeaning: "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments."
+          biologicalMeaning:
+            "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments.",
         },
         {
-          label: "RNAPII-ChIAPET", 
+          label: "RNAPII-ChIAPET",
           color: "blue",
           description: "RNA Polymerase II ChIA-PET data",
-          biologicalMeaning: "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks."
-        }
-      ]
+          biologicalMeaning:
+            "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks.",
+        },
+      ],
     },
     visualElements: {
       shapes: [
         {
           name: "Arc curves",
           description: "Curved lines connecting genomic positions",
-          meaning: "Represent spatial proximity or functional interactions between distant genomic loci"
-        }
+          meaning:
+            "Represent spatial proximity or functional interactions between distant genomic loci",
+        },
       ],
       indicators: [
         {
           name: "Arc thickness",
           description: "Width of arc curves",
-          meaning: "Thicker arcs indicate stronger interaction signals or higher statistical confidence"
+          meaning:
+            "Thicker arcs indicate stronger interaction signals or higher statistical confidence",
         },
         {
           name: "Arc opacity",
-          description: "Transparency level of arc curves", 
-          meaning: "More opaque arcs represent higher interaction frequencies or significance scores"
-        }
-      ]
-    }
+          description: "Transparency level of arc curves",
+          meaning:
+            "More opaque arcs represent higher interaction frequencies or significance scores",
+        },
+      ],
+    },
   },
 
   single_cell_tissue_chromatin_overlay_link: {
@@ -1175,22 +1214,25 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "Chromatin Interaction Assay Types",
-      description: "Color-coding for different experimental methods used to detect chromatin interactions (same as arc link track)",
+      description:
+        "Color-coding for different experimental methods used to detect chromatin interactions (same as arc link track)",
       categories: [
         {
           label: "Intact-HiC",
           color: "red",
           description: "Hi-C proximity ligation data",
-          biologicalMeaning: "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments."
+          biologicalMeaning:
+            "Genome-wide chromatin interactions detected by proximity ligation. Reveals overall 3D chromatin architecture including topological domains and compartments.",
         },
         {
-          label: "RNAPII-ChIAPET", 
+          label: "RNAPII-ChIAPET",
           color: "blue",
           description: "RNA Polymerase II ChIA-PET data",
-          biologicalMeaning: "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks."
-        }
-      ]
-    }
+          biologicalMeaning:
+            "Protein-mediated chromatin interactions involving RNA Polymerase II. Shows enhancer-promoter loops and transcriptional regulatory networks.",
+        },
+      ],
+    },
   },
 
   // Mappability tracks - simplified documentation for similar tracks
@@ -1316,42 +1358,48 @@ const TRACK_DOCUMENTATION: Record<
     },
     colorLegend: {
       title: "GWAS Statistical Significance",
-      description: "Quantitative color scale representing -log10(p-value) for trait associations",
+      description:
+        "Quantitative color scale representing -log10(p-value) for trait associations",
       categories: [
         {
           label: "Low Significance",
           color: "light colors",
           description: "Lower -log10(p-value) scores",
-          biologicalMeaning: "Weak statistical evidence for trait association. May represent background variation or require additional validation."
+          biologicalMeaning:
+            "Weak statistical evidence for trait association. May represent background variation or require additional validation.",
         },
         {
-          label: "Moderate Significance", 
+          label: "Moderate Significance",
           color: "medium colors",
           description: "Intermediate -log10(p-value) scores",
-          biologicalMeaning: "Suggestive associations that may warrant follow-up studies. Below genome-wide significance threshold."
+          biologicalMeaning:
+            "Suggestive associations that may warrant follow-up studies. Below genome-wide significance threshold.",
         },
         {
           label: "High Significance",
-          color: "dark/warm colors", 
+          color: "dark/warm colors",
           description: "High -log10(p-value) scores (≥7.3)",
-          biologicalMeaning: "Genome-wide significant associations (p<5e-8). Strong statistical evidence for trait association requiring functional validation."
-        }
-      ]
+          biologicalMeaning:
+            "Genome-wide significant associations (p<5e-8). Strong statistical evidence for trait association requiring functional validation.",
+        },
+      ],
     },
     visualElements: {
       indicators: [
         {
           name: "Point height",
           description: "Vertical position of data points",
-          meaning: "Corresponds to -log10(p-value) - higher points have more significant p-values"
+          meaning:
+            "Corresponds to -log10(p-value) - higher points have more significant p-values",
         },
         {
           name: "Color intensity",
           description: "Gradual color scale from light to dark/warm",
-          meaning: "Reflects statistical significance - more intense colors indicate stronger associations"
-        }
-      ]
-    }
+          meaning:
+            "Reflects statistical significance - more intense colors indicate stronger associations",
+        },
+      ],
+    },
   },
 
   // Mappability tracks (k24 variants)

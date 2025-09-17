@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Logo } from "@/components/ui/logo";
+import { WhatsNewButton } from "@/components/ui/whats-new-button";
 
 const menuItems = [
   {
@@ -135,9 +136,9 @@ export function Navbar() {
                 </div>
               </div>
 
-              {/* Empty right section for balance */}
+              {/* What's New Button - Right */}
               <div className="justify-self-end">
-                {/* Intentionally empty for perfect centering */}
+                <WhatsNewButton />
               </div>
             </div>
 
@@ -233,6 +234,11 @@ export function Navbar() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Mobile What's New Button */}
+              <div className="px-4">
+                <WhatsNewButton />
               </div>
             </div>
           </div>

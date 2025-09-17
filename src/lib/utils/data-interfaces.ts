@@ -14,23 +14,23 @@ export interface PaginationResponse {
 export interface FilterParams {
   // Numeric filters with thresholds
   thresholds?: Record<string, number>;
-  
+
   // Categorical filters
   categories?: string[];
   tissues?: string[];
   cellTypes?: string[];
   experimentalMethods?: string[];
-  
+
   // Common genomic filters
   confidenceMin?: number;
   pValueMax?: number;
   scoreMin?: number;
   scoreMax?: number;
-  
+
   // Regulatory element filters
   regulatoryMarks?: string[];
   regulatoryTypes?: string[];
-  
+
   // Interaction filters
   interactionTypes?: string[];
   evidenceTypes?: string[];
@@ -38,10 +38,13 @@ export interface FilterParams {
 
 export interface SortParams {
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
-export interface StandardToolParams extends PaginationParams, FilterParams, SortParams {}
+export interface StandardToolParams
+  extends PaginationParams,
+    FilterParams,
+    SortParams {}
 
 export interface StandardToolResponse<T = any> extends PaginationResponse {
   data: T[];
@@ -63,7 +66,7 @@ export interface GWASFilters extends FilterParams {
 }
 
 export interface PPIFilters extends FilterParams {
-  databases?: ('biogrid' | 'intact' | 'huri')[];
+  databases?: ("biogrid" | "intact" | "huri")[];
   minConfidence?: number;
   maxDistance?: number;
 }
@@ -84,7 +87,7 @@ export interface ABCFilters extends FilterParams {
 // Common field definitions for genomic data
 export interface GenomicField {
   name: string;
-  type: 'numeric' | 'categorical' | 'text' | 'boolean';
+  type: "numeric" | "categorical" | "text" | "boolean";
   description: string;
   aliases?: string[];
   unit?: string;

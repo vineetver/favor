@@ -7,10 +7,12 @@ interface RegionEpimapPageProps {
   };
 }
 
-export default async function RegionEpimapPage({ params }: RegionEpimapPageProps) {
+export default async function RegionEpimapPage({
+  params,
+}: RegionEpimapPageProps) {
   const { region } = params;
 
   const data = await fetchEpimapByRegion(region);
-  
+
   return <EpimapDisplay data={data} />;
 }

@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import type { UIMessage, InferUITool } from 'ai';
+import { z } from "zod";
+import type { UIMessage, InferUITool } from "ai";
 
-export type DataPart = { type: 'append-message'; message: string };
+export type DataPart = { type: "append-message"; message: string };
 
 export const messageMetadataSchema = z.object({
   createdAt: z.string(),
@@ -14,27 +14,27 @@ export type GenomicsTools = {
   // Variant tools
   getVariant: InferUITool<any>;
   ccreTool: InferUITool<any>;
-  
+
   // Gene tools
   getGeneSummary: InferUITool<any>;
   getGeneAnnotation: InferUITool<any>;
   getGeneVariants: InferUITool<any>;
-  
+
   // Region tools
   getRegionSummary: InferUITool<any>;
   getRegionVariants: InferUITool<any>;
-  
+
   // Interaction tools
   getBiogrid: InferUITool<any>;
   getIntact: InferUITool<any>;
   getHuri: InferUITool<any>;
   getPathwayPairs: InferUITool<any>;
   getPathwayGenes: InferUITool<any>;
-  
+
   // Visualization tools
   displayBarChart: InferUITool<any>;
   getDescription: InferUITool<any>;
-  
+
   // Experimental tools
   crisprLinksTool: InferUITool<any>;
   chiaPetLinksTool: InferUITool<any>;
@@ -85,4 +85,4 @@ export interface Attachment {
   contentType: string;
 }
 
-export type VisibilityType = 'public' | 'private';
+export type VisibilityType = "public" | "private";

@@ -8,7 +8,7 @@ export default function RsidLoading() {
         <Skeleton className="h-8 w-20" />
         <Skeleton className="h-8 w-32" />
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>

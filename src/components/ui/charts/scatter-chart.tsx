@@ -225,7 +225,11 @@ export function ScatterChart({
               tick={{ fontSize: CHART_THEME.axis.fontSize }}
               stroke={CHART_THEME.axis.stroke}
               tickFormatter={formatXAxis}
-              label={xLabel ? { value: xLabel, position: "insideBottom", offset: -5 } : undefined}
+              label={
+                xLabel
+                  ? { value: xLabel, position: "insideBottom", offset: -5 }
+                  : undefined
+              }
             />
           )}
           {showYAxis && (
@@ -237,7 +241,11 @@ export function ScatterChart({
               tick={{ fontSize: CHART_THEME.axis.fontSize }}
               stroke={CHART_THEME.axis.stroke}
               tickFormatter={formatYAxis}
-              label={yLabel ? { value: yLabel, angle: -90, position: "insideLeft" } : undefined}
+              label={
+                yLabel
+                  ? { value: yLabel, angle: -90, position: "insideLeft" }
+                  : undefined
+              }
             />
           )}
           <Tooltip content={<CustomTooltip />} />

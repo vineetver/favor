@@ -13,7 +13,7 @@ interface TargetDrugsDisplayProps {
 const PHASE_COLORS = {
   0: "bg-gray-100 text-gray-800",
   1: "bg-blue-100 text-blue-800",
-  2: "bg-green-100 text-green-800", 
+  2: "bg-green-100 text-green-800",
   3: "bg-orange-100 text-orange-800",
   4: "bg-purple-100 text-purple-800",
 } as const;
@@ -21,12 +21,15 @@ const PHASE_COLORS = {
 const PHASE_LABELS = {
   0: "Preclinical",
   1: "Phase I",
-  2: "Phase II", 
+  2: "Phase II",
   3: "Phase III",
   4: "Approved",
 } as const;
 
-export function TargetDrugsDisplay({ target, geneName }: TargetDrugsDisplayProps) {
+export function TargetDrugsDisplay({
+  target,
+  geneName,
+}: TargetDrugsDisplayProps) {
   const drugs = target.knownDrugs?.rows || [];
 
   if (drugs.length === 0) {
@@ -53,9 +56,14 @@ export function TargetDrugsDisplay({ target, geneName }: TargetDrugsDisplayProps
       <div className="grid gap-4">
         {drugs.map((drugAssociation, index) => {
           const drug = drugAssociation.drug;
-          const phase = drugAssociation.clinicalTrialPhase || drug.maximumClinicalTrialPhase || 0;
-          const phaseColor = PHASE_COLORS[phase as keyof typeof PHASE_COLORS] || PHASE_COLORS[0];
-          const phaseLabel = PHASE_LABELS[phase as keyof typeof PHASE_LABELS] || "Unknown";
+          const phase =
+            drugAssociation.clinicalTrialPhase ||
+            drug.maximumClinicalTrialPhase ||
+            0;
+          const phaseColor =
+            PHASE_COLORS[phase as keyof typeof PHASE_COLORS] || PHASE_COLORS[0];
+          const phaseLabel =
+            PHASE_LABELS[phase as keyof typeof PHASE_LABELS] || "Unknown";
 
           return (
             <Card key={`${drug.id}-${index}`}>
@@ -70,50 +78,68 @@ export function TargetDrugsDisplay({ target, geneName }: TargetDrugsDisplayProps
                         </Badge>
                       )}
                       {drug.blackBoxWarning && (
-                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-700">
+                        <Badge
+                          variant="outline"
+                          className="text-xs border-orange-500 text-orange-700"
+                        >
                           Black Box Warning
                         </Badge>
                       )}
                     </div>
-                    
+
                     {drug.drugType && (
                       <p className="text-sm text-muted-foreground">
                         Type: {drug.drugType}
                       </p>
                     )}
                   </div>
-                  
-                  <Badge className={phaseColor}>
-                    {phaseLabel}
-                  </Badge>
+
+                  <Badge className={phaseColor}>{phaseLabel}</Badge>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pt-0 space-y-3">
                 {drugAssociation.mechanismOfAction && (
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Mechanism of Action</div>
-                    <p className="text-sm">{drugAssociation.mechanismOfAction}</p>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Mechanism of Action
+                    </div>
+                    <p className="text-sm">
+                      {drugAssociation.mechanismOfAction}
+                    </p>
                   </div>
                 )}
 
-                {drugAssociation.approvedIndications && drugAssociation.approvedIndications.length > 0 && (
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Approved Indications</div>
-                    <div className="flex flex-wrap gap-1">
-                      {drugAssociation.approvedIndications.map((indication, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {indication}
-                        </Badge>
-                      ))}
+                {drugAssociation.approvedIndications &&
+                  drugAssociation.approvedIndications.length > 0 && (
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        Approved Indications
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {drugAssociation.approvedIndications.map(
+                          (indication, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {indication}
+                            </Badge>
+                          ),
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {drug.withdrawnReason && (
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Withdrawal Reason</div>
-                    <p className="text-sm text-red-600">{drug.withdrawnReason}</p>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Withdrawal Reason
+                    </div>
+                    <p className="text-sm text-red-600">
+                      {drug.withdrawnReason}
+                    </p>
                   </div>
                 )}
 

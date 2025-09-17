@@ -1,8 +1,8 @@
-import type { UIMessage } from 'ai';
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { ChatSDKError, type ErrorCode } from '@/lib/chatbot/errors';
-import type { ChatMessage } from '@/lib/chatbot/types';
+import type { UIMessage } from "ai";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { ChatSDKError, type ErrorCode } from "@/lib/chatbot/errors";
+import type { ChatMessage } from "@/lib/chatbot/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,29 +24,38 @@ export async function fetchWithErrorHandlers(
   init?: RequestInit,
 ) {
   try {
-    console.log('[fetchWithErrorHandlers] Making request to:', input, 'with init:', init);
+    console.log(
+      "[fetchWithErrorHandlers] Making request to:",
+      input,
+      "with init:",
+      init,
+    );
     const response = await fetch(input, init);
-    console.log('[fetchWithErrorHandlers] Response status:', response.status, response.statusText);
+    console.log(
+      "[fetchWithErrorHandlers] Response status:",
+      response.status,
+      response.statusText,
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[fetchWithErrorHandlers] Error response:', errorText);
-      
+      console.error("[fetchWithErrorHandlers] Error response:", errorText);
+
       try {
         const { code, cause } = JSON.parse(errorText);
         throw new ChatSDKError(code as ErrorCode, cause);
       } catch (parseError) {
         // If we can't parse the error as JSON, create a generic error
-        throw new ChatSDKError('api_error' as ErrorCode, errorText);
+        throw new ChatSDKError("api_error" as ErrorCode, errorText);
       }
     }
 
     return response;
   } catch (error: unknown) {
-    console.error('[fetchWithErrorHandlers] Caught error:', error);
-    
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new ChatSDKError('offline:chat');
+    console.error("[fetchWithErrorHandlers] Caught error:", error);
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      throw new ChatSDKError("offline:chat");
     }
 
     throw error;
@@ -54,32 +63,32 @@ export async function fetchWithErrorHandlers(
 }
 
 export function getLocalStorage(key: string) {
-  if (typeof window !== 'undefined') {
-    return JSON.parse(localStorage.getItem(key) || '[]');
+  if (typeof window !== "undefined") {
+    return JSON.parse(localStorage.getItem(key) || "[]");
   }
   return [];
 }
 
 export function getMostRecentUserMessage(messages: Array<UIMessage>) {
-  const userMessages = messages.filter((message) => message.role === 'user');
+  const userMessages = messages.filter((message) => message.role === "user");
   return userMessages.at(-1);
 }
 
 export function sanitizeText(text: string) {
-  return text.replace('<has_function_call>', '');
+  return text.replace("<has_function_call>", "");
 }
 
 export function getTextFromMessage(message: ChatMessage): string {
   return message.parts
-    .filter((part) => part.type === 'text')
+    .filter((part) => part.type === "text")
     .map((part) => part.text)
-    .join('');
+    .join("");
 }
 
 export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }

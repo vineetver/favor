@@ -61,7 +61,11 @@ export default async function GeneSummarySubcategoryPage({
           items={filteredData!}
           columns={[
             { type: "value", header: "Count", tooltip: "Number of variants" },
-            { type: "proportion", header: "% of Total", tooltip: "Percentage of gene's total variant burden" },
+            {
+              type: "proportion",
+              header: "% of Total",
+              tooltip: "Percentage of gene's total variant burden",
+            },
           ]}
         />
       ),
@@ -70,11 +74,7 @@ export default async function GeneSummarySubcategoryPage({
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs
-        tabs={tabs}
-        defaultValue="table"
-        className="w-full"
-      />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" className="w-full" />
     </div>
   );
 }

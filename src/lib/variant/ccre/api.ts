@@ -89,7 +89,9 @@ export async function getCCRETissueByRegion(
     if (tissue) params.append("tissue", tissue);
     if (subtissue) params.append("subtissue", subtissue);
 
-    const response = await fetch(`${CCRE_TISSUE_URL}/region/${region}?${params}`);
+    const response = await fetch(
+      `${CCRE_TISSUE_URL}/region/${region}?${params}`,
+    );
     if (!response.ok) {
       if (response.status === 404) {
         return null;

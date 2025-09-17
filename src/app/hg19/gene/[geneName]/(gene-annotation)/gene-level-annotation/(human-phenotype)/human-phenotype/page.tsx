@@ -57,9 +57,13 @@ export default async function HumanPhenotypePage({
                       className="flex flex-col text-sm font-normal sm:px-6 sm:py-5"
                     >
                       <div className="flex items-center">
-                        <dt className="text-sm font-semibold">{item.header}:</dt>
+                        <dt className="text-sm font-semibold">
+                          {item.header}:
+                        </dt>
                       </div>
-                      <dd className="mt-2 text-sm lg:col-span-2">{item.value}</dd>
+                      <dd className="mt-2 text-sm lg:col-span-2">
+                        {item.value}
+                      </dd>
                     </div>
                   );
                 })}

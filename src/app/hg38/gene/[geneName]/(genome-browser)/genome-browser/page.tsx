@@ -21,12 +21,16 @@ export default async function GeneGenomeBrowserPage({
   const { geneName } = params;
 
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData) {
     notFound();
   }
 
-  if (!geneData.genomic_position_start || !geneData.genomic_position_end || !geneData.chromosome) {
+  if (
+    !geneData.genomic_position_start ||
+    !geneData.genomic_position_end ||
+    !geneData.chromosome
+  ) {
     return <div>No genomic position data available for this gene.</div>;
   }
 
@@ -34,10 +38,7 @@ export default async function GeneGenomeBrowserPage({
 
   return (
     <GenomeBrowserErrorBoundary>
-      <DynamicGenomeBrowser 
-        regionParam={region} 
-        initialTracks={[]} 
-      />
+      <DynamicGenomeBrowser regionParam={region} initialTracks={[]} />
     </GenomeBrowserErrorBoundary>
   );
 }

@@ -12,16 +12,20 @@ export default async function GeneScentPage({ params }: GeneScentPageProps) {
   const { geneName } = params;
 
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData) {
     notFound();
   }
 
-  if (!geneData.genomic_position_start || !geneData.genomic_position_end || !geneData.chromosome) {
+  if (
+    !geneData.genomic_position_start ||
+    !geneData.genomic_position_end ||
+    !geneData.chromosome
+  ) {
     return <div>No genomic position data available for this gene.</div>;
   }
 
   const region = `${geneData.chromosome}-${geneData.genomic_position_start}-${geneData.genomic_position_end}`;
-  
+
   return <ScentDisplay region={region} />;
 }

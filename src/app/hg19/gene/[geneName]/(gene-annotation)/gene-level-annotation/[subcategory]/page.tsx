@@ -16,8 +16,11 @@ export default async function GeneSubcategoryPage({
   params,
 }: GeneSubcategoryPageProps) {
   const { geneName, subcategory } = params;
-  
-  const subCategoryData = getHG19SubCategoryBySlug("gene-level-annotation", subcategory);
+
+  const subCategoryData = getHG19SubCategoryBySlug(
+    "gene-level-annotation",
+    subcategory,
+  );
   if (!subCategoryData) {
     notFound();
   }
@@ -30,5 +33,5 @@ export default async function GeneSubcategoryPage({
   const columns = GENE_COLUMNS_MAP[subcategory];
   const filteredData = getFilteredItems(columns!, geneData);
 
-  return <AnnotationTable items={filteredData!} />
+  return <AnnotationTable items={filteredData!} />;
 }

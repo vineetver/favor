@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChartSkeleton, StatCardsSkeleton } from "@/components/ui/skeleton-layouts";
+import {
+  ChartSkeleton,
+  StatCardsSkeleton,
+} from "@/components/ui/skeleton-layouts";
 
 export default function SummaryLoading() {
   return (
@@ -9,7 +12,7 @@ export default function SummaryLoading() {
         <Skeleton className="h-10 w-24" />
         <Skeleton className="h-10 w-24" />
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>

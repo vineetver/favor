@@ -11,12 +11,13 @@ interface PGBoostDisplayProps {
   entityType: "gene" | "region";
 }
 
-export function PGBoostDisplay({ 
-  data, 
-  entityId, 
-  entityType 
+export function PGBoostDisplay({
+  data,
+  entityId,
+  entityType,
 }: PGBoostDisplayProps) {
-  const columns = entityType === "gene" ? pgboostGeneColumns : pgboostRegionColumns;
+  const columns =
+    entityType === "gene" ? pgboostGeneColumns : pgboostRegionColumns;
 
   const exportData = (data: PGBoost[]) => {
     const headers = [
@@ -39,7 +40,7 @@ export function PGBoostDisplay({
     };
 
     const rows = data.map((row) => [
-      entityType === "gene" ? (row.rsid || "N/A") : (row.gene || "N/A"),
+      entityType === "gene" ? row.rsid || "N/A" : row.gene || "N/A",
       formatScore(row.pg_boost),
       formatPercentile(row.pg_boost_percentile),
       formatScore(row.scent),
@@ -75,10 +76,12 @@ export function PGBoostDisplay({
   );
 
   const title = `pgBoost Predictions - ${entityId}`;
-  const description = entityType === "gene" 
-    ? "Variant-gene link predictions using pgBoost and other single-cell ATAC peak-gene linking scores"
-    : "Variant-gene link predictions for this region using pgBoost and other single-cell ATAC peak-gene linking scores";
-  const searchPlaceholder = entityType === "gene" ? "Search rsid..." : "Search genes...";
+  const description =
+    entityType === "gene"
+      ? "Variant-gene link predictions using pgBoost and other single-cell ATAC peak-gene linking scores"
+      : "Variant-gene link predictions for this region using pgBoost and other single-cell ATAC peak-gene linking scores";
+  const searchPlaceholder =
+    entityType === "gene" ? "Search rsid..." : "Search genes...";
 
   return (
     <DataGrid

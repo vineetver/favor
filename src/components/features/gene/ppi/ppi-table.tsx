@@ -2,7 +2,11 @@
 
 import React, { useMemo } from "react";
 import { DataGrid } from "@/components/ui/data-grid";
-import { createPPIColumns, createPPIFacetedFilters, type PPIInteraction } from "@/lib/gene/ppi/ppi-columns";
+import {
+  createPPIColumns,
+  createPPIFacetedFilters,
+  type PPIInteraction,
+} from "@/lib/gene/ppi/ppi-columns";
 
 interface PPITableProps {
   data: PPIInteraction[];
@@ -68,9 +72,10 @@ export function PPITable({ data, selectedNode }: PPITableProps) {
       getRowId={(row) => row.id}
       selectedRowId={
         selectedNode
-          ? data.find(
-              (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-            )?.id ?? null
+          ? (data.find(
+              (row) =>
+                row.gene_a === selectedNode || row.gene_b === selectedNode,
+            )?.id ?? null)
           : null
       }
     />

@@ -20,10 +20,7 @@ export default async function RegionGenomeBrowserPage({
 
   return (
     <GenomeBrowserErrorBoundary>
-      <DynamicGenomeBrowser 
-        regionParam={region} 
-        initialTracks={[]} 
-      />
+      <DynamicGenomeBrowser regionParam={region} initialTracks={[]} />
     </GenomeBrowserErrorBoundary>
   );
 }

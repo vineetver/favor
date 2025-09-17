@@ -21,7 +21,9 @@ export default async function GeneLayout({
   const { geneName, categorySlug } = params;
   const category = categorySlug;
 
-  const currentCategory = HG19_GENE_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = HG19_GENE_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

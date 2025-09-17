@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@source "../node_modules/streamdown/dist/index.js";
 
 @theme {
   --background: oklch(0.98 0.01 335.69);

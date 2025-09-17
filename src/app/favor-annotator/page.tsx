@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { essential, full } from "@/lib/utils/dataset";
-import { cn } from "@/lib/utils/general"
+import { cn } from "@/lib/utils/general";
 
 const status: { [key: string]: string } = {
   CSV: "bg-green-100 text-green-800 border-green-200",
@@ -27,10 +27,18 @@ export default async function Page() {
           <div className="mt-6 space-y-6 text-left">
             <p>
               FAVORannotator is an open source R program{" "}
-              <a href="https://github.com/zhouhufeng/FAVORannotator" className="text-primary hover:underline">GitHub</a>{" "}
+              <a
+                href="https://github.com/zhouhufeng/FAVORannotator"
+                className="text-primary hover:underline"
+              >
+                GitHub
+              </a>{" "}
               for performing offline functional annotation of whole-genome/
               whole-exome sequencing (WGS/WES) studies using{" "}
-              <a href="https://academic.oup.com/nar/article/51/D1/D1300/6814464" className="text-primary hover:underline">
+              <a
+                href="https://academic.oup.com/nar/article/51/D1/D1300/6814464"
+                className="text-primary hover:underline"
+              >
                 FAVOR
               </a>{" "}
               database. It combines the functional annotation data with the
@@ -49,8 +57,17 @@ export default async function Page() {
             <p>
               FAVORannotator can be conveniently integrated into the
               STAARpipeline (
-              <a href="https://github.com/xihaoli/STAARpipeline" className="text-primary hover:underline">GitHub</a> |{" "}
-              <a href="https://www.nature.com/articles/s41592-022-01640-x" className="text-primary hover:underline">
+              <a
+                href="https://github.com/xihaoli/STAARpipeline"
+                className="text-primary hover:underline"
+              >
+                GitHub
+              </a>{" "}
+              |{" "}
+              <a
+                href="https://www.nature.com/articles/s41592-022-01640-x"
+                className="text-primary hover:underline"
+              >
                 Paper
               </a>
               ), a rare variant association analysis tool for WGS/WES studies,
@@ -127,7 +144,7 @@ function DatasetTable({
                       <div
                         className={cn(
                           status[items.kind],
-                          "rounded-md px-2 py-1 text-xs font-medium border"
+                          "rounded-md px-2 py-1 text-xs font-medium border",
                         )}
                       >
                         {items.kind}
@@ -143,7 +160,7 @@ function DatasetTable({
                 </TableRow>
               ))}
             </>
-          )
+          ),
         )}
       </TableBody>
     </Table>

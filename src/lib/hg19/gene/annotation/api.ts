@@ -1,4 +1,4 @@
-import { clickHouseClient } from '@/lib/clickhouse/client';
+import { clickHouseClient } from "@/lib/clickhouse/client";
 
 export interface Hg19GeneAnnotation {
   gene_name: string;
@@ -9,7 +9,9 @@ export interface Hg19GeneAnnotation {
   description?: string;
 }
 
-export async function fetchHg19GeneAnnotation(geneName: string): Promise<Hg19GeneAnnotation | null> {
+export async function fetchHg19GeneAnnotation(
+  geneName: string,
+): Promise<Hg19GeneAnnotation | null> {
   try {
     const query = `
       SELECT 
@@ -22,18 +24,21 @@ export async function fetchHg19GeneAnnotation(geneName: string): Promise<Hg19Gen
       LIMIT 1
     `;
 
-    const result = await clickHouseClient.query({ 
+    const result = await clickHouseClient.query({
       query,
-      query_params: { geneName }
+      query_params: { geneName },
     });
-    
+
     if (result.length === 0) {
       return null;
     }
 
     return result[0] as Hg19GeneAnnotation;
   } catch (error) {
-    console.error('Error fetching HG19 gene annotation from ClickHouse:', error);
+    console.error(
+      "Error fetching HG19 gene annotation from ClickHouse:",
+      error,
+    );
     return null;
   }
 }

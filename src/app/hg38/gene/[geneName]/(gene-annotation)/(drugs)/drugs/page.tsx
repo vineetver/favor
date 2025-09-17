@@ -13,7 +13,7 @@ interface DrugsPageProps {
 
 async function DrugsContent({ geneName }: { geneName: string }) {
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData?.ensembl_gene) {
     return (
       <div className="text-center py-8">
@@ -26,13 +26,8 @@ async function DrugsContent({ geneName }: { geneName: string }) {
 
   try {
     const { target } = await getTargetDrugs(geneData.ensembl_gene);
-    
-    return (
-      <TargetDrugsDisplay 
-        target={target} 
-        geneName={geneName}
-      />
-    );
+
+    return <TargetDrugsDisplay target={target} geneName={geneName} />;
   } catch (error) {
     return (
       <div className="text-center py-8">
@@ -40,7 +35,7 @@ async function DrugsContent({ geneName }: { geneName: string }) {
           Failed to load drug information from OpenTargets
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          {error instanceof Error ? error.message : 'Unknown error'}
+          {error instanceof Error ? error.message : "Unknown error"}
         </p>
       </div>
     );
@@ -53,9 +48,7 @@ export default async function DrugsPage({ params }: DrugsPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Known Drugs
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Known Drugs</h1>
         <p className="text-muted-foreground mt-2">
           Drug-target interactions for {geneName} from OpenTargets Platform
         </p>

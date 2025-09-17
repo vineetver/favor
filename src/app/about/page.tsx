@@ -1,4 +1,3 @@
-
 export default async function Page() {
   return (
     <>
@@ -22,7 +21,10 @@ export default async function Page() {
                 annotation information for all possible SNVs (8,812,917,339
                 SNVs) across the human genome and observed INDELs (79,997,898
                 indels) from the Trans-Omics for Precision Medicine (TOPMed){" "}
-                <a href="https://bravo.sph.umich.edu/freeze8/hg38/" className="text-primary hover:underline">
+                <a
+                  href="https://bravo.sph.umich.edu/freeze8/hg38/"
+                  className="text-primary hover:underline"
+                >
                   BRAVO variant set
                 </a>{" "}
                 (Build GRCh38) (NHLBI TOPMed Consortium, 2018; Taliun et al.,
@@ -34,7 +36,10 @@ export default async function Page() {
                 This data is publicly available for the benefit of the
                 bioscience community to all users who agree to the terms. FAVOR
                 is being developed with the support from the{" "}
-                <a href="https://www.genome.gov/Funded-Programs-Projects/NHGRI-Genome-Sequencing-Program" className="text-primary hover:underline">
+                <a
+                  href="https://www.genome.gov/Funded-Programs-Projects/NHGRI-Genome-Sequencing-Program"
+                  className="text-primary hover:underline"
+                >
                   NHGRI Genome Sequencing Program
                 </a>
                 , in collaboration with TOPMed. There are no publication
@@ -42,29 +47,74 @@ export default async function Page() {
               </p>
               <p>
                 See the Documentation for more info on using FAVOR. Post to the{" "}
-                <a href="https://discussion.genohub.org/" className="text-primary hover:underline">Discussion Forum</a>{" "}
+                <a
+                  href="https://discussion.genohub.org/"
+                  className="text-primary hover:underline"
+                >
+                  Discussion Forum
+                </a>{" "}
                 for user support and feature requests. If you have any questions
                 about this website or would like to report bugs, please email{" "}
-                <a href="mailto:favor@genohub.org" className="text-primary hover:underline">favor@genohub.org</a>.
+                <a
+                  href="mailto:favor@genohub.org"
+                  className="text-primary hover:underline"
+                >
+                  favor@genohub.org
+                </a>
+                .
               </p>
               <p>
                 <strong>FAVOR Developers:</strong>{" "}
-                <a href="https://www.hsph.harvard.edu/hufeng-zhou/" className="text-primary hover:underline">
+                <a
+                  href="https://www.hsph.harvard.edu/hufeng-zhou/"
+                  className="text-primary hover:underline"
+                >
                   Hufeng Zhou
                 </a>{" "}
-                (Lead), <a href="https://www.vineetverma.io/" className="text-primary hover:underline">Vineet Verma</a>{" "}
+                (Lead),{" "}
+                <a
+                  href="https://www.vineetverma.io/"
+                  className="text-primary hover:underline"
+                >
+                  Vineet Verma
+                </a>{" "}
                 (Software Engineer Lead),{" "}
-                <a href="https://content.sph.harvard.edu/xlin/" className="text-primary hover:underline">Xihong Lin</a>
+                <a
+                  href="https://content.sph.harvard.edu/xlin/"
+                  className="text-primary hover:underline"
+                >
+                  Xihong Lin
+                </a>
               </p>
               <p>
                 <strong>FAVORannotator Developers:</strong>{" "}
-                <a href="https://www.hsph.harvard.edu/hufeng-zhou/" className="text-primary hover:underline">
+                <a
+                  href="https://www.hsph.harvard.edu/hufeng-zhou/"
+                  className="text-primary hover:underline"
+                >
                   Hufeng Zhou
                 </a>{" "}
-                (Lead), <a href="https://www.xihaoli.org/" className="text-primary hover:underline">Xihao Li</a> (Co
-                Lead), <a href="https://zilinli1988.github.io/" className="text-primary hover:underline">Zilin Li</a> (Co
-                Lead),{" "}
-                <a href="https://content.sph.harvard.edu/xlin/" className="text-primary hover:underline">Xihong Lin</a>
+                (Lead),{" "}
+                <a
+                  href="https://www.xihaoli.org/"
+                  className="text-primary hover:underline"
+                >
+                  Xihao Li
+                </a>{" "}
+                (Co Lead),{" "}
+                <a
+                  href="https://zilinli1988.github.io/"
+                  className="text-primary hover:underline"
+                >
+                  Zilin Li
+                </a>{" "}
+                (Co Lead),{" "}
+                <a
+                  href="https://content.sph.harvard.edu/xlin/"
+                  className="text-primary hover:underline"
+                >
+                  Xihong Lin
+                </a>
               </p>
               <p>
                 <strong>Other Contributors:</strong> NHGRI Genome Sequencing
@@ -112,25 +162,41 @@ export default async function Page() {
                   Annotator for Variation across the Human Genome
                 </strong>{" "}
                 . Nucleic Acids Res 2022 Nov 9; gkac966. PMID:{" "}
-                <a href="https://pubmed.ncbi.nlm.nih.gov/36350676/" className="text-primary hover:underline">36350676</a>
+                <a
+                  href="https://pubmed.ncbi.nlm.nih.gov/36350676/"
+                  className="text-primary hover:underline"
+                >
+                  36350676
+                </a>
                 . DOI:{" "}
-                <a href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false" className="text-primary hover:underline">
+                <a
+                  href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false"
+                  className="text-primary hover:underline"
+                >
                   10.1093/nar/gkac966.
                 </a>
                 .{" "}
               </p>
               <p>
                 FAVOR Full Database, DOI:{" "}
-                <a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG" className="text-primary hover:underline">
+                <a
+                  href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG"
+                  className="text-primary hover:underline"
+                >
                   10.7910/DVN/KFUBKG
                 </a>
                 . FAVOR Esssential Database, DOI:{" "}
-                <a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI" className="text-primary hover:underline">
+                <a
+                  href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI"
+                  className="text-primary hover:underline"
+                >
                   10.7910/DVN/1VGTJI
                 </a>
                 .
               </p>
-              <p><strong>2. FAVOR-GPT</strong></p>
+              <p>
+                <strong>2. FAVOR-GPT</strong>
+              </p>
               <p>
                 Thomas Cheng Li, Hufeng Zhou, Vineet Verma, Xiangru Tang, Yanjun
                 Shao, Eric Van Buren, Zhiping Weng, Mark Gerstein, Benjamin
@@ -138,11 +204,16 @@ export default async function Page() {
                 <strong>
                   FAVOR-GPT: a generative natural language interface to whole
                   genome variant functional annotations
-                </strong>. <em>Bioinformatics Advances</em>, Volume 4, Issue 1, 2024,
+                </strong>
+                . <em>Bioinformatics Advances</em>, Volume 4, Issue 1, 2024,
                 vbae143. DOI:{" "}
-                <a href="https://doi.org/10.1093/bioadv/vbae143" className="text-primary hover:underline">
+                <a
+                  href="https://doi.org/10.1093/bioadv/vbae143"
+                  className="text-primary hover:underline"
+                >
                   10.1093/bioadv/vbae143
-                </a>.
+                </a>
+                .
               </p>
               <p>
                 <strong>3. STAAR</strong>{" "}
@@ -167,9 +238,17 @@ export default async function Page() {
                   large whole-genome sequencing studies at scale
                 </strong>
                 . <em>Nature Genetics</em> 2020; 52(9): 969-983. PMID:{" "}
-                <a href="https://pubmed.ncbi.nlm.nih.gov/32839606/" className="text-primary hover:underline">32839606</a>
+                <a
+                  href="https://pubmed.ncbi.nlm.nih.gov/32839606/"
+                  className="text-primary hover:underline"
+                >
+                  32839606
+                </a>
                 . DOI:{" "}
-                <a href="https://www.nature.com/articles/s41588-020-0676-4" className="text-primary hover:underline">
+                <a
+                  href="https://www.nature.com/articles/s41588-020-0676-4"
+                  className="text-primary hover:underline"
+                >
                   10.1038/s41588-020-0676-4
                 </a>
                 .
@@ -202,12 +281,14 @@ export default async function Page() {
                   of large-scale whole-genome sequencing studies.
                 </strong>{" "}
                 <em>Nature Methods</em> 19, 1599–1611 (2022) DOI:{" "}
-                <a href="https://doi.org/10.1038/s41592-022-01640-x" className="text-primary hover:underline">
+                <a
+                  href="https://doi.org/10.1038/s41592-022-01640-x"
+                  className="text-primary hover:underline"
+                >
                   s41592-022-01640-x
                 </a>
                 .
               </p>
-              
             </div>
           </div>
         </div>

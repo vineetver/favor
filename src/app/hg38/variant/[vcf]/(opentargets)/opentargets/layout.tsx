@@ -20,7 +20,9 @@ export default async function OpenTargetsLayout({
   const { vcf } = params;
   const category = "opentargets";
 
-  const currentCategory = VARIANT_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = VARIANT_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

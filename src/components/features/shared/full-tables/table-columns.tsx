@@ -19,7 +19,7 @@ import {
 
 function formatAlleleFrequency(value: unknown) {
   if (!isValidNumber(value)) return null;
-  
+
   return (
     <span>
       {Number(value)
@@ -31,7 +31,7 @@ function formatAlleleFrequency(value: unknown) {
 
 function formatScore(value: unknown) {
   if (!isValidNumber(value)) return null;
-  
+
   return (
     <span>
       {Number(value)
@@ -55,10 +55,7 @@ function renderVariantLink(value: unknown) {
   if (!isValidString(value)) return null;
 
   return (
-    <a
-      href={`/hg38/variant/${value}/summary/basic`}
-      className="underline"
-    >
+    <a href={`/hg38/variant/${value}/summary/basic`} className="underline">
       {value}
     </a>
   );
@@ -108,10 +105,10 @@ function renderGeneHancer(value: unknown) {
 
 function renderOrigin(value: unknown) {
   if (!isValidString(value) && !isValidNumber(value)) return null;
-  
-  const origin: {[key: number]: string} = {
+
+  const origin: { [key: number]: string } = {
     0: "unknown",
-    1: "germline", 
+    1: "germline",
     2: "somatic",
     4: "inherited",
     8: "paternal",
@@ -122,18 +119,16 @@ function renderOrigin(value: unknown) {
     256: "not-tested",
     512: "tested-inconclusive",
   };
-  
-  const originValue = typeof value === 'number' ? origin[value] : value;
-  return (
-    <span className="capitalize">{alleleOriginCCode(originValue)}</span>
-  );
+
+  const originValue = typeof value === "number" ? origin[value] : value;
+  return <span className="capitalize">{alleleOriginCCode(originValue)}</span>;
 }
 
 function renderClinicalSignificance(value: unknown) {
   if (!isValidString(value)) return null;
-  
+
   // Handle multiple values separated by pipe
-  const values = value.split('|').filter(v => v.trim() !== '');
+  const values = value.split("|").filter((v) => v.trim() !== "");
   if (values.length > 1) {
     return (
       <div className="space-y-1">
@@ -143,7 +138,7 @@ function renderClinicalSignificance(value: unknown) {
       </div>
     );
   }
-  
+
   return clinicalSignificanceCCode(value);
 }
 

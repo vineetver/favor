@@ -26,19 +26,28 @@ interface HighlightData {
   pathwayInteractions: any[];
 }
 
-const isRowHighlighted = (item: PathwayGeneData | PathwayInteractionData, highlightData?: HighlightData) => {
+const isRowHighlighted = (
+  item: PathwayGeneData | PathwayInteractionData,
+  highlightData?: HighlightData,
+) => {
   if (!highlightData) return false;
-  
+
   const { selectedPathway, selectedNode } = highlightData;
-  
+
   if (selectedPathway && item.pathway === selectedPathway) return true;
-  if (selectedNode && (item.gene_name === selectedNode || 
-      ('interactor_b' in item && item.interactor_b === selectedNode))) return true;
-  
+  if (
+    selectedNode &&
+    (item.gene_name === selectedNode ||
+      ("interactor_b" in item && item.interactor_b === selectedNode))
+  )
+    return true;
+
   return false;
 };
 
-export const createPathwayGenesColumns = (highlightData?: HighlightData): ColumnDef<PathwayGeneData>[] => [
+export const createPathwayGenesColumns = (
+  highlightData?: HighlightData,
+): ColumnDef<PathwayGeneData>[] => [
   {
     accessorKey: "pathway",
     header: ({ column }) => (
@@ -60,7 +69,7 @@ export const createPathwayGenesColumns = (highlightData?: HighlightData): Column
     },
   },
   {
-    accessorKey: "gene_name", 
+    accessorKey: "gene_name",
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -147,7 +156,9 @@ export const createPathwayGenesColumns = (highlightData?: HighlightData): Column
   },
 ];
 
-export const createPathwayInteractionsColumns = (highlightData?: HighlightData): ColumnDef<PathwayInteractionData>[] => [
+export const createPathwayInteractionsColumns = (
+  highlightData?: HighlightData,
+): ColumnDef<PathwayInteractionData>[] => [
   {
     accessorKey: "pathway",
     header: ({ column }) => (
@@ -208,9 +219,7 @@ export const createPathwayInteractionsColumns = (highlightData?: HighlightData):
         <code
           className={cn(
             "px-2 py-1 rounded text-sm",
-            isHighlighted
-              ? "bg-blue-100"
-              : "bg-muted",
+            isHighlighted ? "bg-blue-100" : "bg-muted",
           )}
         >
           {interactorB}
@@ -318,32 +327,47 @@ export const createPathwayInteractionsColumns = (highlightData?: HighlightData):
   },
 ];
 
-export const createPathwayFacetedFilters = (data: (PathwayGeneData | PathwayInteractionData)[], type: "genes" | "interactions") => {
-  const uniqueSources = Array.from(new Set(data.map((item) => item.source))).sort();
-  
+export const createPathwayFacetedFilters = (
+  data: (PathwayGeneData | PathwayInteractionData)[],
+  type: "genes" | "interactions",
+) => {
+  const uniqueSources = Array.from(
+    new Set(data.map((item) => item.source)),
+  ).sort();
+
   const baseFilters = [
     {
       columnId: "source",
       title: "Source",
-      options: uniqueSources.map(source => ({ label: source, value: source }))
-    }
+      options: uniqueSources.map((source) => ({
+        label: source,
+        value: source,
+      })),
+    },
   ];
 
   if (type === "interactions") {
     const interactionData = data as PathwayInteractionData[];
     const uniqueMethods = Array.from(
-      new Set(interactionData.map((item) => item.method).filter(Boolean) as string[])
+      new Set(
+        interactionData.map((item) => item.method).filter(Boolean) as string[],
+      ),
     ).sort();
-    
+
     const uniqueDegrees = Array.from(
-      new Set(interactionData.map((item) => item.degree).filter(Boolean) as string[])
+      new Set(
+        interactionData.map((item) => item.degree).filter(Boolean) as string[],
+      ),
     ).sort();
 
     if (uniqueMethods.length > 0) {
       baseFilters.push({
         columnId: "method",
         title: "Method",
-        options: uniqueMethods.map(method => ({ label: method, value: method }))
+        options: uniqueMethods.map((method) => ({
+          label: method,
+          value: method,
+        })),
       });
     }
 
@@ -351,7 +375,10 @@ export const createPathwayFacetedFilters = (data: (PathwayGeneData | PathwayInte
       baseFilters.push({
         columnId: "degree",
         title: "Degree",
-        options: uniqueDegrees.map(degree => ({ label: degree, value: degree }))
+        options: uniqueDegrees.map((degree) => ({
+          label: degree,
+          value: degree,
+        })),
       });
     }
   }

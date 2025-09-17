@@ -28,8 +28,13 @@ function formatEffect(beta?: number, oddsRatio?: number) {
   return "—";
 }
 
-export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayProps) {
-  const [expandedStudies, setExpandedStudies] = useState<Set<string>>(new Set());
+export function VariantStudiesDisplay({
+  variant,
+  vcf,
+}: VariantStudiesDisplayProps) {
+  const [expandedStudies, setExpandedStudies] = useState<Set<string>>(
+    new Set(),
+  );
 
   const toggleExpanded = (studyId: string) => {
     const newExpanded = new Set(expandedStudies);
@@ -61,12 +66,14 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-2xl font-bold">{variant.studyLoci.count}</div>
+              <div className="text-2xl font-bold">
+                {variant.studyLoci.count}
+              </div>
               <div className="text-sm text-muted-foreground">Total Studies</div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -92,11 +99,13 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
 
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">Associated Studies</h3>
-        
+
         {studies.map((studyLocus, index) => {
           const study = (studyLocus as any).study;
-          const isExpanded = expandedStudies.has(study?.studyId || index.toString());
-          
+          const isExpanded = expandedStudies.has(
+            study?.studyId || index.toString(),
+          );
+
           return (
             <Card key={study?.studyId || index}>
               <CardHeader className="pb-3">
@@ -112,11 +121,12 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
                     )}
                     {study?.pubAuthor && (
                       <p className="text-xs text-muted-foreground">
-                        {study.pubAuthor} {study?.pubDate && `(${study.pubDate})`}
+                        {study.pubAuthor}{" "}
+                        {study?.pubDate && `(${study.pubDate})`}
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="ml-4 text-right space-y-1">
                     <div className="text-sm font-mono">
                       p = {formatPValue(studyLocus.pval)}
@@ -127,7 +137,7 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -147,23 +157,30 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
                       </Badge>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {study?.pmid && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-6 text-xs"
-                        onClick={() => window.open(`https://pubmed.ncbi.nlm.nih.gov/${study.pmid}`, '_blank')}
+                        onClick={() =>
+                          window.open(
+                            `https://pubmed.ncbi.nlm.nih.gov/${study.pmid}`,
+                            "_blank",
+                          )
+                        }
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleExpanded(study?.studyId || index.toString())}
+                      onClick={() =>
+                        toggleExpanded(study?.studyId || index.toString())
+                      }
                       className="h-6 text-xs"
                     >
                       {isExpanded ? (
@@ -180,27 +197,35 @@ export function VariantStudiesDisplay({ variant, vcf }: VariantStudiesDisplayPro
                     {studyLocus.beta !== undefined && (
                       <div>
                         <div className="text-muted-foreground">Beta</div>
-                        <div className="font-mono">{studyLocus.beta.toFixed(4)}</div>
+                        <div className="font-mono">
+                          {studyLocus.beta.toFixed(4)}
+                        </div>
                       </div>
                     )}
                     {studyLocus.oddsRatio !== undefined && (
                       <div>
                         <div className="text-muted-foreground">Odds Ratio</div>
-                        <div className="font-mono">{studyLocus.oddsRatio.toFixed(3)}</div>
-                      </div>
-                    )}
-                    {studyLocus.confidenceIntervalLower !== undefined && studyLocus.confidenceIntervalUpper !== undefined && (
-                      <div>
-                        <div className="text-muted-foreground">95% CI</div>
-                        <div className="font-mono text-xs">
-                          {studyLocus.confidenceIntervalLower.toFixed(3)} - {studyLocus.confidenceIntervalUpper.toFixed(3)}
+                        <div className="font-mono">
+                          {studyLocus.oddsRatio.toFixed(3)}
                         </div>
                       </div>
                     )}
+                    {studyLocus.confidenceIntervalLower !== undefined &&
+                      studyLocus.confidenceIntervalUpper !== undefined && (
+                        <div>
+                          <div className="text-muted-foreground">95% CI</div>
+                          <div className="font-mono text-xs">
+                            {studyLocus.confidenceIntervalLower.toFixed(3)} -{" "}
+                            {studyLocus.confidenceIntervalUpper.toFixed(3)}
+                          </div>
+                        </div>
+                      )}
                     {studyLocus.pval !== undefined && (
                       <div>
                         <div className="text-muted-foreground">P-value</div>
-                        <div className="font-mono">{studyLocus.pval.toExponential(2)}</div>
+                        <div className="font-mono">
+                          {studyLocus.pval.toExponential(2)}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -1,7 +1,9 @@
 import type { VariantHg19 } from "../variant/types";
 import { clickHouseClient } from "@/lib/clickhouse/client";
 
-export async function fetchHg19VariantByRsid(rsid: string): Promise<VariantHg19 | null> {
+export async function fetchHg19VariantByRsid(
+  rsid: string,
+): Promise<VariantHg19 | null> {
   try {
     // Optimized query with BETWEEN for better index usage
     const query = `
@@ -24,12 +26,17 @@ export async function fetchHg19VariantByRsid(rsid: string): Promise<VariantHg19 
 
     return rows && rows.length > 0 ? rows[0] : null;
   } catch (error) {
-    console.error('Error fetching HG19 variant by rsID from ClickHouse:', error);
+    console.error(
+      "Error fetching HG19 variant by rsID from ClickHouse:",
+      error,
+    );
     return null;
   }
 }
 
-export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19[]> {
+export async function fetchHg19VariantsByRsid(
+  rsid: string,
+): Promise<VariantHg19[]> {
   try {
     // First get all variant_vcf values for this rsID, then fetch each variant
     const lookupQuery = `
@@ -39,18 +46,22 @@ export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19
       ORDER BY chromosome, position
     `;
 
-    const lookupRows = await clickHouseClient.query<{variant_vcf: string, chromosome: string, position: number}>({
+    const lookupRows = await clickHouseClient.query<{
+      variant_vcf: string;
+      chromosome: string;
+      position: number;
+    }>({
       query: lookupQuery,
       query_params: { rsid },
     });
-    
+
     if (!lookupRows || lookupRows.length === 0) {
       return [];
     }
 
     // For multiple variants, fetch them individually to avoid join issues
     const variants: VariantHg19[] = [];
-    
+
     for (const lookup of lookupRows) {
       const variantQuery = `
         SELECT *
@@ -77,7 +88,7 @@ export async function fetchHg19VariantsByRsid(rsid: string): Promise<VariantHg19
 
     return variants;
   } catch (error) {
-    console.error('Error fetching HG19 variants by rsID:', error);
+    console.error("Error fetching HG19 variants by rsID:", error);
     return [];
   }
 }

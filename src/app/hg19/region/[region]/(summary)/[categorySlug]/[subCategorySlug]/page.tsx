@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { ResponsiveTabs, TabConfig } from "@/components/ui/responsive-tabs";
-import { fetchHg19RegionSummary, getHg19SummaryByCategory } from "@/lib/hg19/region/summary/api";
+import {
+  fetchHg19RegionSummary,
+  getHg19SummaryByCategory,
+} from "@/lib/hg19/region/summary/api";
 import { summaryHG19columns } from "@/lib/hg19/region/summary/columns";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { SummaryDashboard } from "@/components/features/shared/summary-dashboard";
@@ -61,7 +64,11 @@ export default async function Hg19RegionSummarySubcategoryPage({
           items={filteredData!}
           columns={[
             { type: "value", header: "Count", tooltip: "Number of variants" },
-            { type: "proportion", header: "% of Total", tooltip: "Percentage of region's total variant burden" },
+            {
+              type: "proportion",
+              header: "% of Total",
+              tooltip: "Percentage of region's total variant burden",
+            },
           ]}
         />
       ),
@@ -70,11 +77,7 @@ export default async function Hg19RegionSummarySubcategoryPage({
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs
-        tabs={tabs}
-        defaultValue="table"
-        className="w-full"
-      />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" className="w-full" />
     </div>
   );
 }

@@ -317,27 +317,33 @@ export function TrackDetailsModal({
                           {track.documentation.colorLegend.description}
                         </p>
                         <div className="grid grid-cols-1 gap-3">
-                          {track.documentation.colorLegend.categories.map((category, index) => (
-                            <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                              <div 
-                                className="w-4 h-4 rounded-full border border-border flex-shrink-0 mt-0.5"
-                                style={{ backgroundColor: category.color }}
-                              />
-                              <div className="flex-1 space-y-1">
-                                <div className="font-medium text-sm">
-                                  {category.label}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {category.description}
-                                </div>
-                                {category.biologicalMeaning && (
-                                  <div className="text-xs text-muted-foreground italic">
-                                    <strong>Biological meaning:</strong> {category.biologicalMeaning}
+                          {track.documentation.colorLegend.categories.map(
+                            (category, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
+                              >
+                                <div
+                                  className="w-4 h-4 rounded-full border border-border flex-shrink-0 mt-0.5"
+                                  style={{ backgroundColor: category.color }}
+                                />
+                                <div className="flex-1 space-y-1">
+                                  <div className="font-medium text-sm">
+                                    {category.label}
                                   </div>
-                                )}
+                                  <div className="text-xs text-muted-foreground">
+                                    {category.description}
+                                  </div>
+                                  {category.biologicalMeaning && (
+                                    <div className="text-xs text-muted-foreground italic">
+                                      <strong>Biological meaning:</strong>{" "}
+                                      {category.biologicalMeaning}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </div>
                     </>
@@ -350,57 +356,86 @@ export function TrackDetailsModal({
                         <h4 className="font-semibold text-base text-foreground">
                           Visual Elements Guide
                         </h4>
-                        
+
                         {track.documentation.visualElements.shapes && (
                           <div className="space-y-3">
-                            <h5 className="font-medium text-sm text-foreground">Shapes</h5>
+                            <h5 className="font-medium text-sm text-foreground">
+                              Shapes
+                            </h5>
                             <div className="grid grid-cols-1 gap-2">
-                              {track.documentation.visualElements.shapes.map((shape, index) => (
-                                <div key={index} className="flex items-start gap-3 p-2 bg-muted/20 rounded">
-                                  <div className="flex-1 space-y-1">
-                                    <div className="font-medium text-xs">{shape.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {shape.description} - {shape.meaning}
+                              {track.documentation.visualElements.shapes.map(
+                                (shape, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-start gap-3 p-2 bg-muted/20 rounded"
+                                  >
+                                    <div className="flex-1 space-y-1">
+                                      <div className="font-medium text-xs">
+                                        {shape.name}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {shape.description} - {shape.meaning}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ),
+                              )}
                             </div>
                           </div>
                         )}
 
                         {track.documentation.visualElements.patterns && (
                           <div className="space-y-3">
-                            <h5 className="font-medium text-sm text-foreground">Patterns</h5>
+                            <h5 className="font-medium text-sm text-foreground">
+                              Patterns
+                            </h5>
                             <div className="grid grid-cols-1 gap-2">
-                              {track.documentation.visualElements.patterns.map((pattern, index) => (
-                                <div key={index} className="flex items-start gap-3 p-2 bg-muted/20 rounded">
-                                  <div className="flex-1 space-y-1">
-                                    <div className="font-medium text-xs">{pattern.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {pattern.description} - {pattern.meaning}
+                              {track.documentation.visualElements.patterns.map(
+                                (pattern, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-start gap-3 p-2 bg-muted/20 rounded"
+                                  >
+                                    <div className="flex-1 space-y-1">
+                                      <div className="font-medium text-xs">
+                                        {pattern.name}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {pattern.description} -{" "}
+                                        {pattern.meaning}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ),
+                              )}
                             </div>
                           </div>
                         )}
 
                         {track.documentation.visualElements.indicators && (
                           <div className="space-y-3">
-                            <h5 className="font-medium text-sm text-foreground">Visual Indicators</h5>
+                            <h5 className="font-medium text-sm text-foreground">
+                              Visual Indicators
+                            </h5>
                             <div className="grid grid-cols-1 gap-2">
-                              {track.documentation.visualElements.indicators.map((indicator, index) => (
-                                <div key={index} className="flex items-start gap-3 p-2 bg-muted/20 rounded">
-                                  <div className="flex-1 space-y-1">
-                                    <div className="font-medium text-xs">{indicator.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {indicator.description} - {indicator.meaning}
+                              {track.documentation.visualElements.indicators.map(
+                                (indicator, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-start gap-3 p-2 bg-muted/20 rounded"
+                                  >
+                                    <div className="flex-1 space-y-1">
+                                      <div className="font-medium text-xs">
+                                        {indicator.name}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {indicator.description} -{" "}
+                                        {indicator.meaning}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ),
+                              )}
                             </div>
                           </div>
                         )}

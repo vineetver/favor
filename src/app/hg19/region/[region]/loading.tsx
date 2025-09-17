@@ -8,7 +8,7 @@ export default function RegionLoading() {
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-8 w-24" />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -21,7 +21,7 @@ export default function RegionLoading() {
           </Card>
         ))}
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>

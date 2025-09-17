@@ -1,7 +1,6 @@
 import { CCREDisplay } from "@/components/features/browser/ccre/ccre-display";
 import { getCCREByRegion } from "@/lib/variant/ccre/api";
 
-
 interface RegionCCREPageProps {
   params: {
     region: string;

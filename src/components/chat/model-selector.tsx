@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { startTransition, useMemo, useOptimistic, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { startTransition, useMemo, useOptimistic, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,12 +9,17 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import { models, getReasoningModels, getStandardModels, type ChatModel } from '@/lib/ai/models';
-import { cn } from '@/lib/utils/general';
-import { Check, ChevronDown, Brain, Zap, Globe } from 'lucide-react';
-import { saveChatModelAsCookie } from '@/app/(chat)/actions';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/dropdown-menu";
+import {
+  models,
+  getReasoningModels,
+  getStandardModels,
+  type ChatModel,
+} from "@/lib/ai/models";
+import { cn } from "@/lib/utils/general";
+import { Check, ChevronDown, Brain, Zap, Globe } from "lucide-react";
+import { saveChatModelAsCookie } from "@/app/(chat)/actions";
+import { Badge } from "@/components/ui/badge";
 
 interface ModelSelectorProps {
   selectedModelId: string;
@@ -26,14 +31,15 @@ export function ModelSelector({
   className,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [optimisticModelId, setOptimisticModelId] = useOptimistic(selectedModelId);
+  const [optimisticModelId, setOptimisticModelId] =
+    useOptimistic(selectedModelId);
 
   // All models are available - no entitlements
-  const availableModels = models.filter(model => !model.disabled);
-  
+  const availableModels = models.filter((model) => !model.disabled);
+
   // Group available models by type
-  const standardModels = availableModels.filter(model => !model.reasoning);
-  const reasoningModels = availableModels.filter(model => model.reasoning);
+  const standardModels = availableModels.filter((model) => !model.reasoning);
+  const reasoningModels = availableModels.filter((model) => model.reasoning);
 
   const selectedModel = useMemo(
     () => models.find((model) => model.id === optimisticModelId),
@@ -43,7 +49,8 @@ export function ModelSelector({
   const getModelIcon = (model: ChatModel | undefined) => {
     if (!model) return <Globe className="w-4 h-4" />;
     if (model.reasoning) return <Brain className="w-4 h-4" />;
-    if (model.id.includes('nano') || model.id.includes('mini')) return <Zap className="w-4 h-4" />;
+    if (model.id.includes("nano") || model.id.includes("mini"))
+      return <Zap className="w-4 h-4" />;
     return <Globe className="w-4 h-4" />;
   };
 
@@ -60,10 +67,12 @@ export function ModelSelector({
 
   const handleModelSelect = (modelId: string) => {
     setOpen(false);
-    
-    const selectedModel = models.find(model => model.id === modelId);
-    console.log(`Successfully switched to model: ${selectedModel?.label || modelId} (${modelId})`);
-    
+
+    const selectedModel = models.find((model) => model.id === modelId);
+    console.log(
+      `Successfully switched to model: ${selectedModel?.label || modelId} (${modelId})`,
+    );
+
     startTransition(() => {
       setOptimisticModelId(modelId);
       saveChatModelAsCookie(modelId);
@@ -75,7 +84,7 @@ export function ModelSelector({
       <DropdownMenuTrigger
         asChild
         className={cn(
-          'w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+          "w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
           className,
         )}
       >
@@ -90,8 +99,8 @@ export function ModelSelector({
           <ChevronDown className="w-3 h-3" />
         </Button>
       </DropdownMenuTrigger>
-      
-      <DropdownMenuContent align="start" className="w-72">        
+
+      <DropdownMenuContent align="start" className="w-72">
         {standardModels.length > 0 && (
           <>
             <DropdownMenuLabel className="text-xs font-medium">
@@ -117,7 +126,7 @@ export function ModelSelector({
                     </div>
                     {getModelBadge(model)}
                   </div>
-                  
+
                   {model.id === optimisticModelId && (
                     <Check className="w-4 h-4 text-primary" />
                   )}
@@ -153,7 +162,7 @@ export function ModelSelector({
                     </div>
                     {getModelBadge(model)}
                   </div>
-                  
+
                   {model.id === optimisticModelId && (
                     <Check className="w-4 h-4 text-primary" />
                   )}

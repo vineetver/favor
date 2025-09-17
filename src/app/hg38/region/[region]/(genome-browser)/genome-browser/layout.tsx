@@ -18,7 +18,9 @@ export default async function RegionGenomeBrowserLayout({
   const { region } = params;
   const category = "genome-browser";
 
-  const currentCategory = REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

@@ -23,9 +23,18 @@ import {
 } from "@/components/ui/select";
 import { RotateCcw, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import type { HuriInteraction } from "@/lib/gene/ppi/constants";
-import { applyCytoscapeStyles, calculateAdaptiveZoom, createCytoscapeElements, cytoscapeBaseStyle, LAYOUT_OPTIONS, LayoutType } from "@/lib/gene/ppi/network-utils";
-import { transformHuriToUnified, transformToNetworkData } from "../data-transforms";
-
+import {
+  applyCytoscapeStyles,
+  calculateAdaptiveZoom,
+  createCytoscapeElements,
+  cytoscapeBaseStyle,
+  LAYOUT_OPTIONS,
+  LayoutType,
+} from "@/lib/gene/ppi/network-utils";
+import {
+  transformHuriToUnified,
+  transformToNetworkData,
+} from "../data-transforms";
 
 if (typeof window !== "undefined") {
   cytoscape.use(coseBilkent);

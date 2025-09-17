@@ -1,5 +1,5 @@
-import type { ChatModel } from './models';
-import { getModelById, getDefaultModel } from './models';
+import type { ChatModel } from "./models";
+import { getModelById, getDefaultModel } from "./models";
 
 export interface ChatConfig {
   maxMessages: number;
@@ -11,7 +11,7 @@ export interface ChatConfig {
 
 export interface UserPreferences {
   selectedModelId: string;
-  visibilityType: 'private' | 'public';
+  visibilityType: "private" | "public";
   attachmentsEnabled: boolean;
   notificationsEnabled: boolean;
   autoScrollEnabled: boolean;
@@ -26,8 +26,8 @@ export const DEFAULT_CHAT_CONFIG: ChatConfig = {
 };
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
-  selectedModelId: 'gpt-4o-mini',
-  visibilityType: 'private',
+  selectedModelId: "gpt-4o-mini",
+  visibilityType: "private",
   attachmentsEnabled: true,
   notificationsEnabled: true,
   autoScrollEnabled: true,
@@ -39,7 +39,7 @@ export class ChatConfigManager {
 
   constructor(
     config: Partial<ChatConfig> = {},
-    preferences: Partial<UserPreferences> = {}
+    preferences: Partial<UserPreferences> = {},
   ) {
     this.config = { ...DEFAULT_CHAT_CONFIG, ...config };
     this.preferences = { ...DEFAULT_USER_PREFERENCES, ...preferences };
@@ -71,7 +71,7 @@ export class ChatConfigManager {
     return getModelById(this.preferences.selectedModelId) || getDefaultModel();
   }
 
-  getVisibilityType(): 'private' | 'public' {
+  getVisibilityType(): "private" | "public" {
     return this.preferences.visibilityType;
   }
 
@@ -96,7 +96,7 @@ export class ChatConfigManager {
   // Model-specific configurations
   getModelConfig(modelId?: string): Partial<ChatConfig> {
     const model = modelId ? getModelById(modelId) : this.getSelectedModel();
-    
+
     if (!model) return this.config;
 
     // Adjust config based on model capabilities
@@ -113,27 +113,33 @@ export class ChatConfigManager {
 
   // Cookie/localStorage integration
   saveToStorage(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('favor-chat-preferences', JSON.stringify(this.preferences));
-      localStorage.setItem('favor-chat-config', JSON.stringify(this.config));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "favor-chat-preferences",
+        JSON.stringify(this.preferences),
+      );
+      localStorage.setItem("favor-chat-config", JSON.stringify(this.config));
     }
   }
 
   loadFromStorage(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const savedPreferences = localStorage.getItem('favor-chat-preferences');
-        const savedConfig = localStorage.getItem('favor-chat-config');
+        const savedPreferences = localStorage.getItem("favor-chat-preferences");
+        const savedConfig = localStorage.getItem("favor-chat-config");
 
         if (savedPreferences) {
-          this.preferences = { ...this.preferences, ...JSON.parse(savedPreferences) };
+          this.preferences = {
+            ...this.preferences,
+            ...JSON.parse(savedPreferences),
+          };
         }
 
         if (savedConfig) {
           this.config = { ...this.config, ...JSON.parse(savedConfig) };
         }
       } catch (error) {
-        console.warn('Failed to load chat configuration from storage:', error);
+        console.warn("Failed to load chat configuration from storage:", error);
       }
     }
   }
@@ -151,7 +157,7 @@ export const chatConfig = new ChatConfigManager();
 // Utility functions
 export function createChatConfig(
   modelId?: string,
-  options: Partial<ChatConfig & UserPreferences> = {}
+  options: Partial<ChatConfig & UserPreferences> = {},
 ): ChatConfigManager {
   const preferences: Partial<UserPreferences> = {
     selectedModelId: modelId,
@@ -167,7 +173,7 @@ export function getModelCapabilities(modelId: string): {
   contextLength: number;
 } {
   const model = getModelById(modelId);
-  
+
   return {
     reasoning: model?.reasoning || false,
     multimodal: false, // Future feature

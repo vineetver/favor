@@ -39,8 +39,6 @@ export default function RegionTablePage() {
     }
   }, [subcategory]);
 
-
-
   return (
     <div className="container mx-auto space-y-6">
       <ServerSideDataTable

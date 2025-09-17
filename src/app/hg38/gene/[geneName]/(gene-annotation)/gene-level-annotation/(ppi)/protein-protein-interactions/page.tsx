@@ -5,9 +5,7 @@ import {
   getHuriInteractions,
 } from "@/lib/gene/ppi/api";
 import { NoDataState } from "@/components/ui/error-states";
-import type {
-  PPIData,
-} from "@/lib/gene/ppi/constants";
+import type { PPIData } from "@/lib/gene/ppi/constants";
 import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 import { PPIDashboard } from "@/components/features/gene/ppi/ppi-dashboard";
 
@@ -16,7 +14,6 @@ interface PPIPageProps {
     geneName: string;
   };
 }
-
 
 export default async function ProteinProteinInteractionsPage({
   params,

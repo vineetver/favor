@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { EntexDisplay } from "@/components/features/variant/entex/entex-display";
-import { fetchEntexDefaultByRegion, fetchEntexPooledByRegion } from "@/lib/variant/entex/api";
+import {
+  fetchEntexDefaultByRegion,
+  fetchEntexPooledByRegion,
+} from "@/lib/variant/entex/api";
 import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
 interface GeneEntexPageProps {
@@ -13,12 +16,16 @@ export default async function GeneEntexPage({ params }: GeneEntexPageProps) {
   const { geneName } = params;
 
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData) {
     notFound();
   }
 
-  if (!geneData.genomic_position_start || !geneData.genomic_position_end || !geneData.chromosome) {
+  if (
+    !geneData.genomic_position_start ||
+    !geneData.genomic_position_end ||
+    !geneData.chromosome
+  ) {
     return <div>No genomic position data available for this gene.</div>;
   }
 

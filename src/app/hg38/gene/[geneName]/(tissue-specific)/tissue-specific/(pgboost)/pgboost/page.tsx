@@ -9,22 +9,18 @@ interface GenePGBoostPageProps {
   };
 }
 
-export default async function GenePGBoostPage({ params }: GenePGBoostPageProps) {
+export default async function GenePGBoostPage({
+  params,
+}: GenePGBoostPageProps) {
   const { geneName } = params;
 
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData) {
     notFound();
   }
 
   const data = await fetchPGBoostByGene(geneName);
-  
-  return (
-    <PGBoostDisplay
-      data={data}
-      entityId={geneName}
-      entityType="gene"
-    />
-  );
+
+  return <PGBoostDisplay data={data} entityId={geneName} entityType="gene" />;
 }

@@ -6,10 +6,10 @@ import type {
   IntactProcessedInteraction,
 } from "@/components/features/gene/ppi/intact/intact-types";
 import { ExternalLink } from "@/components/ui/external-link";
-import { 
+import {
   getIntactUniqueValues,
   getIntactUniqueExpansionMethods,
-  getIntactUniqueBiologicalRoles 
+  getIntactUniqueBiologicalRoles,
 } from "@/components/features/gene/ppi/intact/intact-transforms";
 
 function isIntactRowHighlighted(
@@ -47,10 +47,7 @@ export function createIntactColumns(
     {
       accessorKey: "gene_a",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene A"
-        />
+        <DataTableColumnHeader column={column} title="Gene A" />
       ),
       cell: ({ row, getValue }) => {
         const geneA = getValue() as string;
@@ -73,10 +70,7 @@ export function createIntactColumns(
     {
       accessorKey: "gene_b",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene B"
-        />
+        <DataTableColumnHeader column={column} title="Gene B" />
       ),
       cell: ({ row, getValue }) => {
         const geneB = getValue() as string;
@@ -99,10 +93,7 @@ export function createIntactColumns(
     {
       accessorKey: "method",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Method"
-        />
+        <DataTableColumnHeader column={column} title="Method" />
       ),
       cell: ({ getValue }) => {
         const method = getValue() as string;
@@ -116,10 +107,7 @@ export function createIntactColumns(
     {
       accessorKey: "interaction_type",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Type"
-        />
+        <DataTableColumnHeader column={column} title="Type" />
       ),
       cell: ({ getValue }) => {
         const type = getValue() as string;
@@ -133,10 +121,7 @@ export function createIntactColumns(
     {
       accessorKey: "expansion_method",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Expansion"
-        />
+        <DataTableColumnHeader column={column} title="Expansion" />
       ),
       cell: ({ getValue }) => {
         const expansion = getValue() as string;
@@ -152,10 +137,7 @@ export function createIntactColumns(
     {
       accessorKey: "confidence",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Confidence"
-        />
+        <DataTableColumnHeader column={column} title="Confidence" />
       ),
       cell: ({ getValue }) => {
         const confidence = getValue() as number | undefined;
@@ -175,10 +157,7 @@ export function createIntactColumns(
     {
       accessorKey: "host_organism",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Host"
-        />
+        <DataTableColumnHeader column={column} title="Host" />
       ),
       cell: ({ getValue }) => {
         const host = getValue() as string;
@@ -194,10 +173,7 @@ export function createIntactColumns(
     {
       accessorKey: "negative",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Negative"
-        />
+        <DataTableColumnHeader column={column} title="Negative" />
       ),
       cell: ({ getValue }) => {
         const negative = getValue() as boolean;
@@ -213,10 +189,7 @@ export function createIntactColumns(
     {
       accessorKey: "publication",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Publication"
-        />
+        <DataTableColumnHeader column={column} title="Publication" />
       ),
       cell: ({ getValue }) => {
         const publication = getValue() as string | undefined;
@@ -230,10 +203,7 @@ export function createIntactColumns(
     {
       accessorKey: "publication_identifier",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="PubMed"
-        />
+        <DataTableColumnHeader column={column} title="PubMed" />
       ),
       cell: ({ getValue }) => {
         const publicationId = getValue() as string | undefined;
@@ -269,31 +239,59 @@ export function createIntactColumns(
 
 export function createIntactFacetedFilters(data: IntactProcessedInteraction[]) {
   const uniqueMethods = getIntactUniqueValues(data, (item) => item.method);
-  const uniqueTypes = getIntactUniqueValues(data, (item) => item.interaction_type);
+  const uniqueTypes = getIntactUniqueValues(
+    data,
+    (item) => item.interaction_type,
+  );
   const uniqueExpansionMethods = getIntactUniqueExpansionMethods(data);
   const uniqueBiologicalRoles = getIntactUniqueBiologicalRoles(data);
 
   return [
-    ...(uniqueMethods.length > 0 ? [{
-      columnId: 'method',
-      title: 'Method',
-      options: uniqueMethods.map(method => ({ label: method, value: method }))
-    }] : []),
-    ...(uniqueTypes.length > 0 ? [{
-      columnId: 'interaction_type',
-      title: 'Interaction Type',
-      options: uniqueTypes.map(type => ({ label: type, value: type }))
-    }] : []),
-    ...(uniqueExpansionMethods.length > 0 ? [{
-      columnId: 'expansion_method',
-      title: 'Expansion Method',
-      options: uniqueExpansionMethods.map(method => ({ label: method, value: method }))
-    }] : []),
-    ...(uniqueBiologicalRoles.length > 0 ? [{
-      columnId: 'biological_role',
-      title: 'Biological Role',
-      options: uniqueBiologicalRoles.map(role => ({ label: role, value: role }))
-    }] : [])
+    ...(uniqueMethods.length > 0
+      ? [
+          {
+            columnId: "method",
+            title: "Method",
+            options: uniqueMethods.map((method) => ({
+              label: method,
+              value: method,
+            })),
+          },
+        ]
+      : []),
+    ...(uniqueTypes.length > 0
+      ? [
+          {
+            columnId: "interaction_type",
+            title: "Interaction Type",
+            options: uniqueTypes.map((type) => ({ label: type, value: type })),
+          },
+        ]
+      : []),
+    ...(uniqueExpansionMethods.length > 0
+      ? [
+          {
+            columnId: "expansion_method",
+            title: "Expansion Method",
+            options: uniqueExpansionMethods.map((method) => ({
+              label: method,
+              value: method,
+            })),
+          },
+        ]
+      : []),
+    ...(uniqueBiologicalRoles.length > 0
+      ? [
+          {
+            columnId: "biological_role",
+            title: "Biological Role",
+            options: uniqueBiologicalRoles.map((role) => ({
+              label: role,
+              value: role,
+            })),
+          },
+        ]
+      : []),
   ];
 }
 

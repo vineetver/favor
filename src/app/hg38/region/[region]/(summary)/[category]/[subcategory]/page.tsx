@@ -56,7 +56,11 @@ export default async function RegionSummarySubcategoryPage({
           items={filteredData!}
           columns={[
             { type: "value", header: "Count", tooltip: "Number of variants" },
-            { type: "proportion", header: "% of Total", tooltip: "Percentage of region's total variant burden" },
+            {
+              type: "proportion",
+              header: "% of Total",
+              tooltip: "Percentage of region's total variant burden",
+            },
           ]}
         />
       ),
@@ -65,11 +69,7 @@ export default async function RegionSummarySubcategoryPage({
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs
-        tabs={tabs}
-        defaultValue="table"
-        className="w-full"
-      />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" className="w-full" />
     </div>
   );
 }

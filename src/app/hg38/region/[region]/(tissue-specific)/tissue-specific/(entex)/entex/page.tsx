@@ -1,5 +1,8 @@
 import { EntexDisplay } from "@/components/features/variant/entex/entex-display";
-import { fetchEntexDefaultByRegion, fetchEntexPooledByRegion } from "@/lib/variant/entex/api";
+import {
+  fetchEntexDefaultByRegion,
+  fetchEntexPooledByRegion,
+} from "@/lib/variant/entex/api";
 
 interface RegionEntexPageProps {
   params: {
@@ -7,7 +10,9 @@ interface RegionEntexPageProps {
   };
 }
 
-export default async function RegionEntexPage({ params }: RegionEntexPageProps) {
+export default async function RegionEntexPage({
+  params,
+}: RegionEntexPageProps) {
   const { region } = params;
 
   const [defaultData, pooledData] = await Promise.all([

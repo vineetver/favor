@@ -3,16 +3,12 @@ import Link from "next/link";
 import { HeroPattern } from "@/components/layout/hero-pattern";
 import { GenomicSearch } from "@/components/features/search/genomic-search";
 import { Button } from "@/components/ui/button";
-import { WhatsNewBanner } from "@/components/ui/whats-new-banner";
 
 export default function HomePage() {
   return (
     <>
       <HeroPattern />
       <main className="mx-auto max-w-2xl px-4 sm:px-6 md:max-w-5xl">
-        <div className="py-6">
-          <WhatsNewBanner className="mb-8" />
-        </div>
         <div className="py-8 text-center sm:py-12">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
             <span className="block xl:inline">

@@ -15,13 +15,15 @@ import {
   splitText,
 } from "@/lib/annotations/helpers";
 
-const sortableHeader = (title: string) => ({ column }: { column: any }) => (
-  <DataTableColumnHeader column={column} title={title} />
-);
+const sortableHeader =
+  (title: string) =>
+  ({ column }: { column: any }) => (
+    <DataTableColumnHeader column={column} title={title} />
+  );
 
 function formatAlleleFrequency(value: unknown) {
   if (!isValidNumber(value)) return null;
-  
+
   return (
     <span>
       {Number(value)
@@ -33,7 +35,7 @@ function formatAlleleFrequency(value: unknown) {
 
 function formatScore(value: unknown) {
   if (!isValidNumber(value)) return null;
-  
+
   return (
     <span>
       {Number(value)
@@ -50,9 +52,9 @@ function renderSiftCategory(value: unknown) {
 
 function renderClinicalSignificance(value: unknown) {
   if (!isValidString(value)) return null;
-  
+
   // Handle multiple values separated by pipe
-  const values = value.split('|').filter(v => v.trim() !== '');
+  const values = value.split("|").filter((v) => v.trim() !== "");
   if (values.length > 1) {
     return (
       <div className="space-y-1">
@@ -62,7 +64,7 @@ function renderClinicalSignificance(value: unknown) {
       </div>
     );
   }
-  
+
   return clinicalSignificanceCCode(value);
 }
 
@@ -74,10 +76,10 @@ function renderCleanText(value: unknown) {
 
 function renderOrigin(value: unknown) {
   if (!isValidString(value) && !isValidNumber(value)) return null;
-  
-  const origin: {[key: number]: string} = {
+
+  const origin: { [key: number]: string } = {
     0: "unknown",
-    1: "germline", 
+    1: "germline",
     2: "somatic",
     4: "inherited",
     8: "paternal",
@@ -88,11 +90,9 @@ function renderOrigin(value: unknown) {
     256: "not-tested",
     512: "tested-inconclusive",
   };
-  
-  const originValue = typeof value === 'number' ? origin[value] : value;
-  return (
-    <span className="capitalize">{alleleOriginCCode(originValue)}</span>
-  );
+
+  const originValue = typeof value === "number" ? origin[value] : value;
+  return <span className="capitalize">{alleleOriginCCode(originValue)}</span>;
 }
 
 export const HG19GeneTableColumns: ColumnDef<any, any>[] = [
@@ -136,7 +136,7 @@ export const HG19GeneTableColumns: ColumnDef<any, any>[] = [
     enableSorting: true,
   },
   {
-    header: "Genecode Category", 
+    header: "Genecode Category",
     accessorKey: "gencode_category",
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
@@ -149,7 +149,7 @@ export const HG19GeneTableColumns: ColumnDef<any, any>[] = [
     enableSorting: true,
   },
   {
-    header: "Genecode Exonic Category", 
+    header: "Genecode Exonic Category",
     accessorKey: "gencode_exonic_category",
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
     cell: (props) => {

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useMemo } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface HeatmapData {
   variant: string;
@@ -24,23 +24,28 @@ interface FunctionalScoresHeatmapProps {
 }
 
 // Color scales for different score ranges
-const getColorScale = (value: number, min: number, max: number, scoreType: string) => {
+const getColorScale = (
+  value: number,
+  min: number,
+  max: number,
+  scoreType: string,
+) => {
   if (value === null || value === undefined || isNaN(value)) {
-    return '#f3f4f6'; // Gray for missing data
+    return "#f3f4f6"; // Gray for missing data
   }
 
   const normalized = (value - min) / (max - min);
-  
+
   // Different color schemes for different score types
-  if (scoreType.includes('cadd') || scoreType.includes('revel')) {
+  if (scoreType.includes("cadd") || scoreType.includes("revel")) {
     // Red scale for deleteriousness scores (higher = more deleterious)
     const intensity = Math.floor(normalized * 255);
     return `rgb(${255}, ${255 - intensity}, ${255 - intensity})`;
-  } else if (scoreType.includes('scent')) {
+  } else if (scoreType.includes("scent")) {
     // Blue scale for SCENT scores
     const intensity = Math.floor(normalized * 255);
     return `rgb(${255 - intensity}, ${255 - intensity}, ${255})`;
-  } else if (scoreType.includes('cv2f')) {
+  } else if (scoreType.includes("cv2f")) {
     // Green scale for CV2F conservation scores
     const intensity = Math.floor(normalized * 255);
     return `rgb(${255 - intensity}, ${255}, ${255 - intensity})`;
@@ -51,41 +56,50 @@ const getColorScale = (value: number, min: number, max: number, scoreType: strin
   }
 };
 
-export function FunctionalScoresHeatmap({ 
-  data, 
-  width = 800, 
-  height = 400, 
+export function FunctionalScoresHeatmap({
+  data,
+  width = 800,
+  height = 400,
   title = "Functional Scores Heatmap",
-  metadata 
+  metadata,
 }: FunctionalScoresHeatmapProps) {
-  
   const heatmapConfig = useMemo(() => {
     if (!data || data.length === 0) {
       return null;
     }
 
     // Get unique variants and score types
-    const variants = Array.from(new Set(data.map(d => d.variant)));
-    const scoreTypes = Array.from(new Set(data.map(d => d.scoreType)));
-    
+    const variants = Array.from(new Set(data.map((d) => d.variant)));
+    const scoreTypes = Array.from(new Set(data.map((d) => d.scoreType)));
+
     // Create matrix
-    const matrix: Array<Array<{value: number | null, scoreType: string, variant: string}>> = [];
-    
-    variants.forEach(variant => {
-      const row: Array<{value: number | null, scoreType: string, variant: string}> = [];
-      scoreTypes.forEach(scoreType => {
-        const dataPoint = data.find(d => d.variant === variant && d.scoreType === scoreType);
+    const matrix: Array<
+      Array<{ value: number | null; scoreType: string; variant: string }>
+    > = [];
+
+    variants.forEach((variant) => {
+      const row: Array<{
+        value: number | null;
+        scoreType: string;
+        variant: string;
+      }> = [];
+      scoreTypes.forEach((scoreType) => {
+        const dataPoint = data.find(
+          (d) => d.variant === variant && d.scoreType === scoreType,
+        );
         row.push({
           value: dataPoint?.score ?? null,
           scoreType,
-          variant
+          variant,
         });
       });
       matrix.push(row);
     });
 
     // Calculate min/max for color scaling
-    const allValues = data.map(d => d.score).filter(v => v !== null && !isNaN(v));
+    const allValues = data
+      .map((d) => d.score)
+      .filter((v) => v !== null && !isNaN(v));
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
 
@@ -94,7 +108,7 @@ export function FunctionalScoresHeatmap({
       scoreTypes,
       matrix,
       minValue,
-      maxValue
+      maxValue,
     };
   }, [data]);
 
@@ -119,11 +133,11 @@ export function FunctionalScoresHeatmap({
   }
 
   const { variants, scoreTypes, matrix, minValue, maxValue } = heatmapConfig;
-  
+
   // Calculate cell dimensions
   const cellWidth = Math.max(60, (width - 200) / scoreTypes.length); // Leave space for labels
   const cellHeight = Math.max(40, (height - 100) / variants.length);
-  
+
   const chartWidth = cellWidth * scoreTypes.length + 200;
   const chartHeight = cellHeight * variants.length + 100;
 
@@ -137,7 +151,7 @@ export function FunctionalScoresHeatmap({
           </div>
         )}
       </div>
-      
+
       <div className="overflow-auto border rounded-lg bg-white p-4">
         <svg width={chartWidth} height={chartHeight} className="font-mono">
           {/* Column headers (score types) */}
@@ -150,7 +164,7 @@ export function FunctionalScoresHeatmap({
                 className="fill-gray-700 text-xs font-medium"
                 transform={`rotate(-45, ${150 + colIndex * cellWidth + cellWidth / 2}, 30)`}
               >
-                {scoreType.replace('_', ' ').toUpperCase()}
+                {scoreType.replace("_", " ").toUpperCase()}
               </text>
             </g>
           ))}
@@ -174,8 +188,13 @@ export function FunctionalScoresHeatmap({
             row.map((cell, colIndex) => {
               const x = 150 + colIndex * cellWidth;
               const y = 50 + rowIndex * cellHeight;
-              const color = getColorScale(cell.value || 0, minValue, maxValue, cell.scoreType);
-              
+              const color = getColorScale(
+                cell.value || 0,
+                minValue,
+                maxValue,
+                cell.scoreType,
+              );
+
               return (
                 <g key={`cell-${rowIndex}-${colIndex}`}>
                   {/* Cell background */}
@@ -189,7 +208,7 @@ export function FunctionalScoresHeatmap({
                     strokeWidth={1}
                     rx={2}
                   />
-                  
+
                   {/* Cell value text */}
                   {cell.value !== null && (
                     <text
@@ -202,7 +221,7 @@ export function FunctionalScoresHeatmap({
                       {cell.value.toFixed(2)}
                     </text>
                   )}
-                  
+
                   {/* Missing data indicator */}
                   {cell.value === null && (
                     <text
@@ -217,7 +236,7 @@ export function FunctionalScoresHeatmap({
                   )}
                 </g>
               );
-            })
+            }),
           )}
         </svg>
       </div>
@@ -242,17 +261,31 @@ export function FunctionalScoresHeatmap({
           Range: {minValue.toFixed(3)} - {maxValue.toFixed(3)}
         </div>
       </div>
-      
+
       {/* Score type explanations */}
       <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
-        <div><strong>Score Types:</strong></div>
+        <div>
+          <strong>Score Types:</strong>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {scoreTypes.includes('cadd') && <div>• CADD: Combined Annotation Dependent Depletion</div>}
-          {scoreTypes.includes('revel') && <div>• REVEL: Rare Exome Variant Ensemble Learner</div>}
-          {scoreTypes.includes('spliceai') && <div>• SpliceAI: Deep learning splice prediction</div>}
-          {scoreTypes.includes('scent_max') && <div>• SCENT: Single-cell expression prediction</div>}
-          {scoreTypes.includes('cv2f_avg') && <div>• CV2F: Conservation prediction across tissues</div>}
-          {scoreTypes.includes('pgboost') && <div>• PGBoost: Ensemble prediction score</div>}
+          {scoreTypes.includes("cadd") && (
+            <div>• CADD: Combined Annotation Dependent Depletion</div>
+          )}
+          {scoreTypes.includes("revel") && (
+            <div>• REVEL: Rare Exome Variant Ensemble Learner</div>
+          )}
+          {scoreTypes.includes("spliceai") && (
+            <div>• SpliceAI: Deep learning splice prediction</div>
+          )}
+          {scoreTypes.includes("scent_max") && (
+            <div>• SCENT: Single-cell expression prediction</div>
+          )}
+          {scoreTypes.includes("cv2f_avg") && (
+            <div>• CV2F: Conservation prediction across tissues</div>
+          )}
+          {scoreTypes.includes("pgboost") && (
+            <div>• PGBoost: Ensemble prediction score</div>
+          )}
         </div>
       </div>
     </div>
@@ -260,27 +293,26 @@ export function FunctionalScoresHeatmap({
 }
 
 // Enhanced version that can handle tooltip interactions
-export function InteractiveFunctionalScoresHeatmap({ 
-  data, 
-  width = 800, 
-  height = 400, 
+export function InteractiveFunctionalScoresHeatmap({
+  data,
+  width = 800,
+  height = 400,
   title = "Functional Scores Heatmap",
-  metadata 
+  metadata,
 }: FunctionalScoresHeatmapProps) {
-  
   // This would use a more sophisticated charting library like D3 or a React wrapper
   // For now, let's use the basic version but add hover states with CSS
-  
+
   return (
     <div className="relative">
-      <FunctionalScoresHeatmap 
-        data={data} 
-        width={width} 
-        height={height} 
+      <FunctionalScoresHeatmap
+        data={data}
+        width={width}
+        height={height}
         title={title}
         metadata={metadata}
       />
-      
+
       <style jsx>{`
         .heatmap-cell {
           transition: all 0.2s ease;

@@ -12,7 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,6 @@ export default function Page() {
       agree: false,
     },
   });
-
 
   async function onSubmit(values: any) {
     const formData = new FormData();
@@ -155,9 +154,7 @@ export default function Page() {
               />
 
               <div>
-                <Button type="submit">
-                  Sign up
-                </Button>
+                <Button type="submit">Sign up</Button>
               </div>
             </form>
           </div>

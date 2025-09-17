@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ResponsiveTabs, type TabConfig } from "@/components/ui/responsive-tabs";
+import {
+  ResponsiveTabs,
+  type TabConfig,
+} from "@/components/ui/responsive-tabs";
 import { NoDataState } from "@/components/ui/error-states";
 import { PPI_SOURCES, type PPIData } from "@/lib/gene/ppi/constants";
 import { BiogridTable } from "./biogrid/biogrid-table";
@@ -87,17 +90,11 @@ export function PPIDashboard({ ppiData, geneName }: PPIDashboardProps) {
 
     switch (sourceKey) {
       case "BioGRID":
-        return (
-          <BiogridTable data={sourceData} selectedNode={selectedNode} />
-        );
+        return <BiogridTable data={sourceData} selectedNode={selectedNode} />;
       case "IntAct":
-        return (
-          <IntactTable data={sourceData} selectedNode={selectedNode} />
-        );
+        return <IntactTable data={sourceData} selectedNode={selectedNode} />;
       case "HuRI":
-        return (
-          <HuriTable data={sourceData} selectedNode={selectedNode} />
-        );
+        return <HuriTable data={sourceData} selectedNode={selectedNode} />;
       default:
         return (
           <div className="text-center py-8 text-muted-foreground">

@@ -2,7 +2,9 @@ import type { Epimap } from "./types";
 
 const EPIMAP_REGION_URL = "https://api.genohub.org/v1/epimap/regions";
 
-export async function fetchEpimapByRegion(region: string): Promise<Epimap[] | null> {
+export async function fetchEpimapByRegion(
+  region: string,
+): Promise<Epimap[] | null> {
   try {
     const response = await fetch(`${EPIMAP_REGION_URL}/${region}`);
 

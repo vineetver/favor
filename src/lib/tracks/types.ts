@@ -21,7 +21,6 @@ export type ZoomBehavior = "adaptive" | "fixed" | "scalable";
 // Union type for track data
 export type TrackData = Track | Track[] | OverlaidTracks | OverlaidTracks[];
 
-
 export interface TrackCategory {
   id: string;
   name: string;

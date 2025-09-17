@@ -99,9 +99,11 @@ export const vistaEnhancerColumns: ColumnDef<VistaEnhancer>[] = [
     ),
     cell: ({ row }) => {
       const expression = row.getValue("expression") as string;
-      const variant = expression.toLowerCase().includes("positive") ? "default" : 
-                     expression.toLowerCase().includes("negative") ? "secondary" : 
-                     "outline";
+      const variant = expression.toLowerCase().includes("positive")
+        ? "default"
+        : expression.toLowerCase().includes("negative")
+          ? "secondary"
+          : "outline";
       return (
         <Badge variant={variant as any} className="text-xs">
           {expression}
@@ -128,9 +130,7 @@ export const vistaEnhancerColumns: ColumnDef<VistaEnhancer>[] = [
       const tissues = row.getValue("tissues") as string;
       return (
         <div className="text-left max-w-xs">
-          <span className="text-sm capitalize">
-            {tissues}
-          </span>
+          <span className="text-sm capitalize">{tissues}</span>
         </div>
       );
     },

@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { chatAnimations } from '@/lib/design-system/chat-theme';
+import { motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { chatAnimations } from "@/lib/design-system/chat-theme";
 
 const exampleMessages = [
   {
@@ -18,16 +18,19 @@ const exampleMessages = [
   },
   {
     heading: "Retrieve clinical and population data for a variant",
-    message: "What is the clinical significance and allele frequency of 19-44908822-C-T (rs7412)?",
+    message:
+      "What is the clinical significance and allele frequency of 19-44908822-C-T (rs7412)?",
   },
   {
     heading: "Query functional consequences in a region",
-    message: "List variant's functional consequence (e.g. missense, synonymous) for 1-150000000-150000100.",
+    message:
+      "List variant's functional consequence (e.g. missense, synonymous) for 1-150000000-150000100.",
   },
   {
     heading: "Compare multiple variants at a glance",
-    message: "Compare rs7412 and rs429358 across allele frequency, clinical significance, and in-silico scores.",
-  }
+    message:
+      "Compare rs7412 and rs429358 across allele frequency, clinical significance, and in-silico scores.",
+  },
 ];
 
 interface GreetingProps {
@@ -44,16 +47,19 @@ export const Greeting = ({ setInput }: GreetingProps) => {
         transition={chatAnimations.transition.normal}
         className="text-center mb-6"
       >
-        <motion.h1 
+        <motion.h1
           className="text-2xl font-semibold text-foreground mb-2"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          Welcome to <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">FAVOR-GPT</span>
+          Welcome to{" "}
+          <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            FAVOR-GPT
+          </span>
         </motion.h1>
-        
-        <motion.p 
+
+        <motion.p
           className="text-sm text-muted-foreground"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -70,7 +76,6 @@ export const Greeting = ({ setInput }: GreetingProps) => {
         transition={{ delay: 0.3 }}
         className="bg-card/50 backdrop-blur-sm border border-border/60 rounded-2xl p-4 shadow-sm"
       >
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {exampleMessages.map((example, index) => (
             <motion.div

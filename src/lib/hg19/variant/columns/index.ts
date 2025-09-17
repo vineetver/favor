@@ -2,9 +2,7 @@ import { variantDetailedColumns } from "./detailed";
 import { variantSummaryColumns } from "./summary";
 import type { VariantColumnsType } from "@/lib/annotations/types";
 
-export type ColumnCategory =
-  | "summary"
-  | "global-annotation";
+export type ColumnCategory = "summary" | "global-annotation";
 
 export function getHg19VariantColumns(
   parent: string,

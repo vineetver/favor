@@ -22,17 +22,61 @@ export function CV2FDisplay({ data }: CV2FDisplayProps) {
       "K562 CV2F",
       "HepG2 CV2F",
     ];
-    
+
     const rows = filteredData.map((row) => [
       row.Rsid,
-      row.Cm ? roundNumber(typeof row.Cm === 'string' ? parseFloat(row.Cm) : row.Cm).toString() : "N/A",
-      row.Cv2f ? roundNumber(typeof row.Cv2f === 'string' ? parseFloat(row.Cv2f) : row.Cv2f).toString() : "N/A",
-      row.LiverCv2f ? roundNumber(typeof row.LiverCv2f === 'string' ? parseFloat(row.LiverCv2f) : row.LiverCv2f).toString() : "N/A",
-      row.BloodCv2f ? roundNumber(typeof row.BloodCv2f === 'string' ? parseFloat(row.BloodCv2f) : row.BloodCv2f).toString() : "N/A",
-      row.BrainCv2f ? roundNumber(typeof row.BrainCv2f === 'string' ? parseFloat(row.BrainCv2f) : row.BrainCv2f).toString() : "N/A",
-      row.Gm12878Cv2f ? roundNumber(typeof row.Gm12878Cv2f === 'string' ? parseFloat(row.Gm12878Cv2f) : row.Gm12878Cv2f).toString() : "N/A",
-      row.K562Cv2f ? roundNumber(typeof row.K562Cv2f === 'string' ? parseFloat(row.K562Cv2f) : row.K562Cv2f).toString() : "N/A",
-      row.HepG2CV2F ? roundNumber(typeof row.HepG2CV2F === 'string' ? parseFloat(row.HepG2CV2F) : row.HepG2CV2F).toString() : "N/A",
+      row.Cm
+        ? roundNumber(
+            typeof row.Cm === "string" ? parseFloat(row.Cm) : row.Cm,
+          ).toString()
+        : "N/A",
+      row.Cv2f
+        ? roundNumber(
+            typeof row.Cv2f === "string" ? parseFloat(row.Cv2f) : row.Cv2f,
+          ).toString()
+        : "N/A",
+      row.LiverCv2f
+        ? roundNumber(
+            typeof row.LiverCv2f === "string"
+              ? parseFloat(row.LiverCv2f)
+              : row.LiverCv2f,
+          ).toString()
+        : "N/A",
+      row.BloodCv2f
+        ? roundNumber(
+            typeof row.BloodCv2f === "string"
+              ? parseFloat(row.BloodCv2f)
+              : row.BloodCv2f,
+          ).toString()
+        : "N/A",
+      row.BrainCv2f
+        ? roundNumber(
+            typeof row.BrainCv2f === "string"
+              ? parseFloat(row.BrainCv2f)
+              : row.BrainCv2f,
+          ).toString()
+        : "N/A",
+      row.Gm12878Cv2f
+        ? roundNumber(
+            typeof row.Gm12878Cv2f === "string"
+              ? parseFloat(row.Gm12878Cv2f)
+              : row.Gm12878Cv2f,
+          ).toString()
+        : "N/A",
+      row.K562Cv2f
+        ? roundNumber(
+            typeof row.K562Cv2f === "string"
+              ? parseFloat(row.K562Cv2f)
+              : row.K562Cv2f,
+          ).toString()
+        : "N/A",
+      row.HepG2CV2F
+        ? roundNumber(
+            typeof row.HepG2CV2F === "string"
+              ? parseFloat(row.HepG2CV2F)
+              : row.HepG2CV2F,
+          ).toString()
+        : "N/A",
     ]);
 
     const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(

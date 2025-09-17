@@ -61,7 +61,9 @@ export const pgboostColumns: ColumnDef<PGBoost>[] = [
     cell: ({ row }) => {
       const num = row.original?.pg_boost;
       return (
-        <div className="text-left font-mono text-sm">{formatPGBoostScore(num)}</div>
+        <div className="text-left font-mono text-sm">
+          {formatPGBoostScore(num)}
+        </div>
       );
     },
     enableSorting: true,

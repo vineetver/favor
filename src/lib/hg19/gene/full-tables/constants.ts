@@ -40,7 +40,7 @@ export const hg19ClinicalSignificance = [
 
 export const hg19PolyphenPrediction = [
   { label: "Probably Damaging", value: "P" },
-  { label: "Possibly Damaging", value: "D" }, 
+  { label: "Possibly Damaging", value: "D" },
   { label: "Benign", value: "B" },
 ];
 

@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
-import { fetchABCPeaksByRegion, fetchABCScoresByRegion } from "@/lib/region/abc/api";
+import {
+  fetchABCPeaksByRegion,
+  fetchABCScoresByRegion,
+} from "@/lib/region/abc/api";
 import { CatlasDisplay } from "@/components/features/variant/abc/catlas-display";
 
 interface GeneCatlasPageProps {
@@ -13,12 +16,16 @@ export default async function GeneCatlasPage({ params }: GeneCatlasPageProps) {
   const { geneName } = params;
 
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData) {
     notFound();
   }
 
-  if (!geneData.genomic_position_start || !geneData.genomic_position_end || !geneData.chromosome) {
+  if (
+    !geneData.genomic_position_start ||
+    !geneData.genomic_position_end ||
+    !geneData.chromosome
+  ) {
     return <div>No genomic position data available for this gene.</div>;
   }
 

@@ -35,9 +35,10 @@ export default function RootLayout({
   const modelIdFromCookie = cookieStore.get("model-id")?.value;
 
   // Use cookie value if valid, otherwise fall back to default
-  const selectedModelId = modelIdFromCookie && models.find(m => m.id === modelIdFromCookie) 
-    ? modelIdFromCookie 
-    : DEFAULT_MODEL_NAME;
+  const selectedModelId =
+    modelIdFromCookie && models.find((m) => m.id === modelIdFromCookie)
+      ? modelIdFromCookie
+      : DEFAULT_MODEL_NAME;
 
   return (
     <html lang="en">

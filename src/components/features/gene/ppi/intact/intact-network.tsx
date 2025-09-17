@@ -35,7 +35,13 @@ import {
   getIntactUniqueExpansionMethods,
   getIntactUniqueBiologicalRoles,
 } from "./intact-transforms";
-import { applyIntactStyles, createIntactCytoscapeElements, INTACT_LAYOUT_OPTIONS, intactCytoscapeBaseStyle, IntactLayoutType } from "@/lib/gene/ppi/intact-utils";
+import {
+  applyIntactStyles,
+  createIntactCytoscapeElements,
+  INTACT_LAYOUT_OPTIONS,
+  intactCytoscapeBaseStyle,
+  IntactLayoutType,
+} from "@/lib/gene/ppi/intact-utils";
 
 if (typeof window !== "undefined") {
   cytoscape.use(coseBilkent);
@@ -276,13 +282,16 @@ export const IntactNetwork = React.memo(
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium">IntAct</span>
               <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                {cytoscapeElements.nodes.length}n/{cytoscapeElements.edges.length}e
+                {cytoscapeElements.nodes.length}n/
+                {cytoscapeElements.edges.length}e
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-1 flex-wrap">
               <Select
-                value={showAllInteractions ? "all" : interactionLimit.toString()}
+                value={
+                  showAllInteractions ? "all" : interactionLimit.toString()
+                }
                 onValueChange={(value) => {
                   if (value === "all") {
                     setShowAllInteractions(true);
@@ -304,7 +313,10 @@ export const IntactNetwork = React.memo(
               </Select>
 
               {uniqueMethods.length > 1 && (
-                <Select value={filterByMethod} onValueChange={setFilterByMethod}>
+                <Select
+                  value={filterByMethod}
+                  onValueChange={setFilterByMethod}
+                >
                   <SelectTrigger className="w-16 h-5 text-xs px-1">
                     <SelectValue />
                   </SelectTrigger>
@@ -320,7 +332,10 @@ export const IntactNetwork = React.memo(
               )}
 
               {uniqueInteractionTypes.length > 1 && (
-                <Select value={filterByInteractionType} onValueChange={setFilterByInteractionType}>
+                <Select
+                  value={filterByInteractionType}
+                  onValueChange={setFilterByInteractionType}
+                >
                   <SelectTrigger className="w-14 h-5 text-xs px-1">
                     <SelectValue />
                   </SelectTrigger>
@@ -335,7 +350,12 @@ export const IntactNetwork = React.memo(
                 </Select>
               )}
 
-              <Select value={currentLayout} onValueChange={(value) => handleLayoutChange(value as IntactLayoutType)}>
+              <Select
+                value={currentLayout}
+                onValueChange={(value) =>
+                  handleLayoutChange(value as IntactLayoutType)
+                }
+              >
                 <SelectTrigger className="w-16 h-5 text-xs px-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -348,16 +368,36 @@ export const IntactNetwork = React.memo(
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleZoomIn}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={handleZoomIn}
+              >
                 <ZoomIn className="h-3 w-3" />
               </Button>
-              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleZoomOut}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={handleZoomOut}
+              >
                 <ZoomOut className="h-3 w-3" />
               </Button>
-              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleFit}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={handleFit}
+              >
                 <Maximize2 className="h-3 w-3" />
               </Button>
-              <Button variant="outline" size="sm" className="h-5 w-5 p-0" onClick={handleReset}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={handleReset}
+              >
                 <RotateCcw className="h-3 w-3" />
               </Button>
             </div>

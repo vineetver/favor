@@ -6,8 +6,8 @@ import type { CV2F } from "./types";
 const createCV2FSortingFn = (accessorKey: string) => (rowA: any, rowB: any) => {
   const aVal = rowA.getValue(accessorKey) as number | string | undefined;
   const bVal = rowB.getValue(accessorKey) as number | string | undefined;
-  const a = typeof aVal === 'string' ? parseFloat(aVal) : aVal;
-  const b = typeof bVal === 'string' ? parseFloat(bVal) : bVal;
+  const a = typeof aVal === "string" ? parseFloat(aVal) : aVal;
+  const b = typeof bVal === "string" ? parseFloat(bVal) : bVal;
   if (a === undefined && b === undefined) return 0;
   if (a === undefined || isNaN(a)) return 1;
   if (b === undefined || isNaN(b)) return -1;
@@ -15,7 +15,7 @@ const createCV2FSortingFn = (accessorKey: string) => (rowA: any, rowB: any) => {
 };
 
 const renderCV2FValue = (value: number | string | undefined) => {
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (!isValidNumber(numValue)) {
     return <span className="text-gray-400">-</span>;
   }
@@ -26,11 +26,7 @@ export const cv2fColumns: ColumnDef<CV2F>[] = [
   {
     accessorKey: "Rsid",
     header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="rsID"
-        sortable={true}
-      />
+      <DataTableColumnHeader column={column} title="rsID" sortable={true} />
     ),
     cell: ({ row }) => (
       <div className="font-mono text-blue-600">{row.getValue("Rsid")}</div>

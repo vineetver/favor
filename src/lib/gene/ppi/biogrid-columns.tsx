@@ -43,10 +43,7 @@ export function createBiogridColumns(
     {
       accessorKey: "gene_a",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene A"
-        />
+        <DataTableColumnHeader column={column} title="Gene A" />
       ),
       cell: ({ row, getValue }) => {
         const geneA = getValue() as string;
@@ -69,10 +66,7 @@ export function createBiogridColumns(
     {
       accessorKey: "gene_b",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene B"
-        />
+        <DataTableColumnHeader column={column} title="Gene B" />
       ),
       cell: ({ row, getValue }) => {
         const geneB = getValue() as string;
@@ -95,10 +89,7 @@ export function createBiogridColumns(
     {
       accessorKey: "method",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Method"
-        />
+        <DataTableColumnHeader column={column} title="Method" />
       ),
       cell: ({ getValue }) => {
         const method = getValue() as string;
@@ -112,10 +103,7 @@ export function createBiogridColumns(
     {
       accessorKey: "interaction_type",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Type"
-        />
+        <DataTableColumnHeader column={column} title="Type" />
       ),
       cell: ({ getValue }) => {
         const type = getValue() as string;
@@ -129,10 +117,7 @@ export function createBiogridColumns(
     {
       accessorKey: "confidence",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Confidence"
-        />
+        <DataTableColumnHeader column={column} title="Confidence" />
       ),
       cell: ({ getValue }) => {
         const confidence = getValue() as number | undefined;
@@ -152,10 +137,7 @@ export function createBiogridColumns(
     {
       accessorKey: "publication",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Publication"
-        />
+        <DataTableColumnHeader column={column} title="Publication" />
       ),
       cell: ({ getValue }) => {
         const publication = getValue() as string | undefined;
@@ -169,10 +151,7 @@ export function createBiogridColumns(
     {
       accessorKey: "publication_identifiers",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="PubMed"
-        />
+        <DataTableColumnHeader column={column} title="PubMed" />
       ),
       cell: ({ getValue }) => {
         const publicationIds = getValue() as string | undefined;
@@ -206,21 +185,37 @@ export function createBiogridColumns(
   ];
 }
 
-export function createBiogridFacetedFilters(data: BiogridProcessedInteraction[]) {
+export function createBiogridFacetedFilters(
+  data: BiogridProcessedInteraction[],
+) {
   const uniqueMethods = getBiogridUniqueValues(data, (item) => item.method);
-  const uniqueTypes = getBiogridUniqueValues(data, (item) => item.interaction_type);
+  const uniqueTypes = getBiogridUniqueValues(
+    data,
+    (item) => item.interaction_type,
+  );
 
   return [
-    ...(uniqueMethods.length > 0 ? [{
-      columnId: 'method',
-      title: 'Method',
-      options: uniqueMethods.map(method => ({ label: method, value: method }))
-    }] : []),
-    ...(uniqueTypes.length > 0 ? [{
-      columnId: 'interaction_type',
-      title: 'Interaction Type',
-      options: uniqueTypes.map(type => ({ label: type, value: type }))
-    }] : [])
+    ...(uniqueMethods.length > 0
+      ? [
+          {
+            columnId: "method",
+            title: "Method",
+            options: uniqueMethods.map((method) => ({
+              label: method,
+              value: method,
+            })),
+          },
+        ]
+      : []),
+    ...(uniqueTypes.length > 0
+      ? [
+          {
+            columnId: "interaction_type",
+            title: "Interaction Type",
+            options: uniqueTypes.map((type) => ({ label: type, value: type })),
+          },
+        ]
+      : []),
   ];
 }
 

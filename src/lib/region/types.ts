@@ -3,7 +3,7 @@ export type {
   GeneLevelAnnotation as RegionAnnotation,
   GeneSummary as RegionSummary,
   Summary,
-  Gene as RegionVariant
+  Gene as RegionVariant,
 } from "@/lib/gene/types";
 
 // Additional region-specific types if needed

@@ -6,8 +6,10 @@ interface RegionScentPageProps {
   };
 }
 
-export default async function RegionScentPage({ params }: RegionScentPageProps) {
+export default async function RegionScentPage({
+  params,
+}: RegionScentPageProps) {
   const { region } = params;
-  
+
   return <ScentDisplay region={region} />;
 }

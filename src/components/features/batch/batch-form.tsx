@@ -61,7 +61,7 @@ const formSchema = z.object({
       invalid_type_error: "Email must be a string",
     })
     .email(),
-  genome: z.enum(["hg38", "hg19"], {
+  genome: z.enum(["hg38"], {
     required_error: "Genome assembly is required",
   }),
   coordinateSystem: z.string(),
@@ -89,7 +89,7 @@ export function BatchForm() {
     defaultValues: {
       organization: "",
       email: "",
-      genome: "hg38" as "hg38" | "hg19",
+      genome: "hg38" as "hg38",
       file: undefined,
       coordinateSystem: "1-base",
       leftNormalization: false,
@@ -113,29 +113,33 @@ export function BatchForm() {
     formData.append("coordinate-system", values.coordinateSystem);
 
     // Choose the appropriate API based on genome assembly
-    const response = values.genome === "hg19" 
-      ? await sendHg19BatchAnnotation(formData)
-      : await sendBatchAnnotation(formData);
-    
+    const response =
+      values.genome === "hg19"
+        ? await sendHg19BatchAnnotation(formData)
+        : await sendBatchAnnotation(formData);
+
     // Handle different response types
     if (values.genome === "hg19" && response.ok) {
       // For hg19, we get the file directly - download it
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const contentDisposition = response.headers.get('content-disposition');
-      const filename = contentDisposition?.match(/filename="(.+)"/)?.[1] || `batch_results.${values.outputContentType.includes('json') ? 'json' : values.outputContentType.includes('tsv') ? 'tsv' : 'csv'}`;
-      
+      const a = document.createElement("a");
+      const contentDisposition = response.headers.get("content-disposition");
+      const filename =
+        contentDisposition?.match(/filename="(.+)"/)?.[1] ||
+        `batch_results.${values.outputContentType.includes("json") ? "json" : values.outputContentType.includes("tsv") ? "tsv" : "csv"}`;
+
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       return handleToast(
         toast.success("Your file has been processed and downloaded", {
-          description: "The annotated results have been downloaded to your computer.",
+          description:
+            "The annotated results have been downloaded to your computer.",
           classNames: {
             actionButton:
               "group-[.toaster]:bg-green-600 group-[.toaster]:text-white",
@@ -149,7 +153,7 @@ export function BatchForm() {
         }),
       );
     }
-    
+
     const data = await response.json();
 
     if (response.ok) {
@@ -243,7 +247,11 @@ export function BatchForm() {
                         <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Choose the genome assembly for annotation. HG38 uses the existing pipeline with email notification, while HG19 provides immediate results using ClickHouse for faster processing.</p>
+                        <p>
+                          Currently only HG38 genome assembly is available for
+                          batch annotation using the existing pipeline with email
+                          notification.
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -254,13 +262,13 @@ export function BatchForm() {
                   defaultValue="hg38"
                   onValueChange={field.onChange}
                   value={field.value}
+                  disabled
                 >
                   <SelectTrigger className="max-w-xs">
                     <SelectValue placeholder="Select genome assembly" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hg38">HG38 (Email Results)</SelectItem>
-                    <SelectItem value="hg19">HG19 (Instant Download)</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -282,12 +290,17 @@ export function BatchForm() {
                         <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Choose the coordinate system for the annotation type.
-                        Some formats are 0-based (e.g., BED, BAM, BCF) while others are 1-based (e.g.,
-                        GTF, GFF, SAM, VCF).
-                        For example, Ensembl uses a 1-based coordinate system, while UCSC uses a 0-based system. Additionally, some file formats like GFF, SAM, and VCF are 1-based, whereas others like BED and BAM are 0-based.
-                        In R, coordinate conversions happen automatically with some functions. Be
-                        mindful of this to avoid errors.</p>
+                        <p>
+                          Choose the coordinate system for the annotation type.
+                          Some formats are 0-based (e.g., BED, BAM, BCF) while
+                          others are 1-based (e.g., GTF, GFF, SAM, VCF). For
+                          example, Ensembl uses a 1-based coordinate system,
+                          while UCSC uses a 0-based system. Additionally, some
+                          file formats like GFF, SAM, and VCF are 1-based,
+                          whereas others like BED and BAM are 0-based. In R,
+                          coordinate conversions happen automatically with some
+                          functions. Be mindful of this to avoid errors.
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -326,9 +339,15 @@ export function BatchForm() {
                         <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Left normalization shifts the start position of a variant to the left until it can no longer be shifted, ensuring consistency in variant representation.
-                        VCF files often contain multi-allelic variants that should be split into separate lines and left-normalized for accurate annotation.
-                        Use tools like bcftools norm for this process before annotating.</p>
+                        <p>
+                          Left normalization shifts the start position of a
+                          variant to the left until it can no longer be shifted,
+                          ensuring consistency in variant representation. VCF
+                          files often contain multi-allelic variants that should
+                          be split into separate lines and left-normalized for
+                          accurate annotation. Use tools like bcftools norm for
+                          this process before annotating.
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -368,8 +387,11 @@ export function BatchForm() {
                         <Info className="ml-2 h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Choose the output content type for the annotation results.
-                        The default output is text/csv, but you can choose text/json or text/tsv if needed.</p>
+                        <p>
+                          Choose the output content type for the annotation
+                          results. The default output is text/csv, but you can
+                          choose text/json or text/tsv if needed.
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

@@ -7,11 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { NoDataState } from "@/components/ui/error-states";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import type { Target, AssociatedDisease } from "@/lib/opentargets/types";
 
 interface TargetDiseasesDisplayProps {
-  target: Target & { associatedDiseases: { count: number; rows: AssociatedDisease[] } };
+  target: Target & {
+    associatedDiseases: { count: number; rows: AssociatedDisease[] };
+  };
   geneName: string;
 }
 
@@ -30,34 +36,31 @@ interface ProcessedDiseaseData {
 const DATASOURCE_CATEGORIES = {
   "GWAS & Genetics": [
     "gwas_associations",
-    "gene_burden", 
+    "gene_burden",
     "clinvar",
-    "genomics_england", 
+    "genomics_england",
     "gene2phenotype",
     "uniprot_literature",
     "uniprot_variants",
     "orphanet",
-    "clingen"
+    "clingen",
   ],
   "Literature & Curation": [
     "cancer_gene_census",
     "intogen",
-    "cancer_biomarkers", 
+    "cancer_biomarkers",
     "chembl",
     "crispr_screens",
-    "project_score"
+    "project_score",
   ],
   "Pathway & Expression": [
     "slap_enrich",
-    "progeny", 
+    "progeny",
     "reactome",
     "gene_signatures",
-    "europe_pmc"
+    "europe_pmc",
   ],
-  "Expression & Phenotype": [
-    "expression_atlas",
-    "impc"
-  ]
+  "Expression & Phenotype": ["expression_atlas", "impc"],
 };
 
 function categorizeDataSource(dsId: string): string {
@@ -102,7 +105,9 @@ function ScoreCell({ score }: { score: number }) {
     <div className="flex items-center justify-center">
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`rounded-full w-6 h-6 cursor-help ${getColor(score)}`} />
+          <div
+            className={`rounded-full w-6 h-6 cursor-help ${getColor(score)}`}
+          />
         </TooltipTrigger>
         <TooltipContent>
           <p>Score: {score.toFixed(3)}</p>
@@ -112,7 +117,10 @@ function ScoreCell({ score }: { score: number }) {
   );
 }
 
-export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDisplayProps) {
+export function TargetDiseasesDisplay({
+  target,
+  geneName,
+}: TargetDiseasesDisplayProps) {
   const diseases = target.associatedDiseases?.rows || [];
 
   const { processedData, columns, datasourceCategories } = useMemo(() => {
@@ -123,13 +131,13 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
     // Get all unique datasources and categorize them
     const allDatasources = Array.from(
       new Set(
-        diseases.flatMap(d => d.datasourceScores?.map(ds => ds.id) || [])
-      )
+        diseases.flatMap((d) => d.datasourceScores?.map((ds) => ds.id) || []),
+      ),
     ).sort();
 
     // Group datasources by category
     const datasourceCategories: Record<string, string[]> = {};
-    allDatasources.forEach(dsId => {
+    allDatasources.forEach((dsId) => {
       const category = categorizeDataSource(dsId);
       if (!datasourceCategories[category]) {
         datasourceCategories[category] = [];
@@ -138,35 +146,38 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
     });
 
     // Process data
-    const processedData: ProcessedDiseaseData[] = diseases.map(association => {
-      const datasourceScores: Record<string, number> = {};
-      allDatasources.forEach(dsId => {
-        const ds = association.datasourceScores?.find(ds => ds.id === dsId);
-        datasourceScores[dsId] = ds?.score || 0;
-      });
+    const processedData: ProcessedDiseaseData[] = diseases.map(
+      (association) => {
+        const datasourceScores: Record<string, number> = {};
+        allDatasources.forEach((dsId) => {
+          const ds = association.datasourceScores?.find((ds) => ds.id === dsId);
+          datasourceScores[dsId] = ds?.score || 0;
+        });
 
-      // Determine score range for filtering
-      const score = association.score;
-      let scoreRange = "<0.2";
-      if (score >= 0.8) scoreRange = "0.8+";
-      else if (score >= 0.6) scoreRange = "0.6-0.8";
-      else if (score >= 0.4) scoreRange = "0.4-0.6";
-      else if (score >= 0.2) scoreRange = "0.2-0.4";
+        // Determine score range for filtering
+        const score = association.score;
+        let scoreRange = "<0.2";
+        if (score >= 0.8) scoreRange = "0.8+";
+        else if (score >= 0.6) scoreRange = "0.6-0.8";
+        else if (score >= 0.4) scoreRange = "0.4-0.6";
+        else if (score >= 0.2) scoreRange = "0.2-0.4";
 
-      const therapeuticAreas = association.disease.therapeuticAreas?.map(ta => ta.name) || [];
-      const therapeuticAreasString = therapeuticAreas.join(", ");
+        const therapeuticAreas =
+          association.disease.therapeuticAreas?.map((ta) => ta.name) || [];
+        const therapeuticAreasString = therapeuticAreas.join(", ");
 
-      return {
-        id: association.disease.id,
-        name: association.disease.name,
-        description: association.disease.description,
-        score: association.score,
-        therapeuticAreas,
-        therapeuticAreasString,
-        scoreRange,
-        datasourceScores,
-      };
-    });
+        return {
+          id: association.disease.id,
+          name: association.disease.name,
+          description: association.disease.description,
+          score: association.score,
+          therapeuticAreas,
+          therapeuticAreasString,
+          scoreRange,
+          datasourceScores,
+        };
+      },
+    );
 
     // Create simple flat columns (no grouping for now, focus on making it work)
     const columns: ColumnDef<ProcessedDiseaseData>[] = [
@@ -181,27 +192,30 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
                 {row.original.description}
               </div>
             )}
-            {row.original.therapeuticAreas && row.original.therapeuticAreas.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {row.original.therapeuticAreas.slice(0, 2).map(area => (
-                  <Badge key={area} variant="secondary" className="text-xs">
-                    {area}
-                  </Badge>
-                ))}
-                {row.original.therapeuticAreas.length > 2 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{row.original.therapeuticAreas.length - 2}
-                  </Badge>
-                )}
-              </div>
-            )}
+            {row.original.therapeuticAreas &&
+              row.original.therapeuticAreas.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {row.original.therapeuticAreas.slice(0, 2).map((area) => (
+                    <Badge key={area} variant="secondary" className="text-xs">
+                      {area}
+                    </Badge>
+                  ))}
+                  {row.original.therapeuticAreas.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{row.original.therapeuticAreas.length - 2}
+                    </Badge>
+                  )}
+                </div>
+              )}
           </div>
         ),
         enableSorting: true,
         size: 300,
         filterFn: (row, id, value) => {
           const cellValue = row.getValue(id);
-          return cellValue ? cellValue.toString().toLowerCase().includes(value.toLowerCase()) : false;
+          return cellValue
+            ? cellValue.toString().toLowerCase().includes(value.toLowerCase())
+            : false;
         },
       },
       {
@@ -224,11 +238,13 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
     // Don't add virtual filter columns to the table - handle filtering via facetedFilters instead
 
     // Add individual datasource columns (flat structure)
-    allDatasources.forEach(dsId => {
+    allDatasources.forEach((dsId) => {
       const category = categorizeDataSource(dsId);
       columns.push({
         id: dsId,
-        header: dsId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        header: dsId
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
         cell: ({ row }: { row: any }) => (
           <ScoreCell score={row.original.datasourceScores[dsId]} />
         ),
@@ -259,17 +275,25 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
   const facetedFilters = useMemo(() => [], []);
 
   const exportTSV = (filteredData: ProcessedDiseaseData[]) => {
-    const headers = ["Disease", "Description", "Association Score", "Therapeutic Areas", ...Object.keys(filteredData[0]?.datasourceScores || {})];
-    
-    const rows = filteredData.map(row => [
+    const headers = [
+      "Disease",
+      "Description",
+      "Association Score",
+      "Therapeutic Areas",
+      ...Object.keys(filteredData[0]?.datasourceScores || {}),
+    ];
+
+    const rows = filteredData.map((row) => [
       row.name,
       row.description || "",
       row.score.toString(),
       row.therapeuticAreas?.join("; ") || "",
-      ...Object.values(row.datasourceScores).map(score => score.toString()),
+      ...Object.values(row.datasourceScores).map((score) => score.toString()),
     ]);
 
-    const tsv = [headers.join("\t"), ...rows.map(row => row.join("\t"))].join("\n");
+    const tsv = [headers.join("\t"), ...rows.map((row) => row.join("\t"))].join(
+      "\n",
+    );
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -306,7 +330,7 @@ export function TargetDiseasesDisplay({ target, geneName }: TargetDiseasesDispla
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-medium text-sm mb-3">No data</h3>
                 <div className="flex justify-center">

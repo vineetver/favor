@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useScrollToBottom } from './use-scroll-to-bottom';
-import type { UseChatHelpers } from '@ai-sdk/react';
-import type { ChatMessage } from '@/lib/chatbot/types';
+import { useState, useEffect } from "react";
+import { useScrollToBottom } from "./use-scroll-to-bottom";
+import type { UseChatHelpers } from "@ai-sdk/react";
+import type { ChatMessage } from "@/lib/chatbot/types";
 
 export function useMessages({
   chatId,
   status,
 }: {
   chatId: string;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<ChatMessage>["status"];
 }) {
   const {
     containerRef,
@@ -23,13 +23,13 @@ export function useMessages({
 
   useEffect(() => {
     if (chatId) {
-      scrollToBottom('instant');
+      scrollToBottom("instant");
       setHasSentMessage(false);
     }
   }, [chatId, scrollToBottom]);
 
   useEffect(() => {
-    if (status === 'submitted') {
+    if (status === "submitted") {
       setHasSentMessage(true);
     }
   }, [status]);

@@ -2,7 +2,8 @@ const REGION_TABLE_URLS: {
   [category: string]: (region: string) => string;
 } = {
   "SNV-table": (region) => `https://api.genohub.org/v1/regions/${region}/snv`,
-  "InDel-table": (region) => `https://api.genohub.org/v1/regions/${region}/indel`,
+  "InDel-table": (region) =>
+    `https://api.genohub.org/v1/regions/${region}/indel`,
 };
 
 export async function fetchRegionTableData(
@@ -70,7 +71,9 @@ export async function fetchRegionTableData(
       if (response.status === 404) {
         return { data: [], hasNextPage: false };
       }
-      throw new Error(`Failed to fetch region table data: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch region table data: ${response.statusText}`,
+      );
     }
 
     const responseData = await response.json();

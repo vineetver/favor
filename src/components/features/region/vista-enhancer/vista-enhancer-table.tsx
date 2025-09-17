@@ -21,7 +21,7 @@ export function VistaEnhancerTable({
   const exportData = (data: VistaEnhancer[]) => {
     const headers = [
       "Element ID",
-      "Chromosome", 
+      "Chromosome",
       "Start Position",
       "End Position",
       "Description",
@@ -31,7 +31,7 @@ export function VistaEnhancerTable({
       "Organism",
       "Promoter",
       "Transgenesis",
-      "Genome Assembly"
+      "Genome Assembly",
     ];
 
     const rows = data.map((row) => [
@@ -61,29 +61,32 @@ export function VistaEnhancerTable({
     URL.revokeObjectURL(url);
   };
 
-  const facetedFilters = useMemo(() => [
-    {
-      columnId: "expression",
-      title: "Expression",
-      options: Array.from(new Set(data.map((item) => item.expression)))
-        .filter(Boolean)
-        .map((expression) => ({ label: expression, value: expression })),
-    },
-    {
-      columnId: "organism",
-      title: "Organism",
-      options: Array.from(new Set(data.map((item) => item.organism)))
-        .filter(Boolean)
-        .map((organism) => ({ label: organism, value: organism })),
-    },
-    {
-      columnId: "stage",
-      title: "Developmental Stage",
-      options: Array.from(new Set(data.map((item) => item.stage)))
-        .filter(Boolean)
-        .map((stage) => ({ label: stage, value: stage })),
-    },
-  ], [data]);
+  const facetedFilters = useMemo(
+    () => [
+      {
+        columnId: "expression",
+        title: "Expression",
+        options: Array.from(new Set(data.map((item) => item.expression)))
+          .filter(Boolean)
+          .map((expression) => ({ label: expression, value: expression })),
+      },
+      {
+        columnId: "organism",
+        title: "Organism",
+        options: Array.from(new Set(data.map((item) => item.organism)))
+          .filter(Boolean)
+          .map((organism) => ({ label: organism, value: organism })),
+      },
+      {
+        columnId: "stage",
+        title: "Developmental Stage",
+        options: Array.from(new Set(data.map((item) => item.stage)))
+          .filter(Boolean)
+          .map((stage) => ({ label: stage, value: stage })),
+      },
+    ],
+    [data],
+  );
 
   return (
     <DataGrid

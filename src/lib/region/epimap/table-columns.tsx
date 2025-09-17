@@ -92,9 +92,7 @@ export const epimapColumns: ColumnDef<Epimap>[] = [
         sortable={true}
       />
     ),
-    cell: ({ row }) => (
-      <Badge variant="secondary">{row.original.sex}</Badge>
-    ),
+    cell: ({ row }) => <Badge variant="secondary">{row.original.sex}</Badge>,
     enableSorting: true,
     filterFn: (row, id, value) => {
       const sex = row.getValue(id) as string;

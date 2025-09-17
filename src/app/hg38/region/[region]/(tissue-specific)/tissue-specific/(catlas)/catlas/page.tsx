@@ -1,5 +1,8 @@
 import { CatlasDisplay } from "@/components/features/variant/abc/catlas-display";
-import { fetchABCPeaksByRegion, fetchABCScoresByRegion } from "@/lib/region/abc/api";
+import {
+  fetchABCPeaksByRegion,
+  fetchABCScoresByRegion,
+} from "@/lib/region/abc/api";
 
 interface RegionCatlasPageProps {
   params: {
@@ -7,7 +10,9 @@ interface RegionCatlasPageProps {
   };
 }
 
-export default async function RegionCatlasPage({ params }: RegionCatlasPageProps) {
+export default async function RegionCatlasPage({
+  params,
+}: RegionCatlasPageProps) {
   const { region } = params;
 
   const [peaks, scores] = await Promise.all([

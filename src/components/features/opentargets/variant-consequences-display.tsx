@@ -13,7 +13,7 @@ interface VariantConsequencesDisplayProps {
 
 const IMPACT_COLORS = {
   HIGH: "bg-red-100 text-red-800 border-red-200",
-  MODERATE: "bg-orange-100 text-orange-800 border-orange-200", 
+  MODERATE: "bg-orange-100 text-orange-800 border-orange-200",
   LOW: "bg-yellow-100 text-yellow-800 border-yellow-200",
   MODIFIER: "bg-gray-100 text-gray-800 border-gray-200",
 } as const;
@@ -41,7 +41,10 @@ function formatPrediction(prediction?: string, score?: number) {
   return prediction;
 }
 
-export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequencesDisplayProps) {
+export function VariantConsequencesDisplay({
+  variant,
+  vcf,
+}: VariantConsequencesDisplayProps) {
   const consequences = variant.transcriptConsequences || [];
 
   return (
@@ -57,7 +60,7 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -107,20 +110,22 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              No transcript consequences found for variant {vcf} in OpenTargets Platform
+              No transcript consequences found for variant {vcf} in OpenTargets
+              Platform
             </div>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Transcript Consequences</h3>
-          
+
           <div className="grid gap-4">
             {consequences.map((consequence, index) => {
               const gene = consequence.gene;
               const transcript = consequence.transcript;
               const impact = consequence.impact as keyof typeof IMPACT_COLORS;
-              const impactColor = IMPACT_COLORS[impact] || IMPACT_COLORS.MODIFIER;
+              const impactColor =
+                IMPACT_COLORS[impact] || IMPACT_COLORS.MODIFIER;
               const ImpactIcon = IMPACT_ICONS[impact] || Info;
 
               return (
@@ -137,7 +142,7 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <Badge className={impactColor}>
                           <ImpactIcon className="h-3 w-3 mr-1" />
@@ -146,11 +151,13 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
                       </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     {consequence.consequenceType && (
                       <div>
-                        <div className="text-xs text-muted-foreground mb-1">Consequence Type</div>
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Consequence Type
+                        </div>
                         <Badge variant="secondary">
                           {consequence.consequenceType}
                         </Badge>
@@ -159,7 +166,9 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
 
                     {consequence.aminoAcidChange && (
                       <div>
-                        <div className="text-xs text-muted-foreground mb-1">Amino Acid Change</div>
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Amino Acid Change
+                        </div>
                         <div className="font-mono text-sm bg-muted px-2 py-1 rounded">
                           {consequence.aminoAcidChange}
                         </div>
@@ -169,14 +178,21 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {consequence.polyphenPrediction && (
                         <div>
-                          <div className="text-xs text-muted-foreground mb-2">PolyPhen-2</div>
+                          <div className="text-xs text-muted-foreground mb-2">
+                            PolyPhen-2
+                          </div>
                           <div className="space-y-1">
-                            <div className={`p-2 rounded text-sm ${getPredictionColor(consequence.polyphenScore)}`}>
-                              {formatPrediction(consequence.polyphenPrediction, consequence.polyphenScore)}
+                            <div
+                              className={`p-2 rounded text-sm ${getPredictionColor(consequence.polyphenScore)}`}
+                            >
+                              {formatPrediction(
+                                consequence.polyphenPrediction,
+                                consequence.polyphenScore,
+                              )}
                             </div>
                             {consequence.polyphenScore !== undefined && (
-                              <Progress 
-                                value={consequence.polyphenScore * 100} 
+                              <Progress
+                                value={consequence.polyphenScore * 100}
                                 className="h-2"
                               />
                             )}
@@ -186,14 +202,21 @@ export function VariantConsequencesDisplay({ variant, vcf }: VariantConsequences
 
                       {consequence.siftPrediction && (
                         <div>
-                          <div className="text-xs text-muted-foreground mb-2">SIFT</div>
+                          <div className="text-xs text-muted-foreground mb-2">
+                            SIFT
+                          </div>
                           <div className="space-y-1">
-                            <div className={`p-2 rounded text-sm ${getPredictionColor(1 - (consequence.siftScore || 0))}`}>
-                              {formatPrediction(consequence.siftPrediction, consequence.siftScore)}
+                            <div
+                              className={`p-2 rounded text-sm ${getPredictionColor(1 - (consequence.siftScore || 0))}`}
+                            >
+                              {formatPrediction(
+                                consequence.siftPrediction,
+                                consequence.siftScore,
+                              )}
                             </div>
                             {consequence.siftScore !== undefined && (
-                              <Progress 
-                                value={(1 - consequence.siftScore) * 100} 
+                              <Progress
+                                value={(1 - consequence.siftScore) * 100}
                                 className="h-2"
                               />
                             )}

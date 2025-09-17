@@ -76,16 +76,26 @@ export function IntactTable({ data, selectedNode }: IntactTableProps) {
       selectedRowId={
         selectedNode
           ? transformedData.find(
-              (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
+              (row) =>
+                row.gene_a === selectedNode || row.gene_b === selectedNode,
             )
-              ? `${transformedData.find(
-                  (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-                )?.gene_a}-${transformedData.find(
-                  (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-                )?.gene_b}-${transformedData.find(
-                  (row) => row.gene_a === selectedNode || row.gene_b === selectedNode,
-                )?.method}`
-              : null
+            ? `${
+                transformedData.find(
+                  (row) =>
+                    row.gene_a === selectedNode || row.gene_b === selectedNode,
+                )?.gene_a
+              }-${
+                transformedData.find(
+                  (row) =>
+                    row.gene_a === selectedNode || row.gene_b === selectedNode,
+                )?.gene_b
+              }-${
+                transformedData.find(
+                  (row) =>
+                    row.gene_a === selectedNode || row.gene_b === selectedNode,
+                )?.method
+              }`
+            : null
           : null
       }
     />

@@ -111,18 +111,20 @@ export function PieChart({
 
   const renderLabel = (entry: any) => {
     if (!showLabels) return null;
-    
+
     const value = formatLabel ? formatLabel(entry[dataKey]) : entry[dataKey];
     const name = entry[nameKey];
-    
+
     // Calculate percentage
     const total = data.reduce((sum, item) => sum + (item[dataKey] || 0), 0);
-    const percentage = total > 0 ? ((entry[dataKey] / total) * 100).toFixed(1) : "0.0";
-    
+    const percentage =
+      total > 0 ? ((entry[dataKey] / total) * 100).toFixed(1) : "0.0";
+
     return `${name}: ${percentage}%`;
   };
 
-  const calculatedOuterRadius = outerRadius || Math.min(height, width || 400) / 3;
+  const calculatedOuterRadius =
+    outerRadius || Math.min(height, width || 400) / 3;
 
   return (
     <div ref={chartRef}>
@@ -156,8 +158,12 @@ export function PieChart({
               <Cell
                 key={`cell-${index}`}
                 fill={entry.color || chartColors[index % chartColors.length]}
-                className={onSliceClick ? "cursor-pointer hover:opacity-80" : ""}
-                onClick={onSliceClick ? () => onSliceClick(entry, index) : undefined}
+                className={
+                  onSliceClick ? "cursor-pointer hover:opacity-80" : ""
+                }
+                onClick={
+                  onSliceClick ? () => onSliceClick(entry, index) : undefined
+                }
               />
             ))}
           </Pie>

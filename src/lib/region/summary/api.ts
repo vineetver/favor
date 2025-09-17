@@ -1,8 +1,10 @@
 const REGION_SUMMARY_URLS: {
   [category: string]: (region: string) => string;
 } = {
-  "SNV-summary": (region) => `https://api.genohub.org/v1/regions/${region}/summary/snv`,
-  "InDel-summary": (region) => `https://api.genohub.org/v1/regions/${region}/summary/indel`,
+  "SNV-summary": (region) =>
+    `https://api.genohub.org/v1/regions/${region}/summary/snv`,
+  "InDel-summary": (region) =>
+    `https://api.genohub.org/v1/regions/${region}/summary/indel`,
 };
 
 export async function fetchRegionSummary(

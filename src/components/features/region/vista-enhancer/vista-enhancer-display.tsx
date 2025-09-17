@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +13,11 @@ interface VistaEnhancerDisplayProps {
   initialData?: VistaEnhancer[] | null;
 }
 
-export function VistaEnhancerDisplay({ vcf, region, initialData }: VistaEnhancerDisplayProps) {
+export function VistaEnhancerDisplay({
+  vcf,
+  region,
+  initialData,
+}: VistaEnhancerDisplayProps) {
   const [searchDistance, setSearchDistance] = useState([0]);
   const [debouncedSearchDistance, setDebouncedSearchDistance] = useState([0]);
 

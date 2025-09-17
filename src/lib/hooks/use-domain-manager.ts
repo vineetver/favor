@@ -95,7 +95,14 @@ export function useDomainManager({
       windowSize,
       centerOnVariant: !!vcfParam, // Only center on variant for VCF params, not region params
     });
-  }, [vcfParam, regionParam, trackTypes, selectedPreset, customWindowSize, initialPreset]);
+  }, [
+    vcfParam,
+    regionParam,
+    trackTypes,
+    selectedPreset,
+    customWindowSize,
+    initialPreset,
+  ]);
 
   // Update domain when initialDomain changes
   useMemo(() => {

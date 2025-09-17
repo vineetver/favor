@@ -19,7 +19,9 @@ export default async function RegionTissueSpecificLayout({
   const { region } = params;
   const category = "tissue-specific";
 
-  const currentCategory = REGION_NAVIGATION.find((cat) => cat.slug === category);
+  const currentCategory = REGION_NAVIGATION.find(
+    (cat) => cat.slug === category,
+  );
 
   if (!currentCategory) {
     notFound();

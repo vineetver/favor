@@ -324,7 +324,9 @@ export const tissueColumns: ColumnDef<CCRETissue>[] = [
       };
 
       return (
-        <div className={cn("font-mono font-semibold text-sm", colorMap[strength])}>
+        <div
+          className={cn("font-mono font-semibold text-sm", colorMap[strength])}
+        >
           {formatSignalValue(ctcf)}
         </div>
       );

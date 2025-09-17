@@ -13,7 +13,7 @@ interface SafetyPageProps {
 
 async function SafetyContent({ geneName }: { geneName: string }) {
   const geneData = await fetchGeneAnnotation(geneName);
-  
+
   if (!geneData?.ensembl_gene) {
     return (
       <div className="text-center py-8">
@@ -26,13 +26,8 @@ async function SafetyContent({ geneName }: { geneName: string }) {
 
   try {
     const { target } = await getTargetSafety(geneData.ensembl_gene);
-    
-    return (
-      <TargetSafetyDisplay 
-        target={target} 
-        geneName={geneName}
-      />
-    );
+
+    return <TargetSafetyDisplay target={target} geneName={geneName} />;
   } catch (error) {
     return (
       <div className="text-center py-8">
@@ -40,7 +35,7 @@ async function SafetyContent({ geneName }: { geneName: string }) {
           Failed to load safety data from OpenTargets
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          {error instanceof Error ? error.message : 'Unknown error'}
+          {error instanceof Error ? error.message : "Unknown error"}
         </p>
       </div>
     );
@@ -57,7 +52,8 @@ export default async function SafetyPage({ params }: SafetyPageProps) {
           Safety Information
         </h1>
         <p className="text-muted-foreground mt-2">
-          Safety liabilities and adverse events for {geneName} from OpenTargets Platform
+          Safety liabilities and adverse events for {geneName} from OpenTargets
+          Platform
         </p>
       </div>
 

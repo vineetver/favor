@@ -1,4 +1,4 @@
-const VARIANT_URL = "http://localhost:9090/v1/variants";
+const VARIANT_URL = "https://api.genohub.org/v1/variants";
 const HG19_BATCH_URL = "/api/hg19/batch-annotation";
 
 export async function sendBatchAnnotation(formData: FormData) {

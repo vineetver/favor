@@ -1,4 +1,3 @@
-
 export default async function Page() {
   return (
     <>
@@ -12,8 +11,13 @@ export default async function Page() {
               All data in FAVOR are released openly and publicly for the benefit
               of the broad biomedical and health science community. It is
               distributed under the terms of{" "}
-              <a href="https://opensource.org/licenses/MIT" className="text-primary hover:underline">MIT license</a>.
-              Users may freely download, search the data and are encouraged to
+              <a
+                href="https://opensource.org/licenses/MIT"
+                className="text-primary hover:underline"
+              >
+                MIT license
+              </a>
+              . Users may freely download, search the data and are encouraged to
               use and publish results generated from these data. There are no
               restrictions or embargoes on the publication of results derived
               from the FAVOR database.
@@ -26,11 +30,22 @@ export default async function Page() {
             <p>
               This data set has been subjected to extensive quality control,
               there is still the potential for errors. Please contact us using
-              the Discussion <a href="https://discussion.genohub.org" className="text-primary hover:underline">Forum</a>{" "}
+              the Discussion{" "}
+              <a
+                href="https://discussion.genohub.org"
+                className="text-primary hover:underline"
+              >
+                Forum
+              </a>{" "}
               or email us at{" "}
-              <a href="mailto:favor@genohub.org" className="text-primary hover:underline">favor@genohub.org</a>, in the
-              event that any dubious values are encountered so that we may
-              address them.
+              <a
+                href="mailto:favor@genohub.org"
+                className="text-primary hover:underline"
+              >
+                favor@genohub.org
+              </a>
+              , in the event that any dubious values are encountered so that we
+              may address them.
             </p>
             <p>
               When using FAVOR in your work, please use the following citation
@@ -54,20 +69,34 @@ export default async function Page() {
                 Annotator for Variation across the Human Genome
               </strong>{" "}
               . Nucleic Acids Res 2022 Nov 9; gkac966. PMID:{" "}
-              <a href="https://pubmed.ncbi.nlm.nih.gov/36350676/" className="text-primary hover:underline">36350676</a>.
-              DOI:{" "}
-              <a href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false" className="text-primary hover:underline">
+              <a
+                href="https://pubmed.ncbi.nlm.nih.gov/36350676/"
+                className="text-primary hover:underline"
+              >
+                36350676
+              </a>
+              . DOI:{" "}
+              <a
+                href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false"
+                className="text-primary hover:underline"
+              >
                 10.1093/nar/gkac966.
               </a>
               .{" "}
             </p>
             <p>
               FAVOR Full Database, DOI:{" "}
-              <a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG" className="text-primary hover:underline">
+              <a
+                href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG"
+                className="text-primary hover:underline"
+              >
                 10.7910/DVN/KFUBKG
               </a>
               . FAVOR Esssential Database, DOI:{" "}
-              <a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI" className="text-primary hover:underline">
+              <a
+                href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI"
+                className="text-primary hover:underline"
+              >
                 10.7910/DVN/1VGTJI
               </a>
               .
@@ -95,9 +124,17 @@ export default async function Page() {
                 whole-genome sequencing studies at scale
               </strong>
               . <em>Nature Genetics</em> 2020; 52(9): 969-983. PMID:{" "}
-              <a href="https://pubmed.ncbi.nlm.nih.gov/32839606/" className="text-primary hover:underline">32839606</a>.
-              DOI:{" "}
-              <a href="https://www.nature.com/articles/s41588-020-0676-4" className="text-primary hover:underline">
+              <a
+                href="https://pubmed.ncbi.nlm.nih.gov/32839606/"
+                className="text-primary hover:underline"
+              >
+                32839606
+              </a>
+              . DOI:{" "}
+              <a
+                href="https://www.nature.com/articles/s41588-020-0676-4"
+                className="text-primary hover:underline"
+              >
                 10.1038/s41588-020-0676-4
               </a>
               .
@@ -129,7 +166,10 @@ export default async function Page() {
                 large-scale whole-genome sequencing studies.
               </strong>{" "}
               <em>Nature Methods</em> 19, 1599–1611 (2022) DOI:{" "}
-              <a href="https://doi.org/10.1038/s41592-022-01640-x" className="text-primary hover:underline">
+              <a
+                href="https://doi.org/10.1038/s41592-022-01640-x"
+                className="text-primary hover:underline"
+              >
                 s41592-022-01640-x
               </a>
               .

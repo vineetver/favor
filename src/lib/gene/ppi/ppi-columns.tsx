@@ -15,20 +15,22 @@ export interface PPIInteraction {
   interaction_type?: string;
 }
 
-function isRowHighlighted(item: PPIInteraction, selectedNode: string | null): boolean {
+function isRowHighlighted(
+  item: PPIInteraction,
+  selectedNode: string | null,
+): boolean {
   if (!selectedNode) return false;
   return item.gene_a === selectedNode || item.gene_b === selectedNode;
 }
 
-export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInteraction>[] {
+export function createPPIColumns(
+  selectedNode: string | null,
+): ColumnDef<PPIInteraction>[] {
   return [
     {
       accessorKey: "gene_a",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene A"
-        />
+        <DataTableColumnHeader column={column} title="Gene A" />
       ),
       cell: ({ row, getValue }) => {
         const geneA = getValue() as string;
@@ -48,10 +50,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "gene_b",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Gene B"
-        />
+        <DataTableColumnHeader column={column} title="Gene B" />
       ),
       cell: ({ row, getValue }) => {
         const geneB = getValue() as string;
@@ -71,10 +70,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "method",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Detection Method"
-        />
+        <DataTableColumnHeader column={column} title="Detection Method" />
       ),
       cell: ({ getValue }) => {
         const method = getValue() as string;
@@ -88,10 +84,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "interaction_type",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Interaction Type"
-        />
+        <DataTableColumnHeader column={column} title="Interaction Type" />
       ),
       cell: ({ getValue }) => {
         const type = getValue() as string;
@@ -105,10 +98,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "confidence",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Confidence"
-        />
+        <DataTableColumnHeader column={column} title="Confidence" />
       ),
       cell: ({ getValue }) => {
         const confidence = getValue() as number | undefined;
@@ -126,10 +116,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "degree",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Degree"
-        />
+        <DataTableColumnHeader column={column} title="Degree" />
       ),
       cell: ({ getValue }) => {
         const degree = getValue() as string;
@@ -143,10 +130,7 @@ export function createPPIColumns(selectedNode: string | null): ColumnDef<PPIInte
     {
       accessorKey: "publication",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Publication"
-        />
+        <DataTableColumnHeader column={column} title="Publication" />
       ),
       cell: ({ getValue }) => {
         const publication = getValue() as string | undefined;
@@ -174,15 +158,26 @@ export function createPPIFacetedFilters(data: PPIInteraction[]) {
   ).sort();
 
   return [
-    ...(uniqueMethods.length > 0 ? [{
-      columnId: 'method',
-      title: 'Method',
-      options: uniqueMethods.map(method => ({ label: method, value: method }))
-    }] : []),
-    ...(uniqueTypes.length > 0 ? [{
-      columnId: 'interaction_type',
-      title: 'Interaction Type',
-      options: uniqueTypes.map(type => ({ label: type, value: type }))
-    }] : [])
+    ...(uniqueMethods.length > 0
+      ? [
+          {
+            columnId: "method",
+            title: "Method",
+            options: uniqueMethods.map((method) => ({
+              label: method,
+              value: method,
+            })),
+          },
+        ]
+      : []),
+    ...(uniqueTypes.length > 0
+      ? [
+          {
+            columnId: "interaction_type",
+            title: "Interaction Type",
+            options: uniqueTypes.map((type) => ({ label: type, value: type })),
+          },
+        ]
+      : []),
   ];
 }
