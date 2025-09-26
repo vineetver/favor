@@ -2960,7 +2960,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 1,
         header: "TssA (Active TSS)",
-        accessor: "chmm_e1",
+        accessor: "chmm_tssa",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3005,7 +3005,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 2,
         header: "PromU (Promoter Upstream TSS)",
-        accessor: "chmm_e2",
+        accessor: "chmm_tssa_flnk",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3053,7 +3053,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 3,
         header: "PromD1 (Promoter Downstream TSS with Dnase)",
-        accessor: "chmm_e3",
+        accessor: "chmm_tx_flnk",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3102,7 +3102,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 4,
         header: "PromD2 (Promoter Downstream TSS)",
-        accessor: "chmm_e4",
+        accessor: "chmm_tx",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3150,7 +3150,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 5,
         header: `Tx5' (Transcription 5')`,
-        accessor: "chmm_e5",
+        accessor: "chmm_txwk",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3198,7 +3198,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 6,
         header: `Tx (Transcription)`,
-        accessor: "chmm_e6",
+        accessor: "chmm_en_hg",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3245,7 +3245,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 7,
         header: `Tx3' (Transcription 3')`,
-        accessor: "chmm_e7",
+        accessor: "chmm_en_h",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3293,7 +3293,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 8,
         header: "TxWk (Transcription Weak)",
-        accessor: "chmm_e8",
+        accessor: "chmm_znfrpts",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3340,7 +3340,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 9,
         header: "TxReg (Transcription Regulatory)",
-        accessor: "chmm_e9",
+        accessor: "chmm_het",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3389,7 +3389,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 10,
         header: `TxEnh5' (Transcription Enhancer 5')`,
-        accessor: "chmm_e10",
+        accessor: "chmm_tss_biv",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3438,7 +3438,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 11,
         header: `TxEnh3' (Transcription Enhancer 3')`,
-        accessor: "chmm_e11",
+        accessor: "chmm_biv_flnk",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3487,7 +3487,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 12,
         header: "TxEnhW (Transcription Enhancer Weak)",
-        accessor: "chmm_e12",
+        accessor: "chmm_en_hbiv",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3535,7 +3535,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 13,
         header: "EnhA1 (Active Enhancer 1)",
-        accessor: "chmm_e13",
+        accessor: "chmm_reprpc",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3583,7 +3583,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 14,
         header: "EnhA2 (Active Enhancer 2)",
-        accessor: "chmm_e14",
+        accessor: "chmm_reprpc_wk",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3631,7 +3631,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 15,
         header: "EnhAF (Active Enhancer Flanking)",
-        accessor: "chmm_e15",
+        accessor: "chmm_quies",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -3677,10 +3677,16 @@ export const variantDetailedColumns: VariantColumnsType[] = [
           );
         },
       },
+    ],
+  },
+  {
+    name: "Local Nucleotide Diversity",
+    slug: "local-nucleotide-diversity",
+    items: [
       {
-        key: 16,
-        header: "EnhW1 (Enhancer Weak 1)",
-        accessor: "chmm_e16",
+        key: 1,
+        header: "aPC Local Nucleotide Diversity",
+        accessor: "apc_local_nucleotide_diversity",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>

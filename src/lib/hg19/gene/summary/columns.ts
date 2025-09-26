@@ -70,24 +70,6 @@ export const summaryHG19columns: SummaryColumnsType[] = [
         tooltip: "Variants that are in the intronic region",
       },
       {
-        key: 5,
-        header: "Downstream",
-        accessor: "downstream",
-        tooltip: "Variants that are in the downstream region",
-      },
-      {
-        key: 6,
-        header: "Intergenic",
-        accessor: "intergenic",
-        tooltip: "Variants that are in the intergenic region",
-      },
-      {
-        key: 7,
-        header: "Upstream",
-        accessor: "upstream",
-        tooltip: "Variants that are in the upstream region",
-      },
-      {
         key: 8,
         header: "Splicing",
         accessor: "splicing",
