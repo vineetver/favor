@@ -19,6 +19,7 @@ export async function GET(
       subcategory,
       pageSize,
       cursor,
+      includeSummary: true,
     });
 
     return Response.json(data);

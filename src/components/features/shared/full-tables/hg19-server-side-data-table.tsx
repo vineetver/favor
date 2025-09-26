@@ -70,73 +70,94 @@ export function HG19ServerSideDataTable({
     // Only show filters that have data
     const filters = [];
 
-    // Category filter - show if has data
+    // Genecode Category filter - use summary counts directly
     const categoryOptions = hg19GenecodeCategory
-      .filter(
-        (option) =>
-          summary && summary[option.value] && summary[option.value] > 0,
-      )
       .map((option) => ({
         ...option,
-        count: summary[option.value],
-      }));
+        count: summary ? summary[option.value] || 0 : 0,
+      }))
+      .filter((option) => option.count > 0);
 
     if (categoryOptions.length > 0) {
       filters.push({
         columnId: "gencode_category",
-        title: "Category",
+        title: "Genecode Category",
         options: categoryOptions,
       });
     }
 
-    // Exonic Category filter - show if has data
-    const exonicOptions = hg19ExonicCategory
-      .filter(
-        (option) =>
-          summary && summary[option.value] && summary[option.value] > 0,
-      )
-      .map((option) => ({
-        ...option,
-        count: summary[option.value],
-      }));
+    // Exonic Category filter - only show if there are exonic variants
+    if (summary && summary.exonic > 0) {
+      const exonicOptions = hg19ExonicCategory
+        .map((option) => ({
+          ...option,
+          count: summary && option.summaryKey ? summary[option.summaryKey] || 0 : 0,
+        }))
+        .filter((option) => option.count > 0);
 
-    if (exonicOptions.length > 0) {
-      filters.push({
-        columnId: "gencode_exonic_category",
-        title: "Exonic Category",
-        options: exonicOptions,
-      });
+      if (exonicOptions.length > 0) {
+        filters.push({
+          columnId: "gencode_exonic_category",
+          title: "Exonic Category",
+          options: exonicOptions,
+        });
+      }
     }
 
-    // SIFT Category filter - show if has data
-    const siftOptions = hg19SiftCategory
-      .filter(
-        (option) =>
-          summary && summary[option.value] && summary[option.value] > 0,
-      )
-      .map((option) => ({
-        ...option,
-        count: summary[option.value],
-      }));
+    // SIFT Category filter - only show if there are variants with SIFT predictions
+    if (summary && (summary.deleterious > 0 || summary.tolerated > 0)) {
+      const siftOptions = hg19SiftCategory
+        .map((option) => ({
+          ...option,
+          count: summary && option.summaryKey ? summary[option.summaryKey] || 0 : 0,
+        }))
+        .filter((option) => option.count > 0);
 
-    if (siftOptions.length > 0) {
-      filters.push({
-        columnId: "sift_cat",
-        title: "SIFT Category",
-        options: siftOptions,
-      });
+      if (siftOptions.length > 0) {
+        filters.push({
+          columnId: "sift_cat",
+          title: "SIFT Category",
+          options: siftOptions,
+        });
+      }
     }
 
-    // Clinical Significance filter - show if has data
+    // Clinical Significance filter - map calculated fields to ClinVar options
     const clinSigOptions = hg19ClinicalSignificance
-      .filter(
-        (option) =>
-          summary && summary[option.value] && summary[option.value] > 0,
-      )
-      .map((option) => ({
-        ...option,
-        count: summary[option.value],
-      }));
+      .map((option) => {
+        let count = 0;
+        if (summary) {
+          // Map the summary fields to the option values
+          switch (option.value) {
+            case "Pathogenic":
+              count = summary.pathogenic || 0;
+              break;
+            case "Likely_pathogenic":
+              count = summary.likelypathogenic || 0;
+              break;
+            case "Benign":
+              count = summary.benign || 0;
+              break;
+            case "Likely_benign":
+              count = summary.likelybenign || 0;
+              break;
+            case "Uncertain_significance":
+              count = summary.unknown || 0;
+              break;
+            case "Conflicting_interpretations_of_pathogenicity":
+              count = summary.conflicting || 0;
+              break;
+            case "drug_response":
+              count = summary.drugresponse || 0;
+              break;
+          }
+        }
+        return {
+          ...option,
+          count,
+        };
+      })
+      .filter((option) => option.count > 0);
 
     if (clinSigOptions.length > 0) {
       filters.push({
@@ -170,34 +191,22 @@ export function HG19ServerSideDataTable({
         const sortDir =
           sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "asc";
 
-        // Fetch both table data and summary data in parallel via API routes
-        const [tableResult, summaryResult] = await Promise.all([
-          fetch(
-            `/api/hg19/gene/${entityId}/variants?${new URLSearchParams({
-              subcategory,
-              pageSize: serverState.pageSize.toString(),
-              cursor: resetPagination ? "" : serverState.nextCursor || "",
-              sortingQuery: sortField ? `${sortField}:${sortDir}` : "",
-              filtersQuery: Object.entries(filters)
-                .map(([k, v]) => `${k}:${v}`)
-                .join(","),
-            })}`,
-          ).then((res) => res.json()),
-          // Fetch summary for the same subcategory to get filter counts
-          fetch(
-            `/api/hg19/gene/${entityId}/summary/${subcategory.replace("-table", "-summary")}`,
-          ).then((res) => res.json()),
-        ]);
+        // Fetch table data with filtered summary included
+        const tableResult = await fetch(
+          `/api/hg19/gene/${entityId}/variants?${new URLSearchParams({
+            subcategory,
+            pageSize: serverState.pageSize.toString(),
+            cursor: resetPagination ? "" : serverState.nextCursor || "",
+            sortingQuery: sortField ? `${sortField}:${sortDir}` : "",
+            filtersQuery: Object.entries(filters)
+              .map(([k, v]) => `${k}:${v}`)
+              .join(","),
+          })}`,
+        ).then((res) => res.json());
 
         result = tableResult;
-        // Transform summary array to object format for filter logic
-        summary = summaryResult.reduce(
-          (acc: Record<string, number>, item: any) => {
-            acc[item.gencode_category] = item.count;
-            return acc;
-          },
-          {},
-        );
+        // Use the filtered summary returned from the variants API
+        summary = tableResult.summary || {};
       } else if (type === "hg19-region") {
         // Convert filter and sorting to hg19 format
         const filters = columnFilters.reduce(

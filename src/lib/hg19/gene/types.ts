@@ -57,4 +57,5 @@ export interface Hg19GeneVariantsResponse {
   nextCursor?: string;
   pageIndex?: number;
   pageSize?: number;
+  summary?: Record<string, number>;
 }
