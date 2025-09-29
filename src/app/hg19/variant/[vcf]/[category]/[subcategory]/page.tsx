@@ -31,14 +31,9 @@ export default async function VariantPage({ params }: VariantPageProps) {
     ...annotations[0],
   };
 
-  console.log("Enriched variant:", enrichedVariant);
-  console.log("Recombination rate value:", enrichedVariant.recombination_rate);
-  console.log("Category:", category, "Subcategory:", subcategory);
   const columns = getVariantColumns(category, subcategory, "hg19");
-  console.log("Columns:", columns);
 
   const filteredItems = getFilteredItems(columns!, enrichedVariant);
-  console.log("Filtered items:", filteredItems);
 
   return <AnnotationTable items={filteredItems!} />;
 }

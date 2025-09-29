@@ -38,8 +38,6 @@ export async function fetchHg19GeneVariants(
       format: "JSONEachRow",
     });
 
-    console.log("Gene result for", geneName, ":", geneResult);
-
     if (!geneResult.length) {
       console.log("No gene found in gene_loci for:", geneName);
       return {
@@ -50,11 +48,6 @@ export async function fetchHg19GeneVariants(
     }
 
     const { chromosome, start_position, end_position } = geneResult[0];
-    console.log("Gene coordinates:", {
-      chromosome,
-      start_position,
-      end_position,
-    });
 
     // Step 2: Build variant type filter based on subcategory
     let variantTypeFilter = "";
@@ -142,16 +135,12 @@ export async function fetchHg19GeneVariants(
     }
     queryParams.limit = limit;
 
-    console.log("Final query:", query);
-    console.log("Query params:", queryParams);
 
     const data = await clickHouseClient.query({
       query,
       query_params: queryParams,
       format: "JSONEachRow",
     });
-
-    console.log("Query returned", data.length, "results");
 
     let summary;
     if (includeSummary) {

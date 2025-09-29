@@ -96,7 +96,7 @@ export async function explainHg19Query(vcf: string): Promise<void> {
     });
 
     const explanation = JSON.stringify(result);
-    console.log("Query Plan:", explanation);
+
   } catch (error) {
     console.error("Error explaining query:", error);
   }
