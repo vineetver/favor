@@ -73,6 +73,7 @@ class SecureClickHouseClient {
     query: string;
     query_params?: Record<string, any>;
     format?: "JSONEachRow" | "JSON" | "CSV" | "TabSeparated";
+    clickhouse_settings?: Record<string, any>;
   }): Promise<T[]> {
     const client = this.getClient();
     try {
@@ -80,6 +81,7 @@ class SecureClickHouseClient {
         query: params.query,
         query_params: params.query_params,
         format: params.format || "JSONEachRow",
+        clickhouse_settings: params.clickhouse_settings,
       });
       const data = await result.json<T[] | T[][]>();
       if (!Array.isArray(data)) return [];

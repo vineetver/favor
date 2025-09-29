@@ -8,6 +8,7 @@ import {
   selectVariantFromList,
   validateVariantForRsid,
 } from "@/lib/hg19/rsid/helpers";
+import { fetchAllAnnotations } from "@/lib/hg19/annotations/api";
 
 interface RsidPageProps {
   params: {
@@ -45,9 +46,18 @@ export default async function RsidPage({ params }: RsidPageProps) {
     notFound();
   }
 
+  const annotations = await fetchAllAnnotations([
+    { chromosome: selectedVariant.chromosome, position: selectedVariant.position },
+  ]);
+
+  const enrichedVariant = {
+    ...selectedVariant,
+    ...annotations[0],
+  };
+
   const columns = getVariantColumns(category, subcategory, "hg19");
 
-  const filteredItems = getFilteredItems(columns!, selectedVariant);
+  const filteredItems = getFilteredItems(columns!, enrichedVariant);
 
   return <AnnotationTable items={filteredItems!} />;
 }

@@ -3686,486 +3686,6 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 1,
         header: "aPC Local Nucleotide Diversity",
-        accessor: "apc_local_nucleotide_diversity",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>EnhW1 (Enhancer Weak 1):</strong> Number of cell types
-              (out of 48) where this region is in the Enhancer Weak 1 chromatin
-              state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Weak enhancer activity
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;12 cell types):</strong> Broadly weak
-                enhancer
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific weak enhancer
-                activity
-              </li>
-              <li>
-                <strong>Biological role:</strong> Low-level distal regulatory
-                element activity
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-yellow-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 17,
-        header: "EnhW2 (Enhancer Weak 2)",
-        accessor: "chmm_e17",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>EnhW2 (Enhancer Weak 2):</strong> Number of cell types
-              (out of 48) where this region is in the Enhancer Weak 2 chromatin
-              state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Weak enhancer activity
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;12 cell types):</strong> Broadly weak
-                enhancer
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific weak enhancer
-                activity
-              </li>
-              <li>
-                <strong>Biological role:</strong> Low-level proximal regulatory
-                element activity
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-yellow-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 18,
-        header: "EnhAc (Enhancer Acetylation Only)",
-        accessor: "chmm_e18",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>EnhAc (Enhancer Acetylation Only):</strong> Number of cell
-              types (out of 48) where this region is in the Enhancer Acetylation
-              Only chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Acetylation-marked enhancers
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;10 cell types):</strong> Broadly
-                acetylated enhancer regions
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific acetylation
-              </li>
-              <li>
-                <strong>Biological role:</strong> Enhancers marked primarily by
-                histone acetylation
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-yellow-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 19,
-        header: "DNase (DNase Only)",
-        accessor: "chmm_e19",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>DNase (DNase Only):</strong> Number of cell types (out of
-              48) where this region is in the DNase Only chromatin state.
-              (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Accessible chromatin without histone marks
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;15 cell types):</strong> Broadly
-                accessible regions
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific accessibility
-              </li>
-              <li>
-                <strong>Biological role:</strong> Chromatin accessibility
-                without strong histone signatures
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-yellow-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 20,
-        header: "ZNF/Rpts (ZNF Genes and Repeats)",
-        accessor: "chmm_e20",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>ZNF/Rpts (ZNF Genes and Repeats):</strong> Number of cell
-              types (out of 48) where this region is in the ZNF Genes and
-              Repeats chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-emerald-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Zinc finger genes and repetitive elements
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;20 cell types):</strong> Broadly
-                active ZNF/repeat regions
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific ZNF/repeat
-                activity
-              </li>
-              <li>
-                <strong>Biological role:</strong> Zinc finger gene clusters and
-                repetitive elements
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-emerald-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 21,
-        header: "Het (Heterochromatin)",
-        accessor: "chmm_e21",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>Het (Heterochromatin):</strong> Number of cell types (out
-              of 48) where this region is in the Heterochromatin chromatin
-              state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-violet-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Constitutive heterochromatin
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;30 cell types):</strong>{" "}
-                Constitutively silenced regions
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Facultatively heterochromatic
-              </li>
-              <li>
-                <strong>Biological role:</strong> Long-term gene silencing,
-                repetitive elements
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-violet-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 22,
-        header: "PromP (Poised Promoter)",
-        accessor: "chmm_e22",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>PromP (Poised Promoter):</strong> Number of cell types
-              (out of 48) where this region is in the Poised Promoter chromatin
-              state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-rose-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Poised developmental promoters
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;12 cell types):</strong> Broadly
-                poised promoters
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific poised states
-              </li>
-              <li>
-                <strong>Biological role:</strong> Promoters ready for
-                activation, often developmental genes
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-rose-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 23,
-        header: "PromBiv (Bivalent Promoter)",
-        accessor: "chmm_e23",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>PromBiv (Bivalent Promoter):</strong> Number of cell types
-              (out of 48) where this region is in the Bivalent Promoter
-              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-purple-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Poised developmental promoters
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;15 cell types):</strong> Broadly
-                poised developmental genes
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific bivalent
-                states
-              </li>
-              <li>
-                <strong>Biological role:</strong> H3K4me3 + H3K27me3, ready for
-                activation or repression
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="h-2 w-2 mr-2 fill-purple-500"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 24,
-        header: "ReprPC (Repressed PolyComb)",
-        accessor: "chmm_e24",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>ReprPC (Repressed PolyComb):</strong> Number of cell types
-              (out of 48) where this region is in the Repressed PolyComb
-              chromatin state. (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-zinc-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Polycomb-repressed regions
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;20 cell types):</strong> Broadly
-                repressed across contexts
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Cell-type specific repression
-              </li>
-              <li>
-                <strong>Biological role:</strong> Facultative heterochromatin,
-                developmental gene silencing
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="fill-zinc-500 h-2 w-2 mr-2"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        key: 25,
-        header: "Quies (Quiescent/Low)",
-        accessor: "chmm_e25",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>Quies (Quiescent/Low):</strong> Number of cell types (out
-              of 48) where this region is in the Quiescent/Low chromatin state.
-              (default: 1.92). (Ernst and Kellis, 2015)
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-3 h-3 bg-zinc-500 rounded"></span>
-              <span className="text-xs text-muted-foreground">
-                Low activity regions
-              </span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher counts (&gt;35 cell types):</strong>{" "}
-                Constitutively inactive
-              </li>
-              <li>
-                <strong>Lower counts:</strong> Context-dependent activity
-              </li>
-              <li>
-                <strong>Biological role:</strong> Background chromatin with
-                minimal regulatory activity
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return (
-            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 font-medium ring-1 ring-inset ring-border">
-              <svg
-                className="fill-zinc-500 h-2 w-2 mr-2"
-                viewBox="0 0 6 6"
-                aria-hidden="true"
-              >
-                <circle cx={3} cy={3} r={3} />
-              </svg>
-              {value}
-            </span>
-          );
-        },
-      },
-    ],
-  },
-  {
-    name: "Local Nucleotide Diversity",
-    slug: "local-nucleotide-diversity",
-    items: [
-      {
-        key: 1,
-        header: "aPC Local Nucleotide Diversity",
         accessor: "apc_local_nucleotide_diversity_v3",
         tooltip: (
           <div className="space-y-2 text-left">
@@ -4696,7 +4216,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 2,
         header: "Umap k100",
-        accessor: "k100_umap",
+        accessor: "mappability_k100_umap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4733,7 +4253,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 3,
         header: "Bismap k100",
-        accessor: "k100_bismap",
+        accessor: "mappability_k100_bismap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4771,7 +4291,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 4,
         header: "Umap k50",
-        accessor: "k50_umap",
+        accessor: "mappability_k50_umap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4808,7 +4328,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 5,
         header: "Bismap k50",
-        accessor: "k50_bismap",
+        accessor: "mappability_k50_bismap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4846,7 +4366,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 6,
         header: "Umap k36",
-        accessor: "k36_umap",
+        accessor: "mappability_k36_umap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4883,7 +4403,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 7,
         header: "Bismap k36",
-        accessor: "k36_bismap",
+        accessor: "mappability_k36_bismap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4921,7 +4441,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 8,
         header: "Umap k24",
-        accessor: "k24_umap",
+        accessor: "mappability_k24_umap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -4958,7 +4478,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 9,
         header: "Bismap k24",
-        accessor: "k24_bismap",
+        accessor: "mappability_k24_bismap",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>

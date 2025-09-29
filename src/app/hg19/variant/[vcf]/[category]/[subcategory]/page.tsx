@@ -3,6 +3,7 @@ import { AnnotationTable } from "@/components/data-display/annotation-table";
 import { getFilteredItems } from "@/lib/annotations/helpers";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { fetchHg19Variant } from "@/lib/hg19/variant/api";
+import { fetchAllAnnotations } from "@/lib/hg19/annotations/api";
 
 interface VariantPageProps {
   params: {
@@ -21,9 +22,23 @@ export default async function VariantPage({ params }: VariantPageProps) {
     notFound();
   }
 
-  const columns = getVariantColumns(category, subcategory, "hg19");
+  const annotations = await fetchAllAnnotations([
+    { chromosome: variant.chromosome, position: variant.position },
+  ]);
 
-  const filteredItems = getFilteredItems(columns!, variant);
+  const enrichedVariant = {
+    ...variant,
+    ...annotations[0],
+  };
+
+  console.log("Enriched variant:", enrichedVariant);
+  console.log("Recombination rate value:", enrichedVariant.recombination_rate);
+  console.log("Category:", category, "Subcategory:", subcategory);
+  const columns = getVariantColumns(category, subcategory, "hg19");
+  console.log("Columns:", columns);
+
+  const filteredItems = getFilteredItems(columns!, enrichedVariant);
+  console.log("Filtered items:", filteredItems);
 
   return <AnnotationTable items={filteredItems!} />;
 }

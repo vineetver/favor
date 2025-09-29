@@ -14,7 +14,7 @@ export async function fetchHg19Variant(
     }
 
     const query = `
-      SELECT *
+      SELECT *, chromosome, position
       FROM production.variants_hg19
       WHERE chromosome = {chromosome:String}
         AND position BETWEEN {position:UInt32} AND {position:UInt32}

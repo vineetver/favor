@@ -11,7 +11,7 @@ export async function fetchHg19VariantByRsid(
         (SELECT chromosome  FROM production.rsid_lookup WHERE rsid = {rsid:String} LIMIT 1) AS chr_,
         (SELECT position    FROM production.rsid_lookup WHERE rsid = {rsid:String} LIMIT 1) AS pos_,
         (SELECT variant_vcf FROM production.rsid_lookup WHERE rsid = {rsid:String} LIMIT 1) AS vcf_
-      SELECT *
+      SELECT *, chromosome, position
       FROM production.variants_hg19
       WHERE chromosome = chr_
         AND position BETWEEN pos_ AND pos_
@@ -64,7 +64,7 @@ export async function fetchHg19VariantsByRsid(
 
     for (const lookup of lookupRows) {
       const variantQuery = `
-        SELECT *
+        SELECT *, chromosome, position
         FROM production.variants_hg19
         WHERE chromosome = {chromosome:String}
           AND position BETWEEN {position:UInt32} AND {position:UInt32}
