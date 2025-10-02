@@ -35,54 +35,68 @@ export async function fetchMappabilityData(
 ): Promise<MappabilityData[]> {
   if (positions.length === 0) return [];
 
-  const conditions = positions
-    .map(
-      (pos) =>
-        `(chr = '${pos.chromosome}' AND ${pos.position} BETWEEN start AND end_pos)`
-    )
-    .join(" OR ");
+  const tables = [
+    "k24_bismap",
+    "k24_umap",
+    "k36_bismap",
+    "k36_umap",
+    "k50_bismap",
+    "k50_umap",
+    "k100_bismap",
+    "k100_umap",
+  ];
 
-  const query = `
-    SELECT
-      chr as chromosome,
-      start,
-      end_pos,
-      mappability_k24_bismap,
-      mappability_k36_bismap,
-      mappability_k50_bismap,
-      mappability_k100_bismap,
-      mappability_k24_umap,
-      mappability_k36_umap,
-      mappability_k50_umap,
-      mappability_k100_umap
-    FROM production.mappability
-    WHERE ${conditions}
-  `;
+  const results = await Promise.all(
+    tables.map(async (table) => {
+      const conditions = positions
+        .map(
+          (pos) => {
+            const chr = pos.chromosome.startsWith('chr') ? pos.chromosome : `chr${pos.chromosome}`;
+            return `(chr = '${chr}' AND ${pos.position} BETWEEN start AND end_pos)`;
+          }
+        )
+        .join(" OR ");
 
-  const data = await clickHouseClient.query({
-    query,
-    format: "JSONEachRow",
-  });
+      const query = `
+        SELECT
+          chr as chromosome,
+          start,
+          end_pos,
+          score
+        FROM production.mappability_${table}
+        WHERE ${conditions}
+      `;
+
+      const data = await clickHouseClient.query({
+        query,
+        format: "JSONEachRow",
+      });
+
+      return { table, data };
+    })
+  );
 
   return positions.map((pos) => {
-    const match = data.find(
-      (row: any) =>
-        row.chromosome === pos.chromosome &&
-        pos.position >= row.start &&
-        pos.position <= row.end_pos
-    );
-    return {
+    const mappabilityScores: any = {
       chromosome: pos.chromosome,
       position: pos.position,
-      mappability_k24_bismap: match?.mappability_k24_bismap,
-      mappability_k36_bismap: match?.mappability_k36_bismap,
-      mappability_k50_bismap: match?.mappability_k50_bismap,
-      mappability_k100_bismap: match?.mappability_k100_bismap,
-      mappability_k24_umap: match?.mappability_k24_umap,
-      mappability_k36_umap: match?.mappability_k36_umap,
-      mappability_k50_umap: match?.mappability_k50_umap,
-      mappability_k100_umap: match?.mappability_k100_umap,
     };
+
+    const chr = pos.chromosome.startsWith('chr') ? pos.chromosome : `chr${pos.chromosome}`;
+
+    results.forEach(({ table, data }) => {
+      const match = data.find(
+        (row: any) =>
+          row.chromosome === chr &&
+          pos.position >= row.start &&
+          pos.position <= row.end_pos
+      );
+      if (match) {
+        mappabilityScores[`mappability_${table}`] = match.score;
+      }
+    });
+
+    return mappabilityScores;
   });
 }
 
