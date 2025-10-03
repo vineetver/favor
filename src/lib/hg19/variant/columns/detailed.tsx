@@ -3750,7 +3750,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 3,
         header: "Nucleotide Diversity",
-        accessor: "nucdiv",
+        accessor: "nucleotide_diversity",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>

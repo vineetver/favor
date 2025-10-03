@@ -30,6 +30,12 @@ export interface ApcMappabilityData {
   apc_mappability?: number;
 }
 
+export interface NucleotideDiversityData {
+  chromosome: string;
+  position: number;
+  nucleotide_diversity?: number;
+}
+
 export async function fetchMappabilityData(
   positions: VariantPosition[]
 ): Promise<MappabilityData[]> {
@@ -178,13 +184,56 @@ export async function fetchApcMappabilityData(
   });
 }
 
+export async function fetchNucleotideDiversityData(
+  positions: VariantPosition[]
+): Promise<NucleotideDiversityData[]> {
+  if (positions.length === 0) return [];
+
+  const conditions = positions
+    .map(
+      (pos) =>
+        `(chromosome = '${pos.chromosome}' AND ${pos.position} BETWEEN start_pos AND end_pos)`
+    )
+    .join(" OR ");
+
+  const query = `
+    SELECT
+      chromosome,
+      start_pos,
+      end_pos,
+      diversity_score
+    FROM production.nucleotide_diversity
+    WHERE ${conditions}
+  `;
+
+  const data = await clickHouseClient.query({
+    query,
+    format: "JSONEachRow",
+  });
+
+  return positions.map((pos) => {
+    const match = data.find(
+      (row: any) =>
+        row.chromosome === pos.chromosome &&
+        pos.position >= row.start_pos &&
+        pos.position <= row.end_pos
+    );
+    return {
+      chromosome: pos.chromosome,
+      position: pos.position,
+      nucleotide_diversity: match?.diversity_score,
+    };
+  });
+}
+
 export async function fetchAllAnnotations(positions: VariantPosition[]) {
   if (positions.length === 0) return [];
 
-  const [mappability, recombinationRate, apcMappability] = await Promise.all([
+  const [mappability, recombinationRate, apcMappability, nucleotideDiversity] = await Promise.all([
     fetchMappabilityData(positions),
     fetchRecombinationRateData(positions),
     fetchApcMappabilityData(positions),
+    fetchNucleotideDiversityData(positions),
   ]);
 
   return positions.map((pos) => {
@@ -197,6 +246,9 @@ export async function fetchAllAnnotations(positions: VariantPosition[]) {
     const apcMatch = apcMappability.find(
       (a) => a.chromosome === pos.chromosome && a.position === pos.position
     );
+    const nucDivMatch = nucleotideDiversity.find(
+      (n) => n.chromosome === pos.chromosome && n.position === pos.position
+    );
 
     return {
       chromosome: pos.chromosome,
@@ -204,6 +256,7 @@ export async function fetchAllAnnotations(positions: VariantPosition[]) {
       ...mappabilityMatch,
       recombination_rate: recombMatch?.recombination_rate,
       apc_mappability: apcMatch?.apc_mappability,
+      nucleotide_diversity: nucDivMatch?.nucleotide_diversity,
     };
   });
 }
