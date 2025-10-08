@@ -1,10 +1,20 @@
+"use client";
+
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 import { HeroPattern } from "@/components/layout/hero-pattern";
 import { GenomicSearch } from "@/components/features/search/genomic-search";
 import { Button } from "@/components/ui/button";
+import { useSearchActions } from "@/lib/stores/search-store";
 
 export default function HomePage() {
+  const { setSelectedGenome } = useSearchActions();
+
+  useEffect(() => {
+    setSelectedGenome("hg38");
+  }, [setSelectedGenome]);
+
   return (
     <>
       <HeroPattern />

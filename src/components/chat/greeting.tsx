@@ -67,6 +67,7 @@ export const Greeting = ({ setInput }: GreetingProps) => {
         >
           Your AI assistant for genomics and variant analysis
         </motion.p>
+
       </motion.div>
 
       <motion.div
@@ -104,7 +105,11 @@ export const Greeting = ({ setInput }: GreetingProps) => {
             </motion.div>
           ))}
         </div>
+        
       </motion.div>
+      <p className="text-xs text-muted-foreground mt-3 text-center">
+          ⚠️ Research Use Only: FAVOR-GPT outputs are for research and educational purposes and are not intended for clinical or diagnostic use.
+        </p>
     </div>
   );
 };

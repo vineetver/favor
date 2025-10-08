@@ -19,6 +19,8 @@ import {
   Layers,
   Activity,
   Search,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { GenomicDomainManager } from "@/lib/utils/domain-manager";
 
@@ -29,6 +31,8 @@ interface GenomeBrowserControlsProps {
   onZoom?: (factor: number) => void;
   onPresetChange?: (preset: string) => void;
   onClearAllTracks?: () => void;
+  isStatic?: boolean;
+  onStaticToggle?: () => void;
   className?: string;
   compact?: boolean;
 }
@@ -84,6 +88,8 @@ export function GenomeBrowserControls({
   onZoom,
   onPresetChange,
   onClearAllTracks,
+  isStatic = false,
+  onStaticToggle,
   className = "",
   compact = false,
 }: GenomeBrowserControlsProps) {
@@ -211,6 +217,36 @@ export function GenomeBrowserControls({
                   </TooltipContent>
                 </Tooltip>
               </div>
+            )}
+
+            {/* Static Mode Toggle */}
+            {onStaticToggle && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isStatic ? "default" : "outline"}
+                    size="sm"
+                    onClick={onStaticToggle}
+                    className="text-xs h-7 sm:h-8 px-2 sm:px-3 font-medium"
+                  >
+                    {isStatic ? (
+                      <Lock className="h-3 w-3 mr-0.5 sm:mr-1" />
+                    ) : (
+                      <Unlock className="h-3 w-3 mr-0.5 sm:mr-1" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isStatic ? "Locked" : "Interactive"}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {isStatic
+                      ? "Click to enable zoom/pan"
+                      : "Click to disable zoom/pan"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {/* Preset Controls */}

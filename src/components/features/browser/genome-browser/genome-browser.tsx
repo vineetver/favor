@@ -21,6 +21,7 @@ const GenomeBrowserImpl = ({
 }: GenomeBrowserProps) => {
   const [enabledTrackIds, setEnabledTrackIds] =
     useState<string[]>(initialTracks);
+  const [isStatic, setIsStatic] = useState(false);
 
   const enabledTracks = useMemo(
     () =>
@@ -45,8 +46,9 @@ const GenomeBrowserImpl = ({
     () => ({
       enabledTracks,
       domain: domainManager.domain,
+      isStatic,
     }),
-    [enabledTracks, domainManager.domain],
+    [enabledTracks, domainManager.domain, isStatic],
   );
 
   const goslingSpec = useGoslingSpec(goslingSpecConfig);
@@ -77,6 +79,10 @@ const GenomeBrowserImpl = ({
     setEnabledTrackIds([]);
   }, []);
 
+  const handleStaticToggle = useCallback(() => {
+    setIsStatic((prev) => !prev);
+  }, []);
+
   const controlsClassName = useMemo(
     () => (enabledTracks.length > 0 ? "mb-4" : ""),
     [enabledTracks.length],
@@ -99,6 +105,8 @@ const GenomeBrowserImpl = ({
             onZoom={domainManager.zoom}
             onPresetChange={domainManager.applyPreset}
             onClearAllTracks={handleClearAllTracks}
+            isStatic={isStatic}
+            onStaticToggle={handleStaticToggle}
             className={controlsClassName}
           />
 

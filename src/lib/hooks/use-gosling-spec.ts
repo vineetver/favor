@@ -8,11 +8,13 @@ import type { TrackMetadata } from "@/lib/tracks/types";
 interface UseGoslingSpecProps {
   enabledTracks: TrackMetadata[];
   domain: DomainChrInterval | null;
+  isStatic?: boolean;
 }
 
 export function useGoslingSpec({
   enabledTracks,
   domain,
+  isStatic = false,
 }: UseGoslingSpecProps): GoslingSpec | null {
   const goslingSpec = useMemo((): GoslingSpec | null => {
     if (!domain || enabledTracks.length === 0) return null;
@@ -27,6 +29,7 @@ export function useGoslingSpec({
         centerRadius: 0.1,
         layout: "linear",
         spacing: 0,
+        static: isStatic,
         // @ts-ignore - Complex type mismatch with Gosling track types
         tracks: enabledTracks.flatMap((track) => {
           if (Array.isArray(track.track)) {
@@ -60,7 +63,7 @@ export function useGoslingSpec({
       arrangement: "vertical",
       views,
     };
-  }, [domain, enabledTracks]);
+  }, [domain, enabledTracks, isStatic]);
 
   return goslingSpec;
 }

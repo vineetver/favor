@@ -106,7 +106,6 @@ export const useSearchStore = create<SearchStore>()(
           set(
             {
               ...initialState,
-              selectedGenome: get().selectedGenome,
             },
             false,
             "resetSearch",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Database, LayoutDashboard, Microscope, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils/general";
 
 interface NavigationItem {
@@ -16,6 +17,13 @@ interface NavigationTabsProps {
   activeItem: string;
   basePath: string;
 }
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  summary: LayoutDashboard,
+  "global-annotation": Database,
+  "single-cell-tissue": Microscope,
+  "genome-browser": ScanLine,
+};
 
 export function NavigationTabs({
   items,
@@ -54,36 +62,51 @@ export function NavigationTabs({
     <div className="w-full relative">
       <div
         ref={scrollContainerRef}
-        className="cursor-pointer -mb-px flex items-center border-b border-border overflow-x-auto scrollbar-hide"
+        className="overflow-x-auto scrollbar-hide"
       >
-        <div className="flex items-center min-w-fit">
-          {items.map((item) => (
-            <Link
-              key={item.slug}
-              href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}`}
-              className={cn(
-                "h-[42px] px-3 sm:px-5 py-6 flex items-center justify-center shadow-sm whitespace-nowrap",
-                "text-muted-foreground border-b-2 border-transparent min-w-0 flex-shrink-0",
-                "hover:text-foreground hover:bg-foreground/10 touch-manipulation",
-                "transition-all duration-200 ease-in text-sm sm:text-base",
-                activeItem === item.slug && [
-                  "border-b-primary",
-                  "text-foreground bg-foreground/10",
-                ],
-              )}
-            >
-              {item.name}
-            </Link>
-          ))}
+        <div className="inline-flex items-center gap-2 bg-muted/40 p-1.5 pl-1 rounded-xl min-w-fit">
+          {items.map((item) => {
+            const Icon = iconMap[item.slug];
+            const isActive = activeItem === item.slug;
+
+            return (
+              <Link
+                key={item.slug}
+                href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}`}
+                className={cn(
+                  "relative flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5",
+                  "rounded-lg whitespace-nowrap touch-manipulation",
+                  "text-sm sm:text-base font-medium transition-all duration-300 ease-out",
+                  "hover:scale-[1.02] active:scale-[0.98]",
+                  isActive && [
+                    "bg-primary text-primary-foreground shadow-lg shadow-primary/25",
+                    "hover:bg-primary/90",
+                  ],
+                  !isActive && [
+                    "text-muted-foreground hover:text-foreground",
+                    "hover:bg-background/60",
+                  ],
+                )}
+              >
+                {Icon && (
+                  <Icon className={cn(
+                    "w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300",
+                    isActive && "scale-110"
+                  )} />
+                )}
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       {canScrollRight && (
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none" />
       )}
 
       {canScrollLeft && (
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent pointer-events-none" />
       )}
     </div>
   );
