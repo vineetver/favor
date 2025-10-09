@@ -107,7 +107,7 @@ export const Greeting = ({ setInput }: GreetingProps) => {
         </div>
         
       </motion.div>
-      <p className="text-xs text-muted-foreground mt-3 text-center">
+      <p className="text-sm font-medium text-muted-foreground mt-4 text-center">
           ⚠️ Research Use Only: FAVOR-GPT outputs are for research and educational purposes and are not intended for clinical or diagnostic use.
         </p>
     </div>

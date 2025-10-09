@@ -122,7 +122,7 @@ export function ChatInterface({
           </FABButton>
         </motion.div>
       </PopoverTrigger>
-      <PopoverContent className="bg-background text-foreground p-0 md:m-4 md:h-[610px] md:w-[850px] md:max-w-[90vw] md:max-h-[85vh]">
+      <PopoverContent className="bg-background text-foreground p-0 md:m-4 md:h-[680px] md:w-[850px] md:max-w-[90vw] md:max-h-[85vh]">
         <Chat
           selectedModelId={selectedModelId}
           Close={PopoverCloseButton}
