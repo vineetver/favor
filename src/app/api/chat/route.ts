@@ -1,5 +1,6 @@
 import { myProvider, tools } from "@/lib/ai";
 import { systemPrompt } from "@/lib/ai/prompts";
+import { isReasoningModel } from "@/lib/ai/models";
 import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
@@ -17,11 +18,11 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: myProvider.languageModel(model),
-    providerOptions: {
+    providerOptions: isReasoningModel(model) ? {
       openai: {
         reasoningEffort: 'low',
       } satisfies OpenAIResponsesProviderOptions,
-    },
+    } : undefined,
     messages: convertToModelMessages(messages),
     tools: tools,
     stopWhen: stepCountIs(10),

@@ -36,7 +36,7 @@ export const GENE_NAVIGATION: NavigationCategory[] = [
     subCategories: [
       { text: "Allele Distribution", slug: "allele-distribution" },
       {
-        text: "Genecode Comprehensive Category",
+        text: "Gencode Comprehensive Category",
         slug: "genecode-comprehensive-category",
       },
       { text: "Clinvar Clinical Significance", slug: "clinvar" },

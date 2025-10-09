@@ -1,4 +1,4 @@
-export const DEFAULT_MODEL_NAME: string = "gpt-4.1-nano";
+export const DEFAULT_MODEL_NAME: string = "gpt-4o-mini";
 
 export interface ChatModel {
   id: string;

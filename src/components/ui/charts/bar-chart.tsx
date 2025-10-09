@@ -17,9 +17,6 @@ import {
 } from "@/components/ui/charts/base-chart";
 import {
   generateColors,
-  formatAlleleFrequency,
-  createTooltipFormatter,
-  createLabelFormatter,
   trimLabel,
   CHART_THEME,
   CHART_MARGINS,
@@ -55,8 +52,8 @@ export function BarChart({
   keys,
   indexBy = "name",
   width,
-  height = 400,
-  margin = CHART_MARGINS.default,
+  height = 300,
+  margin = { top: 10, right: 10, bottom: 40, left: 40 },
   colors,
   className,
   title,
@@ -75,8 +72,8 @@ export function BarChart({
   categoryGap = 20,
   responsive = true,
   formatXAxis,
-  formatYAxis = formatAlleleFrequency,
-  formatTooltipValue = formatAlleleFrequency,
+  formatYAxis = (value) => Math.round(value).toString(),
+  formatTooltipValue = (value) => Math.round(value).toString(),
   tickAngle = -45,
   maxBarSize = 50,
   onBarClick,
@@ -121,7 +118,7 @@ export function BarChart({
     if (!payload || !payload.length) return null;
 
     return (
-      <div className="flex flex-wrap justify-center gap-4 mt-10">
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 text-sm">
             <div

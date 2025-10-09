@@ -1,5 +1,9 @@
 "use client";
 
+import { ComponentType } from "react";
+import { useChat } from "@ai-sdk/react";
+import { RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   PromptInput,
   PromptInputBody,
@@ -7,61 +11,30 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Action, Actions } from "@/components/ai-elements/actions";
-import { ComponentType, Fragment, useState } from "react";
-import * as React from "react";
-import { useChat } from "@ai-sdk/react";
-import { CopyIcon, RefreshCcwIcon, RotateCcw, Trash2Icon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from "@/components/ai-elements/reasoning";
-import { Loader } from "@/components/ai-elements/loader";
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from "../ai-elements/conversation";
-import { Markdown } from "../ai-elements/markdown";
-import { sanitizeText } from "@/lib/chatbot/utils";
 import { ChatHeader } from "./chat-header";
-import { Message, MessageContent } from "../ai-elements/message";
-import { Greeting } from "./greeting";
-import {
-  Tool,
-  ToolHeader,
-  ToolContent,
-  ToolInput,
-  ToolOutput,
-} from "../ai-elements/tool";
-import { ChartRenderer } from "./chart-renderer";
-import { ChatSDKError } from "@/lib/chatbot/errors";
-import { toast } from "../ui/toast";
+import { Messages } from "./messages";
 
 export const Chat = ({
   Close,
   selectedModelId,
+  messages,
+  sendMessage,
+  status,
+  regenerate,
+  setMessages,
+  input,
+  setInput,
 }: {
   Close: ComponentType<{ onClick?: () => void }>;
   selectedModelId: string;
+  messages: ReturnType<typeof useChat>["messages"];
+  sendMessage: ReturnType<typeof useChat>["sendMessage"];
+  status: ReturnType<typeof useChat>["status"];
+  regenerate: ReturnType<typeof useChat>["regenerate"];
+  setMessages: ReturnType<typeof useChat>["setMessages"];
+  input: string;
+  setInput: (input: string) => void;
 }) => {
-  const [input, setInput] = useState("");
-  const { messages, sendMessage, status, regenerate, setMessages } = useChat(
-    {
-      onError: (error) => {
-        console.log("Error:", error);
-      if (error instanceof ChatSDKError) {
-        toast({
-          type: 'error',
-          description: error.message,
-        });
-      }
-    },
-    }
-  );
 
   const handleReset = () => {
     setMessages([]);
@@ -90,142 +63,20 @@ export const Chat = ({
     setInput("");
   };
 
-  console.log("status", status);
   return (
     <div className="max-w-4xl mx-auto relative size-full p-1">
       <div className="flex flex-col h-full">
         <ChatHeader selectedModelId={selectedModelId} Close={Close} />
 
-        <Conversation className="h-full">
-          <ConversationContent>
-            {messages.length === 0 && <Greeting setInput={setInput} />}
-            {messages.map((message) => (
-              <div key={message.id}>
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      return (
-                        <Fragment key={`${message.id}-${i}`}>
-                          <Message from={message.role}>
-                            <MessageContent>
-                              <Markdown>{sanitizeText(part.text)}</Markdown>
-                            </MessageContent>
-                          </Message>
-                          {message.role === "assistant" && (
-                            <Actions className="mt-2">
-                              <Action
-                                onClick={() => regenerate()}
-                                label="Retry"
-                              >
-                                <RefreshCcwIcon className="size-3" />
-                              </Action>
-                              <Action
-                                onClick={() =>
-                                  navigator.clipboard.writeText(part.text)
-                                }
-                                label="Copy"
-                              >
-                                <CopyIcon className="size-3" />
-                              </Action>
-                            </Actions>
-                          )}
-                        </Fragment>
-                      );
-                    case "reasoning":
-                      return part.text?.trim() ? (
-                        <Reasoning
-                          key={`${message.id}-${i}`}
-                          className="w-full"
-                          isStreaming={
-                            status === "streaming" &&
-                            i === message.parts.length - 1 &&
-                            message.id === messages.at(-1)?.id
-                          }
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      ) : null;
-                    default:
-                      if (part.type?.startsWith('tool-')) {
-                          const toolPart = part as any;
-                          const defaultOpen = false;
+        <Messages
+          messages={messages}
+          regenerate={regenerate}
+          setInput={setInput}
+          status={status}
+          selectedModelId={selectedModelId}
+        />
 
-                          return (
-                            <Tool defaultOpen={defaultOpen}>
-                              <ToolHeader type={part.type} state={toolPart.state || 'input-available'} />
-                              <ToolContent>
-                                {toolPart.input && (
-                                  <ToolInput input={toolPart.input} />
-                                )}
-                                {(toolPart.state === 'output-available' || toolPart.state === 'output-error') && (
-                                  <ToolOutput
-                                    output={
-                                      toolPart.output && typeof toolPart.output === 'object' ? (
-                                        <>
-                                          <details className="cursor-pointer">
-                                            <summary className="text-xs font-medium text-muted-foreground mb-2">
-                                              View Raw Data
-                                            </summary>
-                                            <pre className="text-xs overflow-x-auto bg-muted/50 p-2 rounded">
-                                              <code>{JSON.stringify(toolPart.output, null, 2)}</code>
-                                            </pre>
-                                          </details>
-                                        </>
-                                      ) : (
-                                        <Markdown>{String(toolPart.output || '')}</Markdown>
-                                      )
-                                    }
-                                    errorText={toolPart.errorText}
-                                  />
-                                )}
-                              </ToolContent>
-                            </Tool>
-                          );
-                        }
-                      return null;
-                  }
-                })}
-
-                {/* Handle chart data from tool outputs */}
-                {message.role === 'assistant' && message.parts?.map(part => {
-                  if (part.type?.startsWith('tool-') && (part as any).output?.type === 'chart') {
-                    const toolPart = part as any;
-                    const { toolCallId } = toolPart
-                    return (
-                      <div key={toolCallId}>
-                        <ChartRenderer
-                          type={toolPart.output.type}
-                          chartType={toolPart.output.chartType}
-                          data={toolPart.output.data}
-                          config={toolPart.output.config}
-                          metadata={toolPart.output.metadata}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            ))}
-            {(status === "submitted" || status !== "ready") && status !== "error" && (
-              <div className="flex items-center gap-2 px-4 py-2 mt-2 text-sm text-muted-foreground">
-                <Loader />
-                <span>
-                  {status === "submitted" ? "Processing..." : "Waiting for response..."}
-                </span>
-              </div>
-            )}
-            {status === "error" && (
-              <div className="flex items-center gap-2 px-4 py-2 text-sm text-destructive bg-destructive/10 rounded-md mx-4">
-                <div className="w-2 h-2 bg-destructive rounded-full"></div>
-                <span>An error occurred during the API request, preventing successful completion.</span>
-              </div>
-            )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-        <div className="px-4 py-3">
+        <div className="px-4">
           <PromptInput
             onSubmit={handleSubmit}
             className="mt-4"
@@ -239,14 +90,13 @@ export const Chat = ({
               />
             </PromptInputBody>
 
-            <div className="absolute bottom-3 left-4 p-3">
+            <div className="absolute bottom-0 left-4 p-3">
               {messages.length > 0 && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={handleReset}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
                   title="Clear conversation"
                 >
                   <RotateCcw size={16}  />
@@ -255,7 +105,7 @@ export const Chat = ({
             </div>
 
             <div className="absolute bottom-3 right-4 p-2 w-fit flex flex-row justify-end">
-              <PromptInputSubmit disabled={!input && !status} status={status} />
+              <PromptInputSubmit disabled={!input} status={status} />
             </div>
           </PromptInput>
         </div>

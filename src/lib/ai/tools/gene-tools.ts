@@ -22,7 +22,7 @@ import {
 export function getComprehensiveGeneSummary() {
   return tool({
     description:
-      'GENE SUMMARY TOOL: Use this tool ONLY for COUNTING and STATISTICAL queries about genes. Examples: "How many variants in BRCA1?", "How many pathogenic variants in TP53?", "Count of variants in BRCA1 for plof category", "Total SNVs in gene X". This tool provides COUNTS, TOTALS, and SUMMARY STATISTICS only. For variant listings, use getGeneVariantData. For gene information, use getGeneAnnotationData.',
+      'GENE SUMMARY TOOL: Use this tool ONLY for COUNTING and STATISTICAL queries about genes. Examples: "How many variants in BRCA1?", "How many pathogenic variants in TP53?", "Count of variants in BRCA1 for plof category", "Total SNVs in gene X". This tool provides COUNTS, TOTALS, and SUMMARY STATISTICS only. For variant listings, use getGeneVariantData. For gene information, use getGeneAnnotationData. The summary includes detailed field descriptions to help explain what each count represents.',
     inputSchema: z.object({
       geneName: z.string().describe("Gene name (e.g., BRCA1, TP53)"),
       category: z
@@ -34,18 +34,72 @@ export function getComprehensiveGeneSummary() {
       geneName,
       category = "total-summary",
     }) => {
-      // Only get gene summary statistics - no variant listing
       const result = await fetchGeneSummary(geneName);
       if (!result) return { error: `No data found for gene ${geneName}` };
 
+      const summaryData =
+        category === "SNV-summary"
+          ? result.snv_summary
+          : category === "InDel-summary"
+            ? result.indel_summary
+            : result.total_summary;
+
+      const fieldDescriptions = {
+        alleleDistribution: {
+          total: "Total count of all variants in this gene",
+          common: "Variants with MAF > 1% (population polymorphisms, generally tolerated)",
+          lowfreq: "Variants with 0.01% ≤ MAF < 1% (regional/founder effects, moderate clinical relevance)",
+          rare: "Variants with MAF < 0.01% (recent mutations, highest likelihood of being deleterious)",
+          singletons: "Variants observed once (AC=1, private/de novo, candidate for rare disease)",
+          doubletons: "Variants observed twice (AC=2, very rare recurrent variants)"
+        },
+        genomicRegion: {
+          exonic: "Variants in protein-coding exons (highest functional impact, ~2% of genome)",
+          utr: "Variants in untranslated regions (post-transcriptional regulation)",
+          ncrna: "Variants in non-coding RNA genes (regulatory function)",
+          intronic: "Variants within introns (potential regulatory/splicing effects)",
+          splicing: "Variants at splice sites (critical for transcript integrity, high impact)",
+          upstream: "Variants in promoter/upstream regulatory regions (transcription regulation)",
+          downstream: "Variants downstream of genes (potential regulatory elements)",
+          intergenic: "Variants between genes (distal regulatory potential)"
+        },
+        clinicalSignificance: {
+          pathogenic: "Clinically confirmed disease-causing variants (immediate clinical action)",
+          likelypathogenic: "Probably disease-causing (clinical consideration warranted)",
+          benign: "Confirmed non-pathogenic variants",
+          likelybenign: "Probably non-pathogenic variants",
+          unknown: "Variants of uncertain significance (VUS, requires monitoring)",
+          drugresponse: "Pharmacogenomic variants affecting drug metabolism/response",
+          conflicting: "Variants with conflicting interpretations (expert review needed)"
+        },
+        functionalConsequence: {
+          plof: "Protein loss-of-function variants (stop-gain, frameshift, severe impact)",
+          nonsynonymous: "Missense variants causing amino acid changes (moderate impact)",
+          synonymous: "Silent variants with no amino acid change (low impact)",
+          deleterious: "SIFT-predicted damaging variants",
+          damaging: "PolyPhen-predicted probably damaging variants",
+          cageenhancer: "Variants overlapping CAGE-identified enhancer regions",
+          cagepromoter: "Variants overlapping CAGE-identified promoter regions"
+        },
+        integrativeScores: {
+          apcproteinfunction: "aPC-Protein Function score >10 indicates likely functional impact (PHRED scale, combines SIFT/PolyPhen/etc)",
+          apcconservation: "aPC-Conservation score >10 indicates high evolutionary conservation (GERP, PhyloP, PhastCons)",
+          apcepigeneticsactive: "aPC-Active Chromatin score >10 indicates active regulatory state (H3K4me3, H3K27ac marks)",
+          apcepigeneticsrepressive: "aPC-Repressed Chromatin score >10 indicates silenced state (H3K9me3, H3K27me3)",
+          apcepigeneticstranscription: "aPC-Transcription score >10 indicates active transcription (H3K36me3, H3K79me2)",
+          apclocalnucleotidediversity: "aPC-Nucleotide Diversity score >10 indicates high local genetic diversity",
+          apcmutationdensity: "aPC-Mutation Density score >10 indicates high local mutation burden",
+          apctranscriptionfactor: "aPC-TF Binding score >10 indicates strong transcription factor binding evidence",
+          apcmappability: "aPC-Mappability score >10 indicates good sequence uniqueness for read mapping",
+          caddphred: "CADD PHRED score >10 indicates likely deleterious (higher = more deleterious, max ~40)"
+        }
+      };
+
       return {
         gene: geneName,
-        summary:
-          category === "SNV-summary"
-            ? result.snv_summary
-            : category === "InDel-summary"
-              ? result.indel_summary
-              : result.total_summary,
+        summary: summaryData,
+        fieldDescriptions,
+        interpretationGuide: "Use fieldDescriptions to explain what each count represents. Scores >10 for aPC metrics indicate high values. Higher CADD scores indicate more likely deleterious effects.",
         metadata: {
           dataType: "gene_summary",
           category,

@@ -1,11 +1,10 @@
-// Core Analysis Tools - Streamlined 4-tool architecture
 export * from "./variantAnalysis";
 export * from "./gene-tools";
 export * from "./region-tools";
 export * from "./enhanced-visualization";
 
 import { getVariantAnalysis } from "./variantAnalysis";
-import { createUniversalVisualization } from "./enhanced-visualization";
+import { createBarChart } from "./enhanced-visualization";
 
 // Import all gene tools from the dedicated gene-tools file
 import {
@@ -52,6 +51,5 @@ export const tools = {
   regionCosmic: getRegionCosmicData(),                 // COSMIC cancer data for regions
   regionVistaEnhancers: getRegionVistaEnhancers(),     // VISTA enhancer data
 
-  // 4. Visualization - Universal visualization tool for all chart types
-  visualization: createUniversalVisualization(),
+  barChart: createBarChart(),
 };

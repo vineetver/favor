@@ -16,13 +16,23 @@ interface ReasoningProps extends React.ComponentProps<typeof Collapsible> {
 const Reasoning = React.forwardRef<
   React.ElementRef<typeof Collapsible>,
   ReasoningProps
->(({ isStreaming = false, className, ...props }, ref) => {
-  const [isOpen, setIsOpen] = React.useState(isStreaming);
+>(({ isStreaming = false, className, defaultOpen, ...props }, ref) => {
+  const [hasBeenStreaming, setHasBeenStreaming] = React.useState(isStreaming);
+  const [isOpen, setIsOpen] = React.useState(defaultOpen ?? hasBeenStreaming);
 
-  // Auto-open when streaming starts, auto-close when streaming ends
   React.useEffect(() => {
-    setIsOpen(isStreaming);
+    if (isStreaming) {
+      setHasBeenStreaming(true);
+    }
   }, [isStreaming]);
+
+  React.useEffect(() => {
+    if (defaultOpen !== undefined) {
+      setIsOpen(defaultOpen);
+    } else if (hasBeenStreaming) {
+      setIsOpen(true);
+    }
+  }, [defaultOpen, hasBeenStreaming]);
 
   return (
     <Collapsible
