@@ -308,7 +308,7 @@ export function getGeneVariantData() {
  */
 export function getGenePathwayInteractions() {
   return tool({
-    description: "Get pathway interaction pairs for a gene. Use this tool to find what pathways a gene participates in and its interaction partners within those pathways.",
+    description: "Get pathway interaction pairs for a gene from multiple pathway databases. Use this tool to find what pathways a gene participates in and its interaction partners within those pathways. Available sources: KEGG, BioCyc, WikiPathways, IntPath.",
     inputSchema: z.object({
       geneName: z
         .string()
@@ -316,14 +316,15 @@ export function getGenePathwayInteractions() {
       limit: z
         .number()
         .optional()
-        .describe("Maximum number of interactions to return"),
+        .describe("Maximum number of interactions to return (default: 100)"),
       source: z
-        .string()
+        .enum(["KEGG", "BioCyc", "WikiPathways", "IntPath"])
         .optional()
-        .describe("Specific pathway source to filter by"),
+        .describe("Specific pathway source to filter by. Options: KEGG (Kyoto Encyclopedia), BioCyc (Pathway/Genome Databases), WikiPathways (collaborative curation), IntPath (integrated analysis, returns all sources if not specified)"),
     }),
     execute: async ({ geneName, limit, source }) => {
-      const result = await getPathwayPairs(geneName, limit, source);
+      const sourceParam = source === "IntPath" ? "" : source;
+      const result = await getPathwayPairs(geneName, limit, sourceParam);
       if (!result)
         return { error: `No pathway interactions found for gene ${geneName}` };
 
@@ -333,7 +334,8 @@ export function getGenePathwayInteractions() {
         metadata: {
           dataType: "pathway_interactions",
           source: source || "all",
-          limit,
+          limit: limit || 100,
+          totalResults: result.length,
         },
       };
     },
@@ -346,16 +348,17 @@ export function getGenePathwayInteractions() {
  */
 export function getGenePathwayGenes() {
   return tool({
-    description: "Get genes in the same pathways as the query gene. Use this tool to find functionally related genes that participate in the same biological pathways.",
+    description: "Get genes in the same pathways as the query gene from multiple pathway databases. Use this tool to find functionally related genes that participate in the same biological pathways. Available sources: KEGG, BioCyc, WikiPathways, IntPath.",
     inputSchema: z.object({
       geneName: z.string().describe("Gene name to find pathway genes for"),
       source: z
-        .string()
+        .enum(["KEGG", "BioCyc", "WikiPathways", "IntPath"])
         .optional()
-        .describe("Specific pathway source to filter by"),
+        .describe("Specific pathway source to filter by. Options: KEGG (Kyoto Encyclopedia), BioCyc (Pathway/Genome Databases), WikiPathways (collaborative curation), IntPath (integrated analysis, returns all sources if not specified)"),
     }),
     execute: async ({ geneName, source }) => {
-      const result = await getPathwayGenes(geneName, source);
+      const sourceParam = source === "IntPath" ? "" : source;
+      const result = await getPathwayGenes(geneName, sourceParam);
       if (!result)
         return { error: `No pathway genes found for gene ${geneName}` };
 
@@ -365,6 +368,7 @@ export function getGenePathwayGenes() {
         metadata: {
           dataType: "pathway_genes",
           source: source || "all",
+          totalResults: result.length,
         },
       };
     },
@@ -377,21 +381,37 @@ export function getGenePathwayGenes() {
  */
 export function getGeneCosmicData() {
   return tool({
-    description: "Get COSMIC cancer gene census data. Use this tool to find information about a gene's role in cancer, including cancer types, mutation patterns, and oncogene/tumor suppressor classifications.",
+    description: "Get COSMIC cancer gene census data. Use this tool to find information about a gene's role in cancer, including cancer types, mutation patterns, and oncogene/tumor suppressor classifications. IMPORTANT: By default, only 10 records are returned. Inform users there may be more COSMIC data available.",
     inputSchema: z.object({
       geneName: z.string().describe("Gene name to get COSMIC data for"),
+      limit: z
+        .number()
+        .optional()
+        .describe("Number of COSMIC records to return (default: 10, use higher values only if user explicitly requests more)"),
     }),
-    execute: async ({ geneName }) => {
-      const result = await fetchCosmicByGene(geneName);
-      if (!result)
+    execute: async ({ geneName, limit = 10 }) => {
+      const { processPaginatedResults } = await import(
+        "@/lib/utils/pagination"
+      );
+
+      const allData = await fetchCosmicByGene(geneName);
+      if (!allData || allData.length === 0)
         return { error: `No COSMIC data found for gene ${geneName}` };
+
+      const result = processPaginatedResults(allData, limit);
 
       return {
         gene: geneName,
-        cosmic: result,
+        cosmic: result.paginatedData,
+        hasMore: result.pagination.hasNextPage,
+        summary: `Found ${result.pagination.totalCount || 0} COSMIC records for ${geneName}. Showing ${result.paginatedData.length} records` +
+          (result.pagination.hasNextPage ? ". More COSMIC data available upon request." : ""),
         metadata: {
           dataType: "cosmic_gene",
           source: "cosmic",
+          totalRecords: result.pagination.totalCount || 0,
+          limit,
+          returnedRecords: result.paginatedData.length,
         },
       };
     },
@@ -405,7 +425,7 @@ export function getGeneCosmicData() {
 export function getGeneProteinInteractions() {
   return tool({
     description:
-      "Get protein-protein interactions from multiple databases (BioGRID, IntAct, HuRI) with cross-database filtering, deduplication, and pagination. Use this tool to find proteins that physically interact with the query gene's protein product.",
+      "Get protein-protein interactions from multiple databases (BioGRID, IntAct, HuRI) with cross-database filtering, deduplication, and pagination. Use this tool to find proteins that physically interact with the query gene's protein product. IMPORTANT: By default, only 10 interactions are returned. Inform users there may be more interactions available. Do NOT enable crossDbValidation unless user explicitly requests it - it's very restrictive and often returns 0 results.",
     inputSchema: z.object({
       geneName: z
         .string()
@@ -417,8 +437,7 @@ export function getGeneProteinInteractions() {
       pageSize: z
         .number()
         .optional()
-        .describe("Number of results per page (default: 20)"),
-      cursor: z.string().optional().describe("Pagination cursor"),
+        .describe("Number of results per page (default: 10, use higher values only if user explicitly requests more)"),
       interactorGenes: z
         .array(z.string())
         .optional()
@@ -434,7 +453,7 @@ export function getGeneProteinInteractions() {
       crossDbValidation: z
         .boolean()
         .optional()
-        .describe("Only show interactions found in multiple databases"),
+        .describe("VERY RESTRICTIVE FILTER: Only show interactions where the EXACT SAME interactor appears in multiple databases. This will often return 0 results. Only use if user explicitly requests cross-database validation. Default: false."),
       deduplicateInteractors: z
         .boolean()
         .optional()
@@ -453,8 +472,7 @@ export function getGeneProteinInteractions() {
     execute: async ({
       geneName,
       databases = ["biogrid", "intact", "huri"],
-      pageSize = 20,
-      cursor,
+      pageSize = 10,
       interactorGenes,
       minConfidenceScore,
       experimentalMethods,
@@ -463,14 +481,11 @@ export function getGeneProteinInteractions() {
       sortBy,
       sortOrder = "desc",
     }) => {
-      const { applyClientSideFilters, createSortFunction } = await import(
+      const { createSortFunction } = await import(
         "@/lib/utils/filtering"
       );
       const { processPaginatedResults } = await import(
         "@/lib/utils/pagination"
-      );
-      const { mergeMultiSourceResults } = await import(
-        "@/lib/utils/data-merging"
       );
 
       const results: any = {};
@@ -564,7 +579,7 @@ export function getGeneProteinInteractions() {
         });
 
         filteredInteractions = [];
-        interactorMap.forEach((data, interactor) => {
+        interactorMap.forEach((data) => {
           if (data.sources.size > 1) {
             filteredInteractions = filteredInteractions.concat(data.items);
           }
@@ -616,18 +631,19 @@ export function getGeneProteinInteractions() {
         : 0;
 
       return {
-        ...result,
         gene: geneName,
-        interactions: results,
+        interactions: result.paginatedData,
+        hasMore: result.pagination.hasNextPage,
         summary:
-          `Found ${result.pagination.totalCount || 0} protein interactions for ${geneName}` +
+          `Found ${result.pagination.totalCount || 0} protein interactions for ${geneName}. Showing ${result.paginatedData.length} interactions` +
           (interactorGenes?.length
             ? ` with interactors: ${interactorGenes.join(", ")}`
             : "") +
           (crossDbValidation
             ? ` (${validatedCount} cross-database validated)`
             : "") +
-          ` across databases: ${uniqueDatabases.join(", ")}`,
+          ` across databases: ${uniqueDatabases.join(", ")}` +
+          (result.pagination.hasNextPage ? ". More interactions available upon request." : ""),
         metadata: {
           dataType: "protein_interactions",
           databases: uniqueDatabases,
@@ -640,6 +656,8 @@ export function getGeneProteinInteractions() {
                 ),
               ).size
             : result.pagination.totalCount || 0,
+          pageSize,
+          returnedResults: result.paginatedData.length,
         },
       };
     },
