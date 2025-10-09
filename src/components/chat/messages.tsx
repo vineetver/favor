@@ -57,6 +57,9 @@ function PureMessages({ status, messages, regenerate, setInput, selectedModelId 
 }
 
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
+  if (nextProps.status === 'streaming') {
+    return false;
+  }
   if (prevProps.status !== nextProps.status) {
     return false;
   }

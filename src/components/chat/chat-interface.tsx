@@ -11,7 +11,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import FABButton from "@/components/ui/fab";
-import React, { StrictMode, useState } from "react";
+import React, { useState } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -103,40 +103,38 @@ export function ChatInterface({
   }
 
   return (
-    <StrictMode>
-      <Popover>
-        <PopoverTrigger
-          id="chatbot-trigger-button"
-          className="fixed bottom-8 right-6 z-50"
-          asChild
+    <Popover>
+      <PopoverTrigger
+        id="chatbot-trigger-button"
+        className="fixed bottom-8 right-6 z-50"
+        asChild
+      >
+        <motion.div
+          className="inline-block"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={chatAnimations.spring.snappy}
         >
-          <motion.div
-            className="inline-block"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={chatAnimations.spring.snappy}
+          <FABButton
+            className={buttonVariants({ variant: "fab", size: "fab" })}
           >
-            <FABButton
-              className={buttonVariants({ variant: "fab", size: "fab" })}
-            >
-              Chat with FAVOR-GPT
-            </FABButton>
-          </motion.div>
-        </PopoverTrigger>
-        <PopoverContent className="bg-background text-foreground p-0 md:m-4 md:h-[610px] md:w-[850px] md:max-w-[90vw] md:max-h-[85vh]">
-          <Chat
-            selectedModelId={selectedModelId}
-            Close={PopoverCloseButton}
-            messages={messages}
-            sendMessage={sendMessage}
-            status={status}
-            regenerate={regenerate}
-            setMessages={setMessages}
-            input={input}
-            setInput={setInput}
-          />
-        </PopoverContent>
-      </Popover>
-    </StrictMode>
+            Chat with FAVOR-GPT
+          </FABButton>
+        </motion.div>
+      </PopoverTrigger>
+      <PopoverContent className="bg-background text-foreground p-0 md:m-4 md:h-[610px] md:w-[850px] md:max-w-[90vw] md:max-h-[85vh]">
+        <Chat
+          selectedModelId={selectedModelId}
+          Close={PopoverCloseButton}
+          messages={messages}
+          sendMessage={sendMessage}
+          status={status}
+          regenerate={regenerate}
+          setMessages={setMessages}
+          input={input}
+          setInput={setInput}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

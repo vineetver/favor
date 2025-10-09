@@ -152,6 +152,9 @@ const PurePreviewMessage = ({
 };
 
 export const PreviewMessage = memo(PurePreviewMessage, (prevProps, nextProps) => {
+  if (nextProps.isLoading) {
+    return false;
+  }
   if (prevProps.isLoading !== nextProps.isLoading) {
     return false;
   }
