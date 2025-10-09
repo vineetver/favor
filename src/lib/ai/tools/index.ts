@@ -1,10 +1,10 @@
 export * from "./variantAnalysis";
 export * from "./gene-tools";
 export * from "./region-tools";
-export * from "./enhanced-visualization";
+export * from "./bar-chart-tool";
 
 import { getVariantAnalysis } from "./variantAnalysis";
-import { createBarChart } from "./enhanced-visualization";
+import { createBarChart } from "./bar-chart-tool";
 
 // Import all gene tools from the dedicated gene-tools file
 import {

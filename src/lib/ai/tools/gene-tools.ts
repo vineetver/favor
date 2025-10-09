@@ -201,7 +201,7 @@ export function getGeneAnnotationData() {
 export function getGeneVariantData() {
   return tool({
     description:
-      'GENE VARIANT LISTING TOOL: Use this tool for LISTING and BROWSING individual variants within a gene, NOT for counting. Examples: "Show me variants in BRCA1", "List pathogenic variants in TP53", "Find variants with highest conservation in BRCA1", "Show me 10 variants sorted by CADD score". This tool is for when users want to SEE ACTUAL VARIANTS with their details, positions, scores, etc. Use getComprehensiveGeneSummary for counting queries.',
+      'GENE VARIANT LISTING TOOL: Use this tool for LISTING and BROWSING individual variants within a gene, NOT for counting. Examples: "Show me variants in BRCA1", "List pathogenic variants in TP53", "Find variants with highest conservation in BRCA1", "Show me 10 variants sorted by CADD score". This tool is for when users want to SEE ACTUAL VARIANTS with their details, positions, scores, etc. Use getComprehensiveGeneSummary for counting queries. IMPORTANT: By default, only 5 variants are returned per page. ALWAYS inform the user that there may be more variants available and they can request additional variants if needed.',
     inputSchema: z.object({
       geneName: z
         .string()
@@ -220,7 +220,7 @@ export function getGeneVariantData() {
         .string()
         .optional()
         .describe(
-          'Filter query string for categorical filters. Available filters: genecode_comprehensive_category (exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr), clnsig (drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown). Format: "genecode_comprehensive_category=exonic,utr&clnsig=pathogenic"',
+          'Filter query string for categorical filters. Available filters: genecode_comprehensive_category (exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr), clnsig_v2 (drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown). Format: "genecode_comprehensive_category=exonic,utr&clnsig_v2=pathogenic"',
         ),
       numericFilters: z
         .array(
@@ -249,7 +249,7 @@ export function getGeneVariantData() {
       pageSize: z
         .number()
         .optional()
-        .describe("Number of variants per page (default: 20)"),
+        .describe("Number of variants per page (default: 5, use higher values only if user explicitly requests more variants)"),
     }),
     execute: async ({
       geneName,
@@ -258,7 +258,7 @@ export function getGeneVariantData() {
       filtersQuery,
       numericFilters,
       sortBy,
-      pageSize = 20,
+      pageSize = 5,
     }) => {
       // Map Total-table to SNV-table for API compatibility
       const apiSubcategory =
