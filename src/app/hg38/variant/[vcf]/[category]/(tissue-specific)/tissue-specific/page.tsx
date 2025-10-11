@@ -9,7 +9,6 @@ import { fetchPGBoost } from "@/lib/variant/pgboost/api";
 import { getVariantColumns } from "@/lib/variant/columns";
 import { processTissueSpecificData } from "@/lib/variant/tissue/helpers";
 import { getFilteredItems } from "@/lib/annotations/helpers";
-import { FilteredItem } from "@/lib/annotations/types";
 import { AnnotationTable } from "@/components/data-display/annotation-table";
 
 interface TissueSpecificPageProps {

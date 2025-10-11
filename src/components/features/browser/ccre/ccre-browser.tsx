@@ -84,7 +84,6 @@ export function CCREBrowser({
 
   const handleTrackToggle = useCallback(
     (trackId: string) => {
-      // Check if this is a dynamic track
       const isDynamicTrack = tissueSpecificTracks.some(
         (track) => track.id === trackId,
       );
@@ -106,6 +105,48 @@ export function CCREBrowser({
     [tissueSpecificTracks],
   );
 
+  const handleBatchToggle = useCallback(
+    (trackIds: string[], enabled: boolean) => {
+      const dynamicTrackIds = trackIds.filter((id) =>
+        tissueSpecificTracks.some((track) => track.id === id)
+      );
+      const staticTrackIds = trackIds.filter((id) => !dynamicTrackIds.includes(id));
+
+      if (dynamicTrackIds.length > 0) {
+        setEnabledDynamicTrackIds((prev) => {
+          if (enabled) {
+            const newIds = [...prev];
+            dynamicTrackIds.forEach((id) => {
+              if (!newIds.includes(id)) {
+                newIds.push(id);
+              }
+            });
+            return newIds;
+          } else {
+            return prev.filter((id) => !dynamicTrackIds.includes(id));
+          }
+        });
+      }
+
+      if (staticTrackIds.length > 0) {
+        setEnabledTrackIds((prev) => {
+          if (enabled) {
+            const newIds = [...prev];
+            staticTrackIds.forEach((id) => {
+              if (!newIds.includes(id)) {
+                newIds.push(id);
+              }
+            });
+            return newIds;
+          } else {
+            return prev.filter((id) => !staticTrackIds.includes(id));
+          }
+        });
+      }
+    },
+    [tissueSpecificTracks]
+  );
+
   const handleClearAllTracks = useCallback(() => {
     setEnabledTrackIds(["other_gene_annotation"]);
     setEnabledDynamicTrackIds([]);
@@ -117,6 +158,7 @@ export function CCREBrowser({
       <CCRETrackSelector
         enabledTracks={[...enabledTrackIds, ...enabledDynamicTrackIds]}
         onTrackToggle={handleTrackToggle}
+        onBatchToggle={handleBatchToggle}
         tissueSpecificTracks={tissueSpecificTracks}
       />
 

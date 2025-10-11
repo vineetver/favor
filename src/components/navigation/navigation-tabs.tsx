@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Database, LayoutDashboard, Microscope, ScanLine } from "lucide-react";
+import {
+  Database,
+  LayoutDashboard,
+  Microscope,
+  ScanLine,
+  Dna,
+  FileBarChart2,
+  Table2,
+  Activity
+} from "lucide-react";
 import { cn } from "@/lib/utils/general";
 
 interface NavigationItem {
@@ -23,6 +32,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "global-annotation": Database,
   "single-cell-tissue": Microscope,
   "genome-browser": ScanLine,
+  "gene-level-annotation": Dna,
+  "SNV-summary": Activity,
+  "InDel-summary": Activity,
+  "tissue-specific": Microscope,
+  "full-tables": Table2,
 };
 
 export function NavigationTabs({

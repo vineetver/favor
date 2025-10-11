@@ -7,6 +7,10 @@ import { GenomeBrowserControls } from "@/components/features/browser/genome-brow
 import { useDomainManager } from "@/lib/hooks/use-domain-manager";
 import { useGoslingSpec } from "@/lib/hooks/use-gosling-spec";
 import { COMPREHENSIVE_TRACK_REGISTRY } from "@/lib/tracks/registry";
+import { useTissueSpecificTracks } from "@/lib/hooks/use-tissue-specific-tracks";
+import type { DynamicTrack } from "@/lib/tracks/dynamic-track-generator";
+import { TissueConfig } from "@/lib/variant/ccre/tissue-config";
+import { generateTissueSpecificTracks } from "@/lib/tracks/dynamic-track-generator";
 
 interface GenomeBrowserProps {
   vcfParam?: string;
@@ -21,14 +25,51 @@ const GenomeBrowserImpl = ({
 }: GenomeBrowserProps) => {
   const [enabledTrackIds, setEnabledTrackIds] =
     useState<string[]>(initialTracks);
+  const [enabledDynamicTrackIds, setEnabledDynamicTrackIds] = useState<
+    string[]
+  >([]);
   const [isStatic, setIsStatic] = useState(false);
 
-  const enabledTracks = useMemo(
+  const { tissueSpecificTracks } = useTissueSpecificTracks();
+
+  const allPossibleTissueTracks = useMemo(() => {
+    const tracks: DynamicTrack[] = [];
+    const tissues = Object.keys(TissueConfig);
+    tissues.forEach((tissue) => {
+      const subtissues = TissueConfig[tissue];
+      subtissues.forEach((subtissue) => {
+        const generatedTracks = generateTissueSpecificTracks(
+          tissue,
+          subtissue.name,
+          subtissue.assays
+        );
+        tracks.push(...generatedTracks);
+      });
+    });
+    return tracks;
+  }, []);
+
+  const enabledStaticTracks = useMemo(
     () =>
       enabledTrackIds
         .map((trackId) => COMPREHENSIVE_TRACK_REGISTRY[trackId])
         .filter(Boolean),
     [enabledTrackIds],
+  );
+
+  const enabledDynamicTracks = useMemo(
+    () =>
+      enabledDynamicTrackIds
+        .map((trackId) =>
+          allPossibleTissueTracks.find((track) => track.id === trackId)
+        )
+        .filter((track): track is DynamicTrack => track !== undefined),
+    [enabledDynamicTrackIds, allPossibleTissueTracks],
+  );
+
+  const enabledTracks = useMemo(
+    () => [...enabledStaticTracks, ...enabledDynamicTracks],
+    [enabledStaticTracks, enabledDynamicTracks],
   );
 
   const domainManagerConfig = useMemo(
@@ -53,30 +94,71 @@ const GenomeBrowserImpl = ({
 
   const goslingSpec = useGoslingSpec(goslingSpecConfig);
 
-  const handleTrackToggle = useCallback((trackId: string) => {
-    setEnabledTrackIds((prev) =>
-      prev.includes(trackId)
-        ? prev.filter((id) => id !== trackId)
-        : [...prev, trackId],
-    );
-  }, []);
+  const handleTrackToggle = useCallback(
+    (trackId: string) => {
+      const isDynamicTrack = allPossibleTissueTracks.some(
+        (track) => track.id === trackId
+      );
+
+      if (isDynamicTrack) {
+        setEnabledDynamicTrackIds((prev) =>
+          prev.includes(trackId)
+            ? prev.filter((id) => id !== trackId)
+            : [...prev, trackId]
+        );
+      } else {
+        setEnabledTrackIds((prev) =>
+          prev.includes(trackId)
+            ? prev.filter((id) => id !== trackId)
+            : [...prev, trackId]
+        );
+      }
+    },
+    [allPossibleTissueTracks]
+  );
 
   const handleCollectionToggle = useCallback(
     (trackIds: string[], enabled: boolean) => {
-      setEnabledTrackIds((prev) => {
-        if (enabled) {
-          const newTracks = trackIds.filter((id) => !prev.includes(id));
-          return [...prev, ...newTracks];
-        } else {
-          return prev.filter((id) => !trackIds.includes(id));
-        }
-      });
+      const dynamicTrackIds = trackIds.filter((id) =>
+        allPossibleTissueTracks.some((track) => track.id === id)
+      );
+      const staticTrackIds = trackIds.filter(
+        (id) => !dynamicTrackIds.includes(id)
+      );
+
+      if (dynamicTrackIds.length > 0) {
+        setEnabledDynamicTrackIds((prev) => {
+          if (enabled) {
+            const newIds = [...prev];
+            dynamicTrackIds.forEach((id) => {
+              if (!newIds.includes(id)) {
+                newIds.push(id);
+              }
+            });
+            return newIds;
+          } else {
+            return prev.filter((id) => !dynamicTrackIds.includes(id));
+          }
+        });
+      }
+
+      if (staticTrackIds.length > 0) {
+        setEnabledTrackIds((prev) => {
+          if (enabled) {
+            const newTracks = staticTrackIds.filter((id) => !prev.includes(id));
+            return [...prev, ...newTracks];
+          } else {
+            return prev.filter((id) => !staticTrackIds.includes(id));
+          }
+        });
+      }
     },
-    [],
+    [allPossibleTissueTracks]
   );
 
   const handleClearAllTracks = useCallback(() => {
     setEnabledTrackIds([]);
+    setEnabledDynamicTrackIds([]);
   }, []);
 
   const handleStaticToggle = useCallback(() => {
@@ -91,7 +173,7 @@ const GenomeBrowserImpl = ({
   return (
     <div className="w-full h-full flex flex-col md:flex-row">
       <TrackSelector
-        enabledTracks={enabledTrackIds}
+        enabledTracks={[...enabledTrackIds, ...enabledDynamicTrackIds]}
         onTrackToggle={handleTrackToggle}
         onCollectionToggle={handleCollectionToggle}
       />

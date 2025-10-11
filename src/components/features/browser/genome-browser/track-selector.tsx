@@ -20,12 +20,16 @@ import {
 } from "@/lib/tracks/registry";
 import type { TrackMetadata } from "@/lib/tracks/types";
 import { TrackDetailsModal } from "@/components/features/browser/genome-browser/track-details-modal";
+import { TissueTrackSelectorDialog } from "@/components/features/browser/ccre/tissue-track-selector-dialog";
+import { useTissueSpecificTracks } from "@/lib/hooks/use-tissue-specific-tracks";
+import { TissueConfig } from "@/lib/variant/ccre/tissue-config";
+import { generateTissueSpecificTracks } from "@/lib/tracks/dynamic-track-generator";
 
 // Category color mapping
 const getCategoryColor = (categoryId: string): string => {
   const colors: Record<string, string> = {
     other: "#3B82F6", // blue
-    "single-cell-tissue-tracks": "#10B981", // green
+    "single-cell-tissue": "#10B981", // green
     clinvar: "#EF4444", // red
     mappability: "#8B5CF6", // purple
     "local-nucleotide-diversity": "#F59E0B", // amber
@@ -309,6 +313,30 @@ function TrackSelectorContent({
     null,
   );
   const [showCollections, setShowCollections] = useState(false);
+  const [showTissueDialog, setShowTissueDialog] = useState(false);
+
+  const allTissueSpecificTracks = useMemo(() => {
+    const tracks = [];
+    const tissues = Object.keys(TissueConfig);
+    tissues.forEach((tissue) => {
+      const subtissues = TissueConfig[tissue];
+      subtissues.forEach((subtissue) => {
+        const generatedTracks = generateTissueSpecificTracks(
+          tissue,
+          subtissue.name,
+          subtissue.assays
+        );
+        tracks.push(...generatedTracks);
+      });
+    });
+    return tracks;
+  }, []);
+
+  const tissueTrackEnabledCount = useMemo(() => {
+    return enabledTracks.filter((trackId) =>
+      allTissueSpecificTracks.some((track) => track.id === trackId)
+    ).length;
+  }, [enabledTracks, allTissueSpecificTracks]);
 
   // Filter tracks based on search
   const filteredTracks = useMemo(() => {
@@ -440,14 +468,42 @@ function TrackSelectorContent({
                     {COMPREHENSIVE_TRACK_CATEGORIES.filter(
                       (category) => tracksByCategory[category.id]?.length > 0,
                     ).map((category) => (
-                      <CategorySection
-                        key={category.id}
-                        category={category}
-                        tracks={tracksByCategory[category.id]}
-                        enabledTracks={enabledTracks}
-                        onTrackToggle={onTrackToggle}
-                        onShowDetails={setSelectedDetailTrack}
-                      />
+                      <div key={category.id}>
+                        <CategorySection
+                          category={category}
+                          tracks={tracksByCategory[category.id]}
+                          enabledTracks={enabledTracks}
+                          onTrackToggle={onTrackToggle}
+                          onShowDetails={setSelectedDetailTrack}
+                        />
+
+                        {category.id === "single-cell-tissue" && (
+                          <div className="mt-1 pl-6">
+                            <div
+                              className="group relative cursor-pointer"
+                              onClick={() => setShowTissueDialog(true)}
+                            >
+                              <div className="flex items-center justify-between py-2.5 px-1 hover:bg-muted/50 rounded-lg transition-all duration-200">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <span className="text-sm font-medium text-foreground">
+                                    Tissue-Specific
+                                  </span>
+                                  {tissueTrackEnabledCount > 0 && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-xs text-muted-foreground font-medium">
+                                    {allTissueSpecificTracks.length}
+                                  </span>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -463,6 +519,15 @@ function TrackSelectorContent({
         isOpen={selectedDetailTrack !== null}
         onClose={() => setSelectedDetailTrack(null)}
         onToggleTrack={onTrackToggle}
+      />
+
+      {/* Tissue Track Selector Dialog */}
+      <TissueTrackSelectorDialog
+        isOpen={showTissueDialog}
+        onClose={() => setShowTissueDialog(false)}
+        enabledTracks={enabledTracks}
+        onTrackToggle={onTrackToggle}
+        onBatchToggle={onCollectionToggle}
       />
     </>
   );

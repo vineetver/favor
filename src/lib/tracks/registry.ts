@@ -2102,8 +2102,8 @@ export const COMPREHENSIVE_TRACK_CATEGORIES: {
   },
   {
     id: "single-cell-tissue" as const,
-    name: "Single Cell/Tissue",
-    description: "Epigenomic marks, accessibility, and functional validation",
+    name: "Regulatory Elements",
+    description: "cCREs, epigenomic marks, chromatin accessibility, and gene linkages",
     priority: 2,
   },
   {

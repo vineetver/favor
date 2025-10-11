@@ -22,13 +22,13 @@ import {
 export function getComprehensiveGeneSummary() {
   return tool({
     description:
-      'GENE SUMMARY TOOL: Use this tool ONLY for COUNTING and STATISTICAL queries about genes. Examples: "How many variants in BRCA1?", "How many pathogenic variants in TP53?", "Count of variants in BRCA1 for plof category", "Total SNVs in gene X". This tool provides COUNTS, TOTALS, and SUMMARY STATISTICS only. For variant listings, use getGeneVariantData. For gene information, use getGeneAnnotationData. The summary includes detailed field descriptions to help explain what each count represents.',
+      'GENE SUMMARY TOOL: Use this tool ONLY for COUNTING and STATISTICAL queries about genes. Examples: "How many variants in BRCA1?", "How many pathogenic variants in TP53?", "Count of variants in BRCA1 for plof category", "Total SNVs in gene X". This tool provides COUNTS, TOTALS, and SUMMARY STATISTICS only. For variant listings, use getGeneVariantData.',
     inputSchema: z.object({
       geneName: z.string().describe("Gene name (e.g., BRCA1, TP53)"),
       category: z
         .enum(["SNV-summary", "InDel-summary", "total-summary"])
         .optional()
-        .describe("Type of summary to retrieve for gene statistics"),
+        .describe("Type of summary to retrieve for gene statistics. Options: 'SNV-summary' (single nucleotide variants only - point mutations where one base is substituted), 'InDel-summary' (insertions and deletions only - variants where bases are added or removed), 'total-summary' (combined statistics for all variant types, most comprehensive) - default: total-summary"),
     }),
     execute: async ({
       geneName,
@@ -220,7 +220,7 @@ export function getGeneVariantData() {
         .string()
         .optional()
         .describe(
-          'Filter query string for categorical filters. Available filters: genecode_comprehensive_category (exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr), clnsig_v2 (drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown). Format: "genecode_comprehensive_category=exonic,utr&clnsig_v2=pathogenic"',
+          'CATEGORICAL FILTERS ONLY - DO NOT use for numeric fields like apc_conservation_v2, cadd_phred, position, etc. Use numericFilters for those. This parameter is ONLY for categorical filters: genecode_comprehensive_category (exonic, ncrna, intronic, downstream, intergenic, upstream, splicing, utr), clnsig_v2 (drugresponse, pathogenic, likelypathogenic, benign, likelybenign, conflicting, unknown). Format: "genecode_comprehensive_category=exonic,utr&clnsig_v2=pathogenic"',
         ),
       numericFilters: z
         .array(
@@ -239,7 +239,7 @@ export function getGeneVariantData() {
           }),
         )
         .optional()
-        .describe("Array of numeric filters"),
+        .describe("REQUIRED for numeric field filtering (scores, positions, allele frequencies). ALWAYS use this parameter for fields like apc_conservation_v2, cadd_phred, position, af_total, etc. Examples: (1) apc_conservation > 10: [{field: 'apc_conservation_v2', operator: 'gt', value: '10'}]. (2) Range 10-15: [{field: 'apc_conservation_v2', operator: 'gt', value: '10'}, {field: 'apc_conservation_v2', operator: 'lt', value: '15'}]. (3) CADD > 20: [{field: 'cadd_phred', operator: 'gt', value: '20'}]"),
       sortBy: z
         .string()
         .optional()

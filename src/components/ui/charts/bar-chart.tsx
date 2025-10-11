@@ -72,8 +72,14 @@ export function BarChart({
   categoryGap = 20,
   responsive = true,
   formatXAxis,
-  formatYAxis = (value) => Math.round(value).toString(),
-  formatTooltipValue = (value) => Math.round(value).toString(),
+  formatYAxis = (value) => {
+    if (typeof value !== 'number') return value;
+    return Number.isInteger(value) ? value.toString() : value.toFixed(4).replace(/\.?0+$/, '');
+  },
+  formatTooltipValue = (value) => {
+    if (typeof value !== 'number') return value;
+    return Number.isInteger(value) ? value.toString() : value.toFixed(4).replace(/\.?0+$/, '');
+  },
   tickAngle = -45,
   maxBarSize = 50,
   onBarClick,
@@ -118,7 +124,7 @@ export function BarChart({
     if (!payload || !payload.length) return null;
 
     return (
-      <div className="flex flex-wrap justify-center gap-4 mt-4">
+      <div className="flex flex-wrap justify-center gap-4 mt-8">
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 text-sm">
             <div
@@ -215,13 +221,13 @@ export function BarChart({
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
             domain={["dataMin", "dataMax"]}
-            allowDecimals={false}
+            allowDecimals={true}
             tickCount={6}
             label={{
               value: yLabel,
               angle: -90,
               position: "insideLeft",
-              offset: -10,
+              offset: 0,
             }}
           />
         )}
@@ -252,7 +258,7 @@ export function BarChart({
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
             domain={["dataMin", "dataMax"]}
-            allowDecimals={false}
+            allowDecimals={true}
             tickCount={6}
           />
         )}

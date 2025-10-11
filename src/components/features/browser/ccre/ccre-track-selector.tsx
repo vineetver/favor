@@ -14,10 +14,12 @@ import { COMPREHENSIVE_TRACK_REGISTRY } from "@/lib/tracks/registry";
 import type { TrackMetadata } from "@/lib/tracks/types";
 import type { DynamicTrack } from "@/lib/tracks/dynamic-track-generator";
 import { TrackDetailsModal } from "@/components/features/browser/genome-browser/track-details-modal";
+import { EnhancedTissueTrackSelector } from "./enhanced-tissue-track-selector";
 
 interface CCRETrackSelectorProps {
   enabledTracks: string[];
   onTrackToggle: (trackId: string) => void;
+  onBatchToggle?: (trackIds: string[], enabled: boolean) => void;
   tissueSpecificTracks?: DynamicTrack[];
   className?: string;
 }
@@ -111,6 +113,7 @@ function TrackGroup({
 export function CCRETrackSelector({
   enabledTracks,
   onTrackToggle,
+  onBatchToggle,
   tissueSpecificTracks = [],
   className = "",
 }: CCRETrackSelectorProps) {
@@ -182,86 +185,86 @@ export function CCRETrackSelector({
 
   return (
     <>
-      <div
-        className={`bg-card rounded-lg border border-border/50 shadow-sm ${className} grid grid-cols-1`}
-      >
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <h2 className="font-semibold text-foreground text-sm truncate">
-                  Tracks
-                </h2>
-                <Badge
-                  variant="outline"
-                  className="text-xs px-1.5 sm:px-2 flex-shrink-0"
-                >
-                  {enabledCount}/{totalTracks}
-                </Badge>
+      <div className={`space-y-4 ${className}`}>
+        <div className="bg-card rounded-lg border border-border/50 shadow-sm grid grid-cols-1">
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <h2 className="font-semibold text-foreground text-sm truncate">
+                    Core Tracks
+                  </h2>
+                  <Badge
+                    variant="outline"
+                    className="text-xs px-1.5 sm:px-2 flex-shrink-0"
+                  >
+                    {enabledCount}/{totalTracks}
+                  </Badge>
+                </div>
+                <div className="flex-shrink-0 ml-2">
+                  {isOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
               </div>
-              <div className="flex-shrink-0 ml-2">
-                {isOpen ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                )}
+            </CollapsibleTrigger>
+
+            <CollapsibleContent>
+              <div className="border-t border-border/30 p-3 sm:p-4 space-y-3 sm:space-y-4">
+                <div className="space-y-4 sm:space-y-6">
+                  {tissueSpecificTracksList.length > 0 && (
+                    <TrackGroup
+                      title="Currently Selected Tissue Tracks"
+                      tracks={tissueSpecificTracksList}
+                      enabledTracks={enabledTracks}
+                      onTrackToggle={onTrackToggle}
+                      onShowDetails={setSelectedDetailTrack}
+                    />
+                  )}
+
+                  {geneAnnotation.length > 0 && (
+                    <TrackGroup
+                      title="Gene Annotation"
+                      tracks={geneAnnotation}
+                      enabledTracks={enabledTracks}
+                      onTrackToggle={onTrackToggle}
+                      onShowDetails={setSelectedDetailTrack}
+                    />
+                  )}
+
+                  {singleCellTracks.length > 0 && (
+                    <TrackGroup
+                      title="Regulatory Elements"
+                      tracks={singleCellTracks}
+                      enabledTracks={enabledTracks}
+                      onTrackToggle={onTrackToggle}
+                      onShowDetails={setSelectedDetailTrack}
+                    />
+                  )}
+
+                  {filteredTracks.length === 0 && searchQuery && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        No tracks found matching "{searchQuery}"
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </CollapsibleTrigger>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
 
-          <CollapsibleContent>
-            <div className="border-t border-border/30 p-3 sm:p-4 space-y-3 sm:space-y-4">
-              {/* Track Groups */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Tissue-Specific Tracks - Show first when available */}
-                {tissueSpecificTracksList.length > 0 && (
-                  <TrackGroup
-                    title="Tissue-Specific Tracks"
-                    tracks={tissueSpecificTracksList}
-                    enabledTracks={enabledTracks}
-                    onTrackToggle={onTrackToggle}
-                    onShowDetails={setSelectedDetailTrack}
-                  />
-                )}
-
-                {/* Gene Annotation */}
-                {geneAnnotation.length > 0 && (
-                  <TrackGroup
-                    title="Gene Annotation"
-                    tracks={geneAnnotation}
-                    enabledTracks={enabledTracks}
-                    onTrackToggle={onTrackToggle}
-                    onShowDetails={setSelectedDetailTrack}
-                  />
-                )}
-
-                {/* Single Cell/Tissue Tracks */}
-                {singleCellTracks.length > 0 && (
-                  <TrackGroup
-                    title="Regulatory Elements"
-                    tracks={singleCellTracks}
-                    enabledTracks={enabledTracks}
-                    onTrackToggle={onTrackToggle}
-                    onShowDetails={setSelectedDetailTrack}
-                  />
-                )}
-
-                {/* No results */}
-                {filteredTracks.length === 0 && searchQuery && (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                      No tracks found matching "{searchQuery}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        <EnhancedTissueTrackSelector
+          enabledTracks={enabledTracks}
+          onTrackToggle={onTrackToggle}
+          onBatchToggle={onBatchToggle}
+        />
       </div>
 
-      {/* Track Details Modal */}
       <TrackDetailsModal
         trackId={selectedDetailTrack}
         isOpen={selectedDetailTrack !== null}

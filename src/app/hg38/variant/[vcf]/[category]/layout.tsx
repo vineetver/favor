@@ -40,7 +40,7 @@ export default async function VariantLayout({
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <VariantHeader variant={variant} />
 
-          <div className="mb-6 lg:ml-80">
+          <div className="mb-6">
             <NavigationTabs
               items={VARIANT_NAVIGATION.map((cat) => ({
                 name: cat.name,
