@@ -19,9 +19,9 @@ export function getSearchRoute(
 
   try {
     const routes: Record<QueryType, string> = {
-      rsid: `/${genome}/rsid/${query.toLowerCase()}/summary/basic`,
-      gene: `/${genome}/gene/${query.toUpperCase()}/gene-level-annotation/info-and-ids`,
-      variant: `/${genome}/variant/${query.toUpperCase()}/summary/basic`,
+      rsid: `/${genome}/rsid/${query.toLowerCase()}/global-annotation/llm-summary`,
+      gene: `/${genome}/gene/${query.toUpperCase()}/gene-level-annotation/llm-summary`,
+      variant: `/${genome}/variant/${query.toUpperCase()}/global-annotation/llm-summary`,
       region: `/${genome}/region/${query}/SNV-summary/allele-distribution`,
     };
 

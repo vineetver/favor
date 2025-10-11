@@ -25,6 +25,9 @@ ai-chat-bot-components/
 .DS_Store
 *.pem
 
+# cache
+.cache/
+
 # certificates
 /certs/
 *.crt

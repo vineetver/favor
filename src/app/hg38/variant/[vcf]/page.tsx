@@ -8,5 +8,5 @@ interface VariantRedirectProps {
 
 export default function VariantRedirect({ params }: VariantRedirectProps) {
   const { vcf } = params;
-  redirect(`/hg38/variant/${vcf}/summary/basic`);
+  redirect(`/hg38/variant/${vcf}/global-annotation/llm-summary`);
 }

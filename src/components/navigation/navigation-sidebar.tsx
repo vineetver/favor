@@ -32,7 +32,7 @@ export function NavigationSidebar({ items, basePath }: NavigationSidebarProps) {
   };
 
   return (
-    <aside className="hidden lg:block w-80 px-4 py-2">
+    <aside className="hidden lg:block w-80 px-4">
       <nav className="space-y-0.5">
         {items.map((item) => {
           const isActive = isActiveItem(item.slug);

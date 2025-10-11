@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle";
+import { DataTableRangeFilter } from "@/components/ui/data-table-range-filter";
 import { ServerSideFacetedFilter } from "./server-side-faceted-filter";
 import { NoDataState } from "@/components/ui/error-states";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,6 +47,14 @@ interface ServerSideDataGridProps<TData, TValue> {
       count?: number;
       icon?: React.ComponentType<{ className?: string }>;
     }>;
+  }>;
+  rangeFilters?: Array<{
+    columnId: string;
+    title: string;
+    min: number;
+    max: number;
+    step?: number;
+    formatValue?: (value: number) => string;
   }>;
   onExport?: (data: TData[], filename?: string) => void;
   exportFilename?: string;
@@ -74,6 +83,7 @@ export function ServerSideDataGrid<TData, TValue>({
   title,
   description,
   facetedFilters = [],
+  rangeFilters = [],
   onExport,
   exportFilename = "data.csv",
   isLoading = false,
@@ -252,9 +262,9 @@ export function ServerSideDataGrid<TData, TValue>({
             </div>
           </div>
 
-          {facetedFilters.length > 0 && (
+          {(facetedFilters.length > 0 || rangeFilters.length > 0) && (
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
-              <div className="flex flex-wrap items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {facetedFilters.map((filter) => (
                   <ServerSideFacetedFilter
                     key={filter.columnId}
@@ -263,6 +273,32 @@ export function ServerSideDataGrid<TData, TValue>({
                     options={filter.options}
                   />
                 ))}
+                {rangeFilters.map((filter) => {
+                  const column = table.getColumn(filter.columnId);
+                  return (
+                    <DataTableRangeFilter
+                      key={filter.columnId}
+                      column={
+                        column
+                          ? {
+                              getFilterValue: () =>
+                                column.getFilterValue() as
+                                  | [number, number]
+                                  | undefined,
+                              setFilterValue: (
+                                value: [number, number] | undefined,
+                              ) => column.setFilterValue(value),
+                            }
+                          : undefined
+                      }
+                      title={filter.title}
+                      min={filter.min}
+                      max={filter.max}
+                      step={filter.step}
+                      formatValue={filter.formatValue}
+                    />
+                  );
+                })}
                 {columnFilters.length > 0 && (
                   <Button
                     variant="ghost"

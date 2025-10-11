@@ -8,5 +8,5 @@ interface GeneRedirectProps {
 
 export default function GeneRedirect({ params }: GeneRedirectProps) {
   const { geneName } = params;
-  redirect(`/hg19/gene/${geneName}/gene-level-annotation/info-and-ids`);
+  redirect(`/hg19/gene/${geneName}/gene-level-annotation/llm-summary`);
 }

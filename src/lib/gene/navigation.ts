@@ -14,6 +14,7 @@ export const GENE_NAVIGATION: NavigationCategory[] = [
     name: "Gene Level Annotation",
     slug: "gene-level-annotation",
     subCategories: [
+      { text: "LLM Summary", slug: "llm-summary" },
       { text: "Info and IDs", slug: "info-and-ids" },
       { text: "Function", slug: "function" },
       { text: "Human Phenotype", slug: "human-phenotype" },

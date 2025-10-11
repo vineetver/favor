@@ -8,7 +8,11 @@ import { fetchRegionTableData } from "@/lib/region/table/api";
 import { fetchRegionSummary } from "@/lib/region/summary/api";
 import { fetchGeneTableData } from "@/lib/gene/table/api";
 import { fetchGeneSummary, getSummaryByCategory } from "@/lib/gene/summary/api";
-import { buildFiltersQuery, buildSortingQuery } from "@/lib/utils/query";
+import {
+  buildFiltersQuery,
+  buildSortingQuery,
+  extractNumericFilters,
+} from "@/lib/utils/query";
 import {
   genecodeCategory,
   clinsig,
@@ -152,16 +156,60 @@ export function ServerSideDataTable({
     return filters;
   }, [serverState.summary]);
 
+  const rangeFilters = useMemo(() => {
+    return [
+      {
+        columnId: "cadd_phred",
+        title: "CADD Phred",
+        min: 0,
+        max: 50,
+        step: 0.1,
+      },
+      {
+        columnId: "apc_conservation_v2",
+        title: "aPC Conservation",
+        min: 0,
+        max: 50,
+        step: 0.1,
+      },
+      {
+        columnId: "apc_protein_function_v3",
+        title: "aPC Protein Function",
+        min: 0,
+        max: 50,
+        step: 0.1,
+      },
+      {
+        columnId: "af_total",
+        title: "Total AF",
+        min: 0,
+        max: 1,
+        step: 0.0001,
+        formatValue: (v: number) => v.toExponential(2),
+      },
+      {
+        columnId: "bravo_af",
+        title: "Bravo AF",
+        min: 0,
+        max: 1,
+        step: 0.0001,
+        formatValue: (v: number) => v.toExponential(2),
+      },
+    ];
+  }, []);
+
   const fetchData = async (resetPagination = false) => {
     setServerState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const filtersQuery = buildFiltersQuery(columnFilters);
       const sortingQuery = buildSortingQuery(sorting);
+      const numericFilters = extractNumericFilters(columnFilters);
 
       // Uncomment for debugging:
       // console.log("Filter Debug - columnFilters:", columnFilters);
       // console.log("Filter Debug - filtersQuery:", filtersQuery);
+      // console.log("Filter Debug - numericFilters:", numericFilters);
       // console.log("Filter Debug - sortingQuery:", sortingQuery);
 
       let result;
@@ -174,6 +222,7 @@ export function ServerSideDataTable({
             subcategory,
             filtersQuery,
             sortingQuery,
+            numericFilters,
             pageSize: serverState.pageSize,
             cursor: resetPagination
               ? undefined
@@ -201,6 +250,7 @@ export function ServerSideDataTable({
             subcategory,
             filtersQuery,
             sortingQuery,
+            numericFilters,
             pageSize: serverState.pageSize,
             cursor: resetPagination
               ? undefined
@@ -314,6 +364,7 @@ export function ServerSideDataTable({
         description={description}
         isLoading={serverState.loading}
         facetedFilters={facetedFilters}
+        rangeFilters={rangeFilters}
         onExport={handleExport}
         exportFilename={`${type}-variants-${entityId}.tsv`}
         emptyState={{

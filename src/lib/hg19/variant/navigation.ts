@@ -11,25 +11,11 @@ export interface NavigationCategory {
 
 export const HG19_VARIANT_NAVIGATION: NavigationCategory[] = [
   {
-    name: "Summary",
-    slug: "summary",
-    subCategories: [
-      { text: "Basic", slug: "basic" },
-      { text: "Category", slug: "category" },
-      { text: "Clinvar", slug: "clinvar" },
-      { text: "Integrative", slug: "integrative" },
-      { text: "Protein Function", slug: "protein-function" },
-      { text: "Conservation", slug: "conservation" },
-      { text: "Epigenetics", slug: "epigenetics" },
-      { text: "Mutation Rate", slug: "mutation-rate" },
-      { text: "Alphamissense", slug: "alphamissense" },
-    ],
-  },
-  {
     name: "Global Annotation",
     slug: "global-annotation",
     subCategories: [
-      { text: "Basic", slug: "basic" },
+      { text: "Variant Summary", slug: "llm-summary" },
+      { text: "Basic Information", slug: "basic" },
       { text: "Category", slug: "category" },
       { text: "Clinvar", slug: "clinvar" },
       { text: "Ancestry Specific AF", slug: "ancestry-af" },

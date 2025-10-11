@@ -78,7 +78,7 @@ export function NavigationTabs({
         ref={scrollContainerRef}
         className="overflow-x-auto scrollbar-hide"
       >
-        <div className="inline-flex items-center gap-2 bg-muted/40 p-1.5 pl-1 rounded-xl min-w-fit">
+        <div className="inline-flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/40 min-w-fit">
           {items.map((item) => {
             const Icon = iconMap[item.slug];
             const isActive = activeItem === item.slug;
@@ -88,27 +88,25 @@ export function NavigationTabs({
                 key={item.slug}
                 href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}`}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5",
+                  "relative flex items-center gap-2 px-4 py-2.5",
                   "rounded-lg whitespace-nowrap touch-manipulation",
-                  "text-sm sm:text-base font-medium transition-all duration-300 ease-out",
+                  "text-base font-medium transition-all duration-300 ease-out",
                   "hover:scale-[1.02] active:scale-[0.98]",
                   isActive && [
-                    "bg-primary text-primary-foreground shadow-lg shadow-primary/25",
-                    "hover:bg-primary/90",
+                    "bg-primary text-primary-foreground",
+                    "shadow-lg shadow-primary/30 ring-1 ring-primary/20",
+                    "hover:bg-primary/90 hover:shadow-xl",
                   ],
                   !isActive && [
-                    "text-muted-foreground hover:text-foreground",
-                    "hover:bg-background/60",
+                    "text-muted-foreground",
+                    "hover:text-foreground hover:bg-background/60",
                   ],
                 )}
               >
                 {Icon && (
-                  <Icon className={cn(
-                    "w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300",
-                    isActive && "scale-110"
-                  )} />
+                  <Icon className="w-5 h-5 flex-shrink-0 transition-all duration-300" />
                 )}
-                <span>{item.name}</span>
+                <span className="tracking-tight">{item.name}</span>
               </Link>
             );
           })}
@@ -116,11 +114,11 @@ export function NavigationTabs({
       </div>
 
       {canScrollRight && (
-        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
       )}
 
       {canScrollLeft && (
-        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background via-background/80 to-transparent pointer-events-none" />
       )}
     </div>
   );

@@ -8,5 +8,5 @@ interface RsidRedirectProps {
 
 export default function RsidRedirect({ params }: RsidRedirectProps) {
   const { rsid } = params;
-  redirect(`/hg38/rsid/${rsid}/summary/basic`);
+  redirect(`/hg38/rsid/${rsid}/global-annotation/llm-summary`);
 }

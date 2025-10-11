@@ -23,7 +23,7 @@ import { TrackDetailsModal } from "@/components/features/browser/genome-browser/
 import { TissueTrackSelectorDialog } from "@/components/features/browser/ccre/tissue-track-selector-dialog";
 import { useTissueSpecificTracks } from "@/lib/hooks/use-tissue-specific-tracks";
 import { TissueConfig } from "@/lib/variant/ccre/tissue-config";
-import { generateTissueSpecificTracks } from "@/lib/tracks/dynamic-track-generator";
+import { generateTissueSpecificTracks, DynamicTrack } from "@/lib/tracks/dynamic-track-generator";
 
 // Category color mapping
 const getCategoryColor = (categoryId: string): string => {
@@ -316,7 +316,7 @@ function TrackSelectorContent({
   const [showTissueDialog, setShowTissueDialog] = useState(false);
 
   const allTissueSpecificTracks = useMemo(() => {
-    const tracks = [];
+    const tracks: DynamicTrack[] = [];
     const tissues = Object.keys(TissueConfig);
     tissues.forEach((tissue) => {
       const subtissues = TissueConfig[tissue];
