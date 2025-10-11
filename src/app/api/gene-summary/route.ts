@@ -3,7 +3,7 @@ import { streamText } from "ai";
 import { prisma } from "@/lib/prisma";
 import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 function constructGenePrompt(geneData: any, symbol: string): string {
   const sections: string[] = [];

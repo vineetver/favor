@@ -9,7 +9,7 @@ import { fetchPGBoost } from "@/lib/variant/pgboost/api";
 import { fetchScentTissueByVCF } from "@/lib/variant/scent/api";
 import { prisma } from "@/lib/prisma";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 function constructVariantPrompt(
   variant: Variant,
