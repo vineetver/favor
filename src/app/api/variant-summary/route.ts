@@ -363,18 +363,25 @@ export async function POST(req: Request) {
         generateSummaryInBackground(vcf, model);
         return Response.json({ status: "generating" });
       }
+      if (existingRecord.status === "pending") {
+        await prisma.variantSummary.update({
+          where: { vcf },
+          data: { status: "generating" },
+        });
+        generateSummaryInBackground(vcf, model);
+        return Response.json({ status: "generating" });
+      }
     } else {
       await prisma.variantSummary.create({
         data: {
           vcf,
           modelId: model,
-          status: "pending",
+          status: "generating",
         },
       });
+      generateSummaryInBackground(vcf, model);
+      return Response.json({ status: "generating" });
     }
-
-    generateSummaryInBackground(vcf, model);
-    return Response.json({ status: "generating" });
   } catch (error) {
     console.error("Error in variant-summary route:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to generate variant summary";
