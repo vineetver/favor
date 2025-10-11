@@ -2,6 +2,7 @@ import { myProvider } from "@/lib/ai";
 import { streamText } from "ai";
 import { prisma } from "@/lib/prisma";
 import { fetchGeneAnnotation } from "@/lib/gene/annotation/api";
+import { waitUntil } from "@vercel/functions";
 
 export const maxDuration = 300;
 
@@ -224,7 +225,7 @@ export async function POST(req: Request) {
           where: { symbol },
           data: { status: "generating", error: null },
         });
-        generateGeneSummaryInBackground(symbol, model);
+        waitUntil(generateGeneSummaryInBackground(symbol, model));
         return Response.json({ status: "generating" });
       }
       if (existingRecord.status === "pending") {
@@ -232,7 +233,7 @@ export async function POST(req: Request) {
           where: { symbol },
           data: { status: "generating" },
         });
-        generateGeneSummaryInBackground(symbol, model);
+        waitUntil(generateGeneSummaryInBackground(symbol, model));
         return Response.json({ status: "generating" });
       }
     } else {
@@ -243,7 +244,7 @@ export async function POST(req: Request) {
           status: "generating",
         },
       });
-      generateGeneSummaryInBackground(symbol, model);
+      waitUntil(generateGeneSummaryInBackground(symbol, model));
       return Response.json({ status: "generating" });
     }
   } catch (error) {

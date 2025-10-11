@@ -8,6 +8,7 @@ import { fetchCV2F } from "@/lib/variant/cv2f/api";
 import { fetchPGBoost } from "@/lib/variant/pgboost/api";
 import { fetchScentTissueByVCF } from "@/lib/variant/scent/api";
 import { prisma } from "@/lib/prisma";
+import { waitUntil } from "@vercel/functions";
 
 export const maxDuration = 300;
 
@@ -360,7 +361,7 @@ export async function POST(req: Request) {
           where: { vcf },
           data: { status: "generating", error: null },
         });
-        generateSummaryInBackground(vcf, model);
+        waitUntil(generateSummaryInBackground(vcf, model));
         return Response.json({ status: "generating" });
       }
       if (existingRecord.status === "pending") {
@@ -368,7 +369,7 @@ export async function POST(req: Request) {
           where: { vcf },
           data: { status: "generating" },
         });
-        generateSummaryInBackground(vcf, model);
+        waitUntil(generateSummaryInBackground(vcf, model));
         return Response.json({ status: "generating" });
       }
     } else {
@@ -379,7 +380,7 @@ export async function POST(req: Request) {
           status: "generating",
         },
       });
-      generateSummaryInBackground(vcf, model);
+      waitUntil(generateSummaryInBackground(vcf, model));
       return Response.json({ status: "generating" });
     }
   } catch (error) {
