@@ -37,7 +37,7 @@ export const cosmicColumns: ColumnDef<Cosmic>[] = [
         value,
         (str: string) => (
           <ExternalLink
-            href={`/hg38/variant/${encodeURIComponent(str)}/summary/basic`}
+            href={`/hg38/variant/${encodeURIComponent(str)}/global-annotation/llm-summary`}
             className="font-mono text-sm hover:text-primary"
           >
             {str}

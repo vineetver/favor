@@ -55,7 +55,7 @@ function renderVariantLink(value: unknown) {
   if (!isValidString(value)) return null;
 
   return (
-    <a href={`/hg38/variant/${value}/summary/basic`} className="underline">
+    <a href={`/hg38/variant/${value}/global-annotation/llm-summary`} className="underline">
       {value}
     </a>
   );

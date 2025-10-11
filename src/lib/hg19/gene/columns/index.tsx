@@ -104,7 +104,7 @@ export const HG19GeneTableColumns: ColumnDef<any, any>[] = [
       if (!variant_vcf) return null;
       return (
         <a
-          href={`/hg19/variant/${variant_vcf}/summary/basic`}
+          href={`/hg19/variant/${variant_vcf}/global-annotation/llm-summary`}
           className="underline"
         >
           {variant_vcf}
