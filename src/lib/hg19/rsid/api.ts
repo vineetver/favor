@@ -1,11 +1,11 @@
 import type { VariantHg19 } from "../variant/types";
 import { clickHouseClient } from "@/lib/clickhouse/client";
+import { addSyntheticApcFields } from "../variant/utils";
 
 export async function fetchHg19VariantByRsid(
   rsid: string,
 ): Promise<VariantHg19 | null> {
   try {
-    // Optimized query with BETWEEN for better index usage
     const query = `
       WITH
         (SELECT chromosome  FROM production.rsid_lookup WHERE rsid = {rsid:String} LIMIT 1) AS chr_,
@@ -19,12 +19,14 @@ export async function fetchHg19VariantByRsid(
       LIMIT 1
     `;
 
-    const rows = await clickHouseClient.query<VariantHg19>({
+    const rows = await clickHouseClient.query<any>({
       query,
       query_params: { rsid },
     });
 
-    return rows && rows.length > 0 ? rows[0] : null;
+    if (!rows || rows.length === 0) return null;
+
+    return await addSyntheticApcFields(rows[0]);
   } catch (error) {
     console.error(
       "Error fetching HG19 variant by rsID from ClickHouse:",
@@ -38,7 +40,6 @@ export async function fetchHg19VariantsByRsid(
   rsid: string,
 ): Promise<VariantHg19[]> {
   try {
-    // First get all variant_vcf values for this rsID, then fetch each variant
     const lookupQuery = `
       SELECT variant_vcf, chromosome, position
       FROM production.rsid_lookup
@@ -59,7 +60,6 @@ export async function fetchHg19VariantsByRsid(
       return [];
     }
 
-    // For multiple variants, fetch them individually to avoid join issues
     const variants: VariantHg19[] = [];
 
     for (const lookup of lookupRows) {
@@ -72,7 +72,7 @@ export async function fetchHg19VariantsByRsid(
         LIMIT 1
       `;
 
-      const variantRows = await clickHouseClient.query<VariantHg19>({
+      const variantRows = await clickHouseClient.query<any>({
         query: variantQuery,
         query_params: {
           chromosome: lookup.chromosome,
@@ -82,7 +82,8 @@ export async function fetchHg19VariantsByRsid(
       });
 
       if (variantRows && variantRows.length > 0) {
-        variants.push(variantRows[0]);
+        const variantWithSynthetic = await addSyntheticApcFields(variantRows[0]);
+        variants.push(variantWithSynthetic);
       }
     }
 
