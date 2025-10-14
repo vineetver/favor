@@ -220,7 +220,7 @@ export function BarChart({
             tick={{ fontSize: CHART_THEME.axis.fontSize }}
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
-            domain={["dataMin", "dataMax"]}
+            domain={[0, "auto"]}
             allowDecimals={true}
             tickCount={6}
             label={{
@@ -257,7 +257,7 @@ export function BarChart({
             tick={{ fontSize: CHART_THEME.axis.fontSize }}
             stroke={CHART_THEME.axis.stroke}
             tickFormatter={formatYAxis}
-            domain={["dataMin", "dataMax"]}
+            domain={[0, "auto"]}
             allowDecimals={true}
             tickCount={6}
           />

@@ -1670,7 +1670,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 7,
         header: "Mutation Taster",
-        accessor: "mutation_taster_score",
+        accessor: "mutationtaster_score",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -1701,7 +1701,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 8,
         header: "Mutation Assessor",
-        accessor: "mutation_assessor_score",
+        accessor: "mutationassessor_score",
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
@@ -2237,7 +2237,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 5,
         header: "H3K27ac",
-        accessor: "encodeh3k27ac_sum",
+        accessor: "ench3k27ac",
         activity: epigeneticsCCode("Active"),
         tooltip: (
           <div className="space-y-2 text-left">
@@ -2280,7 +2280,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 6,
         header: "H3K4me1",
-        accessor: "encodeh3k4me1_sum",
+        accessor: "ench3k4me1",
         activity: epigeneticsCCode("Active"),
         tooltip: (
           <div className="space-y-2 text-left">
@@ -2368,7 +2368,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
       {
         key: 8,
         header: "H3K4me3",
-        accessor: "encodeh3k4me3_sum",
+        accessor: "ench3k4me3",
         activity: epigeneticsCCode("Active"),
         tooltip: (
           <div className="space-y-2 text-left">
