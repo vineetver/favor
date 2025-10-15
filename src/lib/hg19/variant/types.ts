@@ -102,6 +102,7 @@ export type VariantHg19 = {
   mutation_density_apc_scaled_phred_score: number;
   apc_local_nucleotide_diversity_v3: number | null;
   apc_mappability: number | null;
+  apc_mutation_density: number | null;
   aloft_score: number;
   aloft_alof_description: string;
   aloft_alof_score: number;
