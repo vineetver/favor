@@ -108,7 +108,9 @@ export const Greeting = ({ setInput }: GreetingProps) => {
         
       </motion.div>
       <p className="text-sm font-medium text-muted-foreground mt-4 text-center">
-          ⚠️ Research Use Only: FAVOR-GPT outputs are intended for research and educational purposes only and are not suitable for clinical or diagnostic use. As an AI-assisted system, FAVOR-GPT may occasionally generate incomplete or inaccurate results due to the probabilistic nature of language models. Users should interpret the outputs critically and verify findings through independent validation.
+          ⚠️ Research Use Only: FAVOR-GPT outputs are intended for research and educational purposes only and are not suitable for clinical or diagnostic use. 
+          As an AI-assisted system, FAVOR-GPT may occasionally generate incomplete or inaccurate results due to the probabilistic nature of language models. 
+          Users should interpret the outputs critically and verify findings through independent validation.
         </p>
     </div>
   );
