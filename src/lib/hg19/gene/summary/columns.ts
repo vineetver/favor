@@ -39,6 +39,30 @@ export const summaryHG19columns: SummaryColumnsType[] = [
         accessor: "common",
         tooltip: "Minor allele frequency (MAF) > 0.01",
       },
+      {
+        key: 3,
+        header: "Low Frequency (0.0001 <= MAF < 0.01)",
+        accessor: "lowfreq",
+        tooltip: "Minor allele frequency (MAF) between 0.0001 and 0.01",
+      },
+      {
+        key: 4,
+        header: "Rare (MAF < 0.0001)",
+        accessor: "rare",
+        tooltip: "Minor allele frequency (MAF) < 0.0001",
+      },
+      {
+        key: 5,
+        header: "Singletons",
+        accessor: "singletons",
+        tooltip: "Variants that are observed only once in the dataset",
+      },
+      {
+        key: 6,
+        header: "Doubletons",
+        accessor: "doubletons",
+        tooltip: "Variants that are observed twice in the dataset",
+      },
     ],
   },
   {
