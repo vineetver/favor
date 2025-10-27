@@ -42,7 +42,7 @@ export interface PopulationConfig {
 const POPULATION_CONFIGS: PopulationConfig[] = [
   {
     code: "Overall AF",
-    name: "Overall Population",
+    name: "ALL (Overall Population)",
     maleField: "af_male",
     femaleField: "af_female",
     exomeMaleField: "af_xy",
@@ -52,7 +52,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "AFR AF",
-    name: "African/African American",
+    name: "AFR (African/African American)",
     maleField: "af_afr_male",
     femaleField: "af_afr_female",
     exomeMaleField: "af_afr_xy",
@@ -62,7 +62,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "AMI AF",
-    name: "Amish",
+    name: "AMI (Amish)",
     maleField: "af_ami_male",
     femaleField: "af_ami_female",
     exomeMaleField: "af_ami_xy",
@@ -72,7 +72,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "AMR AF",
-    name: "American",
+    name: "AMR (Ad Mixed American)",
     maleField: "af_amr_male",
     femaleField: "af_amr_female",
     exomeMaleField: "af_amr_xy",
@@ -82,7 +82,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "ASJ AF",
-    name: "Ashkenazi Jewish",
+    name: "ASJ (Ashkenazi Jewish)",
     maleField: "af_asj_male",
     femaleField: "af_asj_female",
     exomeMaleField: "af_asj_xy",
@@ -92,7 +92,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "EAS AF",
-    name: "East Asian",
+    name: "EAS (East Asian)",
     maleField: "af_eas_male",
     femaleField: "af_eas_female",
     exomeMaleField: "af_eas_xy",
@@ -102,7 +102,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "FIN AF",
-    name: "Finnish",
+    name: "FIN (Finnish in Finland)",
     maleField: "af_fin_male",
     femaleField: "af_fin_female",
     exomeMaleField: "af_fin_xy",
@@ -112,7 +112,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "NFE AF",
-    name: "Non-Finnish European",
+    name: "NFE (Non-Finnish European)",
     maleField: "af_nfe_male",
     femaleField: "af_nfe_female",
     exomeMaleField: "af_nfe_xy",
@@ -122,7 +122,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "OTH AF",
-    name: "Other",
+    name: "OTH (Other Populations)",
     maleField: "af_oth_male",
     femaleField: "af_oth_female",
     exomeMaleField: "af_remaining_xy",
@@ -132,7 +132,7 @@ const POPULATION_CONFIGS: PopulationConfig[] = [
   },
   {
     code: "SAS AF",
-    name: "South Asian",
+    name: "SAS (South Asian)",
     maleField: "af_sas_male",
     femaleField: "af_sas_female",
     exomeMaleField: "af_sas_xy",
@@ -199,7 +199,7 @@ export interface AncestryFrequency {
 const ANCESTRY_POPULATION_CONFIGS = [
   {
     code: "AFR",
-    name: "African/African American",
+    name: "AFR (African)",
     g1000Field: "tg_afr" as keyof Variant,
     gnomad31Field: "af_afr" as keyof Variant,
     exomeField: "af_afr" as keyof GnomadData,
@@ -207,7 +207,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "AMR",
-    name: "American",
+    name: "AMR (Ad Mixed American)",
     g1000Field: "tg_amr" as keyof Variant,
     gnomad31Field: "af_amr" as keyof Variant,
     exomeField: "af_amr" as keyof GnomadData,
@@ -215,7 +215,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "EAS",
-    name: "East Asian",
+    name: "EAS (East Asian)",
     g1000Field: "tg_eas" as keyof Variant,
     gnomad31Field: "af_eas" as keyof Variant,
     exomeField: "af_eas" as keyof GnomadData,
@@ -223,7 +223,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "EUR",
-    name: "European",
+    name: "EUR (European)",
     g1000Field: "tg_eur" as keyof Variant,
     gnomad31Field: null,
     exomeField: null,
@@ -231,7 +231,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "NFE",
-    name: "Non-Finnish European",
+    name: "NFE (Non-Finnish European)",
     g1000Field: null,
     gnomad31Field: "af_nfe" as keyof Variant,
     exomeField: "af_nfe" as keyof GnomadData,
@@ -239,7 +239,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "FIN",
-    name: "Finnish",
+    name: "FIN (Finnish in Finland)",
     g1000Field: null,
     gnomad31Field: "af_fin" as keyof Variant,
     exomeField: "af_fin" as keyof GnomadData,
@@ -247,7 +247,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "SAS",
-    name: "South Asian",
+    name: "SAS (South Asian)",
     g1000Field: "tg_sas" as keyof Variant,
     gnomad31Field: "af_sas" as keyof Variant,
     exomeField: "af_sas" as keyof GnomadData,
@@ -255,7 +255,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "ASJ",
-    name: "Ashkenazi Jewish",
+    name: "ASJ (Ashkenazi Jewish)",
     g1000Field: null,
     gnomad31Field: "af_asj" as keyof Variant,
     exomeField: "af_asj" as keyof GnomadData,
@@ -263,7 +263,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "AMI",
-    name: "Amish",
+    name: "AMI (Amish)",
     g1000Field: null,
     gnomad31Field: "af_ami" as keyof Variant,
     exomeField: "af_ami" as keyof GnomadData,
@@ -271,7 +271,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "MID",
-    name: "Middle Eastern",
+    name: "MID (Middle Eastern)",
     g1000Field: null,
     gnomad31Field: null,
     exomeField: "af_mid" as keyof GnomadData,
@@ -279,7 +279,7 @@ const ANCESTRY_POPULATION_CONFIGS = [
   },
   {
     code: "REMAINING",
-    name: "Remaining",
+    name: "REMAINING (Other Populations)",
     g1000Field: null,
     gnomad31Field: "af_oth" as keyof Variant,
     exomeField: "af_remaining" as keyof GnomadData,

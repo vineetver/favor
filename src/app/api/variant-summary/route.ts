@@ -87,11 +87,11 @@ function constructVariantPrompt(
   }
 
   sections.push("Ancestry frequencies:");
-  if (variant.af_afr !== null) sections.push(`  AFR: ${variant.af_afr.toExponential(3)}`);
-  if (variant.af_amr !== null) sections.push(`  AMR: ${variant.af_amr.toExponential(3)}`);
-  if (variant.af_eas !== null) sections.push(`  EAS: ${variant.af_eas.toExponential(3)}`);
-  if (variant.af_nfe !== null) sections.push(`  NFE: ${variant.af_nfe.toExponential(3)}`);
-  if (variant.af_sas !== null) sections.push(`  SAS: ${variant.af_sas.toExponential(3)}`);
+  if (variant.af_afr !== null) sections.push(`  AFR (African): ${variant.af_afr.toExponential(3)}`);
+  if (variant.af_amr !== null) sections.push(`  AMR (Ad Mixed American): ${variant.af_amr.toExponential(3)}`);
+  if (variant.af_eas !== null) sections.push(`  EAS (East Asian): ${variant.af_eas.toExponential(3)}`);
+  if (variant.af_nfe !== null) sections.push(`  NFE (Non-Finnish European): ${variant.af_nfe.toExponential(3)}`);
+  if (variant.af_sas !== null) sections.push(`  SAS (South Asian): ${variant.af_sas.toExponential(3)}`);
 
   sections.push("\n# EVOLUTIONARY CONSERVATION");
   if (variant.mamphylop !== null) sections.push(`PhyloP (100-way): ${variant.mamphylop}`);

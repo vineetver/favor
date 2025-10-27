@@ -12,6 +12,17 @@ import { getCCREByVCF } from "@/lib/variant/ccre/api";
 import { fetchEntexDefault } from "@/lib/variant/entex/api";
 import { fetchABCPeaks, fetchABCScores } from "@/lib/variant/abc/api";
 
+const ANCESTRY_NAMES: Record<string, string> = {
+  afr: "AFR (African)",
+  amr: "AMR (Ad Mixed American)",
+  asj: "ASJ (Ashkenazi Jewish)",
+  eas: "EAS (East Asian)",
+  fin: "FIN (Finnish in Finland)",
+  mid: "MID (Middle Eastern)",
+  nfe: "NFE (Non-Finnish European)",
+  sas: "SAS (South Asian)",
+};
+
 export function getVariantAnalysis() {
   return tool({
     description:
@@ -62,7 +73,7 @@ export function getVariantAnalysis() {
         .nullable()
         .optional()
         .describe(
-          'Focus on specific populations (e.g., ["AFR", "EUR", "EAS"] for gnomAD ancestry groups)',
+          'Focus on specific populations (e.g., ["AFR", "AMR", "EAS"] - AFR: African, AMR: Ad Mixed American, EAS: East Asian, etc.)',
         ),
       includeGenderSpecific: z
         .boolean()
@@ -400,7 +411,9 @@ function aggregatePopulationData(data: any, options: any) {
 
       ancestries.forEach((anc) => {
         if (d[`af_${anc}`] !== undefined) {
-          ancestryData[anc.toUpperCase()] = {
+          const ancestryKey = anc.toUpperCase();
+          ancestryData[ancestryKey] = {
+            name: ANCESTRY_NAMES[anc] || ancestryKey,
             af: d[`af_${anc}`],
             ac: d[`ac_${anc}`],
             an: d[`an_${anc}`],
@@ -411,12 +424,12 @@ function aggregatePopulationData(data: any, options: any) {
             options.includeGenderSpecific &&
             d[`af_${anc}_xx`] !== undefined
           ) {
-            ancestryData[anc.toUpperCase()].female = {
+            ancestryData[ancestryKey].female = {
               af: d[`af_${anc}_xx`],
               ac: d[`ac_${anc}_xx`],
               an: d[`an_${anc}_xx`],
             };
-            ancestryData[anc.toUpperCase()].male = {
+            ancestryData[ancestryKey].male = {
               af: d[`af_${anc}_xy`],
               ac: d[`ac_${anc}_xy`],
               an: d[`an_${anc}_xy`],
@@ -895,9 +908,10 @@ function generateAnalysisSummary(variantData: any, variantCount: number) {
 // This prevents tool rerender issues and consolidates visualization logic
 
 function generatePopulationFrequencyChart(variantData: any) {
+  const ancestryCodes = ["AFR", "AMR", "ASJ", "EAS", "FIN", "MID", "NFE", "SAS"];
   const chartData: any = {
     datasets: [],
-    labels: ["AFR", "AMR", "ASJ", "EAS", "FIN", "MID", "NFE", "SAS"],
+    labels: ancestryCodes.map(code => ANCESTRY_NAMES[code.toLowerCase()] || code),
   };
 
   Object.entries(variantData).forEach(([variant, data]: [string, any]) => {

@@ -767,13 +767,13 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         tooltip: (
           <div className="space-y-2 text-left">
             <p>
-              <strong>AMR 1000G AF:</strong> 1000 Genomes Admixed American
+              <strong>AMR 1000G AF:</strong> 1000 Genomes AMR (Ad Mixed American)
               population allele frequency.
             </p>
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>
                 <strong>Population context:</strong> Represents allele frequency
-                in Admixed American ancestry samples
+                in AMR (Ad Mixed American) ancestry samples
               </li>
               <li>
                 <strong>Clinical relevance:</strong> Important for
@@ -788,7 +788,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         header: "AMR GNOMAD AF",
         accessor: "af_amr",
         tooltip:
-          "GNOMAD v3 Genome Ad Mixed American population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
+          "GNOMAD v3 Genome AMR (Ad Mixed American) population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
       },
       {
         key: 5,
@@ -940,7 +940,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         header: "AMR Male GNOMAD AF",
         accessor: "af_amr_male",
         tooltip:
-          "GNOMAD v3 Genome Ad Mixed American Male population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
+          "GNOMAD v3 Genome AMR (Ad Mixed American) Male population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
       },
       {
         key: 5,
@@ -1016,7 +1016,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
         header: "AMR Female GNOMAD AF",
         accessor: "af_amr_female",
         tooltip:
-          "GNOMAD v3 Genome Ad Mixed American Female population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
+          "GNOMAD v3 Genome AMR (Ad Mixed American) Female population frequency. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
       },
       {
         key: 5,

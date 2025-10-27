@@ -22,8 +22,8 @@ REQUIRED STRUCTURE - All fields marked REQUIRED must be provided:
 {
   "title": "Population Allele Frequencies",
   "data": [
-    { "population": "African (AFR)", "frequency": 10.5 },
-    { "population": "European (NFE)", "frequency": 8.2 }
+    { "population": "AFR (African)", "frequency": 10.5 },
+    { "population": "NFE (Non-Finnish European)", "frequency": 8.2 }
   ],
   "series": [
     { "type": "bar", "dataKey": "frequency", "label": "Allele Frequency" }
