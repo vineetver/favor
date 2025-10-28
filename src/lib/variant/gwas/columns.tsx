@@ -146,7 +146,23 @@ const StudyCell = ({ author }: { author: string }) => {
 };
 
 export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
-  // Most important: Statistical significance
+  {
+    accessorKey: "gwas_strongest_snp_risk_allele",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Risk Allele"
+        tooltip="The allele associated with increased risk or trait value"
+        sortable={false}
+      />
+    ),
+    cell: ({ row }) => (
+      <div className="font-mono text-left bg-muted/50 rounded px-2 py-1 inline-block">
+        {row.getValue("gwas_strongest_snp_risk_allele")}
+      </div>
+    ),
+    size: 110,
+  },
   {
     accessorKey: "gwas_p_value",
     header: ({ column }) => (
@@ -166,81 +182,12 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
       return a - b;
     },
   },
-  // Second most important: Effect magnitude
-  {
-    accessorKey: "gwas_or_or_beta",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Effect Size"
-        tooltip="Odds Ratio (OR) for binary traits or Beta coefficient for quantitative traits"
-      />
-    ),
-    cell: ({ row }) => (
-      <EffectSizeCell
-        value={row.getValue("gwas_or_or_beta") as string | null}
-      />
-    ),
-    size: 90,
-    sortingFn: (rowA, rowB) => {
-      const valueA = rowA.getValue("gwas_or_or_beta") as string | null;
-      const valueB = rowB.getValue("gwas_or_or_beta") as string | null;
-
-      if (!valueA && !valueB) return 0;
-      if (!valueA) return 1;
-      if (!valueB) return -1;
-
-      const a = parseFloat(valueA);
-      const b = parseFloat(valueB);
-      return Math.abs(Math.log(b)) - Math.abs(Math.log(a)); // Sort by effect magnitude
-    },
-    enableSorting: true,
-  },
-  // Third: What trait/disease this affects
-  {
-    accessorKey: "gwas_disease_trait",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Trait"
-        tooltip="Disease or phenotypic trait associated with this genetic variant"
-        sortable={false}
-      />
-    ),
-    cell: ({ row }) => (
-      <div
-        className="leading-tight text-left whitespace-normal break-words max-w-lg"
-        title={row.getValue("gwas_disease_trait")}
-      >
-        {row.getValue("gwas_disease_trait")}
-      </div>
-    ),
-  },
-  // Fourth: Allele details
-  {
-    accessorKey: "gwas_strongest_snp_risk_allele",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Risk Allele"
-        tooltip="The allele associated with increased risk or trait value"
-        sortable={false}
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="font-mono text-left bg-muted/50 rounded px-2 py-1 inline-block">
-        {row.getValue("gwas_strongest_snp_risk_allele")}
-      </div>
-    ),
-    size: 80,
-  },
-  // Fifth: Allele frequency
   {
     accessorKey: "gwas_risk_allele_frequency",
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
-        title="Allele Freq"
+        title="RAF"
         tooltip="Frequency of the risk allele in the study population (0.0-1.0)"
       />
     ),
@@ -261,7 +208,35 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     },
     enableSorting: true,
   },
-  // Less important: Confidence interval
+  {
+    accessorKey: "gwas_or_or_beta",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="OR/Beta"
+        tooltip="Odds Ratio (OR) for binary traits or Beta coefficient for quantitative traits"
+      />
+    ),
+    cell: ({ row }) => (
+      <EffectSizeCell
+        value={row.getValue("gwas_or_or_beta") as string | null}
+      />
+    ),
+    size: 90,
+    sortingFn: (rowA, rowB) => {
+      const valueA = rowA.getValue("gwas_or_or_beta") as string | null;
+      const valueB = rowB.getValue("gwas_or_or_beta") as string | null;
+
+      if (!valueA && !valueB) return 0;
+      if (!valueA) return 1;
+      if (!valueB) return -1;
+
+      const a = parseFloat(valueA);
+      const b = parseFloat(valueB);
+      return Math.abs(Math.log(b)) - Math.abs(Math.log(a));
+    },
+    enableSorting: true,
+  },
   {
     accessorKey: "gwas_95_ci_text",
     header: ({ column }) => (
@@ -278,7 +253,41 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     },
     size: 110,
   },
-  // Study metadata (least critical for interpretation)
+  {
+    accessorKey: "gwas_mapped_gene",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Mapped Gene"
+        tooltip="Gene(s) mapped to this genetic variant"
+        sortable={false}
+      />
+    ),
+    cell: ({ row }) => {
+      const gene = row.getValue("gwas_mapped_gene") as string;
+      return <GeneCell gene={gene} />;
+    },
+    size: 120,
+  },
+  {
+    accessorKey: "gwas_disease_trait",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Reported Trait"
+        tooltip="Disease or phenotypic trait associated with this genetic variant"
+        sortable={false}
+      />
+    ),
+    cell: ({ row }) => (
+      <div
+        className="leading-tight text-left whitespace-normal break-words max-w-lg"
+        title={row.getValue("gwas_disease_trait")}
+      >
+        {row.getValue("gwas_disease_trait")}
+      </div>
+    ),
+  },
   {
     accessorKey: "gwas_first_author",
     header: ({ column }) => (

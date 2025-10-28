@@ -144,6 +144,10 @@ export function processGwasDataForChart(
     ySpread: 0.15,
   },
 ): CategoryProcessingResult {
+  const DISPLAY_MAX = 150;
+  const DISPLAY_EXTREME_RANGE_START = 140;
+  const DISPLAY_EXTREME_RANGE_END = 150;
+
   const processed = data
     .map((d, index) => {
       let category = "Other";
@@ -163,19 +167,23 @@ export function processGwasDataForChart(
 
       const isAboveCutoff =
         originalYValue > GWAS_CONSTANTS.Y_AXIS_CUTOFF_THRESHOLD;
-      const yValue = isAboveCutoff
-        ? calculateStaggeredYPosition(
-            originalYValue,
-            d.rsid,
-            d.gwas_disease_trait,
-          )
-        : originalYValue;
+
+      let displayYValue;
+      if (originalYValue > DISPLAY_MAX) {
+        const normalizedValue = Math.min((originalYValue - DISPLAY_MAX) / 1000, 1);
+        displayYValue =
+          DISPLAY_EXTREME_RANGE_START +
+          normalizedValue *
+            (DISPLAY_EXTREME_RANGE_END - DISPLAY_EXTREME_RANGE_START);
+      } else {
+        displayYValue = originalYValue;
+      }
 
       return {
         ...d,
         category,
         xValue: 0,
-        yValue,
+        yValue: displayYValue,
         originalYValue,
         isAboveCutoff,
         radius,
@@ -207,7 +215,9 @@ export function processGwasDataForChart(
     );
 
     d.xValue = xValue;
-    d.yValue = Math.max(GWAS_CONSTANTS.Y_AXIS_MIN, d.yValue + yOffset);
+    d.yValue = d.isAboveCutoff
+      ? d.yValue
+      : Math.max(GWAS_CONSTANTS.Y_AXIS_MIN, d.yValue + yOffset);
   });
 
   return { processed, categories };

@@ -127,7 +127,7 @@ const ChartLegend = React.memo(function ChartLegend({
           </div>
           <div className="flex items-center gap-2">
             <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-blue-500 opacity-80"></div>
-            <span>Extremely significant (-log₁₀P {">"} 80)</span>
+            <span>Extremely high significance (-log₁₀P &gt; 80, displayed in compressed range)</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -171,7 +171,7 @@ export function GwasScatterChart({
   const chartDimensions: ChartDimensions = {
     width: "100%",
     height: 600,
-    margin: { top: 5, right: 15, bottom: 50, left: 0 },
+    margin: { top: 5, right: 15, bottom: 100, left: 5 },
     ...dimensions,
   };
 
@@ -209,7 +209,7 @@ export function GwasScatterChart({
   const chartData = filteredData;
   const dynamicCategories = chartDataMemo.categories;
 
-  const yAxisMax = GWAS_CONSTANTS.Y_AXIS_MAX;
+  const yAxisMax = 160;
 
   const selectedCategoryData = useMemo(() => {
     return selectedCategory
@@ -413,21 +413,15 @@ export function GwasScatterChart({
             dataKey="xValue"
             domain={[-0.5, dynamicCategories.length - 0.5]}
             ticks={dynamicCategories.map((_, i) => i)}
-            tickFormatter={(tick) => {
-              const category = dynamicCategories[tick] ?? "";
-              // Truncate long category names on mobile
-              return category.length > 8
-                ? `${category.slice(0, 6)}...`
-                : category;
-            }}
+            tickFormatter={(tick) => dynamicCategories[tick] ?? ""}
             angle={-35}
             textAnchor="end"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 16 }}
             label={{
               value: "Categories",
               position: "insideBottom",
-              offset: -5,
-              style: { fontSize: 10, fill: "#666" },
+              offset: -90,
+              style: { fontSize: 16, fill: "#666" },
             }}
             onClick={(data) => {
               if (typeof data?.value === "number") {
@@ -440,12 +434,12 @@ export function GwasScatterChart({
             type="number"
             dataKey="yValue"
             domain={[0, yAxisMax]}
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 16 }}
             label={{
               value: "-log₁₀P",
               angle: -90,
               position: "insideLeft",
-              style: { textAnchor: "middle", fontSize: 10, fill: "#666" },
+              style: { textAnchor: "middle", fontSize: 16, fill: "#666" },
             }}
           />
           <Tooltip

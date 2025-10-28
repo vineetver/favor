@@ -17,26 +17,24 @@ interface GwasCatalogDataDisplayProps {
 function GwasTable({ data }: { data: GWAS[] }) {
   const exportTSV = (filteredData: GWAS[]) => {
     const headers = [
-      "Disease/Trait",
       "Risk Allele",
       "P-value",
-      "-log10(P)",
       "RAF",
       "OR/Beta",
       "95% CI",
       "Mapped Gene",
-      "First Author",
+      "Reported Trait",
+      "Study",
       "PubMed ID",
     ];
     const rows = filteredData.map((row) => [
-      row.gwas_disease_trait,
       row.gwas_strongest_snp_risk_allele,
       row.gwas_p_value,
-      row.gwas_p_value_mlog,
       row.gwas_risk_allele_frequency,
       row.gwas_or_or_beta || "",
       row.gwas_95_ci_text || "",
       row.gwas_mapped_gene,
+      row.gwas_disease_trait,
       row.gwas_first_author,
       row.gwas_pubmedid,
     ]);
