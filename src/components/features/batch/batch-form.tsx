@@ -34,10 +34,17 @@ import {
 } from "@/components/ui/tooltip";
 
 const ACCEPTED_FILE_TYPES = [
+  ".txt",
+  ".csv",
+  ".tsv",
+  ".vcf",
+  ".gz",
   "text/plain",
   "text/csv",
   "text/tsv",
+  "text/tab-separated-values",
   "text/vcard",
+  "text/x-vcard",
   "application/gzip",
   "application/x-gzip",
 ];
@@ -75,11 +82,25 @@ const formSchema = z.object({
       message: "File is required",
     })
     .refine((file) => {
-      return file.size <= 35 * MB_BYTES; // Update this line
+      return file.size <= 35 * MB_BYTES;
     }, `File size should be less than 35MB.`)
     .refine(
-      (file) => ACCEPTED_FILE_TYPES.includes(file.type),
-      'File type should be "text" or "application/gzip".',
+      (file) => {
+        const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        const validExtensions = ['.txt', '.csv', '.tsv', '.vcf', '.gz'];
+        const validMimeTypes = [
+          'text/plain',
+          'text/csv',
+          'text/tsv',
+          'text/tab-separated-values',
+          'text/vcard',
+          'text/x-vcard',
+          'application/gzip',
+          'application/x-gzip',
+        ];
+        return validExtensions.includes(fileExt) || validMimeTypes.includes(file.type) || file.type === '';
+      },
+      'File must be TXT, CSV, TSV, VCF, or GZ format.',
     ),
 });
 
