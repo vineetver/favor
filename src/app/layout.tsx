@@ -8,6 +8,7 @@ import { ChatInterface } from "@/components/chat/chat-interface";
 import { cookies } from "next/headers";
 import { DEFAULT_MODEL_NAME, models } from "@/lib/ai/models";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@/components/ui/google-analytics";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -42,6 +43,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <GoogleAnalytics GA_TRACKING_ID={process.env.GA_TRACKING_ID} />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface font-sans text-on-surface min-h-screen`}
       >
