@@ -41,15 +41,15 @@ export default async function IntegrativePage({
           columns={[
             {
               type: "value" as const,
-              header: "Integrative Score",
+              header: "Integrative Score (PHRED Scale)",
               tooltip:
-                "Combined functional impact score integrating multiple prediction algorithms and conservation metrics",
+                "Combined functional impact score integrating multiple prediction algorithms and conservation metrics. PHRED scale: higher scores indicate greater functional impact. A score of 10 indicates the variant is in the top 10% most deleterious, 20 = top 1%, 30 = top 0.1%.",
             },
             {
               type: "percentile" as const,
-              header: "Percentile",
+              header: "Genome-wide Percentile",
               tooltip:
-                "Score transformed to percentile scale using formula: 10^(score * -0.1) * 100. Higher scores result in lower percentiles, indicating greater functional impact or statistical significance.",
+                "Genome-wide percentile rank of the variant. Score transformed to percentile scale using formula: 10^(score * -0.1) * 100. Lower percentiles indicate greater functional impact or statistical significance.",
             },
           ]}
         />

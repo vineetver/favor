@@ -37,24 +37,6 @@ export const femaleColumns: ColumnDef<FemaleFrequency>[] = [
     },
   },
   {
-    accessorKey: "female31",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="gnomAD v3.1 (Female)"
-        tooltip="Female allele frequency from gnomAD v3.1 database"
-        sortable={true}
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="font-mono text-pink-600">
-        {formatFrequency(row.getValue("female31"))}
-      </div>
-    ),
-    enableSorting: true,
-    sortingFn: createFrequencySortingFn("female31"),
-  },
-  {
     accessorKey: "female41_exome",
     header: ({ column }) => (
       <DataTableColumnHeader
@@ -112,24 +94,6 @@ export const maleColumns: ColumnDef<MaleFrequency>[] = [
     },
   },
   {
-    accessorKey: "male31",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="gnomAD v3.1 (Male)"
-        tooltip="Male allele frequency from gnomAD v3.1 database"
-        sortable={true}
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="font-mono text-blue-600">
-        {formatFrequency(row.getValue("male31"))}
-      </div>
-    ),
-    enableSorting: true,
-    sortingFn: createFrequencySortingFn("male31"),
-  },
-  {
     accessorKey: "male41_exome",
     header: ({ column }) => (
       <DataTableColumnHeader
@@ -171,9 +135,8 @@ export const maleColumns: ColumnDef<MaleFrequency>[] = [
 export const FEMALE_CHART_CONFIG = {
   title: "Female Allele Frequencies",
   subtitle: "XX chromosome allele frequencies across different populations",
-  keys: ["gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"] as string[],
+  keys: ["gnomAD v4.1 Exome", "gnomAD v4.1 Genome"] as string[],
   colors: [
-    "#ec4899", // pink-500 for v3.1
     "#be185d", // pink-700 for v4.1 Exome
     "#831843", // pink-800 for v4.1 Genome
   ] as string[],
@@ -183,9 +146,8 @@ export const FEMALE_CHART_CONFIG = {
 export const MALE_CHART_CONFIG = {
   title: "Male Allele Frequencies",
   subtitle: "XY chromosome allele frequencies across different populations",
-  keys: ["gnomAD v3.1", "gnomAD v4.1 Exome", "gnomAD v4.1 Genome"] as string[],
+  keys: ["gnomAD v4.1 Exome", "gnomAD v4.1 Genome"] as string[],
   colors: [
-    "#3b82f6", // blue-500 for v3.1
     "#1d4ed8", // blue-700 for v4.1 Exome
     "#1e3a8a", // blue-800 for v4.1 Genome
   ] as string[],

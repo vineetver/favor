@@ -1810,6 +1810,127 @@ export const variantDetailedColumns: VariantColumnsType[] = [
           </div>
         ),
       },
+      {
+        key: 11,
+        header: "Protein Variant",
+        accessor: "protein_variant",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              Amino acid change induced by the alternative allele, in the
+              format:
+            </p>
+            <p className="font-mono bg-muted/30 px-2 py-1 rounded">
+              {"<Reference amino acid><Position><Alternative amino acid>"}
+            </p>
+            <div className="flex items-center gap-2 my-2">
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                AlphaMissense
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Protein variant notation
+              </span>
+            </div>
+            <p>
+              <strong>Example:</strong> V2L means Valine at position 2 changed
+              to Leucine
+            </p>
+            <p>Position is 1-based within the protein amino acid sequence.</p>
+          </div>
+        ),
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (str) => (
+              <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">
+                {str}
+              </span>
+            ),
+            isValidString,
+          );
+        },
+      },
+      {
+        key: 12,
+        header: "AM Pathogenicity",
+        accessor: "am_pathogenicity",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              Calibrated AlphaMissense pathogenicity scores ranging between 0
+              and 1.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                AlphaMissense
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Pathogenicity score
+              </span>
+            </div>
+            <p>
+              <strong>Interpretation:</strong> Can be interpreted as the
+              predicted probability of a variant being clinically pathogenic.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Higher scores = more likely pathogenic</li>
+              <li>Lower scores = more likely benign</li>
+            </ul>
+          </div>
+        ),
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (str) => <span className="font-mono">{str}</span>,
+            isValidString,
+          );
+        },
+      },
+      {
+        key: 13,
+        header: "AM Class",
+        accessor: "am_class",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              Classification of the protein variant into three discrete
+              categories:
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-indigo-300 px-2 py-1 text-xs font-medium text-indigo-900">
+                AlphaMissense
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Classification
+              </span>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-green-300 rounded"></span>
+                <strong>Likely Benign:</strong> pathogenicity &lt; 0.34
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-300 rounded"></span>
+                <strong>Likely Pathogenic:</strong> pathogenicity &gt; 0.564
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-amber-300 rounded"></span>
+                <strong>Ambiguous:</strong> pathogenicity between 0.34-0.564
+              </div>
+            </div>
+          </div>
+        ),
+        Cell: (value) =>
+          safeCellRenderer(
+            value,
+            (validValue) => (
+              <span className="uppercase">
+                {alphamissenseCCODE(validValue.split("_").join(" "))}
+              </span>
+            ),
+            isValidString,
+          ),
+      },
     ],
   },
   {
@@ -4653,6 +4774,276 @@ export const variantDetailedColumns: VariantColumnsType[] = [
           </div>
         ),
       },
+      {
+        key: 11,
+        header: "Filter value",
+        accessor: "filter_value",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (str) => filterValueCCode(str),
+            isValidString,
+          );
+        },
+        tooltip: (
+          <div className="space-y-3 text-left">
+            <p>
+              <strong>Filter Value:</strong> Quality assessment categories for
+              genomic regions based on various sequencing and genomic metrics.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Quality filter
+              </span>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div className="flex items-start gap-3">
+                <span className="w-3 h-3 bg-red-300 rounded flex-shrink-0 mt-0.5"></span>
+                <div>
+                  <strong>Low:</strong>
+                  <div className="mt-1">
+                    Low quality regions determined by gnomAD sequencing metrics:
+                  </div>
+                  <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
+                    <li>Mappability &lt; 0.5</li>
+                    <li>Overlap with &gt;50nt simple repeat</li>
+                    <li>ReadPosRankSum &gt; 1</li>
+                    <li>0 SNVs in 100bp window</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="w-3 h-3 bg-amber-300 rounded flex-shrink-0 mt-0.5"></span>
+                <div>
+                  <strong>SFS_bump:</strong>
+                  <div className="mt-1">
+                    Pentamer context with abnormal site frequency spectrum
+                    (SFS). High-frequency SNVs [0.0005 &lt; MAF ≤ 0.2] exceed
+                    1.5× mutation rate controlled average. Often repetitive
+                    contexts.
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="w-3 h-3 bg-blue-300 rounded flex-shrink-0 mt-0.5"></span>
+                <div>
+                  <strong>TFBS:</strong>
+                  <div className="mt-1">
+                    Transcription factor binding site determined by overlap with
+                    ChIP-seq peaks
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 12,
+        header: "PN",
+        accessor: "pn",
+        Cell: (value) => {
+          return safeCellRenderer(
+            value,
+            (str) => <span className="font-mono uppercase">{str}</span>,
+            isValidString,
+          );
+        },
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>PN (Pentanucleotide):</strong> The 5-nucleotide sequence
+              context surrounding the variant position, important for
+              understanding mutation patterns and rates.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Sequence context
+              </span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>
+                <strong>Context dependency:</strong> Mutation rates vary
+                significantly based on surrounding nucleotide sequence
+              </li>
+              <li>
+                <strong>Format:</strong> 5-base sequence with variant position
+                in center
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        key: 13,
+        header: "MR",
+        accessor: "mr",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>MR (Mutation Rate):</strong> Roulette mutation rate
+              estimate based on sequence context and evolutionary patterns.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Roulette estimate
+              </span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>
+                <strong>Higher rates:</strong> More mutagenic sequence contexts
+              </li>
+              <li>
+                <strong>Lower rates:</strong> More stable sequence contexts
+              </li>
+              <li>
+                <strong>Application:</strong> Helps distinguish pathogenic
+                variants from benign polymorphisms
+              </li>
+            </ul>
+          </div>
+        ),
+        Cell: (value) =>
+          safeCellRenderer(
+            value,
+            (num) => <span>{roundNumber(num)}</span>,
+            isValidNumber,
+          ),
+      },
+      {
+        key: 14,
+        header: "AR",
+        accessor: "ar",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>AR (Adjusted Rate):</strong> Adjusted Roulette mutation
+              rate estimate that accounts for additional genomic factors beyond
+              basic sequence context.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Adjusted Roulette estimate
+              </span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>
+                <strong>Higher rates:</strong> Contexts prone to higher mutation
+                frequency
+              </li>
+              <li>
+                <strong>Lower rates:</strong> More evolutionarily stable regions
+              </li>
+              <li>
+                <strong>Adjustment factors:</strong> Incorporates chromatin
+                structure and replication timing
+              </li>
+            </ul>
+          </div>
+        ),
+        Cell: (value) =>
+          safeCellRenderer(
+            value,
+            (num) => <span>{roundNumber(num)}</span>,
+            isValidNumber,
+          ),
+      },
+      {
+        key: 15,
+        header: "MG",
+        accessor: "mg",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>MG (gnomAD Rate):</strong> Mutation rate estimate from the
+              gnomAD consortium based on large-scale population genomic data.
+              (Karczewski et al. 2020)
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                gnomAD estimate
+              </span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>
+                <strong>Population-based:</strong> Derived from analysis of
+                &gt;140,000 genomes and exomes
+              </li>
+              <li>
+                <strong>Higher rates:</strong> Regions with elevated mutation
+                burden
+              </li>
+              <li>
+                <strong>Clinical relevance:</strong> Helps calibrate variant
+                interpretation frameworks
+              </li>
+            </ul>
+          </div>
+        ),
+        Cell: (value) =>
+          safeCellRenderer(
+            value,
+            (num) => <span>{roundNumber(num)}</span>,
+            isValidNumber,
+          ),
+      },
+      {
+        key: 16,
+        header: "MC",
+        accessor: "mc",
+        tooltip: (
+          <div className="space-y-2 text-left">
+            <p>
+              <strong>MC (Carlson Rate):</strong> Mutation rate estimate from
+              Carlson et al. based on de novo mutation patterns in families.
+              (Carlson et al. 2018)
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex rounded-full bg-orange-300 px-2 py-1 text-xs font-medium text-orange-900">
+                Mutation Rate
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Carlson de novo estimate
+              </span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>
+                <strong>De novo focus:</strong> Based on analysis of new
+                mutations in parent-offspring trios
+              </li>
+              <li>
+                <strong>Higher rates:</strong> Sequence contexts with increased
+                de novo mutation frequency
+              </li>
+              <li>
+                <strong>Complementary approach:</strong> Provides independent
+                validation of mutation rate patterns
+              </li>
+            </ul>
+          </div>
+        ),
+        Cell: (value) =>
+          safeCellRenderer(
+            value,
+            (num) => <span>{roundNumber(num)}</span>,
+            isValidNumber,
+          ),
+      },
     ],
   },
   {
@@ -4990,337 +5381,6 @@ export const variantDetailedColumns: VariantColumnsType[] = [
     ],
   },
   {
-    name: "Mutation Rate",
-    slug: "mutation-rate",
-    items: [
-      {
-        key: 1,
-        header: "Filter value",
-        accessor: "filter_value",
-        Cell: (value) => {
-          return safeCellRenderer(
-            value,
-            (str) => filterValueCCode(str),
-            isValidString,
-          );
-        },
-        tooltip: (
-          <div className="space-y-3 text-left">
-            <p>
-              <strong>Filter Value:</strong> Quality assessment categories for
-              genomic regions based on various sequencing and genomic metrics.
-            </p>
-            <div className="space-y-3 text-xs">
-              <div className="flex items-start gap-3">
-                <span className="w-3 h-3 bg-red-300 rounded flex-shrink-0 mt-0.5"></span>
-                <div>
-                  <strong>Low:</strong>
-                  <div className="mt-1">
-                    Low quality regions determined by gnomAD sequencing metrics:
-                  </div>
-                  <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
-                    <li>Mappability &lt; 0.5</li>
-                    <li>Overlap with &gt;50nt simple repeat</li>
-                    <li>ReadPosRankSum &gt; 1</li>
-                    <li>0 SNVs in 100bp window</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="w-3 h-3 bg-amber-300 rounded flex-shrink-0 mt-0.5"></span>
-                <div>
-                  <strong>SFS_bump:</strong>
-                  <div className="mt-1">
-                    Pentamer context with abnormal site frequency spectrum
-                    (SFS). High-frequency SNVs [0.0005 &lt; MAF ≤ 0.2] exceed
-                    1.5× mutation rate controlled average. Often repetitive
-                    contexts.
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="w-3 h-3 bg-blue-300 rounded flex-shrink-0 mt-0.5"></span>
-                <div>
-                  <strong>TFBS:</strong>
-                  <div className="mt-1">
-                    Transcription factor binding site determined by overlap with
-                    ChIP-seq peaks
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ),
-      },
-      {
-        key: 2,
-        header: "PN",
-        accessor: "pn",
-        Cell: (value) => {
-          return safeCellRenderer(
-            value,
-            (str) => <span className="font-mono uppercase">{str}</span>,
-            isValidString,
-          );
-        },
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>PN (Pentanucleotide):</strong> The 5-nucleotide sequence
-              context surrounding the variant position, important for
-              understanding mutation patterns and rates.
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Context dependency:</strong> Mutation rates vary
-                significantly based on surrounding nucleotide sequence
-              </li>
-              <li>
-                <strong>Format:</strong> 5-base sequence with variant position
-                in center
-              </li>
-            </ul>
-          </div>
-        ),
-      },
-      {
-        key: 3,
-        header: "MR",
-        accessor: "mr",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>MR (Mutation Rate):</strong> Roulette mutation rate
-              estimate based on sequence context and evolutionary patterns.
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher rates:</strong> More mutagenic sequence contexts
-              </li>
-              <li>
-                <strong>Lower rates:</strong> More stable sequence contexts
-              </li>
-              <li>
-                <strong>Application:</strong> Helps distinguish pathogenic
-                variants from benign polymorphisms
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) =>
-          safeCellRenderer(
-            value,
-            (num) => <span>{roundNumber(num)}</span>,
-            isValidNumber,
-          ),
-      },
-      {
-        key: 4,
-        header: "AR",
-        accessor: "ar",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>AR (Adjusted Rate):</strong> Adjusted Roulette mutation
-              rate estimate that accounts for additional genomic factors beyond
-              basic sequence context.
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Higher rates:</strong> Contexts prone to higher mutation
-                frequency
-              </li>
-              <li>
-                <strong>Lower rates:</strong> More evolutionarily stable regions
-              </li>
-              <li>
-                <strong>Adjustment factors:</strong> Incorporates chromatin
-                structure and replication timing
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) =>
-          safeCellRenderer(
-            value,
-            (num) => <span>{roundNumber(num)}</span>,
-            isValidNumber,
-          ),
-      },
-      {
-        key: 5,
-        header: "MG",
-        accessor: "mg",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>MG (gnomAD Rate):</strong> Mutation rate estimate from the
-              gnomAD consortium based on large-scale population genomic data.
-              (Karczewski et al. 2020)
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>Population-based:</strong> Derived from analysis of
-                &gt;140,000 genomes and exomes
-              </li>
-              <li>
-                <strong>Higher rates:</strong> Regions with elevated mutation
-                burden
-              </li>
-              <li>
-                <strong>Clinical relevance:</strong> Helps calibrate variant
-                interpretation frameworks
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) =>
-          safeCellRenderer(
-            value,
-            (num) => <span>{roundNumber(num)}</span>,
-            isValidNumber,
-          ),
-      },
-      {
-        key: 6,
-        header: "MC",
-        accessor: "mc",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              <strong>MC (Carlson Rate):</strong> Mutation rate estimate from
-              Carlson et al. based on de novo mutation patterns in families.
-              (Carlson et al. 2018)
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>
-                <strong>De novo focus:</strong> Based on analysis of new
-                mutations in parent-offspring trios
-              </li>
-              <li>
-                <strong>Higher rates:</strong> Sequence contexts with increased
-                de novo mutation frequency
-              </li>
-              <li>
-                <strong>Complementary approach:</strong> Provides independent
-                validation of mutation rate patterns
-              </li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) =>
-          safeCellRenderer(
-            value,
-            (num) => <span>{roundNumber(num)}</span>,
-            isValidNumber,
-          ),
-      },
-    ],
-  },
-  {
-    name: "Alphamissense",
-    slug: "alphamissense",
-    items: [
-      {
-        key: 1,
-        header: "Protein Variant",
-        accessor: "protein_variant",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              Amino acid change induced by the alternative allele, in the
-              format:
-            </p>
-            <p className="font-mono bg-muted/30 px-2 py-1 rounded">
-              {"<Reference amino acid><Position><Alternative amino acid>"}
-            </p>
-            <p>
-              <strong>Example:</strong> V2L means Valine at position 2 changed
-              to Leucine
-            </p>
-            <p>Position is 1-based within the protein amino acid sequence.</p>
-          </div>
-        ),
-        Cell: (value) => {
-          return safeCellRenderer(
-            value,
-            (str) => (
-              <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">
-                {str}
-              </span>
-            ),
-            isValidString,
-          );
-        },
-      },
-      {
-        key: 2,
-        header: "AM Pathogenicity",
-        accessor: "am_pathogenicity",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              Calibrated AlphaMissense pathogenicity scores ranging between 0
-              and 1.
-            </p>
-            <p>
-              <strong>Interpretation:</strong> Can be interpreted as the
-              predicted probability of a variant being clinically pathogenic.
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Higher scores = more likely pathogenic</li>
-              <li>Lower scores = more likely benign</li>
-            </ul>
-          </div>
-        ),
-        Cell: (value) => {
-          return safeCellRenderer(
-            value,
-            (str) => <span className="font-mono">{str}</span>,
-            isValidString,
-          );
-        },
-      },
-      {
-        key: 3,
-        header: "AM Class",
-        accessor: "am_class",
-        tooltip: (
-          <div className="space-y-2 text-left">
-            <p>
-              Classification of the protein variant into three discrete
-              categories:
-            </p>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-green-300 rounded"></span>
-                <strong>Likely Benign:</strong> pathogenicity &lt; 0.34
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-300 rounded"></span>
-                <strong>Likely Pathogenic:</strong> pathogenicity &gt; 0.564
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-amber-300 rounded"></span>
-                <strong>Ambiguous:</strong> pathogenicity between 0.34-0.564
-              </div>
-            </div>
-          </div>
-        ),
-        Cell: (value) =>
-          safeCellRenderer(
-            value,
-            (validValue) => (
-              <span className="uppercase">
-                {alphamissenseCCODE(validValue.split("_").join(" "))}
-              </span>
-            ),
-            isValidString,
-          ),
-      },
-    ],
-  },
-  {
     name: "Proximity Table",
     slug: "proximity-table",
     items: [
@@ -5341,7 +5401,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
     ],
   },
   {
-    name: "Cosmic",
+    name: "Somatic Mutation",
     slug: "cosmic",
     items: [
       {

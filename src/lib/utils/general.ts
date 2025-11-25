@@ -9,5 +9,5 @@ export function formatFrequency(value: number | undefined | null): string {
   if (value === undefined || value === null || value === 0) {
     return "—";
   }
-  return value.toExponential(3);
+  return value.toFixed(6);
 }

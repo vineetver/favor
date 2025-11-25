@@ -28,7 +28,6 @@ export function MaleDataDisplay({
 
   const validFrequencies = maleFrequencies.filter(
     (freq) =>
-      freq.male31 !== undefined ||
       freq.male41_exome !== undefined ||
       freq.male41_genome !== undefined,
   );
@@ -37,15 +36,13 @@ export function MaleDataDisplay({
     return validFrequencies
       .map((freq) => ({
         population: freq.name,
-        [MALE_CHART_CONFIG.keys[0]]: freq.male31 || 0,
-        [MALE_CHART_CONFIG.keys[1]]: freq.male41_exome || 0,
-        [MALE_CHART_CONFIG.keys[2]]: freq.male41_genome || 0,
+        [MALE_CHART_CONFIG.keys[0]]: freq.male41_exome || 0,
+        [MALE_CHART_CONFIG.keys[1]]: freq.male41_genome || 0,
       }))
       .filter(
         (item) =>
           (item[MALE_CHART_CONFIG.keys[0]] as number) > 0 ||
-          (item[MALE_CHART_CONFIG.keys[1]] as number) > 0 ||
-          (item[MALE_CHART_CONFIG.keys[2]] as number) > 0,
+          (item[MALE_CHART_CONFIG.keys[1]] as number) > 0,
       );
   }, [validFrequencies]);
 

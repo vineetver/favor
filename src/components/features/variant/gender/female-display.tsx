@@ -28,7 +28,6 @@ export function FemaleDataDisplay({
 
   const validFrequencies = femaleFrequencies.filter(
     (freq) =>
-      freq.female31 !== undefined ||
       freq.female41_exome !== undefined ||
       freq.female41_genome !== undefined,
   );
@@ -37,15 +36,13 @@ export function FemaleDataDisplay({
     return validFrequencies
       .map((freq) => ({
         population: freq.name,
-        [FEMALE_CHART_CONFIG.keys[0]]: freq.female31 || 0,
-        [FEMALE_CHART_CONFIG.keys[1]]: freq.female41_exome || 0,
-        [FEMALE_CHART_CONFIG.keys[2]]: freq.female41_genome || 0,
+        [FEMALE_CHART_CONFIG.keys[0]]: freq.female41_exome || 0,
+        [FEMALE_CHART_CONFIG.keys[1]]: freq.female41_genome || 0,
       }))
       .filter(
         (item) =>
           (item[FEMALE_CHART_CONFIG.keys[0]] as number) > 0 ||
-          (item[FEMALE_CHART_CONFIG.keys[1]] as number) > 0 ||
-          (item[FEMALE_CHART_CONFIG.keys[2]] as number) > 0,
+          (item[FEMALE_CHART_CONFIG.keys[1]] as number) > 0,
       );
   }, [validFrequencies]);
 

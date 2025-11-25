@@ -29,7 +29,6 @@ export function AncestryDisplay({
   const validFrequencies = ancestryFrequencies.filter(
     (freq) =>
       freq.g1000 !== undefined ||
-      freq.gnomad31 !== undefined ||
       freq.gnomad41_exome !== undefined ||
       freq.gnomad41_genome !== undefined,
   );
@@ -39,16 +38,14 @@ export function AncestryDisplay({
       .map((freq) => ({
         population: freq.name,
         [ANCESTRY_CHART_CONFIG.keys[0]]: freq.g1000 || 0,
-        [ANCESTRY_CHART_CONFIG.keys[1]]: freq.gnomad31 || 0,
-        [ANCESTRY_CHART_CONFIG.keys[2]]: freq.gnomad41_exome || 0,
-        [ANCESTRY_CHART_CONFIG.keys[3]]: freq.gnomad41_genome || 0,
+        [ANCESTRY_CHART_CONFIG.keys[1]]: freq.gnomad41_exome || 0,
+        [ANCESTRY_CHART_CONFIG.keys[2]]: freq.gnomad41_genome || 0,
       }))
       .filter(
         (item) =>
           (item[ANCESTRY_CHART_CONFIG.keys[0]] as number) > 0 ||
           (item[ANCESTRY_CHART_CONFIG.keys[1]] as number) > 0 ||
-          (item[ANCESTRY_CHART_CONFIG.keys[2]] as number) > 0 ||
-          (item[ANCESTRY_CHART_CONFIG.keys[3]] as number) > 0,
+          (item[ANCESTRY_CHART_CONFIG.keys[2]] as number) > 0,
       );
   }, [validFrequencies]);
 

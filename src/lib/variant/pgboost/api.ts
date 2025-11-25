@@ -15,6 +15,9 @@ export async function fetchPGBoost(rsid: string): Promise<PGBoost[] | null> {
     }
 
     const data = await response.json();
+    if (data === null || data === undefined) {
+      return null;
+    }
     return Array.isArray(data) ? (data as PGBoost[]) : ([data] as PGBoost[]);
   } catch (error) {
     console.error("Error fetching PGBoost data:", error);
@@ -36,6 +39,9 @@ export async function fetchPGBoostByGene(
     }
 
     const data = await response.json();
+    if (data === null || data === undefined) {
+      return null;
+    }
     return Array.isArray(data) ? (data as PGBoost[]) : ([data] as PGBoost[]);
   } catch (error) {
     console.error("Error fetching PGBoost gene data:", error);

@@ -120,6 +120,10 @@ export function EpigeneticsBarChart({ items }: EpigeneticsBarChartProps) {
     }
 
     const chartData = items
+      .filter((item) => {
+        const header = item.header.toLowerCase();
+        return header !== "totalrna" && header !== "gc" && header !== "cpg";
+      })
       .map((item) => ({
         name: item.header,
         value: extractNumericValue(item.value),

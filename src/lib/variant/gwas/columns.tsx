@@ -164,23 +164,20 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     size: 110,
   },
   {
-    accessorKey: "gwas_p_value",
+    accessorKey: "gwas_mapped_gene",
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
-        title="P-value"
-        tooltip="Statistical significance of association (values < 5×10⁻⁸ are genome-wide significant)"
+        title="Mapped Gene"
+        tooltip="Gene(s) mapped to this genetic variant"
+        sortable={false}
       />
     ),
-    cell: ({ row }) => (
-      <PValueCell value={row.getValue("gwas_p_value") as string} />
-    ),
-    size: 120,
-    sortingFn: (rowA, rowB) => {
-      const a = parseFloat(rowA.getValue("gwas_p_value") as string);
-      const b = parseFloat(rowB.getValue("gwas_p_value") as string);
-      return a - b;
+    cell: ({ row }) => {
+      const gene = row.getValue("gwas_mapped_gene") as string;
+      return <GeneCell gene={gene} />;
     },
+    size: 120,
   },
   {
     accessorKey: "gwas_risk_allele_frequency",
@@ -238,6 +235,25 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
     enableSorting: true,
   },
   {
+    accessorKey: "gwas_p_value",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="P-value"
+        tooltip="Statistical significance of association (values < 5×10⁻⁸ are genome-wide significant)"
+      />
+    ),
+    cell: ({ row }) => (
+      <PValueCell value={row.getValue("gwas_p_value") as string} />
+    ),
+    size: 120,
+    sortingFn: (rowA, rowB) => {
+      const a = parseFloat(rowA.getValue("gwas_p_value") as string);
+      const b = parseFloat(rowB.getValue("gwas_p_value") as string);
+      return a - b;
+    },
+  },
+  {
     accessorKey: "gwas_95_ci_text",
     header: ({ column }) => (
       <DataTableColumnHeader
@@ -252,22 +268,6 @@ export const gwasColumns: ColumnDef<GWAS | ProcessedGwasData>[] = [
       return <div className="font-mono text-left text-sm">{value || "—"}</div>;
     },
     size: 110,
-  },
-  {
-    accessorKey: "gwas_mapped_gene",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Mapped Gene"
-        tooltip="Gene(s) mapped to this genetic variant"
-        sortable={false}
-      />
-    ),
-    cell: ({ row }) => {
-      const gene = row.getValue("gwas_mapped_gene") as string;
-      return <GeneCell gene={gene} />;
-    },
-    size: 120,
   },
   {
     accessorKey: "gwas_disease_trait",

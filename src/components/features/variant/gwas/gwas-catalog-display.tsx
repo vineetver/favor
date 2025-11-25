@@ -18,22 +18,22 @@ function GwasTable({ data }: { data: GWAS[] }) {
   const exportTSV = (filteredData: GWAS[]) => {
     const headers = [
       "Risk Allele",
-      "P-value",
+      "Mapped Gene",
       "RAF",
       "OR/Beta",
+      "P-value",
       "95% CI",
-      "Mapped Gene",
       "Reported Trait",
       "Study",
       "PubMed ID",
     ];
     const rows = filteredData.map((row) => [
       row.gwas_strongest_snp_risk_allele,
-      row.gwas_p_value,
+      row.gwas_mapped_gene,
       row.gwas_risk_allele_frequency,
       row.gwas_or_or_beta || "",
+      row.gwas_p_value,
       row.gwas_95_ci_text || "",
-      row.gwas_mapped_gene,
       row.gwas_disease_trait,
       row.gwas_first_author,
       row.gwas_pubmedid,

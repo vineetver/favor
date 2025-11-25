@@ -42,6 +42,12 @@ import {
   caddGTrack,
   caddTTrack,
 } from "@/components/tracks/cadd";
+import {
+  alphamisense_aTrack,
+  alphamisense_cTrack,
+  alphamisense_gTrack,
+  alphamisense_tTrack,
+} from "@/components/tracks/alphamisense";
 import { gwasPValueTrack } from "@/components/tracks/gwas/p-value";
 
 interface TrackSpec {
@@ -61,151 +67,62 @@ interface CategoryData {
 // Track categories data with all track specifications
 const allCategoriesData: CategoryData[] = [
   {
-    name: "Other",
+    name: "Gene Annotation",
     tracks: [
       {
-        id: "other_gene_annotation",
+        id: "gene_annotation_gene_annotation",
         name: "Gene Annotation",
         description:
           "Comprehensive gene annotations showing gene boundaries, exons, and strand information from GENCODE. Essential for understanding genomic context and variant impact assessment.",
         spec: geneTrack,
-        category: "Other",
+        category: "Gene Annotation",
         visible: true,
       },
-      {
-        id: "other_gnocchi",
-        name: "Gnocchi",
-        description:
-          "Specialized genomic analysis tool providing advanced pattern recognition and computational insights for research applications.",
-        spec: gnocchiTrack,
-        category: "Other",
-        visible: false,
-      },
-      {
-        id: "other_jarvis",
-        name: "JARVIS",
-        description:
-          "Joint Analysis of Regulatory Variants in Single-cell data. Provides cell-type-specific regulatory analysis and variant interpretation.",
-        spec: jarvisTrack,
-        category: "Other",
-        visible: false,
-      },
     ],
   },
   {
-    name: "Single Cell/Tissue",
+    name: "Integrative",
     tracks: [
       {
-        id: "single_cell_tissue_ccres",
-        name: "cCREs",
-        description: "cCREs are cell-type specific regulatory elements.",
-        spec: cCRETrack,
-        category: "Single Cell/Tissue",
+        id: "integrative_cadd_1_7_mutation_a",
+        name: "CADD 1.7 (Mutation A)",
+        description:
+          "CADD pathogenicity predictions for A>X mutations using machine learning integration of genomic annotations and conservation scores.",
+        spec: caddATrack,
+        category: "Integrative",
         visible: false,
       },
       {
-        id: "single_cell_tissue_atac_seq_chromatin_accessibility",
-        name: "ATAC-seq (Chromatin Accessibility)",
+        id: "integrative_cadd_1_7_mutation_c",
+        name: "CADD 1.7 (Mutation C)",
         description:
-          "Assay for Transposase-Accessible Chromatin sequencing data showing open chromatin regions across different cell types and tissues.",
-        spec: atacTrack,
-        category: "Single Cell/Tissue",
+          "CADD pathogenicity predictions for C>X mutations using comprehensive variant annotation and deleteriousness scoring.",
+        spec: caddCTrack,
+        category: "Integrative",
         visible: false,
       },
       {
-        id: "single_cell_tissue_dnase_seq_chromatin_accessibility",
-        name: "DNase-seq (Chromatin Accessibility)",
+        id: "integrative_cadd_1_7_mutation_g",
+        name: "CADD 1.7 (Mutation G)",
         description:
-          "DNase hypersensitive sites revealing chromatin accessibility and active regulatory elements across multiple cell types.",
-        spec: dnaseTrack,
-        category: "Single Cell/Tissue",
+          "CADD pathogenicity predictions for G>X mutations with integrated functional annotations and evolutionary constraints.",
+        spec: caddGTrack,
+        category: "Integrative",
         visible: false,
       },
       {
-        id: "single_cell_tissue_ctcf_binding",
-        name: "CTCF Binding",
+        id: "integrative_cadd_1_7_mutation_t",
+        name: "CADD 1.7 (Mutation T)",
         description:
-          "CTCF transcription factor binding sites showing chromatin organization and topological domain boundaries that regulate gene expression.",
-        spec: ctcfTrack,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_h3k4me3_active_promoters",
-        name: "H3K4me3 (Active Promoters)",
-        description:
-          "Histone H3 lysine 4 trimethylation marks indicating active promoter regions and transcriptional start sites across cell types.",
-        spec: h3k4me3Track,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_h3k27ac_enhancer_activity",
-        name: "H3K27ac (Enhancer Activity)",
-        description:
-          "Histone H3 lysine 27 acetylation marking active enhancers and promoters, indicating regulatory element activity levels.",
-        spec: h3k27acTrack,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_eqtls_arc_link",
-        name: "eQTLs (Arc Link)",
-        description:
-          "Expression quantitative trait loci showing genetic variants that influence gene expression levels, displayed as arc connections.",
-        spec: eQTLTrack,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_eqtls_overlay_link",
-        name: "eQTLs (Overlay Link)",
-        description:
-          "Comprehensive eQTL visualization with regulatory elements and gene links in overlay format showing complete regulatory context.",
-        spec: eQTLTrack2,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_crispr_arc_link",
-        name: "CRISPR (Arc Link)",
-        description:
-          "CRISPR screen results showing functional validation of regulatory elements and their target genes through experimental perturbation.",
-        spec: crisprTrack,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_crispr_overlay_link",
-        name: "CRISPR (Overlay Link)",
-        description:
-          "Comprehensive CRISPR functional validation data in overlay format showing regulatory element functionality with experimental evidence.",
-        spec: crisprTrack2,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_chromatin_arc_link",
-        name: "Chromatin (Arc Link)",
-        description:
-          "Chromatin interaction data showing 3D genome organization and long-range regulatory connections between genomic elements.",
-        spec: chromatinTrack,
-        category: "Single Cell/Tissue",
-        visible: false,
-      },
-      {
-        id: "single_cell_tissue_chromatin_overlay_link",
-        name: "Chromatin (Overlay Link)",
-        description:
-          "Comprehensive chromatin organization data showing 3D genome structure and spatial regulatory relationships in overlay format.",
-        spec: chromatinTrack2,
-        category: "Single Cell/Tissue",
+          "CADD pathogenicity predictions for T>X mutations combining multiple genomic features for variant deleteriousness assessment.",
+        spec: caddTTrack,
+        category: "Integrative",
         visible: false,
       },
     ],
   },
   {
-    name: "Clinvar",
+    name: "Clinical Significance",
     tracks: [
       {
         id: "clinvar_clinvar",
@@ -213,7 +130,125 @@ const allCategoriesData: CategoryData[] = [
         description:
           "Clinical significance annotations for genetic variants from laboratories worldwide. Essential for clinical variant interpretation and pathogenicity assessment.",
         spec: clinvarTrack,
-        category: "Clinvar",
+        category: "Clinical Significance",
+        visible: false,
+      },
+      {
+        id: "clinical_significance_alphamissense_a",
+        name: "AlphaMissense (Mutation A)",
+        description:
+          "AlphaMissense pathogenicity predictions for A>X mutations using deep learning to predict the impact of missense variants.",
+        spec: alphamisense_aTrack,
+        category: "Clinical Significance",
+        visible: false,
+      },
+      {
+        id: "clinical_significance_alphamissense_c",
+        name: "AlphaMissense (Mutation C)",
+        description:
+          "AlphaMissense pathogenicity predictions for C>X mutations using protein structure-based deep learning models.",
+        spec: alphamisense_cTrack,
+        category: "Clinical Significance",
+        visible: false,
+      },
+      {
+        id: "clinical_significance_alphamissense_g",
+        name: "AlphaMissense (Mutation G)",
+        description:
+          "AlphaMissense pathogenicity predictions for G>X mutations with structural biology-informed deep learning.",
+        spec: alphamisense_gTrack,
+        category: "Clinical Significance",
+        visible: false,
+      },
+      {
+        id: "clinical_significance_alphamissense_t",
+        name: "AlphaMissense (Mutation T)",
+        description:
+          "AlphaMissense pathogenicity predictions for T>X mutations using AlphaFold-derived structural predictions.",
+        spec: alphamisense_tTrack,
+        category: "Clinical Significance",
+        visible: false,
+      },
+    ],
+  },
+  {
+    name: "Conservation",
+    tracks: [
+      {
+        id: "conservation_gerpn",
+        name: "GerpN",
+        description:
+          "GERP neutral evolution scores measuring conservation constraint across mammalian species for variant pathogenicity assessment.",
+        spec: gerpNTrack,
+        category: "Conservation",
+        visible: false,
+      },
+      {
+        id: "conservation_gerpr",
+        name: "GerpR",
+        description:
+          "GERP rejected substitution scores indicating evolutionary constraint and conservation pressure at genomic positions.",
+        spec: gerpRTrack,
+        category: "Conservation",
+        visible: false,
+      },
+    ],
+  },
+  {
+    name: "Epigenetics",
+    tracks: [
+      {
+        id: "epigenetics_gnocchi",
+        name: "Gnocchi",
+        description:
+          "Specialized genomic analysis tool providing advanced pattern recognition and computational insights for research applications.",
+        spec: gnocchiTrack,
+        category: "Epigenetics",
+        visible: false,
+      },
+      {
+        id: "epigenetics_h3k4me3_active_promoters",
+        name: "H3K4me3 (Active Promoters)",
+        description:
+          "Histone H3 lysine 4 trimethylation marks indicating active promoter regions and transcriptional start sites across cell types.",
+        spec: h3k4me3Track,
+        category: "Epigenetics",
+        visible: false,
+      },
+      {
+        id: "epigenetics_h3k27ac_enhancer_activity",
+        name: "H3K27ac (Enhancer Activity)",
+        description:
+          "Histone H3 lysine 27 acetylation marking active enhancers and promoters, indicating regulatory element activity levels.",
+        spec: h3k27acTrack,
+        category: "Epigenetics",
+        visible: false,
+      },
+      {
+        id: "epigenetics_atac_seq_chromatin_accessibility",
+        name: "ATAC-seq (Chromatin Accessibility)",
+        description:
+          "Assay for Transposase-Accessible Chromatin sequencing data showing open chromatin regions across different cell types and tissues.",
+        spec: atacTrack,
+        category: "Epigenetics",
+        visible: false,
+      },
+      {
+        id: "epigenetics_dnase_seq_chromatin_accessibility",
+        name: "DNase-seq (Chromatin Accessibility)",
+        description:
+          "DNase hypersensitive sites revealing chromatin accessibility and active regulatory elements across multiple cell types.",
+        spec: dnaseTrack,
+        category: "Epigenetics",
+        visible: false,
+      },
+      {
+        id: "epigenetics_ctcf_binding",
+        name: "CTCF Binding",
+        description:
+          "CTCF transcription factor binding sites showing chromatin organization and topological domain boundaries that regulate gene expression.",
+        spec: ctcfTrack,
+        category: "Epigenetics",
         visible: false,
       },
     ],
@@ -337,70 +372,6 @@ const allCategoriesData: CategoryData[] = [
     ],
   },
   {
-    name: "Conservation",
-    tracks: [
-      {
-        id: "conservation_gerpn",
-        name: "GerpN",
-        description:
-          "GERP neutral evolution scores measuring conservation constraint across mammalian species for variant pathogenicity assessment.",
-        spec: gerpNTrack,
-        category: "Conservation",
-        visible: false,
-      },
-      {
-        id: "conservation_gerpr",
-        name: "GerpR",
-        description:
-          "GERP rejected substitution scores indicating evolutionary constraint and conservation pressure at genomic positions.",
-        spec: gerpRTrack,
-        category: "Conservation",
-        visible: false,
-      },
-    ],
-  },
-  {
-    name: "Integrative",
-    tracks: [
-      {
-        id: "integrative_cadd_1_7_mutation_a",
-        name: "CADD 1.7 (Mutation A)",
-        description:
-          "CADD pathogenicity predictions for A>X mutations using machine learning integration of genomic annotations and conservation scores.",
-        spec: caddATrack,
-        category: "Integrative",
-        visible: false,
-      },
-      {
-        id: "integrative_cadd_1_7_mutation_c",
-        name: "CADD 1.7 (Mutation C)",
-        description:
-          "CADD pathogenicity predictions for C>X mutations using comprehensive variant annotation and deleteriousness scoring.",
-        spec: caddCTrack,
-        category: "Integrative",
-        visible: false,
-      },
-      {
-        id: "integrative_cadd_1_7_mutation_g",
-        name: "CADD 1.7 (Mutation G)",
-        description:
-          "CADD pathogenicity predictions for G>X mutations with integrated functional annotations and evolutionary constraints.",
-        spec: caddGTrack,
-        category: "Integrative",
-        visible: false,
-      },
-      {
-        id: "integrative_cadd_1_7_mutation_t",
-        name: "CADD 1.7 (Mutation T)",
-        description:
-          "CADD pathogenicity predictions for T>X mutations combining multiple genomic features for variant deleteriousness assessment.",
-        spec: caddTTrack,
-        category: "Integrative",
-        visible: false,
-      },
-    ],
-  },
-  {
     name: "GWAS",
     tracks: [
       {
@@ -410,6 +381,87 @@ const allCategoriesData: CategoryData[] = [
           "Genome-wide association study results showing statistical significance of trait-associated variants across chromosomes.",
         spec: gwasPValueTrack,
         category: "GWAS",
+        visible: false,
+      },
+    ],
+  },
+  {
+    name: "Single Cell/Tissue",
+    tracks: [
+      {
+        id: "single_cell_tissue_ccres",
+        name: "cCREs",
+        description: "cCREs are cell-type specific regulatory elements.",
+        spec: cCRETrack,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_eqtls_arc_link",
+        name: "eQTLs (Arc Link)",
+        description:
+          "Expression quantitative trait loci showing genetic variants that influence gene expression levels, displayed as arc connections.",
+        spec: eQTLTrack,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_eqtls_overlay_link",
+        name: "eQTLs (Overlay Link)",
+        description:
+          "Comprehensive eQTL visualization with regulatory elements and gene links in overlay format showing complete regulatory context.",
+        spec: eQTLTrack2,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_crispr_arc_link",
+        name: "CRISPR (Arc Link)",
+        description:
+          "CRISPR screen results showing functional validation of regulatory elements and their target genes through experimental perturbation.",
+        spec: crisprTrack,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_crispr_overlay_link",
+        name: "CRISPR (Overlay Link)",
+        description:
+          "Comprehensive CRISPR functional validation data in overlay format showing regulatory element functionality with experimental evidence.",
+        spec: crisprTrack2,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_chromatin_arc_link",
+        name: "Chromatin (Arc Link)",
+        description:
+          "Chromatin interaction data showing 3D genome organization and long-range regulatory connections between genomic elements.",
+        spec: chromatinTrack,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+      {
+        id: "single_cell_tissue_chromatin_overlay_link",
+        name: "Chromatin (Overlay Link)",
+        description:
+          "Comprehensive chromatin organization data showing 3D genome structure and spatial regulatory relationships in overlay format.",
+        spec: chromatinTrack2,
+        category: "Single Cell/Tissue",
+        visible: false,
+      },
+    ],
+  },
+  {
+    name: "Other",
+    tracks: [
+      {
+        id: "other_jarvis",
+        name: "JARVIS",
+        description:
+          "Joint Analysis of Regulatory Variants in Single-cell data. Provides cell-type-specific regulatory analysis and variant interpretation.",
+        spec: jarvisTrack,
+        category: "Other",
         visible: false,
       },
     ],
@@ -472,7 +524,7 @@ const TRACK_DOCUMENTATION: Record<
   }
 > = {
   // Gene Annotation
-  other_gene_annotation: {
+  gene_annotation_gene_annotation: {
     overview:
       "Comprehensive gene annotations showing gene boundaries, exons, and strand information from GENCODE. Essential for understanding genomic context and variant impact assessment.",
     dataSource: "GENCODE comprehensive gene annotation (hg38)",
@@ -745,7 +797,7 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
-  single_cell_tissue_atac_seq_chromatin_accessibility: {
+  epigenetics_atac_seq_chromatin_accessibility: {
     overview:
       "ATAC-seq (Assay for Transposase-Accessible Chromatin) data showing chromatin accessibility across different cell types and tissues.",
     dataSource: "ENCODE ATAC-seq experiments and tissue-specific datasets",
@@ -776,7 +828,7 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
-  single_cell_tissue_dnase_seq_chromatin_accessibility: {
+  epigenetics_dnase_seq_chromatin_accessibility: {
     overview:
       "DNase-seq data revealing chromatin accessibility and DNase hypersensitive sites (DHS) across multiple cell types.",
     dataSource: "ENCODE DNase-seq experiments",
@@ -807,7 +859,7 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
-  single_cell_tissue_h3k4me3_active_promoters: {
+  epigenetics_h3k4me3_active_promoters: {
     overview:
       "H3K4me3 histone modification marks indicating active promoter regions across different cell types and developmental stages.",
     dataSource: "ENCODE and Roadmap Epigenomics ChIP-seq data",
@@ -842,7 +894,7 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
-  single_cell_tissue_h3k27ac_enhancer_activity: {
+  epigenetics_h3k27ac_enhancer_activity: {
     overview:
       "H3K27ac histone modification marking active enhancers and promoters, indicating regulatory element activity.",
     dataSource: "ENCODE and Roadmap Epigenomics ChIP-seq data",
@@ -873,7 +925,7 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
-  single_cell_tissue_ctcf_binding: {
+  epigenetics_ctcf_binding: {
     overview:
       "CTCF binding sites showing chromatin organization and topological domain boundaries.",
     dataSource: "ENCODE CTCF ChIP-seq experiments",
@@ -1742,6 +1794,127 @@ const TRACK_DOCUMENTATION: Record<
     },
   },
 
+  // AlphaMissense tracks
+  clinical_significance_alphamissense_a: {
+    overview:
+      "AlphaMissense pathogenicity predictions for A>X mutations using deep learning models trained on protein structure data.",
+    dataSource: "AlphaMissense (Google DeepMind) pre-computed scores",
+    methodology:
+      "Deep learning model leveraging AlphaFold protein structure predictions to assess missense variant pathogenicity. Predicts functional impact based on structural context.",
+    interpretation:
+      "Higher scores indicate greater predicted pathogenicity. Scores >0.564 suggest likely pathogenic variants. Complements sequence-based predictors with structural information.",
+    references: [
+      "Cheng J, et al. Accurate proteome-wide missense variant effect prediction with AlphaMissense. Science. 2023;381(6664):eadg7492.",
+    ],
+    version: "1.0.0",
+    authors: ["Google DeepMind", "AlphaMissense Team"],
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~350MB",
+    },
+    interactions: {
+      supportedViewTypes: ["linear", "stack"],
+      linkingSupported: false,
+      zoomBehavior: "scalable",
+    },
+    customization: {
+      colorable: true,
+      heightAdjustable: true,
+      filtersAvailable: ["pathogenicity_threshold", "mutation_type"],
+    },
+  },
+
+  clinical_significance_alphamissense_c: {
+    overview:
+      "AlphaMissense pathogenicity predictions for C>X mutations using protein structure-based deep learning models.",
+    dataSource: "AlphaMissense (Google DeepMind) pre-computed scores",
+    methodology:
+      "Structure-aware deep learning model predicting C>A, C>G, C>T mutation impacts using AlphaFold structural predictions.",
+    interpretation:
+      "Pathogenicity scores based on structural disruption predictions. Threshold >0.564 indicates likely pathogenic. Particularly useful for coding variants.",
+    references: [
+      "Cheng J, et al. Accurate proteome-wide missense variant effect prediction with AlphaMissense. Science. 2023;381(6664):eadg7492.",
+    ],
+    version: "1.0.0",
+    authors: ["Google DeepMind", "AlphaMissense Team"],
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~350MB",
+    },
+    interactions: {
+      supportedViewTypes: ["linear", "stack"],
+      linkingSupported: false,
+      zoomBehavior: "scalable",
+    },
+    customization: {
+      colorable: true,
+      heightAdjustable: true,
+      filtersAvailable: ["pathogenicity_threshold", "mutation_type"],
+    },
+  },
+
+  clinical_significance_alphamissense_g: {
+    overview:
+      "AlphaMissense pathogenicity predictions for G>X mutations with structural biology-informed deep learning.",
+    dataSource: "AlphaMissense (Google DeepMind) pre-computed scores",
+    methodology:
+      "Advanced neural network combining sequence and AlphaFold structural context for G>A, G>C, G>T mutation assessment.",
+    interpretation:
+      "Structural context-aware pathogenicity predictions. Higher scores correlate with protein destabilization and loss of function.",
+    references: [
+      "Cheng J, et al. Accurate proteome-wide missense variant effect prediction with AlphaMissense. Science. 2023;381(6664):eadg7492.",
+    ],
+    version: "1.0.0",
+    authors: ["Google DeepMind", "AlphaMissense Team"],
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~350MB",
+    },
+    interactions: {
+      supportedViewTypes: ["linear", "stack"],
+      linkingSupported: false,
+      zoomBehavior: "scalable",
+    },
+    customization: {
+      colorable: true,
+      heightAdjustable: true,
+      filtersAvailable: ["pathogenicity_threshold", "mutation_type"],
+    },
+  },
+
+  clinical_significance_alphamissense_t: {
+    overview:
+      "AlphaMissense pathogenicity predictions for T>X mutations using AlphaFold-derived structural predictions.",
+    dataSource: "AlphaMissense (Google DeepMind) pre-computed scores",
+    methodology:
+      "Deep learning framework integrating 3D protein structure predictions for T>A, T>C, T>G missense variant pathogenicity assessment.",
+    interpretation:
+      "Scores reflect predicted structural and functional impact. Complements traditional sequence-based methods with structural insights. Threshold >0.564 for pathogenicity.",
+    references: [
+      "Cheng J, et al. Accurate proteome-wide missense variant effect prediction with AlphaMissense. Science. 2023;381(6664):eadg7492.",
+    ],
+    version: "1.0.0",
+    authors: ["Google DeepMind", "AlphaMissense Team"],
+    performance: {
+      renderTime: "medium",
+      memoryUsage: "medium",
+      dataSize: "~350MB",
+    },
+    interactions: {
+      supportedViewTypes: ["linear", "stack"],
+      linkingSupported: false,
+      zoomBehavior: "scalable",
+    },
+    customization: {
+      colorable: true,
+      heightAdjustable: true,
+      filtersAvailable: ["pathogenicity_threshold", "mutation_type"],
+    },
+  },
+
   // CADD tracks (C, G, T mutations)
   integrative_cadd_1_7_mutation_c: {
     overview:
@@ -1837,7 +2010,7 @@ const TRACK_DOCUMENTATION: Record<
   },
 
   // Research Tools
-  other_gnocchi: {
+  epigenetics_gnocchi: {
     overview:
       "Gnocchi research tool providing specialized genomic analysis and visualization capabilities.",
     dataSource: "Custom research datasets and algorithms",
@@ -2095,45 +2268,45 @@ export const COMPREHENSIVE_TRACK_CATEGORIES: {
   priority: number;
 }[] = [
   {
-    id: "other" as const,
-    name: "Other",
-    description: "Core genomic annotations and research tools",
+    id: "gene-annotation" as const,
+    name: "Gene Annotation",
+    description: "Core gene annotations from GENCODE",
     priority: 1,
-  },
-  {
-    id: "single-cell-tissue" as const,
-    name: "Regulatory Elements",
-    description: "cCREs, epigenomic marks, chromatin accessibility, and gene linkages",
-    priority: 2,
-  },
-  {
-    id: "clinvar" as const,
-    name: "Clinvar",
-    description: "Clinical significance and pathogenicity data",
-    priority: 3,
-  },
-  {
-    id: "mappability" as const,
-    name: "Mappability",
-    description: "Sequencing mappability and technical assessments",
-    priority: 4,
-  },
-  {
-    id: "local-nucleotide-diversity" as const,
-    name: "Local Nucleotide Diversity",
-    description: "Recombination rates and population diversity metrics",
-    priority: 5,
-  },
-  {
-    id: "conservation" as const,
-    name: "Conservation",
-    description: "Cross-species conservation and constraint scores",
-    priority: 6,
   },
   {
     id: "integrative" as const,
     name: "Integrative",
     description: "Computational predictions of variant deleteriousness",
+    priority: 2,
+  },
+  {
+    id: "clinical-significance" as const,
+    name: "Clinical Significance",
+    description: "Clinical significance and pathogenicity data",
+    priority: 3,
+  },
+  {
+    id: "conservation" as const,
+    name: "Conservation",
+    description: "Cross-species conservation and constraint scores",
+    priority: 4,
+  },
+  {
+    id: "epigenetics" as const,
+    name: "Epigenetics",
+    description: "Epigenomic marks and chromatin accessibility",
+    priority: 5,
+  },
+  {
+    id: "mappability" as const,
+    name: "Mappability",
+    description: "Sequencing mappability and technical assessments",
+    priority: 6,
+  },
+  {
+    id: "local-nucleotide-diversity" as const,
+    name: "Local Nucleotide Diversity",
+    description: "Recombination rates and population diversity metrics",
     priority: 7,
   },
   {
@@ -2142,6 +2315,18 @@ export const COMPREHENSIVE_TRACK_CATEGORIES: {
     description: "Genome-wide association studies and population data",
     priority: 8,
   },
+  {
+    id: "single-cell-tissue" as const,
+    name: "Single Cell/Tissue",
+    description: "cCREs, regulatory elements, and gene linkages",
+    priority: 9,
+  },
+  {
+    id: "other" as const,
+    name: "Other",
+    description: "Research tools and experimental analyses",
+    priority: 10,
+  },
 ];
 
 // Track collections optimized for different analysis workflows
@@ -2149,13 +2334,13 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
   "essential-clinical": {
     name: "Basic Clinical",
     description: "Core tracks for clinical variant interpretation",
-    tracks: ["other_gene_annotation", "clinvar_clinvar"],
+    tracks: ["gene_annotation_gene_annotation", "clinvar_clinvar"],
   },
   "regulatory-analysis": {
     name: "Complete Analysis",
     description: "Comprehensive epigenomic and regulatory data",
     tracks: [
-      "other_gene_annotation",
+      "gene_annotation_gene_annotation",
       "clinvar_clinvar",
       "single_cell_tissue_ccres",
       "single_cell_tissue_atac_seq_chromatin_accessibility",
@@ -2168,7 +2353,7 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
     name: "Variant Impact",
     description: "Computational predictions and conservation scores",
     tracks: [
-      "other_gene_annotation",
+      "gene_annotation_gene_annotation",
       "clinvar_clinvar",
       "integrative_cadd_1_7_mutation_a",
       "integrative_cadd_1_7_mutation_c",
@@ -2182,7 +2367,7 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
     name: "Experimental Data",
     description: "Experimental validation and functional genomics",
     tracks: [
-      "other_gene_annotation",
+      "gene_annotation_gene_annotation",
       "clinvar_clinvar",
       "single_cell_tissue_eqtls_overlay_link",
       "single_cell_tissue_crispr_arc_link",
@@ -2193,7 +2378,7 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
     name: "Data Quality",
     description: "Technical quality and mappability assessment",
     tracks: [
-      "other_gene_annotation",
+      "gene_annotation_gene_annotation",
       "mappability_k24_bismap",
       "mappability_k36_bismap",
       "mappability_k50_bismap",
@@ -2204,7 +2389,7 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
     name: "Genetic Diversity",
     description: "Population genetics and recombination patterns",
     tracks: [
-      "other_gene_annotation",
+      "gene_annotation_gene_annotation",
       "local_nucleotide_diversity_recombination_rate_1000g_avg",
       "local_nucleotide_diversity_recombination_rate_avg",
       "local_nucleotide_diversity_recombination_rate_maternal",
@@ -2214,6 +2399,6 @@ export const COMPREHENSIVE_TRACK_COLLECTIONS = {
   "gwas-analysis": {
     name: "GWAS Analysis",
     description: "Genome-wide association study results",
-    tracks: ["other_gene_annotation", "gwas_gwas_p_value_manhattan_plot"],
+    tracks: ["gene_annotation_gene_annotation", "gwas_gwas_p_value_manhattan_plot"],
   },
 };

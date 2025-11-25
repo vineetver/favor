@@ -4867,7 +4867,7 @@ export const variantDetailedColumns: VariantColumnsType[] = [
     ],
   },
   {
-    name: "Cosmic",
+    name: "Somatic Mutation",
     slug: "cosmic",
     items: [
       {

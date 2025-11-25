@@ -84,7 +84,7 @@ export const GENE_NAVIGATION: NavigationCategory[] = [
     subCategories: [
       { text: "SNV Table", slug: "SNV-table" },
       { text: "InDel Table", slug: "InDel-table" },
-      { text: "Cosmic", slug: "cosmic" },
+      { text: "Somatic Mutation", slug: "cosmic" },
     ],
   },
   {

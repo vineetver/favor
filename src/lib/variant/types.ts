@@ -188,3 +188,4 @@ export type Variant = {
   K562Cv2f?: number;
   HepG2CV2F?: number;
 };
+

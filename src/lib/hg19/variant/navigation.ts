@@ -32,8 +32,6 @@ export const HG19_VARIANT_NAVIGATION: NavigationCategory[] = [
       { text: "Mutation Density", slug: "mutation-density" },
       { text: "Mappability", slug: "mappability" },
       { text: "Proximity Table", slug: "proximity-table" },
-      { text: "Mutation Rate", slug: "mutation-rate" },
-      { text: "Alphamissense", slug: "alphamissense" },
     ],
   },
 ];

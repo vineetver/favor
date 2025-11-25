@@ -15,12 +15,6 @@ interface EpigeneticsDisplayProps {
 export function EpigeneticsDisplay({ items }: EpigeneticsDisplayProps) {
   const tabs: TabConfig[] = [
     {
-      id: "visualization",
-      label: "Visualization",
-      shortLabel: "Chart",
-      content: <EpigeneticsBarChart items={items} />,
-    },
-    {
       id: "table",
       label: "Annotation Table",
       shortLabel: "Table",
@@ -35,11 +29,17 @@ export function EpigeneticsDisplay({ items }: EpigeneticsDisplayProps) {
         />
       ),
     },
+    {
+      id: "visualization",
+      label: "Visualization",
+      shortLabel: "Chart",
+      content: <EpigeneticsBarChart items={items} />,
+    },
   ];
 
   return (
     <div className="space-y-6">
-      <ResponsiveTabs tabs={tabs} defaultValue="visualization" />
+      <ResponsiveTabs tabs={tabs} defaultValue="table" />
     </div>
   );
 }

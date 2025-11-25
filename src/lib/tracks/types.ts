@@ -3,14 +3,16 @@ import type { Track, OverlaidTracks } from "@/components/gosling";
 
 // Track category types for better type safety
 export type TrackCategoryId =
-  | "other"
-  | "single-cell-tissue"
-  | "clinvar"
+  | "gene-annotation"
+  | "integrative"
+  | "clinical-significance"
+  | "conservation"
+  | "epigenetics"
   | "mappability"
   | "local-nucleotide-diversity"
-  | "conservation"
-  | "integrative"
   | "gwas"
+  | "single-cell-tissue"
+  | "other"
   | "tissue-specific";
 
 export type RenderTime = "fast" | "medium" | "slow";
