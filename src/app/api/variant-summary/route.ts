@@ -9,6 +9,8 @@ import { fetchPGBoost } from "@/lib/variant/pgboost/api";
 import { fetchScentTissueByVCF } from "@/lib/variant/scent/api";
 import { fetchEQTL } from "@/lib/variant/eqtl/api";
 import { fetchGWAS } from "@/lib/variant/gwas/api";
+import { fetchChiaPet, separateChiaPetData } from "@/lib/variant/chiapet/api";
+import { fetchCRISPR } from "@/lib/variant/crispr/api";
 import { prisma } from "@/lib/prisma";
 import { waitUntil } from "@vercel/functions";
 import {
@@ -37,6 +39,8 @@ export type VariantContext = {
   scentData: any[] | null;
   eqtlData: any[] | null;
   gwasData: any[] | null;
+  chiapetData: any[] | null;
+  crisprData: any[] | null;
 };
 
 // Aggregation helper functions
@@ -255,6 +259,89 @@ function aggregateCCREData(ccreData: any[]) {
   };
 }
 
+function aggregateChiaPetData(chiapetData: any[]) {
+  if (!chiapetData || chiapetData.length === 0) return null;
+
+  // Filter valid data
+  const validData = chiapetData.filter((c) => c && c.gene_name && c.assay_type);
+
+  if (validData.length === 0) return null;
+
+  // Separate by assay type
+  const rnapii = validData.filter((c) => c.assay_type === "RNAPII-ChIAPET");
+  const intactHic = validData.filter((c) => c.assay_type === "Intact-HiC");
+
+  // Get unique genes for each type
+  const rnapiiGenes = new Set(rnapii.map((c) => c.gene_name));
+  const intactHicGenes = new Set(intactHic.map((c) => c.gene_name));
+
+  // Get top genes by p-value for each type
+  const getTopGenes = (data: any[], limit = 5) => {
+    return data
+      .filter((c) => c.p_value !== undefined && c.p_value !== null)
+      .sort((a, b) => {
+        const pA = parseFloat(String(a.p_value || Infinity));
+        const pB = parseFloat(String(b.p_value || Infinity));
+        return pA - pB; // Lower p-value = stronger
+      })
+      .slice(0, limit)
+      .map((c) => ({
+        gene: c.gene_name,
+        biosample: c.biosample,
+        pValue: c.p_value,
+        score: c.score,
+      }));
+  };
+
+  return {
+    totalLinks: validData.length,
+    rnapii: {
+      count: rnapii.length,
+      uniqueGenes: rnapiiGenes.size,
+      topGenes: getTopGenes(rnapii),
+    },
+    intactHic: {
+      count: intactHic.length,
+      uniqueGenes: intactHicGenes.size,
+      topGenes: getTopGenes(intactHic),
+    },
+  };
+}
+
+function aggregateCRISPRData(crisprData: any[]) {
+  if (!crisprData || crisprData.length === 0) return null;
+
+  // Filter valid data
+  const validData = crisprData.filter((c) => c && c.gene_name && c.effect_size !== undefined);
+
+  if (validData.length === 0) return null;
+
+  const uniqueGenes = new Set(validData.map((c) => c.gene_name));
+
+  // Get top genes by effect size and p-value
+  const topGenes = validData
+    .filter((c) => c.p_value !== undefined && c.p_value !== null)
+    .sort((a, b) => {
+      const pA = parseFloat(String(a.p_value || Infinity));
+      const pB = parseFloat(String(b.p_value || Infinity));
+      return pA - pB; // Lower p-value = stronger
+    })
+    .slice(0, 5)
+    .map((c) => ({
+      gene: c.gene_name,
+      biosample: c.biosample,
+      effectSize: c.effect_size,
+      pValue: c.p_value,
+      assayType: c.assay_type,
+    }));
+
+  return {
+    totalLinks: validData.length,
+    uniqueGenes: uniqueGenes.size,
+    topGenes,
+  };
+}
+
 /**
  * Pure data collection function - fetches all variant data sources
  */
@@ -265,7 +352,7 @@ async function collectVariantContext(vcf: string): Promise<VariantContext> {
     throw new Error("Variant not found");
   }
 
-  const [gnomadExome, gnomadGenome, ccreData, cv2fData, pgboostData, scentData, eqtlData, gwasData] = await Promise.all([
+  const [gnomadExome, gnomadGenome, ccreData, cv2fData, pgboostData, scentData, eqtlData, gwasData, chiapetData, crisprData] = await Promise.all([
     fetchGnomadExome(vcf).catch(err => {
       console.error(`Failed to fetch gnomAD exome for ${vcf}:`, err);
       return null;
@@ -302,6 +389,14 @@ async function collectVariantContext(vcf: string): Promise<VariantContext> {
       console.error(`Failed to fetch GWAS for ${vcf}:`, err);
       return null;
     }),
+    fetchChiaPet(vcf).catch(err => {
+      console.error(`Failed to fetch ChIA-PET for ${vcf}:`, err);
+      return null;
+    }),
+    fetchCRISPR(vcf).catch(err => {
+      console.error(`Failed to fetch CRISPR for ${vcf}:`, err);
+      return null;
+    }),
   ]);
 
   return {
@@ -314,6 +409,8 @@ async function collectVariantContext(vcf: string): Promise<VariantContext> {
     scentData,
     eqtlData,
     gwasData,
+    chiapetData,
+    crisprData,
   };
 }
 
@@ -321,11 +418,11 @@ async function collectVariantContext(vcf: string): Promise<VariantContext> {
  * Build structured JSON object from variant context matching extraction JSON structure
  */
 function buildVariantJSON(ctx: VariantContext): any {
-  const { variant, gnomadExome, gnomadGenome, ccreData, cv2fData, pgboostData, scentData, eqtlData, gwasData } = ctx;
+  const { variant, gnomadExome, gnomadGenome, ccreData, cv2fData, pgboostData, scentData, eqtlData, gwasData, chiapetData, crisprData } = ctx;
 
   const categories: any = {};
 
-  // Basic Category
+  // Basic Information & Genomic Context (combined)
   const basic: any[] = [];
   basic.push({
     field: "Variant",
@@ -353,90 +450,119 @@ function buildVariantJSON(ctx: VariantContext): any {
       tooltip: "TOPMed Bravo Genome Allele Number. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)"
     });
   }
-  if (variant.bravo_af !== null) {
-    basic.push({
-      field: "TOPMed Bravo AF",
-      value: variant.bravo_af,
-      tooltip: "TOPMed Bravo Genome Allele Frequency. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)"
-    });
-  }
-  if (variant.af_total !== null) {
-    basic.push({
-      field: "Total GNOMAD AF",
-      value: variant.af_total,
-      tooltip: "GNOMAD v3 Genome Allele Frequency using all the samples. (GNOMAD Consortium, 2019; Karczewski et al., 2020)"
-    });
-  }
-  if (variant.tg_all !== null) {
-    basic.push({
-      field: "All 1000 Genomes AF",
-      value: variant.tg_all,
-      tooltip: "1000 Genome Allele Frequency (Whole genome allele frequencies from the 1000 Genomes Project phase 3 data)."
-    });
-  }
-  if (basic.length > 0) categories.Basic = { label: "Basic Information", items: basic };
 
-  // Category section
-  const category: any[] = [];
+  // Add genomic context items to basic
   if (variant.genecode_comprehensive_info) {
-    category.push({
+    basic.push({
       field: "Genecode Comprehensive Info",
       value: variant.genecode_comprehensive_info,
       tooltip: "Identify whether variants cause protein coding changes using Gencode genes definition systems, it will label the gene name of the variants has impact, if it is intergenic region, the nearby gene name will be labeled in the annotation. (Frankish et al., 2018; Harrow et al., 2012)"
     });
   }
   if (variant.genecode_comprehensive_category) {
-    category.push({
+    basic.push({
       field: "Genecode Comprehensive Category",
       value: variant.genecode_comprehensive_category,
       tooltip: "Identify whether variants cause protein coding changes using Gencode genes definition systems. Categories include: Exonic (within protein-coding regions), UTR (untranslated regions), Intronic (within gene introns), Downstream (downstream of genes), Upstream (upstream of genes), Intergenic (between genes), and Splicing (affecting splice sites). (Frankish et al., 2018; Harrow et al., 2012)"
     });
   }
   if (variant.genecode_comprehensive_exonic_category) {
-    category.push({
+    basic.push({
       field: "Genecode Comprehensive Exonic Category",
       value: variant.genecode_comprehensive_exonic_category,
       tooltip: "Identify variants impact using Gencode exonic definition. Categories include: Stopgain (introduces stop codon), Stoploss (removes stop codon), Nonsynonymous SNV (changes amino acid), Synonymous SNV (doesn't change amino acid), Frameshift insertion/deletion/substitution, and Nonframeshift insertion/deletion/substitution. (Frankish et al., 2018; Harrow et al., 2012)"
     });
   }
   if (variant.metasvm_pred && variant.metasvm_pred !== 'T') {
-    category.push({
+    basic.push({
       field: "MetaSVM Prediction",
       value: variant.metasvm_pred,
       tooltip: "Identify whether the variant is a disruptive missense variant, defined as 'disruptive' by the ensemble MetaSVM annotation. D (Deleterious): likely to affect protein function. T (Tolerated): unlikely to affect protein function. (Dong et al., 2014)"
     });
   }
   if (variant.cage_promoter) {
-    category.push({
+    basic.push({
       field: "CAGE Promoter",
       value: variant.cage_promoter,
       tooltip: "CAGE defined promoter sites from Fantom 5. Yes: variant overlaps with CAGE promoter site. No: variant does not overlap with CAGE promoter site. (Forrest et al., 2014)"
     });
   }
   if (variant.cage_enhancer) {
-    category.push({
+    basic.push({
       field: "CAGE Enhancer",
       value: variant.cage_enhancer,
       tooltip: "CAGE defined enhancer sites from Fantom 5. Yes: variant overlaps with CAGE enhancer site. No: variant does not overlap with CAGE enhancer site. (Forrest et al., 2014)"
     });
   }
   if (variant.genehancer) {
-    category.push({
+    basic.push({
       field: "GeneHancer",
       value: variant.genehancer,
       tooltip: "Predicted human enhancer sites from the GeneHancer database. (Fishilevich et al., 2017)"
     });
   }
   if (variant.super_enhancer) {
-    category.push({
+    basic.push({
       field: "Super Enhancer",
       value: variant.super_enhancer,
       tooltip: "Predicted super-enhancer sites and targets in a range of human cell types. (Hnisz et al., 2013)"
     });
   }
-  if (category.length > 0) categories.Category = { label: "Genomic Context", items: category };
+  if (basic.length > 0) categories.Basic = { label: "Basic Information & Genomic Context", items: basic };
 
-  // ClinVar
+  // Population Genetics (moved before ClinVar, includes allele frequencies)
+  const population: any[] = [];
+
+  // Add overall allele frequencies
+  if (variant.bravo_af !== null) {
+    population.push({
+      field: "TOPMed Bravo AF",
+      value: variant.bravo_af,
+      tooltip: "TOPMed Bravo Genome Allele Frequency. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)"
+    });
+  }
+  if (variant.af_total !== null) {
+    population.push({
+      field: "Total GNOMAD AF",
+      value: variant.af_total,
+      tooltip: "GNOMAD v3 Genome Allele Frequency using all the samples. (GNOMAD Consortium, 2019; Karczewski et al., 2020)"
+    });
+  }
+  if (variant.tg_all !== null) {
+    population.push({
+      field: "All 1000 Genomes AF",
+      value: variant.tg_all,
+      tooltip: "1000 Genome Allele Frequency (Whole genome allele frequencies from the 1000 Genomes Project phase 3 data)."
+    });
+  }
+
+  // Add ancestry-specific frequencies
+  const hasV4Ancestry = gnomadGenome && (gnomadGenome.af_afr || gnomadGenome.af_amr || gnomadGenome.af_eas || gnomadGenome.af_nfe || gnomadGenome.af_sas);
+  const hasV3Ancestry = variant.af_afr !== null || variant.af_amr !== null || variant.af_eas !== null || variant.af_nfe !== null || variant.af_sas !== null;
+
+  if (hasV4Ancestry) {
+    if (gnomadGenome.af_afr) population.push({ field: "AFR (African)", value: gnomadGenome.af_afr, source: "gnomAD v4 Genome" });
+    if (gnomadGenome.af_amr) population.push({ field: "AMR (Ad Mixed American)", value: gnomadGenome.af_amr, source: "gnomAD v4 Genome" });
+    if (gnomadGenome.af_eas) population.push({ field: "EAS (East Asian)", value: gnomadGenome.af_eas, source: "gnomAD v4 Genome" });
+    if (gnomadGenome.af_nfe) population.push({ field: "NFE (Non-Finnish European)", value: gnomadGenome.af_nfe, source: "gnomAD v4 Genome" });
+    if (gnomadGenome.af_sas) population.push({ field: "SAS (South Asian)", value: gnomadGenome.af_sas, source: "gnomAD v4 Genome" });
+  } else if (hasV3Ancestry) {
+    if (variant.af_afr !== null) population.push({ field: "AFR (African)", value: variant.af_afr, source: "gnomAD v3" });
+    if (variant.af_amr !== null) population.push({ field: "AMR (Ad Mixed American)", value: variant.af_amr, source: "gnomAD v3" });
+    if (variant.af_eas !== null) population.push({ field: "EAS (East Asian)", value: variant.af_eas, source: "gnomAD v3" });
+    if (variant.af_nfe !== null) population.push({ field: "NFE (Non-Finnish European)", value: variant.af_nfe, source: "gnomAD v3" });
+    if (variant.af_sas !== null) population.push({ field: "SAS (South Asian)", value: variant.af_sas, source: "gnomAD v3" });
+  }
+
+  if (population.length > 0) {
+    categories.Population = {
+      label: "Population Genetics",
+      interpretation: "Rare (MAF < 0.0001), Low Frequency (0.0001 ≤ MAF < 0.01), Common (MAF ≥ 0.01)",
+      items: population
+    };
+  }
+
+  // ClinVar (now comes after Population)
   const clinvar: any[] = [];
   if (variant.clnsig) {
     clinvar.push({
@@ -468,31 +594,86 @@ function buildVariantJSON(ctx: VariantContext): any {
   }
   if (clinvar.length > 0) categories.Clinvar = { label: "Clinical Significance", items: clinvar };
 
-  // Population / Ancestry-specific frequencies
-  const population: any[] = [];
-  const hasV4Ancestry = gnomadGenome && (gnomadGenome.af_afr || gnomadGenome.af_amr || gnomadGenome.af_eas || gnomadGenome.af_nfe || gnomadGenome.af_sas);
-  const hasV3Ancestry = variant.af_afr !== null || variant.af_amr !== null || variant.af_eas !== null || variant.af_nfe !== null || variant.af_sas !== null;
-
-  if (hasV4Ancestry) {
-    if (gnomadGenome.af_afr) population.push({ field: "AFR (African)", value: gnomadGenome.af_afr, source: "gnomAD v4 Genome" });
-    if (gnomadGenome.af_amr) population.push({ field: "AMR (Ad Mixed American)", value: gnomadGenome.af_amr, source: "gnomAD v4 Genome" });
-    if (gnomadGenome.af_eas) population.push({ field: "EAS (East Asian)", value: gnomadGenome.af_eas, source: "gnomAD v4 Genome" });
-    if (gnomadGenome.af_nfe) population.push({ field: "NFE (Non-Finnish European)", value: gnomadGenome.af_nfe, source: "gnomAD v4 Genome" });
-    if (gnomadGenome.af_sas) population.push({ field: "SAS (South Asian)", value: gnomadGenome.af_sas, source: "gnomAD v4 Genome" });
-  } else if (hasV3Ancestry) {
-    if (variant.af_afr !== null) population.push({ field: "AFR (African)", value: variant.af_afr, source: "gnomAD v3" });
-    if (variant.af_amr !== null) population.push({ field: "AMR (Ad Mixed American)", value: variant.af_amr, source: "gnomAD v3" });
-    if (variant.af_eas !== null) population.push({ field: "EAS (East Asian)", value: variant.af_eas, source: "gnomAD v3" });
-    if (variant.af_nfe !== null) population.push({ field: "NFE (Non-Finnish European)", value: variant.af_nfe, source: "gnomAD v3" });
-    if (variant.af_sas !== null) population.push({ field: "SAS (South Asian)", value: variant.af_sas, source: "gnomAD v3" });
+  // Integrative scores (moved before Conservation)
+  const integrative: any[] = [];
+  if (shouldIncludeField('apc_protein_function_v3', variant.apc_protein_function_v3)) {
+    integrative.push({
+      field: "aPC-Protein Function",
+      value: variant.apc_protein_function_v3,
+      tooltip: "Integrative score combining multiple protein function predictions (SIFT, PolyPhen, Grantham, PolyPhen2, MutationTaster, MutationAssessor) into a single PHRED-scaled score. Higher scores (>10) are more likely to affect protein function. Range: [2.974, 86.238]. (Li et al., 2020)"
+    });
   }
-  if (population.length > 0) {
-    categories.Population = {
-      label: "Population Genetics",
-      interpretation: "Rare (MAF < 0.0001), Low Frequency (0.0001 ≤ MAF < 0.01), Common (MAF ≥ 0.01)",
-      items: population
-    };
+  if (shouldIncludeField('apc_conservation_v2', variant.apc_conservation_v2)) {
+    integrative.push({
+      field: "aPC-Conservation",
+      value: variant.apc_conservation_v2,
+      tooltip: "Conservation annotation PC: the first PC of the standardized scores of GerpN, GerpS, priPhCons, mamPhCons, verPhCons, priPhyloP, mamPhyloP, verPhyloP in PHRED scale. Range: [0, 75.824]. Higher scores (>10) indicate more evolutionary conservation. (Li et al., 2020)"
+    });
   }
+  if (shouldIncludeField('apc_epigenetics_active', variant.apc_epigenetics_active)) {
+    integrative.push({
+      field: "aPC-Epigenetics Active",
+      value: variant.apc_epigenetics_active,
+      tooltip: "Integrative epigenetics score for active chromatin marks in PHRED scale. Higher scores indicate stronger evidence of regulatory activity. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_epigenetics_repressed', variant.apc_epigenetics_repressed)) {
+    integrative.push({
+      field: "aPC-Epigenetics Repressed",
+      value: variant.apc_epigenetics_repressed,
+      tooltip: "Integrative epigenetics score for repressed chromatin marks in PHRED scale. Higher scores indicate stronger evidence of regulatory repression. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_epigenetics_transcription', variant.apc_epigenetics_transcription)) {
+    integrative.push({
+      field: "aPC-Epigenetics Transcription",
+      value: variant.apc_epigenetics_transcription,
+      tooltip: "Integrative epigenetics score for transcription-related chromatin marks in PHRED scale. Higher scores indicate stronger evidence of transcriptional activity. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_local_nucleotide_diversity_v3', variant.apc_local_nucleotide_diversity_v3)) {
+    integrative.push({
+      field: "aPC-Local Nucleotide Diversity",
+      value: variant.apc_local_nucleotide_diversity_v3,
+      tooltip: "Local nucleotide diversity score in PHRED scale. Higher scores indicate regions with higher genetic variation. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_mutation_density', variant.apc_mutation_density)) {
+    integrative.push({
+      field: "aPC-Mutation Density",
+      value: variant.apc_mutation_density,
+      tooltip: "Mutation density score in PHRED scale. Higher scores indicate regions with higher mutation rates. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_transcription_factor', variant.apc_transcription_factor)) {
+    integrative.push({
+      field: "aPC-Transcription Factor",
+      value: variant.apc_transcription_factor,
+      tooltip: "Transcription factor binding site score in PHRED scale. Higher scores (>10) indicate stronger evidence of transcription factor binding disruption. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('apc_mappability', variant.apc_mappability)) {
+    integrative.push({
+      field: "aPC-Mappability",
+      value: variant.apc_mappability,
+      tooltip: "Mappability score in PHRED scale. Higher scores indicate regions that are more uniquely mappable in the genome. (Li et al., 2020)"
+    });
+  }
+  if (shouldIncludeField('cadd_phred', variant.cadd_phred)) {
+    integrative.push({
+      field: "CADD phred",
+      value: variant.cadd_phred,
+      tooltip: "The CADD score in PHRED scale (integrative score). A higher CADD score indicates more deleterious. Higher scores (>10) are more likely deleterious. Range: [0.001, 84]. (Kircher et al., 2014; Rentzsch et al., 2018)"
+    });
+  }
+  if (shouldIncludeField('linsight', variant.linsight)) {
+    integrative.push({
+      field: "LINSIGHT",
+      value: variant.linsight,
+      tooltip: "LINSIGHT (LinearlyScaled INSIGHT) predicts the functional impact of non-coding variants. Higher scores (closer to 1) indicate higher probability of functional impact. Range: [0, 1]. (Huang et al., 2017)"
+    });
+  }
+  if (integrative.length > 0) categories.Integrative = { label: "Integrative Scores", items: integrative };
 
   // Conservation
   const conservation: any[] = [];
@@ -578,44 +759,59 @@ function buildVariantJSON(ctx: VariantContext): any {
   if (shouldIncludeField('encodetotal_rna_sum', variant.encodetotal_rna_sum)) {
     epigenetics.push({ field: "totalRNA", value: variant.encodetotal_rna_sum, activity: "Transcription", source: "ENCODE" });
   }
-  if (epigenetics.length > 0) categories.Epigenetics = { label: "Epigenetic Marks", items: epigenetics };
 
-  // Integrative scores
-  const integrative: any[] = [];
-  if (shouldIncludeField('apc_protein_function_v3', variant.apc_protein_function_v3)) {
-    integrative.push({ field: "aPC-Protein Function", value: variant.apc_protein_function_v3 });
+  // Add aggregated eQTL data
+  if (eqtlData) {
+    try {
+      const eqtlAgg = aggregateEQTLData(eqtlData);
+      if (eqtlAgg) {
+        epigenetics.push({
+          field: "eQTL Gene Links",
+          value: `${eqtlAgg.totalGenes} genes across ${eqtlAgg.totalTissues} tissues (${eqtlAgg.totalAssociations} total associations)`,
+          summary: eqtlAgg,
+          source: "GTEx/eQTL"
+        });
+      }
+    } catch (error) {
+      console.error("Error aggregating eQTL data:", error);
+    }
   }
-  if (shouldIncludeField('apc_conservation_v2', variant.apc_conservation_v2)) {
-    integrative.push({ field: "aPC-Conservation", value: variant.apc_conservation_v2 });
+
+  // Add aggregated ChIA-PET data
+  if (chiapetData) {
+    try {
+      const chiapetAgg = aggregateChiaPetData(chiapetData);
+      if (chiapetAgg) {
+        epigenetics.push({
+          field: "ChIA-PET Links",
+          value: `${chiapetAgg.totalLinks} total links (RNAPII: ${chiapetAgg.rnapii.uniqueGenes} genes, Intact-HiC: ${chiapetAgg.intactHic.uniqueGenes} genes)`,
+          summary: chiapetAgg,
+          source: "ChIA-PET"
+        });
+      }
+    } catch (error) {
+      console.error("Error aggregating ChIA-PET data:", error);
+    }
   }
-  if (shouldIncludeField('apc_epigenetics_active', variant.apc_epigenetics_active)) {
-    integrative.push({ field: "aPC-Epigenetics Active", value: variant.apc_epigenetics_active });
+
+  // Add aggregated CRISPR data
+  if (crisprData) {
+    try {
+      const crisprAgg = aggregateCRISPRData(crisprData);
+      if (crisprAgg) {
+        epigenetics.push({
+          field: "CRISPR Perturbation Links",
+          value: `${crisprAgg.uniqueGenes} genes (${crisprAgg.totalLinks} total links)`,
+          summary: crisprAgg,
+          source: "CRISPR"
+        });
+      }
+    } catch (error) {
+      console.error("Error aggregating CRISPR data:", error);
+    }
   }
-  if (shouldIncludeField('apc_epigenetics_repressed', variant.apc_epigenetics_repressed)) {
-    integrative.push({ field: "aPC-Epigenetics Repressed", value: variant.apc_epigenetics_repressed });
-  }
-  if (shouldIncludeField('apc_epigenetics_transcription', variant.apc_epigenetics_transcription)) {
-    integrative.push({ field: "aPC-Epigenetics Transcription", value: variant.apc_epigenetics_transcription });
-  }
-  if (shouldIncludeField('apc_local_nucleotide_diversity_v3', variant.apc_local_nucleotide_diversity_v3)) {
-    integrative.push({ field: "aPC-Local Nucleotide Diversity", value: variant.apc_local_nucleotide_diversity_v3 });
-  }
-  if (shouldIncludeField('apc_mutation_density', variant.apc_mutation_density)) {
-    integrative.push({ field: "aPC-Mutation Density", value: variant.apc_mutation_density });
-  }
-  if (shouldIncludeField('apc_transcription_factor', variant.apc_transcription_factor)) {
-    integrative.push({ field: "aPC-Transcription Factor", value: variant.apc_transcription_factor });
-  }
-  if (shouldIncludeField('apc_mappability', variant.apc_mappability)) {
-    integrative.push({ field: "aPC-Mappability", value: variant.apc_mappability });
-  }
-  if (shouldIncludeField('cadd_phred', variant.cadd_phred)) {
-    integrative.push({ field: "CADD phred", value: variant.cadd_phred });
-  }
-  if (shouldIncludeField('linsight', variant.linsight)) {
-    integrative.push({ field: "LINSIGHT", value: variant.linsight });
-  }
-  if (integrative.length > 0) categories.Integrative = { label: "Integrative Scores", items: integrative };
+
+  if (epigenetics.length > 0) categories.Epigenetics = { label: "Regulatory Function", items: epigenetics };
 
   // Protein Function
   const proteinFunction: any[] = [];
@@ -691,6 +887,30 @@ function buildVariantJSON(ctx: VariantContext): any {
       tooltip: "Predicts functional impact of amino-acid substitutions in proteins. Higher scores (>3) indicate more likely functional impact. Range: [-5.135, 6.125] (default: -5.545). (Reva et al., 2011)"
     });
   }
+
+  // Add AlphaMissense to Protein Function section
+  if ((variant as any).protein_variant) {
+    proteinFunction.push({
+      field: "Protein Variant",
+      value: (variant as any).protein_variant,
+      tooltip: "Amino acid change notation (e.g., R176C means Arginine at position 176 changed to Cysteine). The letter before the number is the original amino acid, the number is the position in the protein, and the letter after is the new amino acid."
+    });
+  }
+  if (shouldIncludeField('am_pathogenicity', (variant as any).am_pathogenicity)) {
+    proteinFunction.push({
+      field: "AlphaMissense Pathogenicity",
+      value: (variant as any).am_pathogenicity,
+      tooltip: "AlphaMissense pathogenicity score. >0.564 = likely pathogenic. This AI-based predictor uses protein structure and evolutionary context to assess variant impact."
+    });
+  }
+  if ((variant as any).am_class) {
+    proteinFunction.push({
+      field: "AlphaMissense Class",
+      value: (variant as any).am_class,
+      tooltip: "AlphaMissense classification: likely_pathogenic, likely_benign, or ambiguous based on the pathogenicity score."
+    });
+  }
+
   if (proteinFunction.length > 0) categories["Protein Function"] = { label: "Protein Function Predictions", items: proteinFunction };
 
   // Splicing
@@ -724,19 +944,6 @@ function buildVariantJSON(ctx: VariantContext): any {
     mutationRate.push({ field: "MC", value: variant.mc, tooltip: "Carlson mutation rate" });
   }
   if (mutationRate.length > 0) categories["Mutation Rate"] = { label: "Mutation Density & Context", items: mutationRate };
-
-  // Alphamissense
-  const alphamissense: any[] = [];
-  if ((variant as any).protein_variant) {
-    alphamissense.push({ field: "Protein Variant", value: (variant as any).protein_variant });
-  }
-  if (shouldIncludeField('am_pathogenicity', (variant as any).am_pathogenicity)) {
-    alphamissense.push({ field: "AM Pathogenicity", value: (variant as any).am_pathogenicity });
-  }
-  if ((variant as any).am_class) {
-    alphamissense.push({ field: "AM Class", value: (variant as any).am_class });
-  }
-  if (alphamissense.length > 0) categories.Alphamissense = { label: "AlphaMissense Predictions", items: alphamissense };
 
   // cCRE (Candidate cis-Regulatory Elements) - separate category
   if (ccreData) {
@@ -784,35 +991,31 @@ function buildVariantJSON(ctx: VariantContext): any {
     }
   }
 
-  if (eqtlData) {
-    try {
-      const eqtlAgg = aggregateEQTLData(eqtlData);
-      if (eqtlAgg) phenotypic.eQTL = eqtlAgg;
-    } catch (error) {
-      console.error("Error aggregating eQTL data:", error);
-    }
-  }
-
   // Add tissue-specific and phenotypic if they have data
   if (Object.keys(tissueSpecific).length > 0) categories["Tissue-Specific"] = { label: "Tissue-Specific Annotations", data: tissueSpecific };
-  if (Object.keys(phenotypic).length > 0) categories["Phenotypic Impact"] = { label: "Phenotypic Associations", data: phenotypic };
+  if (Object.keys(phenotypic).length > 0) categories["Phenotypic Effect"] = { label: "Phenotypic Effect", data: phenotypic };
 
   return categories;
 }
 
-const systemPrompt = String.raw`You are an expert genomic variant analyst with deep knowledge of molecular biology, population genetics, clinical genomics and more. Your role is to synthesize complex multi-source variant annotation data into clear, biologically meaningful summary.
+const systemPrompt = String.raw`You are an expert genomic variant analyst with deep knowledge of molecular biology, population genetics, clinical genomics and more. Your role is to tell the story of each variant using clear, accessible language that connects the data into a coherent biological narrative.
 
 **CRITICAL: Data Fidelity & Citation Rules**
 - ONLY use data explicitly provided in the input - never invent or assume values
 - **MANDATORY: EVERY single data point, score, frequency, or metric MUST have an inline (Source) citation**
+- Extract source citations from the "tooltip" field of each item - citations are typically in parentheses at the end of tooltips (e.g., "(Li et al., 2020)", "(Adzhubei et al., 2010)")
+- When items have a "source" field, use that source (e.g., "gnomAD v4", "ENCODE", "GTEx/eQTL", "ChIA-PET", "CRISPR")
 - PRESERVE all inline database citations (e.g., "gnomAD v4", "BRAVO freeze 10", "ENCODE", "ClinVar") when referencing specific data points
+- Format citations inline after mentioning each score: "CADD PHRED score of 25 (Kircher et al., 2014; Rentzsch et al., 2018)"
 - If insufficient data exists for a section, state that clearly rather than generating placeholder content
 
-**Core Principles:**
-- Provide expert biological reasoning grounded strictly in the provided data
-- Focus on telling a coherent biological story - not listing all available scores
-- Explain significance for both clinical and research contexts
-- Use precise genomic terminology while remaining accessible
+**Core Principles - Tell the Variant's Story:**
+- Write in a narrative style that tells the biological story of this variant
+- Use plain English - explain what scores MEAN in biological terms, not just what they are
+- Connect the dots between different types of evidence (e.g., "This high conservation score suggests the region is important, which aligns with the protein function predictions showing...")
+- Interpret scores in context - explain WHY a score matters and WHAT it tells us about variant impact
+- Focus on biological significance over technical details
+- Think: "What is this variant doing?" rather than "What are the numbers?"
 
 **Input Format:**
 You will receive structured JSON data organized by categories. Each category has a "label" field that should be used as the section header in your summary.
@@ -827,59 +1030,82 @@ Category structure example:
   }
 }
 
-Available categories:
-- Basic (label: "Basic Information"): Variant VCF, rsID, TOPMed QC Status, Bravo AF, GNOMAD AF, 1000 Genomes AF
-- Category (label: "Category Insights"): Genecode annotations, MetaSVM, CAGE, GeneHancer, Super Enhancer
-- Clinvar (label: "Clinical Significance"): Clinical significance, disease name, review status, allele origin
-- Population (label: "Population Genetics"): Ancestry-specific frequencies with interpretation guide
-- Conservation (label: "Evolutionary Conservation"): aPC-Conservation, phyloP/phastCons, GERP scores
-- Epigenetics (label: "Epigenetic Marks"): Histone marks by activity (Active/Repressed/Transcription), DNase, totalRNA
-- Integrative (label: "Integrative Scores"): aPC scores, CADD, LINSIGHT
-- Protein Function (label: "Protein Function Predictions"): CADD, REVEL, PolyPhen, SIFT, Grantham, MutationTaster, MutationAssessor
-- Splicing (label: "Splicing Impact"): SpliceAI, Pangolin
-- Mutation Rate (label: "Mutation Density & Rate"): Filter value, PN, mutation rates
-- Alphamissense (label: "AlphaMissense Predictions"): Protein variant, pathogenicity, classification
-- cCRE (label: "Regulatory Elements (cCRE)"): Candidate cis-regulatory elements
-- PGBoost (label: "Variant-to-Gene Connections"): Variant-to-gene associations
-- Tissue-Specific (label: "Tissue-Specific Annotations"): CV2F chromatin accessibility, SCENT enhancer-gene links
-- Phenotypic Impact (label: "Phenotypic Associations"): GWAS (top 10 unique traits, deduped), eQTL
+Available categories (in order of appearance):
+1. Basic (label: "Basic Information & Genomic Context"): Variant VCF, rsID, TOPMed QC Status, Bravo AN, Genecode annotations, MetaSVM, CAGE, GeneHancer, Super Enhancer
+2. Population (label: "Population Genetics"): Overall allele frequencies (Bravo AF, GNOMAD AF, 1000 Genomes AF) and ancestry-specific frequencies with interpretation guide
+3. Clinvar (label: "Clinical Significance"): Clinical significance, disease name, review status, allele origin
+4. Integrative (label: "Integrative Scores"): aPC scores, CADD, LINSIGHT - integrative metrics combining multiple evidence types
+5. Conservation (label: "Evolutionary Conservation"): aPC-Conservation, phyloP/phastCons, GERP scores
+6. Epigenetics (label: "Regulatory Function"): Histone marks by activity (Active/Repressed/Transcription), DNase, totalRNA, eQTL gene expression associations, ChIA-PET chromatin interaction links (RNAPII and Intact-HiC), CRISPR perturbation screen results linking variant to gene function
+7. Protein Function (label: "Protein Function Predictions"): CADD, REVEL, PolyPhen, SIFT, Grantham, MutationTaster, MutationAssessor, AlphaMissense (protein variant like R176C, pathogenicity score, classification)
+8. Splicing (label: "Splicing Impact"): SpliceAI, Pangolin
+9. Mutation Rate (label: "Mutation Density & Context"): Filter value, PN, mutation rates
+10. cCRE (label: "Regulatory Elements (cCRE)"): Candidate cis-regulatory elements
+11. PGBoost (label: "Variant-to-Gene Connections"): Variant-to-gene associations
+12. Tissue-Specific (label: "Tissue-Specific Annotations"): CV2F chromatin accessibility, SCENT enhancer-gene links
+13. Phenotypic Effect (label: "Phenotypic Effect"): GWAS associations (top 10 unique traits, deduplicated by strongest p-value per trait)
+
+**AlphaMissense Protein Variant Notation:**
+When you see protein variants like "R176C", interpret them as: [Original amino acid][Position][New amino acid]
+- R176C = Arginine (R) at position 176 changed to Cysteine (C)
+- This represents the specific amino acid substitution caused by the DNA variant
+- Always explain this notation when first mentioning the protein variant
 
 **IMPORTANT**: Use the "label" field from each category as your section header.
 
+**PHRED Scale Interpretation:**
+Many scores use PHRED scaling, which represents the probability of being in the top percentile:
+- PHRED 10 = top 10% (90th percentile)
+- PHRED 15 = top 3.2% (96.8th percentile)
+- PHRED 20 = top 1% (99th percentile)
+- PHRED 30 = top 0.1% (99.9th percentile)
+When mentioning PHRED-scaled scores, explain what percentile they represent. For example: "CADD PHRED 25 places this variant in the top 0.32% most deleterious variants."
 
+**CRITICAL: Mention ALL Significant Scores**
+- For PHRED-scaled scores (aPC-*, CADD, etc.): **You MUST mention and interpret every score >= 10** in your summary. Scores >= 10 represent top 10% or better and are biologically significant.
+- For other metrics (LINSIGHT, REVEL, etc.): mention scores that exceed their significance thresholds
+- DO NOT cherry-pick only 1-2 scores when multiple significant scores are present
+- Example: If aPC-Protein Function is 37 (top 0.0%), aPC-Conservation is 15 (top 3%), aPC-Transcription Factor is 14 (top 4%), and CADD is 25 (top 0.3%), you MUST discuss ALL FOUR of these significant findings, not just mention one or two
+- The executive summary paragraph and relevant sections must reflect the full picture of ALL significant evidence
 
 Output Structure & Formatting:
-Start the summary with Basic Information, we dont want any titles, content above it.
-Use #### for section headers (e.g., "#### Basic Information", "#### Category Insights", etc.) based on the "label" field of each category.
 
-1. Hierarchical bullet format: Use nested bullets to organize information under each section header. For example:
-Category Insights:
- - (similar scores interpreted together) 
- - (scores with similar interpretation grouped together)
+**CRITICAL: Start with an Executive Summary Paragraph**
+Begin the entire summary with a single compelling paragraph (3-5 sentences) that tells the complete story of this variant in plain English. This opening should:
+- Synthesize the most important findings across ALL categories
+- Explain what this variant does and why it matters
+- Connect the biological dots (e.g., "This rare variant changes a critical amino acid in a highly conserved region, with multiple predictors suggesting it disrupts protein function...")
+- Use narrative language, not bullet points
+- Make it accessible to someone without deep genomics knowledge
+- DO NOT use section headers or formatting for this paragraph - just flowing prose
 
-2. Score presentation rules: 
-  - Lead with interpretation, then support with data points and citations (e.g., "This variant has a CADD score of 25, which is above the threshold of 10 for likely deleterious variants. (Kircher et al., 2014)"), "GNOMAD v4 reports an allele frequency of 0.0005, which is considered rare (MAF < 0.0001). (gnomAD v4)" etc.
+After the opening paragraph, use #### section headers for detailed breakdowns.
+
+1. Narrative style within sections:
+  - Write in complete sentences that connect ideas
+  - Explain the biological MEANING of scores, not just report them
+  - Show how different pieces of evidence support or contradict each other
+  - ALWAYS include citations extracted from tooltips when mentioning scores
+  - Example: "The variant appears in a region that's been extremely well-preserved across mammalian evolution, with a PhyloP score of 5.2 placing it in the top 1% most conserved positions (Pollard et al., 2010). This evolutionary constraint suggests the position plays a critical functional role."
+  - Example: "Multiple integrative scores flag this variant as highly significant: aPC-Protein Function of 37.2 places it in the top 0.0% (Li et al., 2020), while the CADD PHRED score of 25.3 ranks it in the top 0.3% most likely deleterious variants (Kircher et al., 2014; Rentzsch et al., 2018)."
+
+2. Plain English interpretation:
+  - Translate technical terms (e.g., "nonsynonymous SNV" → "a DNA change that alters the protein sequence")
+  - Explain WHY scores matter (e.g., don't just say "CADD=25", say "CADD score of 25 places this in the top 0.3% most likely harmful variants")
+  - Connect evidence types (e.g., "The high conservation aligns with the damaging protein function predictions...")
 
 3. Styling:
-  - Bold key findings: Highlight critical insights or particularly impactful scores in bold.
-  - Use formats for region, variant as chr-pos-ref-alt (e.g., "19-44908822-C-T"), chr-start-end for regions (e.g., "19-44908816-44908825") without chr prefix
+  - Bold key findings and biological insights
+  - Use variant format: chr-pos-ref-alt (e.g., "19-44908822-C-T")
+  - Use region format: chr-start-end (e.g., "19-44908816-44908825")
+  - Always include source citations inline
 
+4. Example output format:
 
-4. Example output:
-#### Basic Information:
+This variant (19-44908822-C-T, also known as rs7412) causes a change from arginine to cysteine at position 176 of the APOE protein. Multiple lines of evidence suggest this change is functionally significant: the position is highly conserved across species, several computational predictors classify it as likely damaging to protein function, and it's been observed at low frequency (~7-8%) across multiple populations, suggesting it may be under weak selection. The variant has been associated with altered lipid metabolism and cardiovascular disease risk in genome-wide studies.
 
-The variant is identified as **19-44908822-C-T**, also known by its rsID **rs7412**.
-It passes the **TOPMed QC Status**, indicating satisfactory quality.
-The **TOPMed Bravo Allele Number** is **264690**, reflecting the variant's representation in the dataset.
-Its **TOPMed Bravo Allele Frequency** is **0.0781216**, suggesting it is a Low Frequency variant (0.0001 ≤ MAF < 0.01) in the population (NHLBI TOPMed Consortium).
-The **Total GNOMAD Allele Frequency** is **0.0788183**, also indicating low frequency status (GNOMAD Consortium, 2019; Karczewski et al., 2020).
-The **1000 Genomes Allele Frequency** is **0.0750799**, consistent with both previous frequencies.
+#### Basic Information & Genomic Context:
 
-#### Category Insights:
-
-This variant affects the **APOE** gene, categorized as **exonic**, meaning it occurs within the protein-coding region (Frankish et al., 2018; Harrow et al., 2012).
-It particularly results in a **nonsynonymous SNV**, leading to an amino acid change (Frankish et al., 2018; Harrow et al., 2012).
-The variant overlaps with a **CAGE promoter site** positioned at **19-44908816-44908825** (Forrest et al., 2014).
   `;
 
 /**

@@ -1,0 +1,310 @@
+{
+  "categories": [
+    {
+      "name": "Protein Function Scores",
+      "slug": "protein-function",
+      "items": [
+        {
+          "header": "CADD Phred",
+          "accessor": "cadd_phred",
+          "threshold": ">= 10",
+          "tooltip": "Combined Annotation Dependent Depletion score. >10 = deleterious, >20 = highly deleterious"
+        },
+        {
+          "header": "REVEL",
+          "accessor": "revel_max",
+          "threshold": ">= 0.5",
+          "tooltip": "Rare Exome Variant Ensemble Learner. >0.5 = pathogenic, >0.75 = highly pathogenic"
+        },
+        {
+          "header": "PolyPhen-2",
+          "accessor": "polyphen_val",
+          "threshold": ">= 0.8",
+          "tooltip": "PolyPhen-2 score. >0.8 = damaging"
+        },
+        {
+          "header": "PolyPhen-2 HumDiv",
+          "accessor": "polyphen2_hdiv_score",
+          "threshold": ">= 0.8",
+          "tooltip": "PolyPhen-2 HumDiv score. >0.8 = damaging"
+        },
+        {
+          "header": "PolyPhen-2 HumVar",
+          "accessor": "polyphen2_hvar_score",
+          "threshold": ">= 0.8",
+          "tooltip": "PolyPhen-2 HumVar score. >0.8 = damaging"
+        },
+        {
+          "header": "SIFT",
+          "accessor": "sift_val",
+          "threshold": "0.0 - 0.05",
+          "tooltip": "SIFT score. ≤0.05 = deleterious"
+        },
+        {
+          "header": "MutationTaster",
+          "accessor": "mutation_taster_score",
+          "threshold": ">= 0.8",
+          "tooltip": "MutationTaster score. >0.8 = disease causing"
+        },
+        {
+          "header": "MutationAssessor",
+          "accessor": "mutation_assessor_score",
+          "threshold": ">= 3",
+          "tooltip": "MutationAssessor score. >3 = high functional impact"
+        },
+        {
+          "header": "Grantham",
+          "accessor": "grantham",
+          "threshold": ">= 0.8",
+          "tooltip": "Grantham score. >0.8 = large physicochemical difference"
+        }
+      ]
+    },
+    {
+      "name": "Conservation Scores",
+      "slug": "conservation",
+      "items": [
+        {
+          "header": "PhyloP (100-way)",
+          "accessor": "mamphylop",
+          "threshold": "> 3",
+          "tooltip": "Mammalian PhyloP score. >2 = highly conserved, <-2 = fast evolving"
+        },
+        {
+          "header": "PhyloP (Primate)",
+          "accessor": "priphylop",
+          "threshold": "> 0.3",
+          "tooltip": "Primate PhyloP score. >0.3 = conserved"
+        },
+        {
+          "header": "PhyloP (Vertebrate)",
+          "accessor": "verphylop",
+          "threshold": "> 8",
+          "tooltip": "Vertebrate PhyloP score. >8 = conserved"
+        },
+        {
+          "header": "PhastCons (Mammalian)",
+          "accessor": "mamphcons",
+          "threshold": "> 0.8",
+          "tooltip": "Mammalian PhastCons score. >0.8 = conserved"
+        },
+        {
+          "header": "PhastCons (Primate)",
+          "accessor": "priphcons",
+          "threshold": "> 0.8",
+          "tooltip": "Primate PhastCons score. >0.8 = conserved"
+        },
+        {
+          "header": "PhastCons (Vertebrate)",
+          "accessor": "verphcons",
+          "threshold": "> 0.8",
+          "tooltip": "Vertebrate PhastCons score. >0.8 = conserved"
+        },
+        {
+          "header": "GERP++ RS",
+          "accessor": "gerp_s",
+          "threshold": "> 10",
+          "tooltip": "GERP++ rejected substitutions score. >2 = constrained, >4 = highly constrained"
+        },
+        {
+          "header": "GERP++ N",
+          "accessor": "gerp_n",
+          "threshold": "> 10",
+          "tooltip": "GERP++ neutral rate. >10 = neutral evolution"
+        }
+      ]
+    },
+    {
+      "name": "Splicing Predictions",
+      "slug": "splicing",
+      "items": [
+        {
+          "header": "SpliceAI",
+          "accessor": "spliceai_ds_max",
+          "threshold": ">= 0.2",
+          "tooltip": "SpliceAI delta score. >0.2 = likely affects splicing, >0.5 = high confidence, >0.8 = very high confidence"
+        },
+        {
+          "header": "Pangolin",
+          "accessor": "pangolin_largest_ds",
+          "threshold": ">= 0.2",
+          "tooltip": "Pangolin largest delta score. >0.2 = likely affects splicing"
+        }
+      ]
+    },
+    {
+      "name": "Integrative Scores",
+      "slug": "integrative",
+      "items": [
+        {
+          "header": "aPC-Protein Function",
+          "accessor": "apc_protein_function_v3",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for protein function"
+        },
+        {
+          "header": "aPC-Conservation",
+          "accessor": "apc_conservation_v2",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for conservation"
+        },
+        {
+          "header": "aPC-Epigenetics (Active)",
+          "accessor": "apc_epigenetics_active",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for active epigenetic marks"
+        },
+        {
+          "header": "aPC-Epigenetics (Repressed)",
+          "accessor": "apc_epigenetics_repressed",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for repressed epigenetic marks"
+        },
+        {
+          "header": "aPC-Epigenetics (Transcription)",
+          "accessor": "apc_epigenetics_transcription",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for transcription marks"
+        },
+        {
+          "header": "aPC-Transcription Factor",
+          "accessor": "apc_transcription_factor",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for transcription factor binding"
+        },
+        {
+          "header": "aPC-Local Nucleotide Diversity",
+          "accessor": "apc_local_nucleotide_diversity_v3",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for local nucleotide diversity"
+        },
+        {
+          "header": "aPC-Mutation Density",
+          "accessor": "apc_mutation_density",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for mutation density"
+        },
+        {
+          "header": "aPC-Mappability",
+          "accessor": "apc_mappability",
+          "threshold": ">= 10",
+          "tooltip": "Annotation-dependent pseudo-count for mappability"
+        },
+        {
+          "header": "LINSIGHT",
+          "accessor": "linsight",
+          "threshold": ">= 10",
+          "tooltip": "LINSIGHT score for non-coding regions"
+        }
+      ]
+    },
+    {
+      "name": "AlphaMissense",
+      "slug": "alphamissense",
+      "items": [
+        {
+          "header": "AlphaMissense Pathogenicity",
+          "accessor": "am_pathogenicity",
+          "threshold": ">= 0.564",
+          "tooltip": "AlphaMissense pathogenicity score. >0.564 = likely pathogenic"
+        }
+      ]
+    },
+    {
+      "name": "Epigenetics",
+      "slug": "epigenetics",
+      "items": [
+        {
+          "header": "DNase",
+          "accessor": "encode_dnase_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "DNase hypersensitivity. Higher values indicate open chromatin",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K27ac",
+          "accessor": "encodeh3k27ac_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K27ac mark. Indicates active enhancers and promoters",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K4me1",
+          "accessor": "encodeh3k4me1_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K4me1 mark. Indicates enhancers",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K4me2",
+          "accessor": "encodeh3k4me2_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K4me2 mark. Associated with active promoters",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K4me3",
+          "accessor": "encodeh3k4me3_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K4me3 mark. Strong indicator of active promoters",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K9ac",
+          "accessor": "encodeh3k9ac_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K9ac mark. Associated with active transcription",
+          "activity": "Active"
+        },
+        {
+          "header": "H4K20me1",
+          "accessor": "encodeh4k20me1_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H4K20me1 mark. Associated with active transcription",
+          "activity": "Active"
+        },
+        {
+          "header": "H2AFZ",
+          "accessor": "encodeh2afz_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H2AFZ mark. Found at active regulatory elements",
+          "activity": "Active"
+        },
+        {
+          "header": "H3K9me3",
+          "accessor": "encodeh3k9me3_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K9me3 mark. Indicates heterochromatin and gene silencing",
+          "activity": "Repressed"
+        },
+        {
+          "header": "H3K27me3",
+          "accessor": "encodeh3k27me3_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K27me3 mark. Polycomb-mediated repression",
+          "activity": "Repressed"
+        },
+        {
+          "header": "H3K36me3",
+          "accessor": "encodeh3k36me3_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K36me3 mark. Associated with transcription elongation",
+          "activity": "Transcription"
+        },
+        {
+          "header": "H3K79me2",
+          "accessor": "encodeh3k79me2_sum",
+          "threshold": ">= 0.437",
+          "tooltip": "H3K79me2 mark. Associated with active transcription",
+          "activity": "Transcription"
+        },
+        {
+          "header": "Total RNA",
+          "accessor": "encodetotal_rna_sum",
+          "threshold": ">= 0.1",
+          "tooltip": "Total RNA signal from ENCODE"
+        }
+      ]
+    }
+  ]
+}
