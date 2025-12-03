@@ -8,7 +8,10 @@ export const isValidString = (value: unknown): value is string => {
   return typeof value === "string" && value.trim().length > 0;
 };
 
-export const roundNumber = (num: number | null | undefined, decimals = 3): string => {
+export const roundNumber = (
+  num: number | null | undefined,
+  decimals = 3,
+): string => {
   if (num === null || num === undefined || isNaN(num)) return "-";
   return num.toFixed(decimals).replace(/\.?0+$/, "");
 };

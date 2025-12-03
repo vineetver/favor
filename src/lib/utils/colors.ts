@@ -3,11 +3,6 @@ export const alleleOriginCCode = (origin: string) => {
   return origin;
 };
 
-export const genecodeComprehensiveCategoryCCode = (category: string) => {
-  // Placeholder implementation
-  return category;
-};
-
 export const genecodeCompExonicCategoryCCode = (category: string) => {
   // Placeholder implementation
   return category;
