@@ -1,6 +1,6 @@
 import { createColumnHelper } from "@/lib/data-display/builder";
 import type { Variant } from "../../../types/types";
-import { alphamissenseCCODE, polyphenCCode } from "@/lib/utils/colors";
+import { alphamissenseCCODE, polyphenCCode, metasvmPredCCode } from "@/lib/utils/colors";
 import { roundNumber } from "@/lib/data-display/helpers";
 
 const helper = createColumnHelper<Variant>();
@@ -57,6 +57,38 @@ export const proteinFunctionConfig = helper.group(
       description:
         "Predicts the functional impact of amino-acid substitutions in proteins, such as mutations discovered in cancer or missense polymorphisms. Range: [-5.135, 6.125] (default: -5.545). (Reva et al., 2011)",
       cell: helper.format.custom((num) => <span>{roundNumber(num)} </span>),
+    }),
+    helper.accessor("metasvm_pred", {
+      header: "MetaSVM Prediction",
+      description: (
+        <div className="space-y-2 text-left">
+          <p>
+            Identify whether the variant is a disruptive missense variant,
+            defined as "disruptive" by the ensemble MetaSVM annotation. (Dong
+            et al., 2014)
+          </p>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-red-300 rounded"></span>
+              <strong>D (Deleterious):</strong> likely to affect protein
+              function
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-green-300 rounded"></span>
+              <strong>T (Tolerated):</strong> unlikely to affect protein
+              function
+            </div>
+          </div>
+        </div>
+      ),
+      cell: helper.format.badge<Variant>(
+        [
+          [/(D)/i, "red"],
+          [/(T)/i, "green"],
+        ],
+        "gray",
+        { D: "Deleterious", T: "Tolerated" },
+      ),
     }),
     helper.accessor("sift_cat", {
       header: "SIFTcat",
