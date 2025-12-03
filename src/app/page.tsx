@@ -3,6 +3,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { HeroPattern } from "@/components/layout/hero-pattern";
+
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
