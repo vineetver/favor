@@ -19,7 +19,7 @@ export const proteinFunctionConfig = helper.group(
       header: "PolyPhenCat",
       description: "PolyPhen category of change. (Adzhubei et al., 2010)",
       cell: helper.format.custom((val) => (
-        <div>{val ? polyphenCCode(val.split("_").join(" ")) : "-"} </div>
+        <div>{polyphenCCode(val.split("_").join(" "))} </div>
       )),
     }),
     helper.accessor("polyphen_val", {

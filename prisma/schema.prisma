@@ -1,41 +1,42 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model VariantSummary {
-  id        String   @id @default(cuid())
-  vcf       String   @unique
-  summary   String?  @db.Text
-  status    String
-  error     String?  @db.Text
-  modelId   String   @default("gpt-4o-mini")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([vcf])
-  @@index([status])
-}
-
 model GeneSummary {
-  id             String   @id @default(cuid())
-  symbol         String   @unique
-  ensemblGene    String?
-  hgncId         String?
-  ncbiGeneId     String?
-  summary        String?  @db.Text
-  status         String   @default("pending")
-  model          String?  @default("gpt-4o-mini")
-  reasoningEffort String?
+  id                  String   @id
+  symbol              String   @unique
+  ensemblGene         String?
+  hgncId              String?
+  ncbiGeneId          String?
+  summary             String?
+  model               String?  @default("gpt-4o-mini")
+  reasoningEffort     String?
   maxCompletionTokens Int?
-  error          String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  error               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime
+  status              String   @default("pending")
 
-  @@index([symbol])
   @@index([ncbiGeneId])
   @@index([status])
+  @@index([symbol])
+}
+
+model VariantSummary {
+  id        String   @id
+  vcf       String   @unique
+  summary   String?
+  status    String
+  error     String?
+  modelId   String   @default("gpt-4o-mini")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([status])
+  @@index([vcf])
 }

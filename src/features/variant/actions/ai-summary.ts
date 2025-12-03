@@ -68,13 +68,16 @@ export async function generateVariantSummary(
             where: { vcf },
             update: {
                 status: "generating",
-                model: model,
+                modelId: model,
                 error: null,
+                updatedAt: new Date(),
             },
             create: {
+                id: crypto.randomUUID(),
                 vcf,
                 status: "generating",
-                model: model,
+                modelId: model,
+                updatedAt: new Date(),
             },
         });
 
@@ -118,6 +121,7 @@ async function generateSummaryBackground(vcf: string, model: string) {
             data: {
                 status: "completed",
                 summary: summary,
+                updatedAt: new Date(),
             },
         });
     } catch (error: any) {
@@ -127,6 +131,7 @@ async function generateSummaryBackground(vcf: string, model: string) {
             data: {
                 status: "failed",
                 error: error.message || "Unknown error",
+                updatedAt: new Date(),
             },
         });
     }
