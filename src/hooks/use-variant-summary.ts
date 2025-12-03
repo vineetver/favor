@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-    getVariantSummary,
-    generateVariantSummary,
-    type SummaryData
-} from "@/features/variant/actions/ai-summary";
+import { getVariantSummary } from "@/features/variant/actions/summary-queries";
+import { generateVariantSummary } from "@/features/variant/actions/summary-mutations";
+import type { SummaryData } from "@/features/variant/types/summary-types";
 
 interface UseVariantSummaryOptions {
     vcf: string;
