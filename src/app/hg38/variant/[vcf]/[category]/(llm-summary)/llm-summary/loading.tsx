@@ -5,7 +5,9 @@ export default function Loading() {
     <div className="p-6 max-w-4xl">
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-2xl font-semibold">AI-Generated Variant Summary</h2>
+          <h2 className="text-2xl font-semibold">
+            AI-Generated Variant Summary
+          </h2>
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">

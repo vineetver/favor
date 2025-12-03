@@ -3,10 +3,7 @@ import { categoryConfig } from "./columns/category";
 import { clinvarConfig } from "./columns/clinvar";
 import { overallAfConfig } from "./columns/overall-af";
 import { ancestryAfConfig } from "./columns/ancestry-af";
-import {
-    genderAfFemaleConfig,
-    genderAfMaleConfig,
-} from "./columns/gender-af";
+import { genderAfFemaleConfig, genderAfMaleConfig } from "./columns/gender-af";
 import { integrativeConfig } from "./columns/integrative";
 import { proteinFunctionConfig } from "./columns/protein-function";
 import { conservationConfig } from "./columns/conservation";
@@ -15,17 +12,17 @@ import { transcriptionFactorConfig } from "./columns/transcription-factor";
 import { chromatinStateConfig } from "./columns/chromatin-state";
 
 export const variantDetailedColumns = [
-    basicConfig,
-    categoryConfig,
-    clinvarConfig,
-    overallAfConfig,
-    ancestryAfConfig,
-    genderAfMaleConfig,
-    genderAfFemaleConfig,
-    integrativeConfig,
-    proteinFunctionConfig,
-    conservationConfig,
-    epigeneticsConfig,
-    transcriptionFactorConfig,
-    chromatinStateConfig,
+  basicConfig,
+  categoryConfig,
+  clinvarConfig,
+  overallAfConfig,
+  ancestryAfConfig,
+  genderAfMaleConfig,
+  genderAfFemaleConfig,
+  integrativeConfig,
+  proteinFunctionConfig,
+  conservationConfig,
+  epigeneticsConfig,
+  transcriptionFactorConfig,
+  chromatinStateConfig,
 ];

@@ -1,14 +1,16 @@
-import { VariantSummary } from "@/components/features/variant/llm-summary/variant-summary";
+import { VariantSummary } from "@/features/variant/components/variant-summary";
 
 interface VariantLLMSummaryPageProps {
-  params: {
+  params: Promise<{
     vcf: string;
     category: string;
-  };
+  }>;
 }
 
-export default async function VariantLLMSummaryPage({ params }: VariantLLMSummaryPageProps) {
-  const { vcf } = params;
+export default async function VariantLLMSummaryPage({
+  params,
+}: VariantLLMSummaryPageProps) {
+  const { vcf } = await params;
 
   return <VariantSummary vcf={vcf} />;
 }

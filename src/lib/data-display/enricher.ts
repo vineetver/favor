@@ -2,21 +2,21 @@ import type { ReactNode } from "react";
 import type { GroupConfig } from "./builder";
 
 export interface EnrichedCell {
-    key: string;
-    header: string;
-    value: ReactNode;
-    description?: ReactNode;
-    category?: string;
-    subcategory?: string;
-    order?: number;
-    isValid?: boolean;
+  key: string;
+  header: string;
+  value: ReactNode;
+  description?: ReactNode;
+  category?: string;
+  subcategory?: string;
+  order?: number;
+  isValid?: boolean;
 }
 
 export interface EnrichedGroup {
-    id: string;
-    title: string;
-    slug: string;
-    cells: EnrichedCell[];
+  id: string;
+  title: string;
+  slug: string;
+  cells: EnrichedCell[];
 }
 
 /**
@@ -24,56 +24,58 @@ export interface EnrichedGroup {
  * Returns a structured array of groups with rendered cell values.
  */
 export function enrichData<TData>(
-    data: TData,
-    config: GroupConfig<TData>[],
+  data: TData,
+  config: GroupConfig<TData>[],
 ): EnrichedGroup[] {
-    if (!data) return [];
+  if (!data) return [];
 
-    return config.map((group) => {
-        const cells = group.columns
-            .filter((col) => !col.showWhen || col.showWhen(data))
-            .map((col) => {
-                const rawValue = data[col.accessorKey];
+  return config.map((group) => {
+    const cells = group.columns
+      .filter((col) => !col.showWhen || col.showWhen(data))
+      .map((col) => {
+        const rawValue = data[col.accessorKey];
 
-                // Create the context for the renderer
-                const context = {
-                    value: rawValue,
-                    row: data,
-                };
+        // Create the context for the renderer
+        const context = {
+          value: rawValue,
+          row: data,
+        };
 
-                // Render the value using the cell renderer if present, otherwise just stringify
-                // The builder ensures a default text renderer is always present, but we check for safety.
-                const renderedValue = col.cell ? col.cell(context) : String(rawValue ?? "-");
-                const isValid = col.validate ? col.validate(rawValue) : true;
-
-                return {
-                    key: col.key,
-                    header: col.header,
-                    value: renderedValue,
-                    description: col.description,
-                    category: col.category,
-                    subcategory: col.subcategory,
-                    order: col.order,
-                    isValid,
-                };
-            });
+        // Render the value using the cell renderer if present, otherwise just stringify
+        // The builder ensures a default text renderer is always present, but we check for safety.
+        const renderedValue = col.cell
+          ? col.cell(context)
+          : String(rawValue ?? "-");
+        const isValid = col.validate ? col.validate(rawValue) : true;
 
         return {
-            id: group.id,
-            title: group.title,
-            slug: group.slug,
-            cells,
+          key: col.key,
+          header: col.header,
+          value: renderedValue,
+          description: col.description,
+          category: col.category,
+          subcategory: col.subcategory,
+          order: col.order,
+          isValid,
         };
-    });
+      });
+
+    return {
+      id: group.id,
+      title: group.title,
+      slug: group.slug,
+      cells,
+    };
+  });
 }
 
 /**
  * Enriches an array of data items.
  */
 export function enrichDataset<TData>(
-    dataset: TData[],
-    config: GroupConfig<TData>[],
+  dataset: TData[],
+  config: GroupConfig<TData>[],
 ): EnrichedGroup[][] {
-    if (!dataset) return [];
-    return dataset.map((item) => enrichData(item, config));
+  if (!dataset) return [];
+  return dataset.map((item) => enrichData(item, config));
 }

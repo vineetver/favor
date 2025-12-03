@@ -1,26 +1,26 @@
 import { notFound } from "next/navigation";
-import { VariantHeader } from "@/components/features/variant/header/variant-header";
+import { VariantHeader } from "@/features/variant/components/header/variant-header";
 import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
-import { VARIANT_NAVIGATION } from "@/lib/variant/navigation";
-import { fetchVariant } from "@/lib/genohub/hg38/variant/api";
+import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
+import { fetchVariant } from "@/features/variant/api/hg38";
 
 interface VariantLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     vcf: string;
     category: string;
-  };
+  }>;
 }
 
 export default async function VariantLayout({
   children,
   params,
 }: VariantLayoutProps) {
-  const { vcf, category } = params;
+  const { vcf, category } = await params;
 
-  const currentCategory = VARIANT_NAVIGATION.find(
+  const currentCategory = VARIANT_NAVIGATION_CONFIG.find(
     (cat) => cat.slug === category,
   );
 
@@ -42,7 +42,7 @@ export default async function VariantLayout({
 
           <div className="mb-6">
             <NavigationTabs
-              items={VARIANT_NAVIGATION.map((cat) => ({
+              items={VARIANT_NAVIGATION_CONFIG.map((cat) => ({
                 name: cat.name,
                 slug: cat.slug,
                 hasSubCategories: cat.subCategories.length > 0,
@@ -52,7 +52,7 @@ export default async function VariantLayout({
                     : undefined,
               }))}
               activeItem={category}
-              basePath={`/hg38/variant/${encodeURIComponent(vcf)}`}
+              basePath={`/ hg38 / variant / ${encodeURIComponent(vcf)} `}
             />
           </div>
 
@@ -60,7 +60,7 @@ export default async function VariantLayout({
             <div className="mb-6 lg:hidden">
               <MobileSubNavigation
                 items={currentCategory.subCategories}
-                basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
+                basePath={`/ hg38 / variant / ${encodeURIComponent(vcf)}/${category}`}
               />
             </div>
           )}

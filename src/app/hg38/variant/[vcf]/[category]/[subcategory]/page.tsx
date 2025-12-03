@@ -1,8 +1,8 @@
+import { fetchVariant } from "@/features/variant/api/hg38";
+import { VariantHeader } from "@/features/variant/components/header/variant-header";
+import { variantDetailedColumns } from "@/features/variant/config/hg38";
+import { enrichData } from "@/lib/data-display/enricher";
 import { notFound } from "next/navigation";
-import { AnnotationTable } from "@/components/data-display/annotation-table";
-import { getFilteredItems } from "@/lib/annotations/helpers";
-import { getVariantColumns } from "@/lib/variant/columns";
-import { fetchVariant } from "@/lib/variant/api";
 
 interface VariantPageProps {
   params: {
@@ -13,7 +13,7 @@ interface VariantPageProps {
 }
 
 export default async function VariantPage({ params }: VariantPageProps) {
-  const { vcf, category, subcategory } = params;
+  const { vcf, category, subcategory } = await params;
 
   const variant = await fetchVariant(vcf);
 
@@ -21,9 +21,9 @@ export default async function VariantPage({ params }: VariantPageProps) {
     notFound();
   }
 
-  const columns = getVariantColumns(category, subcategory);
+  const enrichedVariant = enrichData(variant, variantDetailedColumns)
 
-  const filteredItems = getFilteredItems(columns!, variant);
+  console.log(enrichedVariant)
 
-  return <AnnotationTable items={filteredItems!} />;
+  return <VariantHeader variant={variant} />;
 }
