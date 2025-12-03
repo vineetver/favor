@@ -46,20 +46,20 @@
   --shadow-2xs: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01);
   --shadow-xs: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01);
   --shadow-sm:
-    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
-    0px 1px 2px -1px oklch(0 0 0 / 1% / 0.01);
+    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01), 0px 1px 2px -1px
+    oklch(0 0 0 / 1% / 0.01);
   --shadow:
-    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
-    0px 1px 2px -1px oklch(0 0 0 / 1% / 0.01);
+    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01), 0px 1px 2px -1px
+    oklch(0 0 0 / 1% / 0.01);
   --shadow-md:
-    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
-    0px 2px 4px -1px oklch(0 0 0 / 1% / 0.01);
+    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01), 0px 2px 4px -1px
+    oklch(0 0 0 / 1% / 0.01);
   --shadow-lg:
-    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
-    0px 4px 6px -1px oklch(0 0 0 / 1% / 0.01);
+    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01), 0px 4px 6px -1px
+    oklch(0 0 0 / 1% / 0.01);
   --shadow-xl:
-    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01),
-    0px 8px 10px -1px oklch(0 0 0 / 1% / 0.01);
+    0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01), 0px 8px 10px -1px
+    oklch(0 0 0 / 1% / 0.01);
   --shadow-2xl: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.03);
 }
 
@@ -124,7 +124,6 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
-
   *,
   ::after,
   ::before,

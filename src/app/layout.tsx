@@ -22,8 +22,6 @@ export const metadata: Metadata = {
     "An open-access variant functional annotation portal for whole genome sequencing (WGS/WES) data. FAVOR contains total 8,892,915,237 variants (all possible 8,812,917,339 SNVs and 79,997,898 Observed indels).",
 };
 
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,9 +35,7 @@ export default function RootLayout({
       >
         <Providers>
           <Navbar />
-          <main className="mt-16 flex-1">
-            {children}
-          </main>
+          <main className="mt-16 flex-1">{children}</main>
           <Footer />
         </Providers>
       </body>
