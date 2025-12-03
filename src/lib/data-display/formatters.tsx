@@ -130,7 +130,7 @@ export const formatters = {
         return (
           <span
             className={cn(
-              "inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors",
+              "inline-flex items-center px-2.5 py-1.5 rounded-full font-medium transition-colors capitalize",
               className,
             )}
           >

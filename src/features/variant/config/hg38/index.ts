@@ -1,9 +1,7 @@
 import { basicConfig } from "./columns/basic";
 import { functionalClassConfig } from "./columns/functional-class";
 import { clinvarConfig } from "./columns/clinvar";
-import { overallAfConfig } from "./columns/overall-af";
-import { ancestryAfConfig } from "./columns/ancestry-af";
-import { genderAfFemaleConfig, genderAfMaleConfig } from "./columns/gender-af";
+import { alleleFrequencyConfig } from "./columns/allele-frequency";
 import { integrativeConfig } from "./columns/integrative";
 import { proteinFunctionConfig } from "./columns/protein-function";
 import { conservationConfig } from "./columns/conservation";
@@ -15,10 +13,7 @@ export const variantDetailedColumns = [
   basicConfig,
   functionalClassConfig,
   clinvarConfig,
-  overallAfConfig,
-  ancestryAfConfig,
-  genderAfMaleConfig,
-  genderAfFemaleConfig,
+  alleleFrequencyConfig,
   integrativeConfig,
   proteinFunctionConfig,
   conservationConfig,

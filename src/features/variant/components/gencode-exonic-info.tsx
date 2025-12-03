@@ -23,7 +23,7 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
   });
 
   return (
-    <div className="text-xs">
+    <div>
       <div className="text-gray-500 text-[11px] mb-1">Protein changes:</div>
       <div className="space-y-0.5">
         {Array.from(changes.values()).map((item, index) => (

@@ -35,16 +35,30 @@ export const basicConfig = helper.group("basic", "Basic", [
       "TOPMed Bravo Genome Allele Frequency. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)",
     cell: helper.format.decimal(6),
   }),
-  helper.accessor("af_total", {
-    header: "Total GNOMAD AF",
-    description:
-      "GNOMAD v3 Genome Allele Frequency using all the samples. (GNOMAD Consortium, 2019; Karczewski et al., 2020)",
-    cell: helper.format.decimal(6),
-  }),
   helper.accessor("tg_all", {
     header: "All 1000 Genomes AF",
     description:
       "1000 Genome Allele Frequency (Whole genome allele frequencies from the 1000 Genomes Project phase 3 data).",
     cell: helper.format.decimal(6),
+  }),
+  helper.accessor("gnomad_exome", {
+    header: "gnomAD v4 Exome AF",
+    description: "gnomAD v4 Exome Allele Frequency",
+    cell: helper.format.custom((val) => {
+      if (!val || val.af === null || val.af === undefined) return "-";
+      const num = val.af;
+      if (isNaN(num)) return "-";
+      return num.toFixed(6).replace(/\.?0+$/, "");
+    }),
+  }),
+  helper.accessor("gnomad_genome", {
+    header: "gnomAD v4 Genome AF",
+    description: "gnomAD v4 Genome Allele Frequency",
+    cell: helper.format.custom((val) => {
+      if (!val || val.af === null || val.af === undefined) return "-";
+      const num = val.af;
+      if (isNaN(num)) return "-";
+      return num.toFixed(6).replace(/\.?0+$/, "");
+    }),
   }),
 ]);

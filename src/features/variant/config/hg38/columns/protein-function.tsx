@@ -120,7 +120,7 @@ export const proteinFunctionConfig = helper.group(
       description:
         "Amino acid change induced by the alternative allele, in the format: <Reference amino acid><Position><Alternative amino acid>",
       cell: helper.format.custom((str) => (
-        <span className="font-mono text-xs bg-muted/20 px-2 py-1 rounded">
+        <span className="font-mono bg-muted/20 px-2 py-1 rounded">
           {str}
         </span>
       )),

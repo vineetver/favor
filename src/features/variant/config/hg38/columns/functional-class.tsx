@@ -266,7 +266,7 @@ export const functionalClassConfig = helper.group(
         const hiddenEntries = entries.slice(limit);
 
         const renderEntry = (entry: { gene: string; score: string }, idx: number) => (
-          <div key={idx} className="flex items-center gap-2 text-xs py-0.5">
+          <div key={idx} className="flex items-center gap-2 py-0.5">
             <span className="font-semibold">{entry.gene}</span>
             <span className="text-muted-foreground">Score: {entry.score}</span>
           </div>
@@ -288,7 +288,7 @@ export const functionalClassConfig = helper.group(
                 )}
               </div>
             </CollapsibleContent>
-            <CollapsibleTrigger className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline underline-offset-2">
+            <CollapsibleTrigger className="mt-2 text-blue-600 hover:text-blue-800 underline underline-offset-2">
               Show {hiddenEntries.length} more
             </CollapsibleTrigger>
           </Collapsible>
@@ -302,7 +302,7 @@ export const functionalClassConfig = helper.group(
       cell: helper.format.custom((val) => {
         if (!val) return "-";
         return (
-          <div className="text-xs font-mono">{val.replace(/,/g, ", ")}</div>
+          <div className="font-mono">{val.replace(/,/g, ", ")}</div>
         );
       }),
     }),
@@ -319,7 +319,7 @@ export const functionalClassConfig = helper.group(
               <ExternalLink
                 key={idx}
                 href={`https://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=${transcript}`}
-                className="text-xs font-mono"
+                className="font-mono"
               >
                 {transcript}
               </ExternalLink>
@@ -344,10 +344,10 @@ export const functionalClassConfig = helper.group(
           if (!changes.has(protein)) changes.set(protein, { protein, exons: new Set() });
           if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
         });
-        if (changes.size === 0) return <span className="text-xs text-gray-500">-</span>;
+        if (changes.size === 0) return <span className="text-gray-500">-</span>;
         return (
-          <div className="text-xs">
-            <div className="text-gray-500 text-[11px] mb-1">Protein changes:</div>
+          <div>
+            <div className="text-gray-500 mb-1">Protein changes:</div>
             <div className="space-y-0.5">
               {Array.from(changes.values()).map((item, index) => (
                 <div key={index} className="flex items-baseline gap-1.5 text-gray-700">
@@ -372,7 +372,7 @@ export const functionalClassConfig = helper.group(
         return (
           <div className="flex flex-wrap gap-1.5">
             {transcripts.map((transcript, idx) => (
-              <ExternalLink key={idx} href={`https://www.ncbi.nlm.nih.gov/nuccore/${transcript}`} className="text-xs font-mono">
+              <ExternalLink key={idx} href={`https://www.ncbi.nlm.nih.gov/nuccore/${transcript}`} className="font-mono">
                 {transcript}
               </ExternalLink>
             ))}
@@ -396,10 +396,10 @@ export const functionalClassConfig = helper.group(
           if (!changes.has(protein)) changes.set(protein, { protein, exons: new Set() });
           if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
         });
-        if (changes.size === 0) return <span className="text-xs text-gray-500">-</span>;
+        if (changes.size === 0) return <span className="text-gray-500">-</span>;
         return (
-          <div className="text-xs">
-            <div className="text-gray-500 text-[11px] mb-1">Protein changes:</div>
+          <div>
+            <div className="text-gray-500 mb-1">Protein changes:</div>
             <div className="space-y-0.5">
               {Array.from(changes.values()).map((item, index) => (
                 <div key={index} className="flex items-baseline gap-1.5 text-gray-700">

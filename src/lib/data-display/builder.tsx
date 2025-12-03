@@ -87,6 +87,34 @@ export class ColumnBuilder<TData> {
     };
   }
 
+  /**
+   * Create a display-only column (no direct data mapping)
+   */
+  display(options: {
+    id: string;
+    header: string;
+    description?: ReactNode;
+    cell: CellRenderer<any, TData>;
+    category?: string;
+    subcategory?: string;
+    order?: number;
+    showWhen?: (data: TData) => boolean;
+  }): ColumnConfig<TData, any> {
+    return {
+      key: options.id,
+      accessorKey: options.id as keyof TData, // Dummy accessor
+      header: options.header,
+      description: options.description,
+      cell: options.cell,
+      enableSorting: false,
+      category: options.category,
+      subcategory: options.subcategory,
+      order: options.order,
+      showWhen: options.showWhen,
+      hideEmpty: false, // Always show unless manually hidden via showWhen
+    };
+  }
+
   // Expose formatters for easy access
   format = formatters;
 }

@@ -15,7 +15,7 @@ export const renderCategoryDescription = (
     return (
         <div className="space-y-2 text-left">
             <div>{intro}</div>
-            <div className="space-y-1 text-xs">
+            <div className="space-y-1">
                 {items.map((item, index) => (
                     <div key={index} className="flex items-center gap-2">
                         <span

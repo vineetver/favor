@@ -1,4 +1,4 @@
-import { fetchVariant } from "@/features/variant/api/hg38";
+import { fetchVariant, fetchGnomadExome, fetchGnomadGenome } from "@/features/variant/api/hg38";
 import { VariantHeader } from "@/features/variant/components/header/variant-header";
 import { AnnotationTable } from "@/features/variant/components/annotation-table";
 import { variantDetailedColumns } from "@/features/variant/config/hg38";
@@ -16,11 +16,19 @@ interface VariantPageProps {
 export default async function VariantPage({ params }: VariantPageProps) {
   const { vcf, category, subcategory } = await params;
 
-  const variant = await fetchVariant(vcf);
+  const [variant, gnomadExome, gnomadGenome] = await Promise.all([
+    fetchVariant(vcf),
+    fetchGnomadExome(vcf),
+    fetchGnomadGenome(vcf),
+  ]);
 
   if (!variant) {
     notFound();
   }
+
+  // Merge gnomAD data into variant
+  variant.gnomad_exome = gnomadExome;
+  variant.gnomad_genome = gnomadGenome;
 
   const enrichedVariant = enrichData(variant, variantDetailedColumns);
 
