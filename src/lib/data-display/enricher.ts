@@ -20,6 +20,18 @@ export interface EnrichedGroup {
 }
 
 /**
+ * Check if a value is considered empty (null, undefined, empty string, or NaN)
+ */
+function isEmpty(value: unknown): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    (typeof value === "number" && isNaN(value))
+  );
+}
+
+/**
  * Enriches raw data using the provided column configuration.
  * Returns a structured array of groups with rendered cell values.
  */
@@ -42,10 +54,13 @@ export function enrichData<TData>(
         };
 
         // Render the value using the cell renderer if present, otherwise just stringify
-        // The builder ensures a default text renderer is always present, but we check for safety.
+        // Don't convert empty values to "-" - let them remain empty for filtering
         const renderedValue = col.cell
           ? col.cell(context)
-          : String(rawValue ?? "-");
+          : isEmpty(rawValue)
+            ? null
+            : String(rawValue);
+
         const isValid = col.validate ? col.validate(rawValue) : true;
 
         return {
@@ -57,8 +72,10 @@ export function enrichData<TData>(
           subcategory: col.subcategory,
           order: col.order,
           isValid,
+          shouldHide: col.hideEmpty !== false && isEmpty(rawValue), // Hide by default unless explicitly set to false
         };
-      });
+      })
+      .filter((cell: any) => !cell.shouldHide); // Filter out cells that should be hidden
 
     return {
       id: group.id,

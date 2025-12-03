@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Variant } from "@/lib/genohub/hg38/types";
+import type { Variant } from "@/features/variant/types/types";
 
 export interface ColumnItem {
   key: number;

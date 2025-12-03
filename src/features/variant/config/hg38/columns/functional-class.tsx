@@ -1,5 +1,5 @@
+import { Variant } from "@/features/variant/types/types";
 import { createColumnHelper } from "@/lib/data-display/builder";
-import type { Variant } from "../../../types/types";
 import {
   cageEnhancerCCode,
   cagePromoterCCode,
@@ -10,7 +10,7 @@ import {
 
 const helper = createColumnHelper<Variant>();
 
-export const categoryConfig = helper.group("category", "Category", [
+export const functionalClassConfig = helper.group("functional-class", "Functional Class", [
   helper.accessor("genecode_comprehensive_info", {
     header: "Genecode Comprehensive Info",
     description:

@@ -1,5 +1,6 @@
 import { fetchVariant } from "@/features/variant/api/hg38";
 import { VariantHeader } from "@/features/variant/components/header/variant-header";
+import { AnnotationTable } from "@/features/variant/components/annotation-table";
 import { variantDetailedColumns } from "@/features/variant/config/hg38";
 import { enrichData } from "@/lib/data-display/enricher";
 import { notFound } from "next/navigation";
@@ -21,9 +22,15 @@ export default async function VariantPage({ params }: VariantPageProps) {
     notFound();
   }
 
-  const enrichedVariant = enrichData(variant, variantDetailedColumns)
+  const enrichedVariant = enrichData(variant, variantDetailedColumns);
 
-  console.log(enrichedVariant)
-
-  return <VariantHeader variant={variant} />;
+  return (
+    <div className="space-y-6">
+      <AnnotationTable
+        enrichedData={enrichedVariant}
+        category={category}
+        subcategory={subcategory}
+      />
+    </div>
+  );
 }

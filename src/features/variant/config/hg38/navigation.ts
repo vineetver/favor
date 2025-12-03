@@ -16,7 +16,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     subCategories: [
       { text: "Variant Summary", slug: "llm-summary" },
       { text: "Basic Information", slug: "basic" },
-      { text: "Category", slug: "category" },
+      { text: "Functional Class", slug: "functional-class" },
       { text: "Clinvar", slug: "clinvar" },
       { text: "Overall AF", slug: "overall-af" },
       { text: "Ancestry Specific AF", slug: "ancestry-af" },

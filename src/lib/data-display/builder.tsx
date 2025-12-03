@@ -8,7 +8,7 @@ export interface ColumnConfig<TData, TValue = any> {
   key: string; // Unique key for the column
   accessorKey: keyof TData; // The key in the data object
   header: string;
-  description?: ReactNode; // Tooltip
+  description?: ReactNode; // Tooltip - supports JSX
   cell?: CellRenderer<TValue, TData>;
 
   // Metadata for filtering/sorting
@@ -24,6 +24,7 @@ export interface ColumnConfig<TData, TValue = any> {
   // Behavior
   showWhen?: (data: TData) => boolean;
   validate?: (value: unknown) => boolean;
+  hideEmpty?: boolean; // If true (default), hide when value is null, undefined, or empty string
 }
 
 export interface GroupConfig<TData> {
@@ -51,6 +52,7 @@ export class ColumnBuilder<TData> {
       order?: number;
       showWhen?: (data: TData) => boolean;
       validate?: (value: unknown) => boolean;
+      hideEmpty?: boolean; // Default true - hide null, undefined, empty string
     },
   ): ColumnConfig<TData, TData[K]> {
     return {
@@ -65,6 +67,7 @@ export class ColumnBuilder<TData> {
       order: options.order,
       showWhen: options.showWhen,
       validate: options.validate,
+      hideEmpty: options.hideEmpty ?? true, // Default to true
     };
   }
 

@@ -1,5 +1,5 @@
 import { basicConfig } from "./columns/basic";
-import { categoryConfig } from "./columns/category";
+import { functionalClassConfig } from "./columns/functional-class";
 import { clinvarConfig } from "./columns/clinvar";
 import { overallAfConfig } from "./columns/overall-af";
 import { ancestryAfConfig } from "./columns/ancestry-af";
@@ -13,7 +13,7 @@ import { chromatinStateConfig } from "./columns/chromatin-state";
 
 export const variantDetailedColumns = [
   basicConfig,
-  categoryConfig,
+  functionalClassConfig,
   clinvarConfig,
   overallAfConfig,
   ancestryAfConfig,
