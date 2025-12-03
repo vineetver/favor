@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HeroPattern } from "@/components/layout/hero-pattern";
 
 import { Button } from "@/components/ui/button";
+import { GenomicSearch } from "@/features/search/components/genomic-search";
 
 export default function HomePage() {
   return (
@@ -27,7 +28,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold tracking-tight mb-4 mt-5">
             Start Exploring
           </h1>
-          {/* <GenomicSearch /> */}
+          <GenomicSearch />
 
           <div className="relative mt-8 md:mt-12">
             <div className="absolute inset-0 flex items-center">

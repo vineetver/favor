@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { GoogleAnalytics } from "@/components/ui/google-analytics";
+import { Providers } from "@/app/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,8 @@ export const metadata: Metadata = {
     "An open-access variant functional annotation portal for whole genome sequencing (WGS/WES) data. FAVOR contains total 8,892,915,237 variants (all possible 8,812,917,339 SNVs and 79,997,898 Observed indels).",
 };
 
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,11 +35,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        <main className="mt-16 flex-1">
-          {children}
-        </main>
-        <Footer />
+        <Providers>
+          <Navbar />
+          <main className="mt-16 flex-1">
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
