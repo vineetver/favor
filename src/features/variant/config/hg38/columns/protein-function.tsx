@@ -190,7 +190,7 @@ export const proteinFunctionConfig = helper.group(
           return (
             <div className="flex items-center gap-1.5 font-mono text-sm">
               <span className="text-muted-foreground">{ref}</span>
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+              <span className="text-sm bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                 {pos}
               </span>
               <ArrowRight className="w-3 h-3 text-muted-foreground/50" />

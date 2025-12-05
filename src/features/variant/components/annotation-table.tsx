@@ -54,7 +54,7 @@ export function AnnotationTable({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="h-5 w-5 cursor-pointer fill-foreground text-background hover:text-background/90 transition-colors flex-shrink-0 mt-0.5" />
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0 mt-0.5" />
                       </TooltipTrigger>
                       <TooltipContent side="right" className="max-w-md">
                         <div>{cell.description}</div>

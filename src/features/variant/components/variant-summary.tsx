@@ -2,8 +2,8 @@
 
 import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Markdown } from "@/components/ai-elements/markdown";
-import { useVariantSummary } from "@/hooks/use-variant-summary";
-import { useVariantChat } from "@/hooks/use-variant-chat";
+import { useVariantSummary } from "@/features/variant/hooks/use-variant-summary";
+import { useVariantChat } from "@/features/variant/hooks/use-variant-chat";
 import { Button } from "@/components/ui/button";
 import { VariantSummaryCard } from "./variant-summary-card";
 import { VariantSummarySkeleton } from "./variant-summary-skeleton";

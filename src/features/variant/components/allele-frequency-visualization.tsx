@@ -413,7 +413,7 @@ function AlleleFrequencyTable({ data, sortField, sortDirection, onSort, viewKeys
                         </button>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{viewKeys.label} allele frequency in gnomAD v4.1 Exome</p>
@@ -434,7 +434,7 @@ function AlleleFrequencyTable({ data, sortField, sortDirection, onSort, viewKeys
                         </button>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{viewKeys.label} allele frequency in gnomAD v4.1 Genome</p>
@@ -501,7 +501,7 @@ const CustomTooltip = (props: any) => {
   return (
     <ChartTooltip {...props}>
       {payload?.map((entry: any, index: number) => (
-        <div key={index} className="flex items-center gap-2 text-xs">
+        <div key={index} className="flex items-center gap-2 text-sm">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: entry.color }}

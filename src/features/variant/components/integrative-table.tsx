@@ -144,7 +144,7 @@ export function IntegrativeTable({
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-xs normal-case font-normal">
                                                 <p>Combined functional impact score integrating multiple prediction algorithms and conservation metrics. PHRED scale: higher scores indicate greater functional impact. A score of 10 indicates the variant is in the top 10% most deleterious, 20 = top 1%, 30 = top 0.1%.</p>
@@ -165,7 +165,7 @@ export function IntegrativeTable({
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-xs normal-case font-normal">
                                                 <p>Genome-wide percentile rank of the variant. Score transformed to percentile scale using formula: 10^(score * -0.1) * 100. Lower percentiles indicate greater functional impact or statistical significance.</p>
@@ -186,7 +186,7 @@ export function IntegrativeTable({
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                                                     </TooltipTrigger>
                                                     <TooltipContent side="right" className="max-w-md">
                                                         <div>{cell.description}</div>

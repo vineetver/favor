@@ -78,14 +78,14 @@ export function SaveSearchDialog({
 
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">Query</Label>
+            <Label>Query</Label>
             <div className="mt-1 text-sm bg-muted p-3 rounded-md font-mono">
               {query}
             </div>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">Genome Build</Label>
+            <Label>Genome Build</Label>
             <div className="mt-1 text-sm bg-muted p-3 rounded-md font-mono">
               {genomicBuild.toUpperCase()}
             </div>

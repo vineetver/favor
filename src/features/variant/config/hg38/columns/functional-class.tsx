@@ -344,10 +344,10 @@ export const functionalClassConfig = helper.group(
           if (!changes.has(protein)) changes.set(protein, { protein, exons: new Set() });
           if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
         });
-        if (changes.size === 0) return <span className="text-gray-500">-</span>;
+        if (changes.size === 0) return <span className="text-xs text-gray-500">-</span>;
         return (
-          <div>
-            <div className="text-gray-500 mb-1">Protein changes:</div>
+          <div className="text-xs">
+            <div className="text-gray-500 text-[11px] mb-1">Protein changes:</div>
             <div className="space-y-0.5">
               {Array.from(changes.values()).map((item, index) => (
                 <div key={index} className="flex items-baseline gap-1.5 text-gray-700">
@@ -372,7 +372,7 @@ export const functionalClassConfig = helper.group(
         return (
           <div className="flex flex-wrap gap-1.5">
             {transcripts.map((transcript, idx) => (
-              <ExternalLink key={idx} href={`https://www.ncbi.nlm.nih.gov/nuccore/${transcript}`} className="font-mono">
+              <ExternalLink key={idx} href={`https://www.ncbi.nlm.nih.gov/nuccore/${transcript}`} className="text-xs font-mono">
                 {transcript}
               </ExternalLink>
             ))}
@@ -396,10 +396,10 @@ export const functionalClassConfig = helper.group(
           if (!changes.has(protein)) changes.set(protein, { protein, exons: new Set() });
           if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
         });
-        if (changes.size === 0) return <span className="text-gray-500">-</span>;
+        if (changes.size === 0) return <span className="text-xs text-gray-500">-</span>;
         return (
-          <div>
-            <div className="text-gray-500 mb-1">Protein changes:</div>
+          <div className="text-xs">
+            <div className="text-gray-500 text-[11px] mb-1">Protein changes:</div>
             <div className="space-y-0.5">
               {Array.from(changes.values()).map((item, index) => (
                 <div key={index} className="flex items-baseline gap-1.5 text-gray-700">

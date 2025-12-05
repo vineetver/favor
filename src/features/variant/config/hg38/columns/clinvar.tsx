@@ -5,6 +5,12 @@ import {
   getBadgeColorMap,
   type CategoryItem,
 } from "@/lib/data-display/category-helper";
+import { BADGE_COLORS } from "@/lib/data-display/color-system";
+import {
+  parseDiseaseNames,
+  parseDatabaseEntries,
+  parseClinicalSignificancePairs,
+} from "@/lib/data-display/parsing-utils";
 import type { Variant } from "../../../types/types";
 
 const helper = createColumnHelper<Variant>();
@@ -203,14 +209,12 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
     cell: helper.format.custom((val) => {
       if (!val) return "-";
 
-      // Split by comma, pipe, or semicolon and parse ID:significance pairs
-      const pairs = val.split(/[,|;]/).map((pair) => pair.trim()).filter((pair) => pair);
+      const pairs = parseClinicalSignificancePairs(val);
 
       return (
         <div className="space-y-1">
-          {pairs.map((pair, idx) => {
-            const [id, significance] = pair.split(":").map((s) => s.trim());
-            if (!significance) return <div key={idx}>{pair.replace(/_/g, " ")}</div>;
+          {pairs.map(({ id, significance, raw }, idx) => {
+            if (!significance) return <div key={idx}>{raw.replace(/_/g, " ")}</div>;
 
             // Find matching category to get color
             const match = CLINICAL_SIGNIFICANCE_CATEGORIES.find((cat) => {
@@ -221,25 +225,12 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
             });
 
             const colorKey = match?.color || "gray";
-            const colorClasses: Record<string, string> = {
-              red: "bg-red-300/90 text-red-950",
-              orange: "bg-orange-300/90 text-orange-950",
-              green: "bg-green-300/90 text-green-950",
-              lime: "bg-lime-300/90 text-lime-950",
-              yellow: "bg-yellow-300/90 text-yellow-950",
-              amber: "bg-amber-300/90 text-amber-950",
-              purple: "bg-purple-300/90 text-purple-950",
-              blue: "bg-blue-300/90 text-blue-950",
-              violet: "bg-violet-300/90 text-violet-950",
-              emerald: "bg-emerald-300/90 text-emerald-950",
-              gray: "bg-gray-300/90 text-gray-950",
-            };
 
             return (
               <div key={idx} className="flex items-center gap-2">
                 <span className="text-muted-foreground font-mono">{id}:</span>
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${colorClasses[colorKey]}`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[colorKey] || BADGE_COLORS.gray}`}
                 >
                   {significance.replace(/_/g, " ")}
                 </span>
@@ -257,10 +248,7 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
     cell: helper.format.custom((val) => {
       if (!val) return "-";
 
-      const diseases = val
-        .split(/[|,]/)
-        .map((d) => d.trim().replace(/_/g, " "))
-        .filter((d) => d);
+      const diseases = parseDiseaseNames(val);
 
       if (diseases.length === 1) {
         return <span>{diseases[0]}</span>;
@@ -285,10 +273,7 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
     cell: helper.format.custom((val) => {
       if (!val) return "-";
 
-      const diseases = val
-        .split(/[|,]/)
-        .map((d) => d.trim().replace(/_/g, " "))
-        .filter((d) => d);
+      const diseases = parseDiseaseNames(val);
 
       if (diseases.length === 1) {
         return <span>{diseases[0]}</span>;
@@ -361,23 +346,7 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
       });
 
       const colorKey = match?.color || "gray";
-
-      // Reuse the same color classes from the badge formatter
-      const colorClasses: Record<string, string> = {
-        blue: "bg-blue-300/90 text-blue-950",
-        rose: "bg-rose-300/90 text-rose-950",
-        purple: "bg-purple-300/90 text-purple-950",
-        cyan: "bg-cyan-300/90 text-cyan-950",
-        indigo: "bg-indigo-300/90 text-indigo-950",
-        violet: "bg-violet-300/90 text-violet-950",
-        teal: "bg-teal-300/90 text-teal-950",
-        lime: "bg-lime-300/90 text-lime-950",
-        gray: "bg-gray-300/90 text-gray-950",
-        stone: "bg-stone-300/90 text-stone-950",
-        amber: "bg-amber-300/90 text-amber-950",
-      };
-
-      const className = colorClasses[colorKey] || colorClasses.gray;
+      const className = BADGE_COLORS[colorKey] || BADGE_COLORS.gray;
 
       return (
         <span
@@ -395,20 +364,15 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
     cell: helper.format.custom((val) => {
       if (!val) return "-";
 
-      // Split by comma or space, but keep database:ID pairs together
-      const entries = val
-        .split(/,\s*|\s+(?=[A-Z])/)
-        .map((entry) => entry.trim())
-        .filter((entry) => entry);
+      const entries = parseDatabaseEntries(val);
 
       return (
         <div className="space-y-0.5">
-          {entries.map((entry, idx) => {
-            const [database, id] = entry.split(":");
+          {entries.map(({ database, id, raw }, idx) => {
             if (!id) {
               return (
                 <div key={idx} className="font-mono">
-                  {entry}
+                  {raw}
                 </div>
               );
             }
@@ -433,20 +397,15 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
     cell: helper.format.custom((val) => {
       if (!val) return "-";
 
-      // Split by comma or space, but keep database:ID pairs together
-      const entries = val
-        .split(/,\s*|\s+(?=[A-Z])/)
-        .map((entry) => entry.trim())
-        .filter((entry) => entry);
+      const entries = parseDatabaseEntries(val);
 
       return (
         <div className="space-y-0.5">
-          {entries.map((entry, idx) => {
-            const [database, id] = entry.split(":");
+          {entries.map(({ database, id, raw }, idx) => {
             if (!id) {
               return (
                 <div key={idx} className="font-mono">
-                  {entry}
+                  {raw}
                 </div>
               );
             }
