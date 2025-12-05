@@ -51,7 +51,7 @@ export const getGnomadMetrics = (
 
     if (af === undefined || af === null) return null;
 
-    return { af, ac, an, hom: hom ?? 0 };
+    return { af, ac: ac ?? 0, an: an ?? 0, hom: hom ?? 0 };
 };
 
 const getCombinedMetrics = (

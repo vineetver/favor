@@ -17,6 +17,7 @@ export interface EnrichedGroup {
   title: string;
   slug: string;
   cells: EnrichedCell[];
+  meta?: any;
 }
 
 /**
@@ -82,6 +83,7 @@ export function enrichData<TData>(
       title: group.title,
       slug: group.slug,
       cells,
+      meta: group.meta,
     };
   });
 }

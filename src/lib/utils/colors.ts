@@ -8,30 +8,7 @@ export const genecodeCompExonicCategoryCCode = (category: string) => {
   return category;
 };
 
-export const metasvmPredCCode = (pred: string) => {
-  // Placeholder implementation
-  return pred;
-};
 
-export const cagePromoterCCode = (value: string) => {
-  // Placeholder implementation
-  return value;
-};
-
-export const cageEnhancerCCode = (value: string) => {
-  // Placeholder implementation
-  return value;
-};
-
-export const polyphenCCode = (value: string) => {
-  // Placeholder implementation
-  return value;
-};
-
-export const alphamissenseCCODE = (value: string) => {
-  // Placeholder implementation
-  return value;
-};
 
 export const epigeneticsCCode = (value: string) => {
   // Placeholder implementation

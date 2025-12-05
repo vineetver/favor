@@ -24,6 +24,7 @@ import {
   getGnomadMetrics,
   type GnomadPopulation,
 } from "@/features/variant/config/hg38/columns/allele-frequency";
+import { ChartTooltip } from "@/components/common/chart-tooltip";
 
 interface PopulationData {
   id: string;
@@ -494,30 +495,25 @@ function AlleleFrequencyTable({ data, sortField, sortDirection, onSort, viewKeys
   );
 }
 
-// Custom Tooltip Component using Shadcn Card
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <Card className="border shadow-md">
-        <CardContent className="p-3 space-y-1">
-          <p className="text-sm font-semibold mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2 text-xs">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-muted-foreground">{entry.name}:</span>
-              <span className="font-mono font-medium">
-                {entry.value !== null ? entry.value.toFixed(6) : "—"}
-              </span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
-  return null;
+// Custom Tooltip Component using reusable ChartTooltip
+const CustomTooltip = (props: any) => {
+  const { payload } = props;
+  return (
+    <ChartTooltip {...props}>
+      {payload?.map((entry: any, index: number) => (
+        <div key={index} className="flex items-center gap-2 text-xs">
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-muted-foreground">{entry.name}:</span>
+          <span className="font-mono font-medium">
+            {entry.value !== null ? entry.value.toFixed(6) : "—"}
+          </span>
+        </div>
+      ))}
+    </ChartTooltip>
+  );
 };
 
 // Chart Component with Recharts

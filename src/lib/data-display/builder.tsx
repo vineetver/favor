@@ -32,6 +32,7 @@ export interface GroupConfig<TData> {
   title: string;
   slug: string;
   columns: ColumnConfig<TData>[];
+  meta?: any;
 }
 
 // --- Builder ---
@@ -78,12 +79,14 @@ export class ColumnBuilder<TData> {
     id: string,
     title: string,
     columns: ColumnConfig<TData>[],
+    meta?: any,
   ): GroupConfig<TData> {
     return {
       id,
       title,
       slug: id.toLowerCase().replace(/\s+/g, "-"),
       columns,
+      meta,
     };
   }
 

@@ -15,6 +15,8 @@ export type CellRenderer<TValue, TData> = (
 
 // --- Formatters ---
 
+import { roundNumber } from "@/lib/data-display/helpers";
+
 export const formatters = {
   // Basic Text
   text:
@@ -24,17 +26,20 @@ export const formatters = {
         return String(value);
       },
 
+  // ... (existing imports)
+
+  // ...
+
   // Numbers
   decimal:
     <TData,>(
       decimals = 3,
+      keepZeros = false,
     ): CellRenderer<number | string | null | undefined, TData> =>
       ({ value }) => {
         if (value === null || value === undefined) return "-";
         const num = typeof value === "string" ? parseFloat(value) : value;
-        if (isNaN(num)) return "-";
-        // Remove trailing zeros after decimal point
-        return num.toFixed(decimals).replace(/\.?0+$/, "");
+        return roundNumber(num, decimals, keepZeros);
       },
 
   scientific:

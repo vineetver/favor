@@ -11,9 +11,11 @@ export const isValidString = (value: unknown): value is string => {
 export const roundNumber = (
   num: number | null | undefined,
   decimals = 3,
+  keepZeros = false,
 ): string => {
   if (num === null || num === undefined || isNaN(num)) return "-";
-  return num.toFixed(decimals).replace(/\.?0+$/, "");
+  const fixed = num.toFixed(decimals);
+  return keepZeros ? fixed : fixed.replace(/\.?0+$/, "");
 };
 
 export const splitText = (text: string, separator: string): ReactNode => {
