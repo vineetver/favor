@@ -1,434 +1,262 @@
 import { ExternalLink } from "@/components/ui/external-link";
-import { createColumnHelper } from "@/lib/data-display/builder";
+import type { Variant } from "../../../types/types";
 import {
-  renderCategoryDescription,
-  getBadgeColorMap,
-  type CategoryItem,
-} from "@/lib/data-display/category-helper";
-import { BADGE_COLORS } from "@/lib/data-display/color-system";
+  createColumns,
+  cell,
+  categories,
+  tooltip,
+  BADGE_COLORS,
+} from "@/lib/table/column-builder";
 import {
   parseDiseaseNames,
   parseDatabaseEntries,
   parseClinicalSignificancePairs,
-} from "@/lib/data-display/parsing-utils";
-import type { Variant } from "../../../types/types";
+} from "@/lib/utils/parsing-utils";
 
-const helper = createColumnHelper<Variant>();
+const col = createColumns<Variant>();
 
-// Category definitions
-const CLINICAL_SIGNIFICANCE_CATEGORIES: CategoryItem[] = [
-  {
-    label: "Pathogenic",
-    pattern: /pathogenic/i,
-    color: "red",
-    description: "variant is disease-causing",
-  },
-  {
-    label: "Likely Pathogenic",
-    pattern: /likely[_\s]pathogenic/i,
-    color: "orange",
-    description: "variant is likely disease-causing",
-  },
-  {
-    label: "Benign",
-    pattern: /benign/i,
-    color: "green",
-    description: "variant is not disease-causing",
-  },
-  {
-    label: "Likely Benign",
-    pattern: /likely[_\s]benign/i,
-    color: "lime",
-    description: "variant is likely not disease-causing",
-  },
-  {
-    label: "Uncertain Significance",
-    pattern: /uncertain[_\s]significance/i,
-    color: "yellow",
-    description: "clinical impact is unclear",
-  },
-  {
-    label: "Conflicting",
-    pattern: /conflicting/i,
-    color: "amber",
-    description: "conflicting interpretations reported",
-  },
-  {
-    label: "Drug Response",
-    pattern: /drug[_\s]response/i,
-    color: "purple",
-    description: "affects drug response",
-  },
-  {
-    label: "Association",
-    pattern: /association/i,
-    color: "blue",
-    description: "associated with phenotype",
-  },
-  {
-    label: "Risk Factor",
-    pattern: /risk[_\s]factor/i,
-    color: "violet",
-    description: "increases disease risk",
-  },
-  {
-    label: "Protective",
-    pattern: /protective/i,
-    color: "emerald",
-    description: "decreases disease risk",
-  },
-];
+// ============================================================================
+// Category Definitions
+// ============================================================================
 
-const REVIEW_STATUS_CATEGORIES: CategoryItem[] = [
-  {
-    label: "Practice Guideline",
-    pattern: /practice[_\s]guideline/i,
-    color: "emerald",
-    description: "reviewed by expert panel with practice guideline",
-  },
-  {
-    label: "Reviewed by Expert Panel",
-    pattern: /reviewed[_\s]by[_\s]expert[_\s]panel/i,
-    color: "green",
-    description: "reviewed by expert panel",
-  },
-  {
-    label: "Criteria Provided (Multiple Submitters)",
-    pattern: /criteria[_\s]provided.*multiple[_\s]submitters/i,
-    color: "lime",
-    description: "multiple submitters provided criteria",
-  },
-  {
-    label: "Criteria Provided (Single Submitter)",
-    pattern: /criteria[_\s]provided.*single[_\s]submitter/i,
-    color: "yellow",
-    description: "single submitter provided criteria",
-  },
-  {
-    label: "No Assertion Criteria Provided",
-    pattern: /no[_\s]assertion[_\s]criteria/i,
-    color: "orange",
-    description: "no assertion criteria provided",
-  },
-  {
-    label: "No Assertion Provided",
-    pattern: /no[_\s]assertion[_\s]provided/i,
-    color: "red",
-    description: "no assertion provided",
-  },
-];
+const clinicalSignificance = categories([
+  { label: "Pathogenic", match: /pathogenic/i, color: "red", description: "variant is disease-causing" },
+  { label: "Likely Pathogenic", match: /likely[_\s]pathogenic/i, color: "orange", description: "variant is likely disease-causing" },
+  { label: "Benign", match: /benign/i, color: "green", description: "variant is not disease-causing" },
+  { label: "Likely Benign", match: /likely[_\s]benign/i, color: "lime", description: "variant is likely not disease-causing" },
+  { label: "Uncertain Significance", match: /uncertain[_\s]significance/i, color: "yellow", description: "clinical impact is unclear" },
+  { label: "Conflicting", match: /conflicting/i, color: "amber", description: "conflicting interpretations reported" },
+  { label: "Drug Response", match: /drug[_\s]response/i, color: "purple", description: "affects drug response" },
+  { label: "Association", match: /association/i, color: "blue", description: "associated with phenotype" },
+  { label: "Risk Factor", match: /risk[_\s]factor/i, color: "violet", description: "increases disease risk" },
+  { label: "Protective", match: /protective/i, color: "emerald", description: "decreases disease risk" },
+]);
 
-const ALLELE_ORIGIN_CATEGORIES: CategoryItem[] = [
-  {
-    label: "Germline",
-    pattern: /germline/i,
-    color: "blue",
-    description: "inherited from parents",
-  },
-  {
-    label: "Somatic",
-    pattern: /somatic/i,
-    color: "rose",
-    description: "acquired mutation",
-  },
-  {
-    label: "De Novo",
-    pattern: /de[_\s-]novo/i,
-    color: "purple",
-    description: "new mutation not in parents",
-  },
-  {
-    label: "Inherited",
-    pattern: /inherited/i,
-    color: "cyan",
-    description: "passed from parent",
-  },
-  {
-    label: "Paternal",
-    pattern: /paternal/i,
-    color: "indigo",
-    description: "from father",
-  },
-  {
-    label: "Maternal",
-    pattern: /maternal/i,
-    color: "violet",
-    description: "from mother",
-  },
-  {
-    label: "Biparental",
-    pattern: /biparental/i,
-    color: "teal",
-    description: "from both parents",
-  },
-  {
-    label: "Uniparental",
-    pattern: /uniparental/i,
-    color: "lime",
-    description: "from one parent only",
-  },
-  {
-    label: "Unknown",
-    pattern: /unknown/i,
-    color: "gray",
-    description: "origin unknown",
-  },
-  {
-    label: "Not Tested",
-    pattern: /not[_\s-]tested/i,
-    color: "stone",
-    description: "not tested",
-  },
-  {
-    label: "Tested Inconclusive",
-    pattern: /tested[_\s-]inconclusive/i,
-    color: "amber",
-    description: "testing was inconclusive",
-  },
-];
+const reviewStatus = categories([
+  { label: "Practice Guideline", match: /practice[_\s]guideline/i, color: "emerald", description: "reviewed by expert panel with practice guideline" },
+  { label: "Reviewed by Expert Panel", match: /reviewed[_\s]by[_\s]expert[_\s]panel/i, color: "green", description: "reviewed by expert panel" },
+  { label: "Criteria Provided (Multiple Submitters)", match: /criteria[_\s]provided.*multiple[_\s]submitters/i, color: "lime", description: "multiple submitters provided criteria" },
+  { label: "Criteria Provided (Single Submitter)", match: /criteria[_\s]provided.*single[_\s]submitter/i, color: "yellow", description: "single submitter provided criteria" },
+  { label: "No Assertion Criteria Provided", match: /no[_\s]assertion[_\s]criteria/i, color: "orange", description: "no assertion criteria provided" },
+  { label: "No Assertion Provided", match: /no[_\s]assertion[_\s]provided/i, color: "red", description: "no assertion provided" },
+]);
 
-export const clinvarConfig = helper.group("clinvar", "Clinvar", [
-  helper.accessor("clnsig", {
+const alleleOrigin = categories([
+  { label: "Germline", match: /germline/i, color: "blue", description: "inherited from parents" },
+  { label: "Somatic", match: /somatic/i, color: "rose", description: "acquired mutation" },
+  { label: "De Novo", match: /de[_\s-]novo/i, color: "purple", description: "new mutation not in parents" },
+  { label: "Inherited", match: /inherited/i, color: "cyan", description: "passed from parent" },
+  { label: "Paternal", match: /paternal/i, color: "indigo", description: "from father" },
+  { label: "Maternal", match: /maternal/i, color: "violet", description: "from mother" },
+  { label: "Biparental", match: /biparental/i, color: "teal", description: "from both parents" },
+  { label: "Uniparental", match: /uniparental/i, color: "lime", description: "from one parent only" },
+  { label: "Unknown", match: /unknown/i, color: "gray", description: "origin unknown" },
+  { label: "Not Tested", match: /not[_\s-]tested/i, color: "stone", description: "not tested" },
+  { label: "Tested Inconclusive", match: /tested[_\s-]inconclusive/i, color: "amber", description: "testing was inconclusive" },
+]);
+
+// Numeric origin code mapping
+const ORIGIN_MAP: Record<number, string> = {
+  0: "unknown",
+  1: "germline",
+  2: "somatic",
+  4: "inherited",
+  8: "paternal",
+  16: "maternal",
+  32: "de-novo",
+  64: "biparental",
+  128: "uniparental",
+  256: "not-tested",
+  512: "tested-inconclusive",
+};
+
+// ============================================================================
+// Custom Cell Renderers
+// ============================================================================
+
+function DiseaseList({ value }: { value: string }) {
+  const diseases = parseDiseaseNames(value);
+  if (diseases.length === 1) return <span>{diseases[0]}</span>;
+
+  return (
+    <div className="space-y-0.5">
+      {diseases.map((disease, i) => (
+        <div key={i} className="flex items-start gap-1.5">
+          <span className="text-muted-foreground mt-0.5">•</span>
+          <span>{disease}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ClinicalSignificancePairs({ value }: { value: string }) {
+  const pairs = parseClinicalSignificancePairs(value);
+
+  return (
+    <div className="space-y-1">
+      {pairs.map(({ id, significance, raw }, i) => {
+        if (!significance) return <div key={i}>{raw.replace(/_/g, " ")}</div>;
+
+        const color = clinicalSignificance.getColor(significance);
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <span className="text-muted-foreground font-mono">{id}:</span>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[color]}`}
+            >
+              {significance.replace(/_/g, " ")}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DatabaseEntries({ value }: { value: string }) {
+  const entries = parseDatabaseEntries(value);
+
+  return (
+    <div className="space-y-0.5">
+      {entries.map(({ database, id, raw }, i) => {
+        if (!id) return <div key={i} className="font-mono">{raw}</div>;
+        return (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-medium">{database}:</span>
+            <span className="font-mono text-foreground">{id}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OriginBadge({ value }: { value: string | number }) {
+  if (!value && value !== 0) return <span>-</span>;
+
+  // Try to decode numeric value (handles both number and string number)
+  const numericValue = typeof value === "number" ? value : parseInt(String(value), 10);
+  const text = !isNaN(numericValue) && numericValue in ORIGIN_MAP
+    ? ORIGIN_MAP[numericValue]
+    : String(value);
+
+  const color = alleleOrigin.getColor(text);
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1.5 rounded-full font-medium capitalize ${BADGE_COLORS[color]}`}
+    >
+      {text.replace(/[_-]/g, " ")}
+    </span>
+  );
+}
+
+// ============================================================================
+// Column Definitions
+// ============================================================================
+
+export const clinvarColumns = [
+  col.accessor("clnsig", {
+    accessor: "clnsig",
     header: "Clinical Significance",
-    description: renderCategoryDescription(
-      <p>
-        Clinical significance for this single variant. (Landrum et al., 2017,
-        2013)
-      </p>,
-      CLINICAL_SIGNIFICANCE_CATEGORIES,
-    ),
-    cell: helper.format.badge<Variant>(
-      getBadgeColorMap(CLINICAL_SIGNIFICANCE_CATEGORIES),
-      "gray",
-    ),
+    description: tooltip({
+      title: "Clinical Significance",
+      description: "Clinical significance for this single variant.",
+      citation: "Landrum et al., 2017, 2013",
+      categories: clinicalSignificance,
+    }),
+    cell: cell.badge(clinicalSignificance),
   }),
-  helper.accessor("clnsigincl", {
+
+  col.accessor("clnsigincl", {
+    accessor: "clnsigincl",
     header: "Clinical Significance (Genotype)",
-    description:
-      "Clinical significance for a haplotype or genotype that includes this variant. Reported as pairs of VariationID:clinical significance. (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
-
-      const pairs = parseClinicalSignificancePairs(val);
-
-      return (
-        <div className="space-y-1">
-          {pairs.map(({ id, significance, raw }, idx) => {
-            if (!significance) return <div key={idx}>{raw.replace(/_/g, " ")}</div>;
-
-            // Find matching category to get color
-            const match = CLINICAL_SIGNIFICANCE_CATEGORIES.find((cat) => {
-              if (cat.pattern instanceof RegExp) {
-                return cat.pattern.test(significance);
-              }
-              return significance === cat.pattern;
-            });
-
-            const colorKey = match?.color || "gray";
-
-            return (
-              <div key={idx} className="flex items-center gap-2">
-                <span className="text-muted-foreground font-mono">{id}:</span>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[colorKey] || BADGE_COLORS.gray}`}
-                >
-                  {significance.replace(/_/g, " ")}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      );
+    description: tooltip({
+      title: "Clinical Significance (Genotype Includes)",
+      description: "Clinical significance for a haplotype or genotype that includes this variant. Reported as pairs of VariationID:clinical significance.",
+      citation: "Landrum et al., 2017, 2013",
+      categories: clinicalSignificance,
     }),
+    cell: cell.custom((val: string) => <ClinicalSignificancePairs value={val} />),
   }),
-  helper.accessor("clndn", {
+
+  col.accessor("clndn", {
+    accessor: "clndn",
     header: "Disease Name",
-    description:
-      "ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB. (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
-
-      const diseases = parseDiseaseNames(val);
-
-      if (diseases.length === 1) {
-        return <span>{diseases[0]}</span>;
-      }
-
-      return (
-        <div className="space-y-0.5">
-          {diseases.map((disease, idx) => (
-            <div key={idx} className="flex items-start gap-1.5">
-              <span className="text-muted-foreground mt-0.5">•</span>
-              <span>{disease}</span>
-            </div>
-          ))}
-        </div>
-      );
+    description: tooltip({
+      title: "Disease Name",
+      description: "ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
+      citation: "Landrum et al., 2017, 2013",
     }),
+    cell: cell.custom((val: string) => <DiseaseList value={val} />),
   }),
-  helper.accessor("clndnincl", {
+
+  col.accessor("clndnincl", {
+    accessor: "clndnincl",
     header: "Disease Name (Variant Includes)",
-    description:
-      "For included variant: ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB. (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
-
-      const diseases = parseDiseaseNames(val);
-
-      if (diseases.length === 1) {
-        return <span>{diseases[0]}</span>;
-      }
-
-      return (
-        <div className="space-y-0.5">
-          {diseases.map((disease, idx) => (
-            <div key={idx} className="flex items-start gap-1.5">
-              <span className="text-muted-foreground mt-0.5">•</span>
-              <span>{disease}</span>
-            </div>
-          ))}
-        </div>
-      );
+    description: tooltip({
+      title: "Disease Name (Variant Includes)",
+      description: "For included variant: ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
+      citation: "Landrum et al., 2017, 2013",
     }),
+    cell: cell.custom((val: string) => <DiseaseList value={val} />),
   }),
-  helper.accessor("clnrevstat", {
+
+  col.accessor("clnrevstat", {
+    accessor: "clnrevstat",
     header: "Review Status",
-    description: renderCategoryDescription(
-      <p>
-        ClinVar review status for the Variation ID. (Landrum et al., 2017,
-        2013)
-      </p>,
-      REVIEW_STATUS_CATEGORIES,
-    ),
-    cell: helper.format.badge<Variant>(
-      getBadgeColorMap(REVIEW_STATUS_CATEGORIES),
-      "gray",
-    ),
+    description: tooltip({
+      title: "Review Status",
+      description: "ClinVar review status for the Variation ID.",
+      citation: "Landrum et al., 2017, 2013",
+      categories: reviewStatus,
+    }),
+    cell: cell.badge(reviewStatus),
   }),
-  helper.accessor("origin", {
+
+  col.accessor("origin", {
+    accessor: "origin",
     header: "Allele Origin",
-    description: renderCategoryDescription(
-      <p>
-        Allele origin. One or more of the following values may be added: 0 -
-        unknown; 1 - germline; 2 - somatic; 4 - inherited; 8 - paternal; 16 -
-        maternal; 32 - de-novo; 64 - biparental; 128 - uniparental; 256 -
-        not-tested; 512 - tested-inconclusive. (Landrum et al., 2017, 2013)
-      </p>,
-      ALLELE_ORIGIN_CATEGORIES,
-    ),
-    cell: helper.format.custom((val: any) => {
-      if (!val) return "-";
-
-      // Map numeric codes to text
-      const originMap: { [key: number]: string } = {
-        0: "unknown",
-        1: "germline",
-        2: "somatic",
-        4: "inherited",
-        8: "paternal",
-        16: "maternal",
-        32: "de-novo",
-        64: "biparental",
-        128: "uniparental",
-        256: "not-tested",
-        512: "tested-inconclusive",
-      };
-
-      const originText = originMap[val] || val;
-      if (!originText) return "-";
-
-      // Find matching category to get color
-      const match = ALLELE_ORIGIN_CATEGORIES.find((cat) => {
-        if (cat.pattern instanceof RegExp) {
-          return cat.pattern.test(originText);
-        }
-        return originText === cat.pattern;
-      });
-
-      const colorKey = match?.color || "gray";
-      const className = BADGE_COLORS[colorKey] || BADGE_COLORS.gray;
-
-      return (
-        <span
-          className={`inline-flex items-center px-2.5 py-1.5 rounded-full font-medium capitalize ${className}`}
-        >
-          {originText.replace(/_/g, " ").replace(/-/g, " ")}
-        </span>
-      );
+    description: tooltip({
+      title: "Allele Origin",
+      description: "Allele origin indicating whether the variant is inherited, acquired, or of unknown origin.",
+      citation: "Landrum et al., 2017, 2013",
+      categories: alleleOrigin,
     }),
+    cell: cell.custom((val: string | number) => <OriginBadge value={val} />),
   }),
-  helper.accessor("clndisdb", {
+
+  col.accessor("clndisdb", {
+    accessor: "clndisdb",
     header: "Disease Database ID",
-    description:
-      "Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN. (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
-
-      const entries = parseDatabaseEntries(val);
-
-      return (
-        <div className="space-y-0.5">
-          {entries.map(({ database, id, raw }, idx) => {
-            if (!id) {
-              return (
-                <div key={idx} className="font-mono">
-                  {raw}
-                </div>
-              );
-            }
-
-            return (
-              <div key={idx} className="flex items-center gap-1.5">
-                <span className="text-muted-foreground font-medium">
-                  {database}:
-                </span>
-                <span className="font-mono text-foreground">{id}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
+    description: tooltip({
+      title: "Disease Database ID",
+      description: "Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
+      citation: "Landrum et al., 2017, 2013",
     }),
+    cell: cell.custom((val: string) => <DatabaseEntries value={val} />),
   }),
-  helper.accessor("clndisdbincl", {
-    header: "Disease Database ID (included variant)",
-    description:
-      "For included variant: Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN. (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
 
-      const entries = parseDatabaseEntries(val);
-
-      return (
-        <div className="space-y-0.5">
-          {entries.map(({ database, id, raw }, idx) => {
-            if (!id) {
-              return (
-                <div key={idx} className="font-mono">
-                  {raw}
-                </div>
-              );
-            }
-
-            return (
-              <div key={idx} className="flex items-center gap-1.5">
-                <span className="text-muted-foreground font-medium">
-                  {database}:
-                </span>
-                <span className="font-mono text-foreground">{id}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
+  col.accessor("clndisdbincl", {
+    accessor: "clndisdbincl",
+    header: "Disease Database ID (Included Variant)",
+    description: tooltip({
+      title: "Disease Database ID (Included Variant)",
+      description: "For included variant: Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
+      citation: "Landrum et al., 2017, 2013",
     }),
+    cell: cell.custom((val: string) => <DatabaseEntries value={val} />),
   }),
-  helper.accessor("geneinfo", {
+
+  col.accessor("geneinfo", {
+    accessor: "geneinfo",
     header: "Gene Reported",
-    description:
-      "Gene(s) for the variant reported as gene symbol:gene id. The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|). (Landrum et al., 2017, 2013)",
-    cell: helper.format.custom((val) => {
-      if (!val) return "-";
+    description: tooltip({
+      title: "Gene Reported",
+      description: "Gene(s) for the variant reported as gene symbol:gene id. The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|).",
+      citation: "Landrum et al., 2017, 2013",
+    }),
+    cell: cell.custom((val: string) => {
       const gene = val.split(":")[0];
       return (
         <ExternalLink
@@ -439,4 +267,6 @@ export const clinvarConfig = helper.group("clinvar", "Clinvar", [
       );
     }),
   }),
-]);
+];
+
+export const clinvarGroup = col.group("clinvar", "ClinVar", clinvarColumns);

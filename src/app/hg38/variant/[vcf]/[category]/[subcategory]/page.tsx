@@ -1,20 +1,21 @@
-import { fetchVariant, fetchGnomadExome, fetchGnomadGenome } from "@/features/variant/api/hg38";
-import { VariantHeader } from "@/features/variant/components/header/variant-header";
-import { AnnotationTable } from "@/features/variant/components/annotation-table";
-import { variantDetailedColumns } from "@/features/variant/config/hg38";
-import { enrichData } from "@/lib/data-display/enricher";
+import {
+  fetchVariant,
+  fetchGnomadExome,
+  fetchGnomadGenome,
+} from "@/features/variant/api/hg38";
+import { VariantCategoryView } from "@/features/variant/components/variant-category-view";
 import { notFound } from "next/navigation";
 
 interface VariantPageProps {
-  params: {
+  params: Promise<{
     vcf: string;
     category: string;
     subcategory: string;
-  };
+  }>;
 }
 
 export default async function VariantPage({ params }: VariantPageProps) {
-  const { vcf, category, subcategory } = await params;
+  const { vcf, subcategory } = await params;
 
   const [variant, gnomadExome, gnomadGenome] = await Promise.all([
     fetchVariant(vcf),
@@ -30,15 +31,5 @@ export default async function VariantPage({ params }: VariantPageProps) {
   variant.gnomad_exome = gnomadExome;
   variant.gnomad_genome = gnomadGenome;
 
-  const enrichedVariant = enrichData(variant, variantDetailedColumns);
-
-  return (
-    <div className="space-y-6">
-      <AnnotationTable
-        enrichedData={enrichedVariant}
-        category={category}
-        subcategory={subcategory}
-      />
-    </div>
-  );
+  return <VariantCategoryView data={variant} categoryId={subcategory} />;
 }

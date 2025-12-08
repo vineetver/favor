@@ -1,64 +1,98 @@
-import { createColumnHelper } from "@/lib/data-display/builder";
 import type { Variant } from "../../../types/types";
+import { createColumns, cell, categories, tooltip } from "@/lib/table/column-builder";
 
-const helper = createColumnHelper<Variant>();
+const col = createColumns<Variant>();
 
-export const basicConfig = helper.group("basic", "Basic", [
-  helper.accessor("variant_vcf", {
-    header: "Variant",
-    description:
-      "The unique identifier of the given variant, Reported as chr-pos-ref-alt format.",
-  }),
-  helper.accessor("rsid", {
-    header: "rsID",
-    description: "The rsID of the given variant (if exists).",
-    cell: helper.format.link(
-      (val) => `https://www.ncbi.nlm.nih.gov/snp/${val}`,
-    ),
-  }),
-  helper.accessor("filter_status", {
-    header: "TOPMed QC Status",
-    description: "TOPMed QC status of the given variant.",
-    cell: helper.format.badge({
-      PASS: "green",
-      FAIL: "red",
-    }),
-  }),
-  helper.accessor("bravo_an", {
-    header: "TOPMed Bravo AN",
-    description:
-      "TOPMed Bravo Genome Allele Number. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)",
-  }),
-  helper.accessor("bravo_af", {
-    header: "TOPMed Bravo AF",
-    description:
-      "TOPMed Bravo Genome Allele Frequency. (NHLBI TOPMed Consortium, 2018; Taliun et al., 2019)",
-    cell: helper.format.decimal(6),
-  }),
-  helper.accessor("tg_all", {
-    header: "All 1000 Genomes AF",
-    description:
-      "1000 Genome Allele Frequency (Whole genome allele frequencies from the 1000 Genomes Project phase 3 data).",
-    cell: helper.format.decimal(6),
-  }),
-  helper.accessor("gnomad_exome", {
-    header: "gnomAD v4 Exome AF",
-    description: "gnomAD v4 Exome Allele Frequency",
-    cell: helper.format.custom((val) => {
-      if (!val || val.af === null || val.af === undefined) return "-";
-      const num = val.af;
-      if (isNaN(num)) return "-";
-      return num.toFixed(6).replace(/\.?0+$/, "");
-    }),
-  }),
-  helper.accessor("gnomad_genome", {
-    header: "gnomAD v4 Genome AF",
-    description: "gnomAD v4 Genome Allele Frequency",
-    cell: helper.format.custom((val) => {
-      if (!val || val.af === null || val.af === undefined) return "-";
-      const num = val.af;
-      if (isNaN(num)) return "-";
-      return num.toFixed(6).replace(/\.?0+$/, "");
-    }),
-  }),
+const filterStatus = categories([
+  { label: "PASS", match: "PASS", color: "green", description: "passed all QC filters" },
+  { label: "FAIL", match: /fail/i, color: "red", description: "failed QC filters" },
 ]);
+
+export const basicColumns = [
+  col.accessor("variant_vcf", {
+    accessor: "variant_vcf",
+    header: "Variant",
+    description: tooltip({
+      title: "Variant ID",
+      description: "Unique variant identifier in chr-pos-ref-alt format.",
+    }),
+    cell: cell.text(),
+  }),
+
+  col.accessor("rsid", {
+    accessor: "rsid",
+    header: "rsID",
+    description: tooltip({
+      title: "Reference SNP ID",
+      description: "dbSNP reference SNP identifier (if exists).",
+    }),
+    cell: cell.link((val) => `https://www.ncbi.nlm.nih.gov/snp/${val}`),
+  }),
+
+  col.accessor("filter_status", {
+    accessor: "filter_status",
+    header: "TOPMed QC Status",
+    description: tooltip({
+      title: "TOPMed QC Status",
+      description: "Quality control status of the variant.",
+      categories: filterStatus,
+    }),
+    cell: cell.badge(filterStatus),
+  }),
+
+  col.accessor("bravo_an", {
+    accessor: "bravo_an",
+    header: "TOPMed Bravo AN",
+    description: tooltip({
+      title: "Allele Number",
+      description: "TOPMed Bravo Genome Allele Number.",
+      citation: "NHLBI TOPMed Consortium, 2018; Taliun et al., 2019",
+    }),
+    cell: cell.text(),
+  }),
+
+  col.accessor("bravo_af", {
+    accessor: "bravo_af",
+    header: "TOPMed Bravo AF",
+    description: tooltip({
+      title: "Allele Frequency",
+      description: "TOPMed Bravo Genome Allele Frequency.",
+      citation: "NHLBI TOPMed Consortium, 2018; Taliun et al., 2019",
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  col.accessor("tg_all", {
+    accessor: "tg_all",
+    header: "1000 Genomes AF",
+    description: tooltip({
+      title: "1000 Genomes Allele Frequency",
+      description: "Whole genome allele frequencies from the 1000 Genomes Project phase 3 data.",
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  col.accessor("gnomad_exome_af", {
+    accessor: (row) => row.gnomad_exome?.af,
+    header: "gnomAD Exome AF",
+    description: tooltip({
+      title: "gnomAD Exome AF",
+      description: "gnomAD v4 Exome Allele Frequency using all samples.",
+      citation: "gnomAD Consortium, 2019; Karczewski et al., 2020",
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  col.accessor("gnomad_genome_af", {
+    accessor: (row) => row.gnomad_genome?.af,
+    header: "gnomAD Genome AF",
+    description: tooltip({
+      title: "gnomAD Genome AF",
+      description: "gnomAD v4 Genome Allele Frequency using all samples.",
+      citation: "gnomAD Consortium, 2019; Karczewski et al., 2020",
+    }),
+    cell: cell.decimal(6),
+  }),
+];
+
+export const basicGroup = col.group("basic", "Basic", basicColumns);

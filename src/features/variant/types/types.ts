@@ -177,8 +177,8 @@ export type Variant = {
   spliceai_ds_max_genome?: number;
   pangolin_largest_ds_exome?: number;
   pangolin_largest_ds_genome?: number;
-  exome: unknown;
-  genome: unknown;
+  exome: GnomadData | null;
+  genome: GnomadData | null;
   Cm?: number;
   Cv2f?: number;
   LiverCv2f?: number;
