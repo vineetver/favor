@@ -173,41 +173,6 @@ export const GET_VARIANT_EFFECTS = `
 `;
 
 /**
- * Get protein coding coordinates for a variant.
- * Shows protein-level impact with linked diseases and therapeutic areas.
- */
-export const GET_VARIANT_PROTEIN_CODING = `
-  query VariantProteinCoding($variantId: String!, $pageIndex: Int!, $pageSize: Int!) {
-    variant(variantId: $variantId) {
-      id
-      proteinCodingCoordinates(page: { index: $pageIndex, size: $pageSize }) {
-        count
-        rows {
-          aminoAcidPosition
-          referenceAminoAcid
-          alternateAminoAcid
-          variantEffect
-          therapeuticAreas
-          uniprotAccessions
-          target {
-            id
-            approvedSymbol
-          }
-          diseases {
-            id
-            name
-          }
-          variantConsequences {
-            id
-            label
-          }
-        }
-      }
-    }
-  }
-`;
-
-/**
  * Get disease/target evidence for a variant.
  * Links variants directly to diseases and targets through various evidence sources.
  */

@@ -4,12 +4,6 @@ import { ExternalLink } from "@/components/ui/external-link";
 
 const col = createColumns<OpenTargetsCredibleSetRow>();
 
-// Confidence level categories
-const confidenceCategories = categories([
-  { label: "High", match: "high", color: "emerald", description: "High confidence fine-mapping result with strong statistical support" },
-  { label: "Medium", match: "medium", color: "amber", description: "Moderate confidence fine-mapping with supporting evidence" },
-  { label: "Low", match: "low", color: "gray", description: "Lower confidence result requiring additional validation" },
-]);
 
 // Study type categories
 const studyTypeCategories = categories([
@@ -86,17 +80,6 @@ export const openTargetsCredibleSetsColumns = [
       if (val === null) return "-";
       return <span className="font-mono text-xs">{val.toFixed(4)}</span>;
     },
-  }),
-
-  col.accessor("confidence", {
-    accessor: "confidence",
-    header: "Confidence",
-    description: tooltip({
-      title: "Fine-mapping Confidence",
-      description: "Confidence level of the fine-mapping result.",
-      categories: confidenceCategories,
-    }),
-    cell: cell.badge(confidenceCategories),
   }),
 
   col.display("finemappingMethod", {

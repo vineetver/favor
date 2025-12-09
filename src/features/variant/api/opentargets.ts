@@ -3,7 +3,6 @@ import {
   getVariantCredibleSets,
   getVariantPharmacogenomics,
   getVariantEffects,
-  getVariantProteinCoding,
   getVariantEvidences,
 } from "@/lib/opentargets/api";
 import type {
@@ -12,7 +11,6 @@ import type {
   OpenTargetsCredibleSetRow,
   OpenTargetsPharmacogenomicsRow,
   OpenTargetsVariantEffectRow,
-  OpenTargetsProteinCodingRow,
   OpenTargetsEvidenceRow,
 } from "../types/opentargets";
 
@@ -59,8 +57,6 @@ export async function fetchOpenTargetsConsequences(
       impact: tc.impact,
       consequenceTerms: tc.variantConsequences.map((c) => c.label).join(", "),
       aminoAcidChange: tc.aminoAcidChange,
-      siftPrediction: tc.siftPrediction,
-      polyphenPrediction: tc.polyphenPrediction,
       isEnsemblCanonical: tc.isEnsemblCanonical,
       codons: tc.codons,
       lofteePrediction: tc.lofteePrediction,
@@ -245,38 +241,6 @@ export async function fetchOpenTargetsVariantEffects(
     }));
   } catch (error) {
     console.error("Open Targets variant effects error:", error);
-    return [];
-  }
-}
-
-/**
- * Fetch and transform protein coding coordinates.
- */
-export async function fetchOpenTargetsProteinCoding(
-  vcf: string
-): Promise<OpenTargetsProteinCodingRow[]> {
-  try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantProteinCoding(variantId);
-
-    if (!data?.variant?.proteinCodingCoordinates?.rows) {
-      return [];
-    }
-
-    return data.variant.proteinCodingCoordinates.rows.map((pc) => ({
-      aminoAcidPosition: pc.aminoAcidPosition,
-      referenceAminoAcid: pc.referenceAminoAcid,
-      alternateAminoAcid: pc.alternateAminoAcid,
-      variantEffect: pc.variantEffect,
-      targetId: pc.target?.id ?? null,
-      targetSymbol: pc.target?.approvedSymbol ?? null,
-      therapeuticAreas: pc.therapeuticAreas,
-      diseases: pc.diseases.map((d) => d.name),
-      uniprotAccessions: pc.uniprotAccessions,
-      consequences: pc.variantConsequences.map((c) => c.label).join(", "),
-    }));
-  } catch (error) {
-    console.error("Open Targets protein coding error:", error);
     return [];
   }
 }

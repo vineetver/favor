@@ -59,7 +59,6 @@ export { openTargetsPharmacogenomicsColumns } from "./columns/open-targets-pharm
 export { openTargetsL2GColumns } from "./columns/open-targets-l2g";
 export { openTargetsCredibleSetsColumns } from "./columns/open-targets-credible-sets";
 export { openTargetsVariantEffectsColumns } from "./columns/open-targets-variant-effects";
-export { openTargetsProteinCodingColumns } from "./columns/open-targets-protein-coding";
 export { openTargetsEvidencesColumns } from "./columns/open-targets-evidences";
 
 // Re-export column builder utilities for external use

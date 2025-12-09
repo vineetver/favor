@@ -165,29 +165,6 @@ export interface VariantEffectsResponse {
   } | null;
 }
 
-// Protein coding coordinates
-export interface ProteinCodingCoordinate {
-  aminoAcidPosition: number;
-  referenceAminoAcid: string;
-  alternateAminoAcid: string;
-  variantEffect: number | null;
-  therapeuticAreas: string[];
-  uniprotAccessions: string[];
-  target: Target | null;
-  diseases: { id: string; name: string }[];
-  variantConsequences: SequenceOntologyTerm[];
-}
-
-export interface ProteinCodingResponse {
-  variant: {
-    id: string;
-    proteinCodingCoordinates: {
-      count: number;
-      rows: ProteinCodingCoordinate[];
-    };
-  } | null;
-}
-
 // Disease/target evidences
 export interface Evidence {
   id: string;

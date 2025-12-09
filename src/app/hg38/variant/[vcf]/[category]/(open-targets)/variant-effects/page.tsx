@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { fetchVariant } from "@/features/variant/api/hg38";
 import { fetchOpenTargetsVariantEffects } from "@/features/variant/api/opentargets";
 import { VariantEffectsTable } from "@/features/variant/components/open-targets/variant-effects-table";
+import { PathogenicitySummary } from "@/features/variant/components/open-targets/pathogenicity-summary";
 
 interface VariantEffectsPageProps {
   params: Promise<{
@@ -22,5 +23,10 @@ export default async function VariantEffectsPage({ params }: VariantEffectsPageP
     notFound();
   }
 
-  return <VariantEffectsTable data={rows} />;
+  return (
+    <div className="space-y-6">
+      <PathogenicitySummary data={rows} />
+      <VariantEffectsTable data={rows} />
+    </div>
+  );
 }

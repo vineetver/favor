@@ -68,19 +68,19 @@ export const openTargetsVariantEffectsColumns = [
     header: "Normalised",
     description: tooltip({
       title: "Normalised Score",
-      description: "Score normalized to a common scale for cross-method comparison.",
-      range: "[-1, 1]",
+      description: "Score normalized to a 0-1 scale for cross-method comparison. Higher values indicate greater predicted pathogenicity.",
+      range: "[0, 1]",
       guides: [
-        { threshold: "> 0.5", meaning: "Likely pathogenic" },
-        { threshold: "0 to 0.5", meaning: "Possibly pathogenic" },
-        { threshold: "-0.5 to 0", meaning: "Possibly benign" },
-        { threshold: "< -0.5", meaning: "Likely benign" },
+        { threshold: "> 0.8", meaning: "Likely pathogenic" },
+        { threshold: "0.5 - 0.8", meaning: "Possibly pathogenic" },
+        { threshold: "0.2 - 0.5", meaning: "Uncertain" },
+        { threshold: "< 0.2", meaning: "Likely benign" },
       ],
     }),
     cell: ({ row }) => {
       const score = row.original.normalisedScore;
       if (score === null) return "-";
-      const color = score > 0.5 ? "red" : score > 0 ? "orange" : score > -0.5 ? "amber" : "green";
+      const color = score > 0.8 ? "red" : score > 0.5 ? "orange" : score > 0.2 ? "amber" : "green";
       return (
         <Badge color={color}>
           {score.toFixed(4)}

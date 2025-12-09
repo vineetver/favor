@@ -85,54 +85,6 @@ export const openTargetsConsequencesColumns = [
     },
   }),
 
-  col.display("siftPrediction", {
-    header: "SIFT",
-    description: tooltip({
-      title: "SIFT Prediction",
-      description: "SIFT predicts whether an amino acid substitution affects protein function based on sequence homology.",
-      citation: "Ng & Henikoff, 2001",
-      guides: [
-        { threshold: "< 0.05", meaning: "Deleterious" },
-        { threshold: "≥ 0.05", meaning: "Tolerated" },
-      ],
-    }),
-    cell: ({ row }) => {
-      const score = row.original.siftPrediction;
-      if (score === null) return "-";
-      const isDeleterious = score < 0.05;
-      return (
-        <Badge color={isDeleterious ? "red" : "green"}>
-          {isDeleterious ? "Deleterious" : "Tolerated"} ({score.toFixed(3)})
-        </Badge>
-      );
-    },
-  }),
-
-  col.display("polyphenPrediction", {
-    header: "PolyPhen",
-    description: tooltip({
-      title: "PolyPhen-2 Prediction",
-      description: "PolyPhen-2 predicts the possible impact of amino acid substitutions on protein structure and function.",
-      citation: "Adzhubei et al., 2010",
-      guides: [
-        { threshold: "> 0.908", meaning: "Probably Damaging" },
-        { threshold: "0.446 - 0.908", meaning: "Possibly Damaging" },
-        { threshold: "≤ 0.446", meaning: "Benign" },
-      ],
-    }),
-    cell: ({ row }) => {
-      const score = row.original.polyphenPrediction;
-      if (score === null) return "-";
-      const label = score > 0.908 ? "Damaging" : score > 0.446 ? "Possibly" : "Benign";
-      const color = score > 0.908 ? "red" : score > 0.446 ? "orange" : "green";
-      return (
-        <Badge color={color}>
-          {label} ({score.toFixed(3)})
-        </Badge>
-      );
-    },
-  }),
-
   col.display("isEnsemblCanonical", {
     header: "Canonical",
     description: tooltip({

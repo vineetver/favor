@@ -13,8 +13,6 @@ export interface OpenTargetsConsequenceRow {
   impact: string | null;
   consequenceTerms: string; // Joined consequence labels
   aminoAcidChange: string | null;
-  siftPrediction: number | null;
-  polyphenPrediction: number | null;
   isEnsemblCanonical: boolean;
   codons: string | null;
   lofteePrediction: string | null;
@@ -97,22 +95,6 @@ export interface OpenTargetsVariantEffectRow {
   assessmentFlag: string | null;
   targetId: string | null;
   targetSymbol: string | null;
-}
-
-/**
- * Protein coding coordinate row for table display.
- */
-export interface OpenTargetsProteinCodingRow {
-  aminoAcidPosition: number;
-  referenceAminoAcid: string;
-  alternateAminoAcid: string;
-  variantEffect: number | null;
-  targetId: string | null;
-  targetSymbol: string | null;
-  therapeuticAreas: string[];
-  diseases: string[]; // Disease names
-  uniprotAccessions: string[];
-  consequences: string; // Joined consequence labels
 }
 
 /**

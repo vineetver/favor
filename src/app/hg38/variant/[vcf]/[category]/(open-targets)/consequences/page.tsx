@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { fetchVariant } from "@/features/variant/api/hg38";
 import { fetchOpenTargetsConsequences } from "@/features/variant/api/opentargets";
 import { ConsequencesTable } from "@/features/variant/components/open-targets/consequences-table";
+import { ConsequencesSummary } from "@/features/variant/components/open-targets/consequences-summary";
 
 interface ConsequencesPageProps {
   params: Promise<{
@@ -22,5 +23,10 @@ export default async function ConsequencesPage({ params }: ConsequencesPageProps
     notFound();
   }
 
-  return <ConsequencesTable data={rows} />;
+  return (
+    <div className="space-y-6">
+      <ConsequencesSummary data={rows} />
+      <ConsequencesTable data={rows} />
+    </div>
+  );
 }

@@ -93,15 +93,19 @@ export const openTargetsL2GColumns = [
     },
   }),
 
-  col.accessor("confidence", {
-    accessor: "confidence",
+  col.display("confidence", {
     header: "Confidence",
     description: tooltip({
-      title: "Confidence Level",
-      description: "Confidence level of the L2G prediction based on available evidence.",
+      title: "Credible Set Confidence",
+      description: "Confidence level of the underlying fine-mapped credible set from which this L2G prediction derives.",
       categories: confidenceCategories,
     }),
-    cell: cell.badge(confidenceCategories),
+    cell: ({ row }) => {
+      const val = row.original.confidence;
+      if (!val) return "-";
+      const color = confidenceCategories.getColor(val.toLowerCase());
+      return <Badge color={color}>{val}</Badge>;
+    },
   }),
 
   col.display("studyId", {

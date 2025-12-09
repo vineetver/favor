@@ -4,7 +4,6 @@ import {
   GET_VARIANT_CREDIBLE_SETS,
   GET_VARIANT_PHARMACOGENOMICS,
   GET_VARIANT_EFFECTS,
-  GET_VARIANT_PROTEIN_CODING,
   GET_VARIANT_EVIDENCES,
 } from "./queries";
 import type {
@@ -12,7 +11,6 @@ import type {
   CredibleSetsResponse,
   PharmacogenomicsResponse,
   VariantEffectsResponse,
-  ProteinCodingResponse,
   EvidencesResponse,
 } from "./types";
 
@@ -49,17 +47,6 @@ export async function getVariantEffects(variantId: string) {
   return openTargetsClient.query<VariantEffectsResponse>(
     GET_VARIANT_EFFECTS,
     { variantId }
-  );
-}
-
-export async function getVariantProteinCoding(
-  variantId: string,
-  pageIndex = 0,
-  pageSize = 50
-) {
-  return openTargetsClient.query<ProteinCodingResponse>(
-    GET_VARIANT_PROTEIN_CODING,
-    { variantId, pageIndex, pageSize }
   );
 }
 
