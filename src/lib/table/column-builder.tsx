@@ -118,8 +118,8 @@ function isEmpty(v: unknown): v is null | undefined {
   return v === null || v === undefined;
 }
 
-/** Badge component */
-function Badge({ children, color }: { children: ReactNode; color: BadgeColor }) {
+/** Badge component - exported for use in derived columns */
+export function Badge({ children, color }: { children: ReactNode; color: BadgeColor }) {
   return (
     <span
       className={cn(
@@ -257,8 +257,8 @@ type DisplayColConfig<TData> = ColConfig<TData, unknown> & {
 export type DerivedColumn = {
   header: string;
   headerTooltip?: ReactNode;
-  /** Transform the base value into a derived value */
-  derive: (value: unknown) => unknown;
+  /** Transform the base value into a derived value. Receives value and optionally the row/column ID. */
+  derive: (value: unknown, id?: string) => unknown;
   /** Render the derived value */
   render: (value: unknown) => ReactNode;
 };

@@ -12,7 +12,7 @@ import { IntegrativeBarChart } from "../../../components/visualizations/integrat
  * Calculate percentile from PHRED score: 10^(score * -0.1) * 100
  * Higher scores = lower percentiles = greater significance.
  */
-function calculatePercentile(score: unknown): number | null {
+function calculatePercentile(score: unknown, _id?: string): number | null {
   if (score === null || score === undefined) return null;
   const num = typeof score === "number" ? score : parseFloat(String(score));
   if (isNaN(num)) return null;

@@ -1,8 +1,86 @@
 import type { Variant } from "../../../types/types";
-import { createColumns, cell, tooltip } from "@/lib/table/column-builder";
+import { createColumns, cell, tooltip, categories, Badge, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
+import { EpigeneticsChart } from "../../../components/visualizations/epigenetics-chart";
 
 const col = createColumns<Variant>();
+
+// ============================================================================
+// Regulatory State Categories
+// ============================================================================
+
+export type RegulatoryState = "Active" | "Repressed" | "Transcription" | null;
+
+// Categories for badge rendering with consistent colors and descriptions
+export const regulatoryStateCategories = categories([
+  {
+    label: "Active",
+    match: "Active",
+    color: "emerald",
+    description: "Associated with open chromatin and gene activation",
+  },
+  {
+    label: "Repressed",
+    match: "Repressed",
+    color: "rose",
+    description: "Associated with closed chromatin and gene silencing",
+  },
+  {
+    label: "Transcription",
+    match: "Transcription",
+    color: "sky",
+    description: "Associated with active transcription",
+  },
+]);
+
+// Map column IDs to their regulatory state
+export const REGULATORY_STATE_MAP: Record<string, RegulatoryState> = {
+  // aPC scores
+  apc_epigenetics_active: "Active",
+  apc_epigenetics_repressed: "Repressed",
+  apc_epigenetics_transcription: "Transcription",
+  // Active marks
+  encode_dnase_sum: "Active",
+  encodeh3k27ac_sum: "Active",
+  encodeh3k4me1_sum: "Active",
+  encodeh3k4me2_sum: "Active",
+  encodeh3k4me3_sum: "Active",
+  encodeh3k9ac_sum: "Active",
+  encodeh4k20me1_sum: "Active",
+  encodeh2afz_sum: "Active",
+  // Repressed marks
+  encodeh3k9me3_sum: "Repressed",
+  encodeh3k27me3_sum: "Repressed",
+  // Transcription marks
+  encodeh3k36me3_sum: "Transcription",
+  encodeh3k79me2_sum: "Transcription",
+  encodetotal_rna_sum: "Transcription",
+  // No regulatory state
+  gc: null,
+  cpg: null,
+};
+
+// ============================================================================
+// Regulatory State Derived Column
+// ============================================================================
+
+const regulatoryStateColumn: DerivedColumn = {
+  header: "Regulatory State",
+  headerTooltip: regulatoryStateCategories.description(
+    "The regulatory state indicates the functional role of this epigenetic mark."
+  ),
+  // Derive regulatory state from column ID
+  derive: (_value, id) => {
+    if (!id) return null;
+    return REGULATORY_STATE_MAP[id] ?? null;
+  },
+  render: (value) => {
+    const state = value as string | null;
+    if (!state) return "—";
+    const color = regulatoryStateCategories.getColor(state);
+    return <Badge color={color}>{state}</Badge>;
+  },
+};
 
 export const epigeneticsColumns = [
   apcColumns.epigeneticsActive,
@@ -263,4 +341,12 @@ export const epigeneticsColumns = [
   }),
 ];
 
-export const epigeneticsGroup = col.group("epigenetics", "Epigenetics", epigeneticsColumns);
+export const epigeneticsGroup = col.group("epigenetics", "Epigenetics", epigeneticsColumns, {
+  derivedColumn: regulatoryStateColumn,
+  view: {
+    format: "transposed",
+    search: true,
+    export: true,
+    visualization: EpigeneticsChart,
+  },
+});

@@ -22,7 +22,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import type { Variant } from "@/features/variant/types/types";
@@ -507,28 +506,82 @@ function AlleleFrequencyChart({
   viewLabel: string;
   isCompare: boolean;
 }) {
-  // Calculate dynamic height based on number of rows - more space for compare mode (4 bars)
-  const rowHeight = isCompare ? 80 : 55;
+  // For compare mode, show simple Male vs Female side by side
+  if (isCompare) {
+    // Transform data for simple male vs female comparison (average of exome + genome)
+    const compareData = data
+      .map((row) => {
+        const maleExome = (row["Male Exome"] as number) || 0;
+        const femaleExome = (row["Female Exome"] as number) || 0;
+        const maleGenome = (row["Male Genome"] as number) || 0;
+        const femaleGenome = (row["Female Genome"] as number) || 0;
+
+        const male = (maleExome + maleGenome) / 2;
+        const female = (femaleExome + femaleGenome) / 2;
+
+        return {
+          name: row.name as string,
+          Male: male,
+          Female: female,
+          maxVal: Math.max(male, female),
+        };
+      })
+      .sort((a, b) => b.maxVal - a.maxVal);
+
+    const chartHeight = Math.max(400, compareData.length * 55);
+
+    return (
+      <div className="space-y-4">
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <span className="text-muted-foreground">Average Allele Frequency (Exome + Genome):</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
+            <span>Male</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: "#ec4899" }} />
+            <span>Female</span>
+          </div>
+        </div>
+
+        {/* Simple grouped bar chart */}
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart
+            data={compareData}
+            layout="vertical"
+            margin={{ top: 10, right: 40, left: 20, bottom: 10 }}
+            barCategoryGap="20%"
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+            <XAxis
+              type="number"
+              domain={[0, "auto"]}
+              tickFormatter={(value) => value.toFixed(3)}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={220}
+              tick={{ fontSize: 12 }}
+            />
+            <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+            <Bar dataKey="Male" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} name="Male" />
+            <Bar dataKey="Female" fill="#ec4899" radius={[0, 4, 4, 0]} barSize={20} name="Female" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  // Regular chart for non-compare modes
+  const rowHeight = 55;
   const chartHeight = Math.max(400, data.length * rowHeight);
 
-  // Sort data by highest value descending for better visualization
+  // Sort data by highest value descending
   const sortedData = [...data].sort((a, b) => {
-    const aMax = Math.max(
-      (a["Exome"] as number) || 0,
-      (a["Genome"] as number) || 0,
-      (a["Male Exome"] as number) || 0,
-      (a["Female Exome"] as number) || 0,
-      (a["Male Genome"] as number) || 0,
-      (a["Female Genome"] as number) || 0
-    );
-    const bMax = Math.max(
-      (b["Exome"] as number) || 0,
-      (b["Genome"] as number) || 0,
-      (b["Male Exome"] as number) || 0,
-      (b["Female Exome"] as number) || 0,
-      (b["Male Genome"] as number) || 0,
-      (b["Female Genome"] as number) || 0
-    );
+    const aMax = Math.max((a["Exome"] as number) || 0, (a["Genome"] as number) || 0);
+    const bMax = Math.max((b["Exome"] as number) || 0, (b["Genome"] as number) || 0);
     return bMax - aMax;
   });
 
@@ -537,37 +590,14 @@ function AlleleFrequencyChart({
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs">
         <span className="text-muted-foreground">{viewLabel} Frequencies:</span>
-        {isCompare ? (
-          <>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#60a5fa" }} />
-              <span>Male Exome</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#f472b6" }} />
-              <span>Female Exome</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#2563eb" }} />
-              <span>Male Genome</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#db2777" }} />
-              <span>Female Genome</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
-              <span>gnomAD v4.1 Exome</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "#1e40af" }} />
-              <span>gnomAD v4.1 Genome</span>
-            </div>
-          </>
-        )}
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
+          <span>gnomAD v4.1 Exome</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#1e40af" }} />
+          <span>gnomAD v4.1 Genome</span>
+        </div>
       </div>
 
       {/* Chart */}
@@ -576,13 +606,13 @@ function AlleleFrequencyChart({
           data={sortedData}
           layout="vertical"
           margin={{ top: 10, right: 40, left: 20, bottom: 10 }}
-          barCategoryGap="25%"
+          barCategoryGap="20%"
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
           <XAxis
             type="number"
             domain={[0, "auto"]}
-            tickFormatter={(value) => value.toFixed(1)}
+            tickFormatter={(value) => value.toFixed(3)}
           />
           <YAxis
             type="category"
@@ -591,19 +621,8 @@ function AlleleFrequencyChart({
             tick={{ fontSize: 12 }}
           />
           <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-          {isCompare ? (
-            <>
-              <Bar dataKey="Male Exome" fill="#60a5fa" radius={[0, 4, 4, 0]} barSize={12} />
-              <Bar dataKey="Female Exome" fill="#f472b6" radius={[0, 4, 4, 0]} barSize={12} />
-              <Bar dataKey="Male Genome" fill="#2563eb" radius={[0, 4, 4, 0]} barSize={12} />
-              <Bar dataKey="Female Genome" fill="#db2777" radius={[0, 4, 4, 0]} barSize={12} />
-            </>
-          ) : (
-            <>
-              <Bar dataKey="Exome" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
-              <Bar dataKey="Genome" fill="#1e40af" radius={[0, 4, 4, 0]} barSize={16} />
-            </>
-          )}
+          <Bar dataKey="Exome" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+          <Bar dataKey="Genome" fill="#1e40af" radius={[0, 4, 4, 0]} barSize={20} />
         </BarChart>
       </ResponsiveContainer>
     </div>

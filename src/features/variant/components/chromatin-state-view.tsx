@@ -1,59 +1,101 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Variant } from "../types/types";
+import { BADGE_COLORS, type BadgeColor, type ColumnMeta } from "@/lib/table/column-builder";
+import { chromatinStateColumns } from "../config/hg38/columns/chromatin-state";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// Chromatin state categories with colors
-const CHROMATIN_CATEGORIES = {
+// Build a map of column ID -> tooltip content from the column definitions
+const CHROMATIN_TOOLTIPS: Record<string, ReactNode> = {};
+chromatinStateColumns.forEach((col) => {
+  if (col.id) {
+    const meta = col.meta as ColumnMeta | undefined;
+    if (meta?.description) {
+      CHROMATIN_TOOLTIPS[col.id] = meta.description;
+    }
+  }
+});
+
+// HeaderTooltip matching the style of category-data-view
+function HeaderTooltip({ content }: { content: ReactNode }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-5 w-5 cursor-help flex-shrink-0 fill-black text-white ring-transparent outline-transparent border-transparent" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-md">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// Chromatin state categories using badge colors
+const CHROMATIN_CATEGORIES: Record<string, {
+  label: string;
+  color: BadgeColor;
+  barClass: string;
+  description: string;
+}> = {
   promoter: {
     label: "Promoter",
-    bgClass: "bg-red-500",
-    lightBgClass: "bg-red-100",
-    textClass: "text-red-700",
+    color: "red",
+    barClass: "bg-red-400",
+    description: "Regions associated with transcription start sites and gene promoters",
   },
   transcription: {
     label: "Transcription",
-    bgClass: "bg-green-500",
-    lightBgClass: "bg-green-100",
-    textClass: "text-green-700",
+    color: "emerald",
+    barClass: "bg-emerald-400",
+    description: "Regions actively being transcribed into RNA",
   },
   enhancer: {
     label: "Enhancer",
-    bgClass: "bg-orange-500",
-    lightBgClass: "bg-orange-100",
-    textClass: "text-orange-700",
+    color: "orange",
+    barClass: "bg-orange-400",
+    description: "Active enhancer regions that increase gene expression",
   },
   weak: {
     label: "Weak Enhancer",
-    bgClass: "bg-yellow-500",
-    lightBgClass: "bg-yellow-100",
-    textClass: "text-yellow-700",
+    color: "amber",
+    barClass: "bg-amber-400",
+    description: "Regions with weak enhancer activity",
   },
   other: {
     label: "Other",
-    bgClass: "bg-sky-500",
-    lightBgClass: "bg-sky-100",
-    textClass: "text-sky-700",
+    color: "sky",
+    barClass: "bg-sky-400",
+    description: "Other regulatory elements including DNase-only and repeat regions",
   },
   heterochromatin: {
     label: "Heterochromatin",
-    bgClass: "bg-stone-500",
-    lightBgClass: "bg-stone-100",
-    textClass: "text-stone-700",
+    color: "stone",
+    barClass: "bg-stone-400",
+    description: "Tightly packed, transcriptionally inactive chromatin",
   },
   repressed: {
     label: "Repressed",
-    bgClass: "bg-purple-500",
-    lightBgClass: "bg-purple-100",
-    textClass: "text-purple-700",
+    color: "purple",
+    barClass: "bg-purple-400",
+    description: "Regions silenced by Polycomb or other repressive mechanisms",
   },
   quiescent: {
     label: "Quiescent",
-    bgClass: "bg-gray-400",
-    lightBgClass: "bg-gray-100",
-    textClass: "text-gray-600",
+    color: "gray",
+    barClass: "bg-gray-400",
+    description: "Inactive regions with low signal across all marks",
   },
-} as const;
+};
 
 type CategoryKey = keyof typeof CHROMATIN_CATEGORIES;
 
@@ -126,7 +168,7 @@ function ChromatinProgressBar({
       <div className={cn("relative h-3 w-32 rounded-full overflow-hidden", isEmpty ? "bg-muted/50" : "bg-muted")}>
         {!isEmpty && (
           <div
-            className={cn("absolute inset-y-0 left-0 rounded-full transition-all", cat.bgClass)}
+            className={cn("absolute inset-y-0 left-0 rounded-full transition-all", cat.barClass)}
             style={{ width: `${percentage}%` }}
           />
         )}
@@ -143,11 +185,14 @@ function ChromatinStateRow({
   state: (typeof CHROMATIN_STATES)[number];
   value: number;
 }) {
-  const cat = CHROMATIN_CATEGORIES[state.category];
+  const tooltipContent = CHROMATIN_TOOLTIPS[state.id];
 
   return (
     <div className="flex items-center gap-4 py-2 px-3 hover:bg-muted/50 transition-colors">
-      <div className="w-24 flex-shrink-0 font-medium text-sm">{state.name}</div>
+      <div className="w-28 flex-shrink-0 flex items-center gap-1">
+        <span className="font-medium text-sm">{state.name}</span>
+        {tooltipContent && <HeaderTooltip content={tooltipContent} />}
+      </div>
       <div className="flex-1 text-sm text-muted-foreground">{state.description}</div>
       <ChromatinProgressBar value={value} category={state.category} />
     </div>
@@ -168,7 +213,7 @@ function ChromatinCategoryGroup({
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <div className={cn("px-3 py-2.5 font-semibold text-sm", cat.lightBgClass, cat.textClass)}>
+      <div className={cn("px-3 py-2.5 font-semibold text-sm", BADGE_COLORS[cat.color])}>
         {cat.label}
       </div>
       <div className="divide-y">

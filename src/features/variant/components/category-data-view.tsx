@@ -112,11 +112,12 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
         value = data[colDef.accessorKey as keyof Variant];
       }
 
+      const id = colDef.id ?? header;
       return {
-        id: colDef.id ?? header,
+        id,
         label: header,
         value,
-        derived: derivedColumn ? derivedColumn.derive(value) : null,
+        derived: derivedColumn ? derivedColumn.derive(value, id) : null,
         description: meta?.description,
         columnDef: colDef,
         variant: data,
@@ -205,7 +206,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
 
   const labelCol = table.getColumn("label");
   const valueCol = table.getColumn("value");
-  const derivedCol = table.getColumn("derived");
+  const derivedCol = derivedColumn ? table.getColumn("derived") : null;
 
   const gridCols = derivedColumn ? "1fr 1fr 1fr" : "1fr 1fr";
   const rowCount = filteredRows.length;
