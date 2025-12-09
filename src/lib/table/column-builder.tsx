@@ -70,6 +70,15 @@ export type Category = {
 export function categories(items: Category[]) {
   return {
     items,
+    /** Get the matching category for a value */
+    getCategory(value: string | null | undefined): Category | undefined {
+      if (!value) return undefined;
+      return items.find((item) =>
+        item.match instanceof RegExp
+          ? item.match.test(value)
+          : value === item.match
+      );
+    },
     /** Get the color for a value */
     getColor(value: string | null | undefined): BadgeColor {
       if (!value) return "gray";
@@ -85,7 +94,7 @@ export function categories(items: Category[]) {
       return (
         <div className="space-y-2 text-left">
           <div>{intro}</div>
-          <div className="space-y-1.5 text-xs">
+          <div className="space-y-1.5 text-sm">
             {items.map((item, i) => (
               <div key={i} className="flex items-start gap-2">
                 <span className={cn("w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0", DOT_COLORS[item.color])} />
@@ -143,14 +152,25 @@ export const cell = {
     };
   },
 
-  /** Scientific notation */
-  scientific<TData>(decimals = 2) {
+  /** Integer (whole number) */
+  integer<TData>() {
     return ({ getValue }: CellContext<TData, number | string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
       if (isNaN(num)) return EMPTY;
-      return num.toExponential(decimals);
+      return Math.round(num).toString();
+    };
+  },
+
+  /** Percentage (multiplies by 100 and adds %) */
+  percent<TData>(decimals = 1) {
+    return ({ getValue }: CellContext<TData, number | string | null | undefined>) => {
+      const v = getValue();
+      if (isEmpty(v)) return EMPTY;
+      const num = typeof v === "string" ? parseFloat(v) : v;
+      if (isNaN(num)) return EMPTY;
+      return `${(num * 100).toFixed(decimals)}%`;
     };
   },
 
@@ -159,8 +179,10 @@ export const cell = {
     return ({ getValue }: CellContext<TData, string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
-      const color = cats.getColor(v) ?? fallback;
-      return <Badge color={color}>{v.replace(/_/g, " ")}</Badge>;
+      const category = cats.getCategory(v);
+      const color = category?.color ?? fallback;
+      const label = category?.label ?? v.replace(/_/g, " ");
+      return <Badge color={color}>{label}</Badge>;
     };
   },
 
@@ -284,7 +306,7 @@ export function scoreDescription(props: {
         {props.citation && <> ({props.citation})</>}
       </p>
       {props.guides && props.guides.length > 0 && (
-        <ul className="list-disc list-inside space-y-1 text-xs">
+        <ul className="list-disc list-inside space-y-1 text-sm">
           {props.guides.map((g, i) => (
             <li key={i}>
               <strong>{g.threshold}:</strong> {g.meaning}
@@ -318,7 +340,7 @@ export function tooltip(props: {
         {props.citation && <> ({props.citation})</>}
       </p>
       {props.guides && props.guides.length > 0 && (
-        <ul className="list-disc list-inside space-y-1 text-xs">
+        <ul className="list-disc list-inside space-y-1 text-sm">
           {props.guides.map((g, i) => (
             <li key={i}>
               <strong>{g.threshold}:</strong> {g.meaning}
@@ -327,7 +349,7 @@ export function tooltip(props: {
         </ul>
       )}
       {props.categories && (
-        <div className="space-y-1.5 text-xs">
+        <div className="space-y-1.5 text-sm">
           {props.categories.items.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <span className={cn("w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0", DOT_COLORS[item.color])} />

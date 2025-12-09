@@ -192,6 +192,11 @@ export type Variant = {
   am_class?: string;
   gnomad_exome?: GnomadData | null;
   gnomad_genome?: GnomadData | null;
+  // Somatic mutation (COSMIC)
+  aa?: string;
+  cds?: string;
+  genome_screen_sample_count?: number;
+  is_canonical?: string;
 };
 
 export type GnomadData = {

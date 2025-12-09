@@ -16,7 +16,7 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More likely to affect protein function" },
         { threshold: "Lower scores", meaning: "Less likely to affect protein function" },
-        { threshold: "PHRED scale", meaning: "Higher values indicate stronger evidence" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),
@@ -33,6 +33,7 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More evolutionarily conserved" },
         { threshold: "Lower scores", meaning: "Less evolutionarily conserved" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),
@@ -49,6 +50,7 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More active chromatin state" },
         { threshold: "Lower scores", meaning: "Less active chromatin state" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),
@@ -65,6 +67,7 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More repressed chromatin state" },
         { threshold: "Lower scores", meaning: "Less repressed chromatin state" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),
@@ -81,6 +84,7 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More transcriptionally active chromatin" },
         { threshold: "Lower scores", meaning: "Less transcriptionally active chromatin" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),
@@ -97,6 +101,58 @@ export const apcColumns = {
       guides: [
         { threshold: "Higher scores (>10)", meaning: "More transcription factor binding evidence" },
         { threshold: "Lower scores", meaning: "Less transcription factor binding evidence" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
+      ],
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  localNucleotideDiversity: col.accessor("apc_local_nucleotide_diversity_v3", {
+    accessor: "apc_local_nucleotide_diversity_v3",
+    header: "aPC-Local Nucleotide Diversity",
+    description: tooltip({
+      title: "aPC-Local Nucleotide Diversity",
+      description: "Integrative score combining local genetic diversity measures (background selection statistic, recombination rate, nucleotide diversity) into a single PHRED-scaled score.",
+      range: "[0, 86.238]",
+      citation: "Li et al., 2020",
+      guides: [
+        { threshold: "Higher scores (>10)", meaning: "Higher local genetic diversity" },
+        { threshold: "Lower scores", meaning: "Lower local genetic diversity" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
+      ],
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  mutationDensity: col.accessor("apc_mutation_density", {
+    accessor: "apc_mutation_density",
+    header: "aPC-Mutation Density",
+    description: tooltip({
+      title: "aPC-Mutation Density",
+      description: "Integrative score combining mutation densities at different scales (100bp, 1kb, 10kb windows) for common, rare, and singleton variants into a single PHRED-scaled score.",
+      range: "[0, 84.477]",
+      citation: "Li et al., 2020",
+      guides: [
+        { threshold: "Higher scores (>10)", meaning: "Higher local mutation density" },
+        { threshold: "Lower scores", meaning: "Lower local mutation density" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
+      ],
+    }),
+    cell: cell.decimal(6),
+  }),
+
+  mappability: col.accessor("apc_mappability", {
+    accessor: "apc_mappability",
+    header: "aPC-Mappability",
+    description: tooltip({
+      title: "aPC-Mappability",
+      description: "Integrative score combining sequence mappability measures at different read lengths (k=24, 36, 50, 100) for unique and multi-mapping reads into a single PHRED-scaled score.",
+      range: "[0.007, 22.966]",
+      citation: "Li et al., 2020",
+      guides: [
+        { threshold: "Higher scores (>10)", meaning: "Better sequence mappability" },
+        { threshold: "Lower scores", meaning: "Poorer sequence mappability" },
+        { threshold: "PHRED scale", meaning: "Higher = more confident. Each 10-point increase means 10× more confidence. Score of 20 means 99% confident, 30 means 99.9% confident." },
       ],
     }),
     cell: cell.decimal(6),

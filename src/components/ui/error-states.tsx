@@ -54,7 +54,7 @@ export function RuntimeError({
                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
                   Technical Details
                 </summary>
-                <div className="mt-2 p-3 bg-muted rounded-md text-xs font-mono">
+                <div className="mt-2 p-3 bg-muted rounded-md text-sm font-mono">
                   <p>
                     <strong>Error:</strong> {error.message}
                   </p>

@@ -98,7 +98,7 @@ function GnomadCell({ data }: { data: CombinedMetrics }) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
       <MetricsDisplay label="Exome" metrics={data.exome} />
       <MetricsDisplay label="Genome" metrics={data.genome} />
     </div>

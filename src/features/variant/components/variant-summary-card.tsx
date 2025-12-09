@@ -32,7 +32,7 @@ export function VariantSummaryCard({
             </button>
           </h2>
           {isUpdating && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-3 h-3 animate-spin" />
               <span>Updating...</span>
             </div>

@@ -73,7 +73,7 @@ export function WhatsNewButton() {
           <Sparkles className="h-4 w-4 text-primary" />
         )}
         <span>What&apos;s New</span>
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="secondary" className="text-sm">
           {siteConfig.version}
         </Badge>
       </Link>

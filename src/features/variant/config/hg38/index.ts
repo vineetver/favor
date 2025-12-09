@@ -8,6 +8,12 @@ import { conservationGroup, conservationColumns } from "./columns/conservation";
 import { epigeneticsGroup, epigeneticsColumns } from "./columns/epigenetics";
 import { transcriptionFactorGroup, transcriptionFactorColumns } from "./columns/transcription-factor";
 import { chromatinStateGroup, chromatinStateColumns } from "./columns/chromatin-state";
+import { localNucleotideDiversityGroup, localNucleotideDiversityColumns } from "./columns/local-nucleotide-diversity";
+import { mutationDensityGroup, mutationDensityColumns } from "./columns/mutation-density";
+import { mappabilityGroup, mappabilityColumns } from "./columns/mappability";
+import { proximityGroup, proximityColumns } from "./columns/proximity";
+import { spliceAiGroup, spliceAiColumns } from "./columns/splice-ai";
+import { somaticMutationGroup, somaticMutationColumns } from "./columns/somatic-mutation";
 
 export const variantColumnGroups = [
   basicGroup,
@@ -20,6 +26,12 @@ export const variantColumnGroups = [
   epigeneticsGroup,
   transcriptionFactorGroup,
   chromatinStateGroup,
+  localNucleotideDiversityGroup,
+  mutationDensityGroup,
+  mappabilityGroup,
+  proximityGroup,
+  spliceAiGroup,
+  somaticMutationGroup,
 ] as const;
 
 export const variantColumns = [
@@ -33,6 +45,12 @@ export const variantColumns = [
   ...epigeneticsColumns,
   ...transcriptionFactorColumns,
   ...chromatinStateColumns,
+  ...localNucleotideDiversityColumns,
+  ...mutationDensityColumns,
+  ...mappabilityColumns,
+  ...proximityColumns,
+  ...spliceAiColumns,
+  ...somaticMutationColumns,
 ] as const;
 
 // Re-export column builder utilities for external use
