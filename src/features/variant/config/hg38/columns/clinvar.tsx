@@ -76,15 +76,13 @@ const ORIGIN_MAP: Record<number, string> = {
 
 function DiseaseList({ value }: { value: string }) {
   const diseases = parseDiseaseNames(value);
+  if (diseases.length === 0) return <span>-</span>;
   if (diseases.length === 1) return <span>{diseases[0]}</span>;
 
   return (
     <div className="space-y-0.5">
       {diseases.map((disease, i) => (
-        <div key={i} className="flex items-start gap-1.5">
-          <span className="text-muted-foreground mt-0.5">•</span>
-          <span>{disease}</span>
-        </div>
+        <div key={i}>{disease}</div>
       ))}
     </div>
   );
@@ -132,19 +130,60 @@ function DatabaseEntries({ value }: { value: string }) {
   );
 }
 
+function decodeOriginFlags(value: number): string[] {
+  const origins: string[] = [];
+  // Check each bit flag from highest to lowest
+  const flags = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1];
+  let remaining = value;
+
+  for (const flag of flags) {
+    if (remaining >= flag && flag in ORIGIN_MAP) {
+      origins.push(ORIGIN_MAP[flag]);
+      remaining -= flag;
+    }
+  }
+
+  // If no flags matched or value is 0, return unknown
+  if (origins.length === 0) {
+    origins.push(ORIGIN_MAP[0] || "unknown");
+  }
+
+  return origins;
+}
+
 function OriginBadge({ value }: { value: string | number }) {
   if (!value && value !== 0) return <span>-</span>;
 
   // Try to decode numeric value (handles both number and string number)
   const numericValue = typeof value === "number" ? value : parseInt(String(value), 10);
-  const text = !isNaN(numericValue) && numericValue in ORIGIN_MAP
-    ? ORIGIN_MAP[numericValue]
-    : String(value);
 
+  // If it's a valid number, decode the bitwise flags
+  if (!isNaN(numericValue)) {
+    const origins = decodeOriginFlags(numericValue);
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {origins.map((origin, i) => {
+          const color = alleleOrigin.getColor(origin);
+          return (
+            <span
+              key={i}
+              className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium capitalize ${BADGE_COLORS[color]}`}
+            >
+              {origin.replace(/[_-]/g, " ")}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // If it's already a string label, display as-is
+  const text = String(value);
   const color = alleleOrigin.getColor(text);
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1.5 rounded-full font-medium capitalize ${BADGE_COLORS[color]}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium capitalize ${BADGE_COLORS[color]}`}
     >
       {text.replace(/[_-]/g, " ")}
     </span>
@@ -257,13 +296,26 @@ export const clinvarColumns = [
       citation: "Landrum et al., 2017, 2013",
     }),
     cell: cell.custom((val: string) => {
-      const gene = val.split(":")[0];
+      // Split by pipe to get multiple genes
+      const genes = val.split("|").filter((g) => g.trim());
+
+      if (genes.length === 0) return <span>-</span>;
+
       return (
-        <ExternalLink
-          href={`https://www.ncbi.nlm.nih.gov/clinvar/?term=${gene}%5Bgene%5D&redir=gene`}
-        >
-          {val}
-        </ExternalLink>
+        <div className="flex flex-wrap gap-2">
+          {genes.map((geneEntry, i) => {
+            const [symbol, geneId] = geneEntry.split(":");
+            return (
+              <ExternalLink
+                key={i}
+                href={`https://www.ncbi.nlm.nih.gov/gene/${geneId}`}
+                className="font-medium"
+              >
+                {symbol}
+              </ExternalLink>
+            );
+          })}
+        </div>
       );
     }),
   }),

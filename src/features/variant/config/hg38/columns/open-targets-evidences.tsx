@@ -159,7 +159,7 @@ export const openTargetsEvidencesColumns = [
             <Badge key={i} color="purple">{area}</Badge>
           ))}
           {areas.length > 2 && (
-            <span className="text-xs text-muted-foreground">+{areas.length - 2}</span>
+            <span className="text-sm text-muted-foreground">+{areas.length - 2}</span>
           )}
         </div>
       );

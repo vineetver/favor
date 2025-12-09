@@ -11,15 +11,25 @@ export function parseDatabaseEntries(
 ): Array<{ database: string; id: string; raw: string }> {
   if (!value) return [];
 
+  // Split by pipe first, then by comma
   const entries = value
-    .split(/,\s*|\s+(?=[A-Z])/)
+    .split("|")
+    .flatMap((part) => part.split(/,\s*/))
     .map((entry) => entry.trim())
-    .filter((entry) => entry);
+    .filter((entry) => entry && entry !== ".");
 
   return entries.map((entry) => {
-    const [database, id] = entry.split(":");
-    return { database: database || "", id: id || "", raw: entry };
-  });
+    // Handle database:id format (e.g., "MedGen:C1264000")
+    const colonIndex = entry.indexOf(":");
+    if (colonIndex > 0) {
+      const database = entry.slice(0, colonIndex).trim();
+      const id = entry.slice(colonIndex + 1).trim();
+      // Skip entries with empty id after colon
+      if (!id) return { database: "", id: "", raw: entry };
+      return { database, id, raw: entry };
+    }
+    return { database: "", id: "", raw: entry };
+  }).filter((entry) => entry.database && entry.id);
 }
 
 export function parseClinicalSignificancePairs(

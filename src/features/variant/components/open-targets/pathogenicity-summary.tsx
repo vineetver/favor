@@ -30,7 +30,7 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-sm font-medium">Average Normalised Score</h4>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Cross-method normalized pathogenicity score (0-1 scale)
             </p>
           </div>
@@ -44,7 +44,7 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
             style={{ left: `${avgNormalisedScore * 100}%` }}
           />
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+        <div className="flex justify-between text-sm text-muted-foreground mt-1">
           <span>Benign (0)</span>
           <span>Pathogenic (1)</span>
         </div>

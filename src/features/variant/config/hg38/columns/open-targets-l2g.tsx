@@ -118,7 +118,7 @@ export const openTargetsL2GColumns = [
     cell: ({ row }) => {
       const studyId = row.original.studyId;
       return (
-        <ExternalLink href={`https://platform.opentargets.org/study/${studyId}`} className="font-mono text-xs">
+        <ExternalLink href={`https://platform.opentargets.org/study/${studyId}`} className="font-mono text-sm">
           {studyId}
         </ExternalLink>
       );

@@ -65,7 +65,7 @@ export const openTargetsCredibleSetsColumns = [
       description: "Statistical significance of the association, computed from mantissa and exponent.",
     }),
     cell: ({ row }) => (
-      <span className="font-mono text-xs">{formatPValue(row.original.pValue)}</span>
+      <span className="font-mono text-sm">{formatPValue(row.original.pValue)}</span>
     ),
   }),
 
@@ -78,7 +78,7 @@ export const openTargetsCredibleSetsColumns = [
     cell: ({ row }) => {
       const val = row.original.beta;
       if (val === null) return "-";
-      return <span className="font-mono text-xs">{val.toFixed(4)}</span>;
+      return <span className="font-mono text-sm">{val.toFixed(4)}</span>;
     },
   }),
 
@@ -148,7 +148,7 @@ export const openTargetsCredibleSetsColumns = [
       const studyId = row.original.studyId;
       const displayId = studyId.length > 20 ? studyId.slice(0, 20) + "..." : studyId;
       return (
-        <ExternalLink href={`https://platform.opentargets.org/study/${studyId}`} className="font-mono text-xs">
+        <ExternalLink href={`https://platform.opentargets.org/study/${studyId}`} className="font-mono text-sm">
           {displayId}
         </ExternalLink>
       );

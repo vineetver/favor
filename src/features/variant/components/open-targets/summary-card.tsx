@@ -45,7 +45,7 @@ export function SummaryCard({
       </div>
       <div className="text-2xl font-bold">{value}</div>
       {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       )}
     </div>
   );
@@ -70,7 +70,7 @@ export function SummarySection({
         <div className="space-y-1">
           {title && <h3 className="text-sm font-semibold">{title}</h3>}
           {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
           )}
         </div>
       )}
@@ -103,7 +103,7 @@ export function ProgressBar({ label, value, total, color = "blue" }: ProgressBar
 
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-xs">
+      <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">{value}</span>
       </div>

@@ -187,7 +187,7 @@ export function TableDataView<T>({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <span className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
+            <span className="px-2 py-1 text-sm rounded-full bg-muted text-muted-foreground">
               {rowCount} {rowCount === 1 ? itemLabel : `${itemLabel}s`}
             </span>
             {canExport && (

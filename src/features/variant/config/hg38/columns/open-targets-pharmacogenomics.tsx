@@ -122,7 +122,7 @@ export const openTargetsPharmacogenomicsColumns = [
     }),
     cell: ({ row }) => {
       const val = row.original.genotypeId;
-      return val ? <span className="font-mono text-xs">{val}</span> : "-";
+      return val ? <span className="font-mono text-sm">{val}</span> : "-";
     },
   }),
 
@@ -148,7 +148,7 @@ export const openTargetsPharmacogenomicsColumns = [
       const refs = row.original.literature;
       if (!refs || refs.length === 0) return "-";
       return (
-        <ExternalLink href={`https://pubmed.ncbi.nlm.nih.gov/${refs[0]}`} className="text-xs">
+        <ExternalLink href={`https://pubmed.ncbi.nlm.nih.gov/${refs[0]}`} className="text-sm">
           {refs.length} ref{refs.length > 1 ? "s" : ""}
         </ExternalLink>
       );

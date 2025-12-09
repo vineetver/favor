@@ -60,7 +60,7 @@ export const openTargetsVariantEffectsColumns = [
     cell: ({ row }) => {
       const val = row.original.score;
       if (val === null) return "-";
-      return <span className="font-mono text-xs">{val.toFixed(4)}</span>;
+      return <span className="font-mono text-sm">{val.toFixed(4)}</span>;
     },
   }),
 

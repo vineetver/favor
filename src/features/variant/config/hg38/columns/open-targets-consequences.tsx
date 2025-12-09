@@ -43,7 +43,7 @@ export const openTargetsConsequencesColumns = [
       const val = row.original.transcriptId;
       if (!val) return "-";
       return (
-        <ExternalLink href={`https://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=${val}`} className="font-mono text-xs">
+        <ExternalLink href={`https://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=${val}`} className="font-mono text-sm">
           {val}
         </ExternalLink>
       );
@@ -121,7 +121,7 @@ export const openTargetsConsequencesColumns = [
     }),
     cell: ({ row }) => {
       const val = row.original.codons;
-      return val ? <span className="font-mono text-xs">{val}</span> : "-";
+      return val ? <span className="font-mono text-sm">{val}</span> : "-";
     },
   }),
 
