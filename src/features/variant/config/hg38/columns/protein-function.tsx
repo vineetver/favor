@@ -62,17 +62,6 @@ export const proteinFunctionColumns = [
   // Integrative score
   apcColumns.proteinFunction,
 
-  // Protein change description
-  col.accessor("protein_variant", {
-    accessor: "protein_variant",
-    header: "Protein Variant",
-    description: tooltip({
-      title: "Protein Variant",
-      description: "Amino acid change induced by the alternative allele. Example: V2L means Valine at position 2 changed to Leucine. Position is 1-based within the protein amino acid sequence.",
-    }),
-    cell: cell.custom((val: string) => <ProteinVariant value={val} />),
-  }),
-
   // ============================================================================
   // CATEGORICAL PREDICTIONS (badges)
   // ============================================================================
