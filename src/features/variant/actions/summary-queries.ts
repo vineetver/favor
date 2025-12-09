@@ -2,10 +2,18 @@
 
 import { prisma } from "@/lib/prisma";
 import type { SummaryStatus, SummaryData } from "../types/summary-types";
-import {
-  SummaryNotFoundError,
-  SummaryDatabaseError,
-} from "../types/summary-types";
+import { SummaryDatabaseError } from "../types/summary-types";
+
+const VALID_STATUSES: SummaryStatus[] = [
+  "pending",
+  "generating",
+  "completed",
+  "failed",
+];
+
+function isValidStatus(status: string): status is SummaryStatus {
+  return VALID_STATUSES.includes(status as SummaryStatus);
+}
 
 /**
  * Fetches the current summary status for a variant
@@ -26,7 +34,7 @@ export async function getVariantSummary(vcf: string): Promise<SummaryData> {
     }
 
     return {
-      status: summary.status as SummaryStatus,
+      status: isValidStatus(summary.status) ? summary.status : "pending",
       summary: summary.summary || undefined,
       error: summary.error || undefined,
       timestamp: summary.updatedAt.toISOString(),
@@ -51,7 +59,8 @@ export async function getVariantSummaryStatus(
       select: { status: true },
     });
 
-    return (summary?.status as SummaryStatus) || "pending";
+    const status = summary?.status;
+    return status && isValidStatus(status) ? status : "pending";
   } catch (error) {
     console.error("Error fetching summary status:", error);
     return "failed";

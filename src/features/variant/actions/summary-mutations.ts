@@ -53,8 +53,10 @@ export async function generateVariantSummary(
       },
     });
 
-    // Trigger background generation (fire and forget)
-    generateSummaryBackground(vcf, model);
+    // Trigger background generation (fire and forget with error logging)
+    generateSummaryBackground(vcf, model).catch((error) => {
+      console.error("Background summary generation failed:", error);
+    });
 
     return { status: "generating" };
   } catch (error) {
@@ -114,13 +116,15 @@ async function generateSummaryBackground(vcf: string, model: string) {
         updatedAt: new Date(),
       },
     });
-  } catch (error: any) {
-    console.error("Error generating summary in background:", error);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("Error generating summary in background:", errorMessage);
     await prisma.variantSummary.update({
       where: { vcf },
       data: {
         status: "failed",
-        error: error.message || "Unknown error",
+        error: errorMessage,
         updatedAt: new Date(),
       },
     });

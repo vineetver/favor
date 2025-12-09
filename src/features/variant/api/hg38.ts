@@ -40,7 +40,7 @@ async function fetchGnomadData(
       );
     }
 
-    return response.json();
+    return await response.json();
   } catch (error) {
     if (error instanceof ApiError) throw error;
     console.error(`Error fetching ${type} gnomAD data:`, error);

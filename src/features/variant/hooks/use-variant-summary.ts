@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getVariantSummary } from "@/features/variant/actions/summary-queries";
 import { generateVariantSummary } from "@/features/variant/actions/summary-mutations";
@@ -58,10 +59,11 @@ export function useVariantSummary({
     !generateMutation.isPending &&
     !generateMutation.isSuccess;
 
-  // Use effect replacement - trigger generation when needed
-  if (shouldGenerate && enabled) {
-    generateMutation.mutate();
-  }
+  useEffect(() => {
+    if (shouldGenerate && enabled) {
+      generateMutation.mutate();
+    }
+  }, [shouldGenerate, enabled, generateMutation]);
 
   const isGenerating =
     summaryQuery.data?.status === "generating" ||
