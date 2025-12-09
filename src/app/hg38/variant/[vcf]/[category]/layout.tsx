@@ -52,7 +52,7 @@ export default async function VariantLayout({
                     : undefined,
               }))}
               activeItem={category}
-              basePath={`/ hg38 / variant / ${encodeURIComponent(vcf)} `}
+              basePath={`/hg38/variant/${encodeURIComponent(vcf)}`}
             />
           </div>
 
@@ -60,7 +60,7 @@ export default async function VariantLayout({
             <div className="mb-6 lg:hidden">
               <MobileSubNavigation
                 items={currentCategory.subCategories}
-                basePath={`/ hg38 / variant / ${encodeURIComponent(vcf)}/${category}`}
+                basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
               />
             </div>
           )}

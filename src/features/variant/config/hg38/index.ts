@@ -53,5 +53,14 @@ export const variantColumns = [
   ...somaticMutationColumns,
 ] as const;
 
+// Open Targets columns (exported separately as they use different data types)
+export { openTargetsConsequencesColumns } from "./columns/open-targets-consequences";
+export { openTargetsPharmacogenomicsColumns } from "./columns/open-targets-pharmacogenomics";
+export { openTargetsL2GColumns } from "./columns/open-targets-l2g";
+export { openTargetsCredibleSetsColumns } from "./columns/open-targets-credible-sets";
+export { openTargetsVariantEffectsColumns } from "./columns/open-targets-variant-effects";
+export { openTargetsProteinCodingColumns } from "./columns/open-targets-protein-coding";
+export { openTargetsEvidencesColumns } from "./columns/open-targets-evidences";
+
 // Re-export column builder utilities for external use
 export { createColumns, cell, categories, tooltip, BADGE_COLORS, type BadgeColor, type Category, type DerivedColumn, type DefaultSort, type ColumnGroup, type ViewConfig, type VisualizationProps, type TransposedRow } from "@/lib/table/column-builder";

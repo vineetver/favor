@@ -50,6 +50,19 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     ],
   },
   {
+    name: "Open Targets",
+    slug: "open-targets",
+    subCategories: [
+      { text: "Consequences", slug: "consequences" },
+      { text: "Pathogenicity", slug: "variant-effects" },
+      { text: "Protein Impact", slug: "protein-impact" },
+      { text: "L2G Scores", slug: "l2g-scores" },
+      { text: "Credible Sets", slug: "credible-sets" },
+      { text: "Disease Evidence", slug: "evidences" },
+      { text: "Pharmacogenomics", slug: "pharmacogenomics" },
+    ],
+  },
+  {
     name: "Genome Browser",
     slug: "genome-browser",
     subCategories: [],
