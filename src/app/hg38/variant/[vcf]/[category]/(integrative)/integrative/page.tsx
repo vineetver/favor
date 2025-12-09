@@ -1,5 +1,5 @@
 import { fetchVariant } from "@/features/variant/api/hg38";
-import { CategoryTableView } from "@/features/variant/components/category-table-view";
+import { CategoryDataView } from "@/features/variant/components/category-data-view";
 import { notFound } from "next/navigation";
 
 interface IntegrativePageProps {
@@ -20,5 +20,6 @@ export default async function IntegrativePage({
     notFound();
   }
 
-  return <CategoryTableView data={variant} categoryId="integrative" />;
+  return <CategoryDataView data={variant} categoryId="integrative" />;
 }
+

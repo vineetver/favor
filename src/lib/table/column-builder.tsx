@@ -270,12 +270,44 @@ export type DefaultSort = {
   direction: "asc" | "desc";
 };
 
+/** Props passed to visualization components */
+export type VisualizationProps<TRow = TransposedRow> = {
+  /** Filtered and sorted rows from the table */
+  data: TRow[];
+  /** The derived column config (if any) */
+  derivedColumn?: DerivedColumn;
+};
+
+/** A row in transposed format (used for integrative, conservation, etc.) */
+export type TransposedRow = {
+  id: string;
+  label: string;
+  value: unknown;
+  derived: unknown;
+};
+
+/** View configuration for CategoryDataView */
+export type ViewConfig = {
+  /** Data format: transposed (columns→rows) or regular table */
+  format?: "transposed" | "regular";
+  /** Enable search input */
+  search?: boolean;
+  /** Enable column visibility toggle */
+  columnToggle?: boolean;
+  /** Enable CSV export */
+  export?: boolean;
+  /** Visualization component (enables Table/Visualization tabs) */
+  visualization?: React.ComponentType<VisualizationProps>;
+};
+
 type GroupConfig = {
   headerTooltip?: ReactNode;
   /** Optional single derived column (e.g., percentile) */
   derivedColumn?: DerivedColumn;
   /** Default sort for table views */
   defaultSort?: DefaultSort;
+  /** View configuration for CategoryDataView */
+  view?: ViewConfig;
 };
 
 /** Type for a column group */
@@ -286,6 +318,7 @@ export type ColumnGroup<TData> = {
   headerTooltip?: ReactNode;
   derivedColumn?: DerivedColumn;
   defaultSort?: DefaultSort;
+  view?: ViewConfig;
 };
 
 /** Create a typed column builder for a specific data type */
@@ -331,7 +364,7 @@ export function createColumns<TData>() {
       };
     },
 
-    /** Group of columns with optional derived column and default sort */
+    /** Group of columns with optional derived column, sort, and view config */
     group(id: string, header: string, columns: ColumnDef<TData>[], config?: GroupConfig): ColumnGroup<TData> {
       return {
         id,
@@ -340,6 +373,7 @@ export function createColumns<TData>() {
         headerTooltip: config?.headerTooltip,
         derivedColumn: config?.derivedColumn,
         defaultSort: config?.defaultSort,
+        view: config?.view,
       };
     },
   };

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Variant } from "../../../types/types";
 import { createColumns, cell, tooltip, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
+import { IntegrativeBarChart } from "../../../components/visualizations/integrative-chart";
 
 // ============================================================================
 // Percentile Derived Column
@@ -151,4 +152,10 @@ export const integrativeColumns = [
 export const integrativeGroup = col.group("integrative", "Integrative", integrativeColumns, {
   derivedColumn: percentileColumn,
   defaultSort: { column: "derived", direction: "asc" },
+  view: {
+    format: "transposed",
+    search: true,
+    export: true,
+    visualization: IntegrativeBarChart,
+  },
 });

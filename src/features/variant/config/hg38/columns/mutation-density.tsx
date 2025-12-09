@@ -250,7 +250,7 @@ export const mutationDensityColumns = [
 ];
 
 export const mutationDensityGroup = col.group(
-  "mutation-density",
+  "expected-rate-of-de-novo-mutation",
   "Expected Rate of De Novo Mutation",
   mutationDensityColumns
 );

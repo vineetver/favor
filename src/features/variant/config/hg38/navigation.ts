@@ -29,7 +29,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         text: "Local Nucleotide Diversity",
         slug: "local-nucleotide-diversity",
       },
-      { text: "Mutation Density & Rate", slug: "mutation-density" },
+      { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation" },
       { text: "Mappability", slug: "mappability" },
       { text: "Proximity Table", slug: "proximity-table" },
       { text: "SpliceAI", slug: "splice-ai" },
