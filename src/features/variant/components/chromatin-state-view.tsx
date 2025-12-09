@@ -64,32 +64,32 @@ const CHROMATIN_STATES: Array<{
   description: string;
   category: CategoryKey;
 }> = [
-  { id: "chmm_e1", name: "TssA", description: "Active TSS", category: "promoter" },
-  { id: "chmm_e2", name: "PromU", description: "Promoter Upstream TSS", category: "promoter" },
-  { id: "chmm_e3", name: "PromD1", description: "Promoter Downstream TSS with DNase", category: "promoter" },
-  { id: "chmm_e4", name: "PromD2", description: "Promoter Downstream TSS", category: "promoter" },
-  { id: "chmm_e5", name: "Tx5'", description: "Transcription 5'", category: "transcription" },
-  { id: "chmm_e6", name: "Tx", description: "Transcription", category: "transcription" },
-  { id: "chmm_e7", name: "Tx3'", description: "Transcription 3'", category: "transcription" },
-  { id: "chmm_e8", name: "TxWk", description: "Transcription Weak", category: "transcription" },
-  { id: "chmm_e9", name: "TxReg", description: "Transcription Regulatory", category: "transcription" },
-  { id: "chmm_e10", name: "TxEnh5'", description: "Transcription 5' Enhancer", category: "transcription" },
-  { id: "chmm_e11", name: "TxEnh3'", description: "Transcription 3' Enhancer", category: "transcription" },
-  { id: "chmm_e12", name: "TxEnhW", description: "Transcription Enhancer Weak", category: "transcription" },
-  { id: "chmm_e13", name: "EnhA1", description: "Active Enhancer 1", category: "enhancer" },
-  { id: "chmm_e14", name: "EnhA2", description: "Active Enhancer 2", category: "enhancer" },
-  { id: "chmm_e15", name: "EnhAF", description: "Active Enhancer Flanking", category: "enhancer" },
-  { id: "chmm_e16", name: "EnhW1", description: "Enhancer Weak 1", category: "weak" },
-  { id: "chmm_e17", name: "EnhW2", description: "Enhancer Weak 2", category: "weak" },
-  { id: "chmm_e18", name: "EnhAc", description: "Enhancer Acetylation Only", category: "weak" },
-  { id: "chmm_e19", name: "DNase", description: "DNase Only", category: "other" },
-  { id: "chmm_e20", name: "ZNF/Rpts", description: "ZNF Genes and Repeats", category: "other" },
-  { id: "chmm_e21", name: "Het", description: "Heterochromatin", category: "heterochromatin" },
-  { id: "chmm_e22", name: "PromP", description: "Poised Promoter", category: "repressed" },
-  { id: "chmm_e23", name: "PromBiv", description: "Bivalent Promoter", category: "repressed" },
-  { id: "chmm_e24", name: "ReprPC", description: "Repressed PolyComb", category: "repressed" },
-  { id: "chmm_e25", name: "Quies", description: "Quiescent/Low", category: "quiescent" },
-];
+    { id: "chmm_e1", name: "TssA", description: "Active TSS", category: "promoter" },
+    { id: "chmm_e2", name: "PromU", description: "Promoter Upstream TSS", category: "promoter" },
+    { id: "chmm_e3", name: "PromD1", description: "Promoter Downstream TSS with DNase", category: "promoter" },
+    { id: "chmm_e4", name: "PromD2", description: "Promoter Downstream TSS", category: "promoter" },
+    { id: "chmm_e5", name: "Tx5'", description: "Transcription 5'", category: "transcription" },
+    { id: "chmm_e6", name: "Tx", description: "Transcription", category: "transcription" },
+    { id: "chmm_e7", name: "Tx3'", description: "Transcription 3'", category: "transcription" },
+    { id: "chmm_e8", name: "TxWk", description: "Transcription Weak", category: "transcription" },
+    { id: "chmm_e9", name: "TxReg", description: "Transcription Regulatory", category: "transcription" },
+    { id: "chmm_e10", name: "TxEnh5'", description: "Transcription 5' Enhancer", category: "transcription" },
+    { id: "chmm_e11", name: "TxEnh3'", description: "Transcription 3' Enhancer", category: "transcription" },
+    { id: "chmm_e12", name: "TxEnhW", description: "Transcription Enhancer Weak", category: "transcription" },
+    { id: "chmm_e13", name: "EnhA1", description: "Active Enhancer 1", category: "enhancer" },
+    { id: "chmm_e14", name: "EnhA2", description: "Active Enhancer 2", category: "enhancer" },
+    { id: "chmm_e15", name: "EnhAF", description: "Active Enhancer Flanking", category: "enhancer" },
+    { id: "chmm_e16", name: "EnhW1", description: "Enhancer Weak 1", category: "weak" },
+    { id: "chmm_e17", name: "EnhW2", description: "Enhancer Weak 2", category: "weak" },
+    { id: "chmm_e18", name: "EnhAc", description: "Enhancer Acetylation Only", category: "weak" },
+    { id: "chmm_e19", name: "DNase", description: "DNase Only", category: "other" },
+    { id: "chmm_e20", name: "ZNF/Rpts", description: "ZNF Genes and Repeats", category: "other" },
+    { id: "chmm_e21", name: "Het", description: "Heterochromatin", category: "heterochromatin" },
+    { id: "chmm_e22", name: "PromP", description: "Poised Promoter", category: "repressed" },
+    { id: "chmm_e23", name: "PromBiv", description: "Bivalent Promoter", category: "repressed" },
+    { id: "chmm_e24", name: "ReprPC", description: "Repressed PolyComb", category: "repressed" },
+    { id: "chmm_e25", name: "Quies", description: "Quiescent/Low", category: "quiescent" },
+  ];
 
 const CATEGORY_ORDER: CategoryKey[] = [
   "promoter",
@@ -147,7 +147,6 @@ function ChromatinStateRow({
 
   return (
     <div className="flex items-center gap-4 py-2 px-3 hover:bg-muted/50 transition-colors">
-      <div className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0", cat.bgClass)} />
       <div className="w-24 flex-shrink-0 font-medium text-sm">{state.name}</div>
       <div className="flex-1 text-sm text-muted-foreground">{state.description}</div>
       <ChromatinProgressBar value={value} category={state.category} />

@@ -35,20 +35,26 @@ export function WhatsNewButton() {
   const [nercStatus, setNercStatus] = useState<NERCStatus | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchNercStatus = async () => {
       try {
-        const response = await fetch(siteConfig.links.nercStatus);
+        const response = await fetch(siteConfig.links.nercStatus, {
+          signal: controller.signal,
+        });
         if (response.ok) {
           const data = await response.json();
           setNercStatus(data);
         }
       } catch (err) {
-        // Fail silently - NERC status is not critical
+        if (err instanceof Error && err.name === "AbortError") return;
         console.error("Failed to fetch NERC status", err);
       }
     };
 
     fetchNercStatus();
+
+    return () => controller.abort();
   }, []);
 
   const hasNercIssues =

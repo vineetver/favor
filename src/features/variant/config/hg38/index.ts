@@ -54,4 +54,4 @@ export const variantColumns = [
 ] as const;
 
 // Re-export column builder utilities for external use
-export { createColumns, cell, categories, scoreDescription, tooltip, BADGE_COLORS, type BadgeColor, type Category } from "@/lib/table/column-builder";
+export { createColumns, cell, categories, tooltip, BADGE_COLORS, type BadgeColor, type Category, type DerivedColumn, type DefaultSort, type ColumnGroup } from "@/lib/table/column-builder";

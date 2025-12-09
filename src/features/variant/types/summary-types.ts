@@ -29,9 +29,3 @@ export class SummaryDatabaseError extends Error {
   }
 }
 
-export class SummaryAPIError extends Error {
-  constructor(message: string) {
-    super(`API error: ${message}`);
-    this.name = "SummaryAPIError";
-  }
-}

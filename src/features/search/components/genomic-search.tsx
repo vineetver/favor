@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SaveSearchDialog } from "@/features/search/components/save-search-dialog";
 import { useGenomicSearch } from "@/features/search/hooks/use-genomic-search";
-import { getPlaceholderText } from "@/features/search/lib/formatters";
+import { SEARCH_PLACEHOLDER } from "@/features/search/lib/formatters";
 
 export function GenomicSearch() {
   const {
@@ -34,7 +34,7 @@ export function GenomicSearch() {
             value={inputValue}
             onValueChange={setInputValue}
             onInputChange={handleInputChange}
-            placeholder={getPlaceholderText()}
+            placeholder={SEARCH_PLACEHOLDER}
             isLoading={isLoading}
             onSubmit={handleSubmit}
             className="w-full"

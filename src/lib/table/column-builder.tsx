@@ -228,9 +228,20 @@ export const cell = {
 // Column Builder - Type-safe column definitions
 // ============================================================================
 
+/** Column metadata stored in meta field, accessible during rendering */
+export type ColumnMeta = {
+  description?: ReactNode;
+  headerTooltip?: ReactNode;
+  sortable?: boolean;
+  sortDescFirst?: boolean;
+};
+
 type ColConfig<TData, TValue> = {
   header: string;
   description?: ReactNode;
+  headerTooltip?: ReactNode;
+  sortable?: boolean;
+  sortDescFirst?: boolean;
   cell?: (ctx: CellContext<TData, TValue>) => ReactNode;
 };
 
@@ -242,6 +253,41 @@ type DisplayColConfig<TData> = ColConfig<TData, unknown> & {
   cell: (ctx: CellContext<TData, unknown>) => ReactNode;
 };
 
+/** Single derived column for key-value table views */
+export type DerivedColumn = {
+  header: string;
+  headerTooltip?: ReactNode;
+  /** Transform the base value into a derived value */
+  derive: (value: unknown) => unknown;
+  /** Render the derived value */
+  render: (value: unknown) => ReactNode;
+};
+
+/** Default sort configuration */
+export type DefaultSort = {
+  /** Column to sort by: "label", "value", or "derived" */
+  column: "label" | "value" | "derived";
+  direction: "asc" | "desc";
+};
+
+type GroupConfig = {
+  headerTooltip?: ReactNode;
+  /** Optional single derived column (e.g., percentile) */
+  derivedColumn?: DerivedColumn;
+  /** Default sort for table views */
+  defaultSort?: DefaultSort;
+};
+
+/** Type for a column group */
+export type ColumnGroup<TData> = {
+  id: string;
+  header: string;
+  columns: ColumnDef<TData>[];
+  headerTooltip?: ReactNode;
+  derivedColumn?: DerivedColumn;
+  defaultSort?: DefaultSort;
+};
+
 /** Create a typed column builder for a specific data type */
 export function createColumns<TData>() {
   return {
@@ -250,31 +296,51 @@ export function createColumns<TData>() {
       id: string,
       config: AccessorColConfig<TData, TValue>
     ): ColumnDef<TData> {
-      const { accessor, header, description, cell: cellFn } = config;
+      const { accessor, header, description, headerTooltip, sortable, sortDescFirst, cell: cellFn } = config;
+      const meta: ColumnMeta = {};
+      if (description) meta.description = description;
+      if (headerTooltip) meta.headerTooltip = headerTooltip;
+      if (sortable !== undefined) meta.sortable = sortable;
+      if (sortDescFirst !== undefined) meta.sortDescFirst = sortDescFirst;
+
       return {
         id,
         accessorFn: typeof accessor === "function"
           ? (accessor as AccessorFn<TData, unknown>)
           : (row) => row[accessor as keyof TData],
         header,
-        meta: description ? { description } : undefined,
+        meta: Object.keys(meta).length > 0 ? meta : undefined,
         cell: cellFn as ColumnDef<TData>["cell"],
+        enableSorting: sortable,
+        sortDescFirst,
       };
     },
 
     /** Display column - no data mapping, just renders */
     display(id: string, config: DisplayColConfig<TData>): ColumnDef<TData> {
+      const { header, description, headerTooltip, cell: cellFn } = config;
+      const meta: ColumnMeta = {};
+      if (description) meta.description = description;
+      if (headerTooltip) meta.headerTooltip = headerTooltip;
+
       return {
         id,
-        header: config.header,
-        meta: config.description ? { description: config.description } : undefined,
-        cell: config.cell as ColumnDef<TData>["cell"],
+        header,
+        meta: Object.keys(meta).length > 0 ? meta : undefined,
+        cell: cellFn as ColumnDef<TData>["cell"],
       };
     },
 
-    /** Group of columns */
-    group(id: string, header: string, columns: ColumnDef<TData>[]) {
-      return { id, header, columns } as const;
+    /** Group of columns with optional derived column and default sort */
+    group(id: string, header: string, columns: ColumnDef<TData>[], config?: GroupConfig): ColumnGroup<TData> {
+      return {
+        id,
+        header,
+        columns,
+        headerTooltip: config?.headerTooltip,
+        derivedColumn: config?.derivedColumn,
+        defaultSort: config?.defaultSort,
+      };
     },
   };
 }
@@ -287,36 +353,6 @@ type ScoreGuide = {
   threshold: string;
   meaning: string;
 };
-
-/** Tooltip for numeric scores with thresholds */
-export function scoreDescription(props: {
-  name: string;
-  description: string;
-  range?: string;
-  defaultValue?: string;
-  guides?: ScoreGuide[];
-  citation?: string;
-}) {
-  return (
-    <div className="space-y-2 text-left">
-      <p>
-        <strong>{props.name}:</strong> {props.description}
-        {props.range && <> Range: {props.range}.</>}
-        {props.defaultValue && <> (default: {props.defaultValue})</>}
-        {props.citation && <> ({props.citation})</>}
-      </p>
-      {props.guides && props.guides.length > 0 && (
-        <ul className="list-disc list-inside space-y-1 text-sm">
-          {props.guides.map((g, i) => (
-            <li key={i}>
-              <strong>{g.threshold}:</strong> {g.meaning}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 /**
  * Unified tooltip builder - works for both scores and categories.

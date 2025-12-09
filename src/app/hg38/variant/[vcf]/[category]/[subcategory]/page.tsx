@@ -3,7 +3,7 @@ import {
   fetchGnomadExome,
   fetchGnomadGenome,
 } from "@/features/variant/api/hg38";
-import { VariantCategoryView } from "@/features/variant/components/variant-category-view";
+import { CategoryDetailView } from "@/features/variant/components/category-detail-view";
 import { notFound } from "next/navigation";
 
 interface VariantPageProps {
@@ -31,5 +31,5 @@ export default async function VariantPage({ params }: VariantPageProps) {
   variant.gnomad_exome = gnomadExome;
   variant.gnomad_genome = gnomadGenome;
 
-  return <VariantCategoryView data={variant} categoryId={subcategory} />;
+  return <CategoryDetailView data={variant} categoryId={subcategory} />;
 }

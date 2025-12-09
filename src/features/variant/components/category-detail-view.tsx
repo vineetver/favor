@@ -11,18 +11,19 @@ import {
 } from "@/components/ui/tooltip";
 import { variantColumnGroups } from "@/features/variant/config/hg38";
 import type { Variant } from "@/features/variant/types/types";
+import type { ColumnMeta } from "@/lib/table/column-builder";
 
-interface VariantCategoryViewProps {
+interface CategoryDetailViewProps {
   data: Variant;
   categoryId: string;
   className?: string;
 }
 
-export function VariantCategoryView({
+export function CategoryDetailView({
   data,
   categoryId,
   className = "",
-}: VariantCategoryViewProps) {
+}: CategoryDetailViewProps) {
   const group = variantColumnGroups.find((g) => g.id === categoryId);
 
   if (!group) {
@@ -52,7 +53,7 @@ export function VariantCategoryView({
       <div className="rounded-lg border border-border/50 bg-card shadow-md text-sm">
         <dl className="divide-y divide-border/40 overflow-hidden">
           {visibleCells.map((cell) => {
-            const meta = cell.column.columnDef.meta as { description?: React.ReactNode } | undefined;
+            const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
             const header = typeof cell.column.columnDef.header === "string"
               ? cell.column.columnDef.header
               : cell.column.id;

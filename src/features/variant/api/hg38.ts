@@ -17,7 +17,7 @@ async function fetchGnomadData(
   vcf: string,
   type: "exome" | "genome",
 ): Promise<GnomadData | null> {
-  if (!vcf || typeof vcf !== "string") {
+  if (!vcf) {
     console.warn(`Invalid VCF provided to fetchGnomad${type}`);
     return null;
   }
@@ -61,7 +61,7 @@ export async function fetchGnomadGenome(
 }
 
 export async function fetchVariant(vcf: string): Promise<Variant | null> {
-  if (!vcf || typeof vcf !== "string") {
+  if (!vcf) {
     console.warn("Invalid VCF provided to fetchVariant");
     return null;
   }
@@ -90,7 +90,7 @@ export async function fetchVariant(vcf: string): Promise<Variant | null> {
 export async function fetchVariantsByRsid(
   rsid: string,
 ): Promise<Variant[] | null> {
-  if (!rsid || typeof rsid !== "string") {
+  if (!rsid) {
     console.warn("Invalid RSID provided to fetchVariantsByRsid");
     return null;
   }

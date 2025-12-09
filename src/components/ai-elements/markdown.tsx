@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React, { memo, useState } from "react";
+import React, { memo, useState, useRef, useEffect } from "react";
 import { Streamdown, type StreamdownProps } from "streamdown";
 import { Copy, Check } from "lucide-react";
 
@@ -23,11 +23,19 @@ const components: Partial<Components> = {
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const onCopy = () => {
     navigator.clipboard.writeText(children);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (

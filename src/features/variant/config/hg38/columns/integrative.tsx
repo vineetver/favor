@@ -1,6 +1,44 @@
+import type { ReactNode } from "react";
 import type { Variant } from "../../../types/types";
-import { createColumns, cell, tooltip } from "@/lib/table/column-builder";
+import { createColumns, cell, tooltip, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
+
+// ============================================================================
+// Percentile Derived Column
+// ============================================================================
+
+/**
+ * Calculate percentile from PHRED score: 10^(score * -0.1) * 100
+ * Higher scores = lower percentiles = greater significance.
+ */
+function calculatePercentile(score: unknown): number | null {
+  if (score === null || score === undefined) return null;
+  const num = typeof score === "number" ? score : parseFloat(String(score));
+  if (isNaN(num)) return null;
+  return Math.pow(10, num * -0.1) * 100;
+}
+
+const PERCENTILE_TOOLTIP: ReactNode = (
+  <div className="space-y-2">
+    <p className="text-sm">
+      Score transformed to percentile: 10^(score × -0.1) × 100
+    </p>
+    <p className="text-sm">
+      Lower percentile = higher significance.
+    </p>
+  </div>
+);
+
+const percentileColumn: DerivedColumn = {
+  header: "Percentile",
+  headerTooltip: PERCENTILE_TOOLTIP,
+  derive: calculatePercentile,
+  render: (value) => {
+    if (value === null) return "—";
+    const pct = Math.min(value as number, 100);
+    return <span className="font-mono">{pct.toFixed(2)}%</span>;
+  },
+};
 
 const col = createColumns<Variant>();
 
@@ -110,4 +148,7 @@ export const integrativeColumns = [
   }),
 ];
 
-export const integrativeGroup = col.group("integrative", "Integrative", integrativeColumns);
+export const integrativeGroup = col.group("integrative", "Integrative", integrativeColumns, {
+  derivedColumn: percentileColumn,
+  defaultSort: { column: "derived", direction: "asc" },
+});
