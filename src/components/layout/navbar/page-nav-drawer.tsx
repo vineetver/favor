@@ -2,18 +2,50 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
 
-interface VariantNavDrawerProps {
+interface NavigationSection {
+  name: string;
+  slug: string;
+  subCategories: { text: string; slug: string }[];
+}
+
+interface PageNavConfig {
+  title: string;
+  basePath: (params: Record<string, string>) => string;
+  sections: NavigationSection[];
+}
+
+const PAGE_NAV_CONFIGS: Record<string, PageNavConfig> = {
+  variant: {
+    title: "Variant Navigation",
+    basePath: (params) => `/hg38/variant/${encodeURIComponent(params.vcf)}`,
+    sections: VARIANT_NAVIGATION_CONFIG,
+  },
+  // Future: Add gene navigation here
+  // gene: {
+  //   title: "Gene Navigation",
+  //   basePath: (params) => `/hg38/gene/${encodeURIComponent(params.geneId)}`,
+  //   sections: GENE_NAVIGATION_CONFIG,
+  // },
+};
+
+function detectPageType(pathname: string): string | null {
+  if (pathname.includes("/variant/")) return "variant";
+  if (pathname.includes("/gene/")) return "gene";
+  return null;
+}
+
+interface PageNavDrawerProps {
   onNavigate: () => void;
 }
 
-export function VariantNavDrawer({ onNavigate }: VariantNavDrawerProps) {
+export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
   const params = useParams();
-  const vcf = params.vcf as string;
+  const pathname = usePathname();
   const category = params.category as string;
   const subcategory = params.subcategory as string;
 
@@ -21,21 +53,25 @@ export function VariantNavDrawer({ onNavigate }: VariantNavDrawerProps) {
     category ?? null
   );
 
-  if (!vcf) return null;
+  const pageType = detectPageType(pathname);
+  if (!pageType) return null;
 
-  const basePath = `/hg38/variant/${encodeURIComponent(vcf)}`;
+  const config = PAGE_NAV_CONFIGS[pageType];
+  if (!config) return null;
+
+  const basePath = config.basePath(params as Record<string, string>);
 
   const toggleSection = (slug: string) => {
     setExpandedSection((prev) => (prev === slug ? null : slug));
   };
 
   return (
-    <div className="space-y-1">
+    <div className="px-4 py-6 border-b border-slate-100 space-y-1">
       <span className="block px-5 py-2 text-sm font-bold text-primary uppercase tracking-wider">
-        Variant Navigation
+        {config.title}
       </span>
 
-      {VARIANT_NAVIGATION_CONFIG.map((section) => {
+      {config.sections.map((section) => {
         const isExpanded = expandedSection === section.slug;
         const hasSubCategories = section.subCategories.length > 0;
         const isActiveSection = category === section.slug;

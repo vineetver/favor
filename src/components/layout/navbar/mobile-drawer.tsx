@@ -2,12 +2,11 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { NAV_ITEMS, RESOURCES, type NavItem } from "./nav-items";
-import { VariantNavDrawer } from "./variant-nav-drawer";
+import { PageNavDrawer } from "./page-nav-drawer";
 import { siteConfig } from "@/config/site";
 
 interface MobileDrawerProps {
@@ -47,8 +46,6 @@ function MobileNavLink({
 }
 
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
-  const pathname = usePathname();
-  const isVariantPage = pathname.includes("/variant/");
 
   useEffect(() => {
     if (open) {
@@ -119,12 +116,8 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            {/* Variant Navigation */}
-            {isVariantPage && (
-              <div className="px-4 py-6 border-b border-slate-100">
-                <VariantNavDrawer onNavigate={onClose} />
-              </div>
-            )}
+            {/* Page-specific Navigation (Variant, Gene, etc.) */}
+            <PageNavDrawer onNavigate={onClose} />
 
             {/* Main Navigation */}
             <div className="px-4 py-6 space-y-1">
