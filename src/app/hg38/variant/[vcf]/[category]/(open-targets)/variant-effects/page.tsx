@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/features/variant/api/hg38";
+import { fetchVariant } from "@/features/variant/api";
 import { fetchOpenTargetsVariantEffects } from "@/features/variant/api/opentargets";
 import { VariantEffectsTable } from "@/features/variant/components/open-targets/variant-effects-table";
 import { PathogenicitySummary } from "@/features/variant/components/open-targets/pathogenicity-summary";

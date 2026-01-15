@@ -2,7 +2,7 @@ import {
   fetchVariant,
   fetchGnomadExome,
   fetchGnomadGenome,
-} from "@/features/variant/api/hg38";
+} from "@/features/variant/api";
 import { AlleleFrequencyVisualization } from "@/features/variant/components/allele-frequency-visualization";
 import { notFound } from "next/navigation";
 

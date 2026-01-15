@@ -1,49 +1,17 @@
-import type { Variant, GnomadData } from "../../../types/types";
+import {
+  type Variant,
+  type GnomadPopulation,
+  type GnomadSex,
+  type GnomadMetrics,
+  getGnomadMetrics,
+} from "@/features/variant/types";
 import { createColumns, cell, tooltip } from "@/lib/table/column-builder";
 
 const col = createColumns<Variant>();
 
-// ============================================================================
-// gnomAD Data Helpers
-// ============================================================================
-
-export type GnomadPopulation = "afr" | "ami" | "amr" | "asj" | "eas" | "fin" | "mid" | "nfe" | "remaining" | "sas" | "";
-export type GnomadSex = "xx" | "xy" | "";
-
-export interface GnomadMetrics {
-  af: number;
-  ac: number;
-  an: number;
-  hom: number;
-}
-
 interface CombinedMetrics {
   exome: GnomadMetrics | null;
   genome: GnomadMetrics | null;
-}
-
-export function getGnomadMetrics(
-  data: GnomadData | null | undefined,
-  prefix: GnomadPopulation,
-  suffix: GnomadSex
-): GnomadMetrics | null {
-  if (!data) return null;
-
-  const getVal = (metric: "af" | "ac" | "an" | "nhomalt") => {
-    const parts = [metric, prefix, suffix].filter(Boolean);
-    const key = parts.join("_") as keyof GnomadData;
-    return data[key] as number | undefined;
-  };
-
-  const af = getVal("af");
-  if (af === undefined || af === null) return null;
-
-  return {
-    af,
-    ac: getVal("ac") ?? 0,
-    an: getVal("an") ?? 0,
-    hom: getVal("nhomalt") ?? 0,
-  };
 }
 
 function getCombinedMetrics(row: Variant, prefix: GnomadPopulation = "", suffix: GnomadSex = ""): CombinedMetrics {

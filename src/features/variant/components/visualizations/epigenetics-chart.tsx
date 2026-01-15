@@ -12,11 +12,8 @@ import {
 } from "recharts";
 import type { VisualizationProps } from "@/lib/table/column-builder";
 import { ChartTooltip } from "@/components/common/chart-tooltip";
-import {
-  REGULATORY_STATE_MAP,
-  regulatoryStateCategories,
-  type RegulatoryState,
-} from "../../config/hg38/columns/epigenetics";
+import { REGULATORY_STATE_MAP, type RegulatoryState } from "@/features/variant/types";
+import { regulatoryStateCategories } from "../../config/hg38/columns/epigenetics";
 
 // Chart colors that match our badge colors (using the 400 shade for visibility)
 // These match the category colors: emerald, rose, sky

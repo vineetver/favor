@@ -5,7 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { Variant } from "@/features/variant/types/types";
+import type { Variant } from "@/features/variant/types";
 import { createColumns, cell, categories, tooltip } from "@/lib/table/column-builder";
 
 const col = createColumns<Variant>();

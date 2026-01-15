@@ -4,7 +4,7 @@ import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigati
 import { NavigationSidebar } from "@/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
 import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
-import { fetchVariant } from "@/features/variant/api/hg38";
+import { fetchVariant } from "@/features/variant/api";
 
 interface VariantLayoutProps {
   children: React.ReactNode;

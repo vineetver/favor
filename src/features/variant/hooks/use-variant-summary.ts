@@ -1,8 +1,13 @@
-import { useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getVariantSummary } from "@/features/variant/actions/summary-queries";
-import { generateVariantSummary } from "@/features/variant/actions/summary-mutations";
-import type { SummaryData } from "@/features/variant/types/summary-types";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  generateAIText,
+  getAIText,
+  subscribeToStream,
+  type VariantSummaryState,
+} from "@/lib/ai-text";
 
 interface UseVariantSummaryOptions {
   vcf: string;
@@ -10,9 +15,19 @@ interface UseVariantSummaryOptions {
   enabled?: boolean;
 }
 
+const DEFAULT_PROMPT =
+  "Provide a comprehensive clinical summary for this genetic variant, including its potential pathogenicity, associated conditions, and clinical significance.";
+
 /**
  * Custom hook for managing variant summary generation and caching
- * Uses React Query with Server Actions
+ *
+ * Returns a discriminated union state that makes invalid states unrepresentable:
+ * - { status: "idle" } - Initial state before any action
+ * - { status: "loading" } - Checking cache
+ * - { status: "pending", requestId } - Queued for generation
+ * - { status: "generating", requestId } - AI is generating
+ * - { status: "completed", summary } - Summary available
+ * - { status: "failed", error } - Generation failed
  */
 export function useVariantSummary({
   vcf,
@@ -20,78 +35,164 @@ export function useVariantSummary({
   enabled = true,
 }: UseVariantSummaryOptions) {
   const queryClient = useQueryClient();
+  const sseCleanupRef = useRef<(() => void) | null>(null);
 
-  // Query for checking summary status (with polling when generating)
-  const summaryQuery = useQuery({
+  // Track generation trigger per vcf to prevent double-triggering
+  const [triggeredFor, setTriggeredFor] = useState<string | null>(null);
+
+  // Query for checking cached summary
+  const { data: state = { status: "idle" } as VariantSummaryState, isLoading } = useQuery({
     queryKey: ["variant-summary", vcf],
-    queryFn: () => getVariantSummary(vcf),
-    enabled: enabled && !!vcf,
-    // Poll every 3 seconds when status is "generating"
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      return data?.status === "generating" ? 3000 : false;
+    queryFn: async (): Promise<VariantSummaryState> => {
+      const response = await getAIText({
+        entity_type: "variant",
+        entity_id: vcf,
+        content_type: "summary",
+      });
+
+      // No cached content - needs generation
+      if (!response.data || !response.data.content) {
+        return { status: "idle" };
+      }
+
+      // Found cached content
+      return {
+        status: "completed",
+        summary: response.data.content,
+        cachedAt: response.data.completed_at ?? undefined,
+      };
     },
-    // Keep polling even when window is not focused
-    refetchIntervalInBackground: true,
-    // Cache for 5 minutes
+    enabled: enabled && !!vcf,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Mutation for triggering summary generation
-  const generateMutation = useMutation({
-    mutationFn: () => generateVariantSummary(vcf, modelId),
-    onSuccess: (data) => {
-      // Update the cache immediately with the new status
-      queryClient.setQueryData(["variant-summary", vcf], {
-        status: data.status,
-        summary: data.summary,
-        timestamp: new Date().toISOString(),
+  // Trigger generation
+  const triggerGeneration = useCallback(async () => {
+    // Prevent double-trigger for same vcf
+    if (triggeredFor === vcf) return;
+    setTriggeredFor(vcf);
+
+    // Transition to loading state
+    queryClient.setQueryData<VariantSummaryState>(
+      ["variant-summary", vcf],
+      { status: "loading" },
+    );
+
+    try {
+      const response = await generateAIText({
+        entity_type: "variant",
+        entity_id: vcf,
+        content_type: "summary",
+        prompt: DEFAULT_PROMPT,
+        model: modelId,
       });
-    },
-    onError: (error) => {
-      console.error("Error generating summary:", error);
-    },
-  });
 
-  // Auto-trigger generation if status is pending
-  const shouldGenerate =
-    summaryQuery.data?.status === "pending" &&
-    !generateMutation.isPending &&
-    !generateMutation.isSuccess;
+      // Handle response based on status (discriminated union)
+      switch (response.status) {
+        case "completed":
+          queryClient.setQueryData<VariantSummaryState>(
+            ["variant-summary", vcf],
+            { status: "completed", summary: response.content },
+          );
+          return;
 
-  useEffect(() => {
-    if (shouldGenerate && enabled) {
-      generateMutation.mutate();
+        case "failed":
+          queryClient.setQueryData<VariantSummaryState>(
+            ["variant-summary", vcf],
+            { status: "failed", error: response.error ?? "Generation failed" },
+          );
+          return;
+
+        case "pending":
+          queryClient.setQueryData<VariantSummaryState>(
+            ["variant-summary", vcf],
+            { status: "pending", requestId: response.request_id },
+          );
+          break;
+
+        case "generating":
+          queryClient.setQueryData<VariantSummaryState>(
+            ["variant-summary", vcf],
+            {
+              status: "generating",
+              requestId: response.request_id,
+              estimatedSeconds: response.estimated_seconds ?? undefined,
+            },
+          );
+          break;
+      }
+
+      // Subscribe to SSE for pending/generating states
+      sseCleanupRef.current?.();
+      sseCleanupRef.current = subscribeToStream(
+        response.request_id,
+        (event) => {
+          switch (event.status) {
+            case "pending":
+              queryClient.setQueryData<VariantSummaryState>(
+                ["variant-summary", vcf],
+                { status: "pending", requestId: event.request_id },
+              );
+              break;
+            case "generating":
+              queryClient.setQueryData<VariantSummaryState>(
+                ["variant-summary", vcf],
+                { status: "generating", requestId: event.request_id },
+              );
+              break;
+            case "completed":
+              queryClient.setQueryData<VariantSummaryState>(
+                ["variant-summary", vcf],
+                { status: "completed", summary: event.content },
+              );
+              break;
+            case "failed":
+              queryClient.setQueryData<VariantSummaryState>(
+                ["variant-summary", vcf],
+                { status: "failed", error: event.error },
+              );
+              break;
+          }
+        },
+        (error) => {
+          console.error("SSE error:", error);
+          queryClient.invalidateQueries({ queryKey: ["variant-summary", vcf] });
+        },
+      );
+    } catch (error) {
+      queryClient.setQueryData<VariantSummaryState>(
+        ["variant-summary", vcf],
+        {
+          status: "failed",
+          error: error instanceof Error ? error.message : "Failed to generate summary",
+        },
+      );
     }
-  }, [shouldGenerate, enabled, generateMutation]);
+  }, [vcf, modelId, queryClient, triggeredFor]);
 
-  const isGenerating =
-    summaryQuery.data?.status === "generating" ||
-    summaryQuery.data?.status === "pending" ||
-    generateMutation.isPending;
+  // Auto-trigger generation when idle and not loading
+  useEffect(() => {
+    if (enabled && state.status === "idle" && !isLoading) {
+      triggerGeneration();
+    }
+  }, [enabled, state.status, isLoading, triggerGeneration]);
 
-  const isCompleted = summaryQuery.data?.status === "completed";
-  const isFailed =
-    summaryQuery.data?.status === "failed" || generateMutation.isError;
+  // Cleanup SSE on unmount
+  useEffect(() => {
+    return () => {
+      sseCleanupRef.current?.();
+    };
+  }, []);
 
-  return {
-    // Data
-    summary: summaryQuery.data?.summary,
-    status: summaryQuery.data?.status,
-    error: summaryQuery.data?.error || generateMutation.error?.message,
-    timestamp: summaryQuery.data?.timestamp,
+  // Retry function
+  const retry = useCallback(() => {
+    sseCleanupRef.current?.();
+    setTriggeredFor(null);
+    queryClient.setQueryData<VariantSummaryState>(
+      ["variant-summary", vcf],
+      { status: "idle" },
+    );
+  }, [vcf, queryClient]);
 
-    // States
-    isLoading: summaryQuery.isLoading,
-    isGenerating,
-    isCompleted,
-    isFailed,
-
-    // Methods
-    retry: () => {
-      generateMutation.reset();
-      summaryQuery.refetch();
-    },
-    refetch: summaryQuery.refetch,
-  };
+  return { state, retry };
 }

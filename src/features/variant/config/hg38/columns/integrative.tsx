@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Variant } from "../../../types/types";
+import type { Variant } from "@/features/variant/types";
 import { createColumns, cell, tooltip, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 import { IntegrativeBarChart } from "../../../components/visualizations/integrative-chart";

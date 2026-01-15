@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import type { Variant } from "../../../types/types";
+import type { Variant } from "@/features/variant/types";
 import { createColumns, cell, categories, tooltip } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 

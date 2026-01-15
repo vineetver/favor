@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { variantColumnGroups } from "@/features/variant/config/hg38";
-import type { Variant } from "@/features/variant/types/types";
+import type { Variant } from "@/features/variant/types";
 import type { ColumnMeta } from "@/lib/table/column-builder";
 
 interface CategoryDetailViewProps {

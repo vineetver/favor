@@ -1,17 +1,10 @@
-import type { Variant } from "../../../types/types";
+import { type Variant, REGULATORY_STATE_MAP } from "@/features/variant/types";
 import { createColumns, cell, tooltip, categories, Badge, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 import { EpigeneticsChart } from "../../../components/visualizations/epigenetics-chart";
 
 const col = createColumns<Variant>();
 
-// ============================================================================
-// Regulatory State Categories
-// ============================================================================
-
-export type RegulatoryState = "Active" | "Repressed" | "Transcription" | null;
-
-// Categories for badge rendering with consistent colors and descriptions
 export const regulatoryStateCategories = categories([
   {
     label: "Active",
@@ -32,33 +25,6 @@ export const regulatoryStateCategories = categories([
     description: "Associated with active transcription",
   },
 ]);
-
-// Map column IDs to their regulatory state
-export const REGULATORY_STATE_MAP: Record<string, RegulatoryState> = {
-  // aPC scores
-  apc_epigenetics_active: "Active",
-  apc_epigenetics_repressed: "Repressed",
-  apc_epigenetics_transcription: "Transcription",
-  // Active marks
-  encode_dnase_sum: "Active",
-  encodeh3k27ac_sum: "Active",
-  encodeh3k4me1_sum: "Active",
-  encodeh3k4me2_sum: "Active",
-  encodeh3k4me3_sum: "Active",
-  encodeh3k9ac_sum: "Active",
-  encodeh4k20me1_sum: "Active",
-  encodeh2afz_sum: "Active",
-  // Repressed marks
-  encodeh3k9me3_sum: "Repressed",
-  encodeh3k27me3_sum: "Repressed",
-  // Transcription marks
-  encodeh3k36me3_sum: "Transcription",
-  encodeh3k79me2_sum: "Transcription",
-  encodetotal_rna_sum: "Transcription",
-  // No regulatory state
-  gc: null,
-  cpg: null,
-};
 
 // ============================================================================
 // Regulatory State Derived Column

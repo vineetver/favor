@@ -1,13 +1,4 @@
-export interface VariantNavigationLink {
-  text: string;
-  slug: string;
-}
-
-export interface VariantNavigationSection {
-  name: string;
-  slug: string;
-  subCategories: VariantNavigationLink[];
-}
+import type { VariantNavigationSection } from "@/features/variant/types";
 
 export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
   {

@@ -24,11 +24,11 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Variant } from "@/features/variant/types/types";
 import {
-  getGnomadMetrics,
+  type Variant,
   type GnomadPopulation,
-} from "@/features/variant/config/hg38/columns/allele-frequency";
+  getGnomadMetrics,
+} from "@/features/variant/types";
 import { ChartTooltip, type TooltipPayloadEntry } from "@/components/common/chart-tooltip";
 
 interface PopulationData {

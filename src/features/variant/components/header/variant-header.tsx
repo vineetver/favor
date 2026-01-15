@@ -1,4 +1,4 @@
-import type { Variant } from "@/features/variant/types/types";
+import type { Variant } from "@/features/variant/types";
 
 interface VariantHeaderProps {
   variant: Variant;

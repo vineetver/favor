@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/features/variant/api/hg38";
+import { fetchVariant } from "@/features/variant/api";
 import { fetchOpenTargetsConsequences } from "@/features/variant/api/opentargets";
 import { ConsequencesTable } from "@/features/variant/components/open-targets/consequences-table";
 import { ConsequencesSummary } from "@/features/variant/components/open-targets/consequences-summary";

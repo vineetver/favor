@@ -1,5 +1,5 @@
 import { ExternalLink } from "@/components/ui/external-link";
-import type { Variant } from "../../../types/types";
+import type { Variant } from "@/features/variant/types";
 import {
   createColumns,
   cell,

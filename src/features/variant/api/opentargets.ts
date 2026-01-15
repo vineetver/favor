@@ -14,41 +14,22 @@ import type {
   OpenTargetsEvidenceRow,
 } from "../types/opentargets";
 
-/**
- * Convert VCF format to Open Targets variant ID.
- * "chr1-12345-A-G" or "1-12345-A-G" → "1_12345_A_G"
- */
 export function vcfToOpenTargetsId(vcf: string): string {
   const parts = vcf.split("-");
-  if (parts.length !== 4) {
-    throw new Error(`Invalid VCF format: ${vcf}`);
-  }
+  if (parts.length !== 4) throw new Error(`Invalid VCF format: ${vcf}`);
   const [chr, pos, ref, alt] = parts;
-  const cleanChr = chr.replace(/^chr/i, "");
-  return `${cleanChr}_${pos}_${ref}_${alt}`;
+  return `${chr.replace(/^chr/i, "")}_${pos}_${ref}_${alt}`;
 }
 
-/**
- * Compute p-value from mantissa and exponent.
- */
 function computePValue(mantissa: number | null, exponent: number | null): number | null {
   if (mantissa === null || exponent === null) return null;
   return mantissa * Math.pow(10, exponent);
 }
 
-/**
- * Fetch and transform variant consequences.
- */
-export async function fetchOpenTargetsConsequences(
-  vcf: string
-): Promise<OpenTargetsConsequenceRow[]> {
+export async function fetchOpenTargetsConsequences(vcf: string): Promise<OpenTargetsConsequenceRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantConsequences(variantId);
-
-    if (!data?.variant?.transcriptConsequences) {
-      return [];
-    }
+    const data = await getVariantConsequences(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.transcriptConsequences) return [];
 
     return data.variant.transcriptConsequences.map((tc) => ({
       targetId: tc.target?.id ?? "",
@@ -69,25 +50,12 @@ export async function fetchOpenTargetsConsequences(
   }
 }
 
-/**
- * Fetch and transform L2G scores from credible sets.
- */
-export async function fetchOpenTargetsL2G(
-  vcf: string
-): Promise<OpenTargetsL2GRow[]> {
+export async function fetchOpenTargetsL2G(vcf: string): Promise<OpenTargetsL2GRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    console.log("[L2G] Fetching for variantId:", variantId);
-    const data = await getVariantCredibleSets(variantId);
-    console.log("[L2G] Response:", data ? "got data" : "null", "credibleSets:", data?.variant?.credibleSets?.count);
-
-    if (!data?.variant?.credibleSets?.rows) {
-      console.log("[L2G] No credible sets rows found");
-      return [];
-    }
+    const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.credibleSets?.rows) return [];
 
     const rows: OpenTargetsL2GRow[] = [];
-
     for (const cs of data.variant.credibleSets.rows) {
       for (const l2g of cs.l2GPredictions.rows) {
         if (l2g.target) {
@@ -104,14 +72,10 @@ export async function fetchOpenTargetsL2G(
       }
     }
 
-    // Sort by score descending, deduplicate by gene
     const geneMap = new Map<string, OpenTargetsL2GRow>();
     for (const row of rows.sort((a, b) => b.score - a.score)) {
-      if (!geneMap.has(row.geneId)) {
-        geneMap.set(row.geneId, row);
-      }
+      if (!geneMap.has(row.geneId)) geneMap.set(row.geneId, row);
     }
-
     return Array.from(geneMap.values());
   } catch (error) {
     console.error("Open Targets L2G error:", error);
@@ -119,19 +83,10 @@ export async function fetchOpenTargetsL2G(
   }
 }
 
-/**
- * Fetch and transform credible sets.
- */
-export async function fetchOpenTargetsCredibleSets(
-  vcf: string
-): Promise<OpenTargetsCredibleSetRow[]> {
+export async function fetchOpenTargetsCredibleSets(vcf: string): Promise<OpenTargetsCredibleSetRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantCredibleSets(variantId);
-
-    if (!data?.variant?.credibleSets?.rows) {
-      return [];
-    }
+    const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.credibleSets?.rows) return [];
 
     return data.variant.credibleSets.rows.map((cs) => ({
       studyLocusId: cs.studyLocusId,
@@ -152,59 +107,36 @@ export async function fetchOpenTargetsCredibleSets(
   }
 }
 
-/**
- * Fetch and transform pharmacogenomics data.
- */
-export async function fetchOpenTargetsPharmacogenomics(
-  vcf: string
-): Promise<OpenTargetsPharmacogenomicsRow[]> {
+export async function fetchOpenTargetsPharmacogenomics(vcf: string): Promise<OpenTargetsPharmacogenomicsRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantPharmacogenomics(variantId);
+    const data = await getVariantPharmacogenomics(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.pharmacogenomics) return [];
 
-    if (!data?.variant?.pharmacogenomics) {
-      return [];
-    }
-
-    // Flatten drugs array - create one row per drug
     const rows: OpenTargetsPharmacogenomicsRow[] = [];
     for (const pgx of data.variant.pharmacogenomics) {
       const drugs = pgx.drugs ?? [];
+      const baseRow = {
+        targetId: pgx.target?.id ?? null,
+        targetSymbol: pgx.target?.approvedSymbol ?? null,
+        isDirectTarget: pgx.isDirectTarget,
+        genotypeId: pgx.genotypeId,
+        pgxCategory: pgx.pgxCategory,
+        evidenceLevel: pgx.evidenceLevel,
+        phenotypeText: pgx.phenotypeText,
+        consequence: pgx.variantFunctionalConsequence?.label ?? null,
+        studyId: pgx.studyId,
+        literature: pgx.literature ?? [],
+      };
+
       if (drugs.length === 0) {
-        // Still include the row even without drugs
-        rows.push({
-          drugName: "Unknown",
-          drugId: null,
-          drugType: null,
-          targetId: pgx.target?.id ?? null,
-          targetSymbol: pgx.target?.approvedSymbol ?? null,
-          isDirectTarget: pgx.isDirectTarget,
-          genotypeId: pgx.genotypeId,
-          pgxCategory: pgx.pgxCategory,
-          evidenceLevel: pgx.evidenceLevel,
-          phenotypeText: pgx.phenotypeText,
-          consequence: pgx.variantFunctionalConsequence?.label ?? null,
-          studyId: pgx.studyId,
-          literature: pgx.literature ?? [],
-        });
+        rows.push({ ...baseRow, drugName: "Unknown", drugId: null, drugType: null });
       } else {
-        for (const drugEntry of drugs) {
-          // Use drug.name if available, fallback to drugFromSource
-          const drugName = drugEntry.drug?.name ?? drugEntry.drugFromSource ?? "Unknown";
+        for (const d of drugs) {
           rows.push({
-            drugName,
-            drugId: drugEntry.drug?.id ?? drugEntry.drugId ?? null,
-            drugType: drugEntry.drug?.drugType ?? null,
-            targetId: pgx.target?.id ?? null,
-            targetSymbol: pgx.target?.approvedSymbol ?? null,
-            isDirectTarget: pgx.isDirectTarget,
-            genotypeId: pgx.genotypeId,
-            pgxCategory: pgx.pgxCategory,
-            evidenceLevel: pgx.evidenceLevel,
-            phenotypeText: pgx.phenotypeText,
-            consequence: pgx.variantFunctionalConsequence?.label ?? null,
-            studyId: pgx.studyId,
-            literature: pgx.literature ?? [],
+            ...baseRow,
+            drugName: d.drug?.name ?? d.drugFromSource ?? "Unknown",
+            drugId: d.drug?.id ?? d.drugId ?? null,
+            drugType: d.drug?.drugType ?? null,
           });
         }
       }
@@ -216,19 +148,10 @@ export async function fetchOpenTargetsPharmacogenomics(
   }
 }
 
-/**
- * Fetch and transform variant effects (pathogenicity predictions).
- */
-export async function fetchOpenTargetsVariantEffects(
-  vcf: string
-): Promise<OpenTargetsVariantEffectRow[]> {
+export async function fetchOpenTargetsVariantEffects(vcf: string): Promise<OpenTargetsVariantEffectRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantEffects(variantId);
-
-    if (!data?.variant?.variantEffect) {
-      return [];
-    }
+    const data = await getVariantEffects(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.variantEffect) return [];
 
     return data.variant.variantEffect.map((ve) => ({
       method: ve.method,
@@ -245,19 +168,10 @@ export async function fetchOpenTargetsVariantEffects(
   }
 }
 
-/**
- * Fetch and transform disease/target evidences.
- */
-export async function fetchOpenTargetsEvidences(
-  vcf: string
-): Promise<OpenTargetsEvidenceRow[]> {
+export async function fetchOpenTargetsEvidences(vcf: string): Promise<OpenTargetsEvidenceRow[]> {
   try {
-    const variantId = vcfToOpenTargetsId(vcf);
-    const data = await getVariantEvidences(variantId);
-
-    if (!data?.variant?.evidences?.rows) {
-      return [];
-    }
+    const data = await getVariantEvidences(vcfToOpenTargetsId(vcf));
+    if (!data?.variant?.evidences?.rows) return [];
 
     return data.variant.evidences.rows.map((ev) => ({
       id: ev.id,

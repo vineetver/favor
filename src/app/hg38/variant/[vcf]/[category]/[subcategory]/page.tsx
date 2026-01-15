@@ -2,7 +2,7 @@ import {
   fetchVariant,
   fetchGnomadExome,
   fetchGnomadGenome,
-} from "@/features/variant/api/hg38";
+} from "@/features/variant/api";
 import { CategoryDetailView } from "@/features/variant/components/category-detail-view";
 import { notFound } from "next/navigation";
 

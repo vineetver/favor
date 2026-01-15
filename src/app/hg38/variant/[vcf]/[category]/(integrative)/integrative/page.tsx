@@ -1,4 +1,4 @@
-import { fetchVariant } from "@/features/variant/api/hg38";
+import { fetchVariant } from "@/features/variant/api";
 import { CategoryDataView } from "@/features/variant/components/category-data-view";
 import { notFound } from "next/navigation";
 

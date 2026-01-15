@@ -1,6 +1,6 @@
 import {
   fetchVariant,
-} from "@/features/variant/api/hg38";
+} from "@/features/variant/api";
 import { ChromatinStateView } from "@/features/variant/components/chromatin-state-view";
 import { notFound } from "next/navigation";
 

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Variant } from "../types/types";
+import type { Variant } from "@/features/variant/types";
 import { BADGE_COLORS, type BadgeColor, type ColumnMeta } from "@/lib/table/column-builder";
 import { chromatinStateColumns } from "../config/hg38/columns/chromatin-state";
 import {
