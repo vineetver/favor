@@ -3,175 +3,149 @@ import { devtools, persist } from "zustand/middleware";
 
 export type GenomicBuild = "hg38" | "hg19";
 
+/**
+ * Search State
+ *
+ * Following Commandment II (Make Invalid States Unrepresentable) and
+ * Commandment XV (Single Source of Truth):
+ * - `error` is null when no error, string when error exists
+ * - No derived state stored (hasInput, hasError are computed)
+ */
 export interface SearchState {
-  inputValue: string;
-  selectedGenome: GenomicBuild;
-  showAlert: boolean;
-  alertMessage: string;
-  hasInput: boolean;
-  hasError: boolean;
+  query: string;
+  genome: GenomicBuild;
+  error: string | null;
 }
 
 export interface SearchActions {
-  setInputValue: (value: string) => void;
-  clearInput: () => void;
-  setSelectedGenome: (genome: GenomicBuild) => void;
-  showError: (message: string) => void;
-  hideAlert: () => void;
-  resetSearch: () => void;
-  setSearchState: (
-    partial: Partial<Pick<SearchState, "inputValue" | "selectedGenome">>,
-  ) => void;
+  setQuery: (value: string) => void;
+  setGenome: (genome: GenomicBuild) => void;
+  setError: (message: string) => void;
+  clearError: () => void;
+  reset: () => void;
 }
 
 export type SearchStore = SearchState & SearchActions;
 
-// Initial state
 const initialState: SearchState = {
-  inputValue: "",
-  selectedGenome: "hg38",
-  showAlert: false,
-  alertMessage: "",
-  hasInput: false,
-  hasError: false,
+  query: "",
+  genome: "hg38",
+  error: null,
 };
 
 export const useSearchStore = create<SearchStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set) => ({
         ...initialState,
 
-        setInputValue: (value: string) => {
-          const trimmed = value.trim();
-          const currentState = get();
-
-          // Only update if value actually changed
-          if (currentState.inputValue === value) return;
-
+        setQuery: (value: string) => {
           set(
-            {
-              inputValue: value,
-              hasInput: trimmed.length > 0,
-              showAlert: trimmed.length > 0 ? false : currentState.showAlert,
-              alertMessage: trimmed.length > 0 ? "" : currentState.alertMessage,
-            },
+            (state) => ({
+              query: value,
+              // Clear error when user starts typing (Commandment III - explicit action)
+              error: value.trim() ? null : state.error,
+            }),
             false,
-            "setInputValue",
+            "setQuery",
           );
         },
 
-        clearInput: () => {
-          set(
-            {
-              inputValue: "",
-              hasInput: false,
-              showAlert: false,
-              alertMessage: "",
-            },
-            false,
-            "clearInput",
-          );
+        setGenome: (genome: GenomicBuild) => {
+          set({ genome }, false, "setGenome");
         },
 
-        setSelectedGenome: (genome: GenomicBuild) => {
-          set({ selectedGenome: genome }, false, "setSelectedGenome");
+        setError: (message: string) => {
+          set({ error: message }, false, "setError");
         },
 
-        showError: (message: string) => {
-          set(
-            {
-              showAlert: true,
-              alertMessage: message,
-              hasError: true,
-            },
-            false,
-            "showError",
-          );
+        clearError: () => {
+          set({ error: null }, false, "clearError");
         },
 
-        hideAlert: () => {
-          set(
-            {
-              showAlert: false,
-              alertMessage: "",
-              hasError: false,
-            },
-            false,
-            "hideAlert",
-          );
-        },
-
-        resetSearch: () => {
-          set(
-            {
-              ...initialState,
-            },
-            false,
-            "resetSearch",
-          );
-        },
-
-        setSearchState: (partial) => {
-          const updates: Partial<SearchState> = { ...partial };
-          if ("inputValue" in updates && updates.inputValue !== undefined) {
-            const trimmed = updates.inputValue.trim();
-            updates.hasInput = trimmed.length > 0;
-          }
-
-          set(updates, false, "setSearchState");
+        reset: () => {
+          set(initialState, false, "reset");
         },
       }),
       {
         name: "search-store",
         partialize: (state) => ({
-          selectedGenome: state.selectedGenome,
+          genome: state.genome,
         }),
       },
     ),
-    {
-      name: "SearchStore",
-    },
+    { name: "SearchStore" },
   ),
 );
 
-// Optimized composite selectors to reduce subscriptions
-export const useSearchValue = () => useSearchStore((state) => state.inputValue);
-export const useSelectedGenome = () =>
-  useSearchStore((state) => state.selectedGenome);
+// ============================================
+// Selectors (Commandment XV - Derive, Don't Store)
+// ============================================
 
-// Composite selectors for related state
-export const useSearchAlert = () => {
-  const showAlert = useSearchStore((state) => state.showAlert);
-  const alertMessage = useSearchStore((state) => state.alertMessage);
-  const hasError = useSearchStore((state) => state.hasError);
-  return { showAlert, alertMessage, hasError };
-};
+/** Get the current query */
+export const useSearchQuery = () => useSearchStore((s) => s.query);
 
-// Composite selector for all input-related state
+/** Get the selected genome build */
+export const useSearchGenome = () => useSearchStore((s) => s.genome);
+
+/** Get error state - null if no error */
+export const useSearchError = () => useSearchStore((s) => s.error);
+
+/** Derived: true if query has content */
+export const useHasInput = () => useSearchStore((s) => s.query.trim().length > 0);
+
+/** Derived: true if there's an error */
+export const useHasError = () => useSearchStore((s) => s.error !== null);
+
+// ============================================
+// Composite Selectors (for components needing multiple values)
+// ============================================
+
+/** Get query + genome together (common pairing) */
 export const useSearchInput = () => {
-  const inputValue = useSearchStore((state) => state.inputValue);
-  const hasInput = useSearchStore((state) => state.hasInput);
-  const selectedGenome = useSearchStore((state) => state.selectedGenome);
-  return { inputValue, hasInput, selectedGenome };
+  const query = useSearchStore((s) => s.query);
+  const genome = useSearchStore((s) => s.genome);
+  return { inputValue: query, selectedGenome: genome };
 };
 
-// Action selectors (stable references)
-export const useSearchActions = () => {
-  const setInputValue = useSearchStore((state) => state.setInputValue);
-  const clearInput = useSearchStore((state) => state.clearInput);
-  const setSelectedGenome = useSearchStore((state) => state.setSelectedGenome);
-  const showError = useSearchStore((state) => state.showError);
-  const hideAlert = useSearchStore((state) => state.hideAlert);
-  const resetSearch = useSearchStore((state) => state.resetSearch);
-  const setSearchState = useSearchStore((state) => state.setSearchState);
+/** Get error alert state */
+export const useSearchAlert = () => {
+  const error = useSearchStore((s) => s.error);
   return {
-    setInputValue,
-    clearInput,
-    setSelectedGenome,
-    showError,
-    hideAlert,
-    resetSearch,
-    setSearchState,
+    showAlert: error !== null,
+    alertMessage: error ?? "",
+    hasError: error !== null,
+  };
+};
+
+/** Get all actions (stable references) */
+export const useSearchActions = () => {
+  const setQuery = useSearchStore((s) => s.setQuery);
+  const setGenome = useSearchStore((s) => s.setGenome);
+  const setError = useSearchStore((s) => s.setError);
+  const clearError = useSearchStore((s) => s.clearError);
+  const reset = useSearchStore((s) => s.reset);
+
+  return {
+    // New API
+    setQuery,
+    setGenome,
+    setError,
+    clearError,
+    reset,
+    // Legacy API (backwards compatible)
+    setInputValue: setQuery,
+    setSelectedGenome: setGenome,
+    showError: setError,
+    hideAlert: clearError,
+    resetSearch: reset,
+    clearInput: () => {
+      setQuery("");
+      clearError();
+    },
+    setSearchState: (partial: { inputValue?: string; selectedGenome?: GenomicBuild }) => {
+      if (partial.inputValue !== undefined) setQuery(partial.inputValue);
+      if (partial.selectedGenome !== undefined) setGenome(partial.selectedGenome);
+    },
   };
 };

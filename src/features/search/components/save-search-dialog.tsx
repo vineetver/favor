@@ -1,18 +1,18 @@
 "use client";
 
+import { Bookmark } from "lucide-react";
 import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Bookmark } from "lucide-react";
 
 interface SaveSearchDialogProps {
   query: string;
@@ -33,96 +33,131 @@ export function SaveSearchDialog({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
-    if (name.trim()) {
-      setIsLoading(true);
-      try {
-        await onSave(name.trim(), description.trim() || undefined);
-        setName("");
-        setDescription("");
-        setOpen(false);
-      } finally {
-        setIsLoading(false);
-      }
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+
+    setIsLoading(true);
+    try {
+      await onSave(trimmedName, description.trim() || undefined);
+      resetForm();
+      setOpen(false);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
   };
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) {
-      setName("");
-      setDescription("");
-    }
+    if (!isOpen) resetForm();
   };
+
+  const canSave = name.trim().length > 0 && !isLoading;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           disabled={disabled || !query.trim()}
-          className="h-8 w-8"
+          className="h-10 w-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Save this search"
         >
-          <Bookmark className="h-4 w-4" />
-        </Button>
+          <Bookmark className="h-5 w-5" />
+        </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Save Search</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+      <DialogContent className="sm:max-w-md rounded-2xl border-slate-200 bg-white shadow-2xl shadow-slate-900/10 p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-lg font-semibold text-slate-900">
+            Save Search
+          </DialogTitle>
+          <DialogDescription className="text-sm text-slate-500">
             Save this search to quickly access it later
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label>Query</Label>
-            <div className="mt-1 text-sm bg-muted p-3 rounded-md font-mono">
-              {query}
+        <div className="px-6 py-4 space-y-4">
+          {/* Query & Genome Info */}
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-medium text-slate-500 mb-1.5 block">
+                Query
+              </span>
+              <div className="text-sm bg-slate-100 px-3 py-2.5 rounded-lg font-mono text-slate-900 truncate">
+                {query}
+              </div>
+            </div>
+            <div className="w-16 shrink-0">
+              <span className="text-xs font-medium text-slate-500 mb-1.5 block">
+                Build
+              </span>
+              <div className="text-sm bg-slate-100 px-3 py-2.5 rounded-lg font-mono text-slate-900 text-center">
+                {genomicBuild.toUpperCase()}
+              </div>
             </div>
           </div>
 
+          {/* Name Input */}
           <div>
-            <Label>Genome Build</Label>
-            <div className="mt-1 text-sm bg-muted p-3 rounded-md font-mono">
-              {genomicBuild.toUpperCase()}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="search-name">Name *</Label>
-            <Input
+            <label
+              htmlFor="search-name"
+              className="text-xs font-medium text-slate-500 mb-1.5 block"
+            >
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
               id="search-name"
-              placeholder="Enter a name for this search"
+              type="text"
+              placeholder="e.g., BRCA1 variant analysis"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1"
+              autoFocus
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-colors"
             />
           </div>
 
+          {/* Description Input */}
           <div>
-            <Label htmlFor="search-description">Description</Label>
-            <Textarea
+            <label
+              htmlFor="search-description"
+              className="text-xs font-medium text-slate-500 mb-1.5 block"
+            >
+              Description <span className="text-slate-400">(optional)</span>
+            </label>
+            <textarea
               id="search-description"
-              placeholder="Optional description"
+              placeholder="Add notes about this search..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="mt-1"
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-colors resize-none"
             />
           </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!name.trim() || isLoading}>
-              {isLoading ? "Saving..." : "Save Search"}
-            </Button>
-          </div>
         </div>
+
+        <DialogFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => handleOpenChange(false)}
+            className="text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            className="bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50"
+          >
+            {isLoading ? "Saving..." : "Save Search"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
