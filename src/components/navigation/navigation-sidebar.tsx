@@ -129,24 +129,21 @@ export function NavigationSidebar({
         key={item.slug}
         href={`${basePath}/${item.slug}`}
         className={cn(
-          "group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+          "group flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
           isActive
-            ? "bg-primary/10 text-primary font-medium"
+            ? "bg-slate-100 text-slate-900 font-medium"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
         )}
       >
         {Icon && (
           <Icon
             className={cn(
-              "w-4 h-4 shrink-0 transition-colors",
-              isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+              "w-4 h-4 shrink-0",
+              isActive ? "text-slate-700" : "text-slate-400 group-hover:text-slate-500"
             )}
           />
         )}
         <span className="truncate">{item.text}</span>
-        {isActive && (
-          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-        )}
       </Link>
     );
   };
