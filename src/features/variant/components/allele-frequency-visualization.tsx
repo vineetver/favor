@@ -60,7 +60,7 @@ function FrequencyCell({ value, color = "blue" }: { value: number | null; color?
 
   return (
     <div className="flex items-center gap-3">
-      <span className={`font-mono text-[15px] tabular-nums ${colorClass}`}>
+      <span className={`text-data tabular-nums ${colorClass}`}>
         {value.toExponential(2)}
       </span>
       <div className="h-1.5 w-16 bg-slate-200 rounded-full overflow-hidden">
@@ -122,7 +122,7 @@ export function AlleleFrequencyVisualization({
       accessorKey: "name",
       header: "Population",
       cell: ({ row }) => (
-        <span className="font-semibold text-slate-900">{row.original.name}</span>
+        <span className="font-medium text-sm text-slate-900">{row.original.name}</span>
       ),
     };
 
@@ -249,7 +249,7 @@ export function AlleleFrequencyVisualization({
           <button
             key={view}
             onClick={() => setDataView(view)}
-            className={`px-3 py-1.5 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+            className={`px-3 py-1.5 text-caption font-semibold rounded-lg transition-all duration-200 ${
               dataView === view
                 ? "bg-white shadow-sm text-slate-900"
                 : "text-slate-500 hover:text-slate-900"
@@ -334,10 +334,10 @@ const CustomTooltip = (props: { active?: boolean; payload?: TooltipPayloadEntry[
   return (
     <ChartTooltip {...props}>
       {payload?.map((entry, index) => (
-        <div key={index} className="flex items-center gap-2 text-[15px]">
+        <div key={index} className="flex items-center gap-2 text-data">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-slate-400">{entry.name}:</span>
-          <span className="font-mono font-medium text-white">
+          <span className="font-medium text-white">
             {typeof entry.value === "number" ? entry.value.toExponential(2) : "—"}
           </span>
         </div>
@@ -359,8 +359,8 @@ function AlleleFrequencyChart({
     return (
       <div className="space-y-4">
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-[13px]">
-          <span className="text-slate-400">Average Allele Frequency:</span>
+        <div className="flex flex-wrap items-center gap-4 text-caption">
+          <span>Average Allele Frequency:</span>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
             <span className="text-slate-600">Male</span>
@@ -403,8 +403,8 @@ function AlleleFrequencyChart({
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-[13px]">
-        <span className="text-slate-400">Allele Frequencies:</span>
+      <div className="flex flex-wrap items-center gap-4 text-caption">
+        <span>Allele Frequencies:</span>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
           <span className="text-slate-600">gnomAD v4.1 Exome</span>

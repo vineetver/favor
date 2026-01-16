@@ -177,9 +177,9 @@
     @apply text-[13px] font-bold uppercase tracking-widest text-subtle;
   }
 
-  /* Table header - 14px uppercase */
+  /* Table header - 12px uppercase */
   .text-table-header {
-    @apply text-sm font-bold uppercase tracking-widest text-subtle;
+    @apply text-xs font-bold uppercase tracking-widest text-subtle;
   }
 
   /* Page title - 36px */
@@ -205,5 +205,10 @@
   /* Sidebar link - 15px */
   .text-sidebar {
     @apply text-[15px] font-medium text-body;
+  }
+
+  /* Caption/legend - 13px (non-uppercase) */
+  .text-caption {
+    @apply text-[13px] text-subtle;
   }
 }

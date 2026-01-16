@@ -110,8 +110,8 @@ export function EpigeneticsChart({ data }: VisualizationProps) {
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-[13px]">
-        <span className="text-muted-foreground">Regulatory State:</span>
+      <div className="flex flex-wrap items-center gap-4 text-caption">
+        <span>Regulatory State:</span>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded" style={{ backgroundColor: CHART_COLORS.Active }} />
           <span>Active</span>

@@ -161,8 +161,8 @@ function ChromatinProgressBar({
   return (
     <div className="flex items-center gap-2">
       <span className={cn(
-        "text-[15px] font-mono w-12 text-right tabular-nums",
-        isEmpty ? "text-slate-300" : "text-slate-500"
+        "text-data w-12 text-right tabular-nums",
+        isEmpty ? "!text-slate-300" : ""
       )}>
         {value}/48
       </span>
@@ -214,7 +214,7 @@ function ChromatinCategoryGroup({
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
-      <div className={cn("px-4 py-3 font-bold text-[13px] uppercase tracking-widest", BADGE_COLORS[cat.color])}>
+      <div className={cn("px-4 py-3 text-label", BADGE_COLORS[cat.color])}>
         {cat.label}
       </div>
       <div className="divide-y divide-slate-200 bg-white">

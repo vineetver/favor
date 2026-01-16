@@ -82,7 +82,7 @@ export function CategoryDetailView({
                       </TooltipProvider>
                     )}
                   </div>
-                  <dd className="text-[15px] text-slate-500 sm:flex-1 sm:pl-6 min-w-0 font-mono">
+                  <dd className="text-data sm:flex-1 sm:pl-6 min-w-0">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>

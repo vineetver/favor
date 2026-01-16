@@ -44,7 +44,7 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
             style={{ left: `${avgNormalisedScore * 100}%` }}
           />
         </div>
-        <div className="flex justify-between text-[13px] text-muted-foreground mt-1">
+        <div className="flex justify-between text-caption mt-1">
           <span>Benign (0)</span>
           <span>Pathogenic (1)</span>
         </div>

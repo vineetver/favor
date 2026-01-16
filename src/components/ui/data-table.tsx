@@ -155,8 +155,8 @@ function DataTablePagination<TData>({
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200">
-      <div className="text-sm text-slate-500">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+      <div className="text-xs text-slate-500">
         Showing <span className="font-semibold text-slate-700">{startRow}</span> to{" "}
         <span className="font-semibold text-slate-700">{endRow}</span> of{" "}
         <span className="font-semibold text-slate-700">{totalRows}</span> results
@@ -441,7 +441,7 @@ export function DataTable<TData, TValue>({
                     return (
                       <th
                         key={header.id}
-                        className="px-6 py-3 text-left text-sm font-bold uppercase tracking-widest text-slate-400"
+                        className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
                       >
                         {header.isPlaceholder ? null : canSort ? (
                           <button
@@ -490,7 +490,7 @@ export function DataTable<TData, TValue>({
                     )}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-6 py-4 text-base">
+                      <td key={cell.id} className="px-4 py-3 text-sm">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -536,7 +536,7 @@ export function DataTableBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-md text-[13px] font-medium border",
+        "inline-flex items-center px-2.5 py-0.5 rounded-md text-caption font-medium border",
         variants[variant],
         className
       )}
@@ -576,7 +576,7 @@ export function DataTableScore({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[15px] font-semibold text-slate-900 tabular-nums">
+      <span className="text-data font-semibold text-slate-900 tabular-nums">
         {value.toFixed(precision)}
       </span>
       {showBar && (
@@ -630,7 +630,7 @@ export function DataTableProgress({
   return (
     <div className="flex items-center gap-2">
       {showValue && (
-        <span className="text-[15px] font-mono text-slate-500 tabular-nums min-w-[70px]">
+        <span className="text-data tabular-nums min-w-[70px]">
           {formatValue()}
         </span>
       )}
@@ -655,7 +655,7 @@ export function DataTableMono({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono text-[15px]",
+        "inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-data",
         className
       )}
     >
@@ -759,13 +759,13 @@ export function DataTableMultiValue({
       {displayed.map((val, i) => (
         <span
           key={i}
-          className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[13px]"
+          className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-caption"
         >
           {val}
         </span>
       ))}
       {remaining > 0 && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[13px]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-caption">
           +{remaining} more
         </span>
       )}

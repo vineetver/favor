@@ -230,10 +230,10 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                 }`}
               >
                 Annotation Table
-                <span className={`ml-2 px-2 py-0.5 text-[13px] rounded-full ${
+                <span className={`ml-2 px-2 py-0.5 text-caption rounded-full ${
                   activeTab === "table"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200 text-slate-600"
+                    ? "bg-white/20 !text-white"
+                    : "bg-slate-200 !text-slate-600"
                 }`}>
                   {rowCount}
                 </span>
@@ -361,8 +361,8 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                           <span className="leading-6">{label}</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="flex justify-between text-[15px] text-slate-500">
-                          <span className="font-mono">{renderValue()}</span>
+                        <div className="flex justify-between">
+                          <span className="text-data">{renderValue()}</span>
                           {derivedColumn && (
                             <span>
                               {derivedColumn.render(derived)}
@@ -377,12 +377,12 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                         style={{ gridTemplateColumns: gridCols }}
                       >
                         <div className="flex items-start gap-1.5">
-                          <span className="text-base font-semibold text-slate-900">{label}</span>
+                          <span className="text-sm font-medium text-slate-900">{label}</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="text-center text-[15px] text-slate-500 font-mono">{renderValue()}</div>
+                        <div className="text-center text-data">{renderValue()}</div>
                         {derivedColumn && (
-                          <div className="text-center text-[15px] text-slate-500">
+                          <div className="text-center text-data">
                             {derivedColumn.render(derived)}
                           </div>
                         )}

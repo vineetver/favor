@@ -39,7 +39,7 @@ export function SummaryCard({
         className
       )}
     >
-      <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="flex items-center gap-2 text-label">
         {icon}
         <span>{title}</span>
       </div>
@@ -103,9 +103,9 @@ export function ProgressBar({ label, value, total, color = "blue" }: ProgressBar
 
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[13px]">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
+      <div className="flex justify-between text-caption">
+        <span>{label}</span>
+        <span className="font-medium text-foreground">{value}</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
