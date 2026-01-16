@@ -1,6 +1,6 @@
 import { fetchVariant } from "@/features/variant/api";
-import { CategoryDataView } from "@/features/variant/components/category-data-view";
 import { notFound } from "next/navigation";
+import { IntegrativeDataTable } from "./integrative-data-table";
 
 interface IntegrativePageProps {
   params: Promise<{
@@ -20,6 +20,6 @@ export default async function IntegrativePage({
     notFound();
   }
 
-  return <CategoryDataView data={variant} categoryId="integrative" />;
+  return <IntegrativeDataTable variant={variant} />;
 }
 

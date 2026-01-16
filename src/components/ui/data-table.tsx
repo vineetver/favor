@@ -26,15 +26,13 @@ import {
   MoreHorizontal,
   Table as TableIcon,
   BarChart3,
-  FileText,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "./card";
-import { Button } from "./button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import {
@@ -43,6 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./tooltip";
+import type { ColumnMeta, DerivedColumn, VisualizationProps } from "@/lib/table/column-builder";
 
 // ============================================================================
 // Types
@@ -52,6 +51,17 @@ export interface DataTableTab {
   id: string;
   label: string;
   icon?: React.ComponentType<{ className?: string }>;
+}
+
+/** Row format for transposed data */
+export interface TransposedRow {
+  id: string;
+  label: string;
+  value: unknown;
+  derived: unknown;
+  description?: React.ReactNode;
+  columnDef: ColumnDef<unknown>;
+  sourceObject: unknown;
 }
 
 export interface DataTableProps<TData, TValue> {
@@ -101,6 +111,18 @@ export interface DataTableProps<TData, TValue> {
   loading?: boolean;
   /** Additional class name */
   className?: string;
+
+  // ========== Transposed Mode Props ==========
+  /** Enable transposed format (single object → rows from columns) */
+  transposed?: boolean;
+  /** Source object for transposed mode */
+  sourceObject?: TData;
+  /** Derived column configuration for transposed mode */
+  derivedColumn?: DerivedColumn;
+  /** Visualization component for transposed mode */
+  visualization?: React.ComponentType<VisualizationProps>;
+  /** Default sort for transposed mode */
+  defaultSort?: { column: "label" | "value" | "derived"; direction: "asc" | "desc" };
 }
 
 // ============================================================================
@@ -108,9 +130,9 @@ export interface DataTableProps<TData, TValue> {
 // ============================================================================
 
 function SortIcon({ direction }: { direction: "asc" | "desc" | false }) {
-  if (direction === "asc") return <ArrowUp className="h-3.5 w-3.5" />;
-  if (direction === "desc") return <ArrowDown className="h-3.5 w-3.5" />;
-  return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />;
+  if (direction === "asc") return <ArrowUp className="h-3 w-3" />;
+  if (direction === "desc") return <ArrowDown className="h-3 w-3" />;
+  return <ArrowUpDown className="h-3 w-3 opacity-40" />;
 }
 
 function DataTablePagination<TData>({
@@ -219,9 +241,9 @@ export function DataTable<TData, TValue>({
   exportable = true,
   exportFilename = "data-export",
   filterable = false,
-  tabs,
-  activeTab,
-  onTabChange,
+  tabs: externalTabs,
+  activeTab: externalActiveTab,
+  onTabChange: externalOnTabChange,
   filterPanel,
   showFilters,
   onToggleFilters,
@@ -232,24 +254,184 @@ export function DataTable<TData, TValue>({
   emptyMessage = "No results found",
   loading = false,
   className,
+  // Transposed mode props
+  transposed = false,
+  sourceObject,
+  derivedColumn,
+  visualization: VisualizationComponent,
+  defaultSort,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>(
+    defaultSort ? [{ id: defaultSort.column, desc: defaultSort.direction === "desc" }] : []
+  );
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [internalActiveTab, setInternalActiveTab] = React.useState<"table" | "visualization">("table");
+
+  // Resolve tabs - use internal tabs for transposed mode with visualization, otherwise external
+  const hasVisualization = transposed && VisualizationComponent;
+  const tabs = hasVisualization
+    ? [
+        { id: "table", label: "Table", icon: TableIcon },
+        { id: "visualization", label: "Chart", icon: BarChart3 },
+      ]
+    : externalTabs;
+  const activeTab = hasVisualization ? internalActiveTab : externalActiveTab;
+  const onTabChange = hasVisualization
+    ? (id: string) => setInternalActiveTab(id as "table" | "visualization")
+    : externalOnTabChange;
+
+  // ========== Transposed Mode: Transform columns → rows ==========
+  const transposedRows = React.useMemo<TransposedRow[]>(() => {
+    if (!transposed || !sourceObject) return [];
+
+    return columns.map((colDef) => {
+      const header = typeof colDef.header === "string" ? colDef.header : colDef.id ?? "";
+      let value: unknown = null;
+
+      // Get value using accessor
+      if ("accessorFn" in colDef && typeof colDef.accessorFn === "function") {
+        value = colDef.accessorFn(sourceObject, 0);
+      } else if ("accessorKey" in colDef && colDef.accessorKey) {
+        value = (sourceObject as Record<string, unknown>)[colDef.accessorKey as string];
+      }
+
+      const meta = colDef.meta as ColumnMeta | undefined;
+      const derived = derivedColumn?.derive(value, colDef.id);
+
+      return {
+        id: colDef.id ?? header,
+        label: header,
+        value,
+        derived,
+        description: meta?.description,
+        columnDef: colDef as ColumnDef<unknown>,
+        sourceObject,
+      };
+    });
+  }, [transposed, sourceObject, columns, derivedColumn]);
+
+  // Columns for transposed table
+  const transposedTableColumns = React.useMemo<ColumnDef<TransposedRow>[]>(() => {
+    if (!transposed) return [];
+
+    const cols: ColumnDef<TransposedRow>[] = [
+      {
+        id: "label",
+        accessorKey: "label",
+        header: "Annotation",
+        cell: ({ row }) => {
+          const { label, description } = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">{label}</span>
+              {description && (
+                <TooltipProvider>
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs text-sm bg-slate-900 text-slate-100 border-slate-800">
+                      {description}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          );
+        },
+        filterFn: (row, _columnId, filterValue) => {
+          return row.original.label.toLowerCase().includes((filterValue as string).toLowerCase());
+        },
+      },
+      {
+        id: "value",
+        accessorKey: "value",
+        header: "Value",
+        cell: ({ row }) => {
+          const { columnDef, sourceObject: src, value } = row.original;
+          if (columnDef.cell && typeof columnDef.cell === "function") {
+            const ctx = {
+              getValue: () => value,
+              row: { original: src, id: "0", index: 0 },
+              column: { id: columnDef.id ?? "" },
+              table: {} as never,
+              cell: {} as never,
+              renderValue: () => value,
+            };
+            return flexRender(columnDef.cell, ctx as never);
+          }
+          return value == null ? "—" : String(value);
+        },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.value;
+          const b = rowB.original.value;
+          if (a == null && b == null) return 0;
+          if (a == null) return 1;
+          if (b == null) return -1;
+          if (typeof a === "number" && typeof b === "number") return a - b;
+          return String(a).localeCompare(String(b));
+        },
+      },
+    ];
+
+    // Add derived column if provided
+    if (derivedColumn) {
+      cols.push({
+        id: "derived",
+        accessorKey: "derived",
+        header: () => (
+          <div className="flex items-center gap-1.5">
+            <span>{derivedColumn.header}</span>
+            {derivedColumn.headerTooltip && (
+              <TooltipProvider>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-sm bg-slate-900 text-slate-100 border-slate-800">
+                    {derivedColumn.headerTooltip}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        ),
+        cell: ({ row }) => derivedColumn.render(row.original.derived),
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.derived;
+          const b = rowB.original.derived;
+          if (a == null && b == null) return 0;
+          if (a == null) return 1;
+          if (b == null) return -1;
+          if (typeof a === "number" && typeof b === "number") return a - b;
+          return String(a).localeCompare(String(b));
+        },
+      });
+    }
+
+    return cols;
+  }, [transposed, derivedColumn]);
+
+  // Use transposed data/columns when in transposed mode
+  const effectiveData = transposed ? (transposedRows as unknown as TData[]) : data;
+  const effectiveColumns = transposed
+    ? (transposedTableColumns as unknown as ColumnDef<TData, TValue>[])
+    : columns;
 
   // Add row actions column if provided
   const columnsWithActions = React.useMemo(() => {
-    if (!rowActions) return columns;
+    if (!rowActions) return effectiveColumns;
 
     return [
-      ...columns,
+      ...effectiveColumns,
       {
         id: "actions",
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <button type="button" className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -260,10 +442,10 @@ export function DataTable<TData, TValue>({
         ),
       } as ColumnDef<TData, TValue>,
     ];
-  }, [columns, rowActions]);
+  }, [effectiveColumns, rowActions]);
 
   const table = useReactTable({
-    data,
+    data: effectiveData,
     columns: columnsWithActions,
     state: {
       sorting,
@@ -286,125 +468,208 @@ export function DataTable<TData, TValue>({
 
   // Export to CSV
   const handleExport = () => {
-    const headers = columns
-      .filter((col) => col.id !== "actions")
-      .map((col) => {
-        if (typeof col.header === "string") return col.header;
-        if ("accessorKey" in col) return String(col.accessorKey);
-        return col.id ?? "";
+    if (transposed) {
+      // Transposed mode export
+      const headers = derivedColumn
+        ? ["Annotation", "Value", derivedColumn.header]
+        : ["Annotation", "Value"];
+
+      const rows = table.getFilteredRowModel().rows.map((row) => {
+        const original = row.original as unknown as TransposedRow;
+        const valueStr = original.value == null ? "" : String(original.value);
+        const derivedStr = original.derived == null ? "" : String(original.derived);
+        const baseRow = [
+          `"${original.label.replace(/"/g, '""')}"`,
+          `"${valueStr.replace(/"/g, '""')}"`,
+        ];
+        if (derivedColumn) {
+          baseRow.push(`"${derivedStr.replace(/"/g, '""')}"`);
+        }
+        return baseRow.join(",");
       });
 
-    const rows = table.getFilteredRowModel().rows.map((row) =>
-      columns
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${exportFilename}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // Regular mode export
+      const headers = effectiveColumns
         .filter((col) => col.id !== "actions")
         .map((col) => {
-          const cellValue = row.getValue(col.id ?? ("accessorKey" in col ? String(col.accessorKey) : ""));
-          return `"${String(cellValue ?? "").replace(/"/g, '""')}"`;
-        })
-        .join(",")
-    );
+          if (typeof col.header === "string") return col.header;
+          if ("accessorKey" in col) return String(col.accessorKey);
+          return col.id ?? "";
+        });
 
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${exportFilename}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const rows = table.getFilteredRowModel().rows.map((row) =>
+        effectiveColumns
+          .filter((col) => col.id !== "actions")
+          .map((col) => {
+            const cellValue = row.getValue(col.id ?? ("accessorKey" in col ? String(col.accessorKey) : ""));
+            return `"${String(cellValue ?? "").replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      );
+
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${exportFilename}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   const filteredCount = table.getFilteredRowModel().rows.length;
-  const totalCount = data.length;
+  const totalCount = effectiveData.length;
+
+  // Prepare data for visualization
+  const visualizationData = React.useMemo(() => {
+    if (!transposed) return [];
+    return table.getFilteredRowModel().rows.map((row) => {
+      const original = row.original as unknown as TransposedRow;
+      return {
+        id: original.id,
+        label: original.label,
+        value: original.value,
+        derived: original.derived,
+      };
+    });
+  }, [transposed, table]);
+
+  // Render visualization tab
+  if (hasVisualization && activeTab === "visualization" && VisualizationComponent) {
+    return (
+      <Card className={className}>
+        <CardContent className="p-0!">
+          {/* Header with tabs */}
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-xl">
+                {tabs?.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      type="button"
+                      key={tab.id}
+                      onClick={() => onTabChange?.(tab.id)}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-out",
+                        activeTab === tab.id
+                          ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/50"
+                          : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      {Icon && <Icon className="h-4 w-4" />}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {filterPanel}
+            </div>
+          </div>
+
+          {/* Visualization */}
+          <div className="p-6 pt-2">
+            <VisualizationComponent data={visualizationData} derivedColumn={derivedColumn} />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={className}>
-      <CardContent className="!p-0">
-        {/* Header */}
-        {(title || subtitle || filterable || exportable) && (
-          <div className="px-6 py-5 border-b border-slate-200">
-            <div className="flex items-start justify-between">
-              <div>
-                {title && (
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                    {title}
-                  </h2>
-                )}
-                {subtitle && (
-                  <p className="mt-1 text-base text-slate-500">{subtitle}</p>
-                )}
-              </div>
+      <CardContent className="p-0!">
+        {/* Integrated Header with Tabs */}
+        <div className="px-6 pt-5 pb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left: Title or Tabs */}
+            <div className="flex items-center gap-4">
+              {tabs && tabs.length > 0 ? (
+                <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-xl">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        type="button"
+                        key={tab.id}
+                        onClick={() => onTabChange?.(tab.id)}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-out",
+                          activeTab === tab.id
+                            ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/50"
+                            : "text-slate-500 hover:text-slate-700"
+                        )}
+                      >
+                        {Icon && <Icon className="h-4 w-4" />}
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : title ? (
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+                  {subtitle && (
+                    <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>
+                  )}
+                </div>
+              ) : null}
+            </div>
 
-              <div className="flex items-center gap-2">
-                {filterable && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onToggleFilters}
-                    className={cn(
-                      "rounded-xl border-slate-200",
-                      showFilters && "bg-slate-100"
-                    )}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                  </Button>
-                )}
-                {exportable && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleExport}
-                    className="rounded-xl bg-slate-900 hover:bg-slate-800"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Data
-                  </Button>
-                )}
-              </div>
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2">
+              {filterable && (
+                <button
+                  type="button"
+                  onClick={onToggleFilters}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                    showFilters
+                      ? "bg-slate-100 text-slate-700"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                  )}
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">Filters</span>
+                </button>
+              )}
+              {exportable && (
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+              )}
             </div>
           </div>
-        )}
-
-        {/* Tabs */}
-        {tabs && tabs.length > 0 && (
-          <div className="px-6 py-3 border-b border-slate-200">
-            <div className="flex items-center gap-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => onTabChange?.(tab.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 text-base font-semibold rounded-xl transition-all duration-200",
-                      activeTab === tab.id
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                    )}
-                  >
-                    {Icon && <Icon className="h-4 w-4" />}
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Filter Panel */}
         {showFilters && filterPanel && (
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+          <div className="px-6 pb-4">
             {filterPanel}
           </div>
         )}
 
-        {/* Search & Count */}
+        {/* Search Bar */}
         {searchable && (
-          <div className="px-6 py-3 border-b border-slate-200">
+          <div className="px-6 pb-4">
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder={searchPlaceholder}
@@ -414,15 +679,15 @@ export function DataTable<TData, TValue>({
                       ? table.getColumn(searchColumn)?.setFilterValue(e.target.value)
                       : setGlobalFilter(e.target.value)
                   }
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-all"
+                  className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50/80 border-0 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all duration-150"
                 />
               </div>
 
-              <div className="text-sm text-slate-500">
-                Showing{" "}
-                <span className="font-semibold text-slate-700">{filteredCount}</span>{" "}
-                of <span className="font-semibold text-slate-700">{totalCount}</span>{" "}
-                {totalCount === 1 ? "result" : "results"}
+              <div className="text-xs text-slate-400">
+                <span className="font-semibold text-slate-600">{filteredCount}</span>
+                {" of "}
+                <span className="font-semibold text-slate-600">{totalCount}</span>
+                {" results"}
               </div>
             </div>
           </div>
@@ -431,7 +696,7 @@ export function DataTable<TData, TValue>({
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50/50 border-b border-slate-200">
+            <thead className="border-y border-slate-100 bg-slate-50/30">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -441,10 +706,11 @@ export function DataTable<TData, TValue>({
                     return (
                       <th
                         key={header.id}
-                        className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
+                        className="px-4 py-2.5 text-left text-sm font-semibold uppercase tracking-wider text-slate-400"
                       >
                         {header.isPlaceholder ? null : canSort ? (
                           <button
+                            type="button"
                             onClick={header.column.getToggleSortingHandler()}
                             className="flex items-center gap-1.5 hover:text-slate-600 transition-colors"
                           >
@@ -460,7 +726,7 @@ export function DataTable<TData, TValue>({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={columnsWithActions.length} className="px-6 py-16 text-center">
@@ -480,22 +746,30 @@ export function DataTable<TData, TValue>({
                   </td>
                 </tr>
               ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => onRowClick?.(row)}
-                    className={cn(
-                      "hover:bg-slate-50/50 transition-colors",
-                      onRowClick && "cursor-pointer"
-                    )}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-sm">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                table.getRowModel().rows.map((row, index) => {
+                  const isEven = index % 2 === 0;
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => onRowClick?.(row)}
+                      className={cn(
+                        "group relative transition-all duration-150 ease-out hover:bg-primary/[0.03]",
+                        isEven ? "bg-transparent" : "bg-slate-50/40",
+                        onRowClick && "cursor-pointer"
+                      )}
+                    >
+                      {row.getVisibleCells().map((cell, cellIndex) => (
+                        <td key={cell.id} className="relative px-4 py-3 text-sm">
+                          {/* Left accent on first cell */}
+                          {cellIndex === 0 && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/60 rounded-r transition-all duration-150 group-hover:h-5" />
+                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -525,18 +799,18 @@ export function DataTableBadge({
   className?: string;
 }) {
   const variants = {
-    default: "bg-slate-100 text-slate-700 border-slate-200",
-    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    warning: "bg-amber-50 text-amber-700 border-amber-200",
-    error: "bg-red-50 text-red-700 border-red-200",
-    info: "bg-blue-50 text-blue-700 border-blue-200",
-    purple: "bg-purple-50 text-purple-700 border-purple-200",
+    default: "bg-slate-50 text-slate-600 ring-1 ring-slate-200/60",
+    success: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60",
+    warning: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/60",
+    error: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/60",
+    info: "bg-sky-50 text-sky-700 ring-1 ring-sky-200/60",
+    purple: "bg-violet-50 text-violet-700 ring-1 ring-violet-200/60",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-md text-caption font-medium border",
+        "inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold tracking-wide uppercase",
         variants[variant],
         className
       )}
@@ -598,7 +872,7 @@ export function DataTableProgress({
 }: {
   value: number | null | undefined;
   max?: number;
-  color?: "blue" | "green" | "red" | "amber" | "purple" | "slate";
+  color?: "blue" | "green" | "red" | "amber" | "purple" | "slate" | "pink";
   showValue?: boolean;
   format?: "percent" | "decimal" | "scientific";
 }) {
@@ -608,12 +882,13 @@ export function DataTableProgress({
 
   const percentage = Math.min((value / max) * 100, 100);
   const colors = {
-    blue: "bg-blue-500",
+    blue: "bg-sky-500",
     green: "bg-emerald-500",
-    red: "bg-red-500",
+    red: "bg-rose-500",
     amber: "bg-amber-500",
-    purple: "bg-purple-500",
-    slate: "bg-slate-500",
+    purple: "bg-violet-500",
+    slate: "bg-slate-400",
+    pink: "bg-pink-500",
   };
 
   const formatValue = () => {
@@ -628,15 +903,15 @@ export function DataTableProgress({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {showValue && (
-        <span className="text-data tabular-nums min-w-[70px]">
+        <span className="text-sm font-mono text-slate-700 tabular-nums min-w-[72px]">
           {formatValue()}
         </span>
       )}
-      <div className="h-2 w-20 bg-slate-200 rounded-full overflow-hidden">
+      <div className="h-1.5 w-20 bg-slate-100 rounded-full overflow-hidden">
         <div
-          className={cn("h-full rounded-full transition-all", colors[color])}
+          className={cn("h-full rounded-full transition-all duration-300", colors[color])}
           style={{ width: `${percentage}%` }}
         />
       </div>

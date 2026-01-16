@@ -25,7 +25,7 @@ chromatinStateColumns.forEach((col) => {
   }
 });
 
-// HeaderTooltip matching the style of category-data-view
+// HeaderTooltip matching the style of DataTable
 function HeaderTooltip({ content }: { content: ReactNode }) {
   return (
     <TooltipProvider>

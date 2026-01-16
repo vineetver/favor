@@ -51,21 +51,27 @@ interface AlleleFrequencyVisualizationProps {
 // Custom Cell Components
 // ============================================================================
 
-function FrequencyCell({ value, color = "blue" }: { value: number | null; color?: "blue" | "pink" }) {
+function FrequencyCell({ value, color = "blue" }: { value: number | null; color?: "blue" | "pink" | "purple" }) {
   if (value === null) {
     return <span className="text-slate-400">—</span>;
   }
 
-  const colorClass = color === "pink" ? "text-pink-600" : "text-blue-600";
+  const colorClasses = {
+    blue: { text: "text-sky-700", bar: "bg-sky-500" },
+    pink: { text: "text-pink-700", bar: "bg-pink-500" },
+    purple: { text: "text-violet-700", bar: "bg-violet-500" },
+  };
+
+  const styles = colorClasses[color];
 
   return (
     <div className="flex items-center gap-3">
-      <span className={`text-data tabular-nums ${colorClass}`}>
+      <span className={`text-sm font-mono tabular-nums ${styles.text}`}>
         {value.toExponential(2)}
       </span>
-      <div className="h-1.5 w-16 bg-slate-200 rounded-full overflow-hidden">
+      <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full ${color === "pink" ? "bg-pink-500" : "bg-blue-500"}`}
+          className={`h-full rounded-full transition-all duration-300 ${styles.bar}`}
           style={{ width: `${Math.min(value * 1000000, 100)}%` }}
         />
       </div>
@@ -243,16 +249,17 @@ export function AlleleFrequencyVisualization({
   // Data view filter panel
   const filterPanel = (
     <div className="flex items-center gap-3">
-      <span className="text-base font-medium text-slate-500">View:</span>
-      <div className="flex items-center bg-slate-100/80 p-1 rounded-xl">
+      <span className="text-sm font-medium text-slate-500">View:</span>
+      <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-xl">
         {(["overall", "male", "female", "compare"] as const).map((view) => (
           <button
+            type="button"
             key={view}
             onClick={() => setDataView(view)}
-            className={`px-3 py-1.5 text-caption font-semibold rounded-lg transition-all duration-200 ${
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ease-out ${
               dataView === view
-                ? "bg-white shadow-sm text-slate-900"
-                : "text-slate-500 hover:text-slate-900"
+                ? "bg-white shadow-sm ring-1 ring-slate-200/50 text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
             {view.charAt(0).toUpperCase() + view.slice(1)}
@@ -271,21 +278,22 @@ export function AlleleFrequencyVisualization({
   if (activeTab === "chart") {
     return (
       <Card>
-        <CardContent className="!p-0">
+        <CardContent className="p-0!">
           {/* Header with tabs */}
-          <div className="px-6 py-4 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-xl">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
+                      type="button"
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as "table" | "chart")}
-                      className={`flex items-center gap-2 px-4 py-2 text-base font-semibold rounded-xl transition-all duration-200 ${
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-out ${
                         activeTab === tab.id
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                          ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/50"
+                          : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -299,7 +307,7 @@ export function AlleleFrequencyVisualization({
           </div>
 
           {/* Chart */}
-          <div className="p-6">
+          <div className="p-6 pt-2">
             <AlleleFrequencyChart data={chartData} isCompare={dataView === "compare"} />
           </div>
         </CardContent>

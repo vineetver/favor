@@ -1,6 +1,6 @@
 import { fetchVariant } from "@/features/variant/api";
-import { CategoryDataView } from "@/features/variant/components/category-data-view";
 import { notFound } from "next/navigation";
+import { EpigeneticsDataTable } from "./epigenetics-data-table";
 
 interface EpigeneticsPageProps {
   params: Promise<{
@@ -20,5 +20,5 @@ export default async function EpigeneticsPage({
     notFound();
   }
 
-  return <CategoryDataView data={variant} categoryId="epigenetics" />;
+  return <EpigeneticsDataTable variant={variant} />;
 }

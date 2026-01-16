@@ -4,52 +4,59 @@ import { ExternalLink } from "@/components/ui/external-link";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
-// Color System
+// Color System - Refined for scientific/genomics data display
 // ============================================================================
 
-// Badge styles for cells
+// Badge styles - subtle, refined aesthetic for scientific contexts
 export const BADGE_COLORS = {
-  blue: "bg-blue-300/90 text-blue-950 hover:bg-blue-400 shadow-sm shadow-blue-500/10",
-  red: "bg-red-300/90 text-red-950 hover:bg-red-400 shadow-sm shadow-red-500/10",
-  green: "bg-green-300/90 text-green-950 hover:bg-green-400 shadow-sm shadow-green-500/10",
-  indigo: "bg-indigo-300/90 text-indigo-950 hover:bg-indigo-400 shadow-sm shadow-indigo-500/10",
-  lime: "bg-lime-300/90 text-lime-950 hover:bg-lime-400 shadow-sm shadow-lime-500/10",
-  teal: "bg-teal-300/90 text-teal-950 hover:bg-teal-400 shadow-sm shadow-teal-500/10",
-  cyan: "bg-cyan-300/90 text-cyan-950 hover:bg-cyan-400 shadow-sm shadow-cyan-500/10",
-  yellow: "bg-yellow-300/90 text-yellow-950 hover:bg-yellow-400 shadow-sm shadow-yellow-500/10",
-  rose: "bg-rose-300/90 text-rose-950 hover:bg-rose-400 shadow-sm shadow-rose-500/10",
-  sky: "bg-sky-300/90 text-sky-950 hover:bg-sky-400 shadow-sm shadow-sky-500/10",
-  orange: "bg-orange-300/90 text-orange-950 hover:bg-orange-400 shadow-sm shadow-orange-500/10",
-  stone: "bg-stone-300/90 text-stone-950 hover:bg-stone-400 shadow-sm shadow-stone-500/10",
-  amber: "bg-amber-300/90 text-amber-950 hover:bg-amber-400 shadow-sm shadow-amber-500/10",
-  emerald: "bg-emerald-300/90 text-emerald-950 hover:bg-emerald-400 shadow-sm shadow-emerald-500/10",
-  fuchsia: "bg-fuchsia-300/90 text-fuchsia-950 hover:bg-fuchsia-400 shadow-sm shadow-fuchsia-500/10",
-  violet: "bg-violet-300/90 text-violet-950 hover:bg-violet-400 shadow-sm shadow-violet-500/10",
-  purple: "bg-purple-300/90 text-purple-950 hover:bg-purple-400 shadow-sm shadow-purple-500/10",
-  pink: "bg-pink-300/90 text-pink-950 hover:bg-pink-400 shadow-sm shadow-pink-500/10",
-  gray: "bg-slate-300/90 text-slate-950 hover:bg-slate-400 shadow-sm shadow-slate-500/10",
+  // Primary status colors - semantic meaning
+  green: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60",
+  red: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/60",
+  yellow: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/60",
+  orange: "bg-orange-50 text-orange-700 ring-1 ring-orange-200/60",
+
+  // Scientific/genomics-oriented colors
+  blue: "bg-sky-50 text-sky-700 ring-1 ring-sky-200/60",
+  indigo: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/60",
+  violet: "bg-violet-50 text-violet-700 ring-1 ring-violet-200/60",
+  purple: "bg-purple-50 text-purple-700 ring-1 ring-purple-200/60",
+  fuchsia: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-200/60",
+
+  // Extended palette
+  lime: "bg-lime-50 text-lime-700 ring-1 ring-lime-200/60",
+  teal: "bg-teal-50 text-teal-700 ring-1 ring-teal-200/60",
+  cyan: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200/60",
+  rose: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/60",
+  sky: "bg-sky-50 text-sky-700 ring-1 ring-sky-200/60",
+  stone: "bg-stone-50 text-stone-600 ring-1 ring-stone-200/60",
+  amber: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/60",
+  emerald: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60",
+  pink: "bg-pink-50 text-pink-700 ring-1 ring-pink-200/60",
+
+  // Neutral
+  gray: "bg-slate-50 text-slate-600 ring-1 ring-slate-200/60",
 } as const;
 
-// Dot colors for tooltip legends (static classes for Tailwind)
+// Dot colors for tooltip legends
 export const DOT_COLORS: Record<BadgeColor, string> = {
-  blue: "bg-blue-400",
-  red: "bg-red-400",
-  green: "bg-green-400",
-  indigo: "bg-indigo-400",
-  lime: "bg-lime-400",
-  teal: "bg-teal-400",
-  cyan: "bg-cyan-400",
-  yellow: "bg-yellow-400",
-  rose: "bg-rose-400",
-  sky: "bg-sky-400",
-  orange: "bg-orange-400",
-  stone: "bg-stone-400",
-  amber: "bg-amber-400",
-  emerald: "bg-emerald-400",
-  fuchsia: "bg-fuchsia-400",
-  violet: "bg-violet-400",
-  purple: "bg-purple-400",
-  pink: "bg-pink-400",
+  green: "bg-emerald-500",
+  red: "bg-rose-500",
+  yellow: "bg-amber-500",
+  orange: "bg-orange-500",
+  blue: "bg-sky-500",
+  indigo: "bg-indigo-500",
+  violet: "bg-violet-500",
+  purple: "bg-purple-500",
+  fuchsia: "bg-fuchsia-500",
+  lime: "bg-lime-500",
+  teal: "bg-teal-500",
+  cyan: "bg-cyan-500",
+  rose: "bg-rose-500",
+  sky: "bg-sky-500",
+  stone: "bg-stone-500",
+  amber: "bg-amber-500",
+  emerald: "bg-emerald-500",
+  pink: "bg-pink-500",
   gray: "bg-slate-400",
 };
 
@@ -123,7 +130,7 @@ export function Badge({ children, color }: { children: ReactNode; color: BadgeCo
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-1.5 rounded-full font-medium transition-colors capitalize",
+        "inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold tracking-wide uppercase",
         BADGE_COLORS[color]
       )}
     >
@@ -286,7 +293,7 @@ export type TransposedRow = {
   derived: unknown;
 };
 
-/** View configuration for CategoryDataView */
+/** View configuration for DataTable transposed mode */
 export type ViewConfig = {
   /** Data format: transposed (columns→rows) or regular table */
   format?: "transposed" | "regular";
@@ -306,7 +313,7 @@ type GroupConfig = {
   derivedColumn?: DerivedColumn;
   /** Default sort for table views */
   defaultSort?: DefaultSort;
-  /** View configuration for CategoryDataView */
+  /** View configuration for DataTable transposed mode */
   view?: ViewConfig;
 };
 
