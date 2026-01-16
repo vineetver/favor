@@ -20,7 +20,7 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
   if (changes.size === 0) return <span>-</span>;
 
   return (
-    <div className="text-sm space-y-0.5">
+    <div className="text-[15px] space-y-0.5">
       {Array.from(changes.values()).map((item, index) => (
         <div key={index} className="flex items-baseline gap-1.5">
           <span className="font-mono font-medium">{item.protein}</span>

@@ -35,6 +35,12 @@
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: oklch(0.56 0.11 228.27);
 
+  /* Typography semantic colors (matched to slate palette) */
+  --text-primary: oklch(0.129 0.042 264.695);    /* slate-900 - headings */
+  --text-secondary: oklch(0.554 0.046 257.417);  /* slate-500 - body text */
+  --text-muted: oklch(0.704 0.04 256.788);       /* slate-400 - labels, muted */
+  --text-caption: oklch(0.704 0.04 256.788);     /* slate-400 - captions */
+
   --font-sans: Geist, Geist Fallback, sans-serif;
   --font-serif: Nunito, sans-serif;
   --font-mono:
@@ -96,6 +102,12 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Typography colors - usable as text-heading, text-body, etc. */
+  --color-heading: var(--text-primary);
+  --color-body: var(--text-secondary);
+  --color-subtle: var(--text-muted);
+  --color-hint: var(--text-caption);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
@@ -146,5 +158,52 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
+  }
+}
+
+/* ============================================================================
+   Typography Component Classes
+
+   Quick reference (see docs/DESIGN_SYSTEM.md for full guide):
+   - Default/Body: text-base (16px)
+   - Navigation: text-base (16px)
+   - Sidebar: text-[15px]
+   - Labels: text-[13px] uppercase tracking-widest
+   - Table Headers: text-sm (14px) uppercase
+   ============================================================================ */
+@layer components {
+  /* Labels - 13px uppercase */
+  .text-label {
+    @apply text-[13px] font-bold uppercase tracking-widest text-subtle;
+  }
+
+  /* Table header - 14px uppercase */
+  .text-table-header {
+    @apply text-sm font-bold uppercase tracking-widest text-subtle;
+  }
+
+  /* Page title - 36px */
+  .text-page-title {
+    @apply text-4xl font-bold tracking-tight text-heading;
+  }
+
+  /* Card title - 18px */
+  .text-card-title {
+    @apply text-lg font-semibold text-heading;
+  }
+
+  /* Mono data value - 15px */
+  .text-data {
+    @apply text-[15px] font-mono text-body;
+  }
+
+  /* Nav link - 16px */
+  .text-nav {
+    @apply text-base font-medium text-body;
+  }
+
+  /* Sidebar link - 15px */
+  .text-sidebar {
+    @apply text-[15px] font-medium text-body;
   }
 }

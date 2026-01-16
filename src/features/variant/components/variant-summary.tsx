@@ -39,7 +39,7 @@ export function VariantSummary({
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <div>
               <p className="font-medium">Queued for generation...</p>
-              <p className="text-sm mt-1">
+              <p className="text-base mt-1">
                 Your request is in the queue. You can navigate away and come back later.
               </p>
             </div>
@@ -54,7 +54,7 @@ export function VariantSummary({
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <div>
               <p className="font-medium">Generating AI-powered analysis...</p>
-              <p className="text-sm mt-1">
+              <p className="text-base mt-1">
                 {state.estimatedSeconds
                   ? `Estimated time: ~${state.estimatedSeconds}s`
                   : "You can navigate away and come back later."}
@@ -83,7 +83,7 @@ export function VariantSummary({
                 <h3 className="text-destructive font-medium mb-2">
                   Error generating summary
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-base text-muted-foreground mb-3">
                   {state.error}
                 </p>
                 <Button

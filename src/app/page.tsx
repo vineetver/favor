@@ -67,7 +67,7 @@ export default function HomePage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500"></span>
                 </span>
-                <span className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                   Functional Annotation Resource
                 </span>
               </div>
@@ -181,7 +181,7 @@ function StatsTicker() {
             <div className="text-5xl md:text-6xl font-bold text-slate-900 tracking-tight mb-2">
               {stat.value}
             </div>
-            <div className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">
               {stat.label}
             </div>
           </div>

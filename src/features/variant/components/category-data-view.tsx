@@ -223,14 +223,14 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
               {/* Table tab */}
               <button
                 onClick={() => setActiveTab("table")}
-                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                className={`px-4 py-2 text-base font-semibold rounded-xl transition-all duration-200 ${
                   activeTab === "table"
                     ? "bg-slate-900 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 Annotation Table
-                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                <span className={`ml-2 px-2 py-0.5 text-[13px] rounded-full ${
                   activeTab === "table"
                     ? "bg-white/20 text-white"
                     : "bg-slate-200 text-slate-600"
@@ -243,7 +243,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
               {VisualizationComponent && (
                 <button
                   onClick={() => setActiveTab("visualization")}
-                  className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                  className={`px-4 py-2 text-base font-semibold rounded-xl transition-all duration-200 ${
                     activeTab === "visualization"
                       ? "bg-slate-900 text-white shadow-sm"
                       : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
@@ -290,7 +290,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
 
             {/* Table Header */}
             <div
-              className="hidden md:grid gap-4 px-6 py-3 bg-slate-50/50 border-b border-slate-200 text-xs font-bold uppercase tracking-widest text-slate-400"
+              className="hidden md:grid gap-4 px-6 py-3 bg-slate-50/50 border-b border-slate-200 text-sm font-bold uppercase tracking-widest text-slate-400"
               style={{ gridTemplateColumns: gridCols }}
             >
               <button
@@ -331,7 +331,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
             {/* Table Rows */}
             <div className="divide-y divide-slate-200">
               {sortedRows.length === 0 ? (
-                <div className="px-6 py-8 text-center text-slate-400 text-sm">
+                <div className="px-6 py-8 text-center text-slate-400 text-base">
                   No results found for &quot;{searchQuery}&quot;
                 </div>
               ) : (
@@ -357,11 +357,11 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                     <div key={row.id} className="px-6 py-4 hover:bg-slate-50/50 transition-colors">
                       {/* Mobile */}
                       <div className="md:hidden space-y-3">
-                        <div className="flex items-start gap-1.5 text-sm font-semibold text-slate-900">
+                        <div className="flex items-start gap-1.5 text-base font-semibold text-slate-900">
                           <span className="leading-6">{label}</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="flex justify-between text-sm text-slate-500">
+                        <div className="flex justify-between text-[15px] text-slate-500">
                           <span className="font-mono">{renderValue()}</span>
                           {derivedColumn && (
                             <span>
@@ -377,12 +377,12 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                         style={{ gridTemplateColumns: gridCols }}
                       >
                         <div className="flex items-start gap-1.5">
-                          <span className="text-sm font-semibold text-slate-900">{label}</span>
+                          <span className="text-base font-semibold text-slate-900">{label}</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="text-center text-sm text-slate-500 font-mono">{renderValue()}</div>
+                        <div className="text-center text-[15px] text-slate-500 font-mono">{renderValue()}</div>
                         {derivedColumn && (
-                          <div className="text-center text-sm text-slate-500">
+                          <div className="text-center text-[15px] text-slate-500">
                             {derivedColumn.render(derived)}
                           </div>
                         )}

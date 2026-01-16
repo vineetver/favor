@@ -331,7 +331,7 @@ export function DataTable<TData, TValue>({
                   </h2>
                 )}
                 {subtitle && (
-                  <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+                  <p className="mt-1 text-base text-slate-500">{subtitle}</p>
                 )}
               </div>
 
@@ -377,7 +377,7 @@ export function DataTable<TData, TValue>({
                     key={tab.id}
                     onClick={() => onTabChange?.(tab.id)}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200",
+                      "flex items-center gap-2 px-4 py-2 text-base font-semibold rounded-xl transition-all duration-200",
                       activeTab === tab.id
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
@@ -441,7 +441,7 @@ export function DataTable<TData, TValue>({
                     return (
                       <th
                         key={header.id}
-                        className="px-6 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
+                        className="px-6 py-3 text-left text-sm font-bold uppercase tracking-widest text-slate-400"
                       >
                         {header.isPlaceholder ? null : canSort ? (
                           <button
@@ -490,7 +490,7 @@ export function DataTable<TData, TValue>({
                     )}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-6 py-4 text-sm">
+                      <td key={cell.id} className="px-6 py-4 text-base">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -536,7 +536,7 @@ export function DataTableBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border",
+        "inline-flex items-center px-2.5 py-0.5 rounded-md text-[13px] font-medium border",
         variants[variant],
         className
       )}
@@ -576,7 +576,7 @@ export function DataTableScore({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-sm font-semibold text-slate-900 tabular-nums">
+      <span className="text-[15px] font-semibold text-slate-900 tabular-nums">
         {value.toFixed(precision)}
       </span>
       {showBar && (
@@ -630,7 +630,7 @@ export function DataTableProgress({
   return (
     <div className="flex items-center gap-2">
       {showValue && (
-        <span className="text-sm font-mono text-slate-500 tabular-nums min-w-[70px]">
+        <span className="text-[15px] font-mono text-slate-500 tabular-nums min-w-[70px]">
           {formatValue()}
         </span>
       )}
@@ -655,7 +655,7 @@ export function DataTableMono({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs",
+        "inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono text-[15px]",
         className
       )}
     >
@@ -727,7 +727,7 @@ export function DataTableLink({
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="text-sm font-medium text-purple-600 hover:text-purple-700 hover:underline transition-colors inline-flex items-center gap-1"
+      className="text-base font-medium text-purple-600 hover:text-purple-700 hover:underline transition-colors inline-flex items-center gap-1"
     >
       {children}
       {external && (
@@ -759,13 +759,13 @@ export function DataTableMultiValue({
       {displayed.map((val, i) => (
         <span
           key={i}
-          className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs"
+          className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[13px]"
         >
           {val}
         </span>
       ))}
       {remaining > 0 && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-xs">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[13px]">
           +{remaining} more
         </span>
       )}
@@ -817,12 +817,12 @@ export function DataTableStatus({
   }
 
   return value ? (
-    <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600">
+    <span className="inline-flex items-center gap-1.5 text-base text-emerald-600">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
       {trueLabel}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+    <span className="inline-flex items-center gap-1.5 text-base text-slate-400">
       <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
       {falseLabel}
     </span>
@@ -838,7 +838,7 @@ export function DataTableGene({
   href?: string;
 }) {
   const content = (
-    <span className="text-sm font-semibold text-slate-900">{symbol}</span>
+    <span className="text-base font-semibold text-slate-900">{symbol}</span>
   );
 
   if (href) {

@@ -39,7 +39,7 @@ export function VariantSummaryCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="text-sm text-slate-500 leading-relaxed">{children}</CardContent>
+      <CardContent className="text-base text-slate-500 leading-relaxed">{children}</CardContent>
     </Card>
   );
 }

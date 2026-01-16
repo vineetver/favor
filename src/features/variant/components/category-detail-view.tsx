@@ -66,7 +66,7 @@ export function CategoryDetailView({
               >
                 <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-6 sm:divide-x sm:divide-slate-200">
                   <div className="flex items-start space-x-2 sm:w-1/3 sm:flex-shrink-0 sm:pr-6">
-                    <dt className="text-sm font-semibold text-slate-900 leading-6 break-words">
+                    <dt className="text-base font-semibold text-slate-900 leading-6 break-words">
                       {header}
                     </dt>
                     {meta?.description && (
@@ -82,7 +82,7 @@ export function CategoryDetailView({
                       </TooltipProvider>
                     )}
                   </div>
-                  <dd className="text-sm text-slate-500 sm:flex-1 sm:pl-6 min-w-0 font-mono">
+                  <dd className="text-[15px] text-slate-500 sm:flex-1 sm:pl-6 min-w-0 font-mono">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>

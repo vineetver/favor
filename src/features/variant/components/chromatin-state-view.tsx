@@ -161,7 +161,7 @@ function ChromatinProgressBar({
   return (
     <div className="flex items-center gap-2">
       <span className={cn(
-        "text-sm font-mono w-12 text-right tabular-nums",
+        "text-[15px] font-mono w-12 text-right tabular-nums",
         isEmpty ? "text-slate-300" : "text-slate-500"
       )}>
         {value}/48
@@ -191,10 +191,10 @@ function ChromatinStateRow({
   return (
     <div className="flex items-center gap-4 py-3 px-4 hover:bg-slate-50/50 transition-colors">
       <div className="w-28 flex-shrink-0 flex items-center gap-1.5">
-        <span className="font-semibold text-sm text-slate-900">{state.name}</span>
+        <span className="font-semibold text-base text-slate-900">{state.name}</span>
         {tooltipContent && <HeaderTooltip content={tooltipContent} />}
       </div>
-      <div className="flex-1 text-sm text-slate-500">{state.description}</div>
+      <div className="flex-1 text-base text-slate-500">{state.description}</div>
       <ChromatinProgressBar value={value} category={state.category} />
     </div>
   );
@@ -214,7 +214,7 @@ function ChromatinCategoryGroup({
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
-      <div className={cn("px-4 py-3 font-bold text-sm tracking-tight", BADGE_COLORS[cat.color])}>
+      <div className={cn("px-4 py-3 font-bold text-[13px] uppercase tracking-widest", BADGE_COLORS[cat.color])}>
         {cat.label}
       </div>
       <div className="divide-y divide-slate-200 bg-white">

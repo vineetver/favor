@@ -88,7 +88,7 @@ export function IntegrativeBarChart({ data }: VisualizationProps) {
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-xs">
+      <div className="flex flex-wrap items-center gap-4 text-[13px]">
         <span className="text-muted-foreground">Percentile:</span>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded" style={{ backgroundColor: "#dc2626" }} />

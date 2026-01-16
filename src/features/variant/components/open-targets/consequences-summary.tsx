@@ -29,8 +29,8 @@ export function ConsequencesSummary({ data }: ConsequencesSummaryProps) {
   return (
     <div className="mb-6">
       <div className="rounded-lg border border-border/50 p-4 space-y-3">
-        <h4 className="text-sm font-medium">Impact Distribution (VEP)</h4>
-        <p className="text-sm text-muted-foreground">
+        <h4 className="text-base font-semibold">Impact Distribution (VEP)</h4>
+        <p className="text-base text-muted-foreground">
           Functional impact classification by Ensembl Variant Effect Predictor
         </p>
         <div className="space-y-2 mt-3">

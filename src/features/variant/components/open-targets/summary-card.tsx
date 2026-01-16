@@ -39,13 +39,13 @@ export function SummaryCard({
         className
       )}
     >
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-widest text-muted-foreground">
         {icon}
         <span>{title}</span>
       </div>
       <div className="text-2xl font-bold">{value}</div>
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-base text-muted-foreground">{description}</p>
       )}
     </div>
   );
@@ -68,9 +68,9 @@ export function SummarySection({
     <div className={cn("space-y-4", className)}>
       {(title || description) && (
         <div className="space-y-1">
-          {title && <h3 className="text-sm font-semibold">{title}</h3>}
+          {title && <h3 className="text-base font-semibold">{title}</h3>}
           {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-base text-muted-foreground">{description}</p>
           )}
         </div>
       )}
@@ -103,7 +103,7 @@ export function ProgressBar({ label, value, total, color = "blue" }: ProgressBar
 
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-sm">
+      <div className="flex justify-between text-[13px]">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">{value}</span>
       </div>
