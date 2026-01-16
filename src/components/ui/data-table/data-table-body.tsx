@@ -17,7 +17,7 @@ function SortIcon({ column }: { column: { getIsSorted: () => "asc" | "desc" | fa
   const sorted = column.getIsSorted();
   if (sorted === "asc") return <ArrowUp className="w-3 h-3 text-primary" />;
   if (sorted === "desc") return <ArrowDown className="w-3 h-3 text-primary" />;
-  return <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />;
+  return <ArrowUpDown className="w-3 h-3 text-slate-300 group-hover:text-slate-500 transition-colors" />;
 }
 
 export function DataTableBody<TData, TValue>({
@@ -85,7 +85,7 @@ export function DataTableBody<TData, TValue>({
                     <td
                       key={cell.id}
                       className={cn(
-                        "px-6 py-3.5 whitespace-nowrap text-sm text-slate-700",
+                        "px-6 py-3 whitespace-nowrap text-sm text-slate-700",
                         cellIndex === 0 && "relative"
                       )}
                     >
