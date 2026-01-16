@@ -4,6 +4,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
   {
     name: "Global Annotation",
     slug: "global-annotation",
+    // Flat list for mobile navigation (backward compatible)
     subCategories: [
       { text: "Variant Summary", slug: "llm-summary" },
       { text: "Basic Information", slug: "basic" },
@@ -16,16 +17,82 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       { text: "Epigenetics", slug: "epigenetics" },
       { text: "Transcription Factors", slug: "transcription-factors" },
       { text: "Chromatin State", slug: "chromatin-state" },
-      {
-        text: "Local Nucleotide Diversity",
-        slug: "local-nucleotide-diversity",
-      },
+      { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity" },
       { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation" },
       { text: "Mappability", slug: "mappability" },
       { text: "Proximity Table", slug: "proximity-table" },
       { text: "SpliceAI", slug: "splice-ai" },
       { text: "Somatic Mutation", slug: "somatic-mutation" },
       { text: "GWAS Catalog", slug: "gwas-catalog" },
+    ],
+    // Grouped structure for desktop sidebar
+    groups: [
+      {
+        name: "Overview",
+        defaultExpanded: true,
+        items: [
+          { text: "Variant Summary", slug: "llm-summary", icon: "sparkles" },
+          { text: "Basic Information", slug: "basic", icon: "file-text" },
+          { text: "Functional Class", slug: "functional-class", icon: "dna" },
+          { text: "Proximity Table", slug: "proximity-table", icon: "map-pin" },
+          { text: "Mappability", slug: "mappability", icon: "microscope" },
+        ],
+      },
+      {
+        name: "Population Genetics",
+        defaultExpanded: true,
+        items: [
+          { text: "Allele Frequency", slug: "allele-frequency", icon: "users" },
+          { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity", icon: "pie-chart" },
+          { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation", icon: "git-branch" },
+        ],
+      },
+      {
+        name: "Clinical Significance",
+        defaultExpanded: true,
+        items: [
+          { text: "Clinvar", slug: "clinvar", icon: "heart-pulse" },
+          { text: "Somatic Mutation", slug: "somatic-mutation", icon: "target" },
+        ],
+      },
+      {
+        name: "Integrative Scores",
+        defaultExpanded: true,
+        items: [
+          { text: "Integrative Score", slug: "integrative", icon: "brain" },
+        ],
+      },
+      {
+        name: "Conservation",
+        defaultExpanded: true,
+        items: [
+          { text: "Conservation", slug: "conservation", icon: "history" },
+        ],
+      },
+      {
+        name: "Epigenetics",
+        defaultExpanded: true,
+        items: [
+          { text: "Epigenetics", slug: "epigenetics", icon: "layers" },
+          { text: "Chromatin State", slug: "chromatin-state", icon: "flask-conical" },
+          { text: "Transcription Factors", slug: "transcription-factors", icon: "scan" },
+        ],
+      },
+      {
+        name: "Protein Function",
+        defaultExpanded: true,
+        items: [
+          { text: "Protein Function", slug: "protein-function", icon: "activity" },
+          { text: "SpliceAI", slug: "splice-ai", icon: "scissors" },
+        ],
+      },
+      {
+        name: "Phenotypic Effect",
+        defaultExpanded: true,
+        items: [
+          { text: "GWAS Catalog", slug: "gwas-catalog", icon: "book-open" },
+        ],
+      },
     ],
   },
   {

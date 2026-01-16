@@ -64,9 +64,9 @@ function HeaderTooltip({ content }: { content: ReactNode }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Info className="h-5 w-5 cursor-help flex-shrink-0 text-white fill-black" />
+          <Info className="h-4 w-4 cursor-help flex-shrink-0 text-slate-400 hover:text-slate-600" />
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-md">
+        <TooltipContent side="top" className="max-w-md bg-slate-900 text-white text-xs">
           {content}
         </TooltipContent>
       </Tooltip>
@@ -213,23 +213,23 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
 
   return (
     <div className={className}>
-      <div className="rounded-lg border border-border/50 bg-card shadow-md overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {/* Header with tabs and toolbar */}
-        <div className="px-6 py-4 border-b border-border/40">
+        <div className="px-6 py-4 border-b border-slate-100">
           {/* Tabs row */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
               {/* Table tab */}
               <button
                 onClick={() => setActiveTab("table")}
-                className={`pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === "table"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 Annotation Table
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-600">
                   {rowCount}
                 </span>
               </button>
@@ -238,13 +238,13 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
               {VisualizationComponent && (
                 <button
                   onClick={() => setActiveTab("visualization")}
-                  className={`pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     activeTab === "visualization"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  Data Visualization
+                  Visualization
                 </button>
               )}
             </div>
@@ -254,7 +254,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
               {showExport && (
                 <button
                   onClick={handleExport}
-                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                   title="Export to CSV"
                 >
                   <Download className="h-4 w-4" />
@@ -269,15 +269,15 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
           <div>
             {/* Search */}
             {showSearch && (
-              <div className="px-6 py-3 border-b border-border/40">
+              <div className="px-6 py-3 border-b border-slate-100">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Search annotations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
                   />
                 </div>
               </div>
@@ -285,12 +285,12 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
 
             {/* Table Header */}
             <div
-              className="hidden md:grid gap-4 px-6 py-3 bg-muted/30 border-b border-border/40 text-sm font-semibold"
+              className="hidden md:grid gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider"
               style={{ gridTemplateColumns: gridCols }}
             >
               <button
                 type="button"
-                className="flex items-center gap-1 text-left hover:text-foreground/80"
+                className="flex items-center gap-1 text-left hover:text-slate-700"
                 onClick={() => labelCol?.toggleSorting()}
               >
                 Annotation
@@ -299,7 +299,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
               <div className="flex items-center gap-1 justify-center">
                 <button
                   type="button"
-                  className="flex items-center gap-1 hover:text-foreground/80"
+                  className="flex items-center gap-1 hover:text-slate-700"
                   onClick={() => valueCol?.toggleSorting()}
                 >
                   Value
@@ -310,7 +310,7 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                 <div className="flex items-center gap-1 justify-center">
                   <button
                     type="button"
-                    className="flex items-center gap-1 hover:text-foreground/80"
+                    className="flex items-center gap-1 hover:text-slate-700"
                     onClick={() => derivedCol?.toggleSorting()}
                   >
                     {derivedColumn.header}
@@ -324,9 +324,9 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
             </div>
 
             {/* Table Rows */}
-            <div className="divide-y divide-border/40 text-sm">
+            <div className="divide-y divide-slate-100 text-sm">
               {sortedRows.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground">
+                <div className="px-6 py-8 text-center text-slate-400">
                   No results found for &quot;{searchQuery}&quot;
                 </div>
               ) : (
@@ -349,14 +349,14 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                   };
 
                   return (
-                    <div key={row.id} className="px-6 py-4">
+                    <div key={row.id} className="px-6 py-4 hover:bg-slate-50 transition-colors">
                       {/* Mobile */}
                       <div className="md:hidden space-y-3">
-                        <div className="flex items-start gap-1 font-medium">
+                        <div className="flex items-start gap-1.5 font-medium text-slate-900">
                           <span className="leading-6">{label}:</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="flex justify-between text-muted-foreground">
+                        <div className="flex justify-between text-slate-500">
                           <span>Value: {renderValue()}</span>
                           {derivedColumn && (
                             <span>
@@ -371,13 +371,13 @@ export function CategoryDataView({ data, categoryId, className = "" }: Props) {
                         className="hidden md:grid gap-4 items-center"
                         style={{ gridTemplateColumns: gridCols }}
                       >
-                        <div className="flex items-start gap-1">
-                          <span className="font-medium text-foreground leading-6">{label}:</span>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-medium text-slate-700">{label}:</span>
                           {description && <HeaderTooltip content={description} />}
                         </div>
-                        <div className="text-center text-muted-foreground">{renderValue()}</div>
+                        <div className="text-center text-slate-600 font-mono">{renderValue()}</div>
                         {derivedColumn && (
-                          <div className="text-center text-muted-foreground">
+                          <div className="text-center text-slate-600">
                             {derivedColumn.render(derived)}
                           </div>
                         )}

@@ -64,10 +64,10 @@ export function SaveSearchDialog({
         <button
           type="button"
           disabled={disabled || !query.trim()}
-          className="h-10 w-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-12 h-12 rounded-[18px] flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Save this search"
         >
-          <Bookmark className="h-5 w-5" />
+          <Bookmark className="w-6 h-6" />
         </button>
       </DialogTrigger>
 

@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
-import { VariantHeader } from "@/features/variant/components/header/variant-header";
+
 import { MobileSubNavigation } from "@/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@/components/navigation/navigation-tabs";
-import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
 import { fetchVariant } from "@/features/variant/api";
+import { VariantHeader } from "@/features/variant/components/header/variant-header";
+import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
 
 interface VariantLayoutProps {
   children: React.ReactNode;
@@ -36,8 +37,9 @@ export default async function VariantLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-background lg:ml-80">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="bg-background">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
           <VariantHeader variant={variant} />
 
           <div className="mb-6">
@@ -67,15 +69,19 @@ export default async function VariantLayout({
         </div>
       </div>
 
-      <div className="flex">
-        {currentCategory.subCategories.length > 0 && (
-          <NavigationSidebar
-            items={currentCategory.subCategories}
-            basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
-          />
-        )}
+      {/* Main Content Section */}
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+        <div className="flex">
+          {(currentCategory.groups || currentCategory.subCategories.length > 0) && (
+            <NavigationSidebar
+              items={currentCategory.subCategories}
+              groups={currentCategory.groups}
+              basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
+            />
+          )}
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8">{children}</main>
+          <main className="flex-1 min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   );

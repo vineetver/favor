@@ -74,7 +74,7 @@ export function NavigationTabs({
   return (
     <div className="w-full relative">
       <div ref={scrollContainerRef} className="overflow-x-auto scrollbar-hide">
-        <div className="inline-flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/40 min-w-fit">
+        <div className="inline-flex items-center gap-1 min-w-fit">
           {items.map((item) => {
             const Icon = iconMap[item.slug];
             const isActive = activeItem === item.slug;
@@ -85,24 +85,22 @@ export function NavigationTabs({
                 href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}`}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2.5",
-                  "rounded-lg whitespace-nowrap touch-manipulation",
-                  "text-base font-medium transition-all duration-300 ease-out",
-                  "hover:scale-[1.02] active:scale-[0.98]",
+                  "rounded-xl whitespace-nowrap touch-manipulation",
+                  "text-sm font-medium transition-all duration-200",
                   isActive && [
-                    "bg-primary text-primary-foreground",
-                    "shadow-lg shadow-primary/30 ring-1 ring-primary/20",
-                    "hover:bg-primary/90 hover:shadow-xl",
+                    "bg-primary text-white",
+                    "shadow-lg shadow-primary/25",
                   ],
                   !isActive && [
-                    "text-muted-foreground",
-                    "hover:text-foreground hover:bg-background/60",
+                    "text-slate-500 bg-slate-100",
+                    "hover:text-slate-700 hover:bg-slate-200",
                   ],
                 )}
               >
                 {Icon && (
-                  <Icon className="w-5 h-5 flex-shrink-0 transition-all duration-300" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                 )}
-                <span className="tracking-tight">{item.name}</span>
+                <span>{item.name}</span>
               </Link>
             );
           })}

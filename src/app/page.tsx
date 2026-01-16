@@ -319,7 +319,7 @@ function SearchInterface() {
                   type="button"
                   onClick={() => handleGenomeChange("hg38")}
                   className={cn(
-                    "relative z-10 px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200",
+                    "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
                     selectedGenome === "hg38"
                       ? "text-slate-900"
                       : "text-slate-500 hover:text-slate-700",
@@ -331,7 +331,7 @@ function SearchInterface() {
                   type="button"
                   onClick={() => handleGenomeChange("hg19")}
                   className={cn(
-                    "relative z-10 px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200",
+                    "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
                     selectedGenome === "hg19"
                       ? "text-slate-900"
                       : "text-slate-500 hover:text-slate-700",
@@ -383,7 +383,7 @@ function SearchInterface() {
             {isDropdownOpen && (
               <ComboboxOptions
                 static
-                className="absolute z-50 mt-2 max-h-80 w-full overflow-auto rounded-2xl bg-white border border-slate-100 shadow-xl py-2 text-base focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
+                className="absolute z-50 mt-2 max-h-80 w-full overflow-auto scrollbar-hide rounded-2xl bg-white border border-slate-100 shadow-xl py-2 text-base focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
               >
                 {isLoading ? (
                   <div className="relative cursor-default select-none py-4 px-6 text-slate-400">
