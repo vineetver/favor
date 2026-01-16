@@ -145,53 +145,44 @@ interface ClinicalSigResult {
   className: string;
 }
 
+// Clinical significance mapping (Commandment V: flat control flow)
+const CLINICAL_SIGNIFICANCE_MAP: Record<string, ClinicalSigResult> = {
+  pathogenic: { label: "Pathogenic", className: "bg-red-100 text-red-700" },
+  "likely_pathogenic": { label: "Likely Pathogenic", className: "bg-orange-100 text-orange-700" },
+  benign: { label: "Benign", className: "bg-green-100 text-green-700" },
+  "likely_benign": { label: "Likely Benign", className: "bg-emerald-100 text-emerald-700" },
+  uncertain_significance: { label: "VUS", className: "bg-amber-100 text-amber-700" },
+  conflicting: { label: "Conflicting", className: "bg-purple-100 text-purple-700" },
+};
+
 function parseClinicalSignificance(clnsig: string | null | undefined): ClinicalSigResult | null {
   if (!clnsig || clnsig === "." || clnsig === "not_provided") return null;
 
   const sig = clnsig.toLowerCase();
 
+  // Check for likely pathogenic first (more specific)
+  if (sig.includes("likely") && sig.includes("pathogenic")) {
+    return CLINICAL_SIGNIFICANCE_MAP["likely_pathogenic"];
+  }
   if (sig.includes("pathogenic") && !sig.includes("benign")) {
-    if (sig.includes("likely")) {
-      return {
-        label: "Likely Pathogenic",
-        className: "bg-orange-100 text-orange-700",
-      };
-    }
-    return {
-      label: "Pathogenic",
-      className: "bg-red-100 text-red-700",
-    };
+    return CLINICAL_SIGNIFICANCE_MAP["pathogenic"];
   }
 
+  // Check for likely benign first (more specific)
+  if (sig.includes("likely") && sig.includes("benign")) {
+    return CLINICAL_SIGNIFICANCE_MAP["likely_benign"];
+  }
   if (sig.includes("benign")) {
-    if (sig.includes("likely")) {
-      return {
-        label: "Likely Benign",
-        className: "bg-emerald-100 text-emerald-700",
-      };
-    }
-    return {
-      label: "Benign",
-      className: "bg-green-100 text-green-700",
-    };
+    return CLINICAL_SIGNIFICANCE_MAP["benign"];
   }
 
   if (sig.includes("uncertain") || sig.includes("vus")) {
-    return {
-      label: "VUS",
-      className: "bg-amber-100 text-amber-700",
-    };
+    return CLINICAL_SIGNIFICANCE_MAP["uncertain_significance"];
   }
 
   if (sig.includes("conflicting")) {
-    return {
-      label: "Conflicting",
-      className: "bg-purple-100 text-purple-700",
-    };
+    return CLINICAL_SIGNIFICANCE_MAP["conflicting"];
   }
 
-  return {
-    label: clnsig.replace(/_/g, " "),
-    className: "bg-slate-100 text-slate-600",
-  };
+  return { label: clnsig.replace(/_/g, " "), className: "bg-slate-100 text-slate-600" };
 }

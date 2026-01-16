@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Database,
   LayoutDashboard,
@@ -36,7 +36,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "InDel-summary": Activity,
   "tissue-specific": Microscope,
   "full-tables": Table2,
+  "open-targets": Database,
 };
+
+// Scroll state as single object (Commandment II: fewer invalid states)
+type ScrollState = { left: boolean; right: boolean };
 
 export function NavigationTabs({
   items,
@@ -44,32 +48,32 @@ export function NavigationTabs({
   basePath,
 }: NavigationTabsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [scrollState, setScrollState] = useState<ScrollState>({ left: false, right: false });
 
-  const checkScrollability = () => {
+  const updateScrollState = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
     const { scrollLeft, scrollWidth, clientWidth } = container;
-    setCanScrollLeft(scrollLeft > 0);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-  };
-
-  useEffect(() => {
-    checkScrollability();
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener("scroll", checkScrollability);
-      return () => container.removeEventListener("scroll", checkScrollability);
-    }
-  }, [items]);
-
-  useEffect(() => {
-    const handleResize = () => checkScrollability();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    setScrollState({
+      left: scrollLeft > 0,
+      right: scrollLeft < scrollWidth - clientWidth - 1,
+    });
   }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    updateScrollState();
+    container.addEventListener("scroll", updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      container.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [updateScrollState]);
 
   return (
     <div className="w-full relative">
@@ -107,11 +111,11 @@ export function NavigationTabs({
         </div>
       </div>
 
-      {canScrollRight && (
+      {scrollState.right && (
         <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
       )}
 
-      {canScrollLeft && (
+      {scrollState.left && (
         <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background via-background/80 to-transparent pointer-events-none" />
       )}
     </div>

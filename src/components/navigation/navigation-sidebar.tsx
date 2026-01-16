@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Collapsible,
@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-// Icon name to component mapping
 const iconMap: Record<string, LucideIcon> = {
   sparkles: Sparkles,
   "file-text": FileText,
@@ -56,7 +55,6 @@ const iconMap: Record<string, LucideIcon> = {
   microscope: Microscope,
 };
 
-// Types
 interface NavigationItem {
   text: string;
   slug: string;
@@ -82,33 +80,21 @@ export function NavigationSidebar({
 }: NavigationSidebarProps) {
   const params = useParams();
   const pathname = usePathname();
-  const currentSubcategory = params.subcategory as string;
 
-  const isActiveItem = (itemSlug: string) => {
-    if (currentSubcategory === itemSlug) return true;
-    return pathname.endsWith(`/${itemSlug}`);
-  };
+  // Derived: current active slug from URL
+  const activeSlug = useMemo(() => {
+    const subcategory = params.subcategory as string | undefined;
+    if (subcategory) return subcategory;
+    // Fallback: extract from pathname
+    const segments = pathname.split("/");
+    return segments[segments.length - 1];
+  }, [params.subcategory, pathname]);
 
-  // Initialize expanded groups based on defaultExpanded or if they contain active item
-  const getInitialExpandedGroups = () => {
-    if (!groups) return new Set<string>();
-
-    return new Set(
-      groups
-        .filter((group) => {
-          if (group.defaultExpanded) return true;
-          return group.items.some((item) => isActiveItem(item.slug));
-        })
-        .map((g) => g.name)
-    );
-  };
-
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    getInitialExpandedGroups
-  );
+  // Track only user-toggled groups (collapsed by user)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (groupName: string) => {
-    setExpandedGroups((prev) => {
+    setCollapsedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupName)) {
         next.delete(groupName);
@@ -119,50 +105,26 @@ export function NavigationSidebar({
     });
   };
 
-  // Render a single navigation item
-  const renderNavItem = (item: NavigationItem) => {
-    const isActive = isActiveItem(item.slug);
-    const Icon = item.icon ? iconMap[item.icon] : null;
-
-    return (
-      <Link
-        key={item.slug}
-        href={`${basePath}/${item.slug}`}
-        className={cn(
-          "group flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
-          isActive
-            ? "bg-slate-100 text-slate-900 font-medium"
-            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        )}
-      >
-        {Icon && (
-          <Icon
-            className={cn(
-              "w-4 h-4 shrink-0",
-              isActive ? "text-slate-700" : "text-slate-400 group-hover:text-slate-500"
-            )}
-          />
-        )}
-        <span className="truncate">{item.text}</span>
-      </Link>
-    );
+  // Derived: check if group should be expanded
+  const isGroupExpanded = (group: NavigationGroup): boolean => {
+    if (collapsedGroups.has(group.name)) return false;
+    if (group.defaultExpanded) return true;
+    return group.items.some((item) => item.slug === activeSlug);
   };
 
-  // If no items or groups, return null
+  // Early return: no content
   if ((!items || items.length === 0) && (!groups || groups.length === 0)) {
     return null;
   }
 
-  return (
-    <aside className="hidden lg:block w-64 shrink-0 pr-8">
-      <nav className="space-y-6">
-        {/* Render grouped navigation if groups exist */}
-        {groups && groups.length > 0 ? (
-          groups.map((group) => {
-            const isExpanded = expandedGroups.has(group.name);
-            const hasActiveItem = group.items.some((item) =>
-              isActiveItem(item.slug)
-            );
+  // Render grouped navigation
+  if (groups && groups.length > 0) {
+    return (
+      <aside className="hidden lg:block w-64 shrink-0 pr-8">
+        <nav className="space-y-6">
+          {groups.map((group) => {
+            const isExpanded = isGroupExpanded(group);
+            const hasActiveItem = group.items.some((item) => item.slug === activeSlug);
 
             return (
               <Collapsible
@@ -171,7 +133,6 @@ export function NavigationSidebar({
                 onOpenChange={() => toggleGroup(group.name)}
               >
                 <div className="space-y-1">
-                  {/* Group Header */}
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1 group cursor-pointer focus:outline-none focus-visible:outline-none">
                     <span
                       className={cn(
@@ -189,45 +150,74 @@ export function NavigationSidebar({
                     />
                   </CollapsibleTrigger>
 
-                  {/* Group Items */}
                   <CollapsibleContent className="space-y-0.5 overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
-                    {group.items.map(renderNavItem)}
+                    {group.items.map((item) => {
+                      const isActive = item.slug === activeSlug;
+                      const Icon = item.icon ? iconMap[item.icon] : null;
+
+                      return (
+                        <Link
+                          key={item.slug}
+                          href={`${basePath}/${item.slug}`}
+                          className={cn(
+                            "group flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
+                            isActive
+                              ? "bg-slate-100 text-slate-900 font-medium"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          )}
+                        >
+                          {Icon && (
+                            <Icon
+                              className={cn(
+                                "w-4 h-4 shrink-0",
+                                isActive ? "text-slate-700" : "text-slate-400 group-hover:text-slate-500"
+                              )}
+                            />
+                          )}
+                          <span className="truncate">{item.text}</span>
+                        </Link>
+                      );
+                    })}
                   </CollapsibleContent>
                 </div>
               </Collapsible>
             );
-          })
-        ) : (
-          /* Fallback to flat items rendering */
-          <div className="space-y-0.5">
-            {items?.map((item) => {
-              const isActive = isActiveItem(item.slug);
+          })}
+        </nav>
+      </aside>
+    );
+  }
 
-              return (
-                <Link
-                  key={item.slug}
-                  href={`${basePath}/${item.slug}`}
-                  className={cn(
-                    "group flex items-center justify-between py-2 text-sm transition-colors",
-                    isActive
-                      ? "text-slate-900 font-medium"
-                      : "text-slate-500 hover:text-slate-700"
-                  )}
-                >
-                  <span>{item.text}</span>
-                  <ChevronRight
-                    className={cn(
-                      "w-4 h-4 transition-all duration-200",
-                      isActive
-                        ? "opacity-100 text-primary"
-                        : "opacity-0 group-hover:opacity-50"
-                    )}
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        )}
+  // Fallback: flat items
+  return (
+    <aside className="hidden lg:block w-64 shrink-0 pr-8">
+      <nav className="space-y-0.5">
+        {items?.map((item) => {
+          const isActive = item.slug === activeSlug;
+
+          return (
+            <Link
+              key={item.slug}
+              href={`${basePath}/${item.slug}`}
+              className={cn(
+                "group flex items-center justify-between py-2 text-sm transition-colors",
+                isActive
+                  ? "text-slate-900 font-medium"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <span>{item.text}</span>
+              <ChevronRight
+                className={cn(
+                  "w-4 h-4 transition-all duration-200",
+                  isActive
+                    ? "opacity-100 text-primary"
+                    : "opacity-0 group-hover:opacity-50"
+                )}
+              />
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );
