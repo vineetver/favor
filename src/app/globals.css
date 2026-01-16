@@ -5,7 +5,7 @@
 @theme {
   --background: #fafafa;
   --foreground: oklch(0.22 0 0);
-  --card: oklch(0.96 0.01 335.69);
+  --card: #fafafa;
   --card-foreground: oklch(0.14 0 0);
   --popover: oklch(0.95 0.01 316.67);
   --popover-foreground: oklch(0.4 0.04 309.35);

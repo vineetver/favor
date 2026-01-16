@@ -2,6 +2,7 @@
 
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table";
 import { Info } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { NoDataState } from "@/components/ui/error-states";
 import {
   Tooltip,
@@ -49,9 +50,9 @@ export function CategoryDetailView({
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      <div className="rounded-lg border border-border/50 bg-card shadow-md text-sm">
-        <dl className="divide-y divide-border/40 overflow-hidden">
+    <Card className={className}>
+      <CardContent className="!p-0">
+        <dl className="divide-y divide-slate-200 overflow-hidden">
           {visibleCells.map((cell) => {
             const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
             const header = typeof cell.column.columnDef.header === "string"
@@ -61,18 +62,18 @@ export function CategoryDetailView({
             return (
               <div
                 key={cell.id}
-                className="px-4 py-4 sm:px-6 sm:py-5 border-b border-border/40 last:border-b-0"
+                className="px-6 py-4 hover:bg-slate-50/50 transition-colors"
               >
-                <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-6 sm:divide-x sm:divide-border">
+                <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-6 sm:divide-x sm:divide-slate-200">
                   <div className="flex items-start space-x-2 sm:w-1/3 sm:flex-shrink-0 sm:pr-6">
-                    <dt className="font-medium text-foreground leading-6 break-words">
-                      {header}:
+                    <dt className="text-sm font-semibold text-slate-900 leading-6 break-words">
+                      {header}
                     </dt>
                     {meta?.description && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-5 w-5 cursor-help flex-shrink-0 mt-0.5 text-white fill-black" />
+                            <Info className="h-4 w-4 cursor-help flex-shrink-0 mt-0.5 text-slate-400 hover:text-slate-600 transition-colors" />
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-md">
                             <div>{meta.description}</div>
@@ -81,7 +82,7 @@ export function CategoryDetailView({
                       </TooltipProvider>
                     )}
                   </div>
-                  <dd className="text-muted-foreground sm:flex-1 sm:pl-6 min-w-0">
+                  <dd className="text-sm text-slate-500 sm:flex-1 sm:pl-6 min-w-0 font-mono">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>
@@ -89,7 +90,7 @@ export function CategoryDetailView({
             );
           })}
         </dl>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

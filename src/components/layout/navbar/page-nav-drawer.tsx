@@ -67,7 +67,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
 
   return (
     <div className="px-4 py-6 border-b border-slate-100 space-y-1">
-      <span className="block px-5 py-2 text-sm font-bold text-primary uppercase tracking-wider">
+      <span className="block px-5 py-2 text-sm font-bold text-primary uppercase tracking-widest">
         {config.title}
       </span>
 
@@ -86,7 +86,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                   className={cn(
                     "w-full flex items-center justify-between",
                     "px-5 py-3.5 rounded-xl",
-                    "text-[15px] font-semibold",
+                    "text-sm font-semibold",
                     "transition-colors duration-200",
                     isActiveSection
                       ? "bg-primary/10 text-primary"
@@ -122,7 +122,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                           className={cn(
                             "flex items-center gap-2",
                             "px-4 py-2.5 rounded-lg",
-                            "text-[14px] font-medium",
+                            "text-sm font-medium",
                             "transition-colors duration-200",
                             isActive
                               ? "bg-primary text-primary-foreground"
@@ -145,7 +145,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                 onClick={onNavigate}
                 className={cn(
                   "block px-5 py-3.5 rounded-xl",
-                  "text-[15px] font-semibold",
+                  "text-sm font-semibold",
                   "transition-colors duration-200",
                   isActiveSection
                     ? "bg-primary text-primary-foreground"

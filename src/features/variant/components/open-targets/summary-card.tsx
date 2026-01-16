@@ -20,7 +20,7 @@ const colorStyles = {
   emerald: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
   blue: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50",
   purple: "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50",
-  gray: "bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-800/50",
+  gray: "bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800/50",
 };
 
 export function SummaryCard({
@@ -95,7 +95,7 @@ const progressColors = {
   emerald: "bg-emerald-500",
   blue: "bg-blue-500",
   purple: "bg-purple-500",
-  gray: "bg-gray-500",
+  gray: "bg-slate-500",
 };
 
 export function ProgressBar({ label, value, total, color = "blue" }: ProgressBarProps) {

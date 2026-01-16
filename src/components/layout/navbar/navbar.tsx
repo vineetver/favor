@@ -22,7 +22,7 @@ function NavLink({ item }: { item: NavItem }) {
     <Link
       href={item.href}
       className={cn(
-        "px-5 py-2 text-[15px] font-medium rounded-full",
+        "px-5 py-2 text-sm font-medium rounded-full",
         "text-slate-600 transition-all duration-300",
         "hover:text-slate-900 hover:bg-primary/10"
       )}
@@ -82,7 +82,7 @@ export function Navbar() {
                       type="button"
                       className={cn(
                         "flex items-center gap-1.5 px-5 py-2 rounded-full",
-                        "text-[15px] font-medium",
+                        "text-sm font-medium",
                         "text-slate-600 transition-all duration-300",
                         "hover:text-slate-900 hover:bg-primary/10",
                         "focus:outline-none"
@@ -103,7 +103,7 @@ export function Navbar() {
                           href={item.href}
                           className={cn(
                             "w-full px-3 py-2.5 rounded-lg cursor-pointer",
-                            "text-[14px] font-medium text-slate-600",
+                            "text-sm font-medium text-slate-600",
                             "transition-colors duration-200",
                             "hover:text-slate-900 hover:bg-slate-100/80"
                           )}

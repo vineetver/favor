@@ -39,7 +39,7 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
     <div className="py-8">
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-3 text-sm mb-4">
-        <span className="px-2.5 py-1 bg-slate-200 rounded-md font-bold text-slate-700 uppercase tracking-wide text-xs">
+        <span className="px-2.5 py-1 bg-slate-200 rounded-md font-bold text-slate-700 uppercase tracking-widest text-xs">
           {genome.toUpperCase()}
         </span>
         <span className="text-slate-300">/</span>
@@ -77,7 +77,7 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
               <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-900">
                 {refAllele}
               </span>
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                 ref / alt
               </span>
               <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-900">
@@ -87,7 +87,7 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
 
             {/* Variant Type Badge */}
             {variantType && (
-              <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 uppercase tracking-wide">
+              <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-widest">
                 {variantType}
               </span>
             )}
@@ -100,7 +100,7 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
           {clinicalSig && (
             <span
               className={cn(
-                "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider",
+                "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest",
                 clinicalSig.className
               )}
             >
@@ -145,44 +145,26 @@ interface ClinicalSigResult {
   className: string;
 }
 
-// Clinical significance mapping (Commandment V: flat control flow)
-const CLINICAL_SIGNIFICANCE_MAP: Record<string, ClinicalSigResult> = {
-  pathogenic: { label: "Pathogenic", className: "bg-red-100 text-red-700" },
-  "likely_pathogenic": { label: "Likely Pathogenic", className: "bg-orange-100 text-orange-700" },
-  benign: { label: "Benign", className: "bg-green-100 text-green-700" },
-  "likely_benign": { label: "Likely Benign", className: "bg-emerald-100 text-emerald-700" },
-  uncertain_significance: { label: "VUS", className: "bg-amber-100 text-amber-700" },
-  conflicting: { label: "Conflicting", className: "bg-purple-100 text-purple-700" },
-};
+// Clinical significance styles (Commandment V: flat control flow, no nesting)
+const STYLE_PATHOGENIC = { label: "Pathogenic", className: "bg-red-100 text-red-700" };
+const STYLE_LIKELY_PATHOGENIC = { label: "Likely Pathogenic", className: "bg-orange-100 text-orange-700" };
+const STYLE_BENIGN = { label: "Benign", className: "bg-green-100 text-green-700" };
+const STYLE_LIKELY_BENIGN = { label: "Likely Benign", className: "bg-emerald-100 text-emerald-700" };
+const STYLE_VUS = { label: "VUS", className: "bg-amber-100 text-amber-700" };
+const STYLE_CONFLICTING = { label: "Conflicting", className: "bg-purple-100 text-purple-700" };
 
 function parseClinicalSignificance(clnsig: string | null | undefined): ClinicalSigResult | null {
   if (!clnsig || clnsig === "." || clnsig === "not_provided") return null;
 
   const sig = clnsig.toLowerCase();
 
-  // Check for likely pathogenic first (more specific)
-  if (sig.includes("likely") && sig.includes("pathogenic")) {
-    return CLINICAL_SIGNIFICANCE_MAP["likely_pathogenic"];
-  }
-  if (sig.includes("pathogenic") && !sig.includes("benign")) {
-    return CLINICAL_SIGNIFICANCE_MAP["pathogenic"];
-  }
-
-  // Check for likely benign first (more specific)
-  if (sig.includes("likely") && sig.includes("benign")) {
-    return CLINICAL_SIGNIFICANCE_MAP["likely_benign"];
-  }
-  if (sig.includes("benign")) {
-    return CLINICAL_SIGNIFICANCE_MAP["benign"];
-  }
-
-  if (sig.includes("uncertain") || sig.includes("vus")) {
-    return CLINICAL_SIGNIFICANCE_MAP["uncertain_significance"];
-  }
-
-  if (sig.includes("conflicting")) {
-    return CLINICAL_SIGNIFICANCE_MAP["conflicting"];
-  }
+  // Early returns - most specific matches first
+  if (sig.includes("likely") && sig.includes("pathogenic")) return STYLE_LIKELY_PATHOGENIC;
+  if (sig.includes("pathogenic") && !sig.includes("benign")) return STYLE_PATHOGENIC;
+  if (sig.includes("likely") && sig.includes("benign")) return STYLE_LIKELY_BENIGN;
+  if (sig.includes("benign")) return STYLE_BENIGN;
+  if (sig.includes("uncertain") || sig.includes("vus")) return STYLE_VUS;
+  if (sig.includes("conflicting")) return STYLE_CONFLICTING;
 
   return { label: clnsig.replace(/_/g, " "), className: "bg-slate-100 text-slate-600" };
 }

@@ -132,7 +132,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
               {/* Resources Section */}
               <div className="pt-6 mt-6 border-t border-slate-100">
-                <span className="block px-5 py-2 text-sm font-bold text-slate-400 uppercase tracking-wider">
+                <span className="block px-5 py-2 text-sm font-bold text-slate-400 uppercase tracking-widest">
                   Resources
                 </span>
                 {RESOURCES.map((item) => (
@@ -161,7 +161,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           {/* Footer */}
           <div className="px-6 py-5 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">
                 {siteConfig.version}
               </span>
               <Link

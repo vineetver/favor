@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Variant } from "@/features/variant/types";
 import { BADGE_COLORS, type BadgeColor, type ColumnMeta } from "@/lib/table/column-builder";
@@ -30,7 +31,7 @@ function HeaderTooltip({ content }: { content: ReactNode }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Info className="h-5 w-5 cursor-help flex-shrink-0 fill-black text-white ring-transparent outline-transparent border-transparent" />
+          <Info className="h-4 w-4 cursor-help flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors" />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-md">
           {content}
@@ -92,7 +93,7 @@ const CHROMATIN_CATEGORIES: Record<string, {
   quiescent: {
     label: "Quiescent",
     color: "gray",
-    barClass: "bg-gray-400",
+    barClass: "bg-slate-400",
     description: "Inactive regions with low signal across all marks",
   },
 };
@@ -161,11 +162,11 @@ function ChromatinProgressBar({
     <div className="flex items-center gap-2">
       <span className={cn(
         "text-sm font-mono w-12 text-right tabular-nums",
-        isEmpty ? "text-muted-foreground/50" : "text-muted-foreground"
+        isEmpty ? "text-slate-300" : "text-slate-500"
       )}>
         {value}/48
       </span>
-      <div className={cn("relative h-3 w-32 rounded-full overflow-hidden", isEmpty ? "bg-muted/50" : "bg-muted")}>
+      <div className={cn("relative h-3 w-32 rounded-full overflow-hidden", isEmpty ? "bg-slate-100" : "bg-slate-200")}>
         {!isEmpty && (
           <div
             className={cn("absolute inset-y-0 left-0 rounded-full transition-all", cat.barClass)}
@@ -188,12 +189,12 @@ function ChromatinStateRow({
   const tooltipContent = CHROMATIN_TOOLTIPS[state.id];
 
   return (
-    <div className="flex items-center gap-4 py-2 px-3 hover:bg-muted/50 transition-colors">
-      <div className="w-28 flex-shrink-0 flex items-center gap-1">
-        <span className="font-medium text-sm">{state.name}</span>
+    <div className="flex items-center gap-4 py-3 px-4 hover:bg-slate-50/50 transition-colors">
+      <div className="w-28 flex-shrink-0 flex items-center gap-1.5">
+        <span className="font-semibold text-sm text-slate-900">{state.name}</span>
         {tooltipContent && <HeaderTooltip content={tooltipContent} />}
       </div>
-      <div className="flex-1 text-sm text-muted-foreground">{state.description}</div>
+      <div className="flex-1 text-sm text-slate-500">{state.description}</div>
       <ChromatinProgressBar value={value} category={state.category} />
     </div>
   );
@@ -212,11 +213,11 @@ function ChromatinCategoryGroup({
   const cat = CHROMATIN_CATEGORIES[categoryKey];
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className={cn("px-3 py-2.5 font-semibold text-sm", BADGE_COLORS[cat.color])}>
+    <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <div className={cn("px-4 py-3 font-bold text-sm tracking-tight", BADGE_COLORS[cat.color])}>
         {cat.label}
       </div>
-      <div className="divide-y">
+      <div className="divide-y divide-slate-200 bg-white">
         {states.map((state) => (
           <ChromatinStateRow
             key={state.id}
@@ -240,20 +241,22 @@ export function ChromatinStateView({ data }: { data: Variant }) {
   }, {} as Record<CategoryKey, typeof CHROMATIN_STATES>);
 
   return (
-    <div className="space-y-4">
-      {CATEGORY_ORDER.map((categoryKey) => {
-        const states = groupedStates[categoryKey];
-        if (!states?.length) return null;
+    <Card>
+      <CardContent className="space-y-4">
+        {CATEGORY_ORDER.map((categoryKey) => {
+          const states = groupedStates[categoryKey];
+          if (!states?.length) return null;
 
-        return (
-          <ChromatinCategoryGroup
-            key={categoryKey}
-            categoryKey={categoryKey}
-            states={states}
-            data={data}
-          />
-        );
-      })}
-    </div>
+          return (
+            <ChromatinCategoryGroup
+              key={categoryKey}
+              categoryKey={categoryKey}
+              states={states}
+              data={data}
+            />
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }

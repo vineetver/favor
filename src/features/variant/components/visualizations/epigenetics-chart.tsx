@@ -125,7 +125,7 @@ export function EpigeneticsChart({ data }: VisualizationProps) {
           <span>Transcription</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-gray-400" />
+          <div className="w-3 h-3 rounded bg-slate-400" />
           <span>Other</span>
         </div>
       </div>

@@ -133,10 +133,10 @@ export function NavigationSidebar({
                 onOpenChange={() => toggleGroup(group.name)}
               >
                 <div className="space-y-1">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1 group cursor-pointer focus:outline-none focus-visible:outline-none">
+                  <CollapsibleTrigger className="flex items-start justify-between w-full px-3 py-1 group cursor-pointer focus:outline-none focus-visible:outline-none">
                     <span
                       className={cn(
-                        "text-[11px] font-semibold tracking-wider uppercase transition-colors",
+                        "text-xs font-bold tracking-widest uppercase transition-colors leading-snug text-left",
                         hasActiveItem ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
                       )}
                     >
@@ -169,12 +169,12 @@ export function NavigationSidebar({
                           {Icon && (
                             <Icon
                               className={cn(
-                                "w-4 h-4 shrink-0",
+                                "w-4 h-4 shrink-0 mt-0.5",
                                 isActive ? "text-slate-700" : "text-slate-400 group-hover:text-slate-500"
                               )}
                             />
                           )}
-                          <span className="truncate">{item.text}</span>
+                          <span className="leading-snug">{item.text}</span>
                         </Link>
                       );
                     })}

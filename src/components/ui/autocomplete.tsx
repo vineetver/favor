@@ -109,7 +109,7 @@ export function Autocomplete({
             </ComboboxButton>
           </div>
 
-          <ComboboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-background/95 backdrop-blur-sm border shadow-lg py-1 text-base focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">
+          <ComboboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-background/95 backdrop-blur-sm border border-slate-200 shadow-lg py-1 text-base focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">
             {isLoading ? (
               <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
                 Loading...

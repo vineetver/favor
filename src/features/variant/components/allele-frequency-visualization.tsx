@@ -1,20 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-import {
-  Download,
-  Search,
-  Info,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
 import {
   BarChart,
   Bar,
@@ -24,12 +11,23 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Table, BarChart3 } from "lucide-react";
+import {
+  DataTable,
+  DataTableProgress,
+  DataTableHeader,
+} from "@/components/ui/data-table";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   type Variant,
   type GnomadPopulation,
   getGnomadMetrics,
 } from "@/features/variant/types";
 import { ChartTooltip, type TooltipPayloadEntry } from "@/components/common/chart-tooltip";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface PopulationData {
   id: string;
@@ -43,31 +41,49 @@ interface PopulationData {
   femaleGenome: number | null;
 }
 
-type SortField =
-  | "name"
-  | "exome"
-  | "genome"
-  | "maleExome"
-  | "maleGenome"
-  | "femaleExome"
-  | "femaleGenome";
-type SortDirection = "asc" | "desc" | null;
 type DataView = "overall" | "male" | "female" | "compare";
 
 interface AlleleFrequencyVisualizationProps {
   variant: Variant;
 }
 
+// ============================================================================
+// Custom Cell Components
+// ============================================================================
+
+function FrequencyCell({ value, color = "blue" }: { value: number | null; color?: "blue" | "pink" }) {
+  if (value === null) {
+    return <span className="text-slate-400">—</span>;
+  }
+
+  const colorClass = color === "pink" ? "text-pink-600" : "text-blue-600";
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`font-mono text-sm tabular-nums ${colorClass}`}>
+        {value.toExponential(2)}
+      </span>
+      <div className="h-1.5 w-16 bg-slate-200 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full ${color === "pink" ? "bg-pink-500" : "bg-blue-500"}`}
+          style={{ width: `${Math.min(value * 1000000, 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 export function AlleleFrequencyVisualization({
   variant,
 }: AlleleFrequencyVisualizationProps) {
-  const [activeTab, setActiveTab] = useState<"table" | "visualization">("table");
+  const [activeTab, setActiveTab] = useState<"table" | "chart">("table");
   const [dataView, setDataView] = useState<DataView>("overall");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
-  // Prepare population data with all frequencies
+  // Prepare population data
   const populationData: PopulationData[] = useMemo(() => {
     const populations: Array<{
       id: string;
@@ -100,379 +116,212 @@ export function AlleleFrequencyVisualization({
     }));
   }, [variant]);
 
-  // Helper to get current view data keys
-  const getViewKeys = (view: DataView) => {
-    switch (view) {
-      case "male":
-        return { exome: "maleExome", genome: "maleGenome", label: "Male" } as const;
-      case "female":
-        return { exome: "femaleExome", genome: "femaleGenome", label: "Female" } as const;
-      case "compare":
-        return { label: "Compare" } as const;
-      case "overall":
-      default:
-        return { exome: "totalExome", genome: "totalGenome", label: "Overall" } as const;
-    }
-  };
-
-  // Filter and sort data
-  const filteredAndSortedData = useMemo(() => {
-    let data = populationData;
-
-    if (searchQuery) {
-      data = data.filter((pop) =>
-        pop.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (sortField && sortDirection) {
-      const keys = getViewKeys(dataView);
-
-      data = [...data].sort((a, b) => {
-        let aVal: string | number | null;
-        let bVal: string | number | null;
-
-        if (sortField === "name") {
-          aVal = a.name;
-          bVal = b.name;
-        } else if (dataView === "compare") {
-          aVal = a[sortField as keyof PopulationData] as number | null;
-          bVal = b[sortField as keyof PopulationData] as number | null;
-        } else {
-          const specificKeys = keys as { exome: keyof PopulationData; genome: keyof PopulationData };
-          const key = sortField === "exome" ? specificKeys.exome : specificKeys.genome;
-          aVal = a[key] as number | null;
-          bVal = b[key] as number | null;
-        }
-
-        if (aVal === null && bVal === null) return 0;
-        if (aVal === null) return 1;
-        if (bVal === null) return -1;
-
-        if (sortField === "name") {
-          return sortDirection === "asc"
-            ? String(aVal).localeCompare(String(bVal))
-            : String(bVal).localeCompare(String(aVal));
-        }
-
-        return sortDirection === "asc"
-          ? (aVal as number) - (bVal as number)
-          : (bVal as number) - (aVal as number);
-      });
-    }
-
-    return data;
-  }, [populationData, searchQuery, sortField, sortDirection, dataView]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
-      } else if (sortDirection === "desc") {
-        setSortField(null);
-        setSortDirection(null);
-      } else {
-        setSortDirection("asc");
-      }
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const exportToCSV = () => {
-    const csvContent = [
-      ["Population", "Total Exome", "Total Genome", "Male Exome", "Male Genome", "Female Exome", "Female Genome"],
-      ...populationData.map((row) => [
-        row.name,
-        row.totalExome?.toString() ?? "—",
-        row.totalGenome?.toString() ?? "—",
-        row.maleExome?.toString() ?? "—",
-        row.maleGenome?.toString() ?? "—",
-        row.femaleExome?.toString() ?? "—",
-        row.femaleGenome?.toString() ?? "—",
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `allele-frequencies-${variant.variant_vcf || "variant"}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const chartData = filteredAndSortedData.map((pop) => {
-    // Use full name for better readability in horizontal chart
-    const displayName = pop.name;
+  // Dynamic columns based on view
+  const columns = useMemo((): ColumnDef<PopulationData>[] => {
+    const baseColumn: ColumnDef<PopulationData> = {
+      accessorKey: "name",
+      header: "Population",
+      cell: ({ row }) => (
+        <span className="font-semibold text-slate-900">{row.original.name}</span>
+      ),
+    };
 
     if (dataView === "compare") {
-      return {
-        name: displayName,
-        "Male Exome": pop.maleExome,
-        "Female Exome": pop.femaleExome,
-        "Male Genome": pop.maleGenome,
-        "Female Genome": pop.femaleGenome,
-      };
+      return [
+        baseColumn,
+        {
+          accessorKey: "maleExome",
+          header: () => (
+            <DataTableHeader tooltip="Male allele frequency in gnomAD v4.1 Exome">
+              Male Exome
+            </DataTableHeader>
+          ),
+          cell: ({ row }) => <FrequencyCell value={row.original.maleExome} color="blue" />,
+        },
+        {
+          accessorKey: "femaleExome",
+          header: () => (
+            <DataTableHeader tooltip="Female allele frequency in gnomAD v4.1 Exome">
+              Female Exome
+            </DataTableHeader>
+          ),
+          cell: ({ row }) => <FrequencyCell value={row.original.femaleExome} color="pink" />,
+        },
+        {
+          accessorKey: "maleGenome",
+          header: () => (
+            <DataTableHeader tooltip="Male allele frequency in gnomAD v4.1 Genome">
+              Male Genome
+            </DataTableHeader>
+          ),
+          cell: ({ row }) => <FrequencyCell value={row.original.maleGenome} color="blue" />,
+        },
+        {
+          accessorKey: "femaleGenome",
+          header: () => (
+            <DataTableHeader tooltip="Female allele frequency in gnomAD v4.1 Genome">
+              Female Genome
+            </DataTableHeader>
+          ),
+          cell: ({ row }) => <FrequencyCell value={row.original.femaleGenome} color="pink" />,
+        },
+      ];
     }
 
-    const keys = getViewKeys(dataView) as { exome: keyof PopulationData; genome: keyof PopulationData };
-    return {
-      name: displayName,
-      Exome: pop[keys.exome],
-      Genome: pop[keys.genome],
-    };
-  });
+    const viewConfig = {
+      overall: { exome: "totalExome" as const, genome: "totalGenome" as const, label: "Overall" },
+      male: { exome: "maleExome" as const, genome: "maleGenome" as const, label: "Male" },
+      female: { exome: "femaleExome" as const, genome: "femaleGenome" as const, label: "Female" },
+    }[dataView] ?? { exome: "totalExome" as const, genome: "totalGenome" as const, label: "Overall" };
 
-  const viewKeys = getViewKeys(dataView);
-  const rowCount = filteredAndSortedData.length;
-
-  return (
-    <div className="rounded-lg border border-border/50 bg-card shadow-md overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-border/40">
-        <div className="flex items-center justify-between">
-          {/* Tabs */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setActiveTab("table")}
-              className={`pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === "table"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Frequency Table
-              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
-                {rowCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("visualization")}
-              className={`pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === "visualization"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Visualization
-            </button>
-          </div>
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-2">
-            {/* Data View Selector */}
-            <div className="flex items-center bg-muted/50 p-1 rounded-lg">
-              {(["overall", "male", "female", "compare"] as const).map((view) => (
-                <button
-                  key={view}
-                  onClick={() => setDataView(view)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                    dataView === view
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {view.charAt(0).toUpperCase() + view.slice(1)}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={exportToCSV}
-              className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-              title="Export to CSV"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="px-6 py-3 border-b border-border/40">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search populations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+    return [
+      baseColumn,
+      {
+        accessorKey: viewConfig.exome,
+        header: () => (
+          <DataTableHeader tooltip={`${viewConfig.label} allele frequency in gnomAD v4.1 Exome`}>
+            Exome ({viewConfig.label})
+          </DataTableHeader>
+        ),
+        cell: ({ row }) => (
+          <DataTableProgress
+            value={row.original[viewConfig.exome]}
+            max={0.5}
+            format="scientific"
+            color="blue"
           />
-        </div>
-      </div>
-
-      {/* Content */}
-      {activeTab === "table" ? (
-        <AlleleFrequencyTable
-          data={filteredAndSortedData}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-          viewKeys={viewKeys}
-          isCompare={dataView === "compare"}
-        />
-      ) : (
-        <div className="p-6">
-          <AlleleFrequencyChart
-            data={chartData}
-            viewLabel={viewKeys.label}
-            isCompare={dataView === "compare"}
+        ),
+      },
+      {
+        accessorKey: viewConfig.genome,
+        header: () => (
+          <DataTableHeader tooltip={`${viewConfig.label} allele frequency in gnomAD v4.1 Genome`}>
+            Genome ({viewConfig.label})
+          </DataTableHeader>
+        ),
+        cell: ({ row }) => (
+          <DataTableProgress
+            value={row.original[viewConfig.genome]}
+            max={0.5}
+            format="scientific"
+            color="purple"
           />
-        </div>
-      )}
+        ),
+      },
+    ];
+  }, [dataView]);
+
+  // Chart data
+  const chartData = useMemo(() => {
+    if (dataView === "compare") {
+      return populationData
+        .map((pop) => ({
+          name: pop.name,
+          Male: ((pop.maleExome ?? 0) + (pop.maleGenome ?? 0)) / 2,
+          Female: ((pop.femaleExome ?? 0) + (pop.femaleGenome ?? 0)) / 2,
+        }))
+        .sort((a, b) => Math.max(b.Male, b.Female) - Math.max(a.Male, a.Female));
+    }
+
+    const viewConfig = {
+      overall: { exome: "totalExome" as const, genome: "totalGenome" as const },
+      male: { exome: "maleExome" as const, genome: "maleGenome" as const },
+      female: { exome: "femaleExome" as const, genome: "femaleGenome" as const },
+    }[dataView] ?? { exome: "totalExome" as const, genome: "totalGenome" as const };
+
+    return populationData
+      .map((pop) => ({
+        name: pop.name,
+        Exome: pop[viewConfig.exome],
+        Genome: pop[viewConfig.genome],
+      }))
+      .sort((a, b) =>
+        Math.max((b.Exome ?? 0), (b.Genome ?? 0)) - Math.max((a.Exome ?? 0), (a.Genome ?? 0))
+      );
+  }, [populationData, dataView]);
+
+  // Data view filter panel
+  const filterPanel = (
+    <div className="flex items-center gap-3">
+      <span className="text-sm font-medium text-slate-500">View:</span>
+      <div className="flex items-center bg-slate-100/80 p-1 rounded-xl">
+        {(["overall", "male", "female", "compare"] as const).map((view) => (
+          <button
+            key={view}
+            onClick={() => setDataView(view)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 ${
+              dataView === view
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            {view.charAt(0).toUpperCase() + view.slice(1)}
+          </button>
+        ))}
+      </div>
     </div>
   );
-}
 
-// ============================================================================
-// Table Component
-// ============================================================================
+  // Tabs configuration
+  const tabs = [
+    { id: "table", label: "Frequency Table", icon: Table },
+    { id: "chart", label: "Visualization", icon: BarChart3 },
+  ];
 
-interface TableProps {
-  data: PopulationData[];
-  sortField: SortField | null;
-  sortDirection: SortDirection;
-  onSort: (field: SortField) => void;
-  viewKeys: { exome?: keyof PopulationData; genome?: keyof PopulationData; label: string };
-  isCompare: boolean;
-}
+  if (activeTab === "chart") {
+    return (
+      <Card>
+        <CardContent className="!p-0">
+          {/* Header with tabs */}
+          <div className="px-6 py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as "table" | "chart")}
+                      className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                        activeTab === tab.id
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {filterPanel}
+            </div>
+          </div>
 
-function SortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
-  if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />;
-  if (sortDirection === "asc") return <ArrowUp className="h-3.5 w-3.5" />;
-  return <ArrowDown className="h-3.5 w-3.5" />;
-}
+          {/* Chart */}
+          <div className="p-6">
+            <AlleleFrequencyChart data={chartData} isCompare={dataView === "compare"} />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-function AlleleFrequencyTable({ data, sortField, sortDirection, onSort, viewKeys, isCompare }: TableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/30 border-b border-border/40">
-          <tr>
-            <th className="px-6 py-3 text-left font-semibold">
-              <button onClick={() => onSort("name")} className="flex items-center gap-1 hover:text-foreground/80">
-                Population
-                <SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
-              </button>
-            </th>
-
-            {isCompare ? (
-              <>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <button onClick={() => onSort("maleExome")} className="flex items-center gap-1 hover:text-foreground/80">
-                    Male Exome <SortIcon field="maleExome" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <button onClick={() => onSort("femaleExome")} className="flex items-center gap-1 hover:text-foreground/80">
-                    Female Exome <SortIcon field="femaleExome" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <button onClick={() => onSort("maleGenome")} className="flex items-center gap-1 hover:text-foreground/80">
-                    Male Genome <SortIcon field="maleGenome" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <button onClick={() => onSort("femaleGenome")} className="flex items-center gap-1 hover:text-foreground/80">
-                    Female Genome <SortIcon field="femaleGenome" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </th>
-              </>
-            ) : (
-              <>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => onSort("exome")} className="flex items-center gap-1 hover:text-foreground/80">
-                      gnomAD v4.1 Exome ({viewKeys.label})
-                      <SortIcon field="exome" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-5 w-5 cursor-help flex-shrink-0 text-white fill-black" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{viewKeys.label} allele frequency in gnomAD v4.1 Exome</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </th>
-                <th className="px-6 py-3 text-left font-semibold">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => onSort("genome")} className="flex items-center gap-1 hover:text-foreground/80">
-                      gnomAD v4.1 Genome ({viewKeys.label})
-                      <SortIcon field="genome" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-5 w-5 cursor-help flex-shrink-0 text-white fill-black" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{viewKeys.label} allele frequency in gnomAD v4.1 Genome</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </th>
-              </>
-            )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/40">
-          {data.map((row) => {
-            if (isCompare) {
-              return (
-                <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-medium">{row.name}</td>
-                  <td className="px-6 py-4 text-blue-600 font-mono">
-                    {row.maleExome?.toFixed(6) ?? <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="px-6 py-4 text-pink-600 font-mono">
-                    {row.femaleExome?.toFixed(6) ?? <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="px-6 py-4 text-blue-800 font-mono">
-                    {row.maleGenome?.toFixed(6) ?? <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="px-6 py-4 text-pink-800 font-mono">
-                    {row.femaleGenome?.toFixed(6) ?? <span className="text-muted-foreground">—</span>}
-                  </td>
-                </tr>
-              );
-            }
-
-            const exomeVal = row[viewKeys.exome!] as number | null;
-            const genomeVal = row[viewKeys.genome!] as number | null;
-
-            return (
-              <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                <td className="px-6 py-4 font-medium">{row.name}</td>
-                <td className="px-6 py-4">
-                  {exomeVal !== null ? (
-                    <span className="text-blue-600 font-mono">{exomeVal.toFixed(6)}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {genomeVal !== null ? (
-                    <span className="text-blue-600 font-mono">{genomeVal.toFixed(6)}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={populationData}
+      searchPlaceholder="Search populations..."
+      searchColumn="name"
+      exportFilename={`allele-frequencies-${variant.variant_vcf || "variant"}`}
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as "table" | "chart")}
+      filterPanel={filterPanel}
+      showFilters={true}
+      defaultPageSize={20}
+      emptyMessage="No population data available"
+    />
   );
 }
 
@@ -487,9 +336,9 @@ const CustomTooltip = (props: { active?: boolean; payload?: TooltipPayloadEntry[
       {payload?.map((entry, index) => (
         <div key={index} className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-muted-foreground">{entry.name}:</span>
-          <span className="font-mono font-medium">
-            {typeof entry.value === "number" ? entry.value.toFixed(6) : "—"}
+          <span className="text-slate-400">{entry.name}:</span>
+          <span className="font-mono font-medium text-white">
+            {typeof entry.value === "number" ? entry.value.toExponential(2) : "—"}
           </span>
         </div>
       ))}
@@ -499,130 +348,96 @@ const CustomTooltip = (props: { active?: boolean; payload?: TooltipPayloadEntry[
 
 function AlleleFrequencyChart({
   data,
-  viewLabel,
   isCompare,
 }: {
   data: Record<string, unknown>[];
-  viewLabel: string;
   isCompare: boolean;
 }) {
-  // For compare mode, show simple Male vs Female side by side
+  const chartHeight = Math.max(400, data.length * 55);
+
   if (isCompare) {
-    // Transform data for simple male vs female comparison (average of exome + genome)
-    const compareData = data
-      .map((row) => {
-        const maleExome = (row["Male Exome"] as number) || 0;
-        const femaleExome = (row["Female Exome"] as number) || 0;
-        const maleGenome = (row["Male Genome"] as number) || 0;
-        const femaleGenome = (row["Female Genome"] as number) || 0;
-
-        const male = (maleExome + maleGenome) / 2;
-        const female = (femaleExome + femaleGenome) / 2;
-
-        return {
-          name: row.name as string,
-          Male: male,
-          Female: female,
-          maxVal: Math.max(male, female),
-        };
-      })
-      .sort((a, b) => b.maxVal - a.maxVal);
-
-    const chartHeight = Math.max(400, compareData.length * 55);
-
     return (
       <div className="space-y-4">
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-muted-foreground">Average Allele Frequency (Exome + Genome):</span>
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="text-slate-400">Average Allele Frequency:</span>
+          <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
-            <span>Male</span>
+            <span className="text-slate-600">Male</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: "#ec4899" }} />
-            <span>Female</span>
+            <span className="text-slate-600">Female</span>
           </div>
         </div>
 
-        {/* Simple grouped bar chart */}
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
-            data={compareData}
+            data={data}
             layout="vertical"
             margin={{ top: 10, right: 40, left: 20, bottom: 10 }}
             barCategoryGap="20%"
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
             <XAxis
               type="number"
               domain={[0, "auto"]}
-              tickFormatter={(value) => value.toFixed(3)}
+              tickFormatter={(value) => value.toExponential(1)}
+              tick={{ fontSize: 11, fill: "#64748b" }}
             />
             <YAxis
               type="category"
               dataKey="name"
               width={220}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "#334155" }}
             />
             <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-            <Bar dataKey="Male" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} name="Male" />
-            <Bar dataKey="Female" fill="#ec4899" radius={[0, 4, 4, 0]} barSize={20} name="Female" />
+            <Bar dataKey="Male" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={18} name="Male" />
+            <Bar dataKey="Female" fill="#ec4899" radius={[0, 4, 4, 0]} barSize={18} name="Female" />
           </BarChart>
         </ResponsiveContainer>
       </div>
     );
   }
 
-  // Regular chart for non-compare modes
-  const rowHeight = 55;
-  const chartHeight = Math.max(400, data.length * rowHeight);
-
-  // Sort data by highest value descending
-  const sortedData = [...data].sort((a, b) => {
-    const aMax = Math.max((a["Exome"] as number) || 0, (a["Genome"] as number) || 0);
-    const bMax = Math.max((b["Exome"] as number) || 0, (b["Genome"] as number) || 0);
-    return bMax - aMax;
-  });
-
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-xs">
-        <span className="text-muted-foreground">{viewLabel} Frequencies:</span>
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        <span className="text-slate-400">Allele Frequencies:</span>
+        <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} />
-          <span>gnomAD v4.1 Exome</span>
+          <span className="text-slate-600">gnomAD v4.1 Exome</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#1e40af" }} />
-          <span>gnomAD v4.1 Genome</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#7c3aed" }} />
+          <span className="text-slate-600">gnomAD v4.1 Genome</span>
         </div>
       </div>
 
-      {/* Chart */}
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart
-          data={sortedData}
+          data={data}
           layout="vertical"
           margin={{ top: 10, right: 40, left: 20, bottom: 10 }}
           barCategoryGap="20%"
         >
-          <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
           <XAxis
             type="number"
             domain={[0, "auto"]}
-            tickFormatter={(value) => value.toFixed(3)}
+            tickFormatter={(value) => value.toExponential(1)}
+            tick={{ fontSize: 11, fill: "#64748b" }}
           />
           <YAxis
             type="category"
             dataKey="name"
             width={220}
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: 12, fill: "#334155" }}
           />
           <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-          <Bar dataKey="Exome" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
-          <Bar dataKey="Genome" fill="#1e40af" radius={[0, 4, 4, 0]} barSize={20} />
+          <Bar dataKey="Exome" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={18} />
+          <Bar dataKey="Genome" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={18} />
         </BarChart>
       </ResponsiveContainer>
     </div>

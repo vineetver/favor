@@ -27,7 +27,7 @@ export const BADGE_COLORS = {
   violet: "bg-violet-300/90 text-violet-950 hover:bg-violet-400 shadow-sm shadow-violet-500/10",
   purple: "bg-purple-300/90 text-purple-950 hover:bg-purple-400 shadow-sm shadow-purple-500/10",
   pink: "bg-pink-300/90 text-pink-950 hover:bg-pink-400 shadow-sm shadow-pink-500/10",
-  gray: "bg-gray-300/90 text-gray-950 hover:bg-gray-400 shadow-sm shadow-gray-500/10",
+  gray: "bg-slate-300/90 text-slate-950 hover:bg-slate-400 shadow-sm shadow-slate-500/10",
 } as const;
 
 // Dot colors for tooltip legends (static classes for Tailwind)
@@ -50,7 +50,7 @@ export const DOT_COLORS: Record<BadgeColor, string> = {
   violet: "bg-violet-400",
   purple: "bg-purple-400",
   pink: "bg-pink-400",
-  gray: "bg-gray-400",
+  gray: "bg-slate-400",
 };
 
 export type BadgeColor = keyof typeof BADGE_COLORS;

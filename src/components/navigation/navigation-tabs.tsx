@@ -102,7 +102,7 @@ export function NavigationTabs({
                 )}
               >
                 {Icon && (
-                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <Icon className="w-4 h-4 shrink-0" />
                 )}
                 <span>{item.name}</span>
               </Link>
@@ -112,11 +112,11 @@ export function NavigationTabs({
       </div>
 
       {scrollState.right && (
-        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-linear-to-l from-background via-background/80 to-transparent pointer-events-none" />
       )}
 
       {scrollState.left && (
-        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background via-background/80 to-transparent pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-linear-to-r from-background via-background/80 to-transparent pointer-events-none" />
       )}
     </div>
   );
