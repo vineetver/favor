@@ -3,7 +3,6 @@ import type { OpenTargetsCredibleSetRow } from "@/features/variant/types/opentar
 import {
   Badge,
   categories,
-  cell,
   createColumns,
   tooltip,
 } from "@/lib/table/column-builder";
@@ -200,7 +199,7 @@ export const openTargetsCredibleSetsColumns = [
     cell: ({ row }) => {
       const studyId = row.original.studyId;
       const displayId =
-        studyId.length > 20 ? studyId.slice(0, 20) + "..." : studyId;
+        studyId.length > 20 ? `${studyId.slice(0, 20)}...` : studyId;
       return (
         <ExternalLink
           href={`https://platform.opentargets.org/study/${studyId}`}

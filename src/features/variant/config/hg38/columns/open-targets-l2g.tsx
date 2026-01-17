@@ -3,7 +3,6 @@ import type { OpenTargetsL2GRow } from "@/features/variant/types/opentargets";
 import {
   Badge,
   categories,
-  cell,
   createColumns,
   tooltip,
 } from "@/lib/table/column-builder";

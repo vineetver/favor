@@ -108,7 +108,7 @@ const metasvm = categories([
 // Custom Cell Renderers
 // ============================================================================
 
-function ProteinVariant({ value }: { value: string }) {
+function _ProteinVariant({ value }: { value: string }) {
   const match = value.match(/^([A-Z])(\d+)([A-Z])$/);
   if (match) {
     const [, ref, pos, alt] = match;

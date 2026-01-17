@@ -200,7 +200,7 @@ export default function LiverE2GBrowser() {
         };
 
     // Filter for selected enhancer (if any)
-    const arcDataTransform = selectedEnhancer
+    const _arcDataTransform = selectedEnhancer
       ? [
           {
             type: "filter" as const,

@@ -5,7 +5,7 @@ import {
   PATTERNS,
   VALID_CHROMOSOMES,
 } from "./patterns";
-import type { QueryType, QueryValidation } from "./types";
+import type { QueryValidation } from "./types";
 
 export function validateQuery(query: string): QueryValidation {
   const trimmed = query.trim();

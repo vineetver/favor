@@ -39,7 +39,7 @@ export function detectQueryType(input: string): SearchInputType {
 }
 
 export function parseQuery(input: string): ParsedQuery {
-  const trimmed = input.trim();
+  const _trimmed = input.trim();
   const cleaned = normalizeInput(input);
   const type = detectQueryType(cleaned);
 

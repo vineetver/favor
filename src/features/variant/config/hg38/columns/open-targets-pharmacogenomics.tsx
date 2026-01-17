@@ -3,7 +3,6 @@ import type { OpenTargetsPharmacogenomicsRow } from "@/features/variant/types/op
 import {
   Badge,
   categories,
-  cell,
   createColumns,
   tooltip,
 } from "@/lib/table/column-builder";

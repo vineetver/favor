@@ -54,7 +54,7 @@ export async function getSuggestions(
       },
       { ttl: CACHE_TTL },
     );
-  } catch (error) {
+  } catch (_error) {
     return [];
   }
 }

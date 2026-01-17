@@ -169,7 +169,7 @@ export const cell = {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
-      if (isNaN(num)) return EMPTY;
+      if (Number.isNaN(num)) return EMPTY;
       return num.toFixed(decimals);
     };
   },
@@ -182,7 +182,7 @@ export const cell = {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
-      if (isNaN(num)) return EMPTY;
+      if (Number.isNaN(num)) return EMPTY;
       return Math.round(num).toString();
     };
   },
@@ -195,7 +195,7 @@ export const cell = {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
-      if (isNaN(num)) return EMPTY;
+      if (Number.isNaN(num)) return EMPTY;
       return `${(num * 100).toFixed(decimals)}%`;
     };
   },

@@ -126,7 +126,7 @@ export const openTargetsEvidencesColumns = [
       const name = row.original.diseaseName;
       const diseaseId = row.original.diseaseId;
       if (!name) return "-";
-      const display = name.length > 50 ? name.slice(0, 50) + "..." : name;
+      const display = name.length > 50 ? `${name.slice(0, 50)}...` : name;
       return (
         <ExternalLink
           href={`https://platform.opentargets.org/disease/${diseaseId}`}

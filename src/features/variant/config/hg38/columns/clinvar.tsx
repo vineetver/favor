@@ -301,7 +301,7 @@ function OriginBadge({ value }: { value: string | number }) {
     typeof value === "number" ? value : parseInt(String(value), 10);
 
   // If it's a valid number, decode the bitwise flags
-  if (!isNaN(numericValue)) {
+  if (!Number.isNaN(numericValue)) {
     const origins = decodeOriginFlags(numericValue);
 
     return (

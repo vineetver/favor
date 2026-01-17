@@ -15,7 +15,7 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
     if (!protein) return;
     if (!changes.has(protein))
       changes.set(protein, { protein, exons: new Set() });
-    if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
+    if (exon) changes.get(protein)?.exons.add(exon.replace("exon", ""));
   });
 
   if (changes.size === 0) return <span>-</span>;

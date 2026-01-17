@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { ChartLegend } from "./ChartLegend";
 import { BarChartTooltip } from "./ChartTooltip";
 import { DEFAULT_BAR_COLOR, getLegendItems, getRowColor } from "./colors";
-import type { BarChartProps, ColorScheme } from "./types";
+import type { BarChartProps } from "./types";
 
 /** Internal chart data format */
 interface ChartRow {

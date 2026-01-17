@@ -1,6 +1,6 @@
 import { Check, Copy } from "lucide-react";
 import Link from "next/link";
-import React, { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Streamdown, type StreamdownProps } from "streamdown";
 
 type Components = StreamdownProps["components"];

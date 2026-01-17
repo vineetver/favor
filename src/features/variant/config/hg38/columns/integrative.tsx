@@ -19,7 +19,7 @@ import { apcColumns } from "./shared";
 function calculatePercentile(score: unknown, _id?: string): number | null {
   if (score === null || score === undefined) return null;
   const num = typeof score === "number" ? score : parseFloat(String(score));
-  if (isNaN(num)) return null;
+  if (Number.isNaN(num)) return null;
   return 10 ** (num * -0.1) * 100;
 }
 
