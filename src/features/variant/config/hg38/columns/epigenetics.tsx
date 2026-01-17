@@ -1,7 +1,6 @@
 import { type Variant, REGULATORY_STATE_MAP } from "@/features/variant/types";
 import { createColumns, cell, tooltip, categories, Badge, type DerivedColumn } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
-import { EpigeneticsChart } from "../../../components/visualizations/epigenetics-chart";
 
 const col = createColumns<Variant>();
 
@@ -313,6 +312,5 @@ export const epigeneticsGroup = col.group("epigenetics", "Epigenetics", epigenet
     format: "transposed",
     search: true,
     export: true,
-    visualization: EpigeneticsChart,
   },
 });

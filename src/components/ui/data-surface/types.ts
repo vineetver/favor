@@ -3,6 +3,47 @@ import type * as React from "react";
 
 export type ViewMode = "table" | "chart";
 
+// ============================================================================
+// Transposed Mode Types
+// ============================================================================
+
+/** Simplified row data for visualizations (only essential fields) */
+export interface VisualizationRow {
+  id: string;
+  label: string;
+  value: unknown;
+  derived: unknown;
+}
+
+/** A row in transposed format (columns become rows) - internal use */
+export interface TransposedRow extends VisualizationRow {
+  description?: React.ReactNode;
+  columnDef: ColumnDef<unknown>;
+  sourceObject: unknown;
+}
+
+/** Derived column configuration for computed values (e.g., percentile) */
+export interface DerivedColumn {
+  header: string;
+  headerTooltip?: React.ReactNode;
+  /** Transform the base value into a derived value */
+  derive: (value: unknown, id?: string) => unknown;
+  /** Render the derived value */
+  render: (value: unknown) => React.ReactNode;
+}
+
+/** Default sort configuration for transposed tables */
+export interface DefaultSort {
+  column: "label" | "value" | "derived";
+  direction: "asc" | "desc";
+}
+
+/** Props for visualization components - uses simplified row type */
+export interface VisualizationProps {
+  data: VisualizationRow[];
+  derivedColumn?: DerivedColumn;
+}
+
 export interface DimensionOption {
   value: string;
   label: string;
@@ -47,7 +88,7 @@ export interface DataSurfaceProps<TData, TValue> {
   searchColumn?: string;
   searchable?: boolean;
   showViewSwitch?: boolean;
-  visualization?: React.ComponentType<{ data: TData[] }>;
+  visualization?: React.ComponentType<{ data: TData[] }> | React.ComponentType<VisualizationProps> | React.ComponentType<{ data: VisualizationRow[] }>;
   defaultViewMode?: ViewMode;
   dimensions?: DimensionConfig[];
   filters?: FilterConfig[];
@@ -70,6 +111,15 @@ export interface DataSurfaceProps<TData, TValue> {
   onRetry?: () => void;
   stickyHeader?: boolean;
   className?: string;
+  // Transposed mode props
+  /** Enable transposed mode - columns become rows */
+  transposed?: boolean;
+  /** Source object to extract values from (required for transposed mode) */
+  sourceObject?: TData;
+  /** Derived column configuration (e.g., percentile) */
+  derivedColumn?: DerivedColumn;
+  /** Default sort for transposed tables */
+  defaultSort?: DefaultSort;
 }
 
 export interface ContextHeaderProps {

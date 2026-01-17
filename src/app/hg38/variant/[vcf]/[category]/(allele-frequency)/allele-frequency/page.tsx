@@ -1,10 +1,12 @@
+import { notFound } from "next/navigation";
+
 import {
-  fetchVariant,
   fetchGnomadExome,
   fetchGnomadGenome,
+  fetchVariant,
 } from "@/features/variant/api";
-import { AlleleFrequencyVisualization } from "@/features/variant/components/allele-frequency-visualization";
-import { notFound } from "next/navigation";
+
+import { AlleleFrequencyDataTable } from "./allele-frequency-data-table";
 
 interface AlleleFrequencyPageProps {
   params: Promise<{
@@ -32,5 +34,5 @@ export default async function AlleleFrequencyPage({
   variant.gnomad_exome = gnomadExome;
   variant.gnomad_genome = gnomadGenome;
 
-  return <AlleleFrequencyVisualization variant={variant} />;
+  return <AlleleFrequencyDataTable variant={variant} />;
 }
