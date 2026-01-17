@@ -18,10 +18,7 @@ export function FilterDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
       {/* Drawer */}
       <div className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
@@ -73,7 +70,9 @@ export function FilterDrawer({
               {filter.type === "multiselect" && filter.options && (
                 <div className="space-y-2">
                   {filter.options.map((opt) => {
-                    const selected = ((filterValues[filter.id] as string[]) ?? []).includes(opt.value);
+                    const selected = (
+                      (filterValues[filter.id] as string[]) ?? []
+                    ).includes(opt.value);
                     return (
                       <label
                         key={opt.value}
@@ -83,7 +82,8 @@ export function FilterDrawer({
                           type="checkbox"
                           checked={selected}
                           onChange={(e) => {
-                            const current = (filterValues[filter.id] as string[]) ?? [];
+                            const current =
+                              (filterValues[filter.id] as string[]) ?? [];
                             const next = e.target.checked
                               ? [...current, opt.value]
                               : current.filter((v) => v !== opt.value);
@@ -91,7 +91,9 @@ export function FilterDrawer({
                           }}
                           className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20"
                         />
-                        <span className="text-sm text-slate-700">{opt.label}</span>
+                        <span className="text-sm text-slate-700">
+                          {opt.label}
+                        </span>
                       </label>
                     );
                   })}

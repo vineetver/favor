@@ -1,4 +1,4 @@
-import { kvClient, isKVConfigured } from "./kv-client";
+import { isKVConfigured, kvClient } from "./kv-client";
 import type { CacheOptions } from "./types";
 
 const CACHE_TIMEOUT = 200;

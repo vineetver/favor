@@ -1,11 +1,11 @@
+import { detectQueryType } from "./parser";
 import {
-  PATTERNS,
-  VALID_CHROMOSOMES,
   MAX_POSITION,
   MAX_REGION_SIZE,
+  PATTERNS,
+  VALID_CHROMOSOMES,
 } from "./patterns";
-import { detectQueryType } from "./parser";
-import type { QueryValidation, QueryType } from "./types";
+import type { QueryType, QueryValidation } from "./types";
 
 export function validateQuery(query: string): QueryValidation {
   const trimmed = query.trim();

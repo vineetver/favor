@@ -10,7 +10,9 @@ interface PharmacogenomicsPageProps {
   }>;
 }
 
-export default async function PharmacogenomicsPage({ params }: PharmacogenomicsPageProps) {
+export default async function PharmacogenomicsPage({
+  params,
+}: PharmacogenomicsPageProps) {
   const { vcf } = await params;
 
   const [variant, rows] = await Promise.all([

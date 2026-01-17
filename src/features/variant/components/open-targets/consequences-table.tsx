@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsConsequencesColumns } from "../../config/hg38/columns/open-targets-consequences";
 import type { OpenTargetsConsequenceRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface ConsequencesTableProps {
   data: OpenTargetsConsequenceRow[];

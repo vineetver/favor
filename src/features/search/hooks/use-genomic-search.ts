@@ -1,20 +1,20 @@
-import { useCallback, useMemo, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { type FormEvent, useCallback, useMemo } from "react";
 import { useDebounce } from "@/features/search/hooks/use-debounce";
-import {
-  useSearchHistory,
-  useRecentSearches,
-} from "@/features/search/hooks/use-search-history";
 import { useSavedSearches } from "@/features/search/hooks/use-saved-searches";
-import { useSearchSuggestions } from "@/features/search/hooks/use-search-suggestions";
 import {
-  useSearchInput,
-  useSearchActions,
-  useSearchAlert,
-  type GenomicBuild,
-} from "@/features/search/stores/search-store";
+  useRecentSearches,
+  useSearchHistory,
+} from "@/features/search/hooks/use-search-history";
+import { useSearchSuggestions } from "@/features/search/hooks/use-search-suggestions";
 import { parseQuery } from "@/features/search/lib/query-parser/parser";
 import { validateQuery } from "@/features/search/lib/query-parser/validators";
+import {
+  type GenomicBuild,
+  useSearchActions,
+  useSearchAlert,
+  useSearchInput,
+} from "@/features/search/stores/search-store";
 import { validateAndNavigate } from "@/features/search/utils/navigation";
 
 export function useGenomicSearch() {

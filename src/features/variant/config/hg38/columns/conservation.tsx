@@ -1,5 +1,5 @@
 import type { Variant } from "@/features/variant/types";
-import { createColumns, cell, tooltip } from "@/lib/table/column-builder";
+import { cell, createColumns, tooltip } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();
@@ -12,12 +12,16 @@ export const conservationColumns = [
     header: "mamPhCons",
     description: tooltip({
       title: "Mammalian phastCons",
-      description: "Conservation score across mammalian species (excl. human). Uses statistical models considering phylogeny and nucleotide substitution rates.",
+      description:
+        "Conservation score across mammalian species (excl. human). Uses statistical models considering phylogeny and nucleotide substitution rates.",
       range: "[0, 1]",
       defaultValue: "0.0",
       citation: "Siepel et al., 2005",
       guides: [
-        { threshold: "Higher scores (>0.8)", meaning: "More evolutionarily conserved" },
+        {
+          threshold: "Higher scores (>0.8)",
+          meaning: "More evolutionarily conserved",
+        },
         { threshold: "Lower scores", meaning: "Less evolutionarily conserved" },
       ],
     }),
@@ -29,13 +33,20 @@ export const conservationColumns = [
     header: "priPhCons",
     description: tooltip({
       title: "Primate phastCons",
-      description: "Conservation score comparing primate species (excluding humans).",
+      description:
+        "Conservation score comparing primate species (excluding humans).",
       range: "[-10.761, 0.595]",
       defaultValue: "-0.029",
       citation: "Pollard et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>0.3)", meaning: "More evolutionarily conserved" },
-        { threshold: "Negative scores", meaning: "Faster evolution than expected" },
+        {
+          threshold: "Higher positive scores (>0.3)",
+          meaning: "More evolutionarily conserved",
+        },
+        {
+          threshold: "Negative scores",
+          meaning: "Faster evolution than expected",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -46,13 +57,20 @@ export const conservationColumns = [
     header: "verPhCons",
     description: tooltip({
       title: "Vertebrate phastCons",
-      description: "Conservation score comparing vertebrate species (excluding humans).",
+      description:
+        "Conservation score comparing vertebrate species (excluding humans).",
       range: "[-20, 11.295]",
       defaultValue: "0.042",
       citation: "Pollard et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>2)", meaning: "More evolutionarily conserved" },
-        { threshold: "Negative scores", meaning: "Faster evolution than expected" },
+        {
+          threshold: "Higher positive scores (>2)",
+          meaning: "More evolutionarily conserved",
+        },
+        {
+          threshold: "Negative scores",
+          meaning: "Faster evolution than expected",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -63,13 +81,20 @@ export const conservationColumns = [
     header: "priPhyloP",
     description: tooltip({
       title: "Primate phyloP",
-      description: "Site-by-site conservation score comparing primate species (excluding humans). Measures evolutionary constraint at individual positions.",
+      description:
+        "Site-by-site conservation score comparing primate species (excluding humans). Measures evolutionary constraint at individual positions.",
       range: "[-10.761, 0.595]",
       defaultValue: "-0.029",
       citation: "Pollard et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>0.3)", meaning: "More evolutionarily conserved" },
-        { threshold: "Negative scores", meaning: "Faster evolution than expected" },
+        {
+          threshold: "Higher positive scores (>0.3)",
+          meaning: "More evolutionarily conserved",
+        },
+        {
+          threshold: "Negative scores",
+          meaning: "Faster evolution than expected",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -80,13 +105,20 @@ export const conservationColumns = [
     header: "mamPhyloP",
     description: tooltip({
       title: "Mammalian phyloP",
-      description: "Site-by-site conservation score comparing mammalian species (excluding humans). Measures evolutionary constraint at individual positions.",
+      description:
+        "Site-by-site conservation score comparing mammalian species (excluding humans). Measures evolutionary constraint at individual positions.",
       range: "[-20, 4.494]",
       defaultValue: "-0.005",
       citation: "Pollard et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>3)", meaning: "More evolutionarily conserved" },
-        { threshold: "Negative scores", meaning: "Faster evolution than expected" },
+        {
+          threshold: "Higher positive scores (>3)",
+          meaning: "More evolutionarily conserved",
+        },
+        {
+          threshold: "Negative scores",
+          meaning: "Faster evolution than expected",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -97,13 +129,20 @@ export const conservationColumns = [
     header: "verPhyloP",
     description: tooltip({
       title: "Vertebrate phyloP",
-      description: "Site-by-site conservation score comparing vertebrate species (excluding humans). Measures evolutionary constraint at individual positions.",
+      description:
+        "Site-by-site conservation score comparing vertebrate species (excluding humans). Measures evolutionary constraint at individual positions.",
       range: "[-20, 11.295]",
       defaultValue: "0.042",
       citation: "Pollard et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>8)", meaning: "More evolutionarily conserved" },
-        { threshold: "Negative scores", meaning: "Faster evolution than expected" },
+        {
+          threshold: "Higher positive scores (>8)",
+          meaning: "More evolutionarily conserved",
+        },
+        {
+          threshold: "Negative scores",
+          meaning: "Faster evolution than expected",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -114,12 +153,16 @@ export const conservationColumns = [
     header: "GerpN",
     description: tooltip({
       title: "GERP++ Neutral",
-      description: "Neutral evolution score defined by GERP++. Higher scores indicate more conservation.",
+      description:
+        "Neutral evolution score defined by GERP++. Higher scores indicate more conservation.",
       range: "[0, 19.8]",
       defaultValue: "3.0",
       citation: "Davydov et al., 2010",
       guides: [
-        { threshold: "Higher scores (>10)", meaning: "More evolutionarily conserved" },
+        {
+          threshold: "Higher scores (>10)",
+          meaning: "More evolutionarily conserved",
+        },
         { threshold: "Lower scores", meaning: "Less evolutionarily conserved" },
       ],
     }),
@@ -131,12 +174,16 @@ export const conservationColumns = [
     header: "GerpS",
     description: tooltip({
       title: "GERP++ Rejected Substitution",
-      description: "Rejected Substitution score. Positive scores indicate evolutionary constraint; negative may indicate accelerated evolution.",
+      description:
+        "Rejected Substitution score. Positive scores indicate evolutionary constraint; negative may indicate accelerated evolution.",
       range: "[-39.5, 19.8]",
       defaultValue: "-0.2",
       citation: "Davydov et al., 2010",
       guides: [
-        { threshold: "Higher positive scores (>10)", meaning: "More evolutionarily conserved" },
+        {
+          threshold: "Higher positive scores (>10)",
+          meaning: "More evolutionarily conserved",
+        },
         { threshold: "Negative scores", meaning: "Accelerated evolution" },
       ],
     }),
@@ -144,4 +191,8 @@ export const conservationColumns = [
   }),
 ];
 
-export const conservationGroup = col.group("conservation", "Conservation", conservationColumns);
+export const conservationGroup = col.group(
+  "conservation",
+  "Conservation",
+  conservationColumns,
+);

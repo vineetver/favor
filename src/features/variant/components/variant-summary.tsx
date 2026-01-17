@@ -40,7 +40,8 @@ export function VariantSummary({
             <div>
               <p className="font-medium">Queued for generation...</p>
               <p className="text-base mt-1">
-                Your request is in the queue. You can navigate away and come back later.
+                Your request is in the queue. You can navigate away and come
+                back later.
               </p>
             </div>
           </div>

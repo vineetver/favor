@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { type ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Users } from "lucide-react";
-import { DataSurface } from "@/components/ui/data-surface";
+import { useMemo, useState } from "react";
 import { BarChart } from "@/components/charts";
+import { DataSurface } from "@/components/ui/data-surface";
 import {
-  type Variant,
   type GnomadPopulation,
   type GnomadSex,
   getGnomadMetrics,
+  type Variant,
 } from "@/features/variant/types";
 
 // ============================================================================
@@ -209,7 +209,7 @@ export function AlleleFrequencyDataTable({
         cell: ({ row }) => <FrequencyCell value={row.original.frequency} />,
       },
     ],
-    []
+    [],
   );
 
   return (

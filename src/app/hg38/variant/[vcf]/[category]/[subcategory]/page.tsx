@@ -1,10 +1,10 @@
+import { notFound } from "next/navigation";
 import {
-  fetchVariant,
   fetchGnomadExome,
   fetchGnomadGenome,
+  fetchVariant,
 } from "@/features/variant/api";
 import { CategoryDetailView } from "@/features/variant/components/category-detail-view";
-import { notFound } from "next/navigation";
 
 interface VariantPageProps {
   params: Promise<{

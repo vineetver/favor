@@ -1,3 +1,3 @@
-export * from "./variant";
 export * from "./gnomad";
 export * from "./opentargets";
+export * from "./variant";

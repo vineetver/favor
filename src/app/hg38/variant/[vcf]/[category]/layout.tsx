@@ -72,7 +72,8 @@ export default async function VariantLayout({
       {/* Main Content Section */}
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <div className="flex">
-          {(currentCategory.groups || currentCategory.subCategories.length > 0) && (
+          {(currentCategory.groups ||
+            currentCategory.subCategories.length > 0) && (
             <NavigationSidebar
               items={currentCategory.subCategories}
               groups={currentCategory.groups}

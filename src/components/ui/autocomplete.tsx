@@ -8,7 +8,7 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronsUpDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface AutocompleteOption {

@@ -25,8 +25,19 @@ export interface AITextGenerateRequest {
 }
 
 export type AITextGenerateResponse =
-  | { status: "pending"; request_id: string; cached: false; estimated_seconds?: number; position?: number }
-  | { status: "generating"; request_id: string; cached: false; estimated_seconds?: number }
+  | {
+      status: "pending";
+      request_id: string;
+      cached: false;
+      estimated_seconds?: number;
+      position?: number;
+    }
+  | {
+      status: "generating";
+      request_id: string;
+      cached: false;
+      estimated_seconds?: number;
+    }
   | { status: "completed"; request_id: string; cached: true; content: string }
   | { status: "failed"; request_id: string; cached: false; error?: string };
 

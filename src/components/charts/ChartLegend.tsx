@@ -9,7 +9,12 @@ export function ChartLegend({ items, title, className }: ChartLegendProps) {
   if (items.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-4 text-xs text-slate-600", className)}>
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-4 text-xs text-slate-600",
+        className,
+      )}
+    >
       {title && <span className="font-medium">{title}</span>}
       {items.map((item, index) => (
         <div key={index} className="flex items-center gap-1.5">

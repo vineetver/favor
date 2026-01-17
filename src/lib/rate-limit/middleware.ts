@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import { rateLimiter } from "./rate-limiter";
 import type { RateLimitConfig } from "./config";
+import { rateLimiter } from "./rate-limiter";
 
 export async function rateLimit(
   limitConfig: Pick<RateLimitConfig, "limit" | "window">,

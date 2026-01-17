@@ -1,5 +1,5 @@
-import { fetchVariant } from "@/features/variant/api";
 import { notFound } from "next/navigation";
+import { fetchVariant } from "@/features/variant/api";
 import { IntegrativeDataTable } from "./integrative-data-table";
 
 interface IntegrativePageProps {
@@ -22,4 +22,3 @@ export default async function IntegrativePage({
 
   return <IntegrativeDataTable variant={variant} />;
 }
-

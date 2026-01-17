@@ -1,4 +1,4 @@
-import { GoslingSpec } from "gosling.js";
+import type { GoslingSpec } from "gosling.js";
 
 export const geneTrack: GoslingSpec = {
   id: "gene-annotation",

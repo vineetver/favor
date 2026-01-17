@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { ProgressBar } from "./summary-card";
 import type { OpenTargetsConsequenceRow } from "../../types/opentargets";
+import { ProgressBar } from "./summary-card";
 
 interface ConsequencesSummaryProps {
   data: OpenTargetsConsequenceRow[];

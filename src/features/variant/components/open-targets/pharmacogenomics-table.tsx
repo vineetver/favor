@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsPharmacogenomicsColumns } from "../../config/hg38/columns/open-targets-pharmacogenomics";
 import type { OpenTargetsPharmacogenomicsRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface PharmacogenomicsTableProps {
   data: OpenTargetsPharmacogenomicsRow[];

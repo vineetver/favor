@@ -36,10 +36,10 @@
   --sidebar-ring: oklch(0.56 0.11 228.27);
 
   /* Typography semantic colors (matched to slate palette) */
-  --text-primary: oklch(0.129 0.042 264.695);    /* slate-900 - headings */
-  --text-secondary: oklch(0.554 0.046 257.417);  /* slate-500 - body text */
-  --text-muted: oklch(0.704 0.04 256.788);       /* slate-400 - labels, muted */
-  --text-caption: oklch(0.704 0.04 256.788);     /* slate-400 - captions */
+  --text-primary: oklch(0.129 0.042 264.695); /* slate-900 - headings */
+  --text-secondary: oklch(0.554 0.046 257.417); /* slate-500 - body text */
+  --text-muted: oklch(0.704 0.04 256.788); /* slate-400 - labels, muted */
+  --text-caption: oklch(0.704 0.04 256.788); /* slate-400 - captions */
 
   --font-sans: Geist, Geist Fallback, sans-serif;
   --font-serif: Nunito, sans-serif;
@@ -159,7 +159,6 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
-
 }
 
 /* ============================================================================

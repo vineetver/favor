@@ -8,18 +8,30 @@ interface SummaryCardProps {
   title: string;
   value: ReactNode;
   description?: string;
-  color?: "default" | "red" | "orange" | "amber" | "emerald" | "blue" | "purple" | "gray";
+  color?:
+    | "default"
+    | "red"
+    | "orange"
+    | "amber"
+    | "emerald"
+    | "blue"
+    | "purple"
+    | "gray";
   className?: string;
 }
 
 const colorStyles = {
   default: "bg-muted/50 border-border/50",
   red: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50",
-  orange: "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
-  amber: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
-  emerald: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
+  orange:
+    "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
+  amber:
+    "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
+  emerald:
+    "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
   blue: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50",
-  purple: "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50",
+  purple:
+    "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50",
   gray: "bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800/50",
 };
 
@@ -36,7 +48,7 @@ export function SummaryCard({
       className={cn(
         "rounded-lg border p-4 flex flex-col gap-2",
         colorStyles[color],
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-2 text-label">
@@ -98,7 +110,12 @@ const progressColors = {
   gray: "bg-slate-500",
 };
 
-export function ProgressBar({ label, value, total, color = "blue" }: ProgressBarProps) {
+export function ProgressBar({
+  label,
+  value,
+  total,
+  color = "blue",
+}: ProgressBarProps) {
   const percentage = total > 0 ? (value / total) * 100 : 0;
 
   return (
@@ -109,7 +126,10 @@ export function ProgressBar({ label, value, total, color = "blue" }: ProgressBar
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className={cn("h-full rounded-full transition-all", progressColors[color])}
+          className={cn(
+            "h-full rounded-full transition-all",
+            progressColors[color],
+          )}
           style={{ width: `${percentage}%` }}
         />
       </div>

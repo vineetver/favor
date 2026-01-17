@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import * as React from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,15 +34,18 @@ export function DimensionSelector({
 
   const filteredOptions = searchable
     ? options.filter((opt) =>
-        opt.label.toLowerCase().includes(search.toLowerCase())
+        opt.label.toLowerCase().includes(search.toLowerCase()),
       )
     : options;
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  const handleSelect = React.useCallback((optionValue: string) => {
-    onChange(optionValue);
-  }, [onChange]);
+  const handleSelect = React.useCallback(
+    (optionValue: string) => {
+      onChange(optionValue);
+    },
+    [onChange],
+  );
 
   if (mode === "segmented") {
     return (
@@ -64,7 +67,7 @@ export function DimensionSelector({
                 "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
                 value === option.value
                   ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  : "text-slate-600 hover:text-slate-900",
               )}
             >
               {option.label}
@@ -118,7 +121,7 @@ export function DimensionSelector({
                   "w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors",
                   value === option.value
                     ? "bg-primary/10 text-primary"
-                    : "text-slate-700 hover:bg-slate-50"
+                    : "text-slate-700 hover:bg-slate-50",
                 )}
               >
                 {option.label}

@@ -1,5 +1,5 @@
-import { fetchVariant } from "@/features/variant/api";
 import { notFound } from "next/navigation";
+import { fetchVariant } from "@/features/variant/api";
 import { EpigeneticsDataTable } from "./epigenetics-data-table";
 
 interface EpigeneticsPageProps {

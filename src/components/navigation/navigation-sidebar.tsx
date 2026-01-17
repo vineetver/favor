@@ -91,7 +91,9 @@ export function NavigationSidebar({
   }, [params.subcategory, pathname]);
 
   // Track only user-toggled groups (collapsed by user)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
 
   const toggleGroup = (groupName: string) => {
     setCollapsedGroups((prev) => {
@@ -124,7 +126,9 @@ export function NavigationSidebar({
         <nav className="space-y-6">
           {groups.map((group) => {
             const isExpanded = isGroupExpanded(group);
-            const hasActiveItem = group.items.some((item) => item.slug === activeSlug);
+            const hasActiveItem = group.items.some(
+              (item) => item.slug === activeSlug,
+            );
 
             return (
               <Collapsible
@@ -137,7 +141,9 @@ export function NavigationSidebar({
                     <span
                       className={cn(
                         "text-xs font-bold tracking-widest uppercase transition-colors leading-snug text-left",
-                        hasActiveItem ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+                        hasActiveItem
+                          ? "text-primary"
+                          : "text-slate-400 group-hover:text-slate-600",
                       )}
                     >
                       {group.name}
@@ -145,7 +151,7 @@ export function NavigationSidebar({
                     <ChevronDown
                       className={cn(
                         "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
-                        isExpanded && "rotate-180"
+                        isExpanded && "rotate-180",
                       )}
                     />
                   </CollapsibleTrigger>
@@ -163,14 +169,16 @@ export function NavigationSidebar({
                             "group flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
                             isActive
                               ? "bg-slate-100 text-slate-900 font-medium"
-                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
                           )}
                         >
                           {Icon && (
                             <Icon
                               className={cn(
                                 "w-4 h-4 shrink-0 mt-0.5",
-                                isActive ? "text-slate-700" : "text-slate-400 group-hover:text-slate-500"
+                                isActive
+                                  ? "text-slate-700"
+                                  : "text-slate-400 group-hover:text-slate-500",
                               )}
                             />
                           )}
@@ -203,7 +211,7 @@ export function NavigationSidebar({
                 "group flex items-center justify-between py-2 text-sm transition-colors",
                 isActive
                   ? "text-slate-900 font-medium"
-                  : "text-slate-500 hover:text-slate-700"
+                  : "text-slate-500 hover:text-slate-700",
               )}
             >
               <span>{item.text}</span>
@@ -212,7 +220,7 @@ export function NavigationSidebar({
                   "w-4 h-4 transition-all duration-200",
                   isActive
                     ? "opacity-100 text-primary"
-                    : "opacity-0 group-hover:opacity-50"
+                    : "opacity-0 group-hover:opacity-50",
                 )}
               />
             </Link>

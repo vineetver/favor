@@ -1,11 +1,11 @@
 "use server";
 
+import { detectQueryType } from "@/features/search/lib/query-parser/parser";
+import { cacheService } from "@/lib/cache/cache-service";
 import { getElasticsearchClient } from "@/lib/elasticsearch/client";
 import { buildAutocompleteQuery } from "@/lib/elasticsearch/queries";
-import { cacheService } from "@/lib/cache/cache-service";
-import { rateLimit } from "@/lib/rate-limit/middleware";
 import { RATE_LIMITS } from "@/lib/rate-limit/config";
-import { detectQueryType } from "@/features/search/lib/query-parser/parser";
+import { rateLimit } from "@/lib/rate-limit/middleware";
 import type { SuggestionResult } from "./types";
 
 const INDEX_NAME = "autocomplete_combined";

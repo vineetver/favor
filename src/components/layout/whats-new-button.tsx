@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Sparkles, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 
 interface NERCStatus {

@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsL2GColumns } from "../../config/hg38/columns/open-targets-l2g";
 import type { OpenTargetsL2GRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface L2GTableProps {
   data: OpenTargetsL2GRow[];
@@ -20,7 +20,15 @@ export function L2GTable({ data }: L2GTableProps) {
       itemLabel="gene"
       defaultSort={{ id: "score", desc: true }}
       exportFilename="l2g-scores.csv"
-      exportHeaders={["Gene", "Gene ID", "L2G Score", "Trait", "Study Type", "Confidence", "Study ID"]}
+      exportHeaders={[
+        "Gene",
+        "Gene ID",
+        "L2G Score",
+        "Trait",
+        "Study Type",
+        "Confidence",
+        "Study ID",
+      ]}
       exportRow={(r) => [
         r.geneSymbol,
         r.geneId,

@@ -8,7 +8,10 @@ interface VariantHeaderProps {
   genome?: "hg38" | "hg19";
 }
 
-export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) {
+export function VariantHeader({
+  variant,
+  genome = "hg38",
+}: VariantHeaderProps) {
   if (!variant || !variant.variant_vcf) {
     return null;
   }
@@ -30,7 +33,9 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
   const geneName = variant.geneinfo?.split(":")?.[0] || null;
 
   // Get variant type from exonic category
-  const variantType = formatVariantType(variant.genecode_comprehensive_exonic_category);
+  const variantType = formatVariantType(
+    variant.genecode_comprehensive_exonic_category,
+  );
 
   // Get clinical significance
   const clinicalSig = parseClinicalSignificance(variant.clnsig);
@@ -101,7 +106,7 @@ export function VariantHeader({ variant, genome = "hg38" }: VariantHeaderProps) 
             <span
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest",
-                clinicalSig.className
+                clinicalSig.className,
               )}
             >
               {clinicalSig.label}
@@ -146,25 +151,48 @@ interface ClinicalSigResult {
 }
 
 // Clinical significance styles (Commandment V: flat control flow, no nesting)
-const STYLE_PATHOGENIC = { label: "Pathogenic", className: "bg-red-100 text-red-700" };
-const STYLE_LIKELY_PATHOGENIC = { label: "Likely Pathogenic", className: "bg-orange-100 text-orange-700" };
-const STYLE_BENIGN = { label: "Benign", className: "bg-green-100 text-green-700" };
-const STYLE_LIKELY_BENIGN = { label: "Likely Benign", className: "bg-emerald-100 text-emerald-700" };
+const STYLE_PATHOGENIC = {
+  label: "Pathogenic",
+  className: "bg-red-100 text-red-700",
+};
+const STYLE_LIKELY_PATHOGENIC = {
+  label: "Likely Pathogenic",
+  className: "bg-orange-100 text-orange-700",
+};
+const STYLE_BENIGN = {
+  label: "Benign",
+  className: "bg-green-100 text-green-700",
+};
+const STYLE_LIKELY_BENIGN = {
+  label: "Likely Benign",
+  className: "bg-emerald-100 text-emerald-700",
+};
 const STYLE_VUS = { label: "VUS", className: "bg-amber-100 text-amber-700" };
-const STYLE_CONFLICTING = { label: "Conflicting", className: "bg-purple-100 text-purple-700" };
+const STYLE_CONFLICTING = {
+  label: "Conflicting",
+  className: "bg-purple-100 text-purple-700",
+};
 
-function parseClinicalSignificance(clnsig: string | null | undefined): ClinicalSigResult | null {
+function parseClinicalSignificance(
+  clnsig: string | null | undefined,
+): ClinicalSigResult | null {
   if (!clnsig || clnsig === "." || clnsig === "not_provided") return null;
 
   const sig = clnsig.toLowerCase();
 
   // Early returns - most specific matches first
-  if (sig.includes("likely") && sig.includes("pathogenic")) return STYLE_LIKELY_PATHOGENIC;
-  if (sig.includes("pathogenic") && !sig.includes("benign")) return STYLE_PATHOGENIC;
-  if (sig.includes("likely") && sig.includes("benign")) return STYLE_LIKELY_BENIGN;
+  if (sig.includes("likely") && sig.includes("pathogenic"))
+    return STYLE_LIKELY_PATHOGENIC;
+  if (sig.includes("pathogenic") && !sig.includes("benign"))
+    return STYLE_PATHOGENIC;
+  if (sig.includes("likely") && sig.includes("benign"))
+    return STYLE_LIKELY_BENIGN;
   if (sig.includes("benign")) return STYLE_BENIGN;
   if (sig.includes("uncertain") || sig.includes("vus")) return STYLE_VUS;
   if (sig.includes("conflicting")) return STYLE_CONFLICTING;
 
-  return { label: clnsig.replace(/_/g, " "), className: "bg-slate-100 text-slate-600" };
+  return {
+    label: clnsig.replace(/_/g, " "),
+    className: "bg-slate-100 text-slate-600",
+  };
 }

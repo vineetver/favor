@@ -1,5 +1,5 @@
 import { PATTERNS } from "./patterns";
-import type { SearchInputType, ParsedQuery } from "./types";
+import type { ParsedQuery, SearchInputType } from "./types";
 
 function normalizeInput(input: string): string {
   let normalized = input.trim();

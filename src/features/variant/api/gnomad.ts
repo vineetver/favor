@@ -1,14 +1,19 @@
-import { fetchOrNull } from "@/lib/api";
 import type { GnomadData } from "@/features/variant/types";
+import { fetchOrNull } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.genohub.org/v1";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "https://api.genohub.org/v1";
 
-export async function fetchGnomadExome(vcf: string): Promise<GnomadData | null> {
+export async function fetchGnomadExome(
+  vcf: string,
+): Promise<GnomadData | null> {
   if (!vcf) return null;
   return fetchOrNull<GnomadData>(`${API_BASE}/ancestry/gnomad/exome/${vcf}`);
 }
 
-export async function fetchGnomadGenome(vcf: string): Promise<GnomadData | null> {
+export async function fetchGnomadGenome(
+  vcf: string,
+): Promise<GnomadData | null> {
   if (!vcf) return null;
   return fetchOrNull<GnomadData>(`${API_BASE}/ancestry/gnomad/genome/${vcf}`);
 }

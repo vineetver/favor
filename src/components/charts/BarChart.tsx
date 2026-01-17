@@ -2,19 +2,19 @@
 
 import { useMemo } from "react";
 import {
-  BarChart as RechartsBarChart,
   Bar,
+  CartesianGrid,
+  Cell,
+  BarChart as RechartsBarChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { ChartLegend } from "./ChartLegend";
 import { BarChartTooltip } from "./ChartTooltip";
-import { getRowColor, getLegendItems, DEFAULT_BAR_COLOR } from "./colors";
+import { DEFAULT_BAR_COLOR, getLegendItems, getRowColor } from "./colors";
 import type { BarChartProps, ColorScheme } from "./types";
 
 /** Internal chart data format */
@@ -55,21 +55,30 @@ export function BarChart({
       .map((row) => ({
         id: row.id,
         label: row.label,
-        value: typeof row.value === "number" ? row.value : parseFloat(String(row.value)) || 0,
-        derived: row.derived !== null && row.derived !== undefined
-          ? (typeof row.derived === "number" ? row.derived : parseFloat(String(row.derived)) || null)
-          : null,
+        value:
+          typeof row.value === "number"
+            ? row.value
+            : parseFloat(String(row.value)) || 0,
+        derived:
+          row.derived !== null && row.derived !== undefined
+            ? typeof row.derived === "number"
+              ? row.derived
+              : parseFloat(String(row.derived)) || null
+            : null,
         category: row.category,
         color: getRowColor(
           {
             value: typeof row.value === "number" ? row.value : null,
-            derived: row.derived !== null && row.derived !== undefined
-              ? (typeof row.derived === "number" ? row.derived : parseFloat(String(row.derived)) || null)
-              : null,
+            derived:
+              row.derived !== null && row.derived !== undefined
+                ? typeof row.derived === "number"
+                  ? row.derived
+                  : parseFloat(String(row.derived)) || null
+                : null,
             category: row.category,
           },
           colorScheme,
-          colorField
+          colorField,
         ),
       }))
       .sort((a, b) => b.value - a.value); // Sort by value descending
@@ -93,7 +102,12 @@ export function BarChart({
   // Empty state
   if (chartData.length === 0) {
     return (
-      <div className={cn("flex items-center justify-center h-64 text-slate-400", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-center h-64 text-slate-400",
+          className,
+        )}
+      >
         {emptyMessage}
       </div>
     );
@@ -146,7 +160,12 @@ export function BarChart({
               <XAxis
                 type="category"
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "#64748b", angle: -45, textAnchor: "end" }}
+                tick={{
+                  fontSize: 11,
+                  fill: "#64748b",
+                  angle: -45,
+                  textAnchor: "end",
+                }}
                 height={80}
               />
               <YAxis

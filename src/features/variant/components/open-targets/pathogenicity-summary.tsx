@@ -19,7 +19,9 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
       }
     }
 
-    return normalisedScoreCount > 0 ? totalNormalisedScore / normalisedScoreCount : null;
+    return normalisedScoreCount > 0
+      ? totalNormalisedScore / normalisedScoreCount
+      : null;
   }, [data]);
 
   if (data.length === 0 || avgNormalisedScore === null) return null;
@@ -29,7 +31,9 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
       <div className="rounded-lg border border-border/50 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-base font-semibold">Average Normalised Score</h4>
+            <h4 className="text-base font-semibold">
+              Average Normalised Score
+            </h4>
             <p className="text-base text-muted-foreground">
               Cross-method normalized pathogenicity score (0-1 scale)
             </p>

@@ -9,15 +9,21 @@ export type AsyncData<T> =
   | { status: "error"; error: string; code?: number }
   | { status: "empty" };
 
-export function isSuccess<T>(state: AsyncData<T>): state is { status: "success"; data: T } {
+export function isSuccess<T>(
+  state: AsyncData<T>,
+): state is { status: "success"; data: T } {
   return state.status === "success";
 }
 
-export function isError<T>(state: AsyncData<T>): state is { status: "error"; error: string } {
+export function isError<T>(
+  state: AsyncData<T>,
+): state is { status: "error"; error: string } {
   return state.status === "error";
 }
 
-export function hasData<T>(state: AsyncData<T>): state is { status: "success"; data: T } {
+export function hasData<T>(
+  state: AsyncData<T>,
+): state is { status: "success"; data: T } {
   return state.status === "success";
 }
 

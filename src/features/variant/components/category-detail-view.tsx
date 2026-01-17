@@ -1,6 +1,10 @@
 "use client";
 
-import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import { Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { NoDataState } from "@/components/ui/error-states";
@@ -55,9 +59,10 @@ export function CategoryDetailView({
         <dl className="overflow-hidden">
           {visibleCells.map((cell, index) => {
             const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
-            const header = typeof cell.column.columnDef.header === "string"
-              ? cell.column.columnDef.header
-              : cell.column.id;
+            const header =
+              typeof cell.column.columnDef.header === "string"
+                ? cell.column.columnDef.header
+                : cell.column.id;
             const isEven = index % 2 === 0;
 
             return (

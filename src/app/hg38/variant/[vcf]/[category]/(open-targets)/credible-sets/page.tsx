@@ -10,7 +10,9 @@ interface CredibleSetsPageProps {
   }>;
 }
 
-export default async function CredibleSetsPage({ params }: CredibleSetsPageProps) {
+export default async function CredibleSetsPage({
+  params,
+}: CredibleSetsPageProps) {
   const { vcf } = await params;
 
   const [variant, rows] = await Promise.all([

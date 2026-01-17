@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import type { AutocompleteOption } from "@/components/ui/autocomplete";
 import { getSuggestions } from "@/features/search/actions/get-suggestions";
 import {
   parseQuery,
   shouldShowSuggestions as shouldShow,
 } from "@/features/search/lib/query-parser/parser";
 import type { GenomicBuild } from "@/features/search/stores/search-store";
-import type { AutocompleteOption } from "@/components/ui/autocomplete";
 
 const SEARCH_EXAMPLES: AutocompleteOption[] = [
   {

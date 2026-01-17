@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Table } from "@tanstack/react-table";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FooterBarProps<TData> {
@@ -44,9 +44,7 @@ export function FooterBar<TData>({
   return (
     <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white">
       <div className="text-sm text-slate-500">
-        Showing{" "}
-        <span className="font-medium text-slate-700">{startRow}</span>
-        –
+        Showing <span className="font-medium text-slate-700">{startRow}</span>–
         <span className="font-medium text-slate-700">{endRow}</span>
         {" of "}
         <span className="font-medium text-slate-700">{totalRows}</span>
@@ -78,12 +76,12 @@ export function FooterBar<TData>({
                     "min-w-[32px] h-8 px-2.5 text-sm font-medium rounded-md transition-colors",
                     page === pageIndex
                       ? "bg-primary text-white"
-                      : "text-slate-600 hover:bg-slate-100"
+                      : "text-slate-600 hover:bg-slate-100",
                   )}
                 >
                   {page + 1}
                 </button>
-              )
+              ),
             )}
 
             <button

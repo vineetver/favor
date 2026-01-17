@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsVariantEffectsColumns } from "../../config/hg38/columns/open-targets-variant-effects";
 import type { OpenTargetsVariantEffectRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface VariantEffectsTableProps {
   data: OpenTargetsVariantEffectRow[];

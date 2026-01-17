@@ -1,7 +1,7 @@
 "use client";
 
 import { flexRender, type HeaderGroup } from "@tanstack/react-table";
-import { ArrowUp, ArrowDown, ArrowUpDown, Info } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -16,14 +16,24 @@ interface TableHeaderProps<TData> {
   sticky?: boolean;
 }
 
-function SortIcon({ column }: { column: { getIsSorted: () => "asc" | "desc" | false } }) {
+function SortIcon({
+  column,
+}: {
+  column: { getIsSorted: () => "asc" | "desc" | false };
+}) {
   const sorted = column.getIsSorted();
   if (sorted === "asc") return <ArrowUp className="w-3.5 h-3.5 text-primary" />;
-  if (sorted === "desc") return <ArrowDown className="w-3.5 h-3.5 text-primary" />;
-  return <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 transition-colors" />;
+  if (sorted === "desc")
+    return <ArrowDown className="w-3.5 h-3.5 text-primary" />;
+  return (
+    <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
+  );
 }
 
-export function TableHeader<TData>({ headerGroups, sticky }: TableHeaderProps<TData>) {
+export function TableHeader<TData>({
+  headerGroups,
+  sticky,
+}: TableHeaderProps<TData>) {
   return (
     <thead className={cn(sticky && "sticky top-[49px] z-10")}>
       {headerGroups.map((headerGroup) => (
@@ -41,20 +51,26 @@ export function TableHeader<TData>({ headerGroups, sticky }: TableHeaderProps<TD
                   "px-6 py-3 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider group",
                   align === "center" && "text-center",
                   align === "right" && "text-right",
-                  canSort && "cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
+                  canSort &&
+                    "cursor-pointer select-none hover:bg-slate-100/80 transition-colors",
                 )}
-                onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                onClick={
+                  canSort ? header.column.getToggleSortingHandler() : undefined
+                }
               >
                 {header.isPlaceholder ? null : (
                   <div
                     className={cn(
                       "flex items-center gap-1.5",
                       align === "center" && "justify-center",
-                      align === "right" && "justify-end"
+                      align === "right" && "justify-end",
                     )}
                   >
                     <span>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                     </span>
                     {meta?.description && (
                       <TooltipProvider>

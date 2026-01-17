@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { fetchVariant } from "@/features/variant/api";
 import { fetchOpenTargetsVariantEffects } from "@/features/variant/api/opentargets";
-import { VariantEffectsTable } from "@/features/variant/components/open-targets/variant-effects-table";
 import { PathogenicitySummary } from "@/features/variant/components/open-targets/pathogenicity-summary";
+import { VariantEffectsTable } from "@/features/variant/components/open-targets/variant-effects-table";
 
 interface VariantEffectsPageProps {
   params: Promise<{
@@ -11,7 +11,9 @@ interface VariantEffectsPageProps {
   }>;
 }
 
-export default async function VariantEffectsPage({ params }: VariantEffectsPageProps) {
+export default async function VariantEffectsPage({
+  params,
+}: VariantEffectsPageProps) {
   const { vcf } = await params;
 
   const [variant, rows] = await Promise.all([

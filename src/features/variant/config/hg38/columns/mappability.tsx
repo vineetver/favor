@@ -1,5 +1,5 @@
 import type { Variant } from "@/features/variant/types";
-import { createColumns, cell, tooltip } from "@/lib/table/column-builder";
+import { cell, createColumns, tooltip } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();
@@ -13,14 +13,24 @@ export const mappabilityColumns = [
     header: "Umap k100",
     description: tooltip({
       title: "Umap k100",
-      description: "Mappability of unconverted genome using 100bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
+      description:
+        "Mappability of unconverted genome using 100bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Unique, reliable mapping region" },
-        { threshold: "Low mappability (<0.5)", meaning: "Repetitive regions, unreliable estimates" },
-        { threshold: "Technical impact", meaning: "Lower values increase susceptibility to spurious mapping" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Unique, reliable mapping region",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Repetitive regions, unreliable estimates",
+        },
+        {
+          threshold: "Technical impact",
+          meaning: "Lower values increase susceptibility to spurious mapping",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -31,14 +41,24 @@ export const mappabilityColumns = [
     header: "Bismap k100",
     description: tooltip({
       title: "Bismap k100",
-      description: "Mappability of the bisulfite-converted genome using 100bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
+      description:
+        "Mappability of the bisulfite-converted genome using 100bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Reliable for methylation analysis" },
-        { threshold: "Low mappability (<0.5)", meaning: "Ambiguous methylation calls, multi-mapping reads" },
-        { threshold: "Bisulfite context", meaning: "C-to-T conversion reduces sequence complexity" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Reliable for methylation analysis",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Ambiguous methylation calls, multi-mapping reads",
+        },
+        {
+          threshold: "Bisulfite context",
+          meaning: "C-to-T conversion reduces sequence complexity",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -50,14 +70,25 @@ export const mappabilityColumns = [
     header: "Umap k50",
     description: tooltip({
       title: "Umap k50",
-      description: "Mappability of unconverted genome using 50bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
+      description:
+        "Mappability of unconverted genome using 50bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Unique, reliable mapping region" },
-        { threshold: "Low mappability (<0.5)", meaning: "Repetitive regions, unreliable estimates" },
-        { threshold: "Read length impact", meaning: "Shorter reads (50bp) have lower mappability than longer reads" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Unique, reliable mapping region",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Repetitive regions, unreliable estimates",
+        },
+        {
+          threshold: "Read length impact",
+          meaning:
+            "Shorter reads (50bp) have lower mappability than longer reads",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -68,14 +99,25 @@ export const mappabilityColumns = [
     header: "Bismap k50",
     description: tooltip({
       title: "Bismap k50",
-      description: "Mappability of the bisulfite-converted genome using 50bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
+      description:
+        "Mappability of the bisulfite-converted genome using 50bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Reliable for methylation analysis" },
-        { threshold: "Low mappability (<0.5)", meaning: "Ambiguous methylation calls, multi-mapping reads" },
-        { threshold: "Combined effects", meaning: "Both shorter reads and bisulfite conversion reduce mappability" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Reliable for methylation analysis",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Ambiguous methylation calls, multi-mapping reads",
+        },
+        {
+          threshold: "Combined effects",
+          meaning:
+            "Both shorter reads and bisulfite conversion reduce mappability",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -87,14 +129,24 @@ export const mappabilityColumns = [
     header: "Umap k36",
     description: tooltip({
       title: "Umap k36",
-      description: "Mappability of unconverted genome using 36bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
+      description:
+        "Mappability of unconverted genome using 36bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Unique, reliable mapping region" },
-        { threshold: "Low mappability (<0.5)", meaning: "Repetitive regions, unreliable estimates" },
-        { threshold: "Short reads", meaning: "36bp reads have more mapping ambiguity than longer reads" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Unique, reliable mapping region",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Repetitive regions, unreliable estimates",
+        },
+        {
+          threshold: "Short reads",
+          meaning: "36bp reads have more mapping ambiguity than longer reads",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -105,14 +157,24 @@ export const mappabilityColumns = [
     header: "Bismap k36",
     description: tooltip({
       title: "Bismap k36",
-      description: "Mappability of the bisulfite-converted genome using 36bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
+      description:
+        "Mappability of the bisulfite-converted genome using 36bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Reliable for methylation analysis" },
-        { threshold: "Low mappability (<0.5)", meaning: "Ambiguous methylation calls, multi-mapping reads" },
-        { threshold: "High complexity", meaning: "Shortest read length with bisulfite conversion challenges" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Reliable for methylation analysis",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Ambiguous methylation calls, multi-mapping reads",
+        },
+        {
+          threshold: "High complexity",
+          meaning: "Shortest read length with bisulfite conversion challenges",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -124,14 +186,24 @@ export const mappabilityColumns = [
     header: "Umap k24",
     description: tooltip({
       title: "Umap k24",
-      description: "Mappability of unconverted genome using 24bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
+      description:
+        "Mappability of unconverted genome using 24bp reads. Measures the extent to which a position can be uniquely mapped by sequence reads.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Unique, reliable mapping region" },
-        { threshold: "Low mappability (<0.5)", meaning: "Repetitive regions, unreliable estimates" },
-        { threshold: "Shortest reads", meaning: "24bp reads have highest mapping ambiguity" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Unique, reliable mapping region",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Repetitive regions, unreliable estimates",
+        },
+        {
+          threshold: "Shortest reads",
+          meaning: "24bp reads have highest mapping ambiguity",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -142,14 +214,24 @@ export const mappabilityColumns = [
     header: "Bismap k24",
     description: tooltip({
       title: "Bismap k24",
-      description: "Mappability of the bisulfite-converted genome using 24bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
+      description:
+        "Mappability of the bisulfite-converted genome using 24bp reads. Identifies unique mapping regions for bisulfite sequencing, which introduces complexity due to C-to-T conversion.",
       range: "[0, 1]",
       defaultValue: "0",
       citation: "Karimzadeh et al., 2018",
       guides: [
-        { threshold: "High mappability (≥0.8)", meaning: "Reliable for methylation analysis" },
-        { threshold: "Low mappability (<0.5)", meaning: "Ambiguous methylation calls, multi-mapping reads" },
-        { threshold: "Maximum complexity", meaning: "Shortest reads with maximum bisulfite mapping challenges" },
+        {
+          threshold: "High mappability (≥0.8)",
+          meaning: "Reliable for methylation analysis",
+        },
+        {
+          threshold: "Low mappability (<0.5)",
+          meaning: "Ambiguous methylation calls, multi-mapping reads",
+        },
+        {
+          threshold: "Maximum complexity",
+          meaning: "Shortest reads with maximum bisulfite mapping challenges",
+        },
       ],
     }),
     cell: cell.decimal(3),
@@ -159,5 +241,5 @@ export const mappabilityColumns = [
 export const mappabilityGroup = col.group(
   "mappability",
   "Mappability",
-  mappabilityColumns
+  mappabilityColumns,
 );

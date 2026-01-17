@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   generateAIText,
   getAIText,
@@ -41,30 +41,31 @@ export function useVariantSummary({
   const [triggeredFor, setTriggeredFor] = useState<string | null>(null);
 
   // Query for checking cached summary
-  const { data: state = { status: "idle" } as VariantSummaryState, isLoading } = useQuery({
-    queryKey: ["variant-summary", vcf],
-    queryFn: async (): Promise<VariantSummaryState> => {
-      const response = await getAIText({
-        entity_type: "variant",
-        entity_id: vcf,
-        content_type: "summary",
-      });
+  const { data: state = { status: "idle" } as VariantSummaryState, isLoading } =
+    useQuery({
+      queryKey: ["variant-summary", vcf],
+      queryFn: async (): Promise<VariantSummaryState> => {
+        const response = await getAIText({
+          entity_type: "variant",
+          entity_id: vcf,
+          content_type: "summary",
+        });
 
-      // No cached content - needs generation
-      if (!response.data || !response.data.content) {
-        return { status: "idle" };
-      }
+        // No cached content - needs generation
+        if (!response.data || !response.data.content) {
+          return { status: "idle" };
+        }
 
-      // Found cached content
-      return {
-        status: "completed",
-        summary: response.data.content,
-        cachedAt: response.data.completed_at ?? undefined,
-      };
-    },
-    enabled: enabled && !!vcf,
-    staleTime: 5 * 60 * 1000,
-  });
+        // Found cached content
+        return {
+          status: "completed",
+          summary: response.data.content,
+          cachedAt: response.data.completed_at ?? undefined,
+        };
+      },
+      enabled: enabled && !!vcf,
+      staleTime: 5 * 60 * 1000,
+    });
 
   // Trigger generation
   const triggerGeneration = useCallback(async () => {
@@ -73,10 +74,9 @@ export function useVariantSummary({
     setTriggeredFor(vcf);
 
     // Transition to loading state
-    queryClient.setQueryData<VariantSummaryState>(
-      ["variant-summary", vcf],
-      { status: "loading" },
-    );
+    queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
+      status: "loading",
+    });
 
     try {
       const response = await generateAIText({
@@ -160,13 +160,11 @@ export function useVariantSummary({
         },
       );
     } catch (error) {
-      queryClient.setQueryData<VariantSummaryState>(
-        ["variant-summary", vcf],
-        {
-          status: "failed",
-          error: error instanceof Error ? error.message : "Failed to generate summary",
-        },
-      );
+      queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
+        status: "failed",
+        error:
+          error instanceof Error ? error.message : "Failed to generate summary",
+      });
     }
   }, [vcf, modelId, queryClient, triggeredFor]);
 
@@ -188,10 +186,9 @@ export function useVariantSummary({
   const retry = useCallback(() => {
     sseCleanupRef.current?.();
     setTriggeredFor(null);
-    queryClient.setQueryData<VariantSummaryState>(
-      ["variant-summary", vcf],
-      { status: "idle" },
-    );
+    queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
+      status: "idle",
+    });
   }, [vcf, queryClient]);
 
   return { state, retry };

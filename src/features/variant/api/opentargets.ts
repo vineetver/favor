@@ -1,17 +1,17 @@
 import {
   getVariantConsequences,
   getVariantCredibleSets,
-  getVariantPharmacogenomics,
   getVariantEffects,
   getVariantEvidences,
+  getVariantPharmacogenomics,
 } from "@/lib/opentargets/api";
 import type {
   OpenTargetsConsequenceRow,
-  OpenTargetsL2GRow,
   OpenTargetsCredibleSetRow,
+  OpenTargetsEvidenceRow,
+  OpenTargetsL2GRow,
   OpenTargetsPharmacogenomicsRow,
   OpenTargetsVariantEffectRow,
-  OpenTargetsEvidenceRow,
 } from "../types/opentargets";
 
 export function vcfToOpenTargetsId(vcf: string): string {
@@ -21,12 +21,17 @@ export function vcfToOpenTargetsId(vcf: string): string {
   return `${chr.replace(/^chr/i, "")}_${pos}_${ref}_${alt}`;
 }
 
-function computePValue(mantissa: number | null, exponent: number | null): number | null {
+function computePValue(
+  mantissa: number | null,
+  exponent: number | null,
+): number | null {
   if (mantissa === null || exponent === null) return null;
-  return mantissa * Math.pow(10, exponent);
+  return mantissa * 10 ** exponent;
 }
 
-export async function fetchOpenTargetsConsequences(vcf: string): Promise<OpenTargetsConsequenceRow[]> {
+export async function fetchOpenTargetsConsequences(
+  vcf: string,
+): Promise<OpenTargetsConsequenceRow[]> {
   try {
     const data = await getVariantConsequences(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.transcriptConsequences) return [];
@@ -50,7 +55,9 @@ export async function fetchOpenTargetsConsequences(vcf: string): Promise<OpenTar
   }
 }
 
-export async function fetchOpenTargetsL2G(vcf: string): Promise<OpenTargetsL2GRow[]> {
+export async function fetchOpenTargetsL2G(
+  vcf: string,
+): Promise<OpenTargetsL2GRow[]> {
   try {
     const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.credibleSets?.rows) return [];
@@ -83,7 +90,9 @@ export async function fetchOpenTargetsL2G(vcf: string): Promise<OpenTargetsL2GRo
   }
 }
 
-export async function fetchOpenTargetsCredibleSets(vcf: string): Promise<OpenTargetsCredibleSetRow[]> {
+export async function fetchOpenTargetsCredibleSets(
+  vcf: string,
+): Promise<OpenTargetsCredibleSetRow[]> {
   try {
     const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.credibleSets?.rows) return [];
@@ -107,7 +116,9 @@ export async function fetchOpenTargetsCredibleSets(vcf: string): Promise<OpenTar
   }
 }
 
-export async function fetchOpenTargetsPharmacogenomics(vcf: string): Promise<OpenTargetsPharmacogenomicsRow[]> {
+export async function fetchOpenTargetsPharmacogenomics(
+  vcf: string,
+): Promise<OpenTargetsPharmacogenomicsRow[]> {
   try {
     const data = await getVariantPharmacogenomics(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.pharmacogenomics) return [];
@@ -129,7 +140,12 @@ export async function fetchOpenTargetsPharmacogenomics(vcf: string): Promise<Ope
       };
 
       if (drugs.length === 0) {
-        rows.push({ ...baseRow, drugName: "Unknown", drugId: null, drugType: null });
+        rows.push({
+          ...baseRow,
+          drugName: "Unknown",
+          drugId: null,
+          drugType: null,
+        });
       } else {
         for (const d of drugs) {
           rows.push({
@@ -148,7 +164,9 @@ export async function fetchOpenTargetsPharmacogenomics(vcf: string): Promise<Ope
   }
 }
 
-export async function fetchOpenTargetsVariantEffects(vcf: string): Promise<OpenTargetsVariantEffectRow[]> {
+export async function fetchOpenTargetsVariantEffects(
+  vcf: string,
+): Promise<OpenTargetsVariantEffectRow[]> {
   try {
     const data = await getVariantEffects(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.variantEffect) return [];
@@ -168,7 +186,9 @@ export async function fetchOpenTargetsVariantEffects(vcf: string): Promise<OpenT
   }
 }
 
-export async function fetchOpenTargetsEvidences(vcf: string): Promise<OpenTargetsEvidenceRow[]> {
+export async function fetchOpenTargetsEvidences(
+  vcf: string,
+): Promise<OpenTargetsEvidenceRow[]> {
   try {
     const data = await getVariantEvidences(vcfToOpenTargetsId(vcf));
     if (!data?.variant?.evidences?.rows) return [];

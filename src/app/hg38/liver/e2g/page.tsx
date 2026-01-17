@@ -407,7 +407,11 @@ export default function LiverE2GBrowser() {
       tooltip: [
         { field: "gene", type: "nominal" as const, alt: "Target Gene" },
         { field: "gene_tss", type: "genomic" as const, alt: "Gene TSS" },
-        { field: "chromStart", type: "genomic" as const, alt: "Enhancer Start" },
+        {
+          field: "chromStart",
+          type: "genomic" as const,
+          alt: "Enhancer Start",
+        },
         { field: "chromEnd", type: "genomic" as const, alt: "Enhancer End" },
         { field: "score", type: "quantitative" as const, alt: "E2G Score" },
         {

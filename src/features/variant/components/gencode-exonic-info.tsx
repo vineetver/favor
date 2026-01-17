@@ -13,7 +13,8 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
     const protein = parts.find((p) => p.startsWith("p."));
     const exon = parts.find((p) => p.includes("exon"));
     if (!protein) return;
-    if (!changes.has(protein)) changes.set(protein, { protein, exons: new Set() });
+    if (!changes.has(protein))
+      changes.set(protein, { protein, exons: new Set() });
     if (exon) changes.get(protein)!.exons.add(exon.replace("exon", ""));
   });
 

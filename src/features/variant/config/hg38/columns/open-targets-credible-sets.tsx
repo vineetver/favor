@@ -1,23 +1,63 @@
-import type { OpenTargetsCredibleSetRow } from "@/features/variant/types/opentargets";
-import { createColumns, cell, categories, tooltip, Badge } from "@/lib/table/column-builder";
 import { ExternalLink } from "@/components/ui/external-link";
+import type { OpenTargetsCredibleSetRow } from "@/features/variant/types/opentargets";
+import {
+  Badge,
+  categories,
+  cell,
+  createColumns,
+  tooltip,
+} from "@/lib/table/column-builder";
 
 const col = createColumns<OpenTargetsCredibleSetRow>();
 
-
 // Study type categories
 const studyTypeCategories = categories([
-  { label: "GWAS", match: "gwas", color: "blue", description: "Genome-Wide Association Study" },
-  { label: "eQTL", match: "eqtl", color: "violet", description: "Expression Quantitative Trait Locus study" },
-  { label: "pQTL", match: "pqtl", color: "purple", description: "Protein Quantitative Trait Locus study" },
-  { label: "sQTL", match: "sqtl", color: "fuchsia", description: "Splicing Quantitative Trait Locus study" },
+  {
+    label: "GWAS",
+    match: "gwas",
+    color: "blue",
+    description: "Genome-Wide Association Study",
+  },
+  {
+    label: "eQTL",
+    match: "eqtl",
+    color: "violet",
+    description: "Expression Quantitative Trait Locus study",
+  },
+  {
+    label: "pQTL",
+    match: "pqtl",
+    color: "purple",
+    description: "Protein Quantitative Trait Locus study",
+  },
+  {
+    label: "sQTL",
+    match: "sqtl",
+    color: "fuchsia",
+    description: "Splicing Quantitative Trait Locus study",
+  },
 ]);
 
 // Fine-mapping method categories
 const methodCategories = categories([
-  { label: "SuSiE", match: "SuSiE", color: "blue", description: "Sum of Single Effects model for fine-mapping" },
-  { label: "FINEMAP", match: "FINEMAP", color: "violet", description: "Shotgun stochastic search algorithm" },
-  { label: "CARMA", match: "CARMA", color: "purple", description: "Causal Variants Identification in Associated Regions" },
+  {
+    label: "SuSiE",
+    match: "SuSiE",
+    color: "blue",
+    description: "Sum of Single Effects model for fine-mapping",
+  },
+  {
+    label: "FINEMAP",
+    match: "FINEMAP",
+    color: "violet",
+    description: "Shotgun stochastic search algorithm",
+  },
+  {
+    label: "CARMA",
+    match: "CARMA",
+    color: "purple",
+    description: "Causal Variants Identification in Associated Regions",
+  },
 ]);
 
 function formatPValue(pval: number | null): string {
@@ -32,14 +72,19 @@ export const openTargetsCredibleSetsColumns = [
     header: "Trait",
     description: tooltip({
       title: "Associated Trait",
-      description: "The trait or phenotype from the original study associated with this credible set.",
+      description:
+        "The trait or phenotype from the original study associated with this credible set.",
     }),
     cell: ({ row }) => {
       const val = row.original.traitFromSource;
       if (!val) return "-";
       return val.length > 60 ? (
-        <span title={val} className="cursor-help">{val.slice(0, 60)}...</span>
-      ) : <span>{val}</span>;
+        <span title={val} className="cursor-help">
+          {val.slice(0, 60)}...
+        </span>
+      ) : (
+        <span>{val}</span>
+      );
     },
   }),
 
@@ -62,10 +107,13 @@ export const openTargetsCredibleSetsColumns = [
     header: "P-value",
     description: tooltip({
       title: "P-value",
-      description: "Statistical significance of the association, computed from mantissa and exponent.",
+      description:
+        "Statistical significance of the association, computed from mantissa and exponent.",
     }),
     cell: ({ row }) => (
-      <span className="font-mono text-sm">{formatPValue(row.original.pValue)}</span>
+      <span className="font-mono text-sm">
+        {formatPValue(row.original.pValue)}
+      </span>
     ),
   }),
 
@@ -86,7 +134,8 @@ export const openTargetsCredibleSetsColumns = [
     header: "Method",
     description: tooltip({
       title: "Fine-mapping Method",
-      description: "Statistical method used for fine-mapping the causal variants.",
+      description:
+        "Statistical method used for fine-mapping the causal variants.",
       categories: methodCategories,
     }),
     cell: ({ row }) => {
@@ -133,7 +182,11 @@ export const openTargetsCredibleSetsColumns = [
     }),
     cell: ({ row }) => {
       const val = row.original.sampleSize;
-      return val ? <span className="font-mono">{val.toLocaleString()}</span> : "-";
+      return val ? (
+        <span className="font-mono">{val.toLocaleString()}</span>
+      ) : (
+        "-"
+      );
     },
   }),
 
@@ -146,9 +199,13 @@ export const openTargetsCredibleSetsColumns = [
     }),
     cell: ({ row }) => {
       const studyId = row.original.studyId;
-      const displayId = studyId.length > 20 ? studyId.slice(0, 20) + "..." : studyId;
+      const displayId =
+        studyId.length > 20 ? studyId.slice(0, 20) + "..." : studyId;
       return (
-        <ExternalLink href={`https://platform.opentargets.org/study/${studyId}`} className="font-mono text-sm">
+        <ExternalLink
+          href={`https://platform.opentargets.org/study/${studyId}`}
+          className="font-mono text-sm"
+        >
           {displayId}
         </ExternalLink>
       );

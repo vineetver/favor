@@ -88,7 +88,10 @@ export interface DataSurfaceProps<TData, TValue> {
   searchColumn?: string;
   searchable?: boolean;
   showViewSwitch?: boolean;
-  visualization?: React.ComponentType<{ data: TData[] }> | React.ComponentType<VisualizationProps> | React.ComponentType<{ data: VisualizationRow[] }>;
+  visualization?:
+    | React.ComponentType<{ data: TData[] }>
+    | React.ComponentType<VisualizationProps>
+    | React.ComponentType<{ data: VisualizationRow[] }>;
   defaultViewMode?: ViewMode;
   dimensions?: DimensionConfig[];
   filters?: FilterConfig[];

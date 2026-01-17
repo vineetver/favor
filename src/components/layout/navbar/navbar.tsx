@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { ChevronDown, Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Logo } from "@/components/ui/logo";
+import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,10 +10,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NAV_ITEMS, RESOURCES, type NavItem } from "./nav-items";
-import { useScrolled } from "./use-navbar";
-import { MobileDrawer } from "./mobile-drawer";
+import { Logo } from "@/components/ui/logo";
 import { siteConfig } from "@/config/site";
+import { cn } from "@/lib/utils";
+import { MobileDrawer } from "./mobile-drawer";
+import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
+import { useScrolled } from "./use-navbar";
 
 function NavLink({ item }: { item: NavItem }) {
   return (
@@ -24,7 +24,7 @@ function NavLink({ item }: { item: NavItem }) {
       className={cn(
         "px-5 py-2 text-base font-medium rounded-full",
         "text-slate-600 transition-all duration-300",
-        "hover:text-slate-900 hover:bg-primary/10"
+        "hover:text-slate-900 hover:bg-primary/10",
       )}
       {...(item.external && {
         target: "_blank",
@@ -48,7 +48,7 @@ export function Navbar() {
           "transition-all duration-500 ease-in-out",
           scrolled
             ? "bg-white/85 backdrop-blur-2xl border-b border-slate-200/60 py-4 shadow-sm"
-            : "bg-transparent border-b border-transparent py-6"
+            : "bg-transparent border-b border-transparent py-6",
         )}
       >
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
@@ -68,7 +68,7 @@ export function Navbar() {
                   "transition-all duration-500",
                   scrolled
                     ? "bg-slate-100/60 border border-slate-200/50"
-                    : "bg-transparent"
+                    : "bg-transparent",
                 )}
               >
                 {NAV_ITEMS.map((item) => (
@@ -85,7 +85,7 @@ export function Navbar() {
                         "text-base font-medium",
                         "text-slate-600 transition-all duration-300",
                         "hover:text-slate-900 hover:bg-primary/10",
-                        "focus:outline-none"
+                        "focus:outline-none",
                       )}
                     >
                       Resources
@@ -105,7 +105,7 @@ export function Navbar() {
                             "w-full px-3 py-2.5 rounded-lg cursor-pointer",
                             "text-base font-medium text-slate-600",
                             "transition-colors duration-200",
-                            "hover:text-slate-900 hover:bg-slate-100/80"
+                            "hover:text-slate-900 hover:bg-slate-100/80",
                           )}
                           {...(item.external && {
                             target: "_blank",
@@ -132,7 +132,7 @@ export function Navbar() {
                   "px-4 py-2 rounded-full",
                   "bg-white border border-slate-200",
                   "shadow-sm hover:shadow transition-all",
-                  "group"
+                  "group",
                 )}
               >
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -148,7 +148,7 @@ export function Navbar() {
                 className={cn(
                   "md:hidden h-10 w-10 rounded-full",
                   "text-slate-900 hover:bg-primary/10",
-                  "transition-colors"
+                  "transition-colors",
                 )}
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Open menu"

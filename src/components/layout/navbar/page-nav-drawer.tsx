@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { VARIANT_NAVIGATION_CONFIG } from "@/features/variant/config/hg38/navigation";
+import { cn } from "@/lib/utils";
 
 interface NavigationSection {
   name: string;
@@ -50,7 +50,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
   const subcategory = params.subcategory as string;
 
   const [expandedSection, setExpandedSection] = useState<string | null>(
-    category ?? null
+    category ?? null,
   );
 
   const pageType = detectPageType(pathname);
@@ -90,7 +90,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                     "transition-colors duration-200",
                     isActiveSection
                       ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-primary/10"
+                      : "text-slate-700 hover:bg-primary/10",
                   )}
                 >
                   <span>{section.name}</span>
@@ -98,7 +98,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                     className={cn(
                       "h-4 w-4 text-slate-400",
                       "transition-transform duration-200",
-                      isExpanded && "rotate-180"
+                      isExpanded && "rotate-180",
                     )}
                   />
                 </button>
@@ -107,7 +107,9 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                   className={cn(
                     "overflow-hidden",
                     "transition-all duration-300 ease-out",
-                    isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                    isExpanded
+                      ? "max-h-[1000px] opacity-100"
+                      : "max-h-0 opacity-0",
                   )}
                 >
                   <div className="ml-4 pl-4 border-l-2 border-slate-200 space-y-0.5 py-2">
@@ -126,7 +128,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                             "transition-colors duration-200",
                             isActive
                               ? "bg-primary text-primary-foreground"
-                              : "text-slate-500 hover:text-slate-900 hover:bg-primary/10"
+                              : "text-slate-500 hover:text-slate-900 hover:bg-primary/10",
                           )}
                         >
                           {isActive && (
@@ -149,7 +151,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                   "transition-colors duration-200",
                   isActiveSection
                     ? "bg-primary text-primary-foreground"
-                    : "text-slate-700 hover:bg-primary/10"
+                    : "text-slate-700 hover:bg-primary/10",
                 )}
               >
                 {section.name}

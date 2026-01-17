@@ -1,24 +1,74 @@
-import type { OpenTargetsVariantEffectRow } from "@/features/variant/types/opentargets";
-import { createColumns, categories, tooltip, Badge } from "@/lib/table/column-builder";
 import { ExternalLink } from "@/components/ui/external-link";
+import type { OpenTargetsVariantEffectRow } from "@/features/variant/types/opentargets";
+import {
+  Badge,
+  categories,
+  createColumns,
+  tooltip,
+} from "@/lib/table/column-builder";
 
 const col = createColumns<OpenTargetsVariantEffectRow>();
 
 // Assessment categories for pathogenicity predictions
 const assessmentCategories = categories([
-  { label: "Pathogenic", match: /pathogenic|deleterious|damaging/i, color: "red", description: "Predicted to be pathogenic or functionally damaging" },
-  { label: "Benign", match: /benign|tolerated|neutral/i, color: "green", description: "Predicted to be benign or tolerated" },
-  { label: "Uncertain", match: /uncertain|possibly|vus/i, color: "amber", description: "Uncertain significance or possibly damaging" },
+  {
+    label: "Pathogenic",
+    match: /pathogenic|deleterious|damaging/i,
+    color: "red",
+    description: "Predicted to be pathogenic or functionally damaging",
+  },
+  {
+    label: "Benign",
+    match: /benign|tolerated|neutral/i,
+    color: "green",
+    description: "Predicted to be benign or tolerated",
+  },
+  {
+    label: "Uncertain",
+    match: /uncertain|possibly|vus/i,
+    color: "amber",
+    description: "Uncertain significance or possibly damaging",
+  },
 ]);
 
 // Method categories for prediction tools
 const methodCategories = categories([
-  { label: "CADD", match: "CADD", color: "blue", description: "Combined Annotation Dependent Depletion" },
-  { label: "AlphaMissense", match: "AlphaMissense", color: "violet", description: "AlphaFold-based missense pathogenicity predictor" },
-  { label: "SIFT", match: "SIFT", color: "teal", description: "Sorting Intolerant From Tolerant" },
-  { label: "PolyPhen", match: /PolyPhen/i, color: "cyan", description: "Polymorphism Phenotyping" },
-  { label: "REVEL", match: "REVEL", color: "purple", description: "Rare Exome Variant Ensemble Learner" },
-  { label: "EVE", match: "EVE", color: "fuchsia", description: "Evolutionary model of Variant Effect" },
+  {
+    label: "CADD",
+    match: "CADD",
+    color: "blue",
+    description: "Combined Annotation Dependent Depletion",
+  },
+  {
+    label: "AlphaMissense",
+    match: "AlphaMissense",
+    color: "violet",
+    description: "AlphaFold-based missense pathogenicity predictor",
+  },
+  {
+    label: "SIFT",
+    match: "SIFT",
+    color: "teal",
+    description: "Sorting Intolerant From Tolerant",
+  },
+  {
+    label: "PolyPhen",
+    match: /PolyPhen/i,
+    color: "cyan",
+    description: "Polymorphism Phenotyping",
+  },
+  {
+    label: "REVEL",
+    match: "REVEL",
+    color: "purple",
+    description: "Rare Exome Variant Ensemble Learner",
+  },
+  {
+    label: "EVE",
+    match: "EVE",
+    color: "fuchsia",
+    description: "Evolutionary model of Variant Effect",
+  },
 ]);
 
 export const openTargetsVariantEffectsColumns = [
@@ -55,7 +105,8 @@ export const openTargetsVariantEffectsColumns = [
     header: "Raw Score",
     description: tooltip({
       title: "Raw Prediction Score",
-      description: "Original score from the prediction method. Interpretation varies by method.",
+      description:
+        "Original score from the prediction method. Interpretation varies by method.",
     }),
     cell: ({ row }) => {
       const val = row.original.score;
@@ -68,7 +119,8 @@ export const openTargetsVariantEffectsColumns = [
     header: "Normalised",
     description: tooltip({
       title: "Normalised Score",
-      description: "Score normalized to a 0-1 scale for cross-method comparison. Higher values indicate greater predicted pathogenicity.",
+      description:
+        "Score normalized to a 0-1 scale for cross-method comparison. Higher values indicate greater predicted pathogenicity.",
       range: "[0, 1]",
       guides: [
         { threshold: "> 0.8", meaning: "Likely pathogenic" },
@@ -80,12 +132,15 @@ export const openTargetsVariantEffectsColumns = [
     cell: ({ row }) => {
       const score = row.original.normalisedScore;
       if (score === null) return "-";
-      const color = score > 0.8 ? "red" : score > 0.5 ? "orange" : score > 0.2 ? "amber" : "green";
-      return (
-        <Badge color={color}>
-          {score.toFixed(4)}
-        </Badge>
-      );
+      const color =
+        score > 0.8
+          ? "red"
+          : score > 0.5
+            ? "orange"
+            : score > 0.2
+              ? "amber"
+              : "green";
+      return <Badge color={color}>{score.toFixed(4)}</Badge>;
     },
   }),
 
@@ -115,7 +170,9 @@ export const openTargetsVariantEffectsColumns = [
       if (!symbol) return "-";
       if (targetId) {
         return (
-          <ExternalLink href={`https://platform.opentargets.org/target/${targetId}`}>
+          <ExternalLink
+            href={`https://platform.opentargets.org/target/${targetId}`}
+          >
             {symbol}
           </ExternalLink>
         );

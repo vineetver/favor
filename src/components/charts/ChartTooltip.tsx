@@ -47,7 +47,7 @@ export function ChartTooltip({
     <Card
       className={cn(
         "border shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-        className
+        className,
       )}
     >
       <CardContent className="p-3 space-y-1">
@@ -71,7 +71,9 @@ export function BarChartTooltip({
   derivedFormatter = (v) => `${Math.min(v, 100).toFixed(2)}%`,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: { label: string; value: number | null; derived?: number | null } }>;
+  payload?: Array<{
+    payload: { label: string; value: number | null; derived?: number | null };
+  }>;
   valueFormatter?: (value: number) => string;
   derivedLabel?: string;
   derivedFormatter?: (value: number) => string;

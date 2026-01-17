@@ -1,18 +1,22 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { Info } from "lucide-react";
+import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { Variant } from "@/features/variant/types";
-import { BADGE_COLORS, type BadgeColor, type ColumnMeta } from "@/lib/table/column-builder";
-import { chromatinStateColumns } from "../config/hg38/columns/chromatin-state";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { Variant } from "@/features/variant/types";
+import {
+  BADGE_COLORS,
+  type BadgeColor,
+  type ColumnMeta,
+} from "@/lib/table/column-builder";
+import { cn } from "@/lib/utils";
+import { chromatinStateColumns } from "../config/hg38/columns/chromatin-state";
 
 // Build a map of column ID -> tooltip content from the column definitions
 const CHROMATIN_TOOLTIPS: Record<string, ReactNode> = {};
@@ -42,17 +46,21 @@ function HeaderTooltip({ content }: { content: ReactNode }) {
 }
 
 // Chromatin state categories using badge colors
-const CHROMATIN_CATEGORIES: Record<string, {
-  label: string;
-  color: BadgeColor;
-  barClass: string;
-  description: string;
-}> = {
+const CHROMATIN_CATEGORIES: Record<
+  string,
+  {
+    label: string;
+    color: BadgeColor;
+    barClass: string;
+    description: string;
+  }
+> = {
   promoter: {
     label: "Promoter",
     color: "red",
     barClass: "bg-red-400",
-    description: "Regions associated with transcription start sites and gene promoters",
+    description:
+      "Regions associated with transcription start sites and gene promoters",
   },
   transcription: {
     label: "Transcription",
@@ -76,7 +84,8 @@ const CHROMATIN_CATEGORIES: Record<string, {
     label: "Other",
     color: "sky",
     barClass: "bg-sky-400",
-    description: "Other regulatory elements including DNase-only and repeat regions",
+    description:
+      "Other regulatory elements including DNase-only and repeat regions",
   },
   heterochromatin: {
     label: "Heterochromatin",
@@ -107,32 +116,157 @@ const CHROMATIN_STATES: Array<{
   description: string;
   category: CategoryKey;
 }> = [
-    { id: "chmm_e1", name: "TssA", description: "Active TSS", category: "promoter" },
-    { id: "chmm_e2", name: "PromU", description: "Promoter Upstream TSS", category: "promoter" },
-    { id: "chmm_e3", name: "PromD1", description: "Promoter Downstream TSS with DNase", category: "promoter" },
-    { id: "chmm_e4", name: "PromD2", description: "Promoter Downstream TSS", category: "promoter" },
-    { id: "chmm_e5", name: "Tx5'", description: "Transcription 5'", category: "transcription" },
-    { id: "chmm_e6", name: "Tx", description: "Transcription", category: "transcription" },
-    { id: "chmm_e7", name: "Tx3'", description: "Transcription 3'", category: "transcription" },
-    { id: "chmm_e8", name: "TxWk", description: "Transcription Weak", category: "transcription" },
-    { id: "chmm_e9", name: "TxReg", description: "Transcription Regulatory", category: "transcription" },
-    { id: "chmm_e10", name: "TxEnh5'", description: "Transcription 5' Enhancer", category: "transcription" },
-    { id: "chmm_e11", name: "TxEnh3'", description: "Transcription 3' Enhancer", category: "transcription" },
-    { id: "chmm_e12", name: "TxEnhW", description: "Transcription Enhancer Weak", category: "transcription" },
-    { id: "chmm_e13", name: "EnhA1", description: "Active Enhancer 1", category: "enhancer" },
-    { id: "chmm_e14", name: "EnhA2", description: "Active Enhancer 2", category: "enhancer" },
-    { id: "chmm_e15", name: "EnhAF", description: "Active Enhancer Flanking", category: "enhancer" },
-    { id: "chmm_e16", name: "EnhW1", description: "Enhancer Weak 1", category: "weak" },
-    { id: "chmm_e17", name: "EnhW2", description: "Enhancer Weak 2", category: "weak" },
-    { id: "chmm_e18", name: "EnhAc", description: "Enhancer Acetylation Only", category: "weak" },
-    { id: "chmm_e19", name: "DNase", description: "DNase Only", category: "other" },
-    { id: "chmm_e20", name: "ZNF/Rpts", description: "ZNF Genes and Repeats", category: "other" },
-    { id: "chmm_e21", name: "Het", description: "Heterochromatin", category: "heterochromatin" },
-    { id: "chmm_e22", name: "PromP", description: "Poised Promoter", category: "repressed" },
-    { id: "chmm_e23", name: "PromBiv", description: "Bivalent Promoter", category: "repressed" },
-    { id: "chmm_e24", name: "ReprPC", description: "Repressed PolyComb", category: "repressed" },
-    { id: "chmm_e25", name: "Quies", description: "Quiescent/Low", category: "quiescent" },
-  ];
+  {
+    id: "chmm_e1",
+    name: "TssA",
+    description: "Active TSS",
+    category: "promoter",
+  },
+  {
+    id: "chmm_e2",
+    name: "PromU",
+    description: "Promoter Upstream TSS",
+    category: "promoter",
+  },
+  {
+    id: "chmm_e3",
+    name: "PromD1",
+    description: "Promoter Downstream TSS with DNase",
+    category: "promoter",
+  },
+  {
+    id: "chmm_e4",
+    name: "PromD2",
+    description: "Promoter Downstream TSS",
+    category: "promoter",
+  },
+  {
+    id: "chmm_e5",
+    name: "Tx5'",
+    description: "Transcription 5'",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e6",
+    name: "Tx",
+    description: "Transcription",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e7",
+    name: "Tx3'",
+    description: "Transcription 3'",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e8",
+    name: "TxWk",
+    description: "Transcription Weak",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e9",
+    name: "TxReg",
+    description: "Transcription Regulatory",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e10",
+    name: "TxEnh5'",
+    description: "Transcription 5' Enhancer",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e11",
+    name: "TxEnh3'",
+    description: "Transcription 3' Enhancer",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e12",
+    name: "TxEnhW",
+    description: "Transcription Enhancer Weak",
+    category: "transcription",
+  },
+  {
+    id: "chmm_e13",
+    name: "EnhA1",
+    description: "Active Enhancer 1",
+    category: "enhancer",
+  },
+  {
+    id: "chmm_e14",
+    name: "EnhA2",
+    description: "Active Enhancer 2",
+    category: "enhancer",
+  },
+  {
+    id: "chmm_e15",
+    name: "EnhAF",
+    description: "Active Enhancer Flanking",
+    category: "enhancer",
+  },
+  {
+    id: "chmm_e16",
+    name: "EnhW1",
+    description: "Enhancer Weak 1",
+    category: "weak",
+  },
+  {
+    id: "chmm_e17",
+    name: "EnhW2",
+    description: "Enhancer Weak 2",
+    category: "weak",
+  },
+  {
+    id: "chmm_e18",
+    name: "EnhAc",
+    description: "Enhancer Acetylation Only",
+    category: "weak",
+  },
+  {
+    id: "chmm_e19",
+    name: "DNase",
+    description: "DNase Only",
+    category: "other",
+  },
+  {
+    id: "chmm_e20",
+    name: "ZNF/Rpts",
+    description: "ZNF Genes and Repeats",
+    category: "other",
+  },
+  {
+    id: "chmm_e21",
+    name: "Het",
+    description: "Heterochromatin",
+    category: "heterochromatin",
+  },
+  {
+    id: "chmm_e22",
+    name: "PromP",
+    description: "Poised Promoter",
+    category: "repressed",
+  },
+  {
+    id: "chmm_e23",
+    name: "PromBiv",
+    description: "Bivalent Promoter",
+    category: "repressed",
+  },
+  {
+    id: "chmm_e24",
+    name: "ReprPC",
+    description: "Repressed PolyComb",
+    category: "repressed",
+  },
+  {
+    id: "chmm_e25",
+    name: "Quies",
+    description: "Quiescent/Low",
+    category: "quiescent",
+  },
+];
 
 const CATEGORY_ORDER: CategoryKey[] = [
   "promoter",
@@ -160,16 +294,26 @@ function ChromatinProgressBar({
 
   return (
     <div className="flex items-center gap-2">
-      <span className={cn(
-        "text-data w-12 text-right tabular-nums",
-        isEmpty ? "!text-slate-300" : ""
-      )}>
+      <span
+        className={cn(
+          "text-data w-12 text-right tabular-nums",
+          isEmpty ? "!text-slate-300" : "",
+        )}
+      >
         {value}/48
       </span>
-      <div className={cn("relative h-3 w-32 rounded-full overflow-hidden", isEmpty ? "bg-slate-100" : "bg-slate-200")}>
+      <div
+        className={cn(
+          "relative h-3 w-32 rounded-full overflow-hidden",
+          isEmpty ? "bg-slate-100" : "bg-slate-200",
+        )}
+      >
         {!isEmpty && (
           <div
-            className={cn("absolute inset-y-0 left-0 rounded-full transition-all", cat.barClass)}
+            className={cn(
+              "absolute inset-y-0 left-0 rounded-full transition-all",
+              cat.barClass,
+            )}
             style={{ width: `${percentage}%` }}
           />
         )}
@@ -191,7 +335,9 @@ function ChromatinStateRow({
   return (
     <div className="flex items-center gap-4 py-3 px-4 hover:bg-slate-50/50 transition-colors">
       <div className="w-28 flex-shrink-0 flex items-center gap-1.5">
-        <span className="font-semibold text-base text-slate-900">{state.name}</span>
+        <span className="font-semibold text-base text-slate-900">
+          {state.name}
+        </span>
         {tooltipContent && <HeaderTooltip content={tooltipContent} />}
       </div>
       <div className="flex-1 text-base text-slate-500">{state.description}</div>
@@ -207,7 +353,7 @@ function ChromatinCategoryGroup({
   data,
 }: {
   categoryKey: CategoryKey;
-  states: (typeof CHROMATIN_STATES);
+  states: typeof CHROMATIN_STATES;
   data: Variant;
 }) {
   const cat = CHROMATIN_CATEGORIES[categoryKey];
@@ -232,13 +378,16 @@ function ChromatinCategoryGroup({
 
 export function ChromatinStateView({ data }: { data: Variant }) {
   // Group states by category
-  const groupedStates = CHROMATIN_STATES.reduce((acc, state) => {
-    if (!acc[state.category]) {
-      acc[state.category] = [];
-    }
-    acc[state.category].push(state);
-    return acc;
-  }, {} as Record<CategoryKey, typeof CHROMATIN_STATES>);
+  const groupedStates = CHROMATIN_STATES.reduce(
+    (acc, state) => {
+      if (!acc[state.category]) {
+        acc[state.category] = [];
+      }
+      acc[state.category].push(state);
+      return acc;
+    },
+    {} as Record<CategoryKey, typeof CHROMATIN_STATES>,
+  );
 
   return (
     <Card>

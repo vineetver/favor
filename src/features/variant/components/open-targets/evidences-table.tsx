@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsEvidencesColumns } from "../../config/hg38/columns/open-targets-evidences";
 import type { OpenTargetsEvidenceRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface EvidencesTableProps {
   data: OpenTargetsEvidenceRow[];

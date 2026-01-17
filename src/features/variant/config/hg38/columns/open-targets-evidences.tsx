@@ -1,31 +1,117 @@
-import type { OpenTargetsEvidenceRow } from "@/features/variant/types/opentargets";
-import { createColumns, cell, categories, tooltip, Badge } from "@/lib/table/column-builder";
 import { ExternalLink } from "@/components/ui/external-link";
+import type { OpenTargetsEvidenceRow } from "@/features/variant/types/opentargets";
+import {
+  Badge,
+  categories,
+  cell,
+  createColumns,
+  tooltip,
+} from "@/lib/table/column-builder";
 
 const col = createColumns<OpenTargetsEvidenceRow>();
 
 // Data source categories
 const datasourceCategories = categories([
-  { label: "OT Genetics", match: "ot_genetics_portal", color: "blue", description: "Open Targets Genetics Portal" },
-  { label: "Gene Burden", match: "gene_burden", color: "violet", description: "Gene burden analysis from rare variant studies" },
-  { label: "ClinVar", match: "eva", color: "red", description: "ClinVar clinical variant database" },
-  { label: "ClinVar Somatic", match: "eva_somatic", color: "rose", description: "ClinVar somatic variant annotations" },
-  { label: "Gene2Phenotype", match: "gene2phenotype", color: "emerald", description: "Gene2Phenotype database" },
-  { label: "GEL", match: "genomics_england", color: "teal", description: "Genomics England PanelApp" },
-  { label: "UniProt Lit", match: "uniprot_literature", color: "amber", description: "UniProt literature curation" },
-  { label: "UniProt Var", match: "uniprot_variants", color: "orange", description: "UniProt variant annotations" },
-  { label: "Orphanet", match: "orphanet", color: "purple", description: "Orphanet rare disease database" },
-  { label: "ClinGen", match: "clingen", color: "cyan", description: "ClinGen clinical genome resource" },
+  {
+    label: "OT Genetics",
+    match: "ot_genetics_portal",
+    color: "blue",
+    description: "Open Targets Genetics Portal",
+  },
+  {
+    label: "Gene Burden",
+    match: "gene_burden",
+    color: "violet",
+    description: "Gene burden analysis from rare variant studies",
+  },
+  {
+    label: "ClinVar",
+    match: "eva",
+    color: "red",
+    description: "ClinVar clinical variant database",
+  },
+  {
+    label: "ClinVar Somatic",
+    match: "eva_somatic",
+    color: "rose",
+    description: "ClinVar somatic variant annotations",
+  },
+  {
+    label: "Gene2Phenotype",
+    match: "gene2phenotype",
+    color: "emerald",
+    description: "Gene2Phenotype database",
+  },
+  {
+    label: "GEL",
+    match: "genomics_england",
+    color: "teal",
+    description: "Genomics England PanelApp",
+  },
+  {
+    label: "UniProt Lit",
+    match: "uniprot_literature",
+    color: "amber",
+    description: "UniProt literature curation",
+  },
+  {
+    label: "UniProt Var",
+    match: "uniprot_variants",
+    color: "orange",
+    description: "UniProt variant annotations",
+  },
+  {
+    label: "Orphanet",
+    match: "orphanet",
+    color: "purple",
+    description: "Orphanet rare disease database",
+  },
+  {
+    label: "ClinGen",
+    match: "clingen",
+    color: "cyan",
+    description: "ClinGen clinical genome resource",
+  },
 ]);
 
 // Data type categories
 const datatypeCategories = categories([
-  { label: "Genetic Association", match: "genetic_association", color: "blue", description: "Evidence from genetic association studies" },
-  { label: "Somatic Mutation", match: "somatic_mutation", color: "red", description: "Evidence from somatic mutation data" },
-  { label: "Known Drug", match: "known_drug", color: "emerald", description: "Evidence from known drug mechanisms" },
-  { label: "Literature", match: "literature", color: "amber", description: "Evidence from literature mining" },
-  { label: "RNA Expression", match: "rna_expression", color: "violet", description: "Evidence from RNA expression data" },
-  { label: "Animal Model", match: "animal_model", color: "teal", description: "Evidence from animal model studies" },
+  {
+    label: "Genetic Association",
+    match: "genetic_association",
+    color: "blue",
+    description: "Evidence from genetic association studies",
+  },
+  {
+    label: "Somatic Mutation",
+    match: "somatic_mutation",
+    color: "red",
+    description: "Evidence from somatic mutation data",
+  },
+  {
+    label: "Known Drug",
+    match: "known_drug",
+    color: "emerald",
+    description: "Evidence from known drug mechanisms",
+  },
+  {
+    label: "Literature",
+    match: "literature",
+    color: "amber",
+    description: "Evidence from literature mining",
+  },
+  {
+    label: "RNA Expression",
+    match: "rna_expression",
+    color: "violet",
+    description: "Evidence from RNA expression data",
+  },
+  {
+    label: "Animal Model",
+    match: "animal_model",
+    color: "teal",
+    description: "Evidence from animal model studies",
+  },
 ]);
 
 export const openTargetsEvidencesColumns = [
@@ -42,7 +128,10 @@ export const openTargetsEvidencesColumns = [
       if (!name) return "-";
       const display = name.length > 50 ? name.slice(0, 50) + "..." : name;
       return (
-        <ExternalLink href={`https://platform.opentargets.org/disease/${diseaseId}`} title={name}>
+        <ExternalLink
+          href={`https://platform.opentargets.org/disease/${diseaseId}`}
+          title={name}
+        >
           {display}
         </ExternalLink>
       );
@@ -61,7 +150,10 @@ export const openTargetsEvidencesColumns = [
       const targetId = row.original.targetId;
       if (!symbol) return "-";
       return (
-        <ExternalLink href={`https://platform.opentargets.org/target/${targetId}`} className="font-medium">
+        <ExternalLink
+          href={`https://platform.opentargets.org/target/${targetId}`}
+          className="font-medium"
+        >
           {symbol}
         </ExternalLink>
       );
@@ -72,7 +164,8 @@ export const openTargetsEvidencesColumns = [
     header: "Score",
     description: tooltip({
       title: "Evidence Score",
-      description: "Open Targets evidence score representing the strength of the target-disease association.",
+      description:
+        "Open Targets evidence score representing the strength of the target-disease association.",
       range: "[0, 1]",
       guides: [
         { threshold: "> 0.7", meaning: "Strong evidence" },
@@ -83,11 +176,7 @@ export const openTargetsEvidencesColumns = [
     cell: ({ row }) => {
       const score = row.original.score;
       const color = score > 0.7 ? "emerald" : score > 0.4 ? "amber" : "gray";
-      return (
-        <Badge color={color}>
-          {score.toFixed(3)}
-        </Badge>
-      );
+      return <Badge color={color}>{score.toFixed(3)}</Badge>;
     },
   }),
 
@@ -138,7 +227,8 @@ export const openTargetsEvidencesColumns = [
     header: "Consequence",
     description: tooltip({
       title: "Molecular Consequence",
-      description: "Sequence Ontology term describing the variant's molecular consequence.",
+      description:
+        "Sequence Ontology term describing the variant's molecular consequence.",
       citation: "Sequence Ontology",
     }),
     cell: cell.text(),
@@ -156,10 +246,14 @@ export const openTargetsEvidencesColumns = [
       return (
         <div className="flex flex-wrap gap-1">
           {areas.slice(0, 2).map((area, i) => (
-            <Badge key={i} color="purple">{area}</Badge>
+            <Badge key={i} color="purple">
+              {area}
+            </Badge>
           ))}
           {areas.length > 2 && (
-            <span className="text-sm text-muted-foreground">+{areas.length - 2}</span>
+            <span className="text-sm text-muted-foreground">
+              +{areas.length - 2}
+            </span>
           )}
         </div>
       );

@@ -1,6 +1,12 @@
 "use client";
 
-import { Search, SlidersHorizontal, X, Table as TableIcon, BarChart3 } from "lucide-react";
+import {
+  BarChart3,
+  Search,
+  SlidersHorizontal,
+  Table as TableIcon,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ControlBarProps, ViewMode } from "./types";
 
@@ -23,7 +29,7 @@ export function ControlBar({
     <div
       className={cn(
         "flex flex-wrap items-center gap-3 px-6 py-3 border-b border-slate-100 bg-white",
-        sticky && "sticky top-0 z-20"
+        sticky && "sticky top-0 z-20",
       )}
     >
       {/* Left: Search + Filter */}
@@ -49,7 +55,7 @@ export function ControlBar({
               "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors",
               hasActiveFilters
                 ? "border-primary bg-primary/5 text-primary"
-                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50",
             )}
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -115,7 +121,7 @@ function ViewSwitch({
           "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
           value === "table"
             ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
+            : "text-slate-500 hover:text-slate-700",
         )}
       >
         <TableIcon className="w-4 h-4" />
@@ -128,7 +134,7 @@ function ViewSwitch({
           "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
           value === "chart"
             ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
+            : "text-slate-500 hover:text-slate-700",
         )}
       >
         <BarChart3 className="w-4 h-4" />

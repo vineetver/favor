@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, useMemo, type ReactNode } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
-  type SortingState,
   type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
 import {
-  Info,
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
   ArrowUpDown,
-  Search,
   Download,
+  Info,
+  Search,
 } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NoDataState } from "@/components/ui/error-states";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -27,15 +30,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { NoDataState } from "@/components/ui/error-states";
 import type { ColumnMeta } from "@/lib/table/column-builder";
 
 // ============================================================================
@@ -120,7 +120,7 @@ export function TableDataView<T>({
 }: TableDataViewProps<T>) {
   // State
   const [sorting, setSorting] = useState<SortingState>(
-    defaultSort ? [defaultSort] : []
+    defaultSort ? [defaultSort] : [],
   );
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -143,7 +143,7 @@ export function TableDataView<T>({
     const csvRows = table.getFilteredRowModel().rows.map((row) =>
       exportRow(row.original)
         .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
-        .join(",")
+        .join(","),
     );
 
     const csv = [exportHeaders.join(","), ...csvRows].join("\n");
@@ -221,19 +221,27 @@ export function TableDataView<T>({
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
-                    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                    const meta = header.column.columnDef.meta as
+                      | ColumnMeta
+                      | undefined;
                     const canSort = header.column.getCanSort();
 
                     return (
                       <TableHead
                         key={header.id}
-                        className={canSort ? "cursor-pointer hover:bg-muted/50" : ""}
-                        onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                        className={
+                          canSort ? "cursor-pointer hover:bg-muted/50" : ""
+                        }
+                        onClick={
+                          canSort
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
                       >
                         <div className="flex items-center gap-1">
                           {flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                           {meta?.description && (
                             <HeaderTooltip content={meta.description} />
@@ -265,7 +273,7 @@ export function TableDataView<T>({
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}

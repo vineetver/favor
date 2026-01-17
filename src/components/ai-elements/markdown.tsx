@@ -1,7 +1,7 @@
+import { Check, Copy } from "lucide-react";
 import Link from "next/link";
-import React, { memo, useState, useRef, useEffect } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import { Streamdown, type StreamdownProps } from "streamdown";
-import { Copy, Check } from "lucide-react";
 
 type Components = StreamdownProps["components"];
 

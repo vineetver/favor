@@ -1,11 +1,26 @@
 import type { Variant } from "@/features/variant/types";
-import { createColumns, cell, categories, tooltip } from "@/lib/table/column-builder";
+import {
+  categories,
+  cell,
+  createColumns,
+  tooltip,
+} from "@/lib/table/column-builder";
 
 const col = createColumns<Variant>();
 
 const filterStatus = categories([
-  { label: "PASS", match: "PASS", color: "green", description: "passed all QC filters" },
-  { label: "FAIL", match: /fail/i, color: "red", description: "failed QC filters" },
+  {
+    label: "PASS",
+    match: "PASS",
+    color: "green",
+    description: "passed all QC filters",
+  },
+  {
+    label: "FAIL",
+    match: /fail/i,
+    color: "red",
+    description: "failed QC filters",
+  },
 ]);
 
 export const basicColumns = [
@@ -67,7 +82,8 @@ export const basicColumns = [
     header: "1000 Genomes AF",
     description: tooltip({
       title: "1000 Genomes Allele Frequency",
-      description: "Whole genome allele frequencies from the 1000 Genomes Project phase 3 data.",
+      description:
+        "Whole genome allele frequencies from the 1000 Genomes Project phase 3 data.",
     }),
     cell: cell.decimal(6),
   }),

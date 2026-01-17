@@ -1,10 +1,13 @@
 "use client";
 
-import { DataSurface } from "@/components/ui/data-surface";
 import { BarChart, PERCENTILE_GRADIENT } from "@/components/charts";
-import { integrativeColumns, integrativeGroup } from "@/features/variant/config/hg38/columns/integrative";
-import type { Variant } from "@/features/variant/types";
+import { DataSurface } from "@/components/ui/data-surface";
 import type { VisualizationRow } from "@/components/ui/data-surface/types";
+import {
+  integrativeColumns,
+  integrativeGroup,
+} from "@/features/variant/config/hg38/columns/integrative";
+import type { Variant } from "@/features/variant/types";
 
 interface IntegrativeDataTableProps {
   variant: Variant;
@@ -29,7 +32,7 @@ function IntegrativeVisualization({ data }: { data: VisualizationRow[] }) {
 
 export function IntegrativeDataTable({ variant }: IntegrativeDataTableProps) {
   return (
-    <DataSurface
+    <DataSurface<Variant, unknown>
       transposed
       columns={integrativeColumns}
       data={[]}

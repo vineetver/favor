@@ -45,7 +45,9 @@ export async function generateAIText(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to generate AI text: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to generate AI text: ${response.status} - ${errorText}`,
+    );
   }
 
   return response.json();

@@ -17,8 +17,14 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       { text: "Epigenetics", slug: "epigenetics" },
       { text: "Transcription Factors", slug: "transcription-factors" },
       { text: "Chromatin State", slug: "chromatin-state" },
-      { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity" },
-      { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation" },
+      {
+        text: "Local Nucleotide Diversity",
+        slug: "local-nucleotide-diversity",
+      },
+      {
+        text: "Expected Rate of De Novo Mutation",
+        slug: "expected-rate-of-de-novo-mutation",
+      },
       { text: "Mappability", slug: "mappability" },
       { text: "Proximity Table", slug: "proximity-table" },
       { text: "SpliceAI", slug: "splice-ai" },
@@ -43,8 +49,16 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Allele Frequency", slug: "allele-frequency", icon: "users" },
-          { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity", icon: "pie-chart" },
-          { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation", icon: "git-branch" },
+          {
+            text: "Local Nucleotide Diversity",
+            slug: "local-nucleotide-diversity",
+            icon: "pie-chart",
+          },
+          {
+            text: "Expected Rate of De Novo Mutation",
+            slug: "expected-rate-of-de-novo-mutation",
+            icon: "git-branch",
+          },
         ],
       },
       {
@@ -52,7 +66,11 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Clinvar", slug: "clinvar", icon: "heart-pulse" },
-          { text: "Somatic Mutation", slug: "somatic-mutation", icon: "target" },
+          {
+            text: "Somatic Mutation",
+            slug: "somatic-mutation",
+            icon: "target",
+          },
         ],
       },
       {
@@ -74,15 +92,27 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Epigenetics", slug: "epigenetics", icon: "layers" },
-          { text: "Chromatin State", slug: "chromatin-state", icon: "flask-conical" },
-          { text: "Transcription Factors", slug: "transcription-factors", icon: "scan" },
+          {
+            text: "Chromatin State",
+            slug: "chromatin-state",
+            icon: "flask-conical",
+          },
+          {
+            text: "Transcription Factors",
+            slug: "transcription-factors",
+            icon: "scan",
+          },
         ],
       },
       {
         name: "Protein Function",
         defaultExpanded: true,
         items: [
-          { text: "Protein Function", slug: "protein-function", icon: "activity" },
+          {
+            text: "Protein Function",
+            slug: "protein-function",
+            icon: "activity",
+          },
           { text: "SpliceAI", slug: "splice-ai", icon: "scissors" },
         ],
       },

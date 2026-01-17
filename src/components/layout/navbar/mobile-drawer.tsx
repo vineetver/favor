@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
-import { X, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 import { Logo } from "@/components/ui/logo";
-import { NAV_ITEMS, RESOURCES, type NavItem } from "./nav-items";
-import { PageNavDrawer } from "./page-nav-drawer";
 import { siteConfig } from "@/config/site";
+import { cn } from "@/lib/utils";
+import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
+import { PageNavDrawer } from "./page-nav-drawer";
 
 interface MobileDrawerProps {
   open: boolean;
@@ -32,7 +32,7 @@ function MobileNavLink({
         "px-5 py-4 rounded-2xl",
         "text-lg font-semibold text-slate-600",
         "transition-colors duration-200",
-        "hover:text-slate-900 hover:bg-primary/10"
+        "hover:text-slate-900 hover:bg-primary/10",
       )}
       {...(item.external && {
         target: "_blank",
@@ -46,7 +46,6 @@ function MobileNavLink({
 }
 
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
-
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -76,7 +75,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           "fixed inset-0 z-50 md:hidden",
           "bg-black/20 backdrop-blur-sm",
           "transition-opacity duration-300",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
         aria-hidden="true"
@@ -90,7 +89,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           "bg-white/95 backdrop-blur-xl",
           "shadow-2xl",
           "transition-transform duration-300 ease-out",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         <div className="flex flex-col h-full">
@@ -106,7 +105,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                 "p-2 -mr-2 rounded-full",
                 "text-slate-400 hover:text-slate-900",
                 "hover:bg-primary/10",
-                "transition-colors"
+                "transition-colors",
               )}
               aria-label="Close menu"
             >
@@ -144,7 +143,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                       "block px-5 py-3 rounded-xl",
                       "text-base font-medium text-slate-500",
                       "transition-colors duration-200",
-                      "hover:text-slate-900 hover:bg-primary/10"
+                      "hover:text-slate-900 hover:bg-primary/10",
                     )}
                     {...(item.external && {
                       target: "_blank",

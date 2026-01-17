@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface VariantSummaryCardProps {
@@ -39,7 +39,9 @@ export function VariantSummaryCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="text-base text-slate-500 leading-relaxed">{children}</CardContent>
+      <CardContent className="text-base text-slate-500 leading-relaxed">
+        {children}
+      </CardContent>
     </Card>
   );
 }

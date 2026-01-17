@@ -1,4 +1,4 @@
-import { kvClient, isKVConfigured } from "@/lib/cache/kv-client";
+import { isKVConfigured, kvClient } from "@/lib/cache/kv-client";
 import type { RateLimitConfig } from "./config";
 
 export interface RateLimitResult {

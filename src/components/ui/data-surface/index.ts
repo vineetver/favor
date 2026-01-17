@@ -1,10 +1,10 @@
-export { DataSurface } from "./data-surface";
 export { ContextHeader } from "./context-header";
-export { ScopeBar } from "./scope-bar";
-export { DimensionSelector } from "./dimension-selector";
 export { ControlBar } from "./control-bar";
-export { TableContent } from "./table-content";
-export { FooterBar } from "./footer-bar";
+export { DataSurface } from "./data-surface";
+export { DimensionSelector } from "./dimension-selector";
 export { FilterDrawer } from "./filter-drawer";
-export { LoadingState, EmptyState, ErrorState } from "./states";
+export { FooterBar } from "./footer-bar";
+export { ScopeBar } from "./scope-bar";
+export { EmptyState, ErrorState, LoadingState } from "./states";
+export { TableContent } from "./table-content";
 export type * from "./types";

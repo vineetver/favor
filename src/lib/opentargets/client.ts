@@ -16,7 +16,10 @@ export class OpenTargetsClient {
     this.baseUrl = baseUrl;
   }
 
-  async query<T>(query: string, variables?: Record<string, any>): Promise<T | null> {
+  async query<T>(
+    query: string,
+    variables?: Record<string, any>,
+  ): Promise<T | null> {
     try {
       const response = await fetch(this.baseUrl, {
         method: "POST",

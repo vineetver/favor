@@ -1,5 +1,5 @@
+import type { AccessorFn, CellContext, ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
-import type { CellContext, ColumnDef, AccessorFn } from "@tanstack/react-table";
 import { ExternalLink } from "@/components/ui/external-link";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +83,7 @@ export function categories(items: Category[]) {
       return items.find((item) =>
         item.match instanceof RegExp
           ? item.match.test(value)
-          : value === item.match
+          : value === item.match,
       );
     },
     /** Get the color for a value */
@@ -92,7 +92,7 @@ export function categories(items: Category[]) {
       const match = items.find((item) =>
         item.match instanceof RegExp
           ? item.match.test(value)
-          : value === item.match
+          : value === item.match,
       );
       return match?.color ?? "gray";
     },
@@ -104,8 +104,15 @@ export function categories(items: Category[]) {
           <div className="space-y-1.5 text-sm">
             {items.map((item, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className={cn("w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0", DOT_COLORS[item.color])} />
-                <span><strong>{item.label}:</strong> {item.description}</span>
+                <span
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0",
+                    DOT_COLORS[item.color],
+                  )}
+                />
+                <span>
+                  <strong>{item.label}:</strong> {item.description}
+                </span>
               </div>
             ))}
           </div>
@@ -126,12 +133,18 @@ function isEmpty(v: unknown): v is null | undefined {
 }
 
 /** Badge component - exported for use in derived columns */
-export function Badge({ children, color }: { children: ReactNode; color: BadgeColor }) {
+export function Badge({
+  children,
+  color,
+}: {
+  children: ReactNode;
+  color: BadgeColor;
+}) {
   return (
     <span
       className={cn(
         "inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold tracking-wide uppercase",
-        BADGE_COLORS[color]
+        BADGE_COLORS[color],
       )}
     >
       {children}
@@ -150,7 +163,9 @@ export const cell = {
 
   /** Decimal number with configurable precision */
   decimal<TData>(decimals = 3) {
-    return ({ getValue }: CellContext<TData, number | string | null | undefined>) => {
+    return ({
+      getValue,
+    }: CellContext<TData, number | string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
@@ -161,7 +176,9 @@ export const cell = {
 
   /** Integer (whole number) */
   integer<TData>() {
-    return ({ getValue }: CellContext<TData, number | string | null | undefined>) => {
+    return ({
+      getValue,
+    }: CellContext<TData, number | string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
@@ -172,7 +189,9 @@ export const cell = {
 
   /** Percentage (multiplies by 100 and adds %) */
   percent<TData>(decimals = 1) {
-    return ({ getValue }: CellContext<TData, number | string | null | undefined>) => {
+    return ({
+      getValue,
+    }: CellContext<TData, number | string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       const num = typeof v === "string" ? parseFloat(v) : v;
@@ -182,7 +201,10 @@ export const cell = {
   },
 
   /** Colored badge based on category matching */
-  badge<TData>(cats: ReturnType<typeof categories>, fallback: BadgeColor = "gray") {
+  badge<TData>(
+    cats: ReturnType<typeof categories>,
+    fallback: BadgeColor = "gray",
+  ) {
     return ({ getValue }: CellContext<TData, string | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
@@ -197,7 +219,7 @@ export const cell = {
   badgeMap<TData>(
     colorMap: Record<string, BadgeColor>,
     labelMap?: Record<string, string>,
-    fallback: BadgeColor = "gray"
+    fallback: BadgeColor = "gray",
   ) {
     return ({ getValue }: CellContext<TData, string | null | undefined>) => {
       const v = getValue();
@@ -210,7 +232,10 @@ export const cell = {
 
   /** External link */
   link<TData, TValue>(urlFn: (value: TValue, row: TData) => string) {
-    return ({ getValue, row }: CellContext<TData, TValue | null | undefined>) => {
+    return ({
+      getValue,
+      row,
+    }: CellContext<TData, TValue | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       return (
@@ -223,7 +248,10 @@ export const cell = {
 
   /** Custom renderer */
   custom<TData, TValue>(render: (value: TValue, row: TData) => ReactNode) {
-    return ({ getValue, row }: CellContext<TData, TValue | null | undefined>) => {
+    return ({
+      getValue,
+      row,
+    }: CellContext<TData, TValue | null | undefined>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;
       return render(v as TValue, row.original);
@@ -334,9 +362,17 @@ export function createColumns<TData>() {
     /** Accessor column - maps to a data field */
     accessor<TValue = unknown>(
       id: string,
-      config: AccessorColConfig<TData, TValue>
+      config: AccessorColConfig<TData, TValue>,
     ): ColumnDef<TData> {
-      const { accessor, header, description, headerTooltip, sortable, sortDescFirst, cell: cellFn } = config;
+      const {
+        accessor,
+        header,
+        description,
+        headerTooltip,
+        sortable,
+        sortDescFirst,
+        cell: cellFn,
+      } = config;
       const meta: ColumnMeta = {};
       if (description) meta.description = description;
       if (headerTooltip) meta.headerTooltip = headerTooltip;
@@ -345,9 +381,10 @@ export function createColumns<TData>() {
 
       return {
         id,
-        accessorFn: typeof accessor === "function"
-          ? (accessor as AccessorFn<TData, unknown>)
-          : (row) => row[accessor as keyof TData],
+        accessorFn:
+          typeof accessor === "function"
+            ? (accessor as AccessorFn<TData, unknown>)
+            : (row) => row[accessor as keyof TData],
         header,
         meta: Object.keys(meta).length > 0 ? meta : undefined,
         cell: cellFn as ColumnDef<TData>["cell"],
@@ -372,7 +409,12 @@ export function createColumns<TData>() {
     },
 
     /** Group of columns with optional derived column, sort, and view config */
-    group(id: string, header: string, columns: ColumnDef<TData>[], config?: GroupConfig): ColumnGroup<TData> {
+    group(
+      id: string,
+      header: string,
+      columns: ColumnDef<TData>[],
+      config?: GroupConfig,
+    ): ColumnGroup<TData> {
       return {
         id,
         header,
@@ -429,8 +471,15 @@ export function tooltip(props: {
         <div className="space-y-1.5 text-sm">
           {props.categories.items.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className={cn("w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0", DOT_COLORS[item.color])} />
-              <span><strong>{item.label}:</strong> {item.description}</span>
+              <span
+                className={cn(
+                  "w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0",
+                  DOT_COLORS[item.color],
+                )}
+              />
+              <span>
+                <strong>{item.label}:</strong> {item.description}
+              </span>
             </div>
           ))}
         </div>

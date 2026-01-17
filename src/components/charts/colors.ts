@@ -1,4 +1,4 @@
-import type { GradientThreshold, ColorScheme } from "./types";
+import type { ColorScheme, GradientThreshold } from "./types";
 
 // ============================================================================
 // Predefined Color Schemes
@@ -9,22 +9,22 @@ import type { GradientThreshold, ColorScheme } from "./types";
  * Lower percentile = more significant = warmer color.
  */
 export const PERCENTILE_GRADIENT: GradientThreshold[] = [
-  { max: 1, color: "#dc2626", label: "<1%" },      // red-600
-  { max: 5, color: "#ea580c", label: "1-5%" },     // orange-600
-  { max: 10, color: "#f59e0b", label: "5-10%" },   // amber-500
-  { max: 25, color: "#eab308", label: "10-25%" },  // yellow-500
-  { max: 50, color: "#84cc16", label: "25-50%" },  // lime-500
-  { max: 100, color: "#22c55e", label: ">50%" },   // green-500
+  { max: 1, color: "#dc2626", label: "<1%" }, // red-600
+  { max: 5, color: "#ea580c", label: "1-5%" }, // orange-600
+  { max: 10, color: "#f59e0b", label: "5-10%" }, // amber-500
+  { max: 25, color: "#eab308", label: "10-25%" }, // yellow-500
+  { max: 50, color: "#84cc16", label: "25-50%" }, // lime-500
+  { max: 100, color: "#22c55e", label: ">50%" }, // green-500
 ];
 
 /**
  * Regulatory state colors for epigenetics data.
  */
 export const REGULATORY_COLORS: Record<string, string> = {
-  Active: "#34d399",        // emerald-400
-  Repressed: "#fb7185",     // rose-400
+  Active: "#34d399", // emerald-400
+  Repressed: "#fb7185", // rose-400
   Transcription: "#38bdf8", // sky-400
-  Other: "#94a3b8",         // slate-400
+  Other: "#94a3b8", // slate-400
 };
 
 /**
@@ -58,7 +58,7 @@ export const CATEGORICAL_PALETTE = [
  */
 export function getGradientColor(
   value: number | null | undefined,
-  thresholds: GradientThreshold[]
+  thresholds: GradientThreshold[],
 ): string {
   if (value === null || value === undefined) {
     return "#94a3b8"; // slate-400 for missing values
@@ -82,7 +82,7 @@ export function getGradientColor(
  */
 export function getCategoryColor(
   category: string | null | undefined,
-  colors: Record<string, string>
+  colors: Record<string, string>,
 ): string {
   if (!category) {
     return "#94a3b8"; // slate-400 for missing category
@@ -101,7 +101,7 @@ export function getCategoryColor(
 export function getRowColor(
   row: { value: number | null; derived?: number | null; category?: string },
   colorScheme: ColorScheme,
-  colorField: "value" | "derived" | "category" = "derived"
+  colorField: "value" | "derived" | "category" = "derived",
 ): string {
   switch (colorScheme.type) {
     case "single":
@@ -126,7 +126,7 @@ export function getRowColor(
  * @returns Array of legend items
  */
 export function getLegendItems(
-  colorScheme: ColorScheme
+  colorScheme: ColorScheme,
 ): Array<{ label: string; color: string }> {
   switch (colorScheme.type) {
     case "single":

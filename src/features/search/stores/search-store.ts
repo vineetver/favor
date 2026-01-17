@@ -92,7 +92,8 @@ export const useSearchGenome = () => useSearchStore((s) => s.genome);
 export const useSearchError = () => useSearchStore((s) => s.error);
 
 /** Derived: true if query has content */
-export const useHasInput = () => useSearchStore((s) => s.query.trim().length > 0);
+export const useHasInput = () =>
+  useSearchStore((s) => s.query.trim().length > 0);
 
 /** Derived: true if there's an error */
 export const useHasError = () => useSearchStore((s) => s.error !== null);
@@ -143,9 +144,13 @@ export const useSearchActions = () => {
       setQuery("");
       clearError();
     },
-    setSearchState: (partial: { inputValue?: string; selectedGenome?: GenomicBuild }) => {
+    setSearchState: (partial: {
+      inputValue?: string;
+      selectedGenome?: GenomicBuild;
+    }) => {
       if (partial.inputValue !== undefined) setQuery(partial.inputValue);
-      if (partial.selectedGenome !== undefined) setGenome(partial.selectedGenome);
+      if (partial.selectedGenome !== undefined)
+        setGenome(partial.selectedGenome);
     },
   };
 };

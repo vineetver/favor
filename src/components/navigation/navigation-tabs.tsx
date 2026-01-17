@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Activity,
   Database,
+  Dna,
   LayoutDashboard,
   Microscope,
   ScanLine,
-  Dna,
   Table2,
-  Activity,
 } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface NavigationItem {
@@ -48,7 +48,10 @@ export function NavigationTabs({
   basePath,
 }: NavigationTabsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollState, setScrollState] = useState<ScrollState>({ left: false, right: false });
+  const [scrollState, setScrollState] = useState<ScrollState>({
+    left: false,
+    right: false,
+  });
 
   const updateScrollState = useCallback(() => {
     const container = scrollContainerRef.current;
@@ -101,9 +104,7 @@ export function NavigationTabs({
                   ],
                 )}
               >
-                {Icon && (
-                  <Icon className="w-4 h-4 shrink-0" />
-                )}
+                {Icon && <Icon className="w-4 h-4 shrink-0" />}
                 <span>{item.name}</span>
               </Link>
             );

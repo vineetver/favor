@@ -25,7 +25,7 @@ export function TableBody<TData>({ table, onRowClick }: TableBodyProps<TData>) {
               "group relative transition-colors border-b border-slate-50",
               isEven ? "bg-white" : "bg-slate-50/30",
               onRowClick ? "cursor-pointer" : "",
-              "hover:bg-primary/[0.03]"
+              "hover:bg-primary/[0.03]",
             )}
           >
             {row.getVisibleCells().map((cell, cellIndex) => {
@@ -39,7 +39,7 @@ export function TableBody<TData>({ table, onRowClick }: TableBodyProps<TData>) {
                     "px-6 py-3 text-sm text-slate-700",
                     align === "center" && "text-center",
                     align === "right" && "text-right",
-                    cellIndex === 0 && "relative"
+                    cellIndex === 0 && "relative",
                   )}
                 >
                   {cellIndex === 0 && (

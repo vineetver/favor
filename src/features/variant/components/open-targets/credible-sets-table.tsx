@@ -1,8 +1,8 @@
 "use client";
 
-import { TableDataView } from "../table-data-view";
 import { openTargetsCredibleSetsColumns } from "../../config/hg38/columns/open-targets-credible-sets";
 import type { OpenTargetsCredibleSetRow } from "../../types/opentargets";
+import { TableDataView } from "../table-data-view";
 
 interface CredibleSetsTableProps {
   data: OpenTargetsCredibleSetRow[];

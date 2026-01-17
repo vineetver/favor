@@ -394,95 +394,97 @@ function SearchInterface() {
                     No results found.
                   </div>
                 ) : (
-                suggestions.map((option) => (
-                  <ComboboxOption
-                    key={option.id}
-                    className="relative cursor-pointer select-none mx-2 rounded-xl transition-all duration-200 data-focus:bg-slate-50"
-                    value={option}
-                  >
-                    <div className="p-4 group">
-                      <div className="w-full text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-slate-900 truncate text-base">
-                            {option.value}
-                          </span>
+                  suggestions.map((option) => (
+                    <ComboboxOption
+                      key={option.id}
+                      className="relative cursor-pointer select-none mx-2 rounded-xl transition-all duration-200 data-focus:bg-slate-50"
+                      value={option}
+                    >
+                      <div className="p-4 group">
+                        <div className="w-full text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-slate-900 truncate text-base">
+                              {option.value}
+                            </span>
+                          </div>
+
+                          {option.type === "rsid" && (
+                            <div className="text-sm text-slate-500 flex gap-2 flex-wrap">
+                              {option.data?.variant_vcf && (
+                                <span className="font-mono">
+                                  {option.data.variant_vcf}
+                                </span>
+                              )}
+                              {option.data?.snp_type && (
+                                <span>
+                                  {option.data.snp_type === "SNV"
+                                    ? "SNV"
+                                    : "InDel"}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {option.type === "variant" &&
+                            option.data?.snp_type && (
+                              <div className="text-sm text-slate-500">
+                                {option.data.snp_type}
+                              </div>
+                            )}
+
+                          {option.type === "gene" &&
+                            option.data?.chromosome && (
+                              <div className="text-sm text-slate-500">
+                                {option.data.chromosome}
+                                {option.data.position &&
+                                  ` - ${option.data.position}`}
+                              </div>
+                            )}
+
+                          {option.type === "history" && (
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-slate-400 italic">
+                                Recent search
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeFromHistory(option.value);
+                                }}
+                                className="h-auto p-1 text-sm opacity-0 group-hover:opacity-100 hover:text-red-500"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          )}
+
+                          {option.type === "saved" && (
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-purple-600 italic">
+                                Saved: {option.data?.name}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  deleteSavedSearch(option.id);
+                                }}
+                                className="h-auto p-1 text-sm opacity-0 group-hover:opacity-100 hover:text-red-500"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          )}
                         </div>
-
-                        {option.type === "rsid" && (
-                          <div className="text-sm text-slate-500 flex gap-2 flex-wrap">
-                            {option.data?.variant_vcf && (
-                              <span className="font-mono">
-                                {option.data.variant_vcf}
-                              </span>
-                            )}
-                            {option.data?.snp_type && (
-                              <span>
-                                {option.data.snp_type === "SNV"
-                                  ? "SNV"
-                                  : "InDel"}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {option.type === "variant" && option.data?.snp_type && (
-                          <div className="text-sm text-slate-500">
-                            {option.data.snp_type}
-                          </div>
-                        )}
-
-                        {option.type === "gene" && option.data?.chromosome && (
-                          <div className="text-sm text-slate-500">
-                            {option.data.chromosome}
-                            {option.data.position &&
-                              ` - ${option.data.position}`}
-                          </div>
-                        )}
-
-                        {option.type === "history" && (
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-slate-400 italic">
-                              Recent search
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeFromHistory(option.value);
-                              }}
-                              className="h-auto p-1 text-sm opacity-0 group-hover:opacity-100 hover:text-red-500"
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        )}
-
-                        {option.type === "saved" && (
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-purple-600 italic">
-                              Saved: {option.data?.name}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                deleteSavedSearch(option.id);
-                              }}
-                              className="h-auto p-1 text-sm opacity-0 group-hover:opacity-100 hover:text-red-500"
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </ComboboxOption>
-                ))
-              )}
+                    </ComboboxOption>
+                  ))
+                )}
               </ComboboxOptions>
             )}
           </Combobox>

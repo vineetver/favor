@@ -1,7 +1,12 @@
 "use client";
 
-import { flexRender, type Table, type Row, type SortingState } from "@tanstack/react-table";
-import { ArrowUp, ArrowDown, ArrowUpDown, Info, Search } from "lucide-react";
+import {
+  flexRender,
+  type Row,
+  type SortingState,
+  type Table,
+} from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown, Info, Search } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -22,11 +27,21 @@ interface TableContentProps<TData> {
   sorting: SortingState;
 }
 
-function SortIcon({ columnId, sorting }: { columnId: string; sorting: SortingState }) {
+function SortIcon({
+  columnId,
+  sorting,
+}: {
+  columnId: string;
+  sorting: SortingState;
+}) {
   const sortEntry = sorting.find((s) => s.id === columnId);
-  if (sortEntry?.desc === false) return <ArrowUp className="w-3.5 h-3.5 text-primary" />;
-  if (sortEntry?.desc === true) return <ArrowDown className="w-3.5 h-3.5 text-primary" />;
-  return <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 transition-colors" />;
+  if (sortEntry?.desc === false)
+    return <ArrowUp className="w-3.5 h-3.5 text-primary" />;
+  if (sortEntry?.desc === true)
+    return <ArrowDown className="w-3.5 h-3.5 text-primary" />;
+  return (
+    <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
+  );
 }
 
 export function TableContent<TData>({
@@ -50,7 +65,9 @@ export function TableContent<TData>({
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b border-slate-100">
               {headerGroup.headers.map((header) => {
-                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                const meta = header.column.columnDef.meta as
+                  | ColumnMeta
+                  | undefined;
                 const canSort = header.column.getCanSort();
                 const align = meta?.align ?? "left";
 
@@ -58,12 +75,17 @@ export function TableContent<TData>({
                   <th
                     key={header.id}
                     scope="col"
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    onClick={
+                      canSort
+                        ? header.column.getToggleSortingHandler()
+                        : undefined
+                    }
                     className={cn(
                       "px-6 py-3 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider",
                       align === "center" && "text-center",
                       align === "right" && "text-right",
-                      canSort && "cursor-pointer select-none hover:text-slate-700 hover:bg-slate-100/80 transition-colors"
+                      canSort &&
+                        "cursor-pointer select-none hover:text-slate-700 hover:bg-slate-100/80 transition-colors",
                     )}
                   >
                     {header.isPlaceholder ? null : (
@@ -71,10 +93,13 @@ export function TableContent<TData>({
                         className={cn(
                           "flex items-center gap-1.5",
                           align === "center" && "justify-center",
-                          align === "right" && "justify-end"
+                          align === "right" && "justify-end",
                         )}
                       >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                         {meta?.description && (
                           <TooltipProvider>
                             <Tooltip delayDuration={200}>
@@ -95,7 +120,12 @@ export function TableContent<TData>({
                             </Tooltip>
                           </TooltipProvider>
                         )}
-                        {canSort && <SortIcon columnId={header.column.id} sorting={sorting} />}
+                        {canSort && (
+                          <SortIcon
+                            columnId={header.column.id}
+                            sorting={sorting}
+                          />
+                        )}
                       </div>
                     )}
                   </th>
@@ -116,11 +146,13 @@ export function TableContent<TData>({
                     "group relative transition-colors border-b border-slate-50",
                     isEven ? "bg-white" : "bg-slate-50/30",
                     onRowClick ? "cursor-pointer" : "",
-                    "hover:bg-primary/[0.03]"
+                    "hover:bg-primary/[0.03]",
                   )}
                 >
                   {row.getVisibleCells().map((cell, cellIndex) => {
-                    const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
+                    const meta = cell.column.columnDef.meta as
+                      | ColumnMeta
+                      | undefined;
                     const align = meta?.align ?? "left";
 
                     return (
@@ -130,13 +162,16 @@ export function TableContent<TData>({
                           "px-6 py-3 text-sm text-slate-700",
                           align === "center" && "text-center",
                           align === "right" && "text-right",
-                          cellIndex === 0 && "relative"
+                          cellIndex === 0 && "relative",
                         )}
                       >
                         {cellIndex === 0 && (
                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/60 rounded-r transition-all duration-150 group-hover:h-6" />
                         )}
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </td>
                     );
                   })}
@@ -145,7 +180,10 @@ export function TableContent<TData>({
             })
           ) : !loading ? (
             <tr>
-              <td colSpan={table.getAllColumns().length} className="px-6 py-12 text-center text-slate-400 text-sm">
+              <td
+                colSpan={table.getAllColumns().length}
+                className="px-6 py-12 text-center text-slate-400 text-sm"
+              >
                 <div className="flex flex-col items-center justify-center gap-2">
                   <Search className="w-8 h-8 text-slate-200" />
                   <p>{emptyMessage}</p>
