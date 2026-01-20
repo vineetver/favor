@@ -22,50 +22,16 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
         {/* Left Side */}
         <div className="space-y-4">
           {/* Title */}
-          <div className="flex items-baseline gap-4">
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-              {disease.name}
-            </h1>
-            <span className="text-lg font-mono text-slate-400">
-              {disease.disease_id}
-            </span>
-          </div>
+          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+            {disease.name}
+          </h1>
 
           {/* Status Chips Row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Source */}
-            {disease.source && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                {disease.source}
-              </span>
-            )}
-
-            {/* Disorder Type */}
-            {disease.epidemiology?.disorder_type && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                {disease.epidemiology.disorder_type}
-              </span>
-            )}
-
-            {/* Therapeutic Area */}
-            {disease.isTherapeuticArea && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
-                Therapeutic Area
-              </span>
-            )}
-
-            {/* Leaf Node */}
-            {disease.leaf && (
+          {disease.leaf && (
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
                 Leaf Node
               </span>
-            )}
-          </div>
-
-          {/* Metadata Row */}
-          {disease.code && (
-            <div className="text-sm text-slate-500">
-              Code <span className="font-semibold font-mono text-slate-700">{disease.code}</span>
             </div>
           )}
         </div>

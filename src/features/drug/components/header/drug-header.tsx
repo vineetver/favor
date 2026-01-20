@@ -45,14 +45,9 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
         {/* Left Side */}
         <div className="space-y-4">
           {/* Title */}
-          <div className="flex items-baseline gap-4">
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-              {drug.name}
-            </h1>
-            <span className="text-lg font-mono text-slate-400">
-              {drug.chembl_id}
-            </span>
-          </div>
+          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+            {drug.name}
+          </h1>
 
           {/* Status Chips Row */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -72,7 +67,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
             </span>
 
             {/* Max Phase */}
-            {drug.max_clinical_trial_phase !== null && (
+            {drug.max_clinical_trial_phase !== null && drug.max_clinical_trial_phase !== undefined && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
                 {getPhaseLabel(drug.max_clinical_trial_phase)}
               </span>
@@ -80,11 +75,11 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
           </div>
 
           {/* Metadata Row */}
-          {drug.year_first_approved && (
+          {drug.year_first_approved ? (
             <div className="text-sm text-slate-500">
               First approved <span className="font-semibold text-slate-700">{drug.year_first_approved}</span>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Right Side */}

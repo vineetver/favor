@@ -1,0 +1,157 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { AlertCircle, Copy, Check } from "lucide-react";
+
+interface MoleculeViewerProps {
+  smiles: string;
+  width?: number;
+  height?: number;
+  className?: string;
+}
+
+export function MoleculeViewer({
+  smiles,
+  width = 400,
+  height = 300,
+  className = ""
+}: MoleculeViewerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [SmilesDrawer, setSmilesDrawer] = useState<any>(null);
+
+  useEffect(() => {
+    // Load smiles-drawer from CDN
+    const loadSmilesDrawer = async () => {
+      try {
+        // Check if already loaded
+        if ((window as any).SmilesDrawer) {
+          setSmilesDrawer((window as any).SmilesDrawer);
+          return;
+        }
+
+        // Load the library
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js";
+        script.async = true;
+        script.onload = () => {
+          setSmilesDrawer((window as any).SmilesDrawer);
+        };
+        script.onerror = () => {
+          setError(true);
+          setLoading(false);
+        };
+        document.head.appendChild(script);
+      } catch (err) {
+        console.error("Failed to load smiles-drawer:", err);
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    loadSmilesDrawer();
+  }, []);
+
+  useEffect(() => {
+    if (!SmilesDrawer || !canvasRef.current || !smiles) return;
+
+    try {
+      // Create a new SmilesDrawer instance
+      const drawer = new SmilesDrawer.Drawer({
+        width,
+        height,
+        bondThickness: 1.5,
+        fontSizeLarge: 14,
+        fontSizeSmall: 10,
+        padding: 20,
+      });
+
+      // Parse and draw the SMILES string
+      SmilesDrawer.parse(smiles, (tree: any) => {
+        if (!tree || tree.error) {
+          console.error("Failed to parse SMILES:", tree?.error);
+          setError(true);
+          setLoading(false);
+          return;
+        }
+
+        drawer.draw(tree, canvasRef.current, "light", false);
+        setLoading(false);
+      }, (err: any) => {
+        console.error("Failed to parse SMILES:", err);
+        setError(true);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error("Failed to draw molecule:", err);
+      setError(true);
+      setLoading(false);
+    }
+  }, [SmilesDrawer, smiles, width, height]);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(smiles);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  return (
+    <div className={`relative group ${className}`}>
+      {loading && !error && (
+        <div
+          className="flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200"
+          style={{ width: `${width}px`, height: `${height}px` }}
+        >
+          <div className="text-sm text-slate-500">Loading structure...</div>
+        </div>
+      )}
+
+      {error && (
+        <div
+          className="flex flex-col items-center justify-center bg-slate-50 rounded-lg border border-slate-200 gap-2"
+          style={{ width: `${width}px`, height: `${height}px` }}
+        >
+          <AlertCircle className="w-8 h-8 text-slate-400" />
+          <div className="text-sm text-slate-500 text-center px-4">
+            Unable to render structure
+          </div>
+          <div className="text-xs text-slate-400 font-mono max-w-[300px] break-all px-4">
+            {smiles}
+          </div>
+        </div>
+      )}
+
+      <canvas
+        ref={canvasRef}
+        className={`rounded-lg border border-slate-200 bg-white ${error || loading ? 'hidden' : ''}`}
+        style={{ width: `${width}px`, height: `${height}px` }}
+      />
+
+      {/* Copy SMILES Button - shows on hover */}
+      {!loading && !error && (
+        <button
+          onClick={copyToClipboard}
+          className="absolute top-2 right-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white/90 hover:bg-white border border-slate-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-green-600" />
+              <span className="text-green-600">Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              Copy SMILES
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}

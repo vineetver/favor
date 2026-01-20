@@ -1,78 +1,346 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { ExternalLink } from "lucide-react";
-import type { Disease } from "@/features/disease/types";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { Disease, DiseaseSynonyms, DiseasePrevalence } from "@/features/disease/types/disease";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClickableEntityId } from "@/components/ui/clickable-entity-id";
+import { DataSurface } from "@/components/ui/data-surface/data-surface";
+import type { DimensionConfig } from "@/components/ui/data-surface/types";
 
 interface DiseaseOverviewProps {
   disease: Disease;
 }
 
+// ============================================================================
+// Table Row Types
+// ============================================================================
+
+interface CrossRefRow {
+  id: string;
+  source: string;
+  referenceId: string;
+}
+
+interface OntologyRow {
+  id: string;
+  relationshipType: "Parent" | "Ancestor" | "Child" | "Descendant" | "Therapeutic Area";
+  entityId: string;
+}
+
+interface SynonymRow {
+  id: string;
+  type: "Exact" | "Broad" | "Narrow" | "Related";
+  synonym: string;
+}
+
+interface EpidemRow {
+  id: string;
+  geographic?: string;
+  prevalenceClass?: string;
+  prevalenceType?: string;
+  value?: number;
+  qualification?: string;
+  validationStatus?: string;
+  source?: string;
+}
+
+interface ObsoleteRow {
+  id: string;
+  type: "Term" | "Cross Reference";
+  value: string;
+}
+
+// ============================================================================
+// Data Transformation Functions
+// ============================================================================
+
+const transformCrossRefs = (dbxrefs?: string[]): CrossRefRow[] => {
+  if (!dbxrefs) return [];
+  return dbxrefs.map((ref, idx) => {
+    const [source, ...idParts] = ref.split(":");
+    return {
+      id: `${ref}-${idx}`,
+      source: source || "Unknown",
+      referenceId: idParts.join(":") || ref,
+    };
+  });
+};
+
+const transformOntologyRelationships = (disease: Disease): OntologyRow[] => {
+  const rows: OntologyRow[] = [];
+
+  disease.parents?.forEach((id, idx) => {
+    rows.push({ id: `parent-${idx}`, relationshipType: "Parent", entityId: id });
+  });
+  disease.ancestors?.forEach((id, idx) => {
+    rows.push({ id: `ancestor-${idx}`, relationshipType: "Ancestor", entityId: id });
+  });
+  disease.children?.forEach((id, idx) => {
+    rows.push({ id: `child-${idx}`, relationshipType: "Child", entityId: id });
+  });
+  disease.descendants?.forEach((id, idx) => {
+    rows.push({ id: `descendant-${idx}`, relationshipType: "Descendant", entityId: id });
+  });
+  disease.therapeutic_areas?.forEach((id, idx) => {
+    rows.push({ id: `therapeutic-${idx}`, relationshipType: "Therapeutic Area", entityId: id });
+  });
+
+  return rows;
+};
+
+const transformSynonyms = (synonyms?: DiseaseSynonyms): SynonymRow[] => {
+  if (!synonyms) return [];
+  const rows: SynonymRow[] = [];
+
+  synonyms.hasExactSynonym?.forEach((syn, idx) => {
+    rows.push({ id: `exact-${idx}`, type: "Exact", synonym: syn });
+  });
+  synonyms.hasBroadSynonym?.forEach((syn, idx) => {
+    rows.push({ id: `broad-${idx}`, type: "Broad", synonym: syn });
+  });
+  synonyms.hasNarrowSynonym?.forEach((syn, idx) => {
+    rows.push({ id: `narrow-${idx}`, type: "Narrow", synonym: syn });
+  });
+  synonyms.hasRelatedSynonym?.forEach((syn, idx) => {
+    rows.push({ id: `related-${idx}`, type: "Related", synonym: syn });
+  });
+
+  return rows;
+};
+
+const transformEpidemiology = (prevalence?: DiseasePrevalence[]): EpidemRow[] => {
+  if (!prevalence) return [];
+  return prevalence.map((prev, idx) => ({
+    id: `prev-${idx}`,
+    geographic: prev.geographic,
+    prevalenceClass: prev.prevalence_class,
+    prevalenceType: prev.prevalence_type,
+    value: prev.value,
+    qualification: prev.prevalence_qualification,
+    validationStatus: prev.validation_status,
+    source: prev.source,
+  }));
+};
+
+const transformObsoleteTerms = (
+  obsoleteTerms?: string[],
+  obsoleteXrefs?: string[]
+): ObsoleteRow[] => {
+  const rows: ObsoleteRow[] = [];
+
+  obsoleteTerms?.forEach((term, idx) => {
+    rows.push({ id: `term-${idx}`, type: "Term", value: term });
+  });
+  obsoleteXrefs?.forEach((xref, idx) => {
+    rows.push({ id: `xref-${idx}`, type: "Cross Reference", value: xref });
+  });
+
+  return rows;
+};
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
-  const renderPillList = (items: string[], maxVisible = 10, mono = false, clickable = false) => {
-    if (items.length === 0) return null;
-    const visibleItems = items.slice(0, maxVisible);
-    const hasOverflow = items.length > maxVisible;
-    return (
-      <div className="flex flex-wrap gap-2">
-        {visibleItems.map((item, index) =>
-          clickable ? (
-            <ClickableEntityId key={`${item}-${index}`} id={item} mono={mono} />
-          ) : (
-            <span
-              key={`${item}-${index}`}
-              className={cn(
-                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700",
-                mono && "font-mono"
-              )}
-            >
-              {item}
-            </span>
-          )
-        )}
-        {hasOverflow && (
-          <span className="text-xs text-slate-400">+{items.length - maxVisible} more</span>
-        )}
-      </div>
-    );
-  };
-
-  const renderPillListWithDetails = (items: string[], maxVisible = 10, mono = false, clickable = false) => {
-    if (items.length <= maxVisible) {
-      return renderPillList(items, maxVisible, mono, clickable);
-    }
-
-    return (
-      <div className="space-y-2">
-        {renderPillList(items, maxVisible, mono, clickable)}
-        <details className="text-xs text-slate-500">
-          <summary className="cursor-pointer select-none hover:text-slate-700">
-            Show all {items.length}
-          </summary>
-          <div className="mt-2 max-h-44 overflow-y-auto pr-1">
-            {renderPillList(items, items.length, mono, clickable)}
-          </div>
-        </details>
-      </div>
-    );
-  };
-
-  const hasIdentifiers = Boolean(disease.source || disease.code || disease.dbxrefs?.length);
-  const hasOntology = Boolean(
-    disease.parents?.length ||
-    disease.ancestors?.length ||
-    disease.children?.length ||
-    disease.descendants?.length ||
-    disease.therapeutic_areas?.length
+  // Transform data
+  const crossRefData = useMemo(() => transformCrossRefs(disease.dbxrefs), [disease.dbxrefs]);
+  const ontologyData = useMemo(() => transformOntologyRelationships(disease), [disease]);
+  const synonymData = useMemo(() => transformSynonyms(disease.synonyms), [disease.synonyms]);
+  const epidemiologyData = useMemo(
+    () => transformEpidemiology(disease.epidemiology?.prevalence),
+    [disease.epidemiology?.prevalence]
   );
-  const hasSynonyms = Boolean(
-    disease.synonyms?.hasExactSynonym?.length ||
-    disease.synonyms?.hasBroadSynonym?.length ||
-    disease.synonyms?.hasNarrowSynonym?.length ||
-    disease.synonyms?.hasRelatedSynonym?.length
+  const obsoleteData = useMemo(
+    () => transformObsoleteTerms(disease.obsolete_terms, disease.obsolete_xrefs),
+    [disease.obsolete_terms, disease.obsolete_xrefs]
   );
+
+  // Filters
+  const [relFilter, setRelFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  // Filtered data
+  const filteredOntologyData = useMemo(() => {
+    if (relFilter === "all") return ontologyData;
+    const filterMap: Record<string, OntologyRow["relationshipType"]> = {
+      parent: "Parent",
+      ancestor: "Ancestor",
+      child: "Child",
+      descendant: "Descendant",
+      therapeutic: "Therapeutic Area",
+    };
+    return ontologyData.filter((row) => row.relationshipType === filterMap[relFilter]);
+  }, [ontologyData, relFilter]);
+
+  const filteredSynonymData = useMemo(() => {
+    if (typeFilter === "all") return synonymData;
+    const filterMap: Record<string, SynonymRow["type"]> = {
+      exact: "Exact",
+      broad: "Broad",
+      narrow: "Narrow",
+      related: "Related",
+    };
+    return synonymData.filter((row) => row.type === filterMap[typeFilter]);
+  }, [synonymData, typeFilter]);
+
+  // Dimension configs
+  const ontologyDimensions: DimensionConfig[] = [
+    {
+      label: "Relationship Type",
+      options: [
+        { value: "all", label: "All" },
+        { value: "parent", label: "Parents" },
+        { value: "ancestor", label: "Ancestors" },
+        { value: "child", label: "Children" },
+        { value: "descendant", label: "Descendants" },
+        { value: "therapeutic", label: "Therapeutic Areas" },
+      ],
+      value: relFilter,
+      onChange: setRelFilter,
+      presentation: "dropdown",
+    },
+  ];
+
+  const synonymDimensions: DimensionConfig[] = [
+    {
+      label: "Synonym Type",
+      options: [
+        { value: "all", label: "All Types" },
+        { value: "exact", label: "Exact" },
+        { value: "broad", label: "Broad" },
+        { value: "narrow", label: "Narrow" },
+        { value: "related", label: "Related" },
+      ],
+      value: typeFilter,
+      onChange: setTypeFilter,
+      presentation: "segmented",
+    },
+  ];
+
+  // Column definitions
+  const crossRefColumns: ColumnDef<CrossRefRow>[] = [
+    {
+      id: "source",
+      accessorKey: "source",
+      header: "Source System",
+      enableSorting: true,
+    },
+    {
+      id: "referenceId",
+      accessorKey: "referenceId",
+      header: "Reference ID",
+      enableSorting: true,
+      cell: ({ row }) => <ClickableEntityId id={row.original.referenceId} mono />,
+    },
+  ];
+
+  const ontologyColumns: ColumnDef<OntologyRow>[] = [
+    {
+      id: "relationshipType",
+      accessorKey: "relationshipType",
+      header: "Relationship Type",
+      enableSorting: true,
+    },
+    {
+      id: "entityId",
+      accessorKey: "entityId",
+      header: "Entity ID",
+      enableSorting: true,
+      cell: ({ row }) => <ClickableEntityId id={row.original.entityId} mono />,
+    },
+  ];
+
+  const synonymColumns: ColumnDef<SynonymRow>[] = [
+    {
+      id: "type",
+      accessorKey: "type",
+      header: "Type",
+      enableSorting: true,
+    },
+    {
+      id: "synonym",
+      accessorKey: "synonym",
+      header: "Synonym",
+      enableSorting: true,
+    },
+  ];
+
+  const epidemColumns: ColumnDef<EpidemRow>[] = [
+    {
+      id: "geographic",
+      accessorKey: "geographic",
+      header: "Geographic",
+      enableSorting: true,
+      cell: ({ row }) => row.original.geographic ?? "—",
+    },
+    {
+      id: "prevalenceClass",
+      accessorKey: "prevalenceClass",
+      header: "Prevalence Class",
+      enableSorting: true,
+      cell: ({ row }) => row.original.prevalenceClass ?? "—",
+    },
+    {
+      id: "prevalenceType",
+      accessorKey: "prevalenceType",
+      header: "Type",
+      enableSorting: true,
+      cell: ({ row }) => row.original.prevalenceType ?? "—",
+    },
+    {
+      id: "value",
+      accessorKey: "value",
+      header: "Value",
+      enableSorting: true,
+      cell: ({ row }) => row.original.value?.toLocaleString() ?? "—",
+    },
+    {
+      id: "qualification",
+      accessorKey: "qualification",
+      header: "Qualification",
+      enableSorting: true,
+      cell: ({ row }) => row.original.qualification ?? "—",
+    },
+    {
+      id: "validationStatus",
+      accessorKey: "validationStatus",
+      header: "Validation",
+      enableSorting: true,
+      cell: ({ row }) => row.original.validationStatus ?? "—",
+    },
+    {
+      id: "source",
+      accessorKey: "source",
+      header: "Source",
+      enableSorting: true,
+      cell: ({ row }) => row.original.source ?? "—",
+    },
+  ];
+
+  const obsoleteColumns: ColumnDef<ObsoleteRow>[] = [
+    {
+      id: "type",
+      accessorKey: "type",
+      header: "Type",
+      enableSorting: true,
+    },
+    {
+      id: "value",
+      accessorKey: "value",
+      header: "Value",
+      enableSorting: true,
+      cell: ({ row }) =>
+        row.original.type === "Cross Reference" ? (
+          <ClickableEntityId id={row.original.value} mono />
+        ) : (
+          <span className="text-sm">{row.original.value}</span>
+        ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -80,7 +348,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       {disease.description && (
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
               Summary
             </CardTitle>
           </CardHeader>
@@ -90,156 +358,53 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
         </Card>
       )}
 
-      {/* Primary Details */}
+      {/* Info Cards - 3 column grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Identifiers */}
+        {/* Basic Info Card */}
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Identifiers
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              Basic Info
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {hasIdentifiers ? (
-              <dl className="space-y-3">
-                {disease.source && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Source
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.source}
-                    </dd>
-                  </div>
-                )}
-
-                {disease.code && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Code
-                    </dt>
-                    <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
-                      {disease.code}
-                    </dd>
-                  </div>
-                )}
-
-                {disease.dbxrefs && disease.dbxrefs.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                      Cross References
-                    </dt>
-                    <dd>{renderPillListWithDetails(disease.dbxrefs, 6, true, true)}</dd>
-                  </div>
-                )}
-
-                {disease.epidemiology?.orphanet_code && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Orphanet Code
-                    </dt>
-                    <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
-                      {disease.epidemiology.orphanet_code}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            ) : (
-              <p className="text-sm text-slate-500">No identifiers available.</p>
-            )}
+            <dl className="space-y-3">
+              {disease.source && (
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Source
+                  </dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{disease.source}</dd>
+                </div>
+              )}
+              {disease.code && (
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Code
+                  </dt>
+                  <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
+                    {disease.code}
+                  </dd>
+                </div>
+              )}
+              {disease.epidemiology?.orphanet_code && (
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Orphanet Code
+                  </dt>
+                  <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
+                    {disease.epidemiology.orphanet_code}
+                  </dd>
+                </div>
+              )}
+            </dl>
           </CardContent>
         </Card>
 
-        {/* Ontology */}
+        {/* Classification Card */}
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Ontology
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hasOntology ? (
-              <dl className="space-y-4">
-                {disease.therapeutic_areas && disease.therapeutic_areas.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Therapeutic Areas
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.therapeutic_areas.length.toLocaleString()}
-                    </dd>
-                    <div className="mt-2">
-                      {renderPillListWithDetails(disease.therapeutic_areas, 6, true, true)}
-                    </div>
-                  </div>
-                )}
-
-                {disease.parents && disease.parents.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Parents
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.parents.length.toLocaleString()}
-                    </dd>
-                    <div className="mt-2">
-                      {renderPillListWithDetails(disease.parents, 6, true, true)}
-                    </div>
-                  </div>
-                )}
-
-                {disease.ancestors && disease.ancestors.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Ancestors
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.ancestors.length.toLocaleString()}
-                    </dd>
-                    <div className="mt-2">
-                      {renderPillListWithDetails(disease.ancestors, 6, true, true)}
-                    </div>
-                  </div>
-                )}
-
-                {disease.children && disease.children.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Children
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.children.length.toLocaleString()}
-                    </dd>
-                    <div className="mt-2">
-                      {renderPillListWithDetails(disease.children, 6, true, true)}
-                    </div>
-                  </div>
-                )}
-
-                {disease.descendants && disease.descendants.length > 0 && (
-                  <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Descendants
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                      {disease.descendants.length.toLocaleString()}
-                    </dd>
-                    <div className="mt-2">
-                      {renderPillListWithDetails(disease.descendants, 6, true, true)}
-                    </div>
-                  </div>
-                )}
-              </dl>
-            ) : (
-              <p className="text-sm text-slate-500">No ontology information available.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Classification */}
-        <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
               Classification
             </CardTitle>
           </CardHeader>
@@ -255,37 +420,39 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                   </dd>
                 </div>
               )}
-
               {disease.isTherapeuticArea !== undefined && (
                 <div>
                   <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                     Therapeutic Area
                   </dt>
                   <dd className="text-sm font-medium mt-0.5">
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
-                      disease.isTherapeuticArea
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-slate-100 text-slate-600"
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
+                        disease.isTherapeuticArea
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-slate-100 text-slate-600"
+                      )}
+                    >
                       {disease.isTherapeuticArea ? "Yes" : "No"}
                     </span>
                   </dd>
                 </div>
               )}
-
               {disease.leaf !== undefined && (
                 <div>
                   <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                     Leaf Node
                   </dt>
                   <dd className="text-sm font-medium mt-0.5">
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
-                      disease.leaf
-                        ? "bg-green-100 text-green-700"
-                        : "bg-slate-100 text-slate-600"
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
+                        disease.leaf
+                          ? "bg-green-100 text-green-700"
+                          : "bg-slate-100 text-slate-600"
+                      )}
+                    >
                       {disease.leaf ? "Yes" : "No"}
                     </span>
                   </dd>
@@ -294,216 +461,120 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
             </dl>
           </CardContent>
         </Card>
+
+        {/* Ontology Sources Card */}
+        {disease.ontology?.sources && (
+          <Card>
+            <CardHeader className="border-b border-slate-200">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Ontology Sources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-3">
+                {disease.ontology.sources.name && (
+                  <div>
+                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Name
+                    </dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {disease.ontology.sources.name}
+                    </dd>
+                  </div>
+                )}
+                {disease.ontology.sources.url && (
+                  <div>
+                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      URL
+                    </dt>
+                    <dd className="text-sm mt-0.5">
+                      <a
+                        href={disease.ontology.sources.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        {disease.ontology.sources.url}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Synonyms */}
-      {hasSynonyms && (
-        <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Synonyms
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {disease.synonyms?.hasExactSynonym && disease.synonyms.hasExactSynonym.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Exact Synonyms
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.synonyms.hasExactSynonym, 12)}</dd>
-                </div>
-              )}
-
-              {disease.synonyms?.hasBroadSynonym && disease.synonyms.hasBroadSynonym.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Broad Synonyms
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.synonyms.hasBroadSynonym, 12)}</dd>
-                </div>
-              )}
-
-              {disease.synonyms?.hasNarrowSynonym && disease.synonyms.hasNarrowSynonym.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Narrow Synonyms
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.synonyms.hasNarrowSynonym, 12)}</dd>
-                </div>
-              )}
-
-              {disease.synonyms?.hasRelatedSynonym && disease.synonyms.hasRelatedSynonym.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Related Synonyms
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.synonyms.hasRelatedSynonym, 12)}</dd>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tables - full width */}
+      {crossRefData.length > 0 && (
+        <DataSurface
+          columns={crossRefColumns}
+          data={crossRefData}
+          title="Cross References"
+          subtitle="External database identifiers and references for this disease across multiple biomedical databases"
+          searchPlaceholder="Search references..."
+          searchColumn="referenceId"
+          exportable
+          exportFilename={`disease-${disease.disease_id}-cross-refs`}
+          defaultPageSize={10}
+        />
       )}
 
-      {/* Epidemiology */}
-      {disease.epidemiology?.prevalence && disease.epidemiology.prevalence.length > 0 && (
-        <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Epidemiology
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {disease.epidemiology.prevalence.map((prev, idx) => (
-                <div key={idx} className="border border-slate-200 rounded-lg p-3">
-                  <dl className="grid grid-cols-2 gap-3 text-xs">
-                    {prev.geographic && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Geographic
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.geographic}</dd>
-                      </div>
-                    )}
-
-                    {prev.prevalence_class && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Prevalence Class
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.prevalence_class}</dd>
-                      </div>
-                    )}
-
-                    {prev.prevalence_type && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Type
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.prevalence_type}</dd>
-                      </div>
-                    )}
-
-                    {prev.value !== undefined && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Value
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.value}</dd>
-                      </div>
-                    )}
-
-                    {prev.prevalence_qualification && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Qualification
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.prevalence_qualification}</dd>
-                      </div>
-                    )}
-
-                    {prev.source && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Source
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.source}</dd>
-                      </div>
-                    )}
-
-                    {prev.validation_status && (
-                      <div>
-                        <dt className="font-semibold text-slate-500 uppercase tracking-wide">
-                          Validation
-                        </dt>
-                        <dd className="text-slate-900 mt-0.5">{prev.validation_status}</dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {ontologyData.length > 0 && (
+        <DataSurface
+          columns={ontologyColumns}
+          data={filteredOntologyData}
+          title="Ontology Relationships"
+          subtitle="Disease hierarchy showing parent-child relationships, ancestors, descendants, and therapeutic area classifications"
+          searchPlaceholder="Search entity IDs..."
+          searchColumn="entityId"
+          dimensions={ontologyDimensions}
+          exportable
+          exportFilename={`disease-${disease.disease_id}-ontology`}
+          defaultPageSize={10}
+        />
       )}
 
-      {/* Ontology Sources */}
-      {disease.ontology?.sources && (
-        <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Ontology Sources
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3">
-              {disease.ontology.sources.name && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Name
-                  </dt>
-                  <dd className="text-sm font-medium text-slate-900 mt-0.5">
-                    {disease.ontology.sources.name}
-                  </dd>
-                </div>
-              )}
-
-              {disease.ontology.sources.url && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    URL
-                  </dt>
-                  <dd className="text-sm mt-0.5">
-                    <a
-                      href={disease.ontology.sources.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:underline"
-                    >
-                      {disease.ontology.sources.url}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </CardContent>
-        </Card>
+      {synonymData.length > 0 && (
+        <DataSurface
+          columns={synonymColumns}
+          data={filteredSynonymData}
+          title="Synonyms"
+          subtitle="Alternative names and terminology used to describe this disease, including exact, broad, narrow, and related terms"
+          searchPlaceholder="Search synonyms..."
+          searchColumn="synonym"
+          dimensions={synonymDimensions}
+          exportable
+          exportFilename={`disease-${disease.disease_id}-synonyms`}
+          defaultPageSize={10}
+        />
       )}
 
-      {/* Obsolete Terms */}
-      {((disease.obsolete_terms && disease.obsolete_terms.length > 0) ||
-        (disease.obsolete_xrefs && disease.obsolete_xrefs.length > 0)) && (
-        <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Obsolete Terms
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {disease.obsolete_terms && disease.obsolete_terms.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Obsolete Terms
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.obsolete_terms, 10)}</dd>
-                </div>
-              )}
+      {epidemiologyData.length > 0 && (
+        <DataSurface
+          columns={epidemColumns}
+          data={epidemiologyData}
+          title="Epidemiology"
+          subtitle="Disease prevalence statistics including geographic distribution, prevalence classes, and validation status from clinical sources"
+          exportable
+          exportFilename={`disease-${disease.disease_id}-epidemiology`}
+          defaultPageSize={10}
+        />
+      )}
 
-              {disease.obsolete_xrefs && disease.obsolete_xrefs.length > 0 && (
-                <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Obsolete Cross References
-                  </dt>
-                  <dd>{renderPillListWithDetails(disease.obsolete_xrefs, 10, true, true)}</dd>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {obsoleteData.length > 0 && (
+        <DataSurface
+          columns={obsoleteColumns}
+          data={obsoleteData}
+          title="Obsolete Terms & References"
+          subtitle="Deprecated terminology and database references that are no longer actively used but maintained for historical tracking"
+          searchPlaceholder="Search obsolete terms..."
+          searchColumn="value"
+          exportable
+          exportFilename={`disease-${disease.disease_id}-obsolete`}
+          defaultPageSize={10}
+        />
       )}
     </div>
   );
