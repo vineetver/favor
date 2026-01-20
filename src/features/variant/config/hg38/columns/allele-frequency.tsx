@@ -3,6 +3,7 @@ import {
   type GnomadPopulation,
   type GnomadSex,
   type Variant,
+  getGnomadMetrics,
 } from "@/features/variant/types";
 import { cell, createColumns, tooltip } from "@/lib/table/column-builder";
 
@@ -19,53 +20,8 @@ function getCombinedMetrics(
   suffix: GnomadSex = "",
 ): CombinedMetrics {
   return {
-    exome: getPopulationMetrics(row.gnomad_exome, prefix, suffix),
-    genome: getPopulationMetrics(row.gnomad_genome, prefix, suffix),
-  };
-}
-
-function getPopulationMetrics(
-  data: Variant["gnomad_exome"] | null | undefined,
-  prefix: GnomadPopulation,
-  suffix: GnomadSex,
-): GnomadMetrics | null {
-  if (!data) return null;
-
-  if (prefix) {
-    const populations = data.populations;
-    const pop =
-      populations?.[prefix] ??
-      populations?.[prefix.toLowerCase()] ??
-      populations?.[prefix.toUpperCase()];
-    if (!pop) return null;
-    const af =
-      suffix === "xx"
-        ? pop.af_xx
-        : suffix === "xy"
-          ? pop.af_xy
-          : pop.af;
-    if (af === null || af === undefined) return null;
-    return { af, ac: null, an: null, hom: null };
-  }
-
-  const af =
-    suffix === "xx"
-      ? data.af_xx
-      : suffix === "xy"
-        ? data.af_xy
-        : data.af;
-  if (af === null || af === undefined) return null;
-
-  const ac =
-    suffix === "xx" ? data.ac_xx : suffix === "xy" ? data.ac_xy : data.ac;
-  const an =
-    suffix === "xx" ? data.an_xx : suffix === "xy" ? data.an_xy : data.an;
-
-  return {
-    af,
-    ac: ac ?? null,
-    an: an ?? null,
-    hom: data.nhomalt ?? null,
+    exome: getGnomadMetrics(row.gnomad_exome, prefix, suffix),
+    genome: getGnomadMetrics(row.gnomad_genome, prefix, suffix),
   };
 }
 

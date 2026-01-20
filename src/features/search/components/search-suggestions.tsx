@@ -10,12 +10,14 @@ import {
   Map,
 } from 'lucide-react';
 import type { TypeaheadResponse, TypeaheadSuggestion, EntityType } from '../types/api';
+import { cn } from '@/lib/utils';
 
 interface SearchSuggestionsProps {
   results: TypeaheadResponse;
   query: string;
   isLoading?: boolean;
   onSelect: (suggestion: TypeaheadSuggestion) => void;
+  selectedSuggestion?: TypeaheadSuggestion | null;
 }
 
 const ENTITY_CONFIG: Record<
@@ -172,6 +174,7 @@ export function SearchSuggestions({
   query,
   isLoading,
   onSelect,
+  selectedSuggestion,
 }: SearchSuggestionsProps) {
   const [selected, setSelected] = useState<TypeaheadSuggestion | null>(null);
 
@@ -186,6 +189,7 @@ export function SearchSuggestions({
 
   const handleSelect = (suggestion: TypeaheadSuggestion | null) => {
     if (suggestion) {
+      setSelected(suggestion);
       onSelect(suggestion);
     }
   };
@@ -216,7 +220,10 @@ export function SearchSuggestions({
                 <ComboboxOption
                   key={suggestion.id}
                   value={suggestion}
-                  className="cursor-pointer ui-active:bg-slate-50"
+                  className={cn(
+                    "cursor-pointer ui-active:bg-slate-50",
+                    selectedSuggestion?.id === suggestion.id && "bg-slate-100"
+                  )}
                 >
                   <SuggestionItem suggestion={suggestion} />
                 </ComboboxOption>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, type FormEvent } from "react";
+import { useState, useCallback, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Combobox,
@@ -11,6 +11,7 @@ import {
 import { Loader2, Search, ExternalLink } from "lucide-react";
 import { useTypeahead } from "../hooks/use-typeahead";
 import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
+import { navigateToQuery, isRoutableQuery, parseQuery, preloadVariantDebounced } from "../utils";
 import type { TypeaheadSuggestion, EntityType } from "../types/api";
 import { cn } from "@/lib/utils";
 
@@ -74,16 +75,39 @@ export function UniversalSearch() {
     setQuery(value);
   }, [setQuery]);
 
+  // Preload variant data when user types a complete VCF
+  useEffect(() => {
+    const parsed = parseQuery(query);
+
+    // Only preload if it's a valid, complete variant query
+    if (parsed.isValid && (parsed.type === 'variant_vcf' || parsed.type === 'variant_rsid')) {
+      preloadVariantDebounced(query, 500).catch(() => {
+        // Silently fail - preloading is optional optimization
+      });
+    }
+  }, [query]);
+
   const handleGenomeChange = useCallback((value: GenomeBuild) => {
     setGenome(value);
   }, []);
 
   const handleSubmit = useCallback(
-    (e: FormEvent) => {
+    async (e: FormEvent) => {
       e.preventDefault();
 
       if (!query.trim()) return;
 
+      // 1. Try direct routing first (for complete VCF/rsID queries)
+      if (isRoutableQuery(query)) {
+        const success = await navigateToQuery(query, genome, router);
+        if (success) {
+          clear();
+          setIsDropdownOpen(false);
+          return;
+        }
+      }
+
+      // 2. Fall back to typeahead suggestions
       if (results && results.total > 0) {
         const entityTypes: EntityType[] = ["genes", "variants", "diseases", "drugs", "pathways"];
 
@@ -96,7 +120,7 @@ export function UniversalSearch() {
         }
       }
     },
-    [query, results, genome]
+    [query, results, genome, router, clear]
   );
 
   const handleSelectSuggestion = useCallback(

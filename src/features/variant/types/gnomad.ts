@@ -24,6 +24,13 @@ export interface GnomadPop {
   af?: number | null;
   af_xx?: number | null;
   af_xy?: number | null;
+  ac?: number | null;
+  ac_xx?: number | null;
+  ac_xy?: number | null;
+  an?: number | null;
+  an_xx?: number | null;
+  an_xy?: number | null;
+  nhomalt?: number | null;
 }
 
 export interface GnomadPopulations {
@@ -102,22 +109,39 @@ export function getGnomadMetrics(
   if (!data) return null;
 
   if (prefix) {
-    const populations = data.populations as GnomadPopulations | null | undefined;
-    const pop =
-      populations?.[prefix] ??
-      populations?.[prefix.toLowerCase()] ??
-      populations?.[prefix.toUpperCase()];
+    // Access population-specific data
+    const populations = data.populations;
+    if (!populations) return null;
+
+    // Get the population data
+    const pop = populations[prefix as keyof GnomadPopulations] as GnomadPop | null | undefined;
     if (!pop) return null;
+
+    // Get allele frequency based on sex filter
     const af =
       suffix === "xx"
         ? pop.af_xx
         : suffix === "xy"
           ? pop.af_xy
           : pop.af;
+
     if (af === null || af === undefined) return null;
-    return { af, ac: null, an: null, hom: null };
+
+    // Get allele count and number based on sex filter
+    const ac =
+      suffix === "xx" ? pop.ac_xx : suffix === "xy" ? pop.ac_xy : pop.ac;
+    const an =
+      suffix === "xx" ? pop.an_xx : suffix === "xy" ? pop.an_xy : pop.an;
+
+    return {
+      af,
+      ac: ac ?? null,
+      an: an ?? null,
+      hom: pop.nhomalt ?? null,
+    };
   }
 
+  // Get global (non-population-specific) data
   const af =
     suffix === "xx" ? data.af_xx : suffix === "xy" ? data.af_xy : data.af;
   if (af === null || af === undefined) return null;

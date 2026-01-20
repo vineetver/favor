@@ -9,6 +9,8 @@ import { PivotExplorer } from './pivot-explorer';
 import { useRouter } from 'next/navigation';
 import type { EntityType, TypeaheadSuggestion } from '../types/api';
 import { hasEntityPage } from '../utils/entity-routes';
+import { getPopulateIdentifier } from '../utils/identifier-extraction';
+import { getRouteForQuery } from '../utils/query-router';
 
 interface GlobalSearchProps {
   /**
@@ -20,15 +22,21 @@ interface GlobalSearchProps {
    * Callback when dialog should close
    */
   onClose?: () => void;
+
+  /**
+   * Initial query to populate the search input
+   */
+  initialQuery?: string;
 }
 
-export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProps) {
+export function GlobalSearch({ open: controlledOpen, onClose, initialQuery }: GlobalSearchProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [pivotEntity, setPivotEntity] = useState<{
     id: string;
     type: EntityType;
     name: string;
   } | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<TypeaheadSuggestion | null>(null);
   const router = useRouter();
 
   const isControlled = controlledOpen !== undefined;
@@ -42,20 +50,16 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
     includePreview: true,
   });
 
-  // Command-K shortcut
+  // Set initial query when dialog opens
+  useEffect(() => {
+    if (isOpen && initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [isOpen, initialQuery, setQuery]);
+
+  // Escape to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K on Mac, Ctrl+K on Windows/Linux
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        if (isControlled) {
-          onClose?.();
-        } else {
-          setInternalOpen(true);
-        }
-      }
-
-      // Escape to close
       if (e.key === 'Escape' && isOpen) {
         handleClose();
       }
@@ -63,11 +67,12 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isControlled, onClose]);
+  }, [isOpen]);
 
   const handleClose = () => {
     clear();
     setPivotEntity(null);
+    setSelectedSuggestion(null);
     if (isControlled) {
       onClose?.();
     } else {
@@ -76,23 +81,82 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
   };
 
   const handleSelect = (suggestion: TypeaheadSuggestion) => {
-    // Navigate to entity page if it has a dedicated page
-    if (suggestion.url && hasEntityPage(suggestion.type)) {
-      router.push(suggestion.url);
-      handleClose();
-    } else {
-      // For entities without dedicated pages, show pivot explorer
-      setPivotEntity({
-        id: suggestion.id,
-        type: suggestion.type,
-        name: suggestion.name,
-      });
-    }
+    // Populate search bar with identifier instead of navigating
+    const identifier = getPopulateIdentifier(suggestion);
+    setQuery(identifier);
+    setSelectedSuggestion(suggestion);
+    // Keep dialog open with results visible
   };
 
   const handleClosePivot = () => {
     setPivotEntity(null);
   };
+
+  // Helper to get first suggestion from results
+  const getFirstSuggestion = (): TypeaheadSuggestion | null => {
+    if (!results) return null;
+    const entityTypes = ['genes', 'variants', 'diseases', 'drugs', 'pathways'] as const;
+    for (const type of entityTypes) {
+      const suggestions = results.suggestions[type];
+      if (suggestions && suggestions.length > 0) {
+        return suggestions[0];
+      }
+    }
+    return null;
+  };
+
+  // Handle Enter key navigation
+  const handleEnterNavigation = async () => {
+    // Priority 1: Use selected suggestion if available
+    if (selectedSuggestion) {
+      if (selectedSuggestion.url && hasEntityPage(selectedSuggestion.type)) {
+        router.push(selectedSuggestion.url);
+        handleClose();
+      } else {
+        // For entities without dedicated pages, show pivot explorer
+        setPivotEntity({
+          id: selectedSuggestion.id,
+          type: selectedSuggestion.type,
+          name: selectedSuggestion.name,
+        });
+      }
+      return;
+    }
+
+    // Priority 2: Try direct routing for routable queries (VCF, rsID, CHEMBL, etc.)
+    const route = getRouteForQuery(query);
+    if (route) {
+      router.push(route.path);
+      handleClose();
+      return;
+    }
+
+    // Priority 3: Use first typeahead suggestion as fallback
+    if (results && results.total > 0) {
+      const firstSuggestion = getFirstSuggestion();
+      if (firstSuggestion) {
+        handleSelect(firstSuggestion);
+      }
+    }
+  };
+
+  // Handle keyboard input
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleEnterNavigation();
+    }
+  };
+
+  // Clear selected suggestion when user manually edits query
+  useEffect(() => {
+    if (selectedSuggestion) {
+      const selectedIdentifier = getPopulateIdentifier(selectedSuggestion);
+      if (query !== selectedIdentifier) {
+        setSelectedSuggestion(null);
+      }
+    }
+  }, [query, selectedSuggestion]);
 
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -131,6 +195,7 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
                   placeholder="Search genes, variants, diseases, drugs, pathways..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleInputKeyDown}
                   autoFocus
                 />
                 {query && (
@@ -151,6 +216,7 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
                   query={query}
                   isLoading={isLoading}
                   onSelect={handleSelect}
+                  selectedSuggestion={selectedSuggestion}
                 />
               )}
 
@@ -202,7 +268,7 @@ export function GlobalSearch({ open: controlledOpen, onClose }: GlobalSearchProp
                       <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-slate-600 shadow-sm ring-1 ring-slate-200">
                         ↵
                       </kbd>
-                      <span>to select</span>
+                      <span>to {selectedSuggestion ? 'navigate' : 'populate'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-slate-600 shadow-sm ring-1 ring-slate-200">

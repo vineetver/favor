@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { GlobalSearch } from './global-search';
+import { useSearch } from '../context/search-context';
 
 interface SearchTriggerProps {
   /**
@@ -17,7 +18,7 @@ interface SearchTriggerProps {
 }
 
 export function SearchTrigger({ variant = 'default', className = '' }: SearchTriggerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, initialQuery, openSearch, closeSearch } = useSearch();
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
@@ -31,14 +32,14 @@ export function SearchTrigger({ variant = 'default', className = '' }: SearchTri
       <>
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
+          onClick={() => openSearch()}
           className={`flex items-center justify-center rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 ${className}`}
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
         </button>
 
-        <GlobalSearch open={isOpen} onClose={() => setIsOpen(false)} />
+        <GlobalSearch open={isOpen} onClose={closeSearch} initialQuery={initialQuery} />
       </>
     );
   }
@@ -47,7 +48,7 @@ export function SearchTrigger({ variant = 'default', className = '' }: SearchTri
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => openSearch()}
         className={`group flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:shadow ${className}`}
       >
         <Search className="h-5 w-5 flex-shrink-0 text-slate-400" />
@@ -57,7 +58,7 @@ export function SearchTrigger({ variant = 'default', className = '' }: SearchTri
         </kbd>
       </button>
 
-      <GlobalSearch open={isOpen} onClose={() => setIsOpen(false)} />
+      <GlobalSearch open={isOpen} onClose={closeSearch} initialQuery={initialQuery} />
     </>
   );
 }

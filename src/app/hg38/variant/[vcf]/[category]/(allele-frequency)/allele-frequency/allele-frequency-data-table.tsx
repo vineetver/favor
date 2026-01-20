@@ -8,8 +8,8 @@ import { DataSurface } from "@/components/ui/data-surface";
 import {
   type GnomadPopulation,
   type GnomadSex,
-  type GnomadData,
   type Variant,
+  getGnomadMetrics,
 } from "@/features/variant/types";
 
 // ============================================================================
@@ -20,13 +20,11 @@ interface PopulationRow {
   id: string;
   population: string;
   code: string;
-  alleleCount: number | null;
-  alleleNumber: number | null;
-  homozygotes: number | null;
-  frequency: number | null;
+  tg: number | null;        // 1000 Genomes
+  exome: number | null;     // gnomAD v4.1 Exome
+  genome: number | null;    // gnomAD v4.1 Genome
 }
 
-type DataSource = "genome" | "exome";
 type SexFilter = "overall" | "male" | "female";
 
 interface AlleleFrequencyDataTableProps {
@@ -42,18 +40,18 @@ const POPULATIONS: Array<{
   name: string;
   code: string;
   prefix: GnomadPopulation;
+  tgKey: string | null; // 1000G uses different keys
 }> = [
-  { id: "all", name: "Global", code: "ALL", prefix: "" },
-  { id: "afr", name: "African/African American", code: "AFR", prefix: "afr" },
-  { id: "amr", name: "Admixed American", code: "AMR", prefix: "amr" },
-  { id: "asj", name: "Ashkenazi Jewish", code: "ASJ", prefix: "asj" },
-  { id: "eas", name: "East Asian", code: "EAS", prefix: "eas" },
-  { id: "fin", name: "Finnish", code: "FIN", prefix: "fin" },
-  { id: "nfe", name: "Non-Finnish European", code: "NFE", prefix: "nfe" },
-  { id: "sas", name: "South Asian", code: "SAS", prefix: "sas" },
-  { id: "ami", name: "Amish", code: "AMI", prefix: "ami" },
-  { id: "mid", name: "Middle Eastern", code: "MID", prefix: "mid" },
-  { id: "oth", name: "Other", code: "OTH", prefix: "remaining" },
+  { id: "all", name: "Global", code: "ALL", prefix: "", tgKey: "tg_all" },
+  { id: "afr", name: "African/African American", code: "AFR", prefix: "afr", tgKey: "tg_afr" },
+  { id: "amr", name: "Admixed American", code: "AMR", prefix: "amr", tgKey: "tg_amr" },
+  { id: "asj", name: "Ashkenazi Jewish", code: "ASJ", prefix: "asj", tgKey: null },
+  { id: "eas", name: "East Asian", code: "EAS", prefix: "eas", tgKey: "tg_eas" },
+  { id: "fin", name: "Finnish", code: "FIN", prefix: "fin", tgKey: null },
+  { id: "nfe", name: "Non-Finnish European", code: "NFE", prefix: "nfe", tgKey: "tg_eur" },
+  { id: "sas", name: "South Asian", code: "SAS", prefix: "sas", tgKey: "tg_sas" },
+  { id: "ami", name: "Amish", code: "AMI", prefix: "ami", tgKey: null },
+  { id: "mid", name: "Middle Eastern", code: "MID", prefix: "mid", tgKey: null },
 ];
 
 // ============================================================================
@@ -71,10 +69,22 @@ function PopulationBadge({ code, name }: { code: string; name: string }) {
   );
 }
 
-function FrequencyCell({ value }: { value: number | null }) {
-  if (value === null) {
+function FrequencyCell({
+  value,
+  min,
+  max
+}: {
+  value: number | null;
+  min: number;
+  max: number;
+}) {
+  if (value === null || value === undefined) {
     return <span className="text-slate-400">—</span>;
   }
+
+  // Scale based on actual data range
+  const range = max - min;
+  const percentage = range > 0 ? ((value - min) / range) * 100 : 0;
 
   return (
     <div className="flex items-center gap-3">
@@ -84,22 +94,10 @@ function FrequencyCell({ value }: { value: number | null }) {
       <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full bg-primary transition-all duration-300"
-          style={{ width: `${Math.min(value * 100 * 3, 100)}%` }}
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
-  );
-}
-
-function NumberCell({ value }: { value: number | null }) {
-  if (value === null) {
-    return <span className="text-slate-400">—</span>;
-  }
-
-  return (
-    <span className="text-sm font-mono tabular-nums text-slate-600">
-      {value.toLocaleString()}
-    </span>
   );
 }
 
@@ -108,14 +106,15 @@ function NumberCell({ value }: { value: number | null }) {
 // ============================================================================
 
 function PopulationChart({ data }: { data: PopulationRow[] }) {
+  // Use gnomAD genome data for visualization (fallback to exome, then 1000G)
   const chartData = [...data]
-    .filter((d) => d.frequency !== null)
-    .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
+    .filter((d) => d.genome !== null || d.exome !== null || d.tg !== null)
     .map((d) => ({
       id: d.id,
       label: d.code,
-      value: d.frequency,
-    }));
+      value: d.genome ?? d.exome ?? d.tg ?? 0,
+    }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <BarChart
@@ -123,55 +122,10 @@ function PopulationChart({ data }: { data: PopulationRow[] }) {
       layout="horizontal"
       colorScheme={{ type: "single", color: "oklch(0.51 0.21 286.5)" }}
       valueFormatter={(v) => v.toFixed(6)}
-      barSize={24}
     />
   );
 }
 
-function getPopulationMetrics(
-  data: GnomadData | null | undefined,
-  prefix: GnomadPopulation,
-  suffix: GnomadSex,
-) {
-  if (!data) return null;
-
-  if (prefix) {
-    const populations = data.populations;
-    const pop =
-      populations?.[prefix] ??
-      populations?.[prefix.toLowerCase()] ??
-      populations?.[prefix.toUpperCase()];
-    if (!pop) return null;
-    const af =
-      suffix === "xx"
-        ? pop.af_xx
-        : suffix === "xy"
-          ? pop.af_xy
-          : pop.af;
-    if (af === null || af === undefined) return null;
-    return { af, ac: null, an: null, hom: null };
-  }
-
-  const af =
-    suffix === "xx"
-      ? data.af_xx
-      : suffix === "xy"
-        ? data.af_xy
-        : data.af;
-  if (af === null || af === undefined) return null;
-
-  const ac =
-    suffix === "xx" ? data.ac_xx : suffix === "xy" ? data.ac_xy : data.ac;
-  const an =
-    suffix === "xx" ? data.an_xx : suffix === "xy" ? data.an_xy : data.an;
-
-  return {
-    af,
-    ac: ac ?? null,
-    an: an ?? null,
-    hom: data.nhomalt ?? null,
-  };
-}
 
 // ============================================================================
 // Main Component
@@ -180,44 +134,65 @@ function getPopulationMetrics(
 export function AlleleFrequencyDataTable({
   variant,
 }: AlleleFrequencyDataTableProps) {
-  const hasGenome = Boolean(variant.gnomad_genome);
-  const hasExome = Boolean(variant.gnomad_exome);
-  const [dataSource, setDataSource] = useState<DataSource>(() =>
-    hasGenome ? "genome" : "exome",
-  );
   const [sexFilter, setSexFilter] = useState<SexFilter>("overall");
 
-  useEffect(() => {
-    if (dataSource === "genome" && !hasGenome && hasExome) {
-      setDataSource("exome");
-    }
-    if (dataSource === "exome" && !hasExome && hasGenome) {
-      setDataSource("genome");
-    }
-  }, [dataSource, hasGenome, hasExome]);
-
-  // Transform gnomAD data to rows based on current filters
+  // Transform data to rows based on sex filter
   const populationData = useMemo((): PopulationRow[] => {
-    const gnomadData =
-      dataSource === "genome" ? variant.gnomad_genome : variant.gnomad_exome;
-
     const sexSuffix: GnomadSex =
       sexFilter === "male" ? "xy" : sexFilter === "female" ? "xx" : "";
 
-    return POPULATIONS.map((pop) => {
-      const metrics = getPopulationMetrics(gnomadData, pop.prefix, sexSuffix);
+    const rows = POPULATIONS.map((pop) => {
+      // Get 1000 Genomes data (no sex-specific data available)
+      let tgValue: number | null = null;
+      if (sexFilter === "overall" && pop.tgKey && variant.tg) {
+        const value = variant.tg[pop.tgKey as keyof typeof variant.tg];
+        tgValue = typeof value === "number" ? value : null;
+      }
+
+      // Get gnomAD exome and genome data
+      const exomeMetrics = getGnomadMetrics(variant.gnomad_exome, pop.prefix, sexSuffix);
+      const genomeMetrics = getGnomadMetrics(variant.gnomad_genome, pop.prefix, sexSuffix);
 
       return {
         id: pop.id,
         population: pop.name,
         code: pop.code,
-        alleleCount: metrics?.ac ?? null,
-        alleleNumber: metrics?.an ?? null,
-        homozygotes: metrics?.hom ?? null,
-        frequency: metrics?.af ?? null,
+        tg: tgValue,
+        exome: exomeMetrics?.af ?? null,
+        genome: genomeMetrics?.af ?? null,
       };
     });
-  }, [variant, dataSource, sexFilter]);
+
+    // Sort by gnomAD genome frequency (descending), with nulls at the end
+    return rows.sort((a, b) => {
+      if (a.genome === null && b.genome === null) return 0;
+      if (a.genome === null) return 1;
+      if (b.genome === null) return -1;
+      return b.genome - a.genome;
+    });
+  }, [variant, sexFilter]);
+
+  // Calculate min/max for each dataset to scale bars appropriately
+  const ranges = useMemo(() => {
+    const tgValues = populationData.map(d => d.tg).filter((v): v is number => v !== null);
+    const exomeValues = populationData.map(d => d.exome).filter((v): v is number => v !== null);
+    const genomeValues = populationData.map(d => d.genome).filter((v): v is number => v !== null);
+
+    return {
+      tg: {
+        min: tgValues.length > 0 ? Math.min(...tgValues) : 0,
+        max: tgValues.length > 0 ? Math.max(...tgValues) : 1,
+      },
+      exome: {
+        min: exomeValues.length > 0 ? Math.min(...exomeValues) : 0,
+        max: exomeValues.length > 0 ? Math.max(...exomeValues) : 1,
+      },
+      genome: {
+        min: genomeValues.length > 0 ? Math.min(...genomeValues) : 0,
+        max: genomeValues.length > 0 ? Math.max(...genomeValues) : 1,
+      },
+    };
+  }, [populationData]);
 
   // Column definitions
   const columns = useMemo(
@@ -235,69 +210,69 @@ export function AlleleFrequencyDataTable({
         ),
       },
       {
-        id: "alleleCount",
-        accessorKey: "alleleCount",
-        header: "Allele Count",
+        id: "tg",
+        accessorKey: "tg",
+        header: "1000G Phase 3",
         enableSorting: true,
-        meta: { description: "Number of alternate alleles observed" },
-        cell: ({ row }) => <NumberCell value={row.original.alleleCount} />,
+        meta: { description: "Allele frequency from 1000 Genomes Project Phase 3" },
+        cell: ({ row }) => (
+          <FrequencyCell
+            value={row.original.tg}
+            min={ranges.tg.min}
+            max={ranges.tg.max}
+          />
+        ),
       },
       {
-        id: "alleleNumber",
-        accessorKey: "alleleNumber",
-        header: "Allele Number",
+        id: "exome",
+        accessorKey: "exome",
+        header: "gnomAD v4.1 Exome",
         enableSorting: true,
-        meta: { description: "Total number of alleles analyzed" },
-        cell: ({ row }) => <NumberCell value={row.original.alleleNumber} />,
+        meta: { description: "Allele frequency from gnomAD v4.1 exome dataset" },
+        cell: ({ row }) => (
+          <FrequencyCell
+            value={row.original.exome}
+            min={ranges.exome.min}
+            max={ranges.exome.max}
+          />
+        ),
       },
       {
-        id: "homozygotes",
-        accessorKey: "homozygotes",
-        header: "Homozygotes",
+        id: "genome",
+        accessorKey: "genome",
+        header: "gnomAD v4.1 Genome",
         enableSorting: true,
-        meta: { description: "Number of homozygous individuals" },
-        cell: ({ row }) => <NumberCell value={row.original.homozygotes} />,
-      },
-      {
-        id: "frequency",
-        accessorKey: "frequency",
-        header: "Frequency",
-        enableSorting: true,
-        meta: { description: "Allele frequency (AC/AN)" },
-        cell: ({ row }) => <FrequencyCell value={row.original.frequency} />,
+        meta: { description: "Allele frequency from gnomAD v4.1 genome dataset" },
+        cell: ({ row }) => (
+          <FrequencyCell
+            value={row.original.genome}
+            min={ranges.genome.min}
+            max={ranges.genome.max}
+          />
+        ),
       },
     ],
-    [variant, dataSource, sexFilter],
+    [ranges],
   );
 
-  console.log(populationData)
   return (
     <DataSurface
       columns={columns}
       data={populationData}
       icon={Users}
-      title="Population Genetics"
-      subtitle="gnomAD v4.1"
+      title="Ancestry Allele Frequencies"
+      subtitle="1000 Genomes Phase 3 & gnomAD v4.1"
       searchPlaceholder="Search populations..."
       searchColumn="population"
       exportable
       exportFilename={`allele-frequencies-${variant.variant_vcf || "variant"}`}
       dimensions={[
         {
-          label: "Dataset",
-          options: [
-            { value: "genome", label: "Genomes" },
-            { value: "exome", label: "Exomes" },
-          ],
-          value: dataSource,
-          onChange: (v) => setDataSource(v as DataSource),
-        },
-        {
           label: "Sex",
           options: [
             { value: "overall", label: "Overall" },
-            { value: "male", label: "Male" },
             { value: "female", label: "Female" },
+            { value: "male", label: "Male" },
           ],
           value: sexFilter,
           onChange: (v) => setSexFilter(v as SexFilter),
