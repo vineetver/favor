@@ -209,6 +209,29 @@ const ORIGIN_MAP: Record<number, string> = {
 // Custom Cell Renderers
 // ============================================================================
 
+function formatDiseaseName(name: string): string {
+  // Replace underscores with spaces
+  let formatted = name.replace(/_/g, " ");
+
+  // Capitalize first letter of each word
+  formatted = formatted
+    .split(" ")
+    .map(word => {
+      // Keep special cases lowercase
+      if (["of", "the", "a", "an", "and", "or", "to", "in", "for", "due"].includes(word.toLowerCase())) {
+        return word.toLowerCase();
+      }
+      // Capitalize first letter
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+
+  // Always capitalize first letter
+  formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+  return formatted;
+}
+
 function DiseaseList({
   value,
 }: {
@@ -217,11 +240,14 @@ function DiseaseList({
   const diseases =
     Array.isArray(value) ? value.filter(Boolean) : parseDiseaseNames(value);
   if (diseases.length === 0) return <span>-</span>;
-  if (diseases.length === 1) return <span>{diseases[0]}</span>;
+
+  const formattedDiseases = diseases.map(d => formatDiseaseName(d));
+
+  if (formattedDiseases.length === 1) return <span>{formattedDiseases[0]}</span>;
 
   return (
     <div className="space-y-0.5">
-      {diseases.map((disease, i) => (
+      {formattedDiseases.map((disease, i) => (
         <div key={i}>{disease}</div>
       ))}
     </div>
@@ -464,76 +490,76 @@ export const clinvarColumns = [
     cell: cell.custom((val: string | number) => <OriginBadge value={val} />),
   }),
 
-  col.accessor("clndisdb", {
-    accessor: (row) => row.clinvar?.clndisdb,
-    header: "Disease Database ID",
-    description: tooltip({
-      title: "Disease Database ID",
-      description:
-        "Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
-      citation: "Landrum et al., 2017, 2013",
-    }),
-    cell: cell.custom(
-      (
-        val:
-          | Array<{ db?: string | null; id?: string | null }>
-          | string
-          | null,
-      ) => <DatabaseEntries value={val} />,
-    ),
-  }),
+  // col.accessor("clndisdb", {
+  //   accessor: (row) => row.clinvar?.clndisdb,
+  //   header: "Disease Database ID",
+  //   description: tooltip({
+  //     title: "Disease Database ID",
+  //     description:
+  //       "Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
+  //     citation: "Landrum et al., 2017, 2013",
+  //   }),
+  //   cell: cell.custom(
+  //     (
+  //       val:
+  //         | Array<{ db?: string | null; id?: string | null }>
+  //         | string
+  //         | null,
+  //     ) => <DatabaseEntries value={val} />,
+  //   ),
+  // }),
 
-  col.accessor("clndisdbincl", {
-    accessor: (row) => row.clinvar?.clndisdbincl,
-    header: "Disease Database ID (Included Variant)",
-    description: tooltip({
-      title: "Disease Database ID (Included Variant)",
-      description:
-        "For included variant: Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
-      citation: "Landrum et al., 2017, 2013",
-    }),
-    cell: cell.custom(
-      (
-        val:
-          | Array<{ db?: string | null; id?: string | null }>
-          | string
-          | null,
-      ) => <DatabaseEntries value={val} />,
-    ),
-  }),
+  // col.accessor("clndisdbincl", {
+  //   accessor: (row) => row.clinvar?.clndisdbincl,
+  //   header: "Disease Database ID (Included Variant)",
+  //   description: tooltip({
+  //     title: "Disease Database ID (Included Variant)",
+  //     description:
+  //       "For included variant: Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
+  //     citation: "Landrum et al., 2017, 2013",
+  //   }),
+  //   cell: cell.custom(
+  //     (
+  //       val:
+  //         | Array<{ db?: string | null; id?: string | null }>
+  //         | string
+  //         | null,
+  //     ) => <DatabaseEntries value={val} />,
+  //   ),
+  // }),
 
-  col.accessor("geneinfo", {
-    accessor: (row) => row.clinvar?.geneinfo,
-    header: "Gene Reported",
-    description: tooltip({
-      title: "Gene Reported",
-      description:
-        "Gene(s) for the variant reported as gene symbol:gene id. The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|).",
-      citation: "Landrum et al., 2017, 2013",
-    }),
-    cell: cell.custom(
-      (
-        val: Array<{ symbol?: string | null; id?: string | null }> | null,
-      ) => {
-        const genes = (val ?? []).filter((gene) => gene?.symbol && gene?.id);
-        if (genes.length === 0) return <span>-</span>;
+  // col.accessor("geneinfo", {
+  //   accessor: (row) => row.clinvar?.geneinfo,
+  //   header: "Gene Reported",
+  //   description: tooltip({
+  //     title: "Gene Reported",
+  //     description:
+  //       "Gene(s) for the variant reported as gene symbol:gene id. The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|).",
+  //     citation: "Landrum et al., 2017, 2013",
+  //   }),
+  //   cell: cell.custom(
+  //     (
+  //       val: Array<{ symbol?: string | null; id?: string | null }> | null,
+  //     ) => {
+  //       const genes = (val ?? []).filter((gene) => gene?.symbol && gene?.id);
+  //       if (genes.length === 0) return <span>-</span>;
 
-        return (
-          <div className="flex flex-wrap gap-2">
-            {genes.map((gene, i) => (
-              <ExternalLink
-                key={i}
-                href={`https://www.ncbi.nlm.nih.gov/gene/${gene?.id}`}
-                className="font-medium"
-              >
-                {gene?.symbol}
-              </ExternalLink>
-            ))}
-          </div>
-        );
-      },
-    ),
-  }),
+  //       return (
+  //         <div className="flex flex-wrap gap-2">
+  //           {genes.map((gene, i) => (
+  //             <ExternalLink
+  //               key={i}
+  //               href={`https://www.ncbi.nlm.nih.gov/gene/${gene?.id}`}
+  //               className="font-medium"
+  //             >
+  //               {gene?.symbol}
+  //             </ExternalLink>
+  //           ))}
+  //         </div>
+  //       );
+  //     },
+  //   ),
+  // }),
 ];
 
 export const clinvarGroup = col.group("clinvar", "ClinVar", clinvarColumns);

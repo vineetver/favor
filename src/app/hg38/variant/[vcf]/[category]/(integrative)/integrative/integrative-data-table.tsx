@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart, PERCENTILE_GRADIENT } from "@/components/charts";
+import { BarChart } from "@/components/charts";
+import type { GradientThreshold } from "@/components/charts/types";
 import { DataSurface } from "@/components/ui/data-surface";
 import type { VisualizationRow } from "@/components/ui/data-surface/types";
 import {
@@ -13,6 +14,14 @@ interface IntegrativeDataTableProps {
   variant: Variant;
 }
 
+// Clearer percentile gradient with significance labels
+const SIGNIFICANCE_GRADIENT: GradientThreshold[] = [
+  { max: 1, color: "#dc2626", label: "Highly Significant (<1%)" },
+  { max: 5, color: "#ea580c", label: "Very Significant (1-5%)" },
+  { max: 10, color: "#f59e0b", label: "Significant (5-10%)" },
+  { max: 100, color: "#3b82f6", label: "Less Significant (>10%)" },
+];
+
 function IntegrativeVisualization({ data }: { data: VisualizationRow[] }) {
   return (
     <BarChart
@@ -22,7 +31,7 @@ function IntegrativeVisualization({ data }: { data: VisualizationRow[] }) {
         value: typeof row.value === "number" ? row.value : null,
         derived: typeof row.derived === "number" ? row.derived : null,
       }))}
-      colorScheme={{ type: "gradient", thresholds: PERCENTILE_GRADIENT }}
+      colorScheme={{ type: "gradient", thresholds: SIGNIFICANCE_GRADIENT }}
       colorField="derived"
       showLegend
       valueFormatter={(v) => v.toFixed(4)}

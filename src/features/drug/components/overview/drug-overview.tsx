@@ -11,6 +11,20 @@ interface DrugOverviewProps {
 }
 
 export function DrugOverview({ drug }: DrugOverviewProps) {
+  // Debug: Log drug data to verify what's being received
+  console.log('DrugOverview - drug data:', {
+    chembl_id: drug.chembl_id,
+    name: drug.name,
+    trade_names: drug.trade_names?.length,
+    synonyms: drug.synonyms?.length,
+    canonical_smiles: drug.canonical_smiles ? 'present' : 'missing',
+    inchi_key: drug.inchi_key ? 'present' : 'missing',
+    cross_references: drug.cross_references?.length,
+    linked_diseases: drug.linked_diseases,
+    linked_targets: drug.linked_targets,
+    child_chembl_ids: drug.child_chembl_ids?.length,
+  });
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);

@@ -39,7 +39,28 @@ const percentileColumn: DerivedColumn = {
   render: (value) => {
     if (value === null) return "—";
     const pct = Math.min(value as number, 100);
-    return <span className="font-mono">{pct.toFixed(2)}%</span>;
+
+    // Color based on significance (lower = more significant = red, higher = less significant = blue)
+    const getColor = (percentile: number) => {
+      if (percentile < 1) return "bg-red-500";
+      if (percentile < 5) return "bg-orange-500";
+      if (percentile < 10) return "bg-amber-500";
+      return "bg-blue-500";
+    };
+
+    return (
+      <div className="flex items-center gap-3">
+        <span className="font-mono text-sm font-medium tabular-nums text-slate-900">
+          {pct.toFixed(2)}%
+        </span>
+        <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${getColor(pct)}`}
+            style={{ width: `${100 - pct}%` }}
+          />
+        </div>
+      </div>
+    );
   },
 };
 

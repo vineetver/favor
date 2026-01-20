@@ -8,7 +8,7 @@ export async function fetchDrug(chemblId: string): Promise<Drug | null> {
   if (!chemblId) return null;
 
   const response = await fetchOrNull<DrugResponse>(
-    `${API_BASE}/drugs/${encodeURIComponent(chemblId)}`
+    `${API_BASE}/drugs/${encodeURIComponent(chemblId)}?view=full&include=links,stats`
   );
 
   if (!response || 'error' in response) return null;

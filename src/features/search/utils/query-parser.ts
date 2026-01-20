@@ -80,7 +80,7 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // 6. Disease ontology ID patterns (MONDO, HPO, EFO, ORPHA, etc.)
-  if (/^(MONDO|HPO|EFO|ORPHA|DOID|OMIM|ICD10|ICD11)[:_]\d+$/i.test(trimmed)) {
+  if (/^(MONDO|HPO?|EFO|ORPHA|DOID|OMIM|ICD10|ICD11)[:_]\d+$/i.test(trimmed)) {
     return {
       type: 'disease',
       raw: query,

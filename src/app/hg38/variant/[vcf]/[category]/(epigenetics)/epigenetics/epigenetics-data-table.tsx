@@ -14,17 +14,13 @@ interface EpigeneticsDataTableProps {
   variant: Variant;
 }
 
-// IDs to exclude from chart (different scales)
-const EXCLUDED_IDS = new Set(["gc", "cpg", "encodetotal_rna_sum"]);
-
 function EpigeneticsVisualization({ data }: { data: VisualizationRow[] }) {
-  // Transform data for chart, filtering out different-scale metrics
+  // Transform data for chart
   const chartData = data
     .filter(
       (row) =>
         row.value !== null &&
-        row.value !== undefined &&
-        !EXCLUDED_IDS.has(row.id),
+        row.value !== undefined,
     )
     .map((row) => {
       const state = REGULATORY_STATE_MAP[row.id];

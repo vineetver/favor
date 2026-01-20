@@ -188,6 +188,20 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                   </div>
                 )}
 
+                {disease.ancestors && disease.ancestors.length > 0 && (
+                  <div>
+                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Ancestors
+                    </dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {disease.ancestors.length.toLocaleString()}
+                    </dd>
+                    <div className="mt-2">
+                      {renderPillListWithDetails(disease.ancestors, 6, true, true)}
+                    </div>
+                  </div>
+                )}
+
                 {disease.children && disease.children.length > 0 && (
                   <div>
                     <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -198,6 +212,20 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                     </dd>
                     <div className="mt-2">
                       {renderPillListWithDetails(disease.children, 6, true, true)}
+                    </div>
+                  </div>
+                )}
+
+                {disease.descendants && disease.descendants.length > 0 && (
+                  <div>
+                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Descendants
+                    </dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {disease.descendants.length.toLocaleString()}
+                    </dd>
+                    <div className="mt-2">
+                      {renderPillListWithDetails(disease.descendants, 6, true, true)}
                     </div>
                   </div>
                 )}

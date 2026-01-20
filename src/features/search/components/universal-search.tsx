@@ -11,7 +11,7 @@ import {
 import { Loader2, Search, ExternalLink } from "lucide-react";
 import { useTypeahead } from "../hooks/use-typeahead";
 import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
-import { navigateToQuery, isRoutableQuery, parseQuery, preloadVariantDebounced } from "../utils";
+import { navigateToQuery, isRoutableQuery, parseQuery, preloadVariantDebounced, getPopulateIdentifier } from "../utils";
 import type { TypeaheadSuggestion, EntityType } from "../types/api";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,7 @@ export function UniversalSearch() {
   const router = useRouter();
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<TypeaheadSuggestion | null>(null);
 
   const { query, setQuery, results, isLoading, clear } = useTypeahead({
     minLength: 2,
@@ -74,6 +75,16 @@ export function UniversalSearch() {
   const handleInputChange = useCallback((value: string) => {
     setQuery(value);
   }, [setQuery]);
+
+  // Clear selected suggestion when user manually edits query
+  useEffect(() => {
+    if (selectedSuggestion) {
+      const selectedIdentifier = getPopulateIdentifier(selectedSuggestion);
+      if (query !== selectedIdentifier) {
+        setSelectedSuggestion(null);
+      }
+    }
+  }, [query, selectedSuggestion]);
 
   // Preload variant data when user types a complete VCF
   useEffect(() => {
@@ -91,13 +102,36 @@ export function UniversalSearch() {
     setGenome(value);
   }, []);
 
+  const handleSelectSuggestion = useCallback(
+    (suggestion: TypeaheadSuggestion) => {
+      // Populate search bar with identifier instead of navigating
+      const identifier = getPopulateIdentifier(suggestion);
+      setQuery(identifier);
+      setSelectedSuggestion(suggestion);
+      // Keep dropdown open with results visible
+    },
+    [setQuery]
+  );
+
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
 
       if (!query.trim()) return;
 
-      // 1. Try direct routing first (for complete VCF/rsID queries)
+      // 1. If user has selected a suggestion, navigate to it
+      if (selectedSuggestion) {
+        const url = selectedSuggestion.url || getEntityUrl(selectedSuggestion.type, selectedSuggestion.id, { genome });
+        if (url && hasEntityPage(selectedSuggestion.type)) {
+          router.push(url);
+          clear();
+          setIsDropdownOpen(false);
+          setSelectedSuggestion(null);
+        }
+        return;
+      }
+
+      // 2. Try direct routing for complete VCF/rsID queries
       if (isRoutableQuery(query)) {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
@@ -107,7 +141,7 @@ export function UniversalSearch() {
         }
       }
 
-      // 2. Fall back to typeahead suggestions
+      // 3. Fall back to first typeahead suggestion (populate, don't navigate)
       if (results && results.total > 0) {
         const entityTypes: EntityType[] = ["genes", "variants", "diseases", "drugs", "pathways"];
 
@@ -120,20 +154,7 @@ export function UniversalSearch() {
         }
       }
     },
-    [query, results, genome, router, clear]
-  );
-
-  const handleSelectSuggestion = useCallback(
-    (suggestion: TypeaheadSuggestion) => {
-      const url = suggestion.url || getEntityUrl(suggestion.type, suggestion.id, { genome });
-
-      if (url && hasEntityPage(suggestion.type)) {
-        router.push(url);
-        clear();
-        setIsDropdownOpen(false);
-      }
-    },
-    [genome, router, clear]
+    [query, results, genome, router, clear, selectedSuggestion, handleSelectSuggestion]
   );
 
   const handleFocus = () => {
@@ -318,11 +339,15 @@ export function UniversalSearch() {
                         }
 
                         return (
-                          <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                              Best Match
-                            </div>
-                            <div className="space-y-2.5">
+                          <ComboboxOption
+                            value={anchorEntity}
+                            className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
+                          >
+                            <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                                Best Match
+                              </div>
+                              <div className="space-y-2.5">
                               {/* Name + ID */}
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -380,6 +405,7 @@ export function UniversalSearch() {
                               )}
                             </div>
                           </div>
+                          </ComboboxOption>
                         );
                       })()}
 

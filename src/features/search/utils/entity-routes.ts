@@ -46,9 +46,9 @@ export function getEntityUrl(
  * Check if an entity type has a dedicated page
  */
 export function hasEntityPage(type: EntityType): boolean {
-  // Currently only variants and genes have dedicated pages
-  // Diseases, drugs, and pathways will use pivot explorer for now
-  return type === 'variants' || type === 'genes';
+  // Variants, genes, and diseases have dedicated pages
+  // Drugs and pathways use pivot explorer
+  return type === 'variants' || type === 'genes' || type === 'diseases';
 }
 
 /**
