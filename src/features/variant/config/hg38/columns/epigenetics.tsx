@@ -60,7 +60,7 @@ export const epigeneticsColumns = [
   apcColumns.epigeneticsTranscription,
 
   col.accessor("encode_dnase_sum", {
-    accessor: "encode_dnase_sum",
+    accessor: (row) => row.main?.encode?.dnase?.raw,
     header: "DNase",
     description: tooltip({
       title: "DNase",
@@ -84,7 +84,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k27ac_sum", {
-    accessor: "encodeh3k27ac_sum",
+    accessor: (row) => row.main?.encode?.h3k27ac?.raw,
     header: "H3K27ac",
     description: tooltip({
       title: "H3K27ac",
@@ -108,7 +108,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k4me1_sum", {
-    accessor: "encodeh3k4me1_sum",
+    accessor: (row) => row.main?.encode?.h3k4me1?.raw,
     header: "H3K4me1",
     description: tooltip({
       title: "H3K4me1",
@@ -132,7 +132,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k4me2_sum", {
-    accessor: "encodeh3k4me2_sum",
+    accessor: (row) => row.main?.encode?.h3k4me2?.raw,
     header: "H3K4me2",
     description: tooltip({
       title: "H3K4me2",
@@ -156,7 +156,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k4me3_sum", {
-    accessor: "encodeh3k4me3_sum",
+    accessor: (row) => row.main?.encode?.h3k4me3?.raw,
     header: "H3K4me3",
     description: tooltip({
       title: "H3K4me3",
@@ -180,7 +180,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k9ac_sum", {
-    accessor: "encodeh3k9ac_sum",
+    accessor: (row) => row.main?.encode?.h3k9ac?.raw,
     header: "H3K9ac",
     description: tooltip({
       title: "H3K9ac",
@@ -204,7 +204,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh4k20me1_sum", {
-    accessor: "encodeh4k20me1_sum",
+    accessor: (row) => row.main?.encode?.h4k20me1?.raw,
     header: "H4K20me1",
     description: tooltip({
       title: "H4K20me1",
@@ -225,7 +225,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh2afz_sum", {
-    accessor: "encodeh2afz_sum",
+    accessor: (row) => row.main?.encode?.h2afz?.raw,
     header: "H2AFZ",
     description: tooltip({
       title: "H2AFZ",
@@ -249,7 +249,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k9me3_sum", {
-    accessor: "encodeh3k9me3_sum",
+    accessor: (row) => row.main?.encode?.h3k9me3?.raw,
     header: "H3K9me3",
     description: tooltip({
       title: "H3K9me3",
@@ -273,7 +273,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k27me3_sum", {
-    accessor: "encodeh3k27me3_sum",
+    accessor: (row) => row.main?.encode?.h3k27me3?.raw,
     header: "H3K27me3",
     description: tooltip({
       title: "H3K27me3",
@@ -297,7 +297,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k36me3_sum", {
-    accessor: "encodeh3k36me3_sum",
+    accessor: (row) => row.main?.encode?.h3k36me3?.raw,
     header: "H3K36me3",
     description: tooltip({
       title: "H3K36me3",
@@ -321,7 +321,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodeh3k79me2_sum", {
-    accessor: "encodeh3k79me2_sum",
+    accessor: (row) => row.main?.encode?.h3k79me2?.raw,
     header: "H3K79me2",
     description: tooltip({
       title: "H3K79me2",
@@ -345,7 +345,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("encodetotal_rna_sum", {
-    accessor: "encodetotal_rna_sum",
+    accessor: (row) => row.main?.encode?.total_rna?.raw,
     header: "totalRNA",
     description: tooltip({
       title: "Total RNA",
@@ -369,7 +369,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("gc", {
-    accessor: "gc",
+    accessor: (row) => row.main?.sequence_context?.gc,
     header: "GC",
     description: tooltip({
       title: "GC Content",
@@ -392,7 +392,7 @@ export const epigeneticsColumns = [
   }),
 
   col.accessor("cpg", {
-    accessor: "cpg",
+    accessor: (row) => row.main?.sequence_context?.cpg,
     header: "CpG",
     description: tooltip({
       title: "CpG Content",

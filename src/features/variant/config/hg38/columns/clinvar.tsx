@@ -209,8 +209,13 @@ const ORIGIN_MAP: Record<number, string> = {
 // Custom Cell Renderers
 // ============================================================================
 
-function DiseaseList({ value }: { value: string }) {
-  const diseases = parseDiseaseNames(value);
+function DiseaseList({
+  value,
+}: {
+  value: Array<string | null> | string | null | undefined;
+}) {
+  const diseases =
+    Array.isArray(value) ? value.filter(Boolean) : parseDiseaseNames(value);
   if (diseases.length === 0) return <span>-</span>;
   if (diseases.length === 1) return <span>{diseases[0]}</span>;
 
@@ -223,8 +228,24 @@ function DiseaseList({ value }: { value: string }) {
   );
 }
 
-function ClinicalSignificancePairs({ value }: { value: string }) {
-  const pairs = parseClinicalSignificancePairs(value);
+function ClinicalSignificancePairs({
+  value,
+}: {
+  value:
+    | Array<{ classification?: string | null; variation_id?: string | null }>
+    | string
+    | null
+    | undefined;
+}) {
+  const pairs = Array.isArray(value)
+    ? value
+        .filter((entry) => entry?.classification || entry?.variation_id)
+        .map((entry) => ({
+          id: entry?.variation_id || "",
+          significance: entry?.classification || "",
+          raw: `${entry?.variation_id || ""}:${entry?.classification || ""}`,
+        }))
+    : parseClinicalSignificancePairs(value);
 
   return (
     <div className="space-y-1">
@@ -247,8 +268,24 @@ function ClinicalSignificancePairs({ value }: { value: string }) {
   );
 }
 
-function DatabaseEntries({ value }: { value: string }) {
-  const entries = parseDatabaseEntries(value);
+function DatabaseEntries({
+  value,
+}: {
+  value:
+    | Array<{ db?: string | null; id?: string | null }>
+    | string
+    | null
+    | undefined;
+}) {
+  const entries = Array.isArray(value)
+    ? value
+        .filter((entry) => entry?.db && entry?.id)
+        .map((entry) => ({
+          database: entry?.db || "",
+          id: entry?.id || "",
+          raw: `${entry?.db || ""}:${entry?.id || ""}`,
+        }))
+    : parseDatabaseEntries(value);
 
   return (
     <div className="space-y-0.5">
@@ -339,7 +376,7 @@ function OriginBadge({ value }: { value: string | number }) {
 
 export const clinvarColumns = [
   col.accessor("clnsig", {
-    accessor: "clnsig",
+    accessor: (row) => row.clinvar?.clnsig?.[0] ?? null,
     header: "Clinical Significance",
     description: tooltip({
       title: "Clinical Significance",
@@ -351,7 +388,7 @@ export const clinvarColumns = [
   }),
 
   col.accessor("clnsigincl", {
-    accessor: "clnsigincl",
+    accessor: (row) => row.clinvar?.clnsigincl,
     header: "Clinical Significance (Genotype)",
     description: tooltip({
       title: "Clinical Significance (Genotype Includes)",
@@ -360,13 +397,18 @@ export const clinvarColumns = [
       citation: "Landrum et al., 2017, 2013",
       categories: clinicalSignificance,
     }),
-    cell: cell.custom((val: string) => (
-      <ClinicalSignificancePairs value={val} />
-    )),
+    cell: cell.custom(
+      (
+        val:
+          | Array<{ classification?: string | null; variation_id?: string | null }>
+          | string
+          | null,
+      ) => <ClinicalSignificancePairs value={val} />,
+    ),
   }),
 
   col.accessor("clndn", {
-    accessor: "clndn",
+    accessor: (row) => row.clinvar?.clndn,
     header: "Disease Name",
     description: tooltip({
       title: "Disease Name",
@@ -374,11 +416,15 @@ export const clinvarColumns = [
         "ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom((val: string) => <DiseaseList value={val} />),
+    cell: cell.custom(
+      (val: Array<string | null> | string | null) => (
+        <DiseaseList value={val} />
+      ),
+    ),
   }),
 
   col.accessor("clndnincl", {
-    accessor: "clndnincl",
+    accessor: (row) => row.clinvar?.clndnincl,
     header: "Disease Name (Variant Includes)",
     description: tooltip({
       title: "Disease Name (Variant Includes)",
@@ -386,11 +432,15 @@ export const clinvarColumns = [
         "For included variant: ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom((val: string) => <DiseaseList value={val} />),
+    cell: cell.custom(
+      (val: Array<string | null> | string | null) => (
+        <DiseaseList value={val} />
+      ),
+    ),
   }),
 
   col.accessor("clnrevstat", {
-    accessor: "clnrevstat",
+    accessor: (row) => row.clinvar?.clnrevstat,
     header: "Review Status",
     description: tooltip({
       title: "Review Status",
@@ -402,7 +452,7 @@ export const clinvarColumns = [
   }),
 
   col.accessor("origin", {
-    accessor: "origin",
+    accessor: (row) => row.clinvar?.origin,
     header: "Allele Origin",
     description: tooltip({
       title: "Allele Origin",
@@ -415,7 +465,7 @@ export const clinvarColumns = [
   }),
 
   col.accessor("clndisdb", {
-    accessor: "clndisdb",
+    accessor: (row) => row.clinvar?.clndisdb,
     header: "Disease Database ID",
     description: tooltip({
       title: "Disease Database ID",
@@ -423,11 +473,18 @@ export const clinvarColumns = [
         "Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom((val: string) => <DatabaseEntries value={val} />),
+    cell: cell.custom(
+      (
+        val:
+          | Array<{ db?: string | null; id?: string | null }>
+          | string
+          | null,
+      ) => <DatabaseEntries value={val} />,
+    ),
   }),
 
   col.accessor("clndisdbincl", {
-    accessor: "clndisdbincl",
+    accessor: (row) => row.clinvar?.clndisdbincl,
     header: "Disease Database ID (Included Variant)",
     description: tooltip({
       title: "Disease Database ID (Included Variant)",
@@ -435,11 +492,18 @@ export const clinvarColumns = [
         "For included variant: Tag-value pairs of disease database name and identifier, e.g. OMIM:NNNNNN.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom((val: string) => <DatabaseEntries value={val} />),
+    cell: cell.custom(
+      (
+        val:
+          | Array<{ db?: string | null; id?: string | null }>
+          | string
+          | null,
+      ) => <DatabaseEntries value={val} />,
+    ),
   }),
 
   col.accessor("geneinfo", {
-    accessor: "geneinfo",
+    accessor: (row) => row.clinvar?.geneinfo,
     header: "Gene Reported",
     description: tooltip({
       title: "Gene Reported",
@@ -447,29 +511,28 @@ export const clinvarColumns = [
         "Gene(s) for the variant reported as gene symbol:gene id. The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|).",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom((val: string) => {
-      // Split by pipe to get multiple genes
-      const genes = val.split("|").filter((g) => g.trim());
+    cell: cell.custom(
+      (
+        val: Array<{ symbol?: string | null; id?: string | null }> | null,
+      ) => {
+        const genes = (val ?? []).filter((gene) => gene?.symbol && gene?.id);
+        if (genes.length === 0) return <span>-</span>;
 
-      if (genes.length === 0) return <span>-</span>;
-
-      return (
-        <div className="flex flex-wrap gap-2">
-          {genes.map((geneEntry, i) => {
-            const [symbol, geneId] = geneEntry.split(":");
-            return (
+        return (
+          <div className="flex flex-wrap gap-2">
+            {genes.map((gene, i) => (
               <ExternalLink
                 key={i}
-                href={`https://www.ncbi.nlm.nih.gov/gene/${geneId}`}
+                href={`https://www.ncbi.nlm.nih.gov/gene/${gene?.id}`}
                 className="font-medium"
               >
-                {symbol}
+                {gene?.symbol}
               </ExternalLink>
-            );
-          })}
-        </div>
-      );
-    }),
+            ))}
+          </div>
+        );
+      },
+    ),
   }),
 ];
 

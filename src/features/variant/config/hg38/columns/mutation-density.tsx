@@ -1,78 +1,15 @@
 import type { Variant } from "@/features/variant/types";
-import {
-  categories,
-  cell,
-  createColumns,
-  tooltip,
-} from "@/lib/table/column-builder";
+import { cell, createColumns, tooltip } from "@/lib/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();
-
-const filterValue = categories([
-  {
-    label: "Low",
-    match: /^Low$/i,
-    color: "red",
-    description:
-      "Low quality regions: Mappability < 0.5, overlap with >50nt simple repeat, ReadPosRankSum > 1, 0 SNVs in 100bp window",
-  },
-  {
-    label: "SFS bump",
-    match: /SFS_bump/i,
-    color: "yellow",
-    description:
-      "Pentamer context with abnormal site frequency spectrum. High-frequency SNVs exceed 1.5× mutation rate controlled average",
-  },
-  {
-    label: "TFBS",
-    match: /^TFBS$/i,
-    color: "blue",
-    description:
-      "Transcription factor binding site determined by overlap with ChIP-seq peaks",
-  },
-]);
 
 export const mutationDensityColumns = [
   apcColumns.mutationDensity,
 
   // Mutation rate estimates
-  col.accessor("filter_value", {
-    accessor: "filter_value",
-    header: "Filter Value",
-    description: tooltip({
-      title: "Filter Value",
-      description:
-        "Quality assessment categories for genomic regions based on various sequencing and genomic metrics.",
-      categories: filterValue,
-    }),
-    cell: cell.badge(filterValue),
-  }),
-
-  col.accessor("pn", {
-    accessor: "pn",
-    header: "Pentanucleotide",
-    description: tooltip({
-      title: "Pentanucleotide Context",
-      description:
-        "The 5-nucleotide sequence context surrounding the variant position, important for understanding mutation patterns and rates.",
-      guides: [
-        {
-          threshold: "Context dependency",
-          meaning:
-            "Mutation rates vary significantly based on surrounding nucleotide sequence",
-        },
-        {
-          threshold: "Format",
-          meaning: "5-base sequence with variant position in center",
-        },
-      ],
-    }),
-    cell: cell.text(),
-  }),
-
   col.accessor("mr", {
-    accessor: "mr",
+    accessor: (row) => row.mutation_rate?.mr,
     header: "Roulette Mutation Rate",
     description: tooltip({
       title: "Roulette Mutation Rate",
@@ -95,7 +32,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("ar", {
-    accessor: "ar",
+    accessor: (row) => row.mutation_rate?.ar,
     header: "Adjusted Mutation Rate",
     description: tooltip({
       title: "Adjusted Roulette Mutation Rate",
@@ -120,7 +57,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("mg", {
-    accessor: "mg",
+    accessor: (row) => row.mutation_rate?.mg,
     header: "gnomAD Mutation Rate",
     description: tooltip({
       title: "gnomAD Mutation Rate",
@@ -146,7 +83,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("mc", {
-    accessor: "mc",
+    accessor: (row) => row.mutation_rate?.mc,
     header: "Carlson Mutation Rate",
     description: tooltip({
       title: "Carlson De Novo Mutation Rate",
@@ -175,7 +112,7 @@ export const mutationDensityColumns = [
 
   // Common variant counts (MAF > 0.05)
   col.accessor("freq100bp", {
-    accessor: "freq100bp",
+    accessor: (row) => row.main?.variant_density?.freq_100bp,
     header: "Common 100bp",
     description: tooltip({
       title: "Common Variants (100bp)",
@@ -198,7 +135,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("freq1000bp", {
-    accessor: "freq1000bp",
+    accessor: (row) => row.main?.variant_density?.freq_1000bp,
     header: "Common 1kb",
     description: tooltip({
       title: "Common Variants (1kb)",
@@ -221,7 +158,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("freq10000bp", {
-    accessor: "freq10000bp",
+    accessor: (row) => row.main?.variant_density?.freq_10000bp,
     header: "Common 10kb",
     description: tooltip({
       title: "Common Variants (10kb)",
@@ -245,7 +182,7 @@ export const mutationDensityColumns = [
 
   // Rare variant counts (MAF < 0.05)
   col.accessor("rare100bp", {
-    accessor: "rare100bp",
+    accessor: (row) => row.main?.variant_density?.rare_100bp,
     header: "Rare 100bp",
     description: tooltip({
       title: "Rare Variants (100bp)",
@@ -268,7 +205,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("rare1000bp", {
-    accessor: "rare1000bp",
+    accessor: (row) => row.main?.variant_density?.rare_1000bp,
     header: "Rare 1kb",
     description: tooltip({
       title: "Rare Variants (1kb)",
@@ -291,7 +228,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("rare10000bp", {
-    accessor: "rare10000bp",
+    accessor: (row) => row.main?.variant_density?.rare_10000bp,
     header: "Rare 10kb",
     description: tooltip({
       title: "Rare Variants (10kb)",
@@ -315,7 +252,7 @@ export const mutationDensityColumns = [
 
   // Singleton variant counts (AC=1)
   col.accessor("sngl100bp", {
-    accessor: "sngl100bp",
+    accessor: (row) => row.main?.variant_density?.sngl_100bp,
     header: "Singleton 100bp",
     description: tooltip({
       title: "Singleton Variants (100bp)",
@@ -338,7 +275,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("sngl1000bp", {
-    accessor: "sngl1000bp",
+    accessor: (row) => row.main?.variant_density?.sngl_1000bp,
     header: "Singleton 1kb",
     description: tooltip({
       title: "Singleton Variants (1kb)",
@@ -361,7 +298,7 @@ export const mutationDensityColumns = [
   }),
 
   col.accessor("sngl10000bp", {
-    accessor: "sngl10000bp",
+    accessor: (row) => row.main?.variant_density?.sngl_10000bp,
     header: "Singleton 10kb",
     description: tooltip({
       title: "Singleton Variants (10kb)",

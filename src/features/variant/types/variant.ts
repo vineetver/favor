@@ -1,201 +1,385 @@
 import type { GnomadData } from "./gnomad";
 
 export interface Variant {
-  variant_vcf: string;
+  vid: number;
   chromosome: string;
-  position: string;
-  bravo_an: number;
-  bravo_ac: number;
-  bravo_af: number;
-  filter_status: string;
-  rsid: string;
-  genecode_comprehensive_category: string;
-  genecode_comprehensive_info: string;
-  genecode_comprehensive_exonic_category: string;
-  genecode_comprehensive_exonic_info: string;
-  ucsc_info: string;
-  ucsc_exonic_info: string;
-  polyphen2_hdiv_score: number;
-  polyphen2_hvar_score: number;
-  mutation_taster_score: number;
-  mutation_assessor_score: number;
-  metasvm_pred: string;
-  refseq_info: string;
-  refseq_exonic_info: string;
-  cage_promoter: string;
-  cage_enhancer: string;
-  genehancer: string;
-  super_enhancer: string;
-  clnsig: string;
-  clnsigincl: string;
-  clndn: string;
-  clndnincl: string;
-  clnrevstat: string;
-  origin: string;
-  clndisdb: string;
-  clndisdbincl: string;
-  geneinfo: string;
-  linsight: number;
-  fathmm_xf: number;
-  gc: number;
-  cpg: number;
-  min_dist_tss: number;
-  min_dist_tse: number;
-  sift_cat: string;
-  sift_val: number;
-  polyphen_cat: string;
-  polyphen_val: number;
-  priphcons: number;
-  mamphcons: number;
-  verphcons: number;
-  priphylop: number;
-  mamphylop: number;
-  verphylop: number;
-  bstatistic: number;
-  chmm_e1: number;
-  chmm_e2: number;
-  chmm_e3: number;
-  chmm_e4: number;
-  chmm_e5: number;
-  chmm_e6: number;
-  chmm_e7: number;
-  chmm_e8: number;
-  chmm_e9: number;
-  chmm_e10: number;
-  chmm_e11: number;
-  chmm_e12: number;
-  chmm_e13: number;
-  chmm_e14: number;
-  chmm_e15: number;
-  chmm_e16: number;
-  chmm_e17: number;
-  chmm_e18: number;
-  chmm_e19: number;
-  chmm_e20: number;
-  chmm_e21: number;
-  chmm_e22: number;
-  chmm_e23: number;
-  chmm_e24: number;
-  chmm_e25: number;
-  gerp_n: number;
-  gerp_s: number;
-  encodeh3k4me1_sum: number;
-  encodeh3k4me2_sum: number;
-  encodeh3k4me3_sum: number;
-  encodeh3k9ac_sum: number;
-  encodeh3k9me3_sum: number;
-  encodeh3k27ac_sum: number;
-  encodeh3k27me3_sum: number;
-  encodeh3k36me3_sum: number;
-  encodeh3k79me2_sum: number;
-  encodeh4k20me1_sum: number;
-  encodeh2afz_sum: number;
-  encode_dnase_sum: number;
-  encodetotal_rna_sum: number;
-  grantham: number;
-  freq100bp: number;
-  rare100bp: number;
-  sngl100bp: number;
-  freq1000bp: number;
-  rare1000bp: number;
-  sngl1000bp: number;
-  freq10000bp: number;
-  rare10000bp: number;
-  sngl10000bp: number;
-  remap_overlap_tf: number;
-  remap_overlap_cl: number;
-  cadd_rawscore: number;
-  cadd_phred: number;
-  apc_conservation_v2: number;
-  apc_epigenetics_active: number;
-  apc_epigenetics_repressed: number;
-  apc_epigenetics_transcription: number;
-  apc_local_nucleotide_diversity_v3: number;
-  apc_mappability: number;
-  apc_mutation_density: number;
-  apc_protein_function_v3: number;
-  apc_transcription_factor: number;
-  tg_afr: number;
-  tg_all: number;
-  tg_amr: number;
-  tg_eas: number;
-  tg_eur: number;
-  tg_sas: number;
-  af_total: number;
-  af_asj_female: number;
-  af_eas_female: number;
-  af_afr_male: number;
-  af_female: number;
-  af_fin_male: number;
-  af_oth_female: number;
-  af_ami: number;
-  af_oth: number;
-  af_male: number;
-  af_ami_female: number;
-  af_afr: number;
-  af_eas_male: number;
-  af_sas: number;
-  af_nfe_female: number;
-  af_asj_male: number;
-  af_raw: number;
-  af_oth_male: number;
-  af_nfe_male: number;
-  af_asj: number;
-  af_amr_male: number;
-  af_amr_female: number;
-  af_sas_female: number;
-  af_fin: number;
-  af_afr_female: number;
-  af_sas_male: number;
-  af_amr: number;
-  af_nfe: number;
-  af_eas: number;
-  af_ami_male: number;
-  af_fin_female: number;
-  k24_bismap: number;
-  k24_umap: number;
-  k36_bismap: number;
-  k36_umap: number;
-  k50_bismap: number;
-  k50_umap: number;
-  k100_bismap: number;
-  k100_umap: number;
-  recombination_rate: number;
-  nucdiv: number;
-  aloft_value: string;
-  aloft_description: string;
-  funseq_value: string;
-  funseq_description: string;
-  qual: string;
-  filter_value: string;
-  pn: string;
-  mr: number;
-  ar: number;
-  mg: number;
-  mc: number;
-  gnomad41_genome?: number;
-  gnomad41_exome?: number;
-  spliceai_ds_max_exome?: number;
-  spliceai_ds_max_genome?: number;
-  pangolin_largest_ds_exome?: number;
-  pangolin_largest_ds_genome?: number;
-  exome: GnomadData | null;
-  genome: GnomadData | null;
-  Cm?: number;
-  Cv2f?: number;
-  LiverCv2f?: number;
-  BloodCv2f?: number;
-  BrainCv2f?: number;
-  Gm12878Cv2f?: number;
-  K562Cv2f?: number;
-  HepG2CV2F?: number;
-  protein_variant?: string;
-  am_pathogenicity?: number;
-  am_class?: string;
+  position: number;
+  variant_vcf: string;
+  bravo?: Bravo | null;
+  genecode?: Gencode | null;
+  ucsc?: Ucsc | null;
+  dbsnp?: Dbsnp | null;
+  dbnsfp?: Dbnsfp | null;
+  refseq?: Refseq | null;
+  cage?: Cage | null;
+  genehancer?: GeneHancer | null;
+  super_enhancer?: SuperEnhancer | null;
+  clinvar?: Clinvar | null;
+  main?: Main | null;
+  tg?: ThousandGenomes | null;
+  mappability?: Mappability | null;
   gnomad_exome?: GnomadData | null;
   gnomad_genome?: GnomadData | null;
-  aa?: string;
-  cds?: string;
-  genome_screen_sample_count?: number;
-  is_canonical?: string;
+  mutation_rate?: MutationRate | null;
+  funseq?: Funseq | null;
+  aloft?: Aloft | null;
+  alphamissense?: AlphaMissense | null;
+  ccre?: Ccre | null;
+  apc?: Apc | null;
+  cosmic?: Cosmic | null;
+  pgboost?: PgBoost[] | null;
+  linsight?: number | null;
+  fathmm_xf?: number | null;
+  recombination_rate?: number | null;
+  nucdiv?: number | null;
+}
+
+export interface VariantWithIncludes extends Variant {
+  gwas?: unknown[] | null;
+}
+
+export interface AmbiguousVariantCandidate {
+  vid: number;
+  variant_vcf: string;
+}
+
+export interface AmbiguousVariantResponse {
+  error: string;
+  variant: string;
+  candidates: AmbiguousVariantCandidate[];
+}
+
+export type VariantSingleResponse = Variant | AmbiguousVariantResponse;
+
+export interface Bravo {
+  bravo_ac?: number | null;
+  bravo_af?: number | null;
+  bravo_an?: number | null;
+  filter_status?: string | null;
+}
+
+export interface ThousandGenomes {
+  tg_afr?: number | null;
+  tg_all?: number | null;
+  tg_amr?: number | null;
+  tg_eas?: number | null;
+  tg_eur?: number | null;
+  tg_sas?: number | null;
+}
+
+export interface Dbsnp {
+  rsid?: string | null;
+  rsid_all?: Array<string | null>;
+}
+
+export interface Dbnsfp {
+  metasvm_pred?: string | null;
+  mutation_assessor?: number | null;
+  mutation_taster?: number | null;
+  polyphen2_hdiv?: number | null;
+  polyphen2_hvar?: number | null;
+}
+
+export interface Gencode {
+  consequence?: string | null;
+  genes?: Array<string | null>;
+  region_type?: string | null;
+  transcripts?: Transcript[];
+}
+
+export interface Transcript {
+  gene?: string | null;
+  hgvsc?: string | null;
+  hgvsp?: string | null;
+  location?: string | null;
+  transcript_id?: string | null;
+}
+
+export interface Refseq {
+  consequence?: string | null;
+  exonic_details?: ExonicDetail[];
+  region_type?: string | null;
+  transcripts?: Array<string | null>;
+}
+
+export interface ExonicDetail {
+  gene?: string | null;
+  hgvsc?: string | null;
+  hgvsp?: string | null;
+  location?: string | null;
+  transcript_id?: string | null;
+}
+
+export interface Ucsc {
+  consequence?: string | null;
+  exonic_details?: UcscTranscript[];
+  region_type?: string | null;
+  transcripts?: Array<string | null>;
+}
+
+export interface UcscTranscript {
+  hgvsc?: string | null;
+  hgvsp?: string | null;
+  location?: string | null;
+  transcript_id?: string | null;
+}
+
+export interface Cage {
+  cage_enhancer?: string | null;
+  cage_promoter?: string | null;
+  cage_tc?: string | null;
+}
+
+export interface GeneHancer {
+  feature_score?: number | null;
+  id?: string | null;
+  targets?: GeneHancerTarget[];
+}
+
+export interface GeneHancerTarget {
+  gene?: string | null;
+  score?: number | null;
+}
+
+export interface SuperEnhancer {
+  ids?: Array<string | null>;
+}
+
+export interface Clinvar {
+  clndisdb?: ClinvarDisDb[];
+  clndisdbincl?: ClinvarDisDb[];
+  clndn?: Array<string | null>;
+  clndnincl?: Array<string | null>;
+  clnrevstat?: string | null;
+  clnsig?: Array<string | null>;
+  clnsigincl?: ClinvarSigIncl[];
+  gene?: string | null;
+  geneinfo?: ClinvarGeneInfo[];
+  origin?: number | null;
+  origin_decoded?: Array<string | null>;
+}
+
+export interface ClinvarDisDb {
+  db?: string | null;
+  id?: string | null;
+}
+
+export interface ClinvarSigIncl {
+  classification?: string | null;
+  variation_id?: string | null;
+}
+
+export interface ClinvarGeneInfo {
+  id?: string | null;
+  symbol?: string | null;
+}
+
+export interface Main {
+  cadd?: Cadd | null;
+  chromhmm?: ChromHmm | null;
+  conservation?: Conservation | null;
+  distance?: Distance | null;
+  encode?: Encode | null;
+  gerp?: Gerp | null;
+  protein_predictions?: ProteinPredictions | null;
+  remap?: Remap | null;
+  sequence_context?: SequenceContext | null;
+  variant_density?: VariantDensity | null;
+}
+
+export interface Cadd {
+  phred?: number | null;
+  raw?: number | null;
+}
+
+export interface ChromHmm {
+  e1?: number | null;
+  e2?: number | null;
+  e3?: number | null;
+  e4?: number | null;
+  e5?: number | null;
+  e6?: number | null;
+  e7?: number | null;
+  e8?: number | null;
+  e9?: number | null;
+  e10?: number | null;
+  e11?: number | null;
+  e12?: number | null;
+  e13?: number | null;
+  e14?: number | null;
+  e15?: number | null;
+  e16?: number | null;
+  e17?: number | null;
+  e18?: number | null;
+  e19?: number | null;
+  e20?: number | null;
+  e21?: number | null;
+  e22?: number | null;
+  e23?: number | null;
+  e24?: number | null;
+  e25?: number | null;
+}
+
+export interface Conservation {
+  bstatistic?: number | null;
+  mamphcons?: number | null;
+  mamphylop?: number | null;
+  priphcons?: number | null;
+  priphylop?: number | null;
+  verphcons?: number | null;
+  verphylop?: number | null;
+}
+
+export interface Distance {
+  min_dist_tse?: number | null;
+  min_dist_tss?: number | null;
+}
+
+export interface EncodeValue {
+  phred?: number | null;
+  raw?: number | null;
+}
+
+export interface Encode {
+  dnase?: EncodeValue | null;
+  h2afz?: EncodeValue | null;
+  h3k27ac?: EncodeValue | null;
+  h3k27me3?: EncodeValue | null;
+  h3k36me3?: EncodeValue | null;
+  h3k4me1?: EncodeValue | null;
+  h3k4me2?: EncodeValue | null;
+  h3k4me3?: EncodeValue | null;
+  h3k79me2?: EncodeValue | null;
+  h3k9ac?: EncodeValue | null;
+  h3k9me3?: EncodeValue | null;
+  h4k20me1?: EncodeValue | null;
+  total_rna?: EncodeValue | null;
+}
+
+export interface Gerp {
+  n?: number | null;
+  rs?: number | null;
+  rs_pval?: number | null;
+  s?: number | null;
+}
+
+export interface ProteinPredictions {
+  grantham?: number | null;
+  polyphen_cat?: string | null;
+  polyphen_val?: number | null;
+  sift_cat?: string | null;
+  sift_val?: number | null;
+}
+
+export interface Remap {
+  overlap_cl?: number | null;
+  overlap_tf?: number | null;
+}
+
+export interface SequenceContext {
+  cpg?: number | null;
+  gc?: number | null;
+}
+
+export interface VariantDensity {
+  freq_10000bp?: number | null;
+  freq_1000bp?: number | null;
+  freq_100bp?: number | null;
+  rare_10000bp?: number | null;
+  rare_1000bp?: number | null;
+  rare_100bp?: number | null;
+  sngl_10000bp?: number | null;
+  sngl_1000bp?: number | null;
+  sngl_100bp?: number | null;
+}
+
+export interface Mappability {
+  k24?: MappabilityValue | null;
+  k36?: MappabilityValue | null;
+  k50?: MappabilityValue | null;
+  k100?: MappabilityValue | null;
+}
+
+export interface MappabilityValue {
+  bismap?: number | null;
+  umap?: number | null;
+}
+
+export interface Apc {
+  conservation?: number | null;
+  conservation_v2?: number | null;
+  epigenetics?: number | null;
+  epigenetics_active?: number | null;
+  epigenetics_repressed?: number | null;
+  epigenetics_transcription?: number | null;
+  local_nucleotide_diversity?: number | null;
+  local_nucleotide_diversity_v2?: number | null;
+  local_nucleotide_diversity_v3?: number | null;
+  mappability?: number | null;
+  micro_rna?: number | null;
+  mutation_density?: number | null;
+  protein_function?: number | null;
+  protein_function_v2?: number | null;
+  protein_function_v3?: number | null;
+  proximity_to_coding?: number | null;
+  proximity_to_coding_v2?: number | null;
+  proximity_to_tsstes?: number | null;
+  transcription_factor?: number | null;
+}
+
+export interface MutationRate {
+  ar?: number | null;
+  mc?: number | null;
+  mg?: number | null;
+  mr?: number | null;
+}
+
+export interface Funseq {
+  description?: string | null;
+  score?: number | null;
+}
+
+export interface Aloft {
+  description?: string | null;
+  score?: number | null;
+}
+
+export interface AlphaMissense {
+  max_pathogenicity?: number | null;
+  predictions?: AlphaMissensePrediction[];
+}
+
+export interface AlphaMissensePrediction {
+  class?: string | null;
+  pathogenicity?: number | null;
+  protein_variant?: string | null;
+  transcript_id?: string | null;
+  uniprot_id?: string | null;
+}
+
+export interface Ccre {
+  accessions?: string | null;
+  annotations?: string | null;
+  count?: number | null;
+  ids?: string | null;
+}
+
+export interface Cosmic {
+  aa?: string | null;
+  cds?: string | null;
+  gene?: string | null;
+  hgvsc?: string | null;
+  hgvsp?: string | null;
+  hgvsg?: string | null;
+  is_canonical?: string | null;
+  sample_count?: number | null;
+  so_term?: string | null;
+  tier?: string | null;
+  transcript?: string | null;
+}
+
+export interface PgBoost {
+  gene?: string | null;
+  percentile?: number | null;
+  score?: number | null;
 }

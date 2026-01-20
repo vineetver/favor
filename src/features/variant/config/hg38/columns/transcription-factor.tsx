@@ -8,7 +8,7 @@ export const transcriptionFactorColumns = [
   apcColumns.transcriptionFactor,
 
   col.accessor("remap_overlap_tf", {
-    accessor: "remap_overlap_tf",
+    accessor: (row) => row.main?.remap?.overlap_tf,
     header: "RemapOverlapTF",
     description: tooltip({
       title: "ReMap TF Overlap",
@@ -32,7 +32,7 @@ export const transcriptionFactorColumns = [
   }),
 
   col.accessor("remap_overlap_cl", {
-    accessor: "remap_overlap_cl",
+    accessor: (row) => row.main?.remap?.overlap_cl,
     header: "RemapOverlapCL",
     description: tooltip({
       title: "ReMap Cell Line Overlap",

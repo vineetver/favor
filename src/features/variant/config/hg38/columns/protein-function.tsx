@@ -128,6 +128,17 @@ function _ProteinVariant({ value }: { value: string }) {
   );
 }
 
+function getAlphaMissenseBest(variant: Variant) {
+  const predictions = variant.alphamissense?.predictions ?? [];
+  if (!predictions.length) return null;
+  return predictions.reduce((best, current) => {
+    if (!best) return current;
+    const bestScore = best.pathogenicity ?? -1;
+    const currentScore = current.pathogenicity ?? -1;
+    return currentScore > bestScore ? current : best;
+  }, predictions[0]);
+}
+
 // ============================================================================
 // Column Definitions - Predictions first, then Scores (mutation rate priority)
 // ============================================================================
@@ -141,7 +152,7 @@ export const proteinFunctionColumns = [
   // ============================================================================
 
   col.accessor("am_class", {
-    accessor: "am_class",
+    accessor: (row) => getAlphaMissenseBest(row)?.class,
     header: "AlphaMissense Class",
     description: tooltip({
       title: "AlphaMissense Classification",
@@ -153,7 +164,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("sift_cat", {
-    accessor: "sift_cat",
+    accessor: (row) => row.main?.protein_predictions?.sift_cat,
     header: "SIFT Prediction",
     description: tooltip({
       title: "SIFT Prediction",
@@ -166,7 +177,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("polyphen_cat", {
-    accessor: "polyphen_cat",
+    accessor: (row) => row.main?.protein_predictions?.polyphen_cat,
     header: "PolyPhen Prediction",
     description: tooltip({
       title: "PolyPhen Prediction",
@@ -179,7 +190,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("metasvm_pred", {
-    accessor: "metasvm_pred",
+    accessor: (row) => row.dbnsfp?.metasvm_pred,
     header: "MetaSVM Prediction",
     description: tooltip({
       title: "MetaSVM Prediction",
@@ -196,7 +207,7 @@ export const proteinFunctionColumns = [
   // ============================================================================
 
   col.accessor("mutation_taster_score", {
-    accessor: "mutation_taster_score",
+    accessor: (row) => row.dbnsfp?.mutation_taster,
     header: "MutationTaster Score",
     description: tooltip({
       title: "MutationTaster Score",
@@ -220,7 +231,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("mutation_assessor_score", {
-    accessor: "mutation_assessor_score",
+    accessor: (row) => row.dbnsfp?.mutation_assessor,
     header: "MutationAssessor Score",
     description: tooltip({
       title: "MutationAssessor Score",
@@ -243,7 +254,9 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("am_pathogenicity", {
-    accessor: "am_pathogenicity",
+    accessor: (row) =>
+      getAlphaMissenseBest(row)?.pathogenicity ??
+      row.alphamissense?.max_pathogenicity,
     header: "AlphaMissense Score",
     description: tooltip({
       title: "AlphaMissense Pathogenicity",
@@ -260,7 +273,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("sift_val", {
-    accessor: "sift_val",
+    accessor: (row) => row.main?.protein_predictions?.sift_val,
     header: "SIFT Score",
     description: tooltip({
       title: "SIFT Score",
@@ -284,7 +297,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("polyphen_val", {
-    accessor: "polyphen_val",
+    accessor: (row) => row.main?.protein_predictions?.polyphen_val,
     header: "PolyPhen Score",
     description: tooltip({
       title: "PolyPhen Score",
@@ -306,7 +319,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("polyphen2_hdiv_score", {
-    accessor: "polyphen2_hdiv_score",
+    accessor: (row) => row.dbnsfp?.polyphen2_hdiv,
     header: "PolyPhen2 HumDiv",
     description: tooltip({
       title: "PolyPhen2 HumDiv",
@@ -328,7 +341,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("polyphen2_hvar_score", {
-    accessor: "polyphen2_hvar_score",
+    accessor: (row) => row.dbnsfp?.polyphen2_hvar,
     header: "PolyPhen2 HumVar",
     description: tooltip({
       title: "PolyPhen2 HumVar",
@@ -350,7 +363,7 @@ export const proteinFunctionColumns = [
   }),
 
   col.accessor("grantham", {
-    accessor: "grantham",
+    accessor: (row) => row.main?.protein_predictions?.grantham,
     header: "Grantham Score",
     description: tooltip({
       title: "Grantham Score",

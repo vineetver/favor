@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart } from "@/components/charts";
 import { DataSurface } from "@/components/ui/data-surface";
 import {
@@ -135,8 +135,21 @@ function PopulationChart({ data }: { data: PopulationRow[] }) {
 export function AlleleFrequencyDataTable({
   variant,
 }: AlleleFrequencyDataTableProps) {
-  const [dataSource, setDataSource] = useState<DataSource>("genome");
+  const hasGenome = Boolean(variant.gnomad_genome);
+  const hasExome = Boolean(variant.gnomad_exome);
+  const [dataSource, setDataSource] = useState<DataSource>(() =>
+    hasGenome ? "genome" : "exome",
+  );
   const [sexFilter, setSexFilter] = useState<SexFilter>("overall");
+
+  useEffect(() => {
+    if (dataSource === "genome" && !hasGenome && hasExome) {
+      setDataSource("exome");
+    }
+    if (dataSource === "exome" && !hasExome && hasGenome) {
+      setDataSource("genome");
+    }
+  }, [dataSource, hasGenome, hasExome]);
 
   // Transform gnomAD data to rows based on current filters
   const populationData = useMemo((): PopulationRow[] => {

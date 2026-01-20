@@ -8,7 +8,7 @@ export const localNucleotideDiversityColumns = [
   apcColumns.localNucleotideDiversity,
 
   col.accessor("recombination_rate", {
-    accessor: "recombination_rate",
+    accessor: (row) => row.recombination_rate,
     header: "Recombination Rate",
     description: tooltip({
       title: "Recombination Rate",
@@ -34,7 +34,7 @@ export const localNucleotideDiversityColumns = [
   }),
 
   col.accessor("nucdiv", {
-    accessor: "nucdiv",
+    accessor: (row) => row.nucdiv,
     header: "Nucleotide Diversity",
     description: tooltip({
       title: "Nucleotide Diversity",
@@ -59,7 +59,7 @@ export const localNucleotideDiversityColumns = [
   }),
 
   col.accessor("bstatistic", {
-    accessor: "bstatistic",
+    accessor: (row) => row.main?.conservation?.bstatistic,
     header: "bStatistic",
     description: tooltip({
       title: "Background Selection Statistic (B)",

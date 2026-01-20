@@ -6,7 +6,7 @@ const col = createColumns<Variant>();
 /** Reusable aPC (aggregated Pathogenicity Composite) column definitions */
 export const apcColumns = {
   proteinFunction: col.accessor("apc_protein_function_v3", {
-    accessor: "apc_protein_function_v3",
+    accessor: (row) => row.apc?.protein_function_v3,
     header: "aPC-Protein Function",
     description: tooltip({
       title: "aPC-Protein Function",
@@ -34,7 +34,7 @@ export const apcColumns = {
   }),
 
   conservation: col.accessor("apc_conservation_v2", {
-    accessor: "apc_conservation_v2",
+    accessor: (row) => row.apc?.conservation_v2,
     header: "aPC-Conservation",
     description: tooltip({
       title: "aPC-Conservation",
@@ -59,7 +59,7 @@ export const apcColumns = {
   }),
 
   epigeneticsActive: col.accessor("apc_epigenetics_active", {
-    accessor: "apc_epigenetics_active",
+    accessor: (row) => row.apc?.epigenetics_active,
     header: "aPC-Epigenetics Active",
     description: tooltip({
       title: "aPC-Epigenetics Active",
@@ -84,7 +84,7 @@ export const apcColumns = {
   }),
 
   epigeneticsRepressed: col.accessor("apc_epigenetics_repressed", {
-    accessor: "apc_epigenetics_repressed",
+    accessor: (row) => row.apc?.epigenetics_repressed,
     header: "aPC-Epigenetics Repressed",
     description: tooltip({
       title: "aPC-Epigenetics Repressed",
@@ -112,7 +112,7 @@ export const apcColumns = {
   }),
 
   epigeneticsTranscription: col.accessor("apc_epigenetics_transcription", {
-    accessor: "apc_epigenetics_transcription",
+    accessor: (row) => row.apc?.epigenetics_transcription,
     header: "aPC-Epigenetics Transcription",
     description: tooltip({
       title: "aPC-Epigenetics Transcription",
@@ -140,7 +140,7 @@ export const apcColumns = {
   }),
 
   transcriptionFactor: col.accessor("apc_transcription_factor", {
-    accessor: "apc_transcription_factor",
+    accessor: (row) => row.apc?.transcription_factor,
     header: "aPC-Transcription Factor",
     description: tooltip({
       title: "aPC-Transcription Factor",
@@ -168,7 +168,7 @@ export const apcColumns = {
   }),
 
   localNucleotideDiversity: col.accessor("apc_local_nucleotide_diversity_v3", {
-    accessor: "apc_local_nucleotide_diversity_v3",
+    accessor: (row) => row.apc?.local_nucleotide_diversity_v3,
     header: "aPC-Local Nucleotide Diversity",
     description: tooltip({
       title: "aPC-Local Nucleotide Diversity",
@@ -193,7 +193,7 @@ export const apcColumns = {
   }),
 
   mutationDensity: col.accessor("apc_mutation_density", {
-    accessor: "apc_mutation_density",
+    accessor: (row) => row.apc?.mutation_density,
     header: "aPC-Mutation Density",
     description: tooltip({
       title: "aPC-Mutation Density",
@@ -218,7 +218,7 @@ export const apcColumns = {
   }),
 
   mappability: col.accessor("apc_mappability", {
-    accessor: "apc_mappability",
+    accessor: (row) => row.apc?.mappability,
     header: "aPC-Mappability",
     description: tooltip({
       title: "aPC-Mappability",

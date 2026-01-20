@@ -111,160 +111,186 @@ type CategoryKey = keyof typeof CHROMATIN_CATEGORIES;
 
 // Chromatin state definitions
 const CHROMATIN_STATES: Array<{
-  id: keyof Variant;
+  id: string;
   name: string;
   description: string;
   category: CategoryKey;
+  accessor: (data: Variant) => number | null | undefined;
 }> = [
   {
     id: "chmm_e1",
     name: "TssA",
     description: "Active TSS",
     category: "promoter",
+    accessor: (data) => data.main?.chromhmm?.e1,
   },
   {
     id: "chmm_e2",
     name: "PromU",
     description: "Promoter Upstream TSS",
     category: "promoter",
+    accessor: (data) => data.main?.chromhmm?.e2,
   },
   {
     id: "chmm_e3",
     name: "PromD1",
     description: "Promoter Downstream TSS with DNase",
     category: "promoter",
+    accessor: (data) => data.main?.chromhmm?.e3,
   },
   {
     id: "chmm_e4",
     name: "PromD2",
     description: "Promoter Downstream TSS",
     category: "promoter",
+    accessor: (data) => data.main?.chromhmm?.e4,
   },
   {
     id: "chmm_e5",
     name: "Tx5'",
     description: "Transcription 5'",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e5,
   },
   {
     id: "chmm_e6",
     name: "Tx",
     description: "Transcription",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e6,
   },
   {
     id: "chmm_e7",
     name: "Tx3'",
     description: "Transcription 3'",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e7,
   },
   {
     id: "chmm_e8",
     name: "TxWk",
     description: "Transcription Weak",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e8,
   },
   {
     id: "chmm_e9",
     name: "TxReg",
     description: "Transcription Regulatory",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e9,
   },
   {
     id: "chmm_e10",
     name: "TxEnh5'",
     description: "Transcription 5' Enhancer",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e10,
   },
   {
     id: "chmm_e11",
     name: "TxEnh3'",
     description: "Transcription 3' Enhancer",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e11,
   },
   {
     id: "chmm_e12",
     name: "TxEnhW",
     description: "Transcription Enhancer Weak",
     category: "transcription",
+    accessor: (data) => data.main?.chromhmm?.e12,
   },
   {
     id: "chmm_e13",
     name: "EnhA1",
     description: "Active Enhancer 1",
     category: "enhancer",
+    accessor: (data) => data.main?.chromhmm?.e13,
   },
   {
     id: "chmm_e14",
     name: "EnhA2",
     description: "Active Enhancer 2",
     category: "enhancer",
+    accessor: (data) => data.main?.chromhmm?.e14,
   },
   {
     id: "chmm_e15",
     name: "EnhAF",
     description: "Active Enhancer Flanking",
     category: "enhancer",
+    accessor: (data) => data.main?.chromhmm?.e15,
   },
   {
     id: "chmm_e16",
     name: "EnhW1",
     description: "Enhancer Weak 1",
     category: "weak",
+    accessor: (data) => data.main?.chromhmm?.e16,
   },
   {
     id: "chmm_e17",
     name: "EnhW2",
     description: "Enhancer Weak 2",
     category: "weak",
+    accessor: (data) => data.main?.chromhmm?.e17,
   },
   {
     id: "chmm_e18",
     name: "EnhAc",
     description: "Enhancer Acetylation Only",
     category: "weak",
+    accessor: (data) => data.main?.chromhmm?.e18,
   },
   {
     id: "chmm_e19",
     name: "DNase",
     description: "DNase Only",
     category: "other",
+    accessor: (data) => data.main?.chromhmm?.e19,
   },
   {
     id: "chmm_e20",
     name: "ZNF/Rpts",
     description: "ZNF Genes and Repeats",
     category: "other",
+    accessor: (data) => data.main?.chromhmm?.e20,
   },
   {
     id: "chmm_e21",
     name: "Het",
     description: "Heterochromatin",
     category: "heterochromatin",
+    accessor: (data) => data.main?.chromhmm?.e21,
   },
   {
     id: "chmm_e22",
     name: "PromP",
     description: "Poised Promoter",
     category: "repressed",
+    accessor: (data) => data.main?.chromhmm?.e22,
   },
   {
     id: "chmm_e23",
     name: "PromBiv",
     description: "Bivalent Promoter",
     category: "repressed",
+    accessor: (data) => data.main?.chromhmm?.e23,
   },
   {
     id: "chmm_e24",
     name: "ReprPC",
     description: "Repressed PolyComb",
     category: "repressed",
+    accessor: (data) => data.main?.chromhmm?.e24,
   },
   {
     id: "chmm_e25",
     name: "Quies",
     description: "Quiescent/Low",
     category: "quiescent",
+    accessor: (data) => data.main?.chromhmm?.e25,
   },
 ];
 
@@ -368,7 +394,7 @@ function ChromatinCategoryGroup({
           <ChromatinStateRow
             key={state.id}
             state={state}
-            value={(data[state.id] as number) ?? 0}
+            value={state.accessor(data) ?? 0}
           />
         ))}
       </div>

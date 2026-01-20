@@ -35,7 +35,7 @@ export const basicColumns = [
   }),
 
   col.accessor("rsid", {
-    accessor: "rsid",
+    accessor: (row) => row.dbsnp?.rsid,
     header: "rsID",
     description: tooltip({
       title: "Reference SNP ID",
@@ -45,7 +45,7 @@ export const basicColumns = [
   }),
 
   col.accessor("filter_status", {
-    accessor: "filter_status",
+    accessor: (row) => row.bravo?.filter_status,
     header: "TOPMed QC Status",
     description: tooltip({
       title: "TOPMed QC Status",
@@ -56,7 +56,7 @@ export const basicColumns = [
   }),
 
   col.accessor("bravo_an", {
-    accessor: "bravo_an",
+    accessor: (row) => row.bravo?.bravo_an,
     header: "TOPMed Bravo AN",
     description: tooltip({
       title: "Allele Number",
@@ -67,7 +67,7 @@ export const basicColumns = [
   }),
 
   col.accessor("bravo_af", {
-    accessor: "bravo_af",
+    accessor: (row) => row.bravo?.bravo_af,
     header: "TOPMed Bravo AF",
     description: tooltip({
       title: "Allele Frequency",
@@ -78,7 +78,7 @@ export const basicColumns = [
   }),
 
   col.accessor("tg_all", {
-    accessor: "tg_all",
+    accessor: (row) => row.tg?.tg_all,
     header: "1000 Genomes AF",
     description: tooltip({
       title: "1000 Genomes Allele Frequency",

@@ -29,17 +29,6 @@ export function VariantHeader({
 
   const [chrom, pos, refAllele, altAllele] = vcfParts;
 
-  // Extract gene name from geneinfo (format: "GENE:ID" or just "GENE")
-  const geneName = variant.geneinfo?.split(":")?.[0] || null;
-
-  // Get variant type from exonic category
-  const variantType = formatVariantType(
-    variant.genecode_comprehensive_exonic_category,
-  );
-
-  // Get clinical significance
-  const clinicalSig = parseClinicalSignificance(variant.clnsig);
-
   return (
     <div className="py-8">
       {/* Breadcrumb Row */}
@@ -51,12 +40,6 @@ export function VariantHeader({
         <span className="font-mono text-slate-500">
           {chrom}:{Number(pos).toLocaleString()}
         </span>
-        {geneName && (
-          <>
-            <span className="text-slate-300">/</span>
-            <span className="font-semibold text-slate-700">{geneName}</span>
-          </>
-        )}
       </div>
 
       {/* Main Content Row */}
@@ -66,9 +49,9 @@ export function VariantHeader({
           {/* Title */}
           <div className="flex items-baseline gap-4">
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-              {variant.rsid || variant.variant_vcf}
+              {variant.dbsnp?.rsid || variant.variant_vcf}
             </h1>
-            {variant.rsid && (
+            {variant.dbsnp?.rsid && (
               <span className="text-lg font-mono text-slate-400">
                 {variant.variant_vcf}
               </span>
@@ -77,7 +60,6 @@ export function VariantHeader({
 
           {/* Badges Row */}
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Allele Badges */}
             <div className="inline-flex items-center gap-2 text-sm">
               <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-900">
                 {refAllele}
@@ -89,30 +71,11 @@ export function VariantHeader({
                 {altAllele}
               </span>
             </div>
-
-            {/* Variant Type Badge */}
-            {variantType && (
-              <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-widest">
-                {variantType}
-              </span>
-            )}
           </div>
         </div>
 
         {/* Right Side */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* Clinical Significance Badge */}
-          {clinicalSig && (
-            <span
-              className={cn(
-                "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest",
-                clinicalSig.className,
-              )}
-            >
-              {clinicalSig.label}
-            </span>
-          )}
-
           {/* Action Buttons */}
           <button
             type="button"
@@ -138,61 +101,8 @@ export function VariantHeader({
 function formatVariantType(category: string | null | undefined): string | null {
   if (!category || category === "." || category === "unknown") return null;
 
-  // Convert snake_case or similar to Title Case
   return category
     .toLowerCase()
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-interface ClinicalSigResult {
-  label: string;
-  className: string;
-}
-
-// Clinical significance styles (Commandment V: flat control flow, no nesting)
-const STYLE_PATHOGENIC = {
-  label: "Pathogenic",
-  className: "bg-red-100 text-red-700",
-};
-const STYLE_LIKELY_PATHOGENIC = {
-  label: "Likely Pathogenic",
-  className: "bg-orange-100 text-orange-700",
-};
-const STYLE_BENIGN = {
-  label: "Benign",
-  className: "bg-green-100 text-green-700",
-};
-const STYLE_LIKELY_BENIGN = {
-  label: "Likely Benign",
-  className: "bg-emerald-100 text-emerald-700",
-};
-const STYLE_VUS = { label: "VUS", className: "bg-amber-100 text-amber-700" };
-const STYLE_CONFLICTING = {
-  label: "Conflicting",
-  className: "bg-purple-100 text-purple-700",
-};
-
-function parseClinicalSignificance(
-  clnsig: string | null | undefined,
-): ClinicalSigResult | null {
-  if (!clnsig || clnsig === "." || clnsig === "not_provided") return null;
-
-  const sig = clnsig.toLowerCase();
-
-  // Early returns - most specific matches first
-  if (sig.includes("likely") && sig.includes("pathogenic"))
-    return STYLE_LIKELY_PATHOGENIC;
-  if (sig.includes("pathogenic") && !sig.includes("benign"))
-    return STYLE_PATHOGENIC;
-  if (sig.includes("likely") && sig.includes("benign"))
-    return STYLE_LIKELY_BENIGN;
-  if (sig.includes("benign")) return STYLE_BENIGN;
-  if (sig.includes("uncertain") || sig.includes("vus")) return STYLE_VUS;
-  if (sig.includes("conflicting")) return STYLE_CONFLICTING;
-
-  return {
-    label: clnsig.replace(/_/g, " "),
-    className: "bg-slate-100 text-slate-600",
-  };
 }

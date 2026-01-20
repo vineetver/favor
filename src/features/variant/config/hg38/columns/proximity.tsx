@@ -5,7 +5,7 @@ const col = createColumns<Variant>();
 
 export const proximityColumns = [
   col.accessor("min_dist_tss", {
-    accessor: "min_dist_tss",
+    accessor: (row) => row.main?.distance?.min_dist_tss,
     header: "Min Distance to TSS",
     description: tooltip({
       title: "Minimum Distance to TSS",
@@ -32,7 +32,7 @@ export const proximityColumns = [
   }),
 
   col.accessor("min_dist_tse", {
-    accessor: "min_dist_tse",
+    accessor: (row) => row.main?.distance?.min_dist_tse,
     header: "Min Distance to TSE",
     description: tooltip({
       title: "Minimum Distance to TSE",

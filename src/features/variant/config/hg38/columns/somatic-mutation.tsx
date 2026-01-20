@@ -25,7 +25,7 @@ const isCanonical = categories([
 
 export const somaticMutationColumns = [
   col.accessor("aa", {
-    accessor: "aa",
+    accessor: (row) => row.cosmic?.aa,
     header: "Mutation (Amino Acid)",
     description: tooltip({
       title: "Mutation (Amino Acid)",
@@ -50,7 +50,7 @@ export const somaticMutationColumns = [
   }),
 
   col.accessor("cds", {
-    accessor: "cds",
+    accessor: (row) => row.cosmic?.cds,
     header: "Mutation (CDS)",
     description: tooltip({
       title: "Mutation (CDS)",
@@ -77,7 +77,7 @@ export const somaticMutationColumns = [
   }),
 
   col.accessor("genome_screen_sample_count", {
-    accessor: "genome_screen_sample_count",
+    accessor: (row) => row.cosmic?.sample_count,
     header: "Genome Screen Sample Count",
     description: tooltip({
       title: "Genome Screen Sample Count",
@@ -102,7 +102,7 @@ export const somaticMutationColumns = [
   }),
 
   col.accessor("is_canonical", {
-    accessor: "is_canonical",
+    accessor: (row) => row.cosmic?.is_canonical,
     header: "Is Canonical",
     description: tooltip({
       title: "Is Canonical",

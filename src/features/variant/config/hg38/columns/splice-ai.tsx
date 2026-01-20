@@ -6,7 +6,7 @@ const col = createColumns<Variant>();
 export const spliceAiColumns = [
   // Pangolin scores
   col.accessor("pangolin_largest_ds_exome", {
-    accessor: "pangolin_largest_ds_exome",
+    accessor: (row) => row.gnomad_exome?.functional?.pangolin_largest_ds,
     header: "Pangolin (Exome)",
     description: tooltip({
       title: "Pangolin (Exome)",
@@ -32,7 +32,7 @@ export const spliceAiColumns = [
   }),
 
   col.accessor("pangolin_largest_ds_genome", {
-    accessor: "pangolin_largest_ds_genome",
+    accessor: (row) => row.gnomad_genome?.functional?.pangolin_largest_ds,
     header: "Pangolin (Genome)",
     description: tooltip({
       title: "Pangolin (Genome)",
@@ -59,7 +59,7 @@ export const spliceAiColumns = [
 
   // SpliceAI scores
   col.accessor("spliceai_ds_max_exome", {
-    accessor: "spliceai_ds_max_exome",
+    accessor: (row) => row.gnomad_exome?.functional?.spliceai_ds_max,
     header: "SpliceAI (Exome)",
     description: tooltip({
       title: "SpliceAI (Exome)",
@@ -85,7 +85,7 @@ export const spliceAiColumns = [
   }),
 
   col.accessor("spliceai_ds_max_genome", {
-    accessor: "spliceai_ds_max_genome",
+    accessor: (row) => row.gnomad_genome?.functional?.spliceai_ds_max,
     header: "SpliceAI (Genome)",
     description: tooltip({
       title: "SpliceAI (Genome)",

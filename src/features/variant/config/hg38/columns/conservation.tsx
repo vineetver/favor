@@ -8,7 +8,7 @@ export const conservationColumns = [
   apcColumns.conservation,
 
   col.accessor("mamphcons", {
-    accessor: "mamphcons",
+    accessor: (row) => row.main?.conservation?.mamphcons,
     header: "mamPhCons",
     description: tooltip({
       title: "Mammalian phastCons",
@@ -29,7 +29,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("priphcons", {
-    accessor: "priphcons",
+    accessor: (row) => row.main?.conservation?.priphcons,
     header: "priPhCons",
     description: tooltip({
       title: "Primate phastCons",
@@ -53,7 +53,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("verphcons", {
-    accessor: "verphcons",
+    accessor: (row) => row.main?.conservation?.verphcons,
     header: "verPhCons",
     description: tooltip({
       title: "Vertebrate phastCons",
@@ -77,7 +77,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("priphylop", {
-    accessor: "priphylop",
+    accessor: (row) => row.main?.conservation?.priphylop,
     header: "priPhyloP",
     description: tooltip({
       title: "Primate phyloP",
@@ -101,7 +101,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("mamphylop", {
-    accessor: "mamphylop",
+    accessor: (row) => row.main?.conservation?.mamphylop,
     header: "mamPhyloP",
     description: tooltip({
       title: "Mammalian phyloP",
@@ -125,7 +125,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("verphylop", {
-    accessor: "verphylop",
+    accessor: (row) => row.main?.conservation?.verphylop,
     header: "verPhyloP",
     description: tooltip({
       title: "Vertebrate phyloP",
@@ -149,7 +149,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("gerp_n", {
-    accessor: "gerp_n",
+    accessor: (row) => row.main?.gerp?.n,
     header: "GerpN",
     description: tooltip({
       title: "GERP++ Neutral",
@@ -170,7 +170,7 @@ export const conservationColumns = [
   }),
 
   col.accessor("gerp_s", {
-    accessor: "gerp_s",
+    accessor: (row) => row.main?.gerp?.s,
     header: "GerpS",
     description: tooltip({
       title: "GERP++ Rejected Substitution",

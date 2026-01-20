@@ -5,7 +5,13 @@ import {
 } from "@/components/ui/collapsible";
 import { ExternalLink } from "@/components/ui/external-link";
 import { GencodeExonicInfo } from "@/features/variant/components/gencode-exonic-info";
-import type { Variant } from "@/features/variant/types";
+import type {
+  ExonicDetail,
+  GeneHancer,
+  Transcript,
+  UcscTranscript,
+  Variant,
+} from "@/features/variant/types";
 import {
   categories,
   cell,
@@ -167,20 +173,16 @@ const cageEnhancer = categories([
 // Custom Cell Renderers
 // ============================================================================
 
-function GeneHancerCell({ value }: { value: string }) {
-  const pairs = value.split(";").map((p) => p.trim());
-  const entries: Array<{ gene: string; score: string }> = [];
+function GeneHancerCell({ value }: { value: GeneHancer | null | undefined }) {
+  const entries =
+    value?.targets
+      ?.filter((target) => target?.gene)
+      .map((target) => ({
+        gene: target?.gene ?? "-",
+        score: target?.score?.toFixed(3) ?? "-",
+      })) ?? [];
 
-  let currentGene = "";
-  pairs.forEach((pair) => {
-    const [key, val] = pair.split("=").map((s) => s.trim());
-    if (key === "connected_gene") {
-      currentGene = val;
-    } else if (key === "score" && currentGene) {
-      entries.push({ gene: currentGene, score: val });
-      currentGene = "";
-    }
-  });
+  if (!entries.length) return <span>-</span>;
 
   const limit = 3;
   const visible = entries.slice(0, limit);
@@ -228,10 +230,11 @@ function TranscriptLinks({
   value,
   urlFn,
 }: {
-  value: string;
+  value: Array<string | null> | null | undefined;
   urlFn: (t: string) => string;
 }) {
-  const transcripts = value.split(",").map((t) => t.trim());
+  const transcripts = (value ?? []).filter(Boolean).map((t) => String(t));
+  if (!transcripts.length) return <span>-</span>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {transcripts.map((t, i) => (
@@ -249,7 +252,7 @@ function TranscriptLinks({
 
 export const functionalClassColumns = [
   col.accessor("genecode_comprehensive_info", {
-    accessor: "genecode_comprehensive_info",
+    accessor: (row) => row.genecode?.genes,
     header: "Gencode Comprehensive Info",
     description: tooltip({
       title: "Gencode Comprehensive Info",
@@ -259,13 +262,15 @@ export const functionalClassColumns = [
     }),
     cell: ({ row }) => (
       <div className="font-mono">
-        {row.getValue("genecode_comprehensive_info")}
+        {(row.getValue("genecode_comprehensive_info") as Array<string | null>)
+          ?.filter(Boolean)
+          ?.join(", ") || "-"}
       </div>
     ),
   }),
 
   col.accessor("genecode_comprehensive_category", {
-    accessor: "genecode_comprehensive_category",
+    accessor: (row) => row.genecode?.region_type,
     header: "Gencode Comprehensive Category",
     description: tooltip({
       title: "Gencode Comprehensive Category",
@@ -278,7 +283,7 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("genecode_comprehensive_exonic_info", {
-    accessor: "genecode_comprehensive_exonic_info",
+    accessor: (row) => row.genecode?.transcripts,
     header: "Gencode Comprehensive Exonic Info",
     description: tooltip({
       title: "Gencode Comprehensive Exonic Info",
@@ -286,11 +291,13 @@ export const functionalClassColumns = [
         "Identify variants cause protein coding changes using Gencode genes definition, and gives out detail annotation information of which exons of the variant has impacts on and how the impacts causes changes in amino acid changes.",
       citation: "Frankish et al., 2018; Harrow et al., 2012",
     }),
-    cell: ({ getValue }) => <GencodeExonicInfo value={getValue() as string} />,
+    cell: ({ getValue }) => (
+      <GencodeExonicInfo value={getValue() as Transcript[] | null} />
+    ),
   }),
 
   col.accessor("genecode_comprehensive_exonic_category", {
-    accessor: "genecode_comprehensive_exonic_category",
+    accessor: (row) => row.genecode?.consequence,
     header: "Gencode Comprehensive Exonic Category",
     description: tooltip({
       title: "Gencode Comprehensive Exonic Category",
@@ -303,7 +310,7 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("cage_promoter", {
-    accessor: "cage_promoter",
+    accessor: (row) => row.cage?.cage_promoter,
     header: "CAGE Promoter",
     description: tooltip({
       title: "CAGE Promoter",
@@ -315,7 +322,7 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("cage_enhancer", {
-    accessor: "cage_enhancer",
+    accessor: (row) => row.cage?.cage_enhancer,
     header: "CAGE Enhancer",
     description: tooltip({
       title: "CAGE Enhancer",
@@ -327,7 +334,7 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("genehancer", {
-    accessor: "genehancer",
+    accessor: (row) => row.genehancer,
     header: "GeneHancer",
     description: tooltip({
       title: "GeneHancer",
@@ -335,11 +342,13 @@ export const functionalClassColumns = [
         "Predicted human enhancer sites from the GeneHancer database.",
       citation: "Fishilevich et al., 2017",
     }),
-    cell: cell.custom((val: string) => <GeneHancerCell value={val} />),
+    cell: cell.custom((val: Variant["genehancer"]) => (
+      <GeneHancerCell value={val} />
+    )),
   }),
 
   col.accessor("super_enhancer", {
-    accessor: "super_enhancer",
+    accessor: (row) => row.super_enhancer?.ids,
     header: "Super Enhancer",
     description: tooltip({
       title: "Super Enhancer",
@@ -347,20 +356,22 @@ export const functionalClassColumns = [
         "Predicted super-enhancer sites and targets in a range of human cell types.",
       citation: "Hnisz et al., 2013",
     }),
-    cell: cell.custom((val: string) => (
-      <div className="font-mono">{val.replace(/,/g, ", ")}</div>
+    cell: cell.custom((val: Array<string | null> | null) => (
+      <div className="font-mono">
+        {val?.filter(Boolean).join(", ") || "-"}
+      </div>
     )),
   }),
 
   col.accessor("ucsc_info", {
-    accessor: "ucsc_info",
+    accessor: (row) => row.ucsc?.transcripts,
     header: "UCSC Info",
     description: tooltip({
       title: "UCSC Info",
       description:
         "Identify whether variants cause protein coding changes using UCSC genes definition systems, it will label the gene name of the variants has impact, if it is intergenic region, the nearby gene name will be labeled in the annotation.",
     }),
-    cell: cell.custom((val: string) => (
+    cell: cell.custom((val: Array<string | null> | null) => (
       <TranscriptLinks
         value={val}
         urlFn={(t) =>
@@ -371,25 +382,27 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("ucsc_exonic_info", {
-    accessor: "ucsc_exonic_info",
+    accessor: (row) => row.ucsc?.exonic_details,
     header: "UCSC Exonic Info",
     description: tooltip({
       title: "UCSC Exonic Info",
       description:
         "Identify variants cause protein coding changes using UCSC genes definition, and gives out detail annotation information of which exons of the variant has impacts on and how the impacts causes changes in amino acid changes.",
     }),
-    cell: cell.custom((val: string) => <GencodeExonicInfo value={val} />),
+    cell: cell.custom((val: UcscTranscript[] | null) => (
+      <GencodeExonicInfo value={val} />
+    )),
   }),
 
   col.accessor("refseq_info", {
-    accessor: "refseq_info",
+    accessor: (row) => row.refseq?.transcripts,
     header: "RefSeq Info",
     description: tooltip({
       title: "RefSeq Info",
       description:
         "Identify whether variants cause protein coding changes using RefSeq genes definition systems, it will label the gene name of the variants has impact, if it is intergenic region, the nearby gene name will be labeled in the annotation.",
     }),
-    cell: cell.custom((val: string) => (
+    cell: cell.custom((val: Array<string | null> | null) => (
       <TranscriptLinks
         value={val}
         urlFn={(t) => `https://www.ncbi.nlm.nih.gov/nuccore/${t}`}
@@ -398,14 +411,16 @@ export const functionalClassColumns = [
   }),
 
   col.accessor("refseq_exonic_info", {
-    accessor: "refseq_exonic_info",
+    accessor: (row) => row.refseq?.exonic_details,
     header: "RefSeq Exonic Info",
     description: tooltip({
       title: "RefSeq Exonic Info",
       description:
         "Identify variants cause protein coding changes using RefSeq genes definition, and gives out detail annotation information of which exons of the variant has impacts on and how the impacts causes changes in amino acid changes.",
     }),
-    cell: cell.custom((val: string) => <GencodeExonicInfo value={val} />),
+    cell: cell.custom((val: ExonicDetail[] | null) => (
+      <GencodeExonicInfo value={val} />
+    )),
   }),
 ];
 

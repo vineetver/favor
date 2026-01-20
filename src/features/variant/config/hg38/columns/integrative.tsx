@@ -53,7 +53,7 @@ export const integrativeColumns = [
   apcColumns.epigeneticsTranscription,
 
   col.accessor("apc_local_nucleotide_diversity_v3", {
-    accessor: "apc_local_nucleotide_diversity_v3",
+    accessor: (row) => row.apc?.local_nucleotide_diversity_v3,
     header: "aPC-Local Nucleotide Diversity",
     description: tooltip({
       title: "aPC-Local Nucleotide Diversity",
@@ -73,7 +73,7 @@ export const integrativeColumns = [
   }),
 
   col.accessor("apc_mutation_density", {
-    accessor: "apc_mutation_density",
+    accessor: (row) => row.apc?.mutation_density,
     header: "aPC-Mutation Density",
     description: tooltip({
       title: "aPC-Mutation Density",
@@ -95,7 +95,7 @@ export const integrativeColumns = [
   apcColumns.transcriptionFactor,
 
   col.accessor("apc_mappability", {
-    accessor: "apc_mappability",
+    accessor: (row) => row.apc?.mappability,
     header: "aPC-Mappability",
     description: tooltip({
       title: "aPC-Mappability",
@@ -115,7 +115,7 @@ export const integrativeColumns = [
   }),
 
   col.accessor("cadd_phred", {
-    accessor: "cadd_phred",
+    accessor: (row) => row.main?.cadd?.phred,
     header: "CADD phred",
     description: tooltip({
       title: "CADD PHRED",
@@ -135,7 +135,7 @@ export const integrativeColumns = [
   }),
 
   col.accessor("linsight", {
-    accessor: "linsight",
+    accessor: (row) => row.linsight,
     header: "LINSIGHT",
     description: tooltip({
       title: "LINSIGHT",
@@ -155,7 +155,7 @@ export const integrativeColumns = [
   }),
 
   col.accessor("fathmm_xf", {
-    accessor: "fathmm_xf",
+    accessor: (row) => row.fathmm_xf,
     header: "Fathmm XF",
     description: tooltip({
       title: "FATHMM-XF",

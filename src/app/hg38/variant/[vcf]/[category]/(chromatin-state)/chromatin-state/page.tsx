@@ -20,5 +20,13 @@ export default async function ChromatinStatePage({
     notFound();
   }
 
-  return <ChromatinStateView data={variant} />;
+  const chromatinData = {
+    ...variant,
+    main: {
+      ...(variant.main ?? {}),
+      chromhmm: variant.main?.chromhmm ?? {},
+    },
+  };
+
+  return <ChromatinStateView data={chromatinData} />;
 }

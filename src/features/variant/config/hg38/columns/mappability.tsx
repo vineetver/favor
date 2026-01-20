@@ -9,7 +9,7 @@ export const mappabilityColumns = [
 
   // 100bp read length
   col.accessor("k100_umap", {
-    accessor: "k100_umap",
+    accessor: (row) => row.mappability?.k100?.umap,
     header: "Umap k100",
     description: tooltip({
       title: "Umap k100",
@@ -37,7 +37,7 @@ export const mappabilityColumns = [
   }),
 
   col.accessor("k100_bismap", {
-    accessor: "k100_bismap",
+    accessor: (row) => row.mappability?.k100?.bismap,
     header: "Bismap k100",
     description: tooltip({
       title: "Bismap k100",
@@ -66,7 +66,7 @@ export const mappabilityColumns = [
 
   // 50bp read length
   col.accessor("k50_umap", {
-    accessor: "k50_umap",
+    accessor: (row) => row.mappability?.k50?.umap,
     header: "Umap k50",
     description: tooltip({
       title: "Umap k50",
@@ -95,7 +95,7 @@ export const mappabilityColumns = [
   }),
 
   col.accessor("k50_bismap", {
-    accessor: "k50_bismap",
+    accessor: (row) => row.mappability?.k50?.bismap,
     header: "Bismap k50",
     description: tooltip({
       title: "Bismap k50",
@@ -125,7 +125,7 @@ export const mappabilityColumns = [
 
   // 36bp read length
   col.accessor("k36_umap", {
-    accessor: "k36_umap",
+    accessor: (row) => row.mappability?.k36?.umap,
     header: "Umap k36",
     description: tooltip({
       title: "Umap k36",
@@ -153,7 +153,7 @@ export const mappabilityColumns = [
   }),
 
   col.accessor("k36_bismap", {
-    accessor: "k36_bismap",
+    accessor: (row) => row.mappability?.k36?.bismap,
     header: "Bismap k36",
     description: tooltip({
       title: "Bismap k36",
@@ -182,7 +182,7 @@ export const mappabilityColumns = [
 
   // 24bp read length
   col.accessor("k24_umap", {
-    accessor: "k24_umap",
+    accessor: (row) => row.mappability?.k24?.umap,
     header: "Umap k24",
     description: tooltip({
       title: "Umap k24",
@@ -210,7 +210,7 @@ export const mappabilityColumns = [
   }),
 
   col.accessor("k24_bismap", {
-    accessor: "k24_bismap",
+    accessor: (row) => row.mappability?.k24?.bismap,
     header: "Bismap k24",
     description: tooltip({
       title: "Bismap k24",

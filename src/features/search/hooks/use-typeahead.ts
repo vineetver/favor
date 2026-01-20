@@ -1,0 +1,161 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchTypeahead } from '../api/search-api';
+import type { TypeaheadResponse, EntityType } from '../types/api';
+
+interface UseTypeaheadOptions {
+  /**
+   * Minimum query length before searching (default: 2)
+   */
+  minLength?: number;
+
+  /**
+   * Debounce delay in milliseconds (default: 150)
+   */
+  debounce?: number;
+
+  /**
+   * Entity types to search (default: all)
+   */
+  types?: EntityType[];
+
+  /**
+   * Max results per type (default: 5)
+   */
+  limit?: number;
+
+  /**
+   * Include link counts (default: true)
+   */
+  includeLinks?: boolean;
+
+  /**
+   * Include preview entities (default: true)
+   */
+  includePreview?: boolean;
+
+  /**
+   * Callback when search completes
+   */
+  onResults?: (results: TypeaheadResponse) => void;
+
+  /**
+   * Callback when error occurs
+   */
+  onError?: (error: Error) => void;
+}
+
+export function useTypeahead(options: UseTypeaheadOptions = {}) {
+  const {
+    minLength = 2,
+    debounce = 150,
+    types,
+    limit = 5,
+    includeLinks = true,
+    includePreview = true,
+    onResults,
+    onError,
+  } = options;
+
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<TypeaheadResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const search = useCallback(
+    async (searchQuery: string) => {
+      // Cancel any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Clear previous results if query is too short
+      if (searchQuery.length < minLength) {
+        setResults(null);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const response = await fetchTypeahead({
+          q: searchQuery,
+          types: types?.join(','),
+          limit,
+          include_links: includeLinks,
+          include_preview: includePreview,
+        });
+
+        setResults(response);
+        onResults?.(response);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Search failed');
+
+        // Don't set error for aborted requests
+        if (error.name !== 'AbortError') {
+          setError(error);
+          onError?.(error);
+        }
+      } finally {
+        setIsLoading(false);
+        abortControllerRef.current = null;
+      }
+    },
+    [minLength, types, limit, includeLinks, includePreview, onResults, onError]
+  );
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      search(query);
+    }, debounce);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [query, search, debounce]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const clear = useCallback(() => {
+    setQuery('');
+    setResults(null);
+    setError(null);
+    setIsLoading(false);
+  }, []);
+
+  return {
+    query,
+    setQuery,
+    results,
+    isLoading,
+    error,
+    clear,
+    hasResults: results !== null && results.total > 0,
+  };
+}

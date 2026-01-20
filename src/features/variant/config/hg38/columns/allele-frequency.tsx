@@ -59,15 +59,21 @@ function MetricsDisplay({
         </div>
         <div className="flex justify-between gap-2">
           <span>AC:</span>
-          <span className="font-mono">{metrics.ac}</span>
+          <span className="font-mono">
+            {metrics.ac === null ? "-" : metrics.ac}
+          </span>
         </div>
         <div className="flex justify-between gap-2">
           <span>AN:</span>
-          <span className="font-mono">{metrics.an}</span>
+          <span className="font-mono">
+            {metrics.an === null ? "-" : metrics.an}
+          </span>
         </div>
         <div className="flex justify-between gap-2">
           <span>Hom:</span>
-          <span className="font-mono">{metrics.hom}</span>
+          <span className="font-mono">
+            {metrics.hom === null ? "-" : metrics.hom}
+          </span>
         </div>
       </div>
     </div>
@@ -116,7 +122,7 @@ function gnomadPopCol(
 export const alleleFrequencyColumns = [
   // Overall populations
   col.accessor("bravo_af", {
-    accessor: "bravo_af",
+    accessor: (row) => row.bravo?.bravo_af,
     header: "TOPMed Bravo AF",
     description: tooltip({
       title: "TOPMed Bravo Allele Frequency",
@@ -128,7 +134,7 @@ export const alleleFrequencyColumns = [
   }),
 
   col.accessor("tg_all", {
-    accessor: "tg_all",
+    accessor: (row) => row.tg?.tg_all,
     header: "1000 Genomes AF",
     description: tooltip({
       title: "1000 Genomes Allele Frequency",
