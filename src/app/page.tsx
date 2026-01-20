@@ -57,7 +57,7 @@ export default function HomePage() {
             {/* Subtitle */}
             <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed tracking-tight font-light">
               An open-access portal for whole genome sequencing variant
-              annotation. Precision at the speed of thought.
+              annotation. Accelerating variant interpretation and discovery.
             </p>
           </div>
 

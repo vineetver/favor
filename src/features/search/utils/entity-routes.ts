@@ -46,9 +46,9 @@ export function getEntityUrl(
  * Check if an entity type has a dedicated page
  */
 export function hasEntityPage(type: EntityType): boolean {
-  // Variants, genes, and diseases have dedicated pages
-  // Drugs and pathways use pivot explorer
-  return type === 'variants' || type === 'genes' || type === 'diseases';
+  // Variants, genes, diseases, and drugs have dedicated pages
+  // Pathways use pivot explorer
+  return type === 'variants' || type === 'genes' || type === 'diseases' || type === 'drugs';
 }
 
 /**

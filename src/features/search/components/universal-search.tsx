@@ -63,6 +63,7 @@ export function UniversalSearch() {
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<TypeaheadSuggestion | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { query, setQuery, results, isLoading, clear } = useTypeahead({
     minLength: 2,
@@ -555,13 +556,16 @@ export function UniversalSearch() {
       </form>
 
       {/* Helper Text */}
-      <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-slate-400 uppercase tracking-widest opacity-80">
-        {["BRCA1", "rs7412", "Alzheimer"].map((search) => (
+      <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-slate-400 uppercase tracking-widest opacity-80 flex-wrap">
+        {["BRCA1", "rs7412", "Alzheimer", "Imatinib"].map((search) => (
           <button
             type="button"
             key={search}
             className="hover:text-purple-600 cursor-pointer transition-colors"
-            onClick={() => setQuery(search)}
+            onClick={() => {
+              setQuery(search);
+              setIsDropdownOpen(true);
+            }}
           >
             {search}
           </button>
