@@ -269,23 +269,95 @@ export function UniversalSearch() {
                   ) : (
                     <>
                       {/* Anchor Card */}
-                      {anchorEntity && (
-                        <div className="border-b border-slate-200 p-5 bg-slate-50">
-                          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
-                            Top Result
-                          </div>
-                          <div className="flex-1">
-                            <div className={cn("font-semibold text-slate-900 mb-1", ENTITY_CONFIG[anchorEntity.type].textColor)}>
-                              {anchorEntity.name}
+                      {anchorEntity && (() => {
+                        const config = ENTITY_CONFIG[anchorEntity.type];
+                        const linkCounts = [
+                          { label: "genes", count: anchorEntity.links?.gene_count },
+                          { label: "variants", count: anchorEntity.links?.variant_count },
+                          { label: "diseases", count: anchorEntity.links?.disease_count },
+                          { label: "drugs", count: anchorEntity.links?.drug_count },
+                          { label: "pathways", count: anchorEntity.links?.pathway_count },
+                        ].filter(link => link.count && link.count > 0);
+
+                        const previews = [];
+                        if (anchorEntity.preview?.genes && anchorEntity.preview.genes.length > 0) {
+                          previews.push({ label: "Genes", items: anchorEntity.preview.genes });
+                        }
+                        if (anchorEntity.preview?.diseases && anchorEntity.preview.diseases.length > 0) {
+                          previews.push({ label: "Diseases", items: anchorEntity.preview.diseases });
+                        }
+                        if (anchorEntity.preview?.drugs && anchorEntity.preview.drugs.length > 0) {
+                          previews.push({ label: "Drugs", items: anchorEntity.preview.drugs });
+                        }
+                        if (anchorEntity.preview?.pathways && anchorEntity.preview.pathways.length > 0) {
+                          previews.push({ label: "Pathways", items: anchorEntity.preview.pathways });
+                        }
+
+                        return (
+                          <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                              Best Match
                             </div>
-                            {anchorEntity.description && (
-                              <div className="text-sm text-slate-600">
-                                {anchorEntity.description}
+                            <div className="space-y-2.5">
+                              {/* Name + ID */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className={cn("font-semibold text-base leading-tight", config.textColor)}>
+                                    {anchorEntity.name}
+                                  </h3>
+                                  {anchorEntity.match_type === 'prefix' && (
+                                    <span className="inline-flex h-2 w-2 rounded-full bg-green-500" title="Exact match" />
+                                  )}
+                                </div>
+                                <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                  {anchorEntity.id}
+                                </div>
                               </div>
-                            )}
+
+                              {/* Description */}
+                              {anchorEntity.description && (
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                  {anchorEntity.description}
+                                </p>
+                              )}
+
+                              {/* Link Counts */}
+                              {linkCounts.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {linkCounts.map((link) => (
+                                    <span
+                                      key={link.label}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
+                                    >
+                                      <span className="font-bold text-slate-900">
+                                        {link.count!.toLocaleString()}
+                                      </span>
+                                      {link.label}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Previews */}
+                              {previews.length > 0 && (
+                                <div className="space-y-1.5 pt-1">
+                                  {previews.slice(0, 3).map((preview) => (
+                                    <div key={preview.label} className="text-[11px]">
+                                      <span className="font-bold text-slate-500 uppercase tracking-wide">
+                                        {preview.label}:
+                                      </span>{" "}
+                                      <span className="text-slate-600">
+                                        {preview.items.slice(0, 5).join(", ")}
+                                        {preview.items.length > 5 && ` +${preview.items.length - 5} more`}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Grouped Results */}
                       {groupedSuggestions.map((group) => {
@@ -309,65 +381,112 @@ export function UniversalSearch() {
                               {group.items.map((item) => {
                                 const hasUrl = hasEntityPage(item.type);
 
+                                // Count how many link types have data
+                                const linkCounts = [
+                                  { label: "genes", count: item.links?.gene_count },
+                                  { label: "variants", count: item.links?.variant_count },
+                                  { label: "diseases", count: item.links?.disease_count },
+                                  { label: "drugs", count: item.links?.drug_count },
+                                  { label: "pathways", count: item.links?.pathway_count },
+                                ].filter(link => link.count && link.count > 0);
+
+                                // Get relevant previews based on entity type
+                                const previews = [];
+                                if (item.preview?.genes && item.preview.genes.length > 0) {
+                                  previews.push({ label: "Genes", items: item.preview.genes });
+                                }
+                                if (item.preview?.diseases && item.preview.diseases.length > 0) {
+                                  previews.push({ label: "Diseases", items: item.preview.diseases });
+                                }
+                                if (item.preview?.drugs && item.preview.drugs.length > 0) {
+                                  previews.push({ label: "Drugs", items: item.preview.drugs });
+                                }
+                                if (item.preview?.pathways && item.preview.pathways.length > 0) {
+                                  previews.push({ label: "Pathways", items: item.preview.pathways });
+                                }
+                                if (item.preview?.variants && item.preview.variants.length > 0) {
+                                  previews.push({ label: "Variants", items: item.preview.variants });
+                                }
+
                                 return (
                                   <ComboboxOption
                                     key={item.id}
-                                    className="cursor-pointer transition-all duration-150 data-focus:bg-slate-50 border-b md:border-r border-slate-100 md:last:border-r-0 md:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0"
+                                    className="cursor-pointer transition-all duration-150 data-focus:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 md:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0 [&:nth-last-child(1)]:border-b-0"
                                     value={item}
                                   >
-                                    <div className="p-4 h-full">
-                                      <div className="flex items-start justify-between gap-3">
+                                    <div className="p-3.5 h-full">
+                                      {/* Header: Name + Match Quality */}
+                                      <div className="flex items-start justify-between gap-2 mb-2">
                                         <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 mb-1.5">
-                                            <span className={cn("font-semibold text-sm", config.textColor)}>
-                                              {item.highlight ? (
-                                                <span
-                                                  dangerouslySetInnerHTML={{
-                                                    __html: item.highlight.replace(/<em>/g, '<em class="not-italic font-bold">'),
-                                                  }}
-                                                />
-                                              ) : (
-                                                item.name
-                                              )}
+                                          <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className={cn("font-semibold text-sm leading-tight", config.textColor)}>
+                                              {item.name}
                                             </span>
-                                            {!hasUrl && (
-                                              <span className="text-[10px] text-slate-400 italic">(soon)</span>
+                                            {/* Match Quality Indicator */}
+                                            {item.match_type === 'prefix' && (
+                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500" title="Exact match" />
+                                            )}
+                                            {item.match_type === 'substring' && (
+                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500" title="Substring match" />
+                                            )}
+                                            {item.match_type === 'fuzzy' && (
+                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500" title="Fuzzy match" />
                                             )}
                                           </div>
-
-                                          {item.description && (
-                                            <div className="text-xs text-slate-600 line-clamp-2 mb-2">
-                                              {item.description}
-                                            </div>
+                                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                            {item.id}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          {!hasUrl && (
+                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">Soon</span>
                                           )}
-
-                                          {/* Compact Stats */}
-                                          {(item.links?.gene_count || item.links?.variant_count || item.links?.disease_count) && (
-                                            <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                              {item.links?.gene_count !== undefined && item.links.gene_count > 0 && (
-                                                <span>{item.links.gene_count.toLocaleString()} genes</span>
-                                              )}
-                                              {item.links?.variant_count !== undefined && item.links.variant_count > 0 && (
-                                                <span>{item.links.variant_count.toLocaleString()} vars</span>
-                                              )}
-                                              {item.links?.disease_count !== undefined && item.links.disease_count > 0 && (
-                                                <span>{item.links.disease_count.toLocaleString()} diseases</span>
-                                              )}
-                                            </div>
-                                          )}
-
-                                          {/* Preview */}
-                                          {item.preview?.genes && item.preview.genes.length > 0 && (
-                                            <div className="mt-1.5 text-[10px] text-slate-400 truncate">
-                                              → {item.preview.genes.slice(0, 3).join(", ")}
-                                            </div>
+                                          {hasUrl && (
+                                            <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
                                           )}
                                         </div>
-
-                                        {hasUrl && (
-                                          <ExternalLink className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
-                                        )}
                                       </div>
+
+                                      {/* Description */}
+                                      {item.description && (
+                                        <p className="text-xs text-slate-600 line-clamp-2 mb-2.5 leading-relaxed">
+                                          {item.description}
+                                        </p>
+                                      )}
+
+                                      {/* Link Counts - Badge Pills */}
+                                      {linkCounts.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mb-2">
+                                          {linkCounts.map((link) => (
+                                            <span
+                                              key={link.label}
+                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
+                                            >
+                                              <span className="font-semibold text-slate-900">
+                                                {link.count!.toLocaleString()}
+                                              </span>
+                                              {link.label}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Previews */}
+                                      {previews.length > 0 && (
+                                        <div className="space-y-1">
+                                          {previews.slice(0, 2).map((preview) => (
+                                            <div key={preview.label} className="text-[10px]">
+                                              <span className="font-semibold text-slate-500 uppercase tracking-wide">
+                                                {preview.label}:
+                                              </span>{" "}
+                                              <span className="text-slate-600">
+                                                {preview.items.slice(0, 4).join(", ")}
+                                                {preview.items.length > 4 && ` +${preview.items.length - 4}`}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   </ComboboxOption>
                                 );

@@ -8,7 +8,7 @@ import { DataSurface } from "@/components/ui/data-surface";
 import {
   type GnomadPopulation,
   type GnomadSex,
-  getGnomadMetrics,
+  type GnomadData,
   type Variant,
 } from "@/features/variant/types";
 
@@ -128,6 +128,51 @@ function PopulationChart({ data }: { data: PopulationRow[] }) {
   );
 }
 
+function getPopulationMetrics(
+  data: GnomadData | null | undefined,
+  prefix: GnomadPopulation,
+  suffix: GnomadSex,
+) {
+  if (!data) return null;
+
+  if (prefix) {
+    const populations = data.populations;
+    const pop =
+      populations?.[prefix] ??
+      populations?.[prefix.toLowerCase()] ??
+      populations?.[prefix.toUpperCase()];
+    if (!pop) return null;
+    const af =
+      suffix === "xx"
+        ? pop.af_xx
+        : suffix === "xy"
+          ? pop.af_xy
+          : pop.af;
+    if (af === null || af === undefined) return null;
+    return { af, ac: null, an: null, hom: null };
+  }
+
+  const af =
+    suffix === "xx"
+      ? data.af_xx
+      : suffix === "xy"
+        ? data.af_xy
+        : data.af;
+  if (af === null || af === undefined) return null;
+
+  const ac =
+    suffix === "xx" ? data.ac_xx : suffix === "xy" ? data.ac_xy : data.ac;
+  const an =
+    suffix === "xx" ? data.an_xx : suffix === "xy" ? data.an_xy : data.an;
+
+  return {
+    af,
+    ac: ac ?? null,
+    an: an ?? null,
+    hom: data.nhomalt ?? null,
+  };
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -160,7 +205,7 @@ export function AlleleFrequencyDataTable({
       sexFilter === "male" ? "xy" : sexFilter === "female" ? "xx" : "";
 
     return POPULATIONS.map((pop) => {
-      const metrics = getGnomadMetrics(gnomadData, pop.prefix, sexSuffix);
+      const metrics = getPopulationMetrics(gnomadData, pop.prefix, sexSuffix);
 
       return {
         id: pop.id,
@@ -222,9 +267,10 @@ export function AlleleFrequencyDataTable({
         cell: ({ row }) => <FrequencyCell value={row.original.frequency} />,
       },
     ],
-    [],
+    [variant, dataSource, sexFilter],
   );
 
+  console.log(populationData)
   return (
     <DataSurface
       columns={columns}

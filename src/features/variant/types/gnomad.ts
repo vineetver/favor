@@ -37,6 +37,7 @@ export interface GnomadPopulations {
   nfe?: GnomadPop | null;
   sas?: GnomadPop | null;
   remaining?: GnomadPop | null;
+  [key: string]: GnomadPop | null | undefined;
 }
 
 export interface GnomadFaf {
@@ -101,7 +102,11 @@ export function getGnomadMetrics(
   if (!data) return null;
 
   if (prefix) {
-    const pop = data.populations?.[prefix as keyof GnomadPopulations];
+    const populations = data.populations as GnomadPopulations | null | undefined;
+    const pop =
+      populations?.[prefix] ??
+      populations?.[prefix.toLowerCase()] ??
+      populations?.[prefix.toUpperCase()];
     if (!pop) return null;
     const af =
       suffix === "xx"
