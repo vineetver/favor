@@ -2,8 +2,8 @@
 
 import { AlertTriangle, FileQuestion, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
+import { Card, CardContent } from "@shared/components/ui/card";
 
 interface BaseErrorProps {
   error?: Error & { digest?: string };

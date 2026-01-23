@@ -18,7 +18,7 @@ export class OpenTargetsClient {
 
   async query<T>(
     query: string,
-    variables?: Record<string, any>,
+    variables?: Record<string, unknown>,
   ): Promise<T | null> {
     try {
       const response = await fetch(this.baseUrl, {
@@ -40,7 +40,7 @@ export class OpenTargetsClient {
         return null;
       }
 
-      const result: OpenTargetsResponse<T> = await response.json();
+      const result = (await response.json()) as OpenTargetsResponse<T>;
 
       if (result.errors && result.errors.length > 0) {
         console.error(

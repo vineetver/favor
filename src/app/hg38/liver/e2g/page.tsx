@@ -2,22 +2,21 @@
 
 import { Download, RotateCcw, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { GoslingWrapper } from "@/shared/components/visualization/gosling-wrapper";
+import { GoslingWrapper } from "@shared/components/visualization/gosling-wrapper";
 
-// Types are inferred at runtime since gosling.js has webpack ESM issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type GoslingRef = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type GoslingSpec = any;
-import { Button } from "@/shared/components/ui/button";
+// gosling.js currently has peer dep mismatches with React 19.
+// We treat its types as an opaque boundary.
+type GoslingRef = unknown;
+type GoslingSpec = unknown;
+import { Button } from "@shared/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
+} from "@shared/components/ui/card";
+import { Input } from "@shared/components/ui/input";
 
 const BASE_URL =
   "https://minio-s3-favor-4ee4be.apps.shift.nerc.mghpcc.org/favor-hg38/lkp/browser/hg38/liver/e2g";

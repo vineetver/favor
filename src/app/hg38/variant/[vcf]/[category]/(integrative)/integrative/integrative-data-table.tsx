@@ -1,14 +1,14 @@
 "use client";
 
-import { BarChart } from "@/shared/components/charts";
-import type { GradientThreshold } from "@/shared/components/charts/types";
-import { DataSurface } from "@/shared/components/ui/data-surface";
-import type { VisualizationRow } from "@/shared/components/ui/data-surface/types";
+import { BarChart } from "@shared/components/charts";
+import type { GradientThreshold } from "@shared/components/charts/types";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { VisualizationRow } from "@shared/components/ui/data-surface/types";
 import {
   integrativeColumns,
   integrativeGroup,
-} from "@/features/variant/config/hg38/columns/integrative";
-import type { Variant } from "@/features/variant/types";
+} from "@features/variant/config/hg38/columns/integrative";
+import type { Variant } from "@features/variant/types";
 
 interface IntegrativeDataTableProps {
   variant: Variant;

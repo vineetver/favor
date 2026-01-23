@@ -18,10 +18,10 @@ import {
   Search,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { NoDataState } from "@/shared/components/ui/error-states";
-import { Input } from "@/shared/components/ui/input";
+import { Button } from "@shared/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { NoDataState } from "@shared/components/ui/error-states";
+import { Input } from "@shared/components/ui/input";
 import {
   Table,
   TableBody,
@@ -29,14 +29,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/shared/components/ui/table";
+} from "@shared/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
-import type { ColumnMeta } from "@/infrastructure/table/column-builder";
+} from "@shared/components/ui/tooltip";
+import type { ColumnMeta } from "@infra/table/column-builder";
 
 // ============================================================================
 // Types

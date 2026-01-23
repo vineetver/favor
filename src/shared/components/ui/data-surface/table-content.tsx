@@ -12,8 +12,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
-import { cn } from "@/infrastructure/utils";
+} from "@shared/components/ui/tooltip";
+import { cn } from "@infra/utils";
 import type { ColumnMeta } from "./types";
 
 interface TableContentProps<TData> {

@@ -13,7 +13,7 @@ import { useTypeahead } from "../hooks/use-typeahead";
 import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
 import { navigateToQuery, isRoutableQuery, parseQuery, preloadVariantDebounced, getPopulateIdentifier } from "../utils";
 import type { TypeaheadSuggestion, EntityType } from "../types/api";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 
 type GenomeBuild = "hg38" | "hg19";
 

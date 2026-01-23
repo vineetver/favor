@@ -1,5 +1,5 @@
-import type { Variant } from "@/features/variant/types";
-import { cell, createColumns, tooltip } from "@/infrastructure/table/column-builder";
+import type { Variant } from "@features/variant/types";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();

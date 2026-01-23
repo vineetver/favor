@@ -31,8 +31,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
-import { cn } from "@/infrastructure/utils";
+} from "@shared/components/ui/collapsible";
+import { cn } from "@infra/utils";
 
 const iconMap: Record<string, LucideIcon> = {
   sparkles: Sparkles,

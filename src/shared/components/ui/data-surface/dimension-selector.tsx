@@ -6,8 +6,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
-import { cn } from "@/infrastructure/utils";
+} from "@shared/components/ui/dropdown-menu";
+import { cn } from "@infra/utils";
 import type { DimensionOption } from "./types";
 
 interface DimensionSelectorProps {

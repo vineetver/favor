@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearch } from "@/features/search";
-import { cn } from "@/infrastructure/utils";
+import { useSearch } from "@features/search";
+import { cn } from "@infra/utils";
 
 interface ClickableEntityIdProps {
   id: string;

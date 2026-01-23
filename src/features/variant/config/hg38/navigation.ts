@@ -1,4 +1,4 @@
-import type { VariantNavigationSection } from "@/features/variant/types";
+import type { VariantNavigationSection } from "@features/variant/types";
 
 export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
   {

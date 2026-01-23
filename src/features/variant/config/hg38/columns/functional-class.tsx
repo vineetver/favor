@@ -2,22 +2,22 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
-import { ExternalLink } from "@/shared/components/ui/external-link";
-import { GencodeExonicInfo } from "@/features/variant/components/gencode-exonic-info";
+} from "@shared/components/ui/collapsible";
+import { ExternalLink } from "@shared/components/ui/external-link";
+import { GencodeExonicInfo } from "@features/variant/components/gencode-exonic-info";
 import type {
   ExonicDetail,
   GeneHancer,
   Transcript,
   UcscTranscript,
   Variant,
-} from "@/features/variant/types";
+} from "@features/variant/types";
 import {
   categories,
   cell,
   createColumns,
   tooltip,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 
 const col = createColumns<Variant>();
 

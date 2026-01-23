@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 import { ChartLegend } from "./ChartLegend";
 import { BarChartTooltip } from "./ChartTooltip";
 import { DEFAULT_BAR_COLOR, getLegendItems, getRowColor } from "./colors";

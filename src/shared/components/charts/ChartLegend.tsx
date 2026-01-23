@@ -1,4 +1,4 @@
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 import type { ChartLegendProps } from "./types";
 
 /**

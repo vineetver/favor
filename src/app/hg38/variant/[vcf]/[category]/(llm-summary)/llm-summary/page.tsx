@@ -1,4 +1,4 @@
-import { VariantSummary } from "@/features/variant/components/variant-summary";
+import { VariantSummary } from "@features/variant/components/variant-summary";
 
 interface VariantLLMSummaryPageProps {
   params: Promise<{

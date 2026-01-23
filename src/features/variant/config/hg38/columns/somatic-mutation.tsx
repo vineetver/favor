@@ -1,10 +1,10 @@
-import type { Variant } from "@/features/variant/types";
+import type { Variant } from "@features/variant/types";
 import {
   categories,
   cell,
   createColumns,
   tooltip,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 
 const col = createColumns<Variant>();
 

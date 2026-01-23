@@ -1,24 +1,26 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState } from "react";
+import type { ComponentType, RefObject } from "react";
+
+type GoslingComponentType = ComponentType<{ spec: unknown }>;
 
 interface GoslingWrapperProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  spec: any; // GoslingSpec
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  goslingRef?: RefObject<any>; // GoslingRef
+  spec: unknown;
+  goslingRef?: RefObject<unknown>;
 }
 
 export function GoslingWrapper({ spec, goslingRef }: GoslingWrapperProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [GoslingComponent, setGoslingComponent] = useState<any>(null);
+  const [GoslingComponent, setGoslingComponent] =
+    useState<GoslingComponentType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Dynamic import at runtime to bypass webpack ESM resolution issues
+    // Runtime import keeps this module out of the server/webpack static graph.
     import("gosling.js")
       .then((mod) => {
-        setGoslingComponent(() => mod.GoslingComponent);
+        // gosling.js is an untyped boundary for us (peer deps mismatch with React 19)
+        setGoslingComponent(() => mod.GoslingComponent as GoslingComponentType);
       })
       .catch((err) => {
         console.error("Failed to load gosling.js:", err);
@@ -42,5 +44,6 @@ export function GoslingWrapper({ spec, goslingRef }: GoslingWrapperProps) {
     );
   }
 
-  return <GoslingComponent ref={goslingRef} spec={spec} />;
+  // biome-ignore lint/suspicious/noExplicitAny: ref typing from external lib is not reliable in React 19
+  return <GoslingComponent {...({ ref: goslingRef, spec } as any)} />;
 }

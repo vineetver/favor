@@ -1,4 +1,4 @@
-import { Skeleton } from "@/shared/components/ui/skeleton";
+import { Skeleton } from "@shared/components/ui/skeleton";
 
 /**
  * Loading skeleton for VariantSummary component

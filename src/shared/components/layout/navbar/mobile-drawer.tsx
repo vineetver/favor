@@ -3,9 +3,9 @@
 import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Logo } from "@/shared/components/ui/logo";
+import { Logo } from "@shared/components/ui/logo";
 import { siteConfig } from "@/config/site";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
 import { PageNavDrawer } from "./page-nav-drawer";
 

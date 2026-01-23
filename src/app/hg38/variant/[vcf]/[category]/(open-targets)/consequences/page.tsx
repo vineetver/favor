@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/features/variant/api";
-import { fetchOpenTargetsConsequences } from "@/features/variant/api/opentargets";
-import { ConsequencesSummary } from "@/features/variant/components/open-targets/consequences-summary";
-import { ConsequencesTable } from "@/features/variant/components/open-targets/consequences-table";
+import { fetchVariant } from "@features/variant/api";
+import { fetchOpenTargetsConsequences } from "@features/variant/api/opentargets";
+import { ConsequencesSummary } from "@features/variant/components/open-targets/consequences-summary";
+import { ConsequencesTable } from "@features/variant/components/open-targets/consequences-table";
 
 interface ConsequencesPageProps {
   params: Promise<{

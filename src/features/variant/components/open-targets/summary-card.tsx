@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 
 interface SummaryCardProps {
   icon?: ReactNode;

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 
 interface NavigationItem {
   name: string;

@@ -3,13 +3,13 @@
 import { useState, useMemo } from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Drug, CrossReference } from "@/features/drug/types/drug";
-import { cn } from "@/infrastructure/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { ClickableEntityId } from "@/shared/components/ui/clickable-entity-id";
-import { DataSurface } from "@/shared/components/ui/data-surface/data-surface";
-import type { DimensionConfig } from "@/shared/components/ui/data-surface/types";
-import { MoleculeViewer } from "@/shared/components/ui/molecule-viewer";
+import type { Drug, CrossReference } from "@features/drug/types/drug";
+import { cn } from "@infra/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { ClickableEntityId } from "@shared/components/ui/clickable-entity-id";
+import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { MoleculeViewer } from "@shared/components/ui/molecule-viewer";
 
 interface DrugOverviewProps {
   drug: Drug;

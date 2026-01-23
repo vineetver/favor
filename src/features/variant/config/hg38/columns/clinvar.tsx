@@ -1,17 +1,17 @@
-import { ExternalLink } from "@/shared/components/ui/external-link";
-import type { Variant } from "@/features/variant/types";
+import { ExternalLink } from "@shared/components/ui/external-link";
+import type { Variant } from "@features/variant/types";
 import {
   BADGE_COLORS,
   categories,
   cell,
   createColumns,
   tooltip,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 import {
   parseClinicalSignificancePairs,
   parseDatabaseEntries,
   parseDiseaseNames,
-} from "@/infrastructure/utils/parsing-utils";
+} from "@infra/utils/parsing-utils";
 
 const col = createColumns<Variant>();
 

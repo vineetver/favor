@@ -3,8 +3,8 @@ import {
   fetchGnomadExome,
   fetchGnomadGenome,
   fetchVariant,
-} from "@/features/variant/api";
-import { CategoryDetailView } from "@/features/variant/components/category-detail-view";
+} from "@features/variant/api";
+import { CategoryDetailView } from "@features/variant/components/category-detail-view";
 
 interface VariantPageProps {
   params: Promise<{

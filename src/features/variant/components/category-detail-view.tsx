@@ -6,17 +6,17 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Info } from "lucide-react";
-import { Card, CardContent } from "@/shared/components/ui/card";
-import { NoDataState } from "@/shared/components/ui/error-states";
+import { Card, CardContent } from "@shared/components/ui/card";
+import { NoDataState } from "@shared/components/ui/error-states";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
-import { variantColumnGroups } from "@/features/variant/config/hg38";
-import type { Variant } from "@/features/variant/types";
-import type { ColumnMeta } from "@/infrastructure/table/column-builder";
+} from "@shared/components/ui/tooltip";
+import { variantColumnGroups } from "@features/variant/config/hg38";
+import type { Variant } from "@features/variant/types";
+import type { ColumnMeta } from "@infra/table/column-builder";
 
 interface CategoryDetailViewProps {
   data: Variant;

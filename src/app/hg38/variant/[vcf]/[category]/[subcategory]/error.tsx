@@ -1,6 +1,6 @@
 "use client";
 
-import { RuntimeError } from "@/shared/components/ui/error-states";
+import { RuntimeError } from "@shared/components/ui/error-states";
 
 export default function Error({
   error,

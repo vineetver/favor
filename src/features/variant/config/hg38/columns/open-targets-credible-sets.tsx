@@ -1,11 +1,11 @@
-import { ExternalLink } from "@/shared/components/ui/external-link";
-import type { OpenTargetsCredibleSetRow } from "@/features/variant/types/opentargets";
+import { ExternalLink } from "@shared/components/ui/external-link";
+import type { OpenTargetsCredibleSetRow } from "@features/variant/types/opentargets";
 import {
   Badge,
   categories,
   createColumns,
   tooltip,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 
 const col = createColumns<OpenTargetsCredibleSetRow>();
 

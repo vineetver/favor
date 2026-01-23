@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchVariant } from "@/features/variant/api";
+import { fetchVariant } from "@features/variant/api";
 import { IntegrativeDataTable } from "./integrative-data-table";
 
 interface IntegrativePageProps {

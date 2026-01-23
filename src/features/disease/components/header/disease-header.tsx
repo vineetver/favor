@@ -1,5 +1,5 @@
 import { Download, Share2 } from "lucide-react";
-import type { Disease } from "@/features/disease/types";
+import type { Disease } from "@features/disease/types";
 
 interface DiseaseHeaderProps {
   disease: Disease;

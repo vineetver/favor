@@ -1,11 +1,11 @@
 import { ArrowRight } from "lucide-react";
-import type { Variant } from "@/features/variant/types";
+import type { Variant } from "@features/variant/types";
 import {
   categories,
   cell,
   createColumns,
   tooltip,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();

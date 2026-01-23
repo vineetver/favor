@@ -6,7 +6,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { SearchProvider } from "@/features/search";
+import { SearchProvider } from "@features/search";
 import type * as React from "react";
 
 function makeQueryClient() {

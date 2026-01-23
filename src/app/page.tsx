@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { UniversalSearch } from "@/features/search";
+import { UniversalSearch } from "@features/search";
 
 // Stats data
 const stats = [

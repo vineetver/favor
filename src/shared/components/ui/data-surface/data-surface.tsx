@@ -18,8 +18,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
-import { cn } from "@/infrastructure/utils";
+} from "@shared/components/ui/tooltip";
+import { cn } from "@infra/utils";
 import { ContextHeader } from "./context-header";
 import { ControlBar } from "./control-bar";
 import { FilterDrawer } from "./filter-drawer";

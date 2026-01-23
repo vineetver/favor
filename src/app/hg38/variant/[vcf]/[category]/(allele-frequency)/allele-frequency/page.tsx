@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { fetchVariant } from "@/features/variant/api";
+import { fetchVariant } from "@features/variant/api";
 
 import { AlleleFrequencyDataTable } from "./allele-frequency-data-table";
 

@@ -92,7 +92,7 @@ export {
   tooltip,
   type ViewConfig,
   type VisualizationProps,
-} from "@/infrastructure/table/column-builder";
+} from "@infra/table/column-builder";
 // Open Targets columns (exported separately as they use different data types)
 export { openTargetsConsequencesColumns } from "./columns/open-targets-consequences";
 export { openTargetsCredibleSetsColumns } from "./columns/open-targets-credible-sets";

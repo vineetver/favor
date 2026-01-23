@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { DrugHeader, DrugOverview, fetchDrug } from "@/features/drug";
+import { DrugHeader, DrugOverview, fetchDrug } from "@features/drug";
 
 interface DrugPageProps {
   params: Promise<{

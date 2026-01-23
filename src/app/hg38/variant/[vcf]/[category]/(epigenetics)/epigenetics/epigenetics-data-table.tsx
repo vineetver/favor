@@ -1,14 +1,14 @@
 "use client";
 
-import { BarChart, REGULATORY_COLORS } from "@/shared/components/charts";
-import { DataSurface } from "@/shared/components/ui/data-surface";
-import type { VisualizationRow } from "@/shared/components/ui/data-surface/types";
+import { BarChart, REGULATORY_COLORS } from "@shared/components/charts";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { VisualizationRow } from "@shared/components/ui/data-surface/types";
 import {
   epigeneticsColumns,
   epigeneticsGroup,
-} from "@/features/variant/config/hg38/columns/epigenetics";
-import type { Variant } from "@/features/variant/types";
-import { REGULATORY_STATE_MAP } from "@/features/variant/types";
+} from "@features/variant/config/hg38/columns/epigenetics";
+import type { Variant } from "@features/variant/types";
+import { REGULATORY_STATE_MAP } from "@features/variant/types";
 
 interface EpigeneticsDataTableProps {
   variant: Variant;

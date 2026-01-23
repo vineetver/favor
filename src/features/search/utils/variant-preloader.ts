@@ -3,8 +3,8 @@
  * Provides instant navigation experience by preloading data
  */
 
-import { fetchVariant, fetchVariantsByRsid } from '@/features/variant/api/variant';
-import type { Variant } from '@/features/variant/types';
+import { fetchVariant, fetchVariantsByRsid } from '@features/variant/api/variant';
+import type { Variant } from '@features/variant/types';
 import type { ParsedVariantQuery } from '../types/query';
 import { parseQuery } from './query-parser';
 

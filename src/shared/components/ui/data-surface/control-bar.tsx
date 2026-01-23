@@ -7,7 +7,7 @@ import {
   Table as TableIcon,
   X,
 } from "lucide-react";
-import { cn } from "@/infrastructure/utils";
+import { cn } from "@infra/utils";
 import type { ControlBarProps, ViewMode } from "./types";
 
 export function ControlBar({

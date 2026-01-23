@@ -4,7 +4,7 @@ import {
   getVariantEffects,
   getVariantEvidences,
   getVariantPharmacogenomics,
-} from "@/infrastructure/opentargets/api";
+} from "@infra/opentargets/api";
 import type {
   OpenTargetsConsequenceRow,
   OpenTargetsCredibleSetRow,
@@ -14,10 +14,14 @@ import type {
   OpenTargetsVariantEffectRow,
 } from "../types/opentargets";
 
-export function vcfToOpenTargetsId(vcf: string): string {
+function toOpenTargetsVariantId(vcf: string): string | null {
+  // Expected format: chr-pos-ref-alt (e.g. 19-44908822-C-T)
   const parts = vcf.split("-");
-  if (parts.length !== 4) throw new Error(`Invalid VCF format: ${vcf}`);
+  if (parts.length !== 4) return null;
+
   const [chr, pos, ref, alt] = parts;
+  if (!chr || !pos || !ref || !alt) return null;
+
   return `${chr.replace(/^chr/i, "")}_${pos}_${ref}_${alt}`;
 }
 
@@ -33,7 +37,10 @@ export async function fetchOpenTargetsConsequences(
   vcf: string,
 ): Promise<OpenTargetsConsequenceRow[]> {
   try {
-    const data = await getVariantConsequences(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantConsequences(otId);
     if (!data?.variant?.transcriptConsequences) return [];
 
     return data.variant.transcriptConsequences.map((tc) => ({
@@ -59,7 +66,10 @@ export async function fetchOpenTargetsL2G(
   vcf: string,
 ): Promise<OpenTargetsL2GRow[]> {
   try {
-    const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantCredibleSets(otId);
     if (!data?.variant?.credibleSets?.rows) return [];
 
     const rows: OpenTargetsL2GRow[] = [];
@@ -94,7 +104,10 @@ export async function fetchOpenTargetsCredibleSets(
   vcf: string,
 ): Promise<OpenTargetsCredibleSetRow[]> {
   try {
-    const data = await getVariantCredibleSets(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantCredibleSets(otId);
     if (!data?.variant?.credibleSets?.rows) return [];
 
     return data.variant.credibleSets.rows.map((cs) => ({
@@ -120,7 +133,10 @@ export async function fetchOpenTargetsPharmacogenomics(
   vcf: string,
 ): Promise<OpenTargetsPharmacogenomicsRow[]> {
   try {
-    const data = await getVariantPharmacogenomics(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantPharmacogenomics(otId);
     if (!data?.variant?.pharmacogenomics) return [];
 
     const rows: OpenTargetsPharmacogenomicsRow[] = [];
@@ -168,7 +184,10 @@ export async function fetchOpenTargetsVariantEffects(
   vcf: string,
 ): Promise<OpenTargetsVariantEffectRow[]> {
   try {
-    const data = await getVariantEffects(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantEffects(otId);
     if (!data?.variant?.variantEffect) return [];
 
     return data.variant.variantEffect.map((ve) => ({
@@ -190,7 +209,10 @@ export async function fetchOpenTargetsEvidences(
   vcf: string,
 ): Promise<OpenTargetsEvidenceRow[]> {
   try {
-    const data = await getVariantEvidences(vcfToOpenTargetsId(vcf));
+    const otId = toOpenTargetsVariantId(vcf);
+    if (!otId) return [];
+
+    const data = await getVariantEvidences(otId);
     if (!data?.variant?.evidences?.rows) return [];
 
     return data.variant.evidences.rows.map((ev) => ({

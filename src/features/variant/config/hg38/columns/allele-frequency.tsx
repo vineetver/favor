@@ -4,8 +4,8 @@ import {
   type GnomadSex,
   type Variant,
   getGnomadMetrics,
-} from "@/features/variant/types";
-import { cell, createColumns, tooltip } from "@/infrastructure/table/column-builder";
+} from "@features/variant/types";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Variant>();
 
