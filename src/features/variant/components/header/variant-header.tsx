@@ -1,7 +1,7 @@
 import { Download, Share2 } from "lucide-react";
 
 import type { Variant } from "@/features/variant/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/infrastructure/utils";
 
 interface VariantHeaderProps {
   variant: Variant;

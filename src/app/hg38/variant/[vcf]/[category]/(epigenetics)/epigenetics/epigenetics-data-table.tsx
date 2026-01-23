@@ -1,8 +1,8 @@
 "use client";
 
-import { BarChart, REGULATORY_COLORS } from "@/components/charts";
-import { DataSurface } from "@/components/ui/data-surface";
-import type { VisualizationRow } from "@/components/ui/data-surface/types";
+import { BarChart, REGULATORY_COLORS } from "@/shared/components/charts";
+import { DataSurface } from "@/shared/components/ui/data-surface";
+import type { VisualizationRow } from "@/shared/components/ui/data-surface/types";
 import {
   epigeneticsColumns,
   epigeneticsGroup,

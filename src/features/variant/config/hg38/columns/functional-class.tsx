@@ -2,8 +2,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ExternalLink } from "@/components/ui/external-link";
+} from "@/shared/components/ui/collapsible";
+import { ExternalLink } from "@/shared/components/ui/external-link";
 import { GencodeExonicInfo } from "@/features/variant/components/gencode-exonic-info";
 import type {
   ExonicDetail,
@@ -17,7 +17,7 @@ import {
   cell,
   createColumns,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 
 const col = createColumns<Variant>();
 

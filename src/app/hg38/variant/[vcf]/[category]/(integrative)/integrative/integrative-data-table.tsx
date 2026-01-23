@@ -1,9 +1,9 @@
 "use client";
 
-import { BarChart } from "@/components/charts";
-import type { GradientThreshold } from "@/components/charts/types";
-import { DataSurface } from "@/components/ui/data-surface";
-import type { VisualizationRow } from "@/components/ui/data-surface/types";
+import { BarChart } from "@/shared/components/charts";
+import type { GradientThreshold } from "@/shared/components/charts/types";
+import { DataSurface } from "@/shared/components/ui/data-surface";
+import type { VisualizationRow } from "@/shared/components/ui/data-surface/types";
 import {
   integrativeColumns,
   integrativeGroup,

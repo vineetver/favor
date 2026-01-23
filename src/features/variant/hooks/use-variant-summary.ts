@@ -7,7 +7,7 @@ import {
   getAIText,
   subscribeToStream,
   type VariantSummaryState,
-} from "@/lib/ai-text";
+} from "@/infrastructure/ai-text";
 
 interface UseVariantSummaryOptions {
   vcf: string;

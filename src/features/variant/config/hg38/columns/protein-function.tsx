@@ -5,7 +5,7 @@ import {
   cell,
   createColumns,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();

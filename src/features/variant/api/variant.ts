@@ -1,5 +1,5 @@
 import type { Variant, VariantSingleResponse } from "@/features/variant/types";
-import { fetchOrNull } from "@/lib/api";
+import { fetchOrNull } from "@/infrastructure/api";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";

@@ -2,20 +2,20 @@
 
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/shared/components/ui/tooltip";
 import type { Variant } from "@/features/variant/types";
 import {
   BADGE_COLORS,
   type BadgeColor,
   type ColumnMeta,
-} from "@/lib/table/column-builder";
-import { cn } from "@/lib/utils";
+} from "@/infrastructure/table/column-builder";
+import { cn } from "@/infrastructure/utils";
 import { chromatinStateColumns } from "../config/hg38/columns/chromatin-state";
 
 // Build a map of column ID -> tooltip content from the column definitions

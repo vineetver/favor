@@ -5,7 +5,7 @@ import {
   createColumns,
   type DerivedColumn,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 import { apcColumns } from "./shared";
 
 // ============================================================================

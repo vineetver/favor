@@ -3,8 +3,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart } from "@/components/charts";
-import { DataSurface } from "@/components/ui/data-surface";
+import { BarChart } from "@/shared/components/charts";
+import { DataSurface } from "@/shared/components/ui/data-surface";
 import {
   type GnomadPopulation,
   type GnomadSex,

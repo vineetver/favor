@@ -4,7 +4,7 @@ import {
   cell,
   createColumns,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 
 const col = createColumns<Variant>();
 

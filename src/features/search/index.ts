@@ -1,18 +1,8 @@
 // Components
-export {
-  GlobalSearch,
-  SearchTrigger,
-  SearchSuggestions,
-  PivotExplorer,
-  UniversalSearch,
-} from './components';
+export { UniversalSearch } from './components';
 
 // Context
 export { SearchProvider, useSearch } from './context/search-context';
-
-// Hooks
-export { useTypeahead } from './hooks/use-typeahead';
-export { usePivotSearch } from './hooks/use-pivot-search';
 
 // API
 export { fetchTypeahead, fetchSearch } from './api/search-api';
@@ -21,19 +11,11 @@ export { fetchTypeahead, fetchSearch } from './api/search-api';
 export {
   getEntityUrl,
   hasEntityPage,
-  getEntityLabel,
   parseQuery,
-  getQueryType,
-  isValidVariantVCF,
-  isValidRsID,
   parseVCF,
   looksLikeVCF,
-  isCompleteVCF,
   preloadVariant,
   preloadVariantDebounced,
-  getCachedVariant,
-  isVariantInDatabase,
-  clearPreloadCache,
   getRouteForQuery,
   navigateToQuery,
   isRoutableQuery,

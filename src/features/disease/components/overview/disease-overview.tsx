@@ -4,11 +4,11 @@ import { useState, useMemo } from "react";
 import { ExternalLink } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Disease, DiseaseSynonyms, DiseasePrevalence } from "@/features/disease/types/disease";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClickableEntityId } from "@/components/ui/clickable-entity-id";
-import { DataSurface } from "@/components/ui/data-surface/data-surface";
-import type { DimensionConfig } from "@/components/ui/data-surface/types";
+import { cn } from "@/infrastructure/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { ClickableEntityId } from "@/shared/components/ui/clickable-entity-id";
+import { DataSurface } from "@/shared/components/ui/data-surface/data-surface";
+import type { DimensionConfig } from "@/shared/components/ui/data-surface/types";
 
 interface DiseaseOverviewProps {
   disease: Disease;

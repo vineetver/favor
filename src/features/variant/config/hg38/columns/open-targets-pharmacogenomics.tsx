@@ -1,11 +1,11 @@
-import { ExternalLink } from "@/components/ui/external-link";
+import { ExternalLink } from "@/shared/components/ui/external-link";
 import type { OpenTargetsPharmacogenomicsRow } from "@/features/variant/types/opentargets";
 import {
   Badge,
   categories,
   createColumns,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 
 const col = createColumns<OpenTargetsPharmacogenomicsRow>();
 

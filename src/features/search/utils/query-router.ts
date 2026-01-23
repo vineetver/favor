@@ -2,7 +2,7 @@
  * Query router - determines navigation destination based on query type
  */
 
-import type { RouteDestination } from '../types/query';
+import type { ParsedVariantQuery, RouteDestination } from '../types/query';
 import { parseQuery } from './query-parser';
 import { preloadVariant } from './variant-preloader';
 
@@ -22,27 +22,31 @@ export function getRouteForQuery(
   }
 
   switch (parsed.type) {
-    case 'variant_vcf':
-      if (!parsed.vcf) {
+    case 'variant_vcf': {
+      const variantParsed = parsed as ParsedVariantQuery;
+      if (!variantParsed.vcf) {
         return null;
       }
 
       return {
-        path: `/${genome}/variant/${encodeURIComponent(parsed.vcf.normalized)}/global-annotation/llm-summary`,
+        path: `/${genome}/variant/${encodeURIComponent(variantParsed.vcf.normalized)}/global-annotation/llm-summary`,
         shouldPreload: true,
         preloadFn: () => preloadVariant(query),
       };
+    }
 
-    case 'variant_rsid':
-      if (!('rsid' in parsed) || !parsed.rsid) {
+    case 'variant_rsid': {
+      const variantParsed = parsed as ParsedVariantQuery;
+      if (!variantParsed.rsid) {
         return null;
       }
 
       return {
-        path: `/${genome}/variant/${encodeURIComponent(parsed.rsid)}/global-annotation/llm-summary`,
+        path: `/${genome}/variant/${encodeURIComponent(variantParsed.rsid)}/global-annotation/llm-summary`,
         shouldPreload: true,
         preloadFn: () => preloadVariant(query),
       };
+    }
 
     case 'drug':
       return {

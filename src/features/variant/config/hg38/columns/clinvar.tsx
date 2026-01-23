@@ -1,4 +1,4 @@
-import { ExternalLink } from "@/components/ui/external-link";
+import { ExternalLink } from "@/shared/components/ui/external-link";
 import type { Variant } from "@/features/variant/types";
 import {
   BADGE_COLORS,
@@ -6,12 +6,12 @@ import {
   cell,
   createColumns,
   tooltip,
-} from "@/lib/table/column-builder";
+} from "@/infrastructure/table/column-builder";
 import {
   parseClinicalSignificancePairs,
   parseDatabaseEntries,
   parseDiseaseNames,
-} from "@/lib/utils/parsing-utils";
+} from "@/infrastructure/utils/parsing-utils";
 
 const col = createColumns<Variant>();
 
@@ -237,8 +237,9 @@ function DiseaseList({
 }: {
   value: Array<string | null> | string | null | undefined;
 }) {
-  const diseases =
-    Array.isArray(value) ? value.filter(Boolean) : parseDiseaseNames(value);
+  const diseases = (
+    Array.isArray(value) ? value.filter(Boolean) : parseDiseaseNames(value ?? null)
+  ).filter((d): d is string => d !== null);
   if (diseases.length === 0) return <span>-</span>;
 
   const formattedDiseases = diseases.map(d => formatDiseaseName(d));
@@ -271,7 +272,7 @@ function ClinicalSignificancePairs({
           significance: entry?.classification || "",
           raw: `${entry?.variation_id || ""}:${entry?.classification || ""}`,
         }))
-    : parseClinicalSignificancePairs(value);
+    : parseClinicalSignificancePairs(value ?? null);
 
   return (
     <div className="space-y-1">
@@ -311,7 +312,7 @@ function DatabaseEntries({
           id: entry?.id || "",
           raw: `${entry?.db || ""}:${entry?.id || ""}`,
         }))
-    : parseDatabaseEntries(value);
+    : parseDatabaseEntries(value ?? null);
 
   return (
     <div className="space-y-0.5">

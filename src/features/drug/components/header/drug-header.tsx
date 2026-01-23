@@ -1,6 +1,6 @@
 import { Download, Share2 } from "lucide-react";
 import type { Drug } from "@/features/drug/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/infrastructure/utils";
 
 interface DrugHeaderProps {
   drug: Drug;

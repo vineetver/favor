@@ -4,7 +4,7 @@ import {
   getVariantEffects,
   getVariantEvidences,
   getVariantPharmacogenomics,
-} from "@/lib/opentargets/api";
+} from "@/infrastructure/opentargets/api";
 import type {
   OpenTargetsConsequenceRow,
   OpenTargetsCredibleSetRow,

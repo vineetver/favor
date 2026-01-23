@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
-import { Markdown } from "@/components/ai-elements/markdown";
-import { Button } from "@/components/ui/button";
+import { Markdown } from "@/shared/components/ai-elements/markdown";
+import { Button } from "@/shared/components/ui/button";
 import { useVariantChat } from "@/features/variant/hooks/use-variant-chat";
 import { useVariantSummary } from "@/features/variant/hooks/use-variant-summary";
 import { VariantSummaryCard } from "./variant-summary-card";

@@ -5,6 +5,7 @@
 
 import { fetchVariant, fetchVariantsByRsid } from '@/features/variant/api/variant';
 import type { Variant } from '@/features/variant/types';
+import type { ParsedVariantQuery } from '../types/query';
 import { parseQuery } from './query-parser';
 
 /**
@@ -56,10 +57,16 @@ export async function preloadVariant(query: string): Promise<Variant | null> {
   // Fetch variant data based on type
   let variant: Variant | null = null;
 
-  if (parsed.type === 'variant_vcf' && parsed.vcf) {
-    variant = await fetchVariant(parsed.vcf.normalized);
-  } else if (parsed.type === 'variant_rsid' && 'rsid' in parsed && parsed.rsid) {
-    variant = await fetchVariantsByRsid(parsed.rsid);
+  if (parsed.type === 'variant_vcf') {
+    const variantParsed = parsed as ParsedVariantQuery;
+    if (variantParsed.vcf) {
+      variant = await fetchVariant(variantParsed.vcf.normalized);
+    }
+  } else if (parsed.type === 'variant_rsid') {
+    const variantParsed = parsed as ParsedVariantQuery;
+    if (variantParsed.rsid) {
+      variant = await fetchVariantsByRsid(variantParsed.rsid);
+    }
   }
 
   // Cache the result (even if null)

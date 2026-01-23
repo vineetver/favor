@@ -1,5 +1,5 @@
 import type { GnomadData } from "@/features/variant/types";
-import { fetchOrNull } from "@/lib/api";
+import { fetchOrNull } from "@/infrastructure/api";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "https://api.genohub.org/v1";
