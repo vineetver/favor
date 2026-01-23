@@ -1,11 +1,10 @@
-import { notFound } from "next/navigation";
-
-import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
-import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
-import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
 import { fetchVariant } from "@features/variant/api";
 import { VariantHeader } from "@features/variant/components/header/variant-header";
 import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
+import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
+import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
+import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
+import { notFound } from "next/navigation";
 
 interface VariantLayoutProps {
   children: React.ReactNode;

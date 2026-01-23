@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
 import { fetchDisease } from "@features/disease/api/disease";
 import { DiseaseHeader } from "@features/disease/components/header/disease-header";
 import { DiseaseOverview } from "@features/disease/components/overview/disease-overview";
+import { notFound } from "next/navigation";
 
 interface DiseasePageProps {
   params: Promise<{ disease_id: string }>;

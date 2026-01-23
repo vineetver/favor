@@ -1,9 +1,3 @@
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@shared/components/ui/collapsible";
-import { ExternalLink } from "@shared/components/ui/external-link";
 import { GencodeExonicInfo } from "@features/variant/components/gencode-exonic-info";
 import type {
   ExonicDetail,
@@ -18,6 +12,12 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
 
@@ -357,9 +357,7 @@ export const functionalClassColumns = [
       citation: "Hnisz et al., 2013",
     }),
     cell: cell.custom((val: Array<string | null> | null) => (
-      <div className="font-mono">
-        {val?.filter(Boolean).join(", ") || "-"}
-      </div>
+      <div className="font-mono">{val?.filter(Boolean).join(", ") || "-"}</div>
     )),
   }),
 

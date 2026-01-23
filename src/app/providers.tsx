@@ -1,4 +1,5 @@
 "use client";
+import { SearchProvider } from "@features/search";
 import {
   defaultShouldDehydrateQuery,
   isServer,
@@ -6,7 +7,6 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { SearchProvider } from "@features/search";
 import type * as React from "react";
 
 function makeQueryClient() {

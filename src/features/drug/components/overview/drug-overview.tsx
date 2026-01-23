@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Copy, ExternalLink } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { Drug, CrossReference } from "@features/drug/types/drug";
+import type { CrossReference, Drug } from "@features/drug/types/drug";
 import { cn } from "@infra/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@shared/components/ui/card";
 import { ClickableEntityId } from "@shared/components/ui/clickable-entity-id";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { MoleculeViewer } from "@shared/components/ui/molecule-viewer";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Copy, ExternalLink } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface DrugOverviewProps {
   drug: Drug;
@@ -51,7 +56,9 @@ const getCrossRefHref = (source: string | undefined, id: string) => {
   return null;
 };
 
-const transformDrugCrossRefs = (crossRefs?: CrossReference[]): DrugCrossRefRow[] => {
+const transformDrugCrossRefs = (
+  crossRefs?: CrossReference[],
+): DrugCrossRefRow[] => {
   if (!crossRefs) return [];
   const rows: DrugCrossRefRow[] = [];
 
@@ -81,7 +88,11 @@ const transformLinkedEntities = (drug: Drug): LinkedEntityRow[] => {
   });
 
   drug.child_chembl_ids?.forEach((id, idx) => {
-    rows.push({ id: `child-${idx}`, entityType: "Child Molecule", entityId: id });
+    rows.push({
+      id: `child-${idx}`,
+      entityType: "Child Molecule",
+      entityId: id,
+    });
   });
 
   return rows;
@@ -118,7 +129,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
   // Transform data
   const crossRefData = useMemo(
     () => transformDrugCrossRefs(drug.cross_references),
-    [drug.cross_references]
+    [drug.cross_references],
   );
   const linkedEntityData = useMemo(() => transformLinkedEntities(drug), [drug]);
   const nameData = useMemo(() => transformNamesAndSynonyms(drug), [drug]);
@@ -135,7 +146,9 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
       target: "Target",
       child: "Child Molecule",
     };
-    return linkedEntityData.filter((row) => row.entityType === filterMap[entityFilter]);
+    return linkedEntityData.filter(
+      (row) => row.entityType === filterMap[entityFilter],
+    );
   }, [linkedEntityData, entityFilter]);
 
   const filteredNameData = useMemo(() => {
@@ -148,9 +161,15 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
   }, [nameData, nameFilter]);
 
   // Counts for subtitle
-  const linkedDiseaseCount = linkedEntityData.filter((r) => r.entityType === "Disease").length;
-  const linkedTargetCount = linkedEntityData.filter((r) => r.entityType === "Target").length;
-  const childCount = linkedEntityData.filter((r) => r.entityType === "Child Molecule").length;
+  const linkedDiseaseCount = linkedEntityData.filter(
+    (r) => r.entityType === "Disease",
+  ).length;
+  const linkedTargetCount = linkedEntityData.filter(
+    (r) => r.entityType === "Target",
+  ).length;
+  const childCount = linkedEntityData.filter(
+    (r) => r.entityType === "Child Molecule",
+  ).length;
 
   // Dimension configs
   const entityDimensions: DimensionConfig[] = [
@@ -195,7 +214,9 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
       accessorKey: "referenceId",
       header: "Reference ID",
       enableSorting: true,
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceId}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">{row.original.referenceId}</span>
+      ),
     },
     {
       id: "link",
@@ -249,7 +270,11 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
 
   // Safety status helpers
   const withdrawnStatus =
-    drug.is_withdrawn === true ? "Yes" : drug.is_withdrawn === false ? "No" : "Unknown";
+    drug.is_withdrawn === true
+      ? "Yes"
+      : drug.is_withdrawn === false
+        ? "No"
+        : "Unknown";
   const withdrawnClasses =
     drug.is_withdrawn === true
       ? "bg-red-100 text-red-700"
@@ -327,7 +352,11 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                       Structure
                     </dt>
                     <dd className="flex justify-center">
-                      <MoleculeViewer smiles={drug.canonical_smiles} width={350} height={250} />
+                      <MoleculeViewer
+                        smiles={drug.canonical_smiles}
+                        width={350}
+                        height={250}
+                      />
                     </dd>
                   </div>
                 )}
@@ -373,7 +402,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                   <span
                     className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
-                      withdrawnClasses
+                      withdrawnClasses,
                     )}
                   >
                     {withdrawnStatus}
@@ -388,7 +417,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                   <span
                     className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
-                      blackBoxClasses
+                      blackBoxClasses,
                     )}
                   >
                     {blackBoxStatus}

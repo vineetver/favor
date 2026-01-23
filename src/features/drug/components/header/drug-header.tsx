@@ -1,6 +1,6 @@
-import { Download, Share2 } from "lucide-react";
 import type { Drug } from "@features/drug/types";
 import { cn } from "@infra/utils";
+import { Download, Share2 } from "lucide-react";
 
 interface DrugHeaderProps {
   drug: Drug;
@@ -21,12 +21,21 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
 
   const getApprovalStatus = (): { label: string; color: string } => {
     if (drug.is_withdrawn === true) {
-      return { label: "Withdrawn", color: "bg-red-100 text-red-700 border-red-200" };
+      return {
+        label: "Withdrawn",
+        color: "bg-red-100 text-red-700 border-red-200",
+      };
     }
     if (drug.is_approved === true) {
-      return { label: "Approved", color: "bg-green-100 text-green-700 border-green-200" };
+      return {
+        label: "Approved",
+        color: "bg-green-100 text-green-700 border-green-200",
+      };
     }
-    return { label: "Investigational", color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
+    return {
+      label: "Investigational",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    };
   };
 
   const approvalStatus = getApprovalStatus();
@@ -59,25 +68,31 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
             )}
 
             {/* Approval Status */}
-            <span className={cn(
-              "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border",
-              approvalStatus.color
-            )}>
+            <span
+              className={cn(
+                "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border",
+                approvalStatus.color,
+              )}
+            >
               {approvalStatus.label}
             </span>
 
             {/* Max Phase */}
-            {drug.max_clinical_trial_phase !== null && drug.max_clinical_trial_phase !== undefined && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                {getPhaseLabel(drug.max_clinical_trial_phase)}
-              </span>
-            )}
+            {drug.max_clinical_trial_phase !== null &&
+              drug.max_clinical_trial_phase !== undefined && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                  {getPhaseLabel(drug.max_clinical_trial_phase)}
+                </span>
+              )}
           </div>
 
           {/* Metadata Row */}
           {drug.year_first_approved ? (
             <div className="text-sm text-slate-500">
-              First approved <span className="font-semibold text-slate-700">{drug.year_first_approved}</span>
+              First approved{" "}
+              <span className="font-semibold text-slate-700">
+                {drug.year_first_approved}
+              </span>
             </div>
           ) : null}
         </div>

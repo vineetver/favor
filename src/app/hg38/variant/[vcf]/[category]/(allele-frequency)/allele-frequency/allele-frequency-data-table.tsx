@@ -1,16 +1,16 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import { Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { BarChart } from "@shared/components/charts";
-import { DataSurface } from "@shared/components/ui/data-surface";
 import {
   type GnomadPopulation,
   type GnomadSex,
-  type Variant,
   getGnomadMetrics,
+  type Variant,
 } from "@features/variant/types";
+import { BarChart } from "@shared/components/charts";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 // ============================================================================
 // Types
@@ -20,9 +20,9 @@ interface PopulationRow {
   id: string;
   population: string;
   code: string;
-  tg: number | null;        // 1000 Genomes
-  exome: number | null;     // gnomAD v4.1 Exome
-  genome: number | null;    // gnomAD v4.1 Genome
+  tg: number | null; // 1000 Genomes
+  exome: number | null; // gnomAD v4.1 Exome
+  genome: number | null; // gnomAD v4.1 Genome
 }
 
 type SexFilter = "overall" | "male" | "female";
@@ -43,15 +43,57 @@ const POPULATIONS: Array<{
   tgKey: string | null; // 1000G uses different keys
 }> = [
   { id: "all", name: "Global", code: "ALL", prefix: "", tgKey: "tg_all" },
-  { id: "afr", name: "African/African American", code: "AFR", prefix: "afr", tgKey: "tg_afr" },
-  { id: "amr", name: "Admixed American", code: "AMR", prefix: "amr", tgKey: "tg_amr" },
-  { id: "asj", name: "Ashkenazi Jewish", code: "ASJ", prefix: "asj", tgKey: null },
-  { id: "eas", name: "East Asian", code: "EAS", prefix: "eas", tgKey: "tg_eas" },
+  {
+    id: "afr",
+    name: "African/African American",
+    code: "AFR",
+    prefix: "afr",
+    tgKey: "tg_afr",
+  },
+  {
+    id: "amr",
+    name: "Admixed American",
+    code: "AMR",
+    prefix: "amr",
+    tgKey: "tg_amr",
+  },
+  {
+    id: "asj",
+    name: "Ashkenazi Jewish",
+    code: "ASJ",
+    prefix: "asj",
+    tgKey: null,
+  },
+  {
+    id: "eas",
+    name: "East Asian",
+    code: "EAS",
+    prefix: "eas",
+    tgKey: "tg_eas",
+  },
   { id: "fin", name: "Finnish", code: "FIN", prefix: "fin", tgKey: null },
-  { id: "nfe", name: "Non-Finnish European", code: "NFE", prefix: "nfe", tgKey: "tg_eur" },
-  { id: "sas", name: "South Asian", code: "SAS", prefix: "sas", tgKey: "tg_sas" },
+  {
+    id: "nfe",
+    name: "Non-Finnish European",
+    code: "NFE",
+    prefix: "nfe",
+    tgKey: "tg_eur",
+  },
+  {
+    id: "sas",
+    name: "South Asian",
+    code: "SAS",
+    prefix: "sas",
+    tgKey: "tg_sas",
+  },
   { id: "ami", name: "Amish", code: "AMI", prefix: "ami", tgKey: null },
-  { id: "mid", name: "Middle Eastern", code: "MID", prefix: "mid", tgKey: null },
+  {
+    id: "mid",
+    name: "Middle Eastern",
+    code: "MID",
+    prefix: "mid",
+    tgKey: null,
+  },
 ];
 
 // ============================================================================
@@ -72,7 +114,7 @@ function PopulationBadge({ code, name }: { code: string; name: string }) {
 function FrequencyCell({
   value,
   min,
-  max
+  max,
 }: {
   value: number | null;
   min: number;
@@ -126,7 +168,6 @@ function PopulationChart({ data }: { data: PopulationRow[] }) {
   );
 }
 
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -150,8 +191,16 @@ export function AlleleFrequencyDataTable({
       }
 
       // Get gnomAD exome and genome data
-      const exomeMetrics = getGnomadMetrics(variant.gnomad_exome, pop.prefix, sexSuffix);
-      const genomeMetrics = getGnomadMetrics(variant.gnomad_genome, pop.prefix, sexSuffix);
+      const exomeMetrics = getGnomadMetrics(
+        variant.gnomad_exome,
+        pop.prefix,
+        sexSuffix,
+      );
+      const genomeMetrics = getGnomadMetrics(
+        variant.gnomad_genome,
+        pop.prefix,
+        sexSuffix,
+      );
 
       return {
         id: pop.id,
@@ -174,9 +223,15 @@ export function AlleleFrequencyDataTable({
 
   // Calculate min/max for each dataset to scale bars appropriately
   const ranges = useMemo(() => {
-    const tgValues = populationData.map(d => d.tg).filter((v): v is number => v !== null);
-    const exomeValues = populationData.map(d => d.exome).filter((v): v is number => v !== null);
-    const genomeValues = populationData.map(d => d.genome).filter((v): v is number => v !== null);
+    const tgValues = populationData
+      .map((d) => d.tg)
+      .filter((v): v is number => v !== null);
+    const exomeValues = populationData
+      .map((d) => d.exome)
+      .filter((v): v is number => v !== null);
+    const genomeValues = populationData
+      .map((d) => d.genome)
+      .filter((v): v is number => v !== null);
 
     return {
       tg: {
@@ -214,7 +269,9 @@ export function AlleleFrequencyDataTable({
         accessorKey: "tg",
         header: "1000G Phase 3",
         enableSorting: true,
-        meta: { description: "Allele frequency from 1000 Genomes Project Phase 3" },
+        meta: {
+          description: "Allele frequency from 1000 Genomes Project Phase 3",
+        },
         cell: ({ row }) => (
           <FrequencyCell
             value={row.original.tg}
@@ -228,7 +285,9 @@ export function AlleleFrequencyDataTable({
         accessorKey: "exome",
         header: "gnomAD v4.1 Exome",
         enableSorting: true,
-        meta: { description: "Allele frequency from gnomAD v4.1 exome dataset" },
+        meta: {
+          description: "Allele frequency from gnomAD v4.1 exome dataset",
+        },
         cell: ({ row }) => (
           <FrequencyCell
             value={row.original.exome}
@@ -242,7 +301,9 @@ export function AlleleFrequencyDataTable({
         accessorKey: "genome",
         header: "gnomAD v4.1 Genome",
         enableSorting: true,
-        meta: { description: "Allele frequency from gnomAD v4.1 genome dataset" },
+        meta: {
+          description: "Allele frequency from gnomAD v4.1 genome dataset",
+        },
         cell: ({ row }) => (
           <FrequencyCell
             value={row.original.genome}

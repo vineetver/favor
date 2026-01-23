@@ -2,7 +2,7 @@
  * Identifier extraction utilities for populating search bar
  */
 
-import type { TypeaheadSuggestion } from '../types/api';
+import type { TypeaheadSuggestion } from "../types/api";
 
 /**
  * Extract the best identifier for populating the search bar
@@ -15,22 +15,22 @@ import type { TypeaheadSuggestion } from '../types/api';
  */
 export function getPopulateIdentifier(suggestion: TypeaheadSuggestion): string {
   switch (suggestion.type) {
-    case 'genes':
+    case "genes":
       // Use display name (e.g., "BRCA1") - users search by symbol
       return suggestion.name;
 
-    case 'drugs':
+    case "drugs":
       // Prefer CHEMBL ID if available - stable identifier for routing
       if (suggestion.id && /^CHEMBL\d+$/i.test(suggestion.id)) {
         return suggestion.id;
       }
       return suggestion.name;
 
-    case 'diseases':
+    case "diseases":
       // Use ontology ID (MONDO_*, HPO_*, etc.) - required for routing
       return suggestion.id;
 
-    case 'variants':
+    case "variants":
       // Prefer rsID if available (more user-friendly), fallback to VCF format
       // When user searches "rs7412", show "rs7412" not "19-44908822-C-T"
       if (suggestion.name && /^rs\d+$/i.test(suggestion.name)) {
@@ -38,7 +38,7 @@ export function getPopulateIdentifier(suggestion: TypeaheadSuggestion): string {
       }
       return suggestion.id;
 
-    case 'pathways':
+    case "pathways":
       // Use name for pathways
       return suggestion.name;
 

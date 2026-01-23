@@ -1,42 +1,37 @@
 // Query parsing and validation
+
+// Entity utilities (existing)
 export {
-  parseQuery,
+  getEntityLabel,
+  getEntityUrl,
+  hasEntityPage,
+} from "./entity-routes";
+// Identifier extraction
+export { getPopulateIdentifier } from "./identifier-extraction";
+export {
   getQueryType,
-  isValidVariantVCF,
   isValidRsID,
-} from './query-parser';
-
-// VCF parsing
-export {
-  parseVCF,
-  looksLikeVCF,
-  isCompleteVCF,
-} from './vcf-parser';
-
-// Variant preloading
-export {
-  preloadVariant,
-  preloadVariantDebounced,
-  getCachedVariant,
-  isVariantInDatabase,
-  clearPreloadCache,
-} from './variant-preloader';
+  isValidVariantVCF,
+  parseQuery,
+} from "./query-parser";
 
 // Query routing
 export {
   getRouteForQuery,
-  navigateToQuery,
   isRoutableQuery,
-} from './query-router';
-
-// Entity utilities (existing)
+  navigateToQuery,
+} from "./query-router";
+// Variant preloading
 export {
-  getEntityUrl,
-  hasEntityPage,
-  getEntityLabel,
-} from './entity-routes';
-
-// Identifier extraction
+  clearPreloadCache,
+  getCachedVariant,
+  isVariantInDatabase,
+  preloadVariant,
+  preloadVariantDebounced,
+} from "./variant-preloader";
+// VCF parsing
 export {
-  getPopulateIdentifier,
-} from './identifier-extraction';
+  isCompleteVCF,
+  looksLikeVCF,
+  parseVCF,
+} from "./vcf-parser";

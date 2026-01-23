@@ -1,14 +1,14 @@
 "use client";
 
-import { BarChart, REGULATORY_COLORS } from "@shared/components/charts";
-import { DataSurface } from "@shared/components/ui/data-surface";
-import type { VisualizationRow } from "@shared/components/ui/data-surface/types";
 import {
   epigeneticsColumns,
   epigeneticsGroup,
 } from "@features/variant/config/hg38/columns/epigenetics";
 import type { Variant } from "@features/variant/types";
 import { REGULATORY_STATE_MAP } from "@features/variant/types";
+import { BarChart, REGULATORY_COLORS } from "@shared/components/charts";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { VisualizationRow } from "@shared/components/ui/data-surface/types";
 
 interface EpigeneticsDataTableProps {
   variant: Variant;
@@ -17,11 +17,7 @@ interface EpigeneticsDataTableProps {
 function EpigeneticsVisualization({ data }: { data: VisualizationRow[] }) {
   // Transform data for chart
   const chartData = data
-    .filter(
-      (row) =>
-        row.value !== null &&
-        row.value !== undefined,
-    )
+    .filter((row) => row.value !== null && row.value !== undefined)
     .map((row) => {
       const state = REGULATORY_STATE_MAP[row.id];
       return {

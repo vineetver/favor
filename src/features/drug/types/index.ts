@@ -1,1 +1,1 @@
-export * from './drug';
+export * from "./drug";

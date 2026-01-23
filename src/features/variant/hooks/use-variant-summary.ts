@@ -1,13 +1,13 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   generateAIText,
   getAIText,
   subscribeToStream,
   type VariantSummaryState,
 } from "@infra/ai-text";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseVariantSummaryOptions {
   vcf: string;

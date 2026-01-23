@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import { useMemo } from "react";
 import {
   Bar,
@@ -11,7 +12,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { cn } from "@infra/utils";
 import { ChartLegend } from "./ChartLegend";
 import { BarChartTooltip } from "./ChartTooltip";
 import { DEFAULT_BAR_COLOR, getLegendItems, getRowColor } from "./colors";

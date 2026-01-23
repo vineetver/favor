@@ -1,13 +1,13 @@
 "use client";
 
-import { Check, ChevronDown, Search } from "lucide-react";
-import * as React from "react";
+import { cn } from "@infra/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
-import { cn } from "@infra/utils";
+import { Check, ChevronDown, Search } from "lucide-react";
+import * as React from "react";
 import type { DimensionOption } from "./types";
 
 interface DimensionSelectorProps {

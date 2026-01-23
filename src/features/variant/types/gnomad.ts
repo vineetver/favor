@@ -114,16 +114,15 @@ export function getGnomadMetrics(
     if (!populations) return null;
 
     // Get the population data
-    const pop = populations[prefix as keyof GnomadPopulations] as GnomadPop | null | undefined;
+    const pop = populations[prefix as keyof GnomadPopulations] as
+      | GnomadPop
+      | null
+      | undefined;
     if (!pop) return null;
 
     // Get allele frequency based on sex filter
     const af =
-      suffix === "xx"
-        ? pop.af_xx
-        : suffix === "xy"
-          ? pop.af_xy
-          : pop.af;
+      suffix === "xx" ? pop.af_xx : suffix === "xy" ? pop.af_xy : pop.af;
 
     if (af === null || af === undefined) return null;
 

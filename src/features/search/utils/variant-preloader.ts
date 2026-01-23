@@ -3,16 +3,22 @@
  * Provides instant navigation experience by preloading data
  */
 
-import { fetchVariant, fetchVariantsByRsid } from '@features/variant/api/variant';
-import type { Variant } from '@features/variant/types';
-import type { ParsedVariantQuery } from '../types/query';
-import { parseQuery } from './query-parser';
+import {
+  fetchVariant,
+  fetchVariantsByRsid,
+} from "@features/variant/api/variant";
+import type { Variant } from "@features/variant/types";
+import type { ParsedVariantQuery } from "../types/query";
+import { parseQuery } from "./query-parser";
 
 /**
  * In-memory cache for preloaded variants
  * Cleared on page navigation or after timeout
  */
-const preloadCache = new Map<string, { data: Variant | null; timestamp: number }>();
+const preloadCache = new Map<
+  string,
+  { data: Variant | null; timestamp: number }
+>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -57,12 +63,12 @@ export async function preloadVariant(query: string): Promise<Variant | null> {
   // Fetch variant data based on type
   let variant: Variant | null = null;
 
-  if (parsed.type === 'variant_vcf') {
+  if (parsed.type === "variant_vcf") {
     const variantParsed = parsed as ParsedVariantQuery;
     if (variantParsed.vcf) {
       variant = await fetchVariant(variantParsed.vcf.normalized);
     }
-  } else if (parsed.type === 'variant_rsid') {
+  } else if (parsed.type === "variant_rsid") {
     const variantParsed = parsed as ParsedVariantQuery;
     if (variantParsed.rsid) {
       variant = await fetchVariantsByRsid(variantParsed.rsid);
@@ -101,7 +107,7 @@ let preloadTimer: NodeJS.Timeout | null = null;
 
 export function preloadVariantDebounced(
   query: string,
-  delay: number = 500
+  delay: number = 500,
 ): Promise<Variant | null> {
   return new Promise((resolve) => {
     if (preloadTimer) {

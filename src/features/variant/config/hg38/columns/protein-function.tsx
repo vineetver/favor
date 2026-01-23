@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import type { Variant } from "@features/variant/types";
 import {
   categories,
@@ -6,6 +5,7 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { ArrowRight } from "lucide-react";
 import { apcColumns } from "./shared";
 
 const col = createColumns<Variant>();

@@ -12,12 +12,34 @@
  * Pattern: [1..22,X,Y,MT]-[Position 1..300M]-{Allele}-{Allele}
  */
 
-import type { VariantVCF } from '../types/query';
+import type { VariantVCF } from "../types/query";
 
 const VALID_CHROMOSOMES = new Set([
-  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-  '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
-  '21', '22', 'X', 'Y', 'MT'
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "21",
+  "22",
+  "X",
+  "Y",
+  "MT",
 ]);
 
 const MAX_POSITION = 300_000_000;
@@ -27,7 +49,7 @@ const MAX_POSITION = 300_000_000;
  * chr19 -> 19, chrX -> X, chrMT -> MT
  */
 function normalizeChromosome(chr: string): string | null {
-  const cleaned = chr.toUpperCase().replace(/^CHR/, '');
+  const cleaned = chr.toUpperCase().replace(/^CHR/, "");
   return VALID_CHROMOSOMES.has(cleaned) ? cleaned : null;
 }
 

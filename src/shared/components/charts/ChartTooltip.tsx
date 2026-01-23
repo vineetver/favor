@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Card, CardContent } from "@shared/components/ui/card";
 import { cn } from "@infra/utils";
+import { Card, CardContent } from "@shared/components/ui/card";
+import type { ReactNode } from "react";
 
 export interface TooltipPayloadEntry {
   name?: string;

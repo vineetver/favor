@@ -2,9 +2,9 @@
  * Query router - determines navigation destination based on query type
  */
 
-import type { ParsedVariantQuery, RouteDestination } from '../types/query';
-import { parseQuery } from './query-parser';
-import { preloadVariant } from './variant-preloader';
+import type { ParsedVariantQuery, RouteDestination } from "../types/query";
+import { parseQuery } from "./query-parser";
+import { preloadVariant } from "./variant-preloader";
 
 /**
  * Get route destination for a given query
@@ -12,7 +12,7 @@ import { preloadVariant } from './variant-preloader';
  */
 export function getRouteForQuery(
   query: string,
-  genome: 'hg38' | 'hg19' = 'hg38'
+  genome: "hg38" | "hg19" = "hg38",
 ): RouteDestination | null {
   const parsed = parseQuery(query);
 
@@ -22,7 +22,7 @@ export function getRouteForQuery(
   }
 
   switch (parsed.type) {
-    case 'variant_vcf': {
+    case "variant_vcf": {
       const variantParsed = parsed as ParsedVariantQuery;
       if (!variantParsed.vcf) {
         return null;
@@ -35,7 +35,7 @@ export function getRouteForQuery(
       };
     }
 
-    case 'variant_rsid': {
+    case "variant_rsid": {
       const variantParsed = parsed as ParsedVariantQuery;
       if (!variantParsed.rsid) {
         return null;
@@ -48,13 +48,13 @@ export function getRouteForQuery(
       };
     }
 
-    case 'drug':
+    case "drug":
       return {
         path: `/drug/${encodeURIComponent(parsed.normalized)}`,
         shouldPreload: false,
       };
 
-    case 'gene':
+    case "gene":
       // TODO: Implement gene routing
       // return {
       //   path: `/gene/${encodeURIComponent(parsed.normalized)}`,
@@ -62,13 +62,13 @@ export function getRouteForQuery(
       // };
       return null;
 
-    case 'disease':
+    case "disease":
       return {
         path: `/disease/${encodeURIComponent(parsed.normalized)}`,
         shouldPreload: false,
       };
 
-    case 'pathway':
+    case "pathway":
       // TODO: Implement pathway routing
       return null;
 
@@ -83,8 +83,8 @@ export function getRouteForQuery(
  */
 export async function navigateToQuery(
   query: string,
-  genome: 'hg38' | 'hg19',
-  router: { push: (path: string) => void }
+  genome: "hg38" | "hg19",
+  router: { push: (path: string) => void },
 ): Promise<boolean> {
   const route = getRouteForQuery(query, genome);
 
@@ -95,7 +95,7 @@ export async function navigateToQuery(
   // Preload data if needed (don't wait for it)
   if (route.shouldPreload && route.preloadFn) {
     route.preloadFn().catch((err) => {
-      console.error('Preload failed:', err);
+      console.error("Preload failed:", err);
     });
   }
 

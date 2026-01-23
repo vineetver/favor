@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
 import { fetchVariant } from "@features/variant/api";
 import { fetchOpenTargetsEvidences } from "@features/variant/api/opentargets";
 import { EvidencesTable } from "@features/variant/components/open-targets/evidences-table";
+import { notFound } from "next/navigation";
 
 interface EvidencesPageProps {
   params: Promise<{

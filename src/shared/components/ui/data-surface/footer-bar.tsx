@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import type { Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@infra/utils";
 
 interface FooterBarProps<TData> {
   table: Table<TData>;

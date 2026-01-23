@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { ComponentType, RefObject } from "react";
+import { useEffect, useState } from "react";
 
 type GoslingComponentType = ComponentType<{ spec: unknown }>;
 

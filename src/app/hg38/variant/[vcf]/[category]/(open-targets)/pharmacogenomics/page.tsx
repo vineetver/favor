@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
 import { fetchVariant } from "@features/variant/api";
 import { fetchOpenTargetsPharmacogenomics } from "@features/variant/api/opentargets";
 import { PharmacogenomicsTable } from "@features/variant/components/open-targets/pharmacogenomics-table";
+import { notFound } from "next/navigation";
 
 interface PharmacogenomicsPageProps {
   params: Promise<{

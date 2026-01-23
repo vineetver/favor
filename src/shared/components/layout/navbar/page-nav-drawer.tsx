@@ -1,11 +1,11 @@
 "use client";
 
+import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
+import { cn } from "@infra/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
-import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
-import { cn } from "@infra/utils";
 
 interface NavigationSection {
   name: string;

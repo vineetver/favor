@@ -1,1 +1,1 @@
-export { UniversalSearch } from './universal-search';
+export { UniversalSearch } from "./universal-search";

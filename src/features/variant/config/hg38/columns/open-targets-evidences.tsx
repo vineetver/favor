@@ -1,4 +1,3 @@
-import { ExternalLink } from "@shared/components/ui/external-link";
 import type { OpenTargetsEvidenceRow } from "@features/variant/types/opentargets";
 import {
   Badge,
@@ -7,6 +6,7 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<OpenTargetsEvidenceRow>();
 

@@ -1,4 +1,3 @@
-import { ExternalLink } from "@shared/components/ui/external-link";
 import type { Variant } from "@features/variant/types";
 import {
   BADGE_COLORS,
@@ -12,6 +11,7 @@ import {
   parseDatabaseEntries,
   parseDiseaseNames,
 } from "@infra/utils/parsing-utils";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
 
@@ -216,9 +216,22 @@ function formatDiseaseName(name: string): string {
   // Capitalize first letter of each word
   formatted = formatted
     .split(" ")
-    .map(word => {
+    .map((word) => {
       // Keep special cases lowercase
-      if (["of", "the", "a", "an", "and", "or", "to", "in", "for", "due"].includes(word.toLowerCase())) {
+      if (
+        [
+          "of",
+          "the",
+          "a",
+          "an",
+          "and",
+          "or",
+          "to",
+          "in",
+          "for",
+          "due",
+        ].includes(word.toLowerCase())
+      ) {
         return word.toLowerCase();
       }
       // Capitalize first letter
@@ -238,13 +251,16 @@ function DiseaseList({
   value: Array<string | null> | string | null | undefined;
 }) {
   const diseases = (
-    Array.isArray(value) ? value.filter(Boolean) : parseDiseaseNames(value ?? null)
+    Array.isArray(value)
+      ? value.filter(Boolean)
+      : parseDiseaseNames(value ?? null)
   ).filter((d): d is string => d !== null);
   if (diseases.length === 0) return <span>-</span>;
 
-  const formattedDiseases = diseases.map(d => formatDiseaseName(d));
+  const formattedDiseases = diseases.map((d) => formatDiseaseName(d));
 
-  if (formattedDiseases.length === 1) return <span>{formattedDiseases[0]}</span>;
+  if (formattedDiseases.length === 1)
+    return <span>{formattedDiseases[0]}</span>;
 
   return (
     <div className="space-y-0.5">
@@ -427,7 +443,10 @@ export const clinvarColumns = [
     cell: cell.custom(
       (
         val:
-          | Array<{ classification?: string | null; variation_id?: string | null }>
+          | Array<{
+              classification?: string | null;
+              variation_id?: string | null;
+            }>
           | string
           | null,
       ) => <ClinicalSignificancePairs value={val} />,
@@ -443,11 +462,9 @@ export const clinvarColumns = [
         "ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom(
-      (val: Array<string | null> | string | null) => (
-        <DiseaseList value={val} />
-      ),
-    ),
+    cell: cell.custom((val: Array<string | null> | string | null) => (
+      <DiseaseList value={val} />
+    )),
   }),
 
   col.accessor("clndnincl", {
@@ -459,11 +476,9 @@ export const clinvarColumns = [
         "For included variant: ClinVar's preferred disease name for the concept specified by disease identifiers in CLNDISDB.",
       citation: "Landrum et al., 2017, 2013",
     }),
-    cell: cell.custom(
-      (val: Array<string | null> | string | null) => (
-        <DiseaseList value={val} />
-      ),
-    ),
+    cell: cell.custom((val: Array<string | null> | string | null) => (
+      <DiseaseList value={val} />
+    )),
   }),
 
   col.accessor("clnrevstat", {

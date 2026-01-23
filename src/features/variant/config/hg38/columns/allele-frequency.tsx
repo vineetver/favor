@@ -2,8 +2,8 @@ import {
   type GnomadMetrics,
   type GnomadPopulation,
   type GnomadSex,
-  type Variant,
   getGnomadMetrics,
+  type Variant,
 } from "@features/variant/types";
 import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 

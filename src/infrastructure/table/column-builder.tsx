@@ -1,7 +1,7 @@
+import { cn } from "@infra/utils";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import type { AccessorFn, CellContext, ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
-import { ExternalLink } from "@shared/components/ui/external-link";
-import { cn } from "@infra/utils";
 
 // ============================================================================
 // Color System - Refined for scientific/genomics data display

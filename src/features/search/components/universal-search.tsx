@@ -1,19 +1,33 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useTransition, useDeferredValue, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import {
   Combobox,
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
 } from "@headlessui/react";
-import { Loader2, Search, ExternalLink } from "lucide-react";
-import { useTypeahead } from "../hooks/use-typeahead";
-import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
-import { navigateToQuery, isRoutableQuery, parseQuery, preloadVariantDebounced, getPopulateIdentifier } from "../utils";
-import type { TypeaheadSuggestion, EntityType } from "../types/api";
 import { cn } from "@infra/utils";
+import { ExternalLink, Loader2, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  type FormEvent,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { useTypeahead } from "../hooks/use-typeahead";
+import type { EntityType, TypeaheadSuggestion } from "../types/api";
+import {
+  getPopulateIdentifier,
+  isRoutableQuery,
+  navigateToQuery,
+  parseQuery,
+  preloadVariantDebounced,
+} from "../utils";
+import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
 
 type GenomeBuild = "hg38" | "hg19";
 
@@ -25,9 +39,9 @@ type GenomeBuild = "hg38" | "hg19";
 //   selected -> typing: user types anything (clears previous selection)
 //   selected -> selected: user clicks a different suggestion (overwrites)
 type SearchState =
-  | { mode: 'idle' }
-  | { mode: 'typing', query: string }
-  | { mode: 'selected', query: string, suggestion: TypeaheadSuggestion };
+  | { mode: "idle" }
+  | { mode: "typing"; query: string }
+  | { mode: "selected"; query: string; suggestion: TypeaheadSuggestion };
 
 const ENTITY_CONFIG: Record<
   EntityType,
@@ -42,38 +56,38 @@ const ENTITY_CONFIG: Record<
     label: "GENES",
     textColor: "text-purple-700",
     bgColor: "bg-purple-600",
-    borderColor: "border-purple-200"
+    borderColor: "border-purple-200",
   },
   variants: {
     label: "VARIANTS",
     textColor: "text-blue-700",
     bgColor: "bg-blue-600",
-    borderColor: "border-blue-200"
+    borderColor: "border-blue-200",
   },
   diseases: {
     label: "DISEASES",
     textColor: "text-red-700",
     bgColor: "bg-red-600",
-    borderColor: "border-red-200"
+    borderColor: "border-red-200",
   },
   drugs: {
     label: "DRUGS",
     textColor: "text-green-700",
     bgColor: "bg-green-600",
-    borderColor: "border-green-200"
+    borderColor: "border-green-200",
   },
   pathways: {
     label: "PATHWAYS",
     textColor: "text-orange-700",
     bgColor: "bg-orange-600",
-    borderColor: "border-orange-200"
+    borderColor: "border-orange-200",
   },
 };
 
 export function UniversalSearch() {
   const router = useRouter();
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
-  const [searchState, setSearchState] = useState<SearchState>({ mode: 'idle' });
+  const [searchState, setSearchState] = useState<SearchState>({ mode: "idle" });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // React 19: useRef for click-outside detection
@@ -84,7 +98,7 @@ export function UniversalSearch() {
   const [isPending, startTransition] = useTransition();
 
   // Derive query from state - Single Source of Truth
-  const query = searchState.mode === 'idle' ? '' : searchState.query;
+  const query = searchState.mode === "idle" ? "" : searchState.query;
 
   // React 19: useDeferredValue for smooth transitions
   // Delays non-urgent updates to prevent choppy UI
@@ -106,11 +120,11 @@ export function UniversalSearch() {
   const handleInputChange = useCallback((value: string) => {
     // ANY user typing transitions to typing mode - clears previous selections
     if (value.trim().length === 0) {
-      setSearchState({ mode: 'idle' });
+      setSearchState({ mode: "idle" });
       setIsDropdownOpen(false);
     } else {
       // Transition to typing mode - invalidates any previous selection
-      setSearchState({ mode: 'typing', query: value });
+      setSearchState({ mode: "typing", query: value });
       if (value.trim().length >= 2) {
         setIsDropdownOpen(true);
       }
@@ -122,7 +136,10 @@ export function UniversalSearch() {
     const parsed = parseQuery(query);
 
     // Only preload if it's a valid, complete variant query
-    if (parsed.isValid && (parsed.type === 'variant_vcf' || parsed.type === 'variant_rsid')) {
+    if (
+      parsed.isValid &&
+      (parsed.type === "variant_vcf" || parsed.type === "variant_rsid")
+    ) {
       preloadVariantDebounced(query, 500).catch(() => {
         // Silently fail - preloading is optional optimization
       });
@@ -138,41 +155,43 @@ export function UniversalSearch() {
       // React 19: Use transition for smooth, non-blocking update
       startTransition(() => {
         const identifier = getPopulateIdentifier(suggestion);
-        setSearchState({ mode: 'selected', query: identifier, suggestion });
+        setSearchState({ mode: "selected", query: identifier, suggestion });
         setIsDropdownOpen(false);
       });
     },
-    [startTransition]
+    [startTransition],
   );
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
 
-      if (searchState.mode === 'idle') return;
+      if (searchState.mode === "idle") return;
 
       // 1. If user has selected a suggestion, navigate to it
-      if (searchState.mode === 'selected') {
+      if (searchState.mode === "selected") {
         const { suggestion, query: selectedQuery } = searchState;
 
         // For variants, use the query (rsID if available) instead of raw ID
         // This ensures "rs7412" routes to /variant/rs7412 not /variant/19-44908822-C-T
-        if (suggestion.type === 'variants' && isRoutableQuery(selectedQuery)) {
+        if (suggestion.type === "variants" && isRoutableQuery(selectedQuery)) {
           const success = await navigateToQuery(selectedQuery, genome, router);
           if (success) {
             clear();
-            setSearchState({ mode: 'idle' });
+            setSearchState({ mode: "idle" });
             setIsDropdownOpen(false);
             return;
           }
         }
 
         // For other entities, use the standard URL generation
-        const url = suggestion.url || getEntityUrl(suggestion.type, suggestion.id, { genome });
+        const url =
+          suggestion.url ||
+          getEntityUrl(suggestion.type, suggestion.id, { genome });
         if (url && hasEntityPage(suggestion.type)) {
           router.push(url);
           clear();
-          setSearchState({ mode: 'idle' });
+          setSearchState({ mode: "idle" });
           setIsDropdownOpen(false);
         }
         return;
@@ -183,7 +202,7 @@ export function UniversalSearch() {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
           clear();
-          setSearchState({ mode: 'idle' });
+          setSearchState({ mode: "idle" });
           setIsDropdownOpen(false);
           return;
         }
@@ -191,7 +210,13 @@ export function UniversalSearch() {
 
       // 3. Fall back to first typeahead suggestion (populate, don't navigate)
       if (results && results.total > 0) {
-        const entityTypes: EntityType[] = ["genes", "variants", "diseases", "drugs", "pathways"];
+        const entityTypes: EntityType[] = [
+          "genes",
+          "variants",
+          "diseases",
+          "drugs",
+          "pathways",
+        ];
 
         for (const type of entityTypes) {
           const entities = results.suggestions[type];
@@ -202,7 +227,15 @@ export function UniversalSearch() {
         }
       }
     },
-    [searchState, results, genome, router, clear, handleSelectSuggestion, query]
+    [
+      searchState,
+      results,
+      genome,
+      router,
+      clear,
+      handleSelectSuggestion,
+      query,
+    ],
   );
 
   // React 19: Proper click-outside detection with event listeners
@@ -221,12 +254,12 @@ export function UniversalSearch() {
     // Add event listener when dropdown is open
     if (isDropdownOpen) {
       // Use capture phase to ensure we catch the event before other handlers
-      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener("mousedown", handleClickOutside, true);
     }
 
     // Cleanup
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener("mousedown", handleClickOutside, true);
     };
   }, [isDropdownOpen]);
 
@@ -290,10 +323,19 @@ export function UniversalSearch() {
   }
 
   // Group remaining suggestions by entity type
-  const groupedSuggestions: Array<{ type: EntityType; items: TypeaheadSuggestion[] }> = [];
+  const groupedSuggestions: Array<{
+    type: EntityType;
+    items: TypeaheadSuggestion[];
+  }> = [];
 
   if (results && results.total > 0) {
-    const entityTypes: EntityType[] = ["genes", "variants", "diseases", "drugs", "pathways"];
+    const entityTypes: EntityType[] = [
+      "genes",
+      "variants",
+      "diseases",
+      "drugs",
+      "pathways",
+    ];
 
     entityTypes.forEach((type) => {
       const items = results.suggestions[type];
@@ -309,13 +351,16 @@ export function UniversalSearch() {
         <div className="absolute -inset-1 bg-linear-to-r from-purple-200 to-indigo-200 rounded-[28px] blur-xl opacity-40 group-hover:opacity-60 transition duration-500"></div>
 
         <div className="relative">
-          <Combobox value={null} onChange={(val) => val && handleSelectSuggestion(val)}>
+          <Combobox
+            value={null}
+            onChange={(val) => val && handleSelectSuggestion(val)}
+          >
             <div className="relative flex flex-col sm:flex-row items-center bg-white p-2.5 rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/80 ring-1 ring-slate-100">
               <div className="grid grid-cols-2 bg-slate-100 rounded-xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
                 <div
                   className={cn(
                     "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out",
-                    genome === "hg38" ? "left-1" : "right-1"
+                    genome === "hg38" ? "left-1" : "right-1",
                   )}
                 />
                 <button
@@ -323,7 +368,9 @@ export function UniversalSearch() {
                   onClick={() => handleGenomeChange("hg38")}
                   className={cn(
                     "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
-                    genome === "hg38" ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
+                    genome === "hg38"
+                      ? "text-slate-900"
+                      : "text-slate-500 hover:text-slate-700",
                   )}
                 >
                   HG38
@@ -333,7 +380,9 @@ export function UniversalSearch() {
                   onClick={() => handleGenomeChange("hg19")}
                   className={cn(
                     "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
-                    genome === "hg19" ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
+                    genome === "hg19"
+                      ? "text-slate-900"
+                      : "text-slate-500 hover:text-slate-700",
                   )}
                 >
                   HG19
@@ -375,7 +424,10 @@ export function UniversalSearch() {
                 {(isLoading || isPending) && groupedSuggestions.length > 0 && (
                   <div className="h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 animate-pulse" />
                 )}
-                <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 400px)" }}>
+                <div
+                  className="overflow-y-auto"
+                  style={{ maxHeight: "calc(100vh - 400px)" }}
+                >
                   {isLoading && groupedSuggestions.length === 0 ? (
                     <div className="py-8 px-6 text-center text-slate-400">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -388,116 +440,177 @@ export function UniversalSearch() {
                   ) : (
                     <>
                       {/* Anchor Card */}
-                      {anchorEntity && (() => {
-                        const config = ENTITY_CONFIG[anchorEntity.type];
-                        const linkCounts = [
-                          { label: "genes", count: anchorEntity.links?.gene_count },
-                          { label: "variants", count: anchorEntity.links?.variant_count },
-                          { label: "diseases", count: anchorEntity.links?.disease_count },
-                          { label: "drugs", count: anchorEntity.links?.drug_count },
-                          { label: "pathways", count: anchorEntity.links?.pathway_count },
-                        ].filter(link => link.count && link.count > 0);
+                      {anchorEntity &&
+                        (() => {
+                          const config = ENTITY_CONFIG[anchorEntity.type];
+                          const linkCounts = [
+                            {
+                              label: "genes",
+                              count: anchorEntity.links?.gene_count,
+                            },
+                            {
+                              label: "variants",
+                              count: anchorEntity.links?.variant_count,
+                            },
+                            {
+                              label: "diseases",
+                              count: anchorEntity.links?.disease_count,
+                            },
+                            {
+                              label: "drugs",
+                              count: anchorEntity.links?.drug_count,
+                            },
+                            {
+                              label: "pathways",
+                              count: anchorEntity.links?.pathway_count,
+                            },
+                          ].filter((link) => link.count && link.count > 0);
 
-                        const previews = [];
-                        if (anchorEntity.preview?.genes && anchorEntity.preview.genes.length > 0) {
-                          previews.push({ label: "Genes", items: anchorEntity.preview.genes });
-                        }
-                        if (anchorEntity.preview?.diseases && anchorEntity.preview.diseases.length > 0) {
-                          previews.push({ label: "Diseases", items: anchorEntity.preview.diseases });
-                        }
-                        if (anchorEntity.preview?.drugs && anchorEntity.preview.drugs.length > 0) {
-                          previews.push({ label: "Drugs", items: anchorEntity.preview.drugs });
-                        }
-                        if (anchorEntity.preview?.pathways && anchorEntity.preview.pathways.length > 0) {
-                          previews.push({ label: "Pathways", items: anchorEntity.preview.pathways });
-                        }
+                          const previews = [];
+                          if (
+                            anchorEntity.preview?.genes &&
+                            anchorEntity.preview.genes.length > 0
+                          ) {
+                            previews.push({
+                              label: "Genes",
+                              items: anchorEntity.preview.genes,
+                            });
+                          }
+                          if (
+                            anchorEntity.preview?.diseases &&
+                            anchorEntity.preview.diseases.length > 0
+                          ) {
+                            previews.push({
+                              label: "Diseases",
+                              items: anchorEntity.preview.diseases,
+                            });
+                          }
+                          if (
+                            anchorEntity.preview?.drugs &&
+                            anchorEntity.preview.drugs.length > 0
+                          ) {
+                            previews.push({
+                              label: "Drugs",
+                              items: anchorEntity.preview.drugs,
+                            });
+                          }
+                          if (
+                            anchorEntity.preview?.pathways &&
+                            anchorEntity.preview.pathways.length > 0
+                          ) {
+                            previews.push({
+                              label: "Pathways",
+                              items: anchorEntity.preview.pathways,
+                            });
+                          }
 
-                        return (
-                          <ComboboxOption
-                            value={anchorEntity}
-                            className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
-                          >
-                            <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                                Best Match
-                              </div>
-                              <div className="space-y-2.5">
-                              {/* Name + ID */}
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className={cn("font-semibold text-base leading-tight", config.textColor)}>
-                                    {anchorEntity.name}
-                                  </h3>
-                                  {anchorEntity.match_type === 'prefix' && (
-                                    <span className="inline-flex h-2 w-2 rounded-full bg-green-500" title="Exact match" />
+                          return (
+                            <ComboboxOption
+                              value={anchorEntity}
+                              className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
+                            >
+                              <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                                  Best Match
+                                </div>
+                                <div className="space-y-2.5">
+                                  {/* Name + ID */}
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3
+                                        className={cn(
+                                          "font-semibold text-base leading-tight",
+                                          config.textColor,
+                                        )}
+                                      >
+                                        {anchorEntity.name}
+                                      </h3>
+                                      {anchorEntity.match_type === "prefix" && (
+                                        <span
+                                          className="inline-flex h-2 w-2 rounded-full bg-green-500"
+                                          title="Exact match"
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                      {anchorEntity.id}
+                                    </div>
+                                  </div>
+
+                                  {/* Description */}
+                                  {anchorEntity.description && (
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                      {anchorEntity.description}
+                                    </p>
+                                  )}
+
+                                  {/* Link Counts */}
+                                  {linkCounts.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {linkCounts.map((link) => (
+                                        <span
+                                          key={link.label}
+                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
+                                        >
+                                          <span className="font-bold text-slate-900">
+                                            {link.count!.toLocaleString()}
+                                          </span>
+                                          {link.label}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Previews */}
+                                  {previews.length > 0 && (
+                                    <div className="space-y-1.5 pt-1">
+                                      {previews.slice(0, 3).map((preview) => (
+                                        <div
+                                          key={preview.label}
+                                          className="text-[11px]"
+                                        >
+                                          <span className="font-bold text-slate-500 uppercase tracking-wide">
+                                            {preview.label}:
+                                          </span>{" "}
+                                          <span className="text-slate-600">
+                                            {preview.items
+                                              .slice(0, 5)
+                                              .join(", ")}
+                                            {preview.items.length > 5 &&
+                                              ` +${preview.items.length - 5} more`}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
-                                <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                  {anchorEntity.id}
-                                </div>
                               </div>
-
-                              {/* Description */}
-                              {anchorEntity.description && (
-                                <p className="text-sm text-slate-600 leading-relaxed">
-                                  {anchorEntity.description}
-                                </p>
-                              )}
-
-                              {/* Link Counts */}
-                              {linkCounts.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {linkCounts.map((link) => (
-                                    <span
-                                      key={link.label}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
-                                    >
-                                      <span className="font-bold text-slate-900">
-                                        {link.count!.toLocaleString()}
-                                      </span>
-                                      {link.label}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Previews */}
-                              {previews.length > 0 && (
-                                <div className="space-y-1.5 pt-1">
-                                  {previews.slice(0, 3).map((preview) => (
-                                    <div key={preview.label} className="text-[11px]">
-                                      <span className="font-bold text-slate-500 uppercase tracking-wide">
-                                        {preview.label}:
-                                      </span>{" "}
-                                      <span className="text-slate-600">
-                                        {preview.items.slice(0, 5).join(", ")}
-                                        {preview.items.length > 5 && ` +${preview.items.length - 5} more`}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          </ComboboxOption>
-                        );
-                      })()}
+                            </ComboboxOption>
+                          );
+                        })()}
 
                       {/* Grouped Results */}
                       {groupedSuggestions.map((group) => {
                         const config = ENTITY_CONFIG[group.type];
 
                         return (
-                          <div key={group.type} className="border-b border-slate-100 last:border-0">
+                          <div
+                            key={group.type}
+                            className="border-b border-slate-100 last:border-0"
+                          >
                             {/* Section Header - Colored */}
-                            <div className={cn(
-                              "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
-                              config.bgColor
-                            )}>
+                            <div
+                              className={cn(
+                                "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
+                                config.bgColor,
+                              )}
+                            >
                               <span className="text-xs font-bold uppercase tracking-widest text-white">
                                 {config.label}
                               </span>
-                              <span className="text-xs text-white/70">({group.items.length})</span>
+                              <span className="text-xs text-white/70">
+                                ({group.items.length})
+                              </span>
                             </div>
 
                             {/* Entity Cards - Two Column Grid on Desktop */}
@@ -507,29 +620,76 @@ export function UniversalSearch() {
 
                                 // Count how many link types have data
                                 const linkCounts = [
-                                  { label: "genes", count: item.links?.gene_count },
-                                  { label: "variants", count: item.links?.variant_count },
-                                  { label: "diseases", count: item.links?.disease_count },
-                                  { label: "drugs", count: item.links?.drug_count },
-                                  { label: "pathways", count: item.links?.pathway_count },
-                                ].filter(link => link.count && link.count > 0);
+                                  {
+                                    label: "genes",
+                                    count: item.links?.gene_count,
+                                  },
+                                  {
+                                    label: "variants",
+                                    count: item.links?.variant_count,
+                                  },
+                                  {
+                                    label: "diseases",
+                                    count: item.links?.disease_count,
+                                  },
+                                  {
+                                    label: "drugs",
+                                    count: item.links?.drug_count,
+                                  },
+                                  {
+                                    label: "pathways",
+                                    count: item.links?.pathway_count,
+                                  },
+                                ].filter(
+                                  (link) => link.count && link.count > 0,
+                                );
 
                                 // Get relevant previews based on entity type
                                 const previews = [];
-                                if (item.preview?.genes && item.preview.genes.length > 0) {
-                                  previews.push({ label: "Genes", items: item.preview.genes });
+                                if (
+                                  item.preview?.genes &&
+                                  item.preview.genes.length > 0
+                                ) {
+                                  previews.push({
+                                    label: "Genes",
+                                    items: item.preview.genes,
+                                  });
                                 }
-                                if (item.preview?.diseases && item.preview.diseases.length > 0) {
-                                  previews.push({ label: "Diseases", items: item.preview.diseases });
+                                if (
+                                  item.preview?.diseases &&
+                                  item.preview.diseases.length > 0
+                                ) {
+                                  previews.push({
+                                    label: "Diseases",
+                                    items: item.preview.diseases,
+                                  });
                                 }
-                                if (item.preview?.drugs && item.preview.drugs.length > 0) {
-                                  previews.push({ label: "Drugs", items: item.preview.drugs });
+                                if (
+                                  item.preview?.drugs &&
+                                  item.preview.drugs.length > 0
+                                ) {
+                                  previews.push({
+                                    label: "Drugs",
+                                    items: item.preview.drugs,
+                                  });
                                 }
-                                if (item.preview?.pathways && item.preview.pathways.length > 0) {
-                                  previews.push({ label: "Pathways", items: item.preview.pathways });
+                                if (
+                                  item.preview?.pathways &&
+                                  item.preview.pathways.length > 0
+                                ) {
+                                  previews.push({
+                                    label: "Pathways",
+                                    items: item.preview.pathways,
+                                  });
                                 }
-                                if (item.preview?.variants && item.preview.variants.length > 0) {
-                                  previews.push({ label: "Variants", items: item.preview.variants });
+                                if (
+                                  item.preview?.variants &&
+                                  item.preview.variants.length > 0
+                                ) {
+                                  previews.push({
+                                    label: "Variants",
+                                    items: item.preview.variants,
+                                  });
                                 }
 
                                 return (
@@ -543,18 +703,33 @@ export function UniversalSearch() {
                                       <div className="flex items-start justify-between gap-2 mb-2">
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-1.5 mb-0.5">
-                                            <span className={cn("font-semibold text-sm leading-tight", config.textColor)}>
+                                            <span
+                                              className={cn(
+                                                "font-semibold text-sm leading-tight",
+                                                config.textColor,
+                                              )}
+                                            >
                                               {item.name}
                                             </span>
                                             {/* Match Quality Indicator */}
-                                            {item.match_type === 'prefix' && (
-                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500" title="Exact match" />
+                                            {item.match_type === "prefix" && (
+                                              <span
+                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"
+                                                title="Exact match"
+                                              />
                                             )}
-                                            {item.match_type === 'substring' && (
-                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500" title="Substring match" />
+                                            {item.match_type ===
+                                              "substring" && (
+                                              <span
+                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500"
+                                                title="Substring match"
+                                              />
                                             )}
-                                            {item.match_type === 'fuzzy' && (
-                                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500" title="Fuzzy match" />
+                                            {item.match_type === "fuzzy" && (
+                                              <span
+                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500"
+                                                title="Fuzzy match"
+                                              />
                                             )}
                                           </div>
                                           <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
@@ -563,7 +738,9 @@ export function UniversalSearch() {
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                           {!hasUrl && (
-                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">Soon</span>
+                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">
+                                              Soon
+                                            </span>
                                           )}
                                           {hasUrl && (
                                             <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
@@ -598,17 +775,25 @@ export function UniversalSearch() {
                                       {/* Previews */}
                                       {previews.length > 0 && (
                                         <div className="space-y-1">
-                                          {previews.slice(0, 2).map((preview) => (
-                                            <div key={preview.label} className="text-[10px]">
-                                              <span className="font-semibold text-slate-500 uppercase tracking-wide">
-                                                {preview.label}:
-                                              </span>{" "}
-                                              <span className="text-slate-600">
-                                                {preview.items.slice(0, 4).join(", ")}
-                                                {preview.items.length > 4 && ` +${preview.items.length - 4}`}
-                                              </span>
-                                            </div>
-                                          ))}
+                                          {previews
+                                            .slice(0, 2)
+                                            .map((preview) => (
+                                              <div
+                                                key={preview.label}
+                                                className="text-[10px]"
+                                              >
+                                                <span className="font-semibold text-slate-500 uppercase tracking-wide">
+                                                  {preview.label}:
+                                                </span>{" "}
+                                                <span className="text-slate-600">
+                                                  {preview.items
+                                                    .slice(0, 4)
+                                                    .join(", ")}
+                                                  {preview.items.length > 4 &&
+                                                    ` +${preview.items.length - 4}`}
+                                                </span>
+                                              </div>
+                                            ))}
                                         </div>
                                       )}
                                     </div>
@@ -638,7 +823,7 @@ export function UniversalSearch() {
             onClick={() => {
               // React 19: Use transition for smooth helper text clicks
               startTransition(() => {
-                setSearchState({ mode: 'typing', query: search });
+                setSearchState({ mode: "typing", query: search });
                 setIsDropdownOpen(true);
               });
             }}

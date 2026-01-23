@@ -2,14 +2,21 @@
  * Query validation and routing types
  */
 
-export type QueryType = 'variant_vcf' | 'variant_rsid' | 'gene' | 'disease' | 'drug' | 'pathway' | 'unknown';
+export type QueryType =
+  | "variant_vcf"
+  | "variant_rsid"
+  | "gene"
+  | "disease"
+  | "drug"
+  | "pathway"
+  | "unknown";
 
 export interface ParsedQuery {
   type: QueryType;
   raw: string;
   normalized: string;
   isValid: boolean;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
 }
 
 export interface VariantVCF {
@@ -21,7 +28,7 @@ export interface VariantVCF {
 }
 
 export interface ParsedVariantQuery extends ParsedQuery {
-  type: 'variant_vcf' | 'variant_rsid';
+  type: "variant_vcf" | "variant_rsid";
   vcf?: VariantVCF;
   rsid?: string;
 }

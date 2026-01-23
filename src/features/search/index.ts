@@ -1,45 +1,41 @@
 // Components
-export { UniversalSearch } from './components';
-
-// Context
-export { SearchProvider, useSearch } from './context/search-context';
 
 // API
-export { fetchTypeahead, fetchSearch } from './api/search-api';
-
+export { fetchSearch, fetchTypeahead } from "./api/search-api";
+export { UniversalSearch } from "./components";
+// Context
+export { SearchProvider, useSearch } from "./context/search-context";
+// Types
+export type {
+  EntityLinks,
+  EntityPreview,
+  EntityType,
+  MatchType,
+  SearchEntity,
+  SearchParams,
+  SearchResults,
+  TypeaheadParams,
+  TypeaheadResponse,
+  TypeaheadSuggestion,
+} from "./types/api";
+export type {
+  ParsedQuery,
+  ParsedVariantQuery,
+  QueryType,
+  RouteDestination,
+  VariantVCF,
+} from "./types/query";
 // Utils
 export {
   getEntityUrl,
+  getPopulateIdentifier,
+  getRouteForQuery,
   hasEntityPage,
+  isRoutableQuery,
+  looksLikeVCF,
+  navigateToQuery,
   parseQuery,
   parseVCF,
-  looksLikeVCF,
   preloadVariant,
   preloadVariantDebounced,
-  getRouteForQuery,
-  navigateToQuery,
-  isRoutableQuery,
-  getPopulateIdentifier,
-} from './utils';
-
-// Types
-export type {
-  EntityType,
-  MatchType,
-  EntityLinks,
-  EntityPreview,
-  TypeaheadSuggestion,
-  TypeaheadResponse,
-  SearchEntity,
-  SearchResults,
-  TypeaheadParams,
-  SearchParams,
-} from './types/api';
-
-export type {
-  QueryType,
-  ParsedQuery,
-  VariantVCF,
-  ParsedVariantQuery,
-  RouteDestination,
-} from './types/query';
+} from "./utils";

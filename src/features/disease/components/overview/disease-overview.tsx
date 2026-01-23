@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ExternalLink } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { Disease, DiseaseSynonyms, DiseasePrevalence } from "@features/disease/types/disease";
+import type {
+  Disease,
+  DiseasePrevalence,
+  DiseaseSynonyms,
+} from "@features/disease/types/disease";
 import { cn } from "@infra/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@shared/components/ui/card";
 import { ClickableEntityId } from "@shared/components/ui/clickable-entity-id";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import type { ColumnDef } from "@tanstack/react-table";
+import { ExternalLink } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface DiseaseOverviewProps {
   disease: Disease;
@@ -26,7 +35,12 @@ interface CrossRefRow {
 
 interface OntologyRow {
   id: string;
-  relationshipType: "Parent" | "Ancestor" | "Child" | "Descendant" | "Therapeutic Area";
+  relationshipType:
+    | "Parent"
+    | "Ancestor"
+    | "Child"
+    | "Descendant"
+    | "Therapeutic Area";
   entityId: string;
 }
 
@@ -73,19 +87,35 @@ const transformOntologyRelationships = (disease: Disease): OntologyRow[] => {
   const rows: OntologyRow[] = [];
 
   disease.parents?.forEach((id, idx) => {
-    rows.push({ id: `parent-${idx}`, relationshipType: "Parent", entityId: id });
+    rows.push({
+      id: `parent-${idx}`,
+      relationshipType: "Parent",
+      entityId: id,
+    });
   });
   disease.ancestors?.forEach((id, idx) => {
-    rows.push({ id: `ancestor-${idx}`, relationshipType: "Ancestor", entityId: id });
+    rows.push({
+      id: `ancestor-${idx}`,
+      relationshipType: "Ancestor",
+      entityId: id,
+    });
   });
   disease.children?.forEach((id, idx) => {
     rows.push({ id: `child-${idx}`, relationshipType: "Child", entityId: id });
   });
   disease.descendants?.forEach((id, idx) => {
-    rows.push({ id: `descendant-${idx}`, relationshipType: "Descendant", entityId: id });
+    rows.push({
+      id: `descendant-${idx}`,
+      relationshipType: "Descendant",
+      entityId: id,
+    });
   });
   disease.therapeutic_areas?.forEach((id, idx) => {
-    rows.push({ id: `therapeutic-${idx}`, relationshipType: "Therapeutic Area", entityId: id });
+    rows.push({
+      id: `therapeutic-${idx}`,
+      relationshipType: "Therapeutic Area",
+      entityId: id,
+    });
   });
 
   return rows;
@@ -111,7 +141,9 @@ const transformSynonyms = (synonyms?: DiseaseSynonyms): SynonymRow[] => {
   return rows;
 };
 
-const transformEpidemiology = (prevalence?: DiseasePrevalence[]): EpidemRow[] => {
+const transformEpidemiology = (
+  prevalence?: DiseasePrevalence[],
+): EpidemRow[] => {
   if (!prevalence) return [];
   return prevalence.map((prev, idx) => ({
     id: `prev-${idx}`,
@@ -127,7 +159,7 @@ const transformEpidemiology = (prevalence?: DiseasePrevalence[]): EpidemRow[] =>
 
 const transformObsoleteTerms = (
   obsoleteTerms?: string[],
-  obsoleteXrefs?: string[]
+  obsoleteXrefs?: string[],
 ): ObsoleteRow[] => {
   const rows: ObsoleteRow[] = [];
 
@@ -147,16 +179,26 @@ const transformObsoleteTerms = (
 
 export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
   // Transform data
-  const crossRefData = useMemo(() => transformCrossRefs(disease.dbxrefs), [disease.dbxrefs]);
-  const ontologyData = useMemo(() => transformOntologyRelationships(disease), [disease]);
-  const synonymData = useMemo(() => transformSynonyms(disease.synonyms), [disease.synonyms]);
+  const crossRefData = useMemo(
+    () => transformCrossRefs(disease.dbxrefs),
+    [disease.dbxrefs],
+  );
+  const ontologyData = useMemo(
+    () => transformOntologyRelationships(disease),
+    [disease],
+  );
+  const synonymData = useMemo(
+    () => transformSynonyms(disease.synonyms),
+    [disease.synonyms],
+  );
   const epidemiologyData = useMemo(
     () => transformEpidemiology(disease.epidemiology?.prevalence),
-    [disease.epidemiology?.prevalence]
+    [disease.epidemiology?.prevalence],
   );
   const obsoleteData = useMemo(
-    () => transformObsoleteTerms(disease.obsolete_terms, disease.obsolete_xrefs),
-    [disease.obsolete_terms, disease.obsolete_xrefs]
+    () =>
+      transformObsoleteTerms(disease.obsolete_terms, disease.obsolete_xrefs),
+    [disease.obsolete_terms, disease.obsolete_xrefs],
   );
 
   // Filters
@@ -173,7 +215,9 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       descendant: "Descendant",
       therapeutic: "Therapeutic Area",
     };
-    return ontologyData.filter((row) => row.relationshipType === filterMap[relFilter]);
+    return ontologyData.filter(
+      (row) => row.relationshipType === filterMap[relFilter],
+    );
   }, [ontologyData, relFilter]);
 
   const filteredSynonymData = useMemo(() => {
@@ -234,7 +278,9 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       accessorKey: "referenceId",
       header: "Reference ID",
       enableSorting: true,
-      cell: ({ row }) => <ClickableEntityId id={row.original.referenceId} mono />,
+      cell: ({ row }) => (
+        <ClickableEntityId id={row.original.referenceId} mono />
+      ),
     },
   ];
 
@@ -374,7 +420,9 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                   <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                     Source
                   </dt>
-                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{disease.source}</dd>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                    {disease.source}
+                  </dd>
                 </div>
               )}
               {disease.code && (
@@ -431,7 +479,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                         "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
                         disease.isTherapeuticArea
                           ? "bg-purple-100 text-purple-700"
-                          : "bg-slate-100 text-slate-600"
+                          : "bg-slate-100 text-slate-600",
                       )}
                     >
                       {disease.isTherapeuticArea ? "Yes" : "No"}
@@ -450,7 +498,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                         "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
                         disease.leaf
                           ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-600"
+                          : "bg-slate-100 text-slate-600",
                       )}
                     >
                       {disease.leaf ? "Yes" : "No"}

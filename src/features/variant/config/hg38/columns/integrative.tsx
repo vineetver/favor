@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Variant } from "@features/variant/types";
 import {
   cell,
@@ -6,6 +5,7 @@ import {
   type DerivedColumn,
   tooltip,
 } from "@infra/table/column-builder";
+import type { ReactNode } from "react";
 import { apcColumns } from "./shared";
 
 // ============================================================================

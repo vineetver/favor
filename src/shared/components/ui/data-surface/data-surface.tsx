@@ -1,5 +1,12 @@
 "use client";
 
+import { cn } from "@infra/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -13,13 +20,6 @@ import {
 } from "@tanstack/react-table";
 import { Download, Info } from "lucide-react";
 import * as React from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
 import { ContextHeader } from "./context-header";
 import { ControlBar } from "./control-bar";
 import { FilterDrawer } from "./filter-drawer";

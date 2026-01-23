@@ -2,8 +2,12 @@
  * Query parser - identifies and validates user queries
  */
 
-import type { ParsedQuery, ParsedVariantQuery, QueryType } from '../types/query';
-import { parseVCF, looksLikeVCF } from './vcf-parser';
+import type {
+  ParsedQuery,
+  ParsedVariantQuery,
+  QueryType,
+} from "../types/query";
+import { looksLikeVCF, parseVCF } from "./vcf-parser";
 
 /**
  * Parse user query and identify its type
@@ -13,11 +17,11 @@ export function parseQuery(query: string): ParsedQuery {
 
   if (!trimmed) {
     return {
-      type: 'unknown',
+      type: "unknown",
       raw: query,
-      normalized: '',
+      normalized: "",
       isValid: false,
-      confidence: 'low',
+      confidence: "low",
     };
   }
 
@@ -25,11 +29,11 @@ export function parseQuery(query: string): ParsedQuery {
   const vcf = parseVCF(trimmed);
   if (vcf) {
     return {
-      type: 'variant_vcf',
+      type: "variant_vcf",
       raw: query,
       normalized: vcf.normalized,
       isValid: true,
-      confidence: 'high',
+      confidence: "high",
       vcf,
     } as ParsedVariantQuery;
   }
@@ -37,11 +41,11 @@ export function parseQuery(query: string): ParsedQuery {
   // 2. Check for rsID pattern (rs followed by digits)
   if (/^rs\d+$/i.test(trimmed)) {
     return {
-      type: 'variant_rsid',
+      type: "variant_rsid",
       raw: query,
       normalized: trimmed.toLowerCase(),
       isValid: true,
-      confidence: 'high',
+      confidence: "high",
       rsid: trimmed.toLowerCase(),
     } as ParsedVariantQuery;
   }
@@ -49,65 +53,65 @@ export function parseQuery(query: string): ParsedQuery {
   // 3. Partial rsID match (user still typing)
   if (/^rs\d/i.test(trimmed)) {
     return {
-      type: 'variant_rsid',
+      type: "variant_rsid",
       raw: query,
       normalized: trimmed.toLowerCase(),
       isValid: false,
-      confidence: 'medium',
+      confidence: "medium",
     } as ParsedVariantQuery;
   }
 
   // 4. Check if it looks like a partial VCF (user still typing)
   if (looksLikeVCF(trimmed)) {
     return {
-      type: 'variant_vcf',
+      type: "variant_vcf",
       raw: query,
       normalized: trimmed,
       isValid: false,
-      confidence: 'medium',
+      confidence: "medium",
     } as ParsedVariantQuery;
   }
 
   // 5. ChEMBL ID pattern (drugs)
   if (/^CHEMBL\d+$/i.test(trimmed)) {
     return {
-      type: 'drug',
+      type: "drug",
       raw: query,
       normalized: trimmed.toUpperCase(),
       isValid: true,
-      confidence: 'high',
+      confidence: "high",
     };
   }
 
   // 6. Disease ontology ID patterns (MONDO, HPO, EFO, ORPHA, etc.)
   if (/^(MONDO|HPO?|EFO|ORPHA|DOID|OMIM|ICD10|ICD11)[:_]\d+$/i.test(trimmed)) {
     return {
-      type: 'disease',
+      type: "disease",
       raw: query,
-      normalized: trimmed.toUpperCase().replace(':', '_'),
+      normalized: trimmed.toUpperCase().replace(":", "_"),
       isValid: true,
-      confidence: 'high',
+      confidence: "high",
     };
   }
 
   // 7. Gene-like pattern (all uppercase, short)
   if (/^[A-Z][A-Z0-9-]{1,10}$/.test(trimmed)) {
     return {
-      type: 'gene',
+      type: "gene",
       raw: query,
       normalized: trimmed,
       isValid: true,
-      confidence: 'medium',
+      confidence: "medium",
     };
   }
 
   // 8. Everything else is unknown (could be pathway, etc.)
   return {
-    type: 'unknown',
+    type: "unknown",
     raw: query,
     normalized: trimmed,
     isValid: false,
-    confidence: 'low',
+    confidence: "low",
   };
 }
 
@@ -124,7 +128,7 @@ export function getQueryType(query: string): QueryType {
  */
 export function isValidVariantVCF(query: string): boolean {
   const parsed = parseQuery(query);
-  return parsed.type === 'variant_vcf' && parsed.isValid;
+  return parsed.type === "variant_vcf" && parsed.isValid;
 }
 
 /**
@@ -132,5 +136,5 @@ export function isValidVariantVCF(query: string): boolean {
  */
 export function isValidRsID(query: string): boolean {
   const parsed = parseQuery(query);
-  return parsed.type === 'variant_rsid' && parsed.isValid;
+  return parsed.type === "variant_rsid" && parsed.isValid;
 }

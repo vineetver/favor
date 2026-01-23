@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  ArrowUpRight,
-  FileText,
-  UploadCloud,
-} from "lucide-react";
-import Link from "next/link";
-
 import { UniversalSearch } from "@features/search";
+import { ArrowUpRight, FileText, UploadCloud } from "lucide-react";
+import Link from "next/link";
 
 // Stats data
 const stats = [

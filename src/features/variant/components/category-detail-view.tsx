@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { Info } from "lucide-react";
+import { variantColumnGroups } from "@features/variant/config/hg38";
+import type { Variant } from "@features/variant/types";
+import type { ColumnMeta } from "@infra/table/column-builder";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
 import {
@@ -14,9 +11,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { variantColumnGroups } from "@features/variant/config/hg38";
-import type { Variant } from "@features/variant/types";
-import type { ColumnMeta } from "@infra/table/column-builder";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { Info } from "lucide-react";
 
 interface CategoryDetailViewProps {
   data: Variant;

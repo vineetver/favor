@@ -1,8 +1,6 @@
 "use client";
 
-import { ChevronDown, Menu } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
   DropdownMenu,
@@ -11,8 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
+import { ChevronDown, Menu } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import { siteConfig } from "@/config/site";
-import { cn } from "@infra/utils";
 import { MobileDrawer } from "./mobile-drawer";
 import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
 import { useScrolled } from "./use-navbar";

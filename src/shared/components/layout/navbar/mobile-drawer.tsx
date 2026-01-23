@@ -1,11 +1,11 @@
 "use client";
 
+import { cn } from "@infra/utils";
+import { Logo } from "@shared/components/ui/logo";
 import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Logo } from "@shared/components/ui/logo";
 import { siteConfig } from "@/config/site";
-import { cn } from "@infra/utils";
 import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
 import { PageNavDrawer } from "./page-nav-drawer";
 

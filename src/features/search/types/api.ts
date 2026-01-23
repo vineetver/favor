@@ -1,7 +1,12 @@
 // Typeahead API Types
-export type EntityType = 'genes' | 'diseases' | 'drugs' | 'pathways' | 'variants';
+export type EntityType =
+  | "genes"
+  | "diseases"
+  | "drugs"
+  | "pathways"
+  | "variants";
 
-export type MatchType = 'prefix' | 'substring' | 'fuzzy';
+export type MatchType = "prefix" | "substring" | "fuzzy";
 
 export interface EntityLinks {
   gene_count?: number;

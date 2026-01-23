@@ -1,13 +1,14 @@
 "use client";
 
+import { GoslingWrapper } from "@shared/components/visualization/gosling-wrapper";
 import { Download, RotateCcw, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { GoslingWrapper } from "@shared/components/visualization/gosling-wrapper";
 
 // gosling.js currently has peer dep mismatches with React 19.
 // We treat its types as an opaque boundary.
 type GoslingRef = unknown;
 type GoslingSpec = unknown;
+
 import { Button } from "@shared/components/ui/button";
 import {
   Card,

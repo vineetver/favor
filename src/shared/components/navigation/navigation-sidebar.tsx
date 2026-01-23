@@ -1,5 +1,11 @@
 "use client";
 
+import { cn } from "@infra/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import {
   Activity,
   BookOpen,
@@ -26,13 +32,6 @@ import {
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@shared/components/ui/collapsible";
-import { cn } from "@infra/utils";
 
 const iconMap: Record<string, LucideIcon> = {
   sparkles: Sparkles,

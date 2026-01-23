@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import {
   Activity,
   Database,
@@ -11,7 +12,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@infra/utils";
 
 interface NavigationItem {
   name: string;

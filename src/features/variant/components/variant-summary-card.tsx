@@ -1,6 +1,6 @@
+import { Card, CardContent, CardHeader } from "@shared/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader } from "@shared/components/ui/card";
 
 interface VariantSummaryCardProps {
   children: ReactNode;

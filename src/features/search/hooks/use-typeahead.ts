@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchTypeahead } from '../api/search-api';
-import type { TypeaheadResponse, EntityType } from '../types/api';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchTypeahead } from "../api/search-api";
+import type { EntityType, TypeaheadResponse } from "../types/api";
 
 interface UseTypeaheadOptions {
   /**
@@ -58,7 +58,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
     onError,
   } = options;
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<TypeaheadResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -95,7 +95,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
       try {
         const response = await fetchTypeahead({
           q: searchQuery,
-          types: types?.join(','),
+          types: types?.join(","),
           limit,
           include_links: includeLinks,
           include_preview: includePreview,
@@ -108,10 +108,10 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
           onResults?.(response);
         }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Search failed');
+        const error = err instanceof Error ? err : new Error("Search failed");
 
         // Don't set error for aborted requests
-        if (error.name !== 'AbortError') {
+        if (error.name !== "AbortError") {
           // Only update error if this is still the latest request
           if (currentRequestId === requestIdRef.current) {
             setError(error);
@@ -126,7 +126,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [minLength, types, limit, includeLinks, includePreview, onResults, onError]
+    [minLength, types, limit, includeLinks, includePreview, onResults, onError],
   );
 
   // Debounced search
@@ -159,7 +159,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
   }, []);
 
   const clear = useCallback(() => {
-    setQuery('');
+    setQuery("");
     setResults(null);
     setError(null);
     setIsLoading(false);

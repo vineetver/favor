@@ -1,8 +1,8 @@
 // Components
-export { DrugHeader, DrugOverview } from './components';
 
 // API
-export { fetchDrug } from './api/drug';
+export { fetchDrug } from "./api/drug";
+export { DrugHeader, DrugOverview } from "./components";
 
 // Types
-export type { Drug, DrugResponse, CrossReference, LinkedEntity } from './types';
+export type { CrossReference, Drug, DrugResponse, LinkedEntity } from "./types";

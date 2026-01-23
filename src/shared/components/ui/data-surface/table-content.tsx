@@ -1,5 +1,12 @@
 "use client";
 
+import { cn } from "@infra/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
 import {
   flexRender,
   type Row,
@@ -7,13 +14,6 @@ import {
   type Table,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, Info, Search } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
 import type { ColumnMeta } from "./types";
 
 interface TableContentProps<TData> {

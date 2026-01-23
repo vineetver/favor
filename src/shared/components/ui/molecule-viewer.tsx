@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { AlertCircle, Copy, Check } from "lucide-react";
+import { AlertCircle, Check, Copy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface MoleculeViewerProps {
   smiles: string;
@@ -14,7 +14,7 @@ export function MoleculeViewer({
   smiles,
   width = 400,
   height = 300,
-  className = ""
+  className = "",
 }: MoleculeViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState(false);
@@ -34,7 +34,8 @@ export function MoleculeViewer({
 
         // Load the library
         const script = document.createElement("script");
-        script.src = "https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js";
+        script.src =
+          "https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js";
         script.async = true;
         script.onload = () => {
           setSmilesDrawer((window as any).SmilesDrawer);
@@ -69,21 +70,25 @@ export function MoleculeViewer({
       });
 
       // Parse and draw the SMILES string
-      SmilesDrawer.parse(smiles, (tree: any) => {
-        if (!tree || tree.error) {
-          console.error("Failed to parse SMILES:", tree?.error);
+      SmilesDrawer.parse(
+        smiles,
+        (tree: any) => {
+          if (!tree || tree.error) {
+            console.error("Failed to parse SMILES:", tree?.error);
+            setError(true);
+            setLoading(false);
+            return;
+          }
+
+          drawer.draw(tree, canvasRef.current, "light", false);
+          setLoading(false);
+        },
+        (err: any) => {
+          console.error("Failed to parse SMILES:", err);
           setError(true);
           setLoading(false);
-          return;
-        }
-
-        drawer.draw(tree, canvasRef.current, "light", false);
-        setLoading(false);
-      }, (err: any) => {
-        console.error("Failed to parse SMILES:", err);
-        setError(true);
-        setLoading(false);
-      });
+        },
+      );
     } catch (err) {
       console.error("Failed to draw molecule:", err);
       setError(true);
@@ -129,7 +134,7 @@ export function MoleculeViewer({
 
       <canvas
         ref={canvasRef}
-        className={`rounded-lg border border-slate-200 bg-white ${error || loading ? 'hidden' : ''}`}
+        className={`rounded-lg border border-slate-200 bg-white ${error || loading ? "hidden" : ""}`}
         style={{ width: `${width}px`, height: `${height}px` }}
       />
 

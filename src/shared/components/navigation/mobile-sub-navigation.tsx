@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@shared/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@shared/components/ui/button";
 
 interface NavigationItem {
   text: string;
