@@ -38,6 +38,8 @@ export async function fetchTypeahead(params: TypeaheadParams): Promise<Typeahead
     },
     // Don't cache typeahead for real-time feel
     cache: 'no-store',
+    // Pass abort signal to cancel in-flight requests
+    signal: params.signal,
   });
 
   if (!response.ok) {

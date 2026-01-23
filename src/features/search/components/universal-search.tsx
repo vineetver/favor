@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, type FormEvent } from "react";
+import { useState, useCallback, useEffect, useRef, useTransition, useDeferredValue, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Combobox,
@@ -16,6 +16,18 @@ import type { TypeaheadSuggestion, EntityType } from "../types/api";
 import { cn } from "@/lib/utils";
 
 type GenomeBuild = "hg38" | "hg19";
+
+// Discriminated union - makes invalid states impossible
+// State transitions (the contract):
+//   idle -> typing: user types anything
+//   typing -> idle: user deletes all text
+//   typing -> selected: user clicks a suggestion
+//   selected -> typing: user types anything (clears previous selection)
+//   selected -> selected: user clicks a different suggestion (overwrites)
+type SearchState =
+  | { mode: 'idle' }
+  | { mode: 'typing', query: string }
+  | { mode: 'selected', query: string, suggestion: TypeaheadSuggestion };
 
 const ENTITY_CONFIG: Record<
   EntityType,
@@ -61,11 +73,24 @@ const ENTITY_CONFIG: Record<
 export function UniversalSearch() {
   const router = useRouter();
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
+  const [searchState, setSearchState] = useState<SearchState>({ mode: 'idle' });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<TypeaheadSuggestion | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
 
-  const { query, setQuery, results, isLoading, clear } = useTypeahead({
+  // React 19: useRef for click-outside detection
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // React 19: useTransition for non-blocking state updates
+  // Keeps UI responsive during selection updates
+  const [isPending, startTransition] = useTransition();
+
+  // Derive query from state - Single Source of Truth
+  const query = searchState.mode === 'idle' ? '' : searchState.query;
+
+  // React 19: useDeferredValue for smooth transitions
+  // Delays non-urgent updates to prevent choppy UI
+  const deferredQuery = useDeferredValue(query);
+
+  const { setQuery, results, isLoading, clear } = useTypeahead({
     minLength: 2,
     debounce: 300,
     limit: 3,
@@ -73,19 +98,24 @@ export function UniversalSearch() {
     includePreview: true,
   });
 
-  const handleInputChange = useCallback((value: string) => {
-    setQuery(value);
-  }, [setQuery]);
-
-  // Clear selected suggestion when user manually edits query
+  // Sync typeahead query - use deferredQuery for smooth transitions
   useEffect(() => {
-    if (selectedSuggestion) {
-      const selectedIdentifier = getPopulateIdentifier(selectedSuggestion);
-      if (query !== selectedIdentifier) {
-        setSelectedSuggestion(null);
+    setQuery(deferredQuery);
+  }, [deferredQuery, setQuery]);
+
+  const handleInputChange = useCallback((value: string) => {
+    // ANY user typing transitions to typing mode - clears previous selections
+    if (value.trim().length === 0) {
+      setSearchState({ mode: 'idle' });
+      setIsDropdownOpen(false);
+    } else {
+      // Transition to typing mode - invalidates any previous selection
+      setSearchState({ mode: 'typing', query: value });
+      if (value.trim().length >= 2) {
+        setIsDropdownOpen(true);
       }
     }
-  }, [query, selectedSuggestion]);
+  }, []);
 
   // Preload variant data when user types a complete VCF
   useEffect(() => {
@@ -105,29 +135,45 @@ export function UniversalSearch() {
 
   const handleSelectSuggestion = useCallback(
     (suggestion: TypeaheadSuggestion) => {
-      // Populate search bar with identifier instead of navigating
-      const identifier = getPopulateIdentifier(suggestion);
-      setQuery(identifier);
-      setSelectedSuggestion(suggestion);
-      // Keep dropdown open with results visible
+      // React 19: Use transition for smooth, non-blocking update
+      startTransition(() => {
+        const identifier = getPopulateIdentifier(suggestion);
+        setSearchState({ mode: 'selected', query: identifier, suggestion });
+        setIsDropdownOpen(false);
+      });
     },
-    [setQuery]
+    [startTransition]
   );
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
 
-      if (!query.trim()) return;
+      if (searchState.mode === 'idle') return;
 
       // 1. If user has selected a suggestion, navigate to it
-      if (selectedSuggestion) {
-        const url = selectedSuggestion.url || getEntityUrl(selectedSuggestion.type, selectedSuggestion.id, { genome });
-        if (url && hasEntityPage(selectedSuggestion.type)) {
+      if (searchState.mode === 'selected') {
+        const { suggestion, query: selectedQuery } = searchState;
+
+        // For variants, use the query (rsID if available) instead of raw ID
+        // This ensures "rs7412" routes to /variant/rs7412 not /variant/19-44908822-C-T
+        if (suggestion.type === 'variants' && isRoutableQuery(selectedQuery)) {
+          const success = await navigateToQuery(selectedQuery, genome, router);
+          if (success) {
+            clear();
+            setSearchState({ mode: 'idle' });
+            setIsDropdownOpen(false);
+            return;
+          }
+        }
+
+        // For other entities, use the standard URL generation
+        const url = suggestion.url || getEntityUrl(suggestion.type, suggestion.id, { genome });
+        if (url && hasEntityPage(suggestion.type)) {
           router.push(url);
           clear();
+          setSearchState({ mode: 'idle' });
           setIsDropdownOpen(false);
-          setSelectedSuggestion(null);
         }
         return;
       }
@@ -137,6 +183,7 @@ export function UniversalSearch() {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
           clear();
+          setSearchState({ mode: 'idle' });
           setIsDropdownOpen(false);
           return;
         }
@@ -155,15 +202,38 @@ export function UniversalSearch() {
         }
       }
     },
-    [query, results, genome, router, clear, selectedSuggestion, handleSelectSuggestion]
+    [searchState, results, genome, router, clear, handleSelectSuggestion, query]
   );
 
-  const handleFocus = () => {
-    setIsDropdownOpen(true);
-  };
+  // React 19: Proper click-outside detection with event listeners
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only close if clicking outside the container and dropdown is open
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        isDropdownOpen
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
 
-  const handleBlur = () => {
-    setTimeout(() => setIsDropdownOpen(false), 200);
+    // Add event listener when dropdown is open
+    if (isDropdownOpen) {
+      // Use capture phase to ensure we catch the event before other handlers
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [isDropdownOpen]);
+
+  const handleFocus = () => {
+    if (query.trim().length >= 2) {
+      setIsDropdownOpen(true);
+    }
   };
 
   // Smart heuristics to detect query intent
@@ -234,7 +304,7 @@ export function UniversalSearch() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       <form onSubmit={handleSubmit} className="relative group">
         <div className="absolute -inset-1 bg-linear-to-r from-purple-200 to-indigo-200 rounded-[28px] blur-xl opacity-40 group-hover:opacity-60 transition duration-500"></div>
 
@@ -276,7 +346,6 @@ export function UniversalSearch() {
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
-                  onBlur={handleBlur}
                   placeholder="Search genes, variants, diseases, drugs, pathways..."
                   autoComplete="off"
                   spellCheck={false}
@@ -285,9 +354,9 @@ export function UniversalSearch() {
 
               <button
                 type="submit"
-                className="hidden sm:flex bg-slate-900 hover:bg-slate-800 text-white w-12 h-12 rounded-[18px] transition-all duration-200 items-center justify-center shadow-lg shadow-slate-900/10 mr-1"
+                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-[18px] transition-all duration-200 items-center justify-center shadow-lg shadow-slate-900/10 mr-1"
               >
-                {isLoading && isDropdownOpen ? (
+                {(isLoading || isPending) && isDropdownOpen ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
                   <Search className="w-6 h-6" />
@@ -302,8 +371,12 @@ export function UniversalSearch() {
                 className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
                 style={{ maxHeight: "calc(100vh - 400px)" }}
               >
+                {/* Subtle loading bar when updating results */}
+                {(isLoading || isPending) && groupedSuggestions.length > 0 && (
+                  <div className="h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 animate-pulse" />
+                )}
                 <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 400px)" }}>
-                  {isLoading ? (
+                  {isLoading && groupedSuggestions.length === 0 ? (
                     <div className="py-8 px-6 text-center text-slate-400">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                       <div className="text-sm">Searching...</div>
@@ -557,14 +630,17 @@ export function UniversalSearch() {
 
       {/* Helper Text */}
       <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-slate-400 uppercase tracking-widest opacity-80 flex-wrap">
-        {["BRCA1", "rs7412", "Alzheimer", "Imatinib"].map((search) => (
+        {["BRCA1", "rs7412", "Alzheimer", "Metformin"].map((search) => (
           <button
             type="button"
             key={search}
             className="hover:text-purple-600 cursor-pointer transition-colors"
             onClick={() => {
-              setQuery(search);
-              setIsDropdownOpen(true);
+              // React 19: Use transition for smooth helper text clicks
+              startTransition(() => {
+                setSearchState({ mode: 'typing', query: search });
+                setIsDropdownOpen(true);
+              });
             }}
           >
             {search}

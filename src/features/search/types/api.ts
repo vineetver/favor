@@ -81,6 +81,7 @@ export interface TypeaheadParams {
   limit?: number;
   include_links?: boolean;
   include_preview?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface SearchParams {

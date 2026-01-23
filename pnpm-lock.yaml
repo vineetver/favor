@@ -220,8 +220,8 @@ packages:
   '@chevrotain/utils@11.0.3':
     resolution: {integrity: sha512-YslZMgtJUyuMbZ+aKvfF3x1f5liK4mWNxghFRv7jqRR9C3R3fAOGTTKvxXDa2Y1s9zSbcpuO0cAxDYsc9SrXoQ==}
 
-  '@duckdb/duckdb-wasm@1.29.1-dev132.0':
-    resolution: {integrity: sha512-OUkJuH9564GQ/OgggdgJ/Yxmlk5PYnWiJe0rrNkEs0Sfsi00nK6WZgJmWGGAtCK6le2KJxFWZ4Z2MjUKGBzLuQ==}
+  '@duckdb/duckdb-wasm@1.30.0':
+    resolution: {integrity: sha512-9aWrm+4ayl4sTlvGtl/b+LxrUyXaac3yyVqkoJ3F7Vkd62PoS8PcQIRJ/KjXBW36LP1CnPY5jjvFyIcTFLtcXA==}
 
   '@elastic/elasticsearch@9.2.0':
     resolution: {integrity: sha512-M59qmMOZOk8pTcI9Ns2ow18PlyMbYrpcXqYwkChjiyXSmmqoCTvFXkC2bGQLxrrQkXaPbYR7aZqWD9b5F1405A==}
@@ -723,8 +723,8 @@ packages:
   '@pixi/utils@7.4.3':
     resolution: {integrity: sha512-NO3Y9HAn2UKS1YdxffqsPp+kDpVm8XWvkZcS/E+rBzY9VTLnNOI7cawSRm+dacdET3a8Jad3aDKEDZ0HmAqAFA==}
 
-  '@preact/signals-core@1.12.1':
-    resolution: {integrity: sha512-BwbTXpj+9QutoZLQvbttRg5x3l5468qaV2kufh+51yha1c53ep5dY4kTuZR35+3pAZxpfQerGJiQqg34ZNZ6uA==}
+  '@preact/signals-core@1.12.2':
+    resolution: {integrity: sha512-5Yf8h1Ke3SMHr15xl630KtwPTW4sYDFkkxS0vQ8UiQLWwZQnrF9IKaVG1mN5VcJz52EcWs2acsc/Npjha/7ysA==}
 
   '@radix-ui/primitive@1.1.3':
     resolution: {integrity: sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg==}
@@ -1496,6 +1496,9 @@ packages:
   '@uwdata/flechette@1.1.2':
     resolution: {integrity: sha512-hhtAgXlJbibLIHHIyFJ2fcPQ/hAK43HtEirRgrb/v2xEQv4It/KcUOyMklaVPUv2Z7+agKjSWLAXGyAQglRPvQ==}
 
+  '@uwdata/flechette@2.2.6':
+    resolution: {integrity: sha512-DoeWHYWHvda7kaxa1BeKVp0+S9ZiqGoRxLC+z9uuYyfMLDQ+3vW4s4WVxnQYFJm8nshS5ezAsbKBN9ojCBtdEQ==}
+
   abortable-promise-cache@1.5.0:
     resolution: {integrity: sha512-S2FfvU1As7Fve6ObCEsuOiE22UR7k91ytM+m4bzG6eAf+fb4TOAVEGZGAzlRfCo7/bZamL9d3ZeXc08MPm3azA==}
     engines: {node: '>=6'}
@@ -2010,8 +2013,8 @@ packages:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
 
-  gl-matrix@3.4.4:
-    resolution: {integrity: sha512-latSnyDNt/8zYUB6VIJ6PCh2jBjJX6gnDsoCZ7LyW7GkqrD51EWwa9qCoGixj8YqBtETQK/xY7OmpTF8xz1DdQ==}
+  gl-matrix@3.4.3:
+    resolution: {integrity: sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -2605,10 +2608,10 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postprocessing@6.38.0:
-    resolution: {integrity: sha512-tisx8XN/PWTL3uXz2mt8bjlMS1wiOUSCK3ixi4zjwUCFmP8XW8hNhXwrxwd2zf2VmCyCQ3GUaLm7GLnkkBbDsQ==}
+  postprocessing@6.38.2:
+    resolution: {integrity: sha512-7DwuT7Tkst41ZjSj287g7C9c5/D3Xx5rMgBosg0dadbUPoZD2HNzkadKPol1d2PJAoI9f+Jeh1/v9YfLzpFGVw==}
     peerDependencies:
-      three: '>= 0.157.0 < 0.182.0'
+      three: '>= 0.157.0 < 0.183.0'
 
   property-information@6.5.0:
     resolution: {integrity: sha512-PgTgs/BlvHxOu8QuEN7wi5A0OmXaBcHpmCSTehcs6Uuu9IkDIEo13Hy7n898RHfrQ49vKCoGeWZSaAK01nwVig==}
@@ -2921,8 +2924,8 @@ packages:
   threads@1.7.0:
     resolution: {integrity: sha512-Mx5NBSHX3sQYR6iI9VYbgHKBLisyB+xROCBGjjWm1O9wb9vfLxdaGtmT/KCjUqMsSNW6nERzCW3T6H43LqjDZQ==}
 
-  three@0.178.0:
-    resolution: {integrity: sha512-ybFIB0+x8mz0wnZgSGy2MO/WCO6xZhQSZnmfytSPyNpM0sBafGRVhdaj+erYh5U+RhQOAg/eXqw5uVDiM2BjhQ==}
+  three@0.180.0:
+    resolution: {integrity: sha512-o+qycAMZrh+TsE01GqWUxUIKR1AL0S8pq7zDkYOQw8GqfX8b8VoCKYUoHbhiX5j+7hr8XsuHDVU6+gkQJQKg9w==}
 
   tiny-invariant@1.3.3:
     resolution: {integrity: sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==}
@@ -2966,8 +2969,8 @@ packages:
     resolution: {integrity: sha512-ya4mg/30vm+DOWfBg4YK3j2WD6TWtRkCbasOJr40CseYENzCUby/7rIvXA99JGsQHeNxLbnXdyLLxKSv3tauFw==}
     engines: {node: '>=12.17'}
 
-  uchimata@0.4.0:
-    resolution: {integrity: sha512-PHP3dzBhcOtWjTe8xI4yMiEHF007ljbd/O0CC2mpew7iOaQdo7JmGApOevS/eoJIPeHull3uG3M+CffAL2nbsA==}
+  uchimata@0.4.3:
+    resolution: {integrity: sha512-D1EU128cQknjnqaKhdiUBYsAGSksniCO5I3kFm7MgfaNf1e4zl5D6zlaNwpoMLHtUEOoYJyz9X+OLtl9/7iWGg==}
 
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
@@ -3198,7 +3201,7 @@ snapshots:
 
   '@chevrotain/utils@11.0.3': {}
 
-  '@duckdb/duckdb-wasm@1.29.1-dev132.0':
+  '@duckdb/duckdb-wasm@1.30.0':
     dependencies:
       apache-arrow: 17.0.0
 
@@ -3666,7 +3669,7 @@ snapshots:
       eventemitter3: 4.0.7
       url: 0.11.4
 
-  '@preact/signals-core@1.12.1': {}
+  '@preact/signals-core@1.12.2': {}
 
   '@radix-ui/primitive@1.1.3': {}
 
@@ -4438,6 +4441,8 @@ snapshots:
 
   '@uwdata/flechette@1.1.2': {}
 
+  '@uwdata/flechette@2.2.6': {}
+
   abortable-promise-cache@1.5.0:
     dependencies:
       abortcontroller-polyfill: 1.7.8
@@ -4958,7 +4963,7 @@ snapshots:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.1
 
-  gl-matrix@3.4.4: {}
+  gl-matrix@3.4.3: {}
 
   gopd@1.2.0: {}
 
@@ -4970,7 +4975,7 @@ snapshots:
       '@gmod/gff': 1.3.0
       '@gmod/tabix': 1.6.1
       '@gmod/vcf': 5.0.10
-      '@preact/signals-core': 1.12.1
+      '@preact/signals-core': 1.12.2
       '@uwdata/flechette': 1.1.2
       allotment: 1.20.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       bezier-js: 4.0.3
@@ -5007,7 +5012,7 @@ snapshots:
       slugid: 3.2.0
       stream-browserify: 3.0.0
       threads: 1.7.0
-      uchimata: 0.4.0
+      uchimata: 0.4.3
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -5746,10 +5751,10 @@ snapshots:
 
   ms@2.1.3: {}
 
-  n8ao@1.10.1(postprocessing@6.38.0(three@0.178.0))(three@0.178.0):
+  n8ao@1.10.1(postprocessing@6.38.2(three@0.180.0))(three@0.180.0):
     dependencies:
-      postprocessing: 6.38.0(three@0.178.0)
-      three: 0.178.0
+      postprocessing: 6.38.2(three@0.180.0)
+      three: 0.180.0
 
   nanoevents@7.0.1: {}
 
@@ -5897,9 +5902,9 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postprocessing@6.38.0(three@0.178.0):
+  postprocessing@6.38.2(three@0.180.0):
     dependencies:
-      three: 0.178.0
+      three: 0.180.0
 
   property-information@6.5.0: {}
 
@@ -6313,7 +6318,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  three@0.178.0: {}
+  three@0.180.0: {}
 
   tiny-invariant@1.3.3: {}
 
@@ -6342,16 +6347,16 @@ snapshots:
 
   typical@7.3.0: {}
 
-  uchimata@0.4.0:
+  uchimata@0.4.3:
     dependencies:
-      '@duckdb/duckdb-wasm': 1.29.1-dev132.0
-      '@preact/signals-core': 1.12.1
-      apache-arrow: 17.0.0
+      '@duckdb/duckdb-wasm': 1.30.0
+      '@preact/signals-core': 1.12.2
+      '@uwdata/flechette': 2.2.6
       chroma-js: 3.2.0
-      gl-matrix: 3.4.4
-      n8ao: 1.10.1(postprocessing@6.38.0(three@0.178.0))(three@0.178.0)
-      postprocessing: 6.38.0(three@0.178.0)
-      three: 0.178.0
+      gl-matrix: 3.4.3
+      n8ao: 1.10.1(postprocessing@6.38.2(three@0.180.0))(three@0.180.0)
+      postprocessing: 6.38.2(three@0.180.0)
+      three: 0.180.0
 
   ufo@1.6.1: {}
 

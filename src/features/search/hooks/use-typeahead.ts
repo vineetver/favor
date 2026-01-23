@@ -65,6 +65,8 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // React 19: Request versioning to ignore stale responses
+  const requestIdRef = useRef(0);
 
   const search = useCallback(
     async (searchQuery: string) => {
@@ -81,6 +83,10 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
         return;
       }
 
+      // Increment request ID for this new request
+      requestIdRef.current += 1;
+      const currentRequestId = requestIdRef.current;
+
       setIsLoading(true);
       setError(null);
 
@@ -93,20 +99,30 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
           limit,
           include_links: includeLinks,
           include_preview: includePreview,
+          signal: abortControllerRef.current.signal,
         });
 
-        setResults(response);
-        onResults?.(response);
+        // Only update if this is still the latest request (prevents race conditions)
+        if (currentRequestId === requestIdRef.current) {
+          setResults(response);
+          onResults?.(response);
+        }
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Search failed');
 
         // Don't set error for aborted requests
         if (error.name !== 'AbortError') {
-          setError(error);
-          onError?.(error);
+          // Only update error if this is still the latest request
+          if (currentRequestId === requestIdRef.current) {
+            setError(error);
+            onError?.(error);
+          }
         }
       } finally {
-        setIsLoading(false);
+        // Only update loading state if this is still the latest request
+        if (currentRequestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
         abortControllerRef.current = null;
       }
     },

@@ -31,7 +31,11 @@ export function getPopulateIdentifier(suggestion: TypeaheadSuggestion): string {
       return suggestion.id;
 
     case 'variants':
-      // Use rsID or VCF notation - already used by query parser
+      // Prefer rsID if available (more user-friendly), fallback to VCF format
+      // When user searches "rs7412", show "rs7412" not "19-44908822-C-T"
+      if (suggestion.name && /^rs\d+$/i.test(suggestion.name)) {
+        return suggestion.name;
+      }
       return suggestion.id;
 
     case 'pathways':

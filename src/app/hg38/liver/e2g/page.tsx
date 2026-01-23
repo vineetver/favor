@@ -1,12 +1,9 @@
 "use client";
 
-import {
-  GoslingComponent,
-  type GoslingRef,
-  type GoslingSpec,
-} from "gosling.js";
+import type { GoslingRef, GoslingSpec } from "gosling.js";
 import { Download, RotateCcw, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { GoslingWrapper } from "@/components/gosling-wrapper";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,78 +17,46 @@ import { Input } from "@/components/ui/input";
 const BASE_URL =
   "https://minio-s3-favor-4ee4be.apps.shift.nerc.mghpcc.org/favor-hg38/lkp/browser/hg38/liver/e2g";
 
-// Dataset definitions
+// Dataset definitions - individual cell lines (selectable)
 const DATASETS = {
-  all_regions: {
-    label: "All cell types (BED10)",
-    url: `${BASE_URL}/all_regions.bed.gz`,
-    indexUrl: `${BASE_URL}/all_regions.bed.gz.tbi`,
-    hasCellType: true,
-  },
   hepatocytes: {
     label: "Hepatocytes",
     url: `${BASE_URL}/hepatocytes.bed.gz`,
     indexUrl: `${BASE_URL}/hepatocytes.bed.gz.tbi`,
-    hasCellType: false,
   },
   kupffer: {
     label: "Kupffer cells",
     url: `${BASE_URL}/kupffer.bed.gz`,
     indexUrl: `${BASE_URL}/kupffer.bed.gz.tbi`,
-    hasCellType: false,
   },
   lsec: {
     label: "LSEC",
     url: `${BASE_URL}/lsec.bed.gz`,
     indexUrl: `${BASE_URL}/lsec.bed.gz.tbi`,
-    hasCellType: false,
   },
   b_cells: {
     label: "B cells",
     url: `${BASE_URL}/b_cells.bed.gz`,
     indexUrl: `${BASE_URL}/b_cells.bed.gz.tbi`,
-    hasCellType: false,
   },
   cholangiocytes: {
     label: "Cholangiocytes",
     url: `${BASE_URL}/cholangiocytes.bed.gz`,
     indexUrl: `${BASE_URL}/cholangiocytes.bed.gz.tbi`,
-    hasCellType: false,
   },
   mesenchymal: {
     label: "Mesenchymal",
     url: `${BASE_URL}/mesenchymal.bed.gz`,
     indexUrl: `${BASE_URL}/mesenchymal.bed.gz.tbi`,
-    hasCellType: false,
   },
   "nk-t": {
     label: "NK-T cells",
     url: `${BASE_URL}/nk-t.bed.gz`,
     indexUrl: `${BASE_URL}/nk-t.bed.gz.tbi`,
-    hasCellType: false,
   },
 } as const;
 
 type DatasetKey = keyof typeof DATASETS;
-
-// Color palettes
-const CELL_TYPE_COLORS: Record<string, string> = {
-  hepatocytes: "#1f77b4",
-  kupffer: "#ff7f0e",
-  lsec: "#2ca02c",
-  b_cells: "#d62728",
-  cholangiocytes: "#9467bd",
-  mesenchymal: "#8c564b",
-  "nk-t": "#e377c2",
-};
-
-const REGION_CLASS_COLORS: Record<string, string> = {
-  promoter: "#e41a1c",
-  enhancer: "#377eb8",
-  distal: "#4daf4a",
-  intronic: "#984ea3",
-  intergenic: "#ff7f00",
-};
 
 // Default region: APOE locus
 const DEFAULT_REGION = {
@@ -131,7 +96,10 @@ function formatRegion(chromosome: string, start: number, end: number): string {
 export default function LiverE2GBrowser() {
   // biome-ignore lint/style/noNonNullAssertion: GoslingComponent requires non-null ref
   const goslingRef = useRef<GoslingRef>(null!);
-  const [dataset, setDataset] = useState<DatasetKey>("all_regions");
+  const [selectedCellLines, setSelectedCellLines] = useState<DatasetKey[]>([
+    "hepatocytes",
+  ]);
+  const [showEnhancerTrack, setShowEnhancerTrack] = useState(true);
   const [regionInput, setRegionInput] = useState(
     formatRegion(
       DEFAULT_REGION.chromosome,
@@ -143,80 +111,44 @@ export default function LiverE2GBrowser() {
   const [selectedEnhancer, setSelectedEnhancer] =
     useState<SelectedEnhancer | null>(null);
 
-  const datasetConfig = DATASETS[dataset];
+  const toggleCellLine = (key: DatasetKey) => {
+    setSelectedCellLines((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
 
   // Build Gosling spec
   const buildSpec = useCallback((): GoslingSpec => {
-    const { url, indexUrl, hasCellType } = datasetConfig;
     const { chromosome, start, end } = currentRegion;
-
-    // Common data definition for BED files using Gosling's BED format
-    // BED standard fields (auto-mapped): chrom, chromStart, chromEnd
-    // Custom fields after position 3: gene_tss, gene, score, region_class, gene_start, gene_end [, cell_type]
-    //
-    // NOTE: If you see "incorrect gzip header check" error, the browser may have cached
-    // corrupted data. Try: Ctrl+Shift+R (hard refresh) or clear browser cache.
-    const commonData = {
-      type: "bed" as const,
-      url,
-      indexUrl,
-      sampleLength: 5000,
-      // customFields names the columns after the first 3 standard BED fields
-      customFields: hasCellType
-        ? [
-            "gene_tss",
-            "gene",
-            "score",
-            "region_class",
-            "gene_start",
-            "gene_end",
-            "cell_type",
-          ]
-        : [
-            "gene_tss",
-            "gene",
-            "score",
-            "region_class",
-            "gene_start",
-            "gene_end",
-          ],
-    };
-
-    // Color encoding based on dataset
-    const rectColor = hasCellType
-      ? {
-          field: "cell_type",
-          type: "nominal" as const,
-          domain: Object.keys(CELL_TYPE_COLORS),
-          range: Object.values(CELL_TYPE_COLORS),
-          legend: true,
-        }
-      : {
-          field: "region_class",
-          type: "nominal" as const,
-          domain: Object.keys(REGION_CLASS_COLORS),
-          range: Object.values(REGION_CLASS_COLORS),
-          legend: true,
-        };
-
-    // Filter for selected enhancer (if any)
-    const _arcDataTransform = selectedEnhancer
-      ? [
-          {
-            type: "filter" as const,
-            field: "chromStart",
-            oneOf: [selectedEnhancer.chromStart],
-          },
-          {
-            type: "filter" as const,
-            field: "chromEnd",
-            oneOf: [selectedEnhancer.chromEnd],
-          },
-        ]
-      : [];
 
     // Linking ID for synchronized zooming/panning across tracks
     const LINKING_ID = "e2g-browser-link";
+
+    // Common data transform for filtering (only remove invalid entries)
+    const commonDataTransform = [
+      {
+        type: "filter" as const,
+        field: "gene_start",
+        not: true,
+        oneOf: [".", ""],
+      },
+    ];
+
+    // Helper to create data config for a cell line
+    const createDataConfig = (cellLine: DatasetKey) => ({
+      type: "bed" as const,
+      url: DATASETS[cellLine].url,
+      indexUrl: DATASETS[cellLine].indexUrl,
+      sampleLength: 5000,
+      customFields: [
+        "gene_tss",
+        "gene",
+        "score",
+        "region_class",
+        "gene_start",
+        "gene_end",
+      ],
+    });
 
     // Gene annotation track from Gosling server
     const geneTrack = {
@@ -282,12 +214,7 @@ export default function LiverE2GBrowser() {
         },
       ],
       row: { field: "strand", type: "nominal" as const, domain: ["+", "-"] },
-      color: {
-        field: "strand",
-        type: "nominal" as const,
-        domain: ["+", "-"],
-        range: ["#7585FF", "#FF8A85"],
-      },
+      color: { value: "#64748b" },
       tooltip: [
         { field: "name", type: "nominal" as const, alt: "Gene Name" },
         { field: "strand", type: "nominal" as const, alt: "Strand" },
@@ -298,24 +225,12 @@ export default function LiverE2GBrowser() {
       height: 80,
     };
 
-    // Enhancer regions track (Track 1) - shows actual enhancer intervals
-    const enhancerTrack = {
-      id: "enhancer-regions",
-      title: "Enhancers (score ≥ 0.7)",
-      data: commonData,
-      dataTransform: [
-        {
-          type: "filter" as const,
-          field: "gene_start",
-          not: true,
-          oneOf: [".", ""],
-        },
-        {
-          type: "filter" as const,
-          field: "score",
-          inRange: [0.7, 1.0],
-        },
-      ],
+    // Enhancer regions track (toggleable)
+    const createEnhancerTrack = (cellLine: DatasetKey) => ({
+      id: `enhancer-regions-${cellLine}`,
+      title: `Enhancers - ${DATASETS[cellLine].label}`,
+      data: createDataConfig(cellLine),
+      dataTransform: commonDataTransform,
       mark: "rect" as const,
       x: {
         field: "chromStart",
@@ -324,11 +239,12 @@ export default function LiverE2GBrowser() {
         linkingId: LINKING_ID,
       },
       xe: { field: "chromEnd", type: "genomic" as const },
-      color: rectColor,
+      color: { value: "#64748b" },
       opacity: {
         field: "score",
         type: "quantitative" as const,
-        range: [0.7, 1.0],
+        domain: [0, 1.0],
+        range: [0.3, 1.0],
       },
       tooltip: [
         {
@@ -338,72 +254,82 @@ export default function LiverE2GBrowser() {
         },
         { field: "chromEnd", type: "genomic" as const, alt: "Enhancer End" },
         { field: "gene", type: "nominal" as const, alt: "Target Gene" },
+        { field: "gene_tss", type: "genomic" as const, alt: "Gene TSS" },
         {
           field: "region_class",
           type: "nominal" as const,
           alt: "Region Class",
         },
-        ...(hasCellType
-          ? [{ field: "cell_type", type: "nominal" as const, alt: "Cell Type" }]
-          : []),
+        { field: "score", type: "quantitative" as const, alt: "E2G Score" },
       ],
       width: 800,
-      height: 120,
-    };
+      height: 40,
+    });
 
-    // E2G Links track (Track 2) - withinLink connecting enhancer to gene
-    const linksTrack = {
-      id: "e2g-links",
-      title: selectedEnhancer
-        ? "E2G Links (filtered)"
-        : "E2G Links (score ≥ 0.7)",
-      data: commonData,
-      dataTransform: [
-        {
-          type: "filter" as const,
-          field: "gene_start",
-          not: true,
-          oneOf: [".", ""],
-        },
-        {
-          type: "filter" as const,
-          field: "score",
-          inRange: [0.7, 1.0],
-        },
-      ],
-      mark: "withinLink" as const,
-      // Source: enhancer interval (x, xe)
-      x: {
-        field: "chromStart",
-        type: "genomic" as const,
-        linkingId: LINKING_ID,
-      },
-      xe: { field: "chromEnd", type: "genomic" as const },
-      // Target: gene start position
-      x1: { field: "gene_end", type: "genomic" as const },
-      x1e: { field: "gene_start", type: "genomic" as const },
-      color: { value: "none" },
-      stroke: hasCellType
-        ? {
-            field: "cell_type",
-            type: "nominal" as const,
-            domain: Object.keys(CELL_TYPE_COLORS),
-            range: Object.values(CELL_TYPE_COLORS),
-            legend: true,
-          }
-        : {
-            field: "score",
-            type: "quantitative" as const,
-            domain: [0.7, 1.0],
-            range: ["#feb24c", "#e31a1c"],
-          },
-      strokeWidth: { value: 3 },
-      opacity: {
+    // E2G Links overlay track for a cell line
+    const createE2GOverlayTrack = (cellLine: DatasetKey) => ({
+      id: `e2g-overlay-${cellLine}`,
+      title: `${DATASETS[cellLine].label}`,
+      alignment: "overlay" as const,
+      data: createDataConfig(cellLine),
+      dataTransform: commonDataTransform,
+      y: {
         field: "score",
         type: "quantitative" as const,
-        domain: [0.7, 1.0],
-        range: [0.6, 1.0],
+        domain: [0, 1.0],
+        axis: "right" as const,
       },
+      tracks: [
+        // Arc links from enhancer to gene TSS
+        {
+          mark: "withinLink" as const,
+          x: {
+            field: "chromStart",
+            type: "genomic" as const,
+            linkingId: LINKING_ID,
+          },
+          xe: { field: "chromEnd", type: "genomic" as const },
+          x1e: { field: "gene_tss", type: "genomic" as const },
+          x1: {
+            field: "gene_tss",
+            type: "genomic" as const,
+          },
+          stroke: { value: "#475569" },
+          strokeWidth: { value: 1.5 },
+          opacity: {
+            field: "score",
+            type: "quantitative" as const,
+            domain: [0, 1.0],
+            range: [0.2, 0.9],
+          },
+        },
+        // Small rect marker at enhancer region
+        {
+          mark: "rect" as const,
+          x: {
+            field: "chromStart",
+            type: "genomic" as const,
+            linkingId: LINKING_ID,
+          },
+          y: { value: 0 },
+          ye: { value: 10 },
+          color: { value: "#64748b" },
+          opacity: { value: 0.8 },
+          size: { value: 6 },
+        },
+        // Triangle at gene TSS
+        {
+          mark: "triangleBottom" as const,
+          x: {
+            field: "gene_tss",
+            type: "genomic" as const,
+            linkingId: LINKING_ID,
+          },
+          color: { value: "#334155" },
+          size: { value: 8 },
+          opacity: { value: 0.9 },
+        },
+      ],
       tooltip: [
         { field: "gene", type: "nominal" as const, alt: "Target Gene" },
         { field: "gene_tss", type: "genomic" as const, alt: "Gene TSS" },
@@ -419,30 +345,49 @@ export default function LiverE2GBrowser() {
           type: "nominal" as const,
           alt: "Region Class",
         },
-        ...(hasCellType
-          ? [{ field: "cell_type", type: "nominal" as const, alt: "Cell Type" }]
-          : []),
       ],
       width: 800,
-      height: 200,
-    };
+      height: 70,
+    });
+
+    // Build tracks array based on selections
+    const tracks: unknown[] = [];
+
+    // Add enhancer tracks if enabled
+    if (showEnhancerTrack) {
+      for (const cellLine of selectedCellLines) {
+        tracks.push(createEnhancerTrack(cellLine));
+      }
+    }
+
+    // Add E2G overlay tracks for each selected cell line
+    for (const cellLine of selectedCellLines) {
+      tracks.push(createE2GOverlayTrack(cellLine));
+    }
+
+    // Add gene track at the bottom
+    tracks.push(geneTrack);
+
+    // Build subtitle
+    const cellLineLabels = selectedCellLines
+      .map((k) => DATASETS[k].label)
+      .join(", ");
 
     return {
       title: "Liver E2G Browser",
-      subtitle: `${datasetConfig.label} | ${formatRegion(chromosome, start, end)}`,
+      subtitle: `${cellLineLabels} | ${formatRegion(chromosome, start, end)}`,
       assembly: "hg38",
       xDomain: { chromosome, interval: [start, end] },
       centerRadius: 0.5,
-      // 3 stacked tracks: Enhancers (top) → Links with arrows (middle) → Genes (bottom)
       views: [
         {
           linkingId: LINKING_ID,
           alignment: "stack" as const,
-          tracks: [enhancerTrack, linksTrack, geneTrack],
+          tracks,
         },
       ],
     } as GoslingSpec;
-  }, [datasetConfig, currentRegion, selectedEnhancer]);
+  }, [selectedCellLines, showEnhancerTrack, currentRegion]);
 
   const handleGoToRegion = () => {
     const parsed = parseRegion(regionInput.replace(/,/g, ""));
@@ -495,27 +440,44 @@ export default function LiverE2GBrowser() {
             <CardTitle className="text-lg">Controls</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap items-end gap-4">
-              {/* Dataset selector */}
+            <div className="flex flex-wrap items-start gap-6">
+              {/* Cell line selector */}
               <div className="space-y-2">
-                <label htmlFor="dataset-select" className="text-sm font-medium">
-                  Dataset
-                </label>
-                <select
-                  id="dataset-select"
-                  value={dataset}
-                  onChange={(e) => {
-                    setDataset(e.target.value as DatasetKey);
-                    setSelectedEnhancer(null);
-                  }}
-                  className="h-9 rounded-md border bg-background px-3 text-sm"
-                >
-                  {Object.entries(DATASETS).map(([key, { label }]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
+                <label className="text-sm font-medium">Cell Lines</label>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(DATASETS) as DatasetKey[]).map((key) => (
+                    <label
+                      key={key}
+                      className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+                        selectedCellLines.includes(key)
+                          ? "border-slate-400 bg-slate-100"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCellLines.includes(key)}
+                        onChange={() => toggleCellLine(key)}
+                        className="h-3 w-3"
+                      />
+                      {DATASETS[key].label}
+                    </label>
                   ))}
-                </select>
+                </div>
+              </div>
+
+              {/* Enhancer track toggle */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Options</label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">
+                  <input
+                    type="checkbox"
+                    checked={showEnhancerTrack}
+                    onChange={(e) => setShowEnhancerTrack(e.target.checked)}
+                    className="h-3 w-3"
+                  />
+                  Show Enhancer Track
+                </label>
               </div>
 
               {/* Region input */}
@@ -575,7 +537,7 @@ export default function LiverE2GBrowser() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <GoslingComponent ref={goslingRef} spec={spec} />
+                <GoslingWrapper goslingRef={goslingRef} spec={spec} />
               </div>
             </CardContent>
           </Card>
@@ -588,41 +550,20 @@ export default function LiverE2GBrowser() {
                 <CardTitle className="text-sm">Legend</CardTitle>
               </CardHeader>
               <CardContent>
-                {datasetConfig.hasCellType ? (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Cell Types
-                    </p>
-                    {Object.entries(CELL_TYPE_COLORS).map(([type, color]) => (
-                      <div key={type} className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-xs capitalize">
-                          {type.replace(/_/g, " ").replace(/-/g, "/")}
-                        </span>
-                      </div>
-                    ))}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-6 rounded bg-slate-500" />
+                    <span className="text-xs">Enhancer region</span>
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Region Classes
-                    </p>
-                    {Object.entries(REGION_CLASS_COLORS).map(
-                      ([type, color]) => (
-                        <div key={type} className="flex items-center gap-2">
-                          <div
-                            className="h-3 w-3 rounded"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-xs capitalize">{type}</span>
-                        </div>
-                      ),
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-slate-700" />
+                    <span className="text-xs">Gene TSS</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <div className="h-[2px] w-6 bg-slate-600 rounded" />
+                    <span className="text-xs">E2G link (arc)</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -666,13 +607,9 @@ export default function LiverE2GBrowser() {
                                 {g.regionClass}
                               </span>
                               {g.cellType && (
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      CELL_TYPE_COLORS[g.cellType] || "#888",
-                                  }}
-                                />
+                                <span className="text-xs text-slate-500">
+                                  ({g.cellType})
+                                </span>
                               )}
                             </div>
                           </div>
