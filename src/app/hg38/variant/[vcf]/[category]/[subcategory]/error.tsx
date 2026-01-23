@@ -2,7 +2,7 @@
 
 import { RuntimeError } from "@shared/components/ui/error-states";
 
-export default function Error({
+export default function ErrorBoundary({
   error,
   reset,
 }: {

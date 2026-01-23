@@ -24,8 +24,9 @@ export default function VariantLoading() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex space-x-2">
+              {/* biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader, order never changes */}
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 w-20" />
+                <Skeleton key={`badge-${i}`} className="h-8 w-20" />
               ))}
             </div>
             <Skeleton className="h-64 w-full" />

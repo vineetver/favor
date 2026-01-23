@@ -11,9 +11,6 @@ const stats = [
   { id: "observed-indels", value: "80M", label: "OBSERVED INDELS" },
 ];
 
-// Quick search examples
-const quickSearches = ["BRCA1", "rs7412", "chr1:1000-2000"];
-
 export default function HomePage() {
   return (
     <div className="min-h-screen relative overflow-hidden text-slate-900 selection:bg-purple-100 selection:text-purple-900">

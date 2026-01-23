@@ -3,6 +3,7 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -21,16 +22,16 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [initialQuery, setInitialQuery] = useState("");
 
-  const openSearch = (query = "") => {
+  const openSearch = useCallback((query = "") => {
     setInitialQuery(query);
     setIsOpen(true);
-  };
+  }, []);
 
-  const closeSearch = () => {
+  const closeSearch = useCallback(() => {
     setIsOpen(false);
     // Clear initial query after a short delay to allow the search to close smoothly
     setTimeout(() => setInitialQuery(""), 200);
-  };
+  }, []);
 
   // Global Command-K shortcut
   useEffect(() => {
@@ -48,7 +49,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, closeSearch, openSearch]);
 
   return (
     <SearchContext.Provider

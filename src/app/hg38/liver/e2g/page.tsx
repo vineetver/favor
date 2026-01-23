@@ -6,7 +6,12 @@ import { useCallback, useRef, useState } from "react";
 
 // gosling.js currently has peer dep mismatches with React 19.
 // We treat its types as an opaque boundary.
-type GoslingRef = unknown;
+type GoslingRef = {
+  api: {
+    exportPng: (transparent: boolean) => Promise<void>;
+    exportPdf: () => Promise<void>;
+  };
+};
 type GoslingSpec = unknown;
 
 import { Button } from "@shared/components/ui/button";
@@ -448,7 +453,7 @@ export default function LiverE2GBrowser() {
             <div className="flex flex-wrap items-start gap-6">
               {/* Cell line selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Cell Lines</label>
+                <div className="text-sm font-medium">Cell Lines</div>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(DATASETS) as DatasetKey[]).map((key) => (
                     <label
@@ -473,7 +478,7 @@ export default function LiverE2GBrowser() {
 
               {/* Enhancer track toggle */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Options</label>
+                <div className="text-sm font-medium">Options</div>
                 <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">
                   <input
                     type="checkbox"

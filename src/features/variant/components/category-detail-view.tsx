@@ -31,15 +31,15 @@ export function CategoryDetailView({
 }: CategoryDetailViewProps) {
   const group = variantColumnGroups.find((g) => g.id === categoryId);
 
+  const table = useReactTable({
+    data: [data],
+    columns: group?.columns ?? [],
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   if (!group) {
     return <NoDataState categoryName="Category" />;
   }
-
-  const table = useReactTable({
-    data: [data],
-    columns: group.columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   const row = table.getRowModel().rows[0];
 

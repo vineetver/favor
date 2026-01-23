@@ -1,5 +1,3 @@
-import { VariantSummary } from "@features/variant/components/variant-summary";
-
 interface VariantLLMSummaryPageProps {
   params: Promise<{
     vcf: string;
@@ -10,8 +8,7 @@ interface VariantLLMSummaryPageProps {
 export default async function VariantLLMSummaryPage({
   params,
 }: VariantLLMSummaryPageProps) {
-  const { vcf } = await params;
-  // <VariantSummary vcf={vcf} />
+  await params;
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Variant LLM Summary</h1>

@@ -1,5 +1,4 @@
 import type { Variant } from "@features/variant/types";
-import { cn } from "@infra/utils";
 import { Download, Share2 } from "lucide-react";
 
 interface VariantHeaderProps {
@@ -95,13 +94,4 @@ export function VariantHeader({
       </div>
     </div>
   );
-}
-
-function formatVariantType(category: string | null | undefined): string | null {
-  if (!category || category === "." || category === "unknown") return null;
-
-  return category
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

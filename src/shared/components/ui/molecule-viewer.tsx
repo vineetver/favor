@@ -20,15 +20,15 @@ export function MoleculeViewer({
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [SmilesDrawer, setSmilesDrawer] = useState<any>(null);
+  const [SmilesDrawer, setSmilesDrawer] = useState<unknown>(null);
 
   useEffect(() => {
     // Load smiles-drawer from CDN
     const loadSmilesDrawer = async () => {
       try {
         // Check if already loaded
-        if ((window as any).SmilesDrawer) {
-          setSmilesDrawer((window as any).SmilesDrawer);
+        if ((window as { SmilesDrawer?: unknown }).SmilesDrawer) {
+          setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
           return;
         }
 
@@ -38,7 +38,7 @@ export function MoleculeViewer({
           "https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js";
         script.async = true;
         script.onload = () => {
-          setSmilesDrawer((window as any).SmilesDrawer);
+          setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
         };
         script.onerror = () => {
           setError(true);
@@ -60,7 +60,7 @@ export function MoleculeViewer({
 
     try {
       // Create a new SmilesDrawer instance
-      const drawer = new SmilesDrawer.Drawer({
+      const drawer = new (SmilesDrawer as { Drawer: new (config: unknown) => { draw: (tree: unknown, canvas: HTMLCanvasElement | null, theme: string, replaceMode: boolean) => void } }).Drawer({
         width,
         height,
         bondThickness: 1.5,
@@ -70,11 +70,14 @@ export function MoleculeViewer({
       });
 
       // Parse and draw the SMILES string
-      SmilesDrawer.parse(
+      (SmilesDrawer as { parse: (smiles: string, success: (tree: unknown) => void, error: (err: unknown) => void) => void }).parse(
         smiles,
-        (tree: any) => {
-          if (!tree || tree.error) {
-            console.error("Failed to parse SMILES:", tree?.error);
+        (tree: unknown) => {
+          if (!tree || (tree as { error?: unknown }).error) {
+            console.error(
+              "Failed to parse SMILES:",
+              (tree as { error?: unknown })?.error,
+            );
             setError(true);
             setLoading(false);
             return;
@@ -83,7 +86,7 @@ export function MoleculeViewer({
           drawer.draw(tree, canvasRef.current, "light", false);
           setLoading(false);
         },
-        (err: any) => {
+        (err: unknown) => {
           console.error("Failed to parse SMILES:", err);
           setError(true);
           setLoading(false);
@@ -141,6 +144,7 @@ export function MoleculeViewer({
       {/* Copy SMILES Button - shows on hover */}
       {!loading && !error && (
         <button
+          type="button"
           onClick={copyToClipboard}
           className="absolute top-2 right-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white/90 hover:bg-white border border-slate-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
         >

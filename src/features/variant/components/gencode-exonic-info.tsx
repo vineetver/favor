@@ -28,7 +28,10 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
     return (
       <div className="text-data space-y-0.5">
         {entries.map((entry, index) => (
-          <div key={index} className="flex items-baseline gap-1.5">
+          <div
+            key={`${entry.label}-${index}`}
+            className="flex items-baseline gap-1.5"
+          >
             <span className="font-mono font-medium">{entry.label}</span>
             {entry.location && (
               <span className="text-muted-foreground">{entry.location}</span>
@@ -56,8 +59,8 @@ export function GencodeExonicInfo({ value }: GencodeExonicInfoProps) {
 
   return (
     <div className="text-data space-y-0.5">
-      {Array.from(changes.values()).map((item, index) => (
-        <div key={index} className="flex items-baseline gap-1.5">
+      {Array.from(changes.values()).map((item) => (
+        <div key={item.protein} className="flex items-baseline gap-1.5">
           <span className="font-mono font-medium">{item.protein}</span>
           {item.exons.size > 0 && (
             <span className="text-muted-foreground">

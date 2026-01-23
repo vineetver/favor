@@ -159,7 +159,7 @@ export function UniversalSearch() {
         setIsDropdownOpen(false);
       });
     },
-    [startTransition],
+    [],
   );
 
   const handleSubmit = useCallback(
@@ -553,7 +553,7 @@ export function UniversalSearch() {
                                           className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
                                         >
                                           <span className="font-bold text-slate-900">
-                                            {link.count!.toLocaleString()}
+                                            {link.count?.toLocaleString()}
                                           </span>
                                           {link.label}
                                         </span>
@@ -764,7 +764,7 @@ export function UniversalSearch() {
                                               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
                                             >
                                               <span className="font-semibold text-slate-900">
-                                                {link.count!.toLocaleString()}
+                                                {link.count?.toLocaleString()}
                                               </span>
                                               {link.label}
                                             </span>

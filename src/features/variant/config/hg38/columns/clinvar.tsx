@@ -11,7 +11,6 @@ import {
   parseDatabaseEntries,
   parseDiseaseNames,
 } from "@infra/utils/parsing-utils";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
 
@@ -311,7 +310,7 @@ function ClinicalSignificancePairs({
   );
 }
 
-function DatabaseEntries({
+function _DatabaseEntries({
   value,
 }: {
   value:

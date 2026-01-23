@@ -1,8 +1,8 @@
 "use client";
 
+import { DataSurface } from "@shared/components/ui/data-surface";
 import { openTargetsEvidencesColumns } from "../../config/hg38/columns/open-targets-evidences";
 import type { OpenTargetsEvidenceRow } from "../../types/opentargets";
-import { TableDataView } from "../table-data-view";
 
 interface EvidencesTableProps {
   data: OpenTargetsEvidenceRow[];
@@ -10,42 +10,16 @@ interface EvidencesTableProps {
 
 export function EvidencesTable({ data }: EvidencesTableProps) {
   return (
-    <TableDataView
+    <DataSurface
       data={data}
       columns={openTargetsEvidencesColumns}
       title="Disease Evidences"
-      description="Direct links between this variant and diseases/targets through various evidence sources"
-      emptyMessage="No disease evidences found for this variant."
+      subtitle="Direct links between this variant and diseases/targets through various evidence sources"
       searchPlaceholder="Search diseases or targets..."
-      itemLabel="evidence"
-      defaultSort={{ id: "score", desc: true }}
-      exportFilename="evidences.csv"
-      exportHeaders={[
-        "Disease",
-        "Disease ID",
-        "Target",
-        "Target ID",
-        "Score",
-        "Source",
-        "Type",
-        "Effect",
-        "Consequence",
-        "Therapeutic Areas",
-        "Sample Size",
-      ]}
-      exportRow={(r) => [
-        r.diseaseName,
-        r.diseaseId,
-        r.targetSymbol,
-        r.targetId,
-        r.score,
-        r.datasourceId,
-        r.datatypeId,
-        r.variantEffect,
-        r.consequence,
-        r.therapeuticAreas.join(";"),
-        r.sampleSize,
-      ]}
+      searchColumn="diseaseName"
+      exportable
+      exportFilename="evidences"
+      defaultPageSize={10}
     />
   );
 }

@@ -9,8 +9,12 @@ export default function Loading() {
         <div className="h-10 bg-muted animate-pulse rounded" />
       </div>
       <div className="p-6 space-y-3">
+        {/* biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader, order never changes */}
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+          <div
+            key={`skeleton-${i}`}
+            className="h-12 bg-muted animate-pulse rounded"
+          />
         ))}
       </div>
     </div>

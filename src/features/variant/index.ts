@@ -17,7 +17,6 @@ export { PathogenicitySummary } from "./components/open-targets/pathogenicity-su
 export { PharmacogenomicsTable } from "./components/open-targets/pharmacogenomics-table";
 export { SummaryCard } from "./components/open-targets/summary-card";
 export { VariantEffectsTable } from "./components/open-targets/variant-effects-table";
-export { TableDataView } from "./components/table-data-view";
 export { VariantSummary } from "./components/variant-summary";
 export { VariantSummaryCard } from "./components/variant-summary-card";
 export { VariantSummarySkeleton } from "./components/variant-summary-skeleton";

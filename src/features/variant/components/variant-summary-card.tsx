@@ -24,6 +24,7 @@ export function VariantSummaryCard({
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             AI-Powered Analysis by{" "}
             <button
+              type="button"
               onClick={onChatClick}
               className="inline-flex items-center rounded-lg text-slate-900 hover:bg-slate-100 hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 px-1.5 py-0.5"
               aria-label="Open FAVOR-GPT chat"

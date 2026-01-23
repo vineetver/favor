@@ -368,7 +368,8 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                         InChIKey
                       </dt>
                       <button
-                        onClick={() => copyToClipboard(drug.inchi_key!)}
+                        type="button"
+                        onClick={() => copyToClipboard(drug.inchi_key ?? "")}
                         className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
                       >
                         <Copy className="w-3 h-3" />

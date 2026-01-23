@@ -1,8 +1,8 @@
 "use client";
 
+import { DataSurface } from "@shared/components/ui/data-surface";
 import { openTargetsVariantEffectsColumns } from "../../config/hg38/columns/open-targets-variant-effects";
 import type { OpenTargetsVariantEffectRow } from "../../types/opentargets";
-import { TableDataView } from "../table-data-view";
 
 interface VariantEffectsTableProps {
   data: OpenTargetsVariantEffectRow[];
@@ -10,33 +10,16 @@ interface VariantEffectsTableProps {
 
 export function VariantEffectsTable({ data }: VariantEffectsTableProps) {
   return (
-    <TableDataView
+    <DataSurface
       data={data}
       columns={openTargetsVariantEffectsColumns}
       title="Pathogenicity Predictions"
-      description="Variant effect predictions from multiple methods (CADD, AlphaMissense, SIFT, etc.)"
-      emptyMessage="No pathogenicity predictions available for this variant."
+      subtitle="Variant effect predictions from multiple methods (CADD, AlphaMissense, SIFT, etc.)"
       searchPlaceholder="Search methods..."
-      itemLabel="prediction"
-      exportFilename="variant-effects.csv"
-      exportHeaders={[
-        "Method",
-        "Assessment",
-        "Raw Score",
-        "Normalised Score",
-        "Flag",
-        "Target",
-        "Target ID",
-      ]}
-      exportRow={(r) => [
-        r.method,
-        r.assessment,
-        r.score,
-        r.normalisedScore,
-        r.assessmentFlag,
-        r.targetSymbol,
-        r.targetId,
-      ]}
+      searchColumn="method"
+      exportable
+      exportFilename="variant-effects"
+      defaultPageSize={10}
     />
   );
 }
