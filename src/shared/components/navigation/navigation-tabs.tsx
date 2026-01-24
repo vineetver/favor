@@ -85,7 +85,7 @@ export function NavigationTabs({
   return (
     <div className="w-full relative">
       <div ref={scrollContainerRef} className="overflow-x-auto scrollbar-hide">
-        <div className="inline-flex items-center gap-1 min-w-fit">
+        <div className="inline-flex items-center gap-2 min-w-fit">
           {items.map((item) => {
             const Icon = iconMap[item.slug];
             const isActive = activeItem === item.slug;
@@ -103,12 +103,19 @@ export function NavigationTabs({
                     "shadow-lg shadow-primary/25",
                   ],
                   !isActive && [
-                    "text-slate-500 bg-slate-100",
-                    "hover:text-slate-700 hover:bg-slate-200",
+                    "text-slate-500 bg-slate-100/60",
+                    "hover:text-slate-700 hover:bg-slate-100",
                   ],
                 )}
               >
-                {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                {Icon && (
+                  <Icon
+                    className={cn(
+                      "w-4 h-4 shrink-0 transition-colors",
+                      !isActive && "text-slate-400 group-hover:text-slate-600",
+                    )}
+                  />
+                )}
                 <span>{item.name}</span>
               </Link>
             );

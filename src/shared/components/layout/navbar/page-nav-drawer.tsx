@@ -105,14 +105,13 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
 
                 <div
                   className={cn(
-                    "overflow-hidden",
                     "transition-all duration-300 ease-out",
                     isExpanded
-                      ? "max-h-[1000px] opacity-100"
-                      : "max-h-0 opacity-0",
+                      ? "max-h-[1000px] opacity-100 mb-4"
+                      : "max-h-0 opacity-0 overflow-hidden",
                   )}
                 >
-                  <div className="ml-4 pl-4 border-l-2 border-slate-200 space-y-0.5 py-2">
+                  <div className="ml-4 pl-4 border-l-2 border-slate-200 space-y-0.5">
                     {section.subCategories.map((sub) => {
                       const isActive =
                         category === section.slug && subcategory === sub.slug;

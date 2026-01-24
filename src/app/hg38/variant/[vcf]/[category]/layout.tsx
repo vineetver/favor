@@ -43,7 +43,7 @@ export default async function VariantLayout({
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
           <VariantHeader result={result} />
 
-          <div className="mb-6">
+          <div className="hidden lg:block mb-6">
             <NavigationTabs
               items={VARIANT_NAVIGATION_CONFIG.map((cat) => ({
                 name: cat.name,
@@ -71,8 +71,8 @@ export default async function VariantLayout({
       </div>
 
       {/* Main Content Section */}
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="flex">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 pb-12">
+        <div className="flex gap-8">
           {(currentCategory.groups ||
             currentCategory.subCategories.length > 0) && (
             <NavigationSidebar

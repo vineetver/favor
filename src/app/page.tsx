@@ -39,7 +39,7 @@ export default function HomePage() {
             </div> */}
 
             {/* Main Heading */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl font-semibold text-slate-900 tracking-tighter mb-8 leading-[1.05]">
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-semibold text-slate-900 tracking-tight mb-8">
               Functional Annotation of Variants <br />
               <span className="text-transparent bg-clip-text bg-linear-to-br from-violet-700 via-purple-700 to-fuchsia-700">
                 Online Resource

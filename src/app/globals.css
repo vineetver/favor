@@ -177,14 +177,39 @@
    - Table Headers: text-sm (14px) uppercase
    ============================================================================ */
 @layer components {
-  /* Labels - 13px uppercase */
+  /* ==========================================================================
+     Typography Scale (use these for consistency)
+     
+     11px - Labels, table headers (uppercase, tracking-widest)
+     13px - Secondary body, subtitles, captions
+     14px - Body text (text-sm)
+     15px - Section headers, emphasized body
+     16px - Navigation, primary body (text-base)
+     ========================================================================== */
+
+  /* Labels - 11px uppercase (card headers, group labels) */
   .text-label {
-    @apply text-[13px] font-bold uppercase tracking-widest text-subtle;
+    @apply text-[11px] font-bold uppercase tracking-widest text-subtle;
   }
 
-  /* Table header - 12px uppercase */
+  /* Table header - 11px uppercase */
   .text-table-header {
-    @apply text-xs font-bold uppercase tracking-widest text-subtle;
+    @apply text-[11px] font-semibold uppercase tracking-wider text-subtle;
+  }
+
+  /* Section header - 15px semibold (DataSurface titles, card titles) */
+  .text-section-header {
+    @apply text-[15px] font-semibold text-heading;
+  }
+
+  /* Body small - 13px (subtitles, secondary text) */
+  .text-body-sm {
+    @apply text-[13px] text-body leading-relaxed;
+  }
+
+  /* Sidebar nav - 13px medium */
+  .text-sidebar-nav {
+    @apply text-[13px] font-medium leading-snug;
   }
 
   /* Page title - 36px */
@@ -197,19 +222,14 @@
     @apply text-lg font-semibold text-heading;
   }
 
-  /* Mono data value - 15px */
+  /* Mono data value - 14px */
   .text-data {
-    @apply text-[15px] font-mono text-body;
+    @apply text-sm font-mono text-body;
   }
 
-  /* Nav link - 16px */
+  /* Nav link - 14px */
   .text-nav {
-    @apply text-base font-medium text-body;
-  }
-
-  /* Sidebar link - 15px */
-  .text-sidebar {
-    @apply text-[15px] font-medium text-body;
+    @apply text-sm font-medium text-body;
   }
 
   /* Caption/legend - 13px (non-uppercase) */
@@ -224,21 +244,21 @@
 
   /* Stats - label below number */
   .text-stat-label {
-    @apply text-xs font-bold uppercase tracking-widest text-subtle;
+    @apply text-[11px] font-bold uppercase tracking-widest text-subtle;
   }
 
   /* Breadcrumb container */
   .text-breadcrumb {
-    @apply text-sm text-subtle;
+    @apply text-[13px] text-subtle;
   }
 
   /* Breadcrumb mono (IDs, codes) */
   .text-breadcrumb-mono {
-    @apply text-sm font-mono text-body;
+    @apply text-[13px] font-mono text-body;
   }
 
   /* Definition term (label in key-value pairs) */
   .text-dt {
-    @apply text-xs font-semibold uppercase tracking-wide text-body;
+    @apply text-[11px] font-semibold uppercase tracking-wider text-body;
   }
 }

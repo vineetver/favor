@@ -65,13 +65,13 @@ export function VariantHeader({
   return (
     <div className="py-8">
       {/* Breadcrumb Row */}
-      <div className="flex items-center gap-3 text-breadcrumb mb-4">
-        <span className="px-2.5 py-1 bg-slate-200 rounded-md text-label">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
           {genome.toUpperCase()}
         </span>
-        <span className="text-slate-300">/</span>
-        <span className="text-breadcrumb-mono">
-          {chrom}:{Number(pos).toLocaleString()}
+        <span className="text-slate-300">·</span>
+        <span className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+          Variant
         </span>
       </div>
 
@@ -80,7 +80,7 @@ export function VariantHeader({
         {/* Left Side */}
         <div className="space-y-4">
           {/* Title */}
-          <div className="flex items-baseline gap-4">
+          <div className="flex items-baseline gap-3">
             <h1 className="text-page-title">
               {isRsidSearch ? result.rsid : variant.variant_vcf}
             </h1>

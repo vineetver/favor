@@ -17,8 +17,8 @@ export function ContextHeader({
           </div>
         )}
         <div>
-          <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-          {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+          <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
+          {subtitle && <p className="text-[13px] text-slate-500 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

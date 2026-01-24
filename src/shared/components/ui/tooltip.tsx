@@ -46,8 +46,8 @@ function TooltipContent({
         sideOffset={sideOffset}
         className={cn(
           "z-50 w-fit max-w-sm origin-(--radix-tooltip-content-transform-origin)",
-          "bg-slate-900 text-white rounded-xl px-4 py-3",
-          "text-sm leading-relaxed",
+          "bg-slate-900 text-white rounded-lg px-3.5 py-2.5",
+          "text-[13px] leading-relaxed",
           "shadow-xl shadow-slate-900/20",
           "animate-in fade-in-0 zoom-in-95",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
