@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 import { IntegrativeDataTable } from "./integrative-data-table";
 
@@ -7,18 +7,20 @@ interface IntegrativePageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function IntegrativePage({
   params,
 }: IntegrativePageProps) {
   const { vcf } = await params;
+  
 
-  const variant = await fetchVariant(vcf);
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
-  return <IntegrativeDataTable variant={variant} />;
+  return <IntegrativeDataTable variant={result.selected} />;
 }

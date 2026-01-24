@@ -3,10 +3,7 @@
  * Provides instant navigation experience by preloading data
  */
 
-import {
-  fetchVariant,
-  fetchVariantsByRsid,
-} from "@features/variant/api/variant";
+import { fetchVariant } from "@features/variant/api/variant";
 import type { Variant } from "@features/variant/types";
 import type { ParsedVariantQuery } from "../types/query";
 import { parseQuery } from "./query-parser";
@@ -66,12 +63,14 @@ export async function preloadVariant(query: string): Promise<Variant | null> {
   if (parsed.type === "variant_vcf") {
     const variantParsed = parsed as ParsedVariantQuery;
     if (variantParsed.vcf) {
-      variant = await fetchVariant(variantParsed.vcf.normalized);
+      const result = await fetchVariant(variantParsed.vcf.normalized);
+      variant = result?.selected || null;
     }
   } else if (parsed.type === "variant_rsid") {
     const variantParsed = parsed as ParsedVariantQuery;
     if (variantParsed.rsid) {
-      variant = await fetchVariantsByRsid(variantParsed.rsid);
+      const result = await fetchVariant(variantParsed.rsid);
+      variant = result?.selected || null;
     }
   }
 

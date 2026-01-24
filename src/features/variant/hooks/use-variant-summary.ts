@@ -7,7 +7,7 @@ import {
   type VariantSummaryState,
 } from "@infra/ai-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 interface UseVariantSummaryOptions {
   vcf: string;
@@ -37,8 +37,10 @@ export function useVariantSummary({
   const queryClient = useQueryClient();
   const sseCleanupRef = useRef<(() => void) | null>(null);
 
-  // Track generation trigger per vcf to prevent double-triggering
-  const [triggeredFor, setTriggeredFor] = useState<string | null>(null);
+  // Track generation trigger per vcf to prevent double-triggering (use ref to avoid effect re-runs)
+  const triggeredForRef = useRef<string | null>(null);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   // Query for checking cached summary
   const { data: state = { status: "idle" } as VariantSummaryState, isLoading } =
@@ -69,9 +71,9 @@ export function useVariantSummary({
 
   // Trigger generation
   const triggerGeneration = useCallback(async () => {
-    // Prevent double-trigger for same vcf
-    if (triggeredFor === vcf) return;
-    setTriggeredFor(vcf);
+    // Prevent double-trigger for same vcf (use ref to avoid deps change)
+    if (triggeredForRef.current === vcf) return;
+    triggeredForRef.current = vcf;
 
     // Transition to loading state
     queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
@@ -86,6 +88,9 @@ export function useVariantSummary({
         prompt: DEFAULT_PROMPT,
         model: modelId,
       });
+
+      // Check if still mounted before updating state
+      if (!isMountedRef.current) return;
 
       // Handle response based on status (discriminated union)
       switch (response.status) {
@@ -127,6 +132,9 @@ export function useVariantSummary({
       sseCleanupRef.current = subscribeToStream(
         response.request_id,
         (event) => {
+          // Check if still mounted before updating state (prevents React 19 warnings)
+          if (!isMountedRef.current) return;
+
           switch (event.status) {
             case "pending":
               queryClient.setQueryData<VariantSummaryState>(
@@ -155,29 +163,34 @@ export function useVariantSummary({
           }
         },
         (error) => {
+          if (!isMountedRef.current) return;
           console.error("SSE error:", error);
           queryClient.invalidateQueries({ queryKey: ["variant-summary", vcf] });
         },
       );
     } catch (error) {
+      if (!isMountedRef.current) return;
       queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
         status: "failed",
         error:
           error instanceof Error ? error.message : "Failed to generate summary",
       });
     }
-  }, [vcf, modelId, queryClient, triggeredFor]);
+  }, [vcf, modelId, queryClient]);
 
   // Auto-trigger generation when idle and not loading
+  // Note: triggerGeneration uses refs internally, so we don't need it in deps
   useEffect(() => {
     if (enabled && state.status === "idle" && !isLoading) {
       triggerGeneration();
     }
   }, [enabled, state.status, isLoading, triggerGeneration]);
 
-  // Cleanup SSE on unmount
+  // Cleanup SSE on unmount and track mounted state
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       sseCleanupRef.current?.();
     };
   }, []);
@@ -185,7 +198,7 @@ export function useVariantSummary({
   // Retry function
   const retry = useCallback(() => {
     sseCleanupRef.current?.();
-    setTriggeredFor(null);
+    triggeredForRef.current = null;
     queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
       status: "idle",
     });

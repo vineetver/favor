@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { fetchOpenTargetsPharmacogenomics } from "@features/variant/api/opentargets";
 import { PharmacogenomicsTable } from "@features/variant/components/open-targets/pharmacogenomics-table";
 import { notFound } from "next/navigation";
@@ -8,6 +8,7 @@ interface PharmacogenomicsPageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function PharmacogenomicsPage({
@@ -15,14 +16,11 @@ export default async function PharmacogenomicsPage({
 }: PharmacogenomicsPageProps) {
   const { vcf } = await params;
 
-  const [variant, rows] = await Promise.all([
-    fetchVariant(vcf),
-    fetchOpenTargetsPharmacogenomics(vcf),
-  ]);
+  const result = await fetchVariantWithCookie(vcf);
+  if (!result) notFound();
 
-  if (!variant) {
-    notFound();
-  }
+  // Use resolved VCF (handles rsID → VCF conversion)
+  const rows = await fetchOpenTargetsPharmacogenomics(result.selected.variant_vcf);
 
   return <PharmacogenomicsTable data={rows} />;
 }

@@ -68,6 +68,15 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
   // React 19: Request versioning to ignore stale responses
   const requestIdRef = useRef(0);
 
+  // Store callbacks in refs to avoid re-creating search function when callbacks change
+  // This prevents debounce reset when parent re-renders with new callback references
+  const onResultsRef = useRef(onResults);
+  const onErrorRef = useRef(onError);
+
+  // Keep refs in sync with current callback values
+  onResultsRef.current = onResults;
+  onErrorRef.current = onError;
+
   const search = useCallback(
     async (searchQuery: string) => {
       // Cancel any pending requests
@@ -105,7 +114,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
         // Only update if this is still the latest request (prevents race conditions)
         if (currentRequestId === requestIdRef.current) {
           setResults(response);
-          onResults?.(response);
+          onResultsRef.current?.(response);
         }
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Search failed");
@@ -115,7 +124,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
           // Only update error if this is still the latest request
           if (currentRequestId === requestIdRef.current) {
             setError(error);
-            onError?.(error);
+            onErrorRef.current?.(error);
           }
         }
       } finally {
@@ -126,7 +135,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [minLength, types, limit, includeLinks, includePreview, onResults, onError],
+    [minLength, types, limit, includeLinks, includePreview],
   );
 
   // Debounced search

@@ -11,7 +11,7 @@ import {
   Table2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface NavigationItem {
   name: string;
@@ -24,6 +24,7 @@ interface NavigationTabsProps {
   items: NavigationItem[];
   activeItem: string;
   basePath: string;
+  queryString?: string;
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,6 +47,7 @@ export function NavigationTabs({
   items,
   activeItem,
   basePath,
+  queryString = "",
 }: NavigationTabsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState<ScrollState>({
@@ -53,30 +55,32 @@ export function NavigationTabs({
     right: false,
   });
 
-  const updateScrollState = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    setScrollState({
-      left: scrollLeft > 0,
-      right: scrollLeft < scrollWidth - clientWidth - 1,
-    });
-  }, []);
-
+  // Use ref-based pattern to avoid listener re-attachment
+  // The handler is defined once and accesses current container via ref
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    const updateScrollState = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setScrollState({
+        left: scrollLeft > 0,
+        right: scrollLeft < scrollWidth - clientWidth - 1,
+      });
+    };
+
+    // Initial check
     updateScrollState();
-    container.addEventListener("scroll", updateScrollState);
-    window.addEventListener("resize", updateScrollState);
+
+    // Use passive listeners for scroll performance
+    container.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState, { passive: true });
 
     return () => {
       container.removeEventListener("scroll", updateScrollState);
       window.removeEventListener("resize", updateScrollState);
     };
-  }, [updateScrollState]);
+  }, []); // Empty deps - listener attached once on mount
 
   return (
     <div className="w-full relative">
@@ -89,7 +93,7 @@ export function NavigationTabs({
             return (
               <Link
                 key={item.slug}
-                href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}`}
+                href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}${queryString}`}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2.5",
                   "rounded-xl whitespace-nowrap touch-manipulation",

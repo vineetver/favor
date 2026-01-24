@@ -4,7 +4,7 @@ import { cn } from "@infra/utils";
 import { Logo } from "@shared/components/ui/logo";
 import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { siteConfig } from "@/config/site";
 import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
 import { PageNavDrawer } from "./page-nav-drawer";
@@ -46,26 +46,32 @@ function MobileNavLink({
 }
 
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
+  // Use ref for onClose to avoid re-attaching listener when callback changes
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Consolidated effect for body scroll lock and escape key handling
+  // This avoids hydration issues from multiple effects mutating the same DOM element
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+
+    // Store original overflow value to restore properly
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleEscape);
     };
   }, [open]);
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (open) {
-      window.addEventListener("keydown", handleEscape);
-      return () => window.removeEventListener("keydown", handleEscape);
-    }
-  }, [open, onClose]);
 
   return (
     <>

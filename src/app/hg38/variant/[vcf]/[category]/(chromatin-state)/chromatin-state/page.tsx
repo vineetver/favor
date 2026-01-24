@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { ChromatinStateView } from "@features/variant/components/chromatin-state-view";
 import { notFound } from "next/navigation";
 
@@ -7,19 +7,22 @@ interface ChromatinStatePageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function ChromatinStatePage({
   params,
 }: ChromatinStatePageProps) {
   const { vcf } = await params;
+  
 
-  const variant = await fetchVariant(vcf);
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
+  const variant = result.selected;
   const chromatinData = {
     ...variant,
     main: {

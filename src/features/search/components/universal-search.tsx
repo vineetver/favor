@@ -239,23 +239,27 @@ export function UniversalSearch() {
   );
 
   // React 19: Proper click-outside detection with event listeners
+  // Using ref to track dropdown state avoids stale closure issues
+  const isDropdownOpenRef = useRef(isDropdownOpen);
+  isDropdownOpenRef.current = isDropdownOpen;
+
   useEffect(() => {
+    // Only attach listener when dropdown is open
+    if (!isDropdownOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      // Only close if clicking outside the container and dropdown is open
+      // Check ref for current state to avoid stale closure
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
-        isDropdownOpen
+        isDropdownOpenRef.current
       ) {
         setIsDropdownOpen(false);
       }
     };
 
-    // Add event listener when dropdown is open
-    if (isDropdownOpen) {
-      // Use capture phase to ensure we catch the event before other handlers
-      document.addEventListener("mousedown", handleClickOutside, true);
-    }
+    // Use capture phase to ensure we catch the event before other handlers
+    document.addEventListener("mousedown", handleClickOutside, true);
 
     // Cleanup
     return () => {
@@ -395,6 +399,13 @@ export function UniversalSearch() {
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
+                  onKeyDown={(e) => {
+                    // Allow Enter to submit form even when dropdown is open
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSubmit(e as unknown as FormEvent);
+                    }
+                  }}
                   placeholder="Search genes, variants, diseases, drugs, pathways..."
                   autoComplete="off"
                   spellCheck={false}

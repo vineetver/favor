@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { fetchOpenTargetsConsequences } from "@features/variant/api/opentargets";
 import { ConsequencesSummary } from "@features/variant/components/open-targets/consequences-summary";
 import { ConsequencesTable } from "@features/variant/components/open-targets/consequences-table";
@@ -9,6 +9,7 @@ interface ConsequencesPageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function ConsequencesPage({
@@ -16,14 +17,11 @@ export default async function ConsequencesPage({
 }: ConsequencesPageProps) {
   const { vcf } = await params;
 
-  const [variant, rows] = await Promise.all([
-    fetchVariant(vcf),
-    fetchOpenTargetsConsequences(vcf),
-  ]);
+  const result = await fetchVariantWithCookie(vcf);
+  if (!result) notFound();
 
-  if (!variant) {
-    notFound();
-  }
+  // Use resolved VCF (handles rsID → VCF conversion)
+  const rows = await fetchOpenTargetsConsequences(result.selected.variant_vcf);
 
   return (
     <div className="space-y-6">

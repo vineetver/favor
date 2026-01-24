@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 import { AlleleFrequencyDataTable } from "./allele-frequency-data-table";
@@ -8,18 +8,20 @@ interface AlleleFrequencyPageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function AlleleFrequencyPage({
   params,
 }: AlleleFrequencyPageProps) {
   const { vcf } = await params;
+  
 
-  const variant = await fetchVariant(vcf);
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
-  return <AlleleFrequencyDataTable variant={variant} />;
+  return <AlleleFrequencyDataTable variant={result.selected} />;
 }

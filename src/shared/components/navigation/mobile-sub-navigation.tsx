@@ -14,11 +14,13 @@ interface NavigationItem {
 interface MobileSubNavigationProps {
   items: NavigationItem[];
   basePath: string;
+  queryString?: string;
 }
 
 export function MobileSubNavigation({
   items,
   basePath,
+  queryString = "",
 }: MobileSubNavigationProps) {
   const params = useParams();
   const pathname = usePathname();
@@ -61,7 +63,7 @@ export function MobileSubNavigation({
               {items.map((item) => (
                 <Link
                   key={item.slug}
-                  href={`${basePath}/${item.slug}`}
+                  href={`${basePath}/${item.slug}${queryString}`}
                   className={`block w-full text-left px-4 py-3 text-base rounded-md transition-colors touch-manipulation ${
                     isActiveItem(item.slug)
                       ? "bg-primary text-primary-foreground"

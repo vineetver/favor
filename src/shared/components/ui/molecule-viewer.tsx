@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface MoleculeViewerProps {
   smiles: string;
@@ -17,18 +17,25 @@ export function MoleculeViewer({
   className = "",
 }: MoleculeViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [SmilesDrawer, setSmilesDrawer] = useState<unknown>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Load smiles-drawer from CDN
     const loadSmilesDrawer = async () => {
       try {
         // Check if already loaded
         if ((window as { SmilesDrawer?: unknown }).SmilesDrawer) {
-          setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+          if (isMountedRef.current) {
+            setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+          }
           return;
         }
 
@@ -38,21 +45,37 @@ export function MoleculeViewer({
           "https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js";
         script.async = true;
         script.onload = () => {
-          setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+          if (isMountedRef.current) {
+            setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+          }
         };
         script.onerror = () => {
-          setError(true);
-          setLoading(false);
+          if (isMountedRef.current) {
+            setError(true);
+            setLoading(false);
+          }
         };
         document.head.appendChild(script);
+        scriptRef.current = script;
       } catch (err) {
         console.error("Failed to load smiles-drawer:", err);
-        setError(true);
-        setLoading(false);
+        if (isMountedRef.current) {
+          setError(true);
+          setLoading(false);
+        }
       }
     };
 
     loadSmilesDrawer();
+
+    // Cleanup: remove script tag on unmount
+    return () => {
+      isMountedRef.current = false;
+      if (scriptRef.current && scriptRef.current.parentNode) {
+        scriptRef.current.parentNode.removeChild(scriptRef.current);
+        scriptRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -99,15 +122,36 @@ export function MoleculeViewer({
     }
   }, [SmilesDrawer, smiles, width, height]);
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(smiles);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+
+      // Clear any existing timeout
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+
+      // Reset copied state after 2 seconds
+      copyTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setCopied(false);
+        }
+        copyTimeoutRef.current = null;
+      }, 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
-  };
+  }, [smiles]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className={`relative group ${className}`}>

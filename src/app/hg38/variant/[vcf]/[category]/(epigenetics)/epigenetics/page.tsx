@@ -1,4 +1,4 @@
-import { fetchVariant } from "@features/variant/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 import { EpigeneticsDataTable } from "./epigenetics-data-table";
 
@@ -7,18 +7,20 @@ interface EpigeneticsPageProps {
     vcf: string;
     category: string;
   }>;
+  
 }
 
 export default async function EpigeneticsPage({
   params,
 }: EpigeneticsPageProps) {
   const { vcf } = await params;
+  
 
-  const variant = await fetchVariant(vcf);
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
-  return <EpigeneticsDataTable variant={variant} />;
+  return <EpigeneticsDataTable variant={result.selected} />;
 }

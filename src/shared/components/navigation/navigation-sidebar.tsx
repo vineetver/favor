@@ -70,12 +70,14 @@ interface NavigationSidebarProps {
   items?: NavigationItem[];
   groups?: NavigationGroup[];
   basePath: string;
+  queryString?: string;
 }
 
 export function NavigationSidebar({
   items,
   groups,
   basePath,
+  queryString = "",
 }: NavigationSidebarProps) {
   const params = useParams();
   const pathname = usePathname();
@@ -163,7 +165,7 @@ export function NavigationSidebar({
                       return (
                         <Link
                           key={item.slug}
-                          href={`${basePath}/${item.slug}`}
+                          href={`${basePath}/${item.slug}${queryString}`}
                           className={cn(
                             "group flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
                             isActive
@@ -205,7 +207,7 @@ export function NavigationSidebar({
           return (
             <Link
               key={item.slug}
-              href={`${basePath}/${item.slug}`}
+              href={`${basePath}/${item.slug}${queryString}`}
               className={cn(
                 "group flex items-center justify-between py-2 text-sm transition-colors",
                 isActive

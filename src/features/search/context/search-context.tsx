@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -33,23 +34,35 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setInitialQuery(""), 200);
   }, []);
 
-  // Global Command-K shortcut
+  // Store current state in ref to avoid re-attaching listener on state changes
+  const isOpenRef = useRef(isOpen);
+  const openSearchRef = useRef(openSearch);
+  const closeSearchRef = useRef(closeSearch);
+
+  // Keep refs in sync with current values
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    openSearchRef.current = openSearch;
+    closeSearchRef.current = closeSearch;
+  });
+
+  // Global Command-K shortcut - listener attached once, uses refs for current values
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+K on Mac, Ctrl+K on Windows/Linux
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        if (isOpen) {
-          closeSearch();
+        if (isOpenRef.current) {
+          closeSearchRef.current();
         } else {
-          openSearch();
+          openSearchRef.current();
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, closeSearch, openSearch]);
+  }, []); // Empty deps - listener attached once
 
   return (
     <SearchContext.Provider

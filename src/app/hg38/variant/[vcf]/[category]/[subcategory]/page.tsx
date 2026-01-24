@@ -1,9 +1,5 @@
-import {
-  fetchGnomadExome,
-  fetchGnomadGenome,
-  fetchVariant,
-} from "@features/variant/api";
 import { CategoryDetailView } from "@features/variant/components/category-detail-view";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 interface VariantPageProps {
@@ -17,19 +13,11 @@ interface VariantPageProps {
 export default async function VariantPage({ params }: VariantPageProps) {
   const { vcf, subcategory } = await params;
 
-  const [variant, gnomadExome, gnomadGenome] = await Promise.all([
-    fetchVariant(vcf),
-    fetchGnomadExome(vcf),
-    fetchGnomadGenome(vcf),
-  ]);
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
-  // Merge gnomAD data into variant
-  variant.gnomad_exome = gnomadExome;
-  variant.gnomad_genome = gnomadGenome;
-
-  return <CategoryDetailView data={variant} categoryId={subcategory} />;
+  return <CategoryDetailView data={result.selected} categoryId={subcategory} />;
 }

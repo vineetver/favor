@@ -38,14 +38,13 @@ export interface VariantWithIncludes extends Variant {
   gwas?: unknown[] | null;
 }
 
-export interface AmbiguousVariantCandidate {
-  vid: number;
-  variant_vcf: string;
-}
+// Ambiguous rsID candidate is a full variant object
+export type AmbiguousVariantCandidate = Variant;
 
 export interface AmbiguousVariantResponse {
-  error: string;
-  variant: string;
+  ambiguous: true;
+  rsid?: string;
+  variant?: string;
   candidates: AmbiguousVariantCandidate[];
 }
 

@@ -1,6 +1,6 @@
-import { fetchVariant } from "@features/variant/api";
 import { VariantHeader } from "@features/variant/components/header/variant-header";
 import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
@@ -28,18 +28,20 @@ export default async function VariantLayout({
     notFound();
   }
 
-  const variant = await fetchVariant(vcf);
+  // Fetch variant with cookie-based selection
+  const result = await fetchVariantWithCookie(vcf);
 
-  if (!variant) {
+  if (!result) {
     notFound();
   }
 
   return (
     <div className="min-h-screen bg-background">
+
       {/* Header Section */}
       <div className="bg-background">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-          <VariantHeader variant={variant} />
+          <VariantHeader result={result} />
 
           <div className="mb-6">
             <NavigationTabs
