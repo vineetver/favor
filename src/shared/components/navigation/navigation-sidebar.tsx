@@ -99,26 +99,26 @@ export function NavigationSidebar({
     return segments[segments.length - 1];
   }, [params.subcategory, pathname]);
 
-  // Track only user-toggled groups (collapsed by user)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    new Set(),
+  // Track user overrides for group expansion state
+  const [groupOverrides, setGroupOverrides] = useState<Map<string, boolean>>(
+    new Map(),
   );
 
-  const toggleGroup = (groupName: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupName)) {
-        next.delete(groupName);
-      } else {
-        next.add(groupName);
-      }
+  const toggleGroup = (groupName: string, currentExpanded: boolean) => {
+    setGroupOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(groupName, !currentExpanded);
       return next;
     });
   };
 
   // Derived: check if group should be expanded
   const isGroupExpanded = (group: NavigationGroup): boolean => {
-    if (collapsedGroups.has(group.name)) return false;
+    // User override takes priority
+    if (groupOverrides.has(group.name)) {
+      return groupOverrides.get(group.name)!;
+    }
+    // Default: use defaultExpanded or check for active item
     if (group.defaultExpanded) return true;
     return group.items.some((item) => item.slug === activeSlug);
   };
@@ -143,7 +143,7 @@ export function NavigationSidebar({
               <Collapsible
                 key={group.name}
                 open={isExpanded}
-                onOpenChange={() => toggleGroup(group.name)}
+                onOpenChange={() => toggleGroup(group.name, isExpanded)}
               >
                 <div className="space-y-1">
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 group cursor-pointer focus:outline-none focus-visible:outline-none">

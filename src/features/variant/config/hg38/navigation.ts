@@ -5,28 +5,33 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     name: "Global Annotation",
     slug: "global-annotation",
     // Flat list for mobile navigation (backward compatible)
+    // Ordered by clinical impact and actionability
     subCategories: [
+      // Overview - context first
       { text: "Variant Summary", slug: "llm-summary" },
       { text: "Basic Information", slug: "basic" },
       { text: "Functional Class", slug: "functional-class" },
-      { text: "Proximity Table", slug: "proximity-table" },
-      { text: "Mappability", slug: "mappability" },
+      { text: "Integrative Score", slug: "integrative" },
+      // Clinical & Disease - high priority
       { text: "Clinvar", slug: "clinvar" },
-      { text: "Somatic Mutation", slug: "somatic-mutation" },
       { text: "Disease Evidence", slug: "evidences" },
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
-      { text: "Protein Function", slug: "protein-function" },
-      { text: "SpliceAI", slug: "splice-ai" },
+      { text: "Somatic Mutation", slug: "somatic-mutation" },
+      // Pathogenicity & Scores
       { text: "Pathogenicity", slug: "variant-effects" },
+      { text: "Protein Function", slug: "protein-function" },
+      { text: "Conservation", slug: "conservation" },
+      { text: "SpliceAI", slug: "splice-ai" },
       { text: "Consequences (VEP)", slug: "consequences" },
+      // GWAS & Association
       { text: "GWAS Catalog", slug: "gwas-catalog" },
       { text: "GWAS Fine-Mapping", slug: "credible-sets" },
       { text: "Locus-to-Gene", slug: "l2g-scores" },
-      { text: "Conservation", slug: "conservation" },
-      { text: "Integrative Score", slug: "integrative" },
+      // Regulatory & Epigenetics
       { text: "Epigenetics", slug: "epigenetics" },
       { text: "Chromatin State", slug: "chromatin-state" },
       { text: "Transcription Factors", slug: "transcription-factors" },
+      // Population Genetics
       { text: "Allele Frequency", slug: "allele-frequency" },
       {
         text: "Local Nucleotide Diversity",
@@ -36,8 +41,12 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         text: "Expected Rate of De Novo Mutation",
         slug: "expected-rate-of-de-novo-mutation",
       },
+      // Technical
+      { text: "Proximity Table", slug: "proximity-table" },
+      { text: "Mappability", slug: "mappability" },
     ],
     // Grouped structure for desktop sidebar
+    // Ordered by clinical impact and actionability
     groups: [
       {
         name: "Overview",
@@ -46,8 +55,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
           { text: "Variant Summary", slug: "llm-summary", icon: "sparkles" },
           { text: "Basic Information", slug: "basic", icon: "file-text" },
           { text: "Functional Class", slug: "functional-class", icon: "dna" },
-          { text: "Proximity Table", slug: "proximity-table", icon: "map-pin" },
-          { text: "Mappability", slug: "mappability", icon: "microscope" },
+          { text: "Integrative Score", slug: "integrative", icon: "brain" },
         ],
       },
       {
@@ -55,18 +63,19 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Clinvar", slug: "clinvar", icon: "heart-pulse" },
-          { text: "Somatic Mutation", slug: "somatic-mutation", icon: "target" },
           { text: "Disease Evidence", slug: "evidences", icon: "clipboard-list" },
           { text: "Pharmacogenomics", slug: "pharmacogenomics", icon: "pill" },
+          { text: "Somatic Mutation", slug: "somatic-mutation", icon: "target" },
         ],
       },
       {
-        name: "Pathogenicity & Function",
+        name: "Pathogenicity & Scores",
         defaultExpanded: true,
         items: [
-          { text: "Protein Function", slug: "protein-function", icon: "activity" },
-          { text: "SpliceAI", slug: "splice-ai", icon: "scissors" },
           { text: "Pathogenicity", slug: "variant-effects", icon: "alert-triangle" },
+          { text: "Protein Function", slug: "protein-function", icon: "activity" },
+          { text: "Conservation", slug: "conservation", icon: "history" },
+          { text: "SpliceAI", slug: "splice-ai", icon: "scissors" },
           { text: "Consequences (VEP)", slug: "consequences", icon: "git-branch" },
         ],
       },
@@ -77,14 +86,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
           { text: "GWAS Catalog", slug: "gwas-catalog", icon: "book-open" },
           { text: "GWAS Fine-Mapping", slug: "credible-sets", icon: "target" },
           { text: "Locus-to-Gene", slug: "l2g-scores", icon: "link" },
-        ],
-      },
-      {
-        name: "Conservation & Scores",
-        defaultExpanded: true,
-        items: [
-          { text: "Conservation", slug: "conservation", icon: "history" },
-          { text: "Integrative Score", slug: "integrative", icon: "brain" },
         ],
       },
       {
@@ -103,6 +104,14 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
           { text: "Allele Frequency", slug: "allele-frequency", icon: "users" },
           { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity", icon: "pie-chart" },
           { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation", icon: "git-branch" },
+        ],
+      },
+      {
+        name: "Technical",
+        defaultExpanded: true,
+        items: [
+          { text: "Proximity Table", slug: "proximity-table", icon: "map-pin" },
+          { text: "Mappability", slug: "mappability", icon: "microscope" },
         ],
       },
     ],

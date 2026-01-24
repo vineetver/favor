@@ -51,7 +51,7 @@ export async function fetchVariant(
   if (!identifier) return null;
 
   const response = await fetchOrNull<VariantSingleResponse>(
-    `${API_BASE}/variants/${encodeURIComponent(identifier)}`,
+    `${API_BASE}/variants/${encodeURIComponent(identifier)}?full=true`,
   );
 
   if (!response) return null;

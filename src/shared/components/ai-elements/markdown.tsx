@@ -19,9 +19,39 @@ const components: Partial<Components> = {
       </Link>
     );
   },
+  ol: ({ node, children, ...props }) => (
+    <ol className="list-decimal list-outside ml-4 space-y-3" {...props}>
+      {children}
+    </ol>
+  ),
+  ul: ({ node, children, ...props }) => (
+    <ul className="list-disc list-outside ml-4 space-y-1" {...props}>
+      {children}
+    </ul>
+  ),
+  li: ({ node, children, ...props }) => (
+    <li className="pl-1" {...props}>
+      {children}
+    </li>
+  ),
+  p: ({ node, children, ...props }) => (
+    <p className="my-2 leading-relaxed" {...props}>
+      {children}
+    </p>
+  ),
+  strong: ({ node, children, ...props }) => (
+    <strong className="font-semibold text-slate-900" {...props}>
+      {children}
+    </strong>
+  ),
 };
 
-const NonMemoizedMarkdown = ({ children }: { children: string }) => {
+interface MarkdownProps {
+  children: string;
+  showCopy?: boolean;
+}
+
+const NonMemoizedMarkdown = ({ children, showCopy = true }: MarkdownProps) => {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -40,13 +70,15 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
 
   return (
     <div className="relative group">
-      <button
-        onClick={onCopy}
-        className="absolute right-2 top-2 p-1.5 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
-        aria-label="Copy to clipboard"
-      >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-      </button>
+      {showCopy && (
+        <button
+          onClick={onCopy}
+          className="absolute right-0 top-0 p-1.5 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
+          aria-label="Copy to clipboard"
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </button>
+      )}
       <Streamdown components={components}>{children}</Streamdown>
     </div>
   );
@@ -54,5 +86,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
 
 export const Markdown = memo(
   NonMemoizedMarkdown,
-  (prevProps, nextProps) => prevProps.children === nextProps.children,
+  (prevProps, nextProps) =>
+    prevProps.children === nextProps.children &&
+    prevProps.showCopy === nextProps.showCopy,
 );

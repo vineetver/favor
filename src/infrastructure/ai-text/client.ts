@@ -5,7 +5,9 @@ import type {
   AITextStreamEvent,
 } from "./types";
 
-const AI_TEXT_API_BASE = "http://localhost:8000/api/v1/ai-text";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const AI_TEXT_API_BASE = `${API_BASE}/ai-text`;
 
 export async function getAIText(params: {
   entity_type: string;
@@ -31,7 +33,9 @@ export async function getAIText(params: {
     throw new Error(`Failed to fetch AI text: ${response.status}`);
   }
 
-  return response.json();
+  // API returns content directly, wrap it in data for consistent interface
+  const data = await response.json();
+  return { data };
 }
 
 export async function generateAIText(

@@ -1,25 +1,37 @@
 "use client";
 
 import {
-  generateAIText,
-  getAIText,
-  subscribeToStream,
-  type VariantSummaryState,
-} from "@infra/ai-text";
+  generateVariantSummary,
+  getVariantSummary,
+} from "@features/variant/actions";
+import { subscribeToStream } from "@infra/ai-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
 interface UseVariantSummaryOptions {
   vcf: string;
+  /** Custom prompt to use for generation. If not provided, uses default clinical prompt. */
+  prompt?: string;
   modelId?: string;
   enabled?: boolean;
 }
+
+export type VariantSummaryState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "pending"; requestId: string }
+  | { status: "generating"; requestId: string; estimatedSeconds?: number }
+  | { status: "completed"; summary: string; cachedAt?: string }
+  | { status: "failed"; error: string };
 
 const DEFAULT_PROMPT =
   "Provide a comprehensive clinical summary for this genetic variant, including its potential pathogenicity, associated conditions, and clinical significance.";
 
 /**
  * Custom hook for managing variant summary generation and caching
+ *
+ * Uses server actions for API calls to keep endpoints secure.
+ * SSE streaming remains client-side for real-time updates.
  *
  * Returns a discriminated union state that makes invalid states unrepresentable:
  * - { status: "idle" } - Initial state before any action
@@ -31,6 +43,7 @@ const DEFAULT_PROMPT =
  */
 export function useVariantSummary({
   vcf,
+  prompt,
   modelId = "gpt-4o-mini",
   enabled = true,
 }: UseVariantSummaryOptions) {
@@ -42,16 +55,12 @@ export function useVariantSummary({
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
 
-  // Query for checking cached summary
+  // Query for checking cached summary (uses server action)
   const { data: state = { status: "idle" } as VariantSummaryState, isLoading } =
     useQuery({
       queryKey: ["variant-summary", vcf],
       queryFn: async (): Promise<VariantSummaryState> => {
-        const response = await getAIText({
-          entity_type: "variant",
-          entity_id: vcf,
-          content_type: "summary",
-        });
+        const response = await getVariantSummary(vcf);
 
         // No cached content - needs generation
         if (!response.data || !response.data.content) {
@@ -69,7 +78,7 @@ export function useVariantSummary({
       staleTime: 5 * 60 * 1000,
     });
 
-  // Trigger generation
+  // Trigger generation (uses server action)
   const triggerGeneration = useCallback(async () => {
     // Prevent double-trigger for same vcf (use ref to avoid deps change)
     if (triggeredForRef.current === vcf) return;
@@ -81,11 +90,9 @@ export function useVariantSummary({
     });
 
     try {
-      const response = await generateAIText({
-        entity_type: "variant",
-        entity_id: vcf,
-        content_type: "summary",
-        prompt: DEFAULT_PROMPT,
+      const response = await generateVariantSummary({
+        vcf,
+        prompt: prompt ?? DEFAULT_PROMPT,
         model: modelId,
       });
 
@@ -97,7 +104,7 @@ export function useVariantSummary({
         case "completed":
           queryClient.setQueryData<VariantSummaryState>(
             ["variant-summary", vcf],
-            { status: "completed", summary: response.content },
+            { status: "completed", summary: response.content! },
           );
           return;
 
@@ -176,7 +183,7 @@ export function useVariantSummary({
           error instanceof Error ? error.message : "Failed to generate summary",
       });
     }
-  }, [vcf, modelId, queryClient]);
+  }, [vcf, prompt, modelId, queryClient]);
 
   // Auto-trigger generation when idle and not loading
   // Note: triggerGeneration uses refs internally, so we don't need it in deps

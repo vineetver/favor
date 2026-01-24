@@ -261,4 +261,133 @@
   .text-dt {
     @apply text-[11px] font-semibold uppercase tracking-wider text-body;
   }
+
+  /* ==========================================================================
+     AI Summary Content - Beautiful markdown rendering
+     ========================================================================== */
+  .ai-summary-content {
+    @apply text-[14px] leading-[1.7] text-body;
+  }
+
+  /* First child - remove top margin */
+  .ai-summary-content > *:first-child {
+    @apply mt-0;
+  }
+
+  /* Headings - clean hierarchy */
+  .ai-summary-content h1,
+  .ai-summary-content h2,
+  .ai-summary-content h3 {
+    @apply text-heading font-semibold mt-5 mb-2;
+  }
+
+  .ai-summary-content > h1:first-child,
+  .ai-summary-content > h2:first-child,
+  .ai-summary-content > h3:first-child {
+    @apply mt-0;
+  }
+
+  .ai-summary-content h1 {
+    @apply text-lg;
+  }
+
+  .ai-summary-content h2 {
+    @apply text-[16px];
+  }
+
+  .ai-summary-content h3 {
+    @apply text-[15px];
+  }
+
+  /* Paragraphs */
+  .ai-summary-content p {
+    @apply my-2;
+  }
+
+  .ai-summary-content > p:first-child {
+    @apply mt-0;
+  }
+
+  .ai-summary-content > p:last-child {
+    @apply mb-0;
+  }
+
+  /* Strong text */
+  .ai-summary-content strong {
+    @apply font-semibold text-heading;
+  }
+
+  /* Ordered lists - clean numbered sections */
+  .ai-summary-content ol {
+    @apply my-0 space-y-4 pl-0;
+    list-style-position: inside;
+  }
+
+  .ai-summary-content > ol:first-child {
+    @apply mt-0;
+  }
+
+  .ai-summary-content ol > li {
+    @apply pl-0;
+  }
+
+  .ai-summary-content ol > li::marker {
+    @apply font-medium text-slate-400;
+  }
+
+  /* Unordered lists - subtle bullets */
+  .ai-summary-content ul {
+    @apply my-2 pl-5 space-y-1;
+  }
+
+  .ai-summary-content ul > li {
+    @apply relative pl-0.5;
+  }
+
+  .ai-summary-content ul > li::marker {
+    @apply text-slate-300;
+  }
+
+  /* Nested lists */
+  .ai-summary-content li > ul,
+  .ai-summary-content li > ol {
+    @apply mt-2 mb-0;
+  }
+
+  .ai-summary-content li > ul {
+    @apply pl-4;
+  }
+
+  /* Links */
+  .ai-summary-content a {
+    @apply text-primary underline underline-offset-2 decoration-primary/30 hover:decoration-primary/60 transition-colors;
+  }
+
+  /* Code */
+  .ai-summary-content code {
+    @apply font-mono text-[13px] bg-slate-100 px-1.5 py-0.5 rounded text-heading;
+  }
+
+  /* Blockquotes */
+  .ai-summary-content blockquote {
+    @apply border-l-2 border-primary/30 pl-4 my-4 italic text-subtle;
+  }
+
+  /* Horizontal rules */
+  .ai-summary-content hr {
+    @apply my-6 border-slate-200;
+  }
+
+  /* Tables */
+  .ai-summary-content table {
+    @apply w-full my-4 text-[13px];
+  }
+
+  .ai-summary-content th {
+    @apply text-left font-semibold text-heading pb-2 border-b border-slate-200;
+  }
+
+  .ai-summary-content td {
+    @apply py-2 border-b border-slate-100;
+  }
 }
