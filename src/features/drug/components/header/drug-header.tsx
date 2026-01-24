@@ -43,10 +43,10 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
   return (
     <div className="py-8">
       {/* Breadcrumb Row */}
-      <div className="flex items-center gap-3 text-sm mb-4">
-        <span className="text-slate-400">Drugs</span>
+      <div className="flex items-center gap-3 text-breadcrumb mb-4">
+        <span className="text-subtle">Drugs</span>
         <span className="text-slate-300">▸</span>
-        <span className="font-mono text-slate-500">{drug.chembl_id}</span>
+        <span className="text-breadcrumb-mono">{drug.chembl_id}</span>
       </div>
 
       {/* Main Content Row */}
@@ -54,7 +54,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
         {/* Left Side */}
         <div className="space-y-4">
           {/* Title */}
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-page-title">
             {drug.name}
           </h1>
 

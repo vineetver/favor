@@ -143,10 +143,10 @@ function StatsTicker() {
             <div className="h-16 w-px bg-slate-200 mx-8 md:mx-16 hidden sm:block" />
           )}
           <div className="text-center px-6 sm:px-0">
-            <div className="text-5xl md:text-6xl font-bold text-slate-900 tracking-tight mb-2">
+            <div className="text-stat-value mb-2">
               {stat.value}
             </div>
-            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">
+            <div className="text-stat-label">
               {stat.label}
             </div>
           </div>

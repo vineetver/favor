@@ -65,12 +65,12 @@ export function VariantHeader({
   return (
     <div className="py-8">
       {/* Breadcrumb Row */}
-      <div className="flex items-center gap-3 text-sm mb-4">
-        <span className="px-2.5 py-1 bg-slate-200 rounded-md font-bold text-slate-700 uppercase tracking-widest text-xs">
+      <div className="flex items-center gap-3 text-breadcrumb mb-4">
+        <span className="px-2.5 py-1 bg-slate-200 rounded-md text-label">
           {genome.toUpperCase()}
         </span>
         <span className="text-slate-300">/</span>
-        <span className="font-mono text-slate-500">
+        <span className="text-breadcrumb-mono">
           {chrom}:{Number(pos).toLocaleString()}
         </span>
       </div>
@@ -81,7 +81,7 @@ export function VariantHeader({
         <div className="space-y-4">
           {/* Title */}
           <div className="flex items-baseline gap-4">
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-page-title">
               {isRsidSearch ? result.rsid : variant.variant_vcf}
             </h1>
             {isRsidSearch ? (
@@ -102,7 +102,7 @@ export function VariantHeader({
             {showAlleleSelector ? (
               /* Allele selector for ambiguous rsIDs */
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-label">
                   Allele
                 </span>
                 <div className="flex gap-1">
@@ -137,13 +137,13 @@ export function VariantHeader({
             ) : (
               /* Static ref/alt display */
               <div className="inline-flex items-center gap-2 text-sm">
-                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-900">
+                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-heading">
                   {refAllele}
                 </span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-label">
                   ref / alt
                 </span>
-                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-900">
+                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-heading">
                   {altAllele}
                 </span>
               </div>

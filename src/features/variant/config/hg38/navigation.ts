@@ -98,7 +98,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       },
       {
         name: "Population Genetics",
-        defaultExpanded: false,
+        defaultExpanded: true,
         items: [
           { text: "Allele Frequency", slug: "allele-frequency", icon: "users" },
           { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity", icon: "pie-chart" },

@@ -3,9 +3,14 @@
 @source "../node_modules/streamdown/dist/index.js";
 
 @theme {
+  /* ============================================================================
+     shadcn/ui Theme with Material-inspired Colors
+     Primary: oklch(0.51 0.21 286.5) — Violet
+     ============================================================================ */
+
   --background: #fafafa;
   --foreground: oklch(0.22 0 0);
-  --card: #fafafa;
+  --card: oklch(0.96 0.01 335.69);
   --card-foreground: oklch(0.14 0 0);
   --popover: oklch(0.95 0.01 316.67);
   --popover-foreground: oklch(0.4 0.04 309.35);
@@ -35,11 +40,11 @@
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: oklch(0.56 0.11 228.27);
 
-  /* Typography semantic colors (matched to slate palette) */
-  --text-primary: oklch(0.129 0.042 264.695); /* slate-900 - headings */
-  --text-secondary: oklch(0.554 0.046 257.417); /* slate-500 - body text */
-  --text-muted: oklch(0.704 0.04 256.788); /* slate-400 - labels, muted */
-  --text-caption: oklch(0.704 0.04 256.788); /* slate-400 - captions */
+  /* Typography semantic colors (slate palette) */
+  --text-primary: oklch(0.129 0.042 264.695);   /* slate-900 - headings */
+  --text-secondary: oklch(0.554 0.046 257.417); /* slate-500 - body */
+  --text-muted: oklch(0.704 0.04 256.788);      /* slate-400 - labels */
+  --text-caption: oklch(0.704 0.04 256.788);    /* slate-400 - captions */
 
   --font-sans: Geist, Geist Fallback, sans-serif;
   --font-serif: Nunito, sans-serif;
@@ -102,7 +107,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Typography colors - usable as text-heading, text-body, etc. */
+  /* Typography semantic colors */
   --color-heading: var(--text-primary);
   --color-body: var(--text-secondary);
   --color-subtle: var(--text-muted);
@@ -210,5 +215,30 @@
   /* Caption/legend - 13px (non-uppercase) */
   .text-caption {
     @apply text-[13px] text-subtle;
+  }
+
+  /* Stats - large display numbers */
+  .text-stat-value {
+    @apply text-5xl md:text-6xl font-bold tracking-tight text-heading;
+  }
+
+  /* Stats - label below number */
+  .text-stat-label {
+    @apply text-xs font-bold uppercase tracking-widest text-subtle;
+  }
+
+  /* Breadcrumb container */
+  .text-breadcrumb {
+    @apply text-sm text-subtle;
+  }
+
+  /* Breadcrumb mono (IDs, codes) */
+  .text-breadcrumb-mono {
+    @apply text-sm font-mono text-body;
+  }
+
+  /* Definition term (label in key-value pairs) */
+  .text-dt {
+    @apply text-xs font-semibold uppercase tracking-wide text-body;
   }
 }

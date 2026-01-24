@@ -394,11 +394,9 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       {disease.description && (
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
-              Summary
-            </CardTitle>
+            <CardTitle className="text-label">Summary</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-700 leading-relaxed">
+          <CardContent className="text-sm text-body leading-relaxed">
             {disease.description}
           </CardContent>
         </Card>
@@ -409,38 +407,30 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
         {/* Basic Info Card */}
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
-              Basic Info
-            </CardTitle>
+            <CardTitle className="text-label">Basic Info</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
               {disease.source && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Source
-                  </dt>
-                  <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                  <dt className="text-dt">Source</dt>
+                  <dd className="text-sm font-medium text-heading mt-0.5">
                     {disease.source}
                   </dd>
                 </div>
               )}
               {disease.code && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Code
-                  </dt>
-                  <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
+                  <dt className="text-dt">Code</dt>
+                  <dd className="text-sm font-mono font-medium text-heading mt-0.5">
                     {disease.code}
                   </dd>
                 </div>
               )}
               {disease.epidemiology?.orphanet_code && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Orphanet Code
-                  </dt>
-                  <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
+                  <dt className="text-dt">Orphanet Code</dt>
+                  <dd className="text-sm font-mono font-medium text-heading mt-0.5">
                     {disease.epidemiology.orphanet_code}
                   </dd>
                 </div>
@@ -452,27 +442,21 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
         {/* Classification Card */}
         <Card>
           <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
-              Classification
-            </CardTitle>
+            <CardTitle className="text-label">Classification</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
               {disease.epidemiology?.disorder_type && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Disorder Type
-                  </dt>
-                  <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                  <dt className="text-dt">Disorder Type</dt>
+                  <dd className="text-sm font-medium text-heading mt-0.5">
                     {disease.epidemiology.disorder_type}
                   </dd>
                 </div>
               )}
               {disease.isTherapeuticArea !== undefined && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Therapeutic Area
-                  </dt>
+                  <dt className="text-dt">Therapeutic Area</dt>
                   <dd className="text-sm font-medium mt-0.5">
                     <span
                       className={cn(
@@ -489,9 +473,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
               )}
               {disease.leaf !== undefined && (
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Leaf Node
-                  </dt>
+                  <dt className="text-dt">Leaf Node</dt>
                   <dd className="text-sm font-medium mt-0.5">
                     <span
                       className={cn(
@@ -514,27 +496,21 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
         {disease.ontology?.sources && (
           <Card>
             <CardHeader className="border-b border-slate-200">
-              <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Ontology Sources
-              </CardTitle>
+              <CardTitle className="text-label">Ontology Sources</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3">
                 {disease.ontology.sources.name && (
                   <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Name
-                    </dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                    <dt className="text-dt">Name</dt>
+                    <dd className="text-sm font-medium text-heading mt-0.5">
                       {disease.ontology.sources.name}
                     </dd>
                   </div>
                 )}
                 {disease.ontology.sources.url && (
                   <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      URL
-                    </dt>
+                    <dt className="text-dt">URL</dt>
                     <dd className="text-sm mt-0.5">
                       <a
                         href={disease.ontology.sources.url}

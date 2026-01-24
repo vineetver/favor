@@ -11,10 +11,10 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
   return (
     <div className="py-8">
       {/* Breadcrumb Row */}
-      <div className="flex items-center gap-3 text-sm mb-4">
-        <span className="text-slate-400">Diseases</span>
+      <div className="flex items-center gap-3 text-breadcrumb mb-4">
+        <span className="text-subtle">Diseases</span>
         <span className="text-slate-300">▸</span>
-        <span className="font-mono text-slate-500">{disease.disease_id}</span>
+        <span className="text-breadcrumb-mono">{disease.disease_id}</span>
       </div>
 
       {/* Main Content Row */}
@@ -22,7 +22,7 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
         {/* Left Side */}
         <div className="space-y-4">
           {/* Title */}
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-page-title">
             {disease.name}
           </h1>
 
