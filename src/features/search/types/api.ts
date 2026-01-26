@@ -4,49 +4,76 @@ export type EntityType =
   | "diseases"
   | "drugs"
   | "pathways"
-  | "variants";
+  | "variants"
+  | "phenotypes"
+  | "studies"
+  | "traits";
 
-export type MatchType = "prefix" | "substring" | "fuzzy";
+export type MatchTier =
+  | "IdExact"
+  | "NameExact"
+  | "SynonymExact"
+  | "Prefix"
+  | "Contains"
+  | "Fuzzy"
+  | "Pivot";
+
+export type MatchReason =
+  | "id_exact"
+  | "name_exact"
+  | "synonym_exact"
+  | "prefix"
+  | "contains"
+  | "fuzzy"
+  | "pivot";
 
 export interface EntityLinks {
-  gene_count?: number;
-  disease_count?: number;
-  drug_count?: number;
-  variant_count?: number;
-  pathway_count?: number;
+  genes?: number;
+  diseases?: number;
+  drugs?: number;
+  variants?: number;
+  pathways?: number;
+  traits?: number;
+  phenotypes?: number;
+  studies?: number;
+  interactors?: number;
+  parents?: number;
+  children?: number;
+  targets?: number;
 }
 
-export interface EntityPreview {
+export interface EntityLinked {
   genes?: string[];
   diseases?: string[];
   drugs?: string[];
   pathways?: string[];
   variants?: string[];
+  phenotypes?: string[];
+  studies?: string[];
+  traits?: string[];
 }
 
 export interface TypeaheadSuggestion {
   id: string;
-  name: string;
-  type: EntityType;
+  display_name: string;
+  entity_type: EntityType;
   description?: string;
-  match_type: MatchType;
-  highlight: string;
+  match_tier: MatchTier;
+  match_reason: MatchReason;
   url?: string | null;
   links?: EntityLinks;
-  preview?: EntityPreview;
+  linked?: EntityLinked;
+}
+
+export interface TypeaheadGroup {
+  entity_type: EntityType;
+  suggestions: TypeaheadSuggestion[];
 }
 
 export interface TypeaheadResponse {
-  query: string;
-  took_ms: number;
-  suggestions: {
-    genes?: TypeaheadSuggestion[];
-    diseases?: TypeaheadSuggestion[];
-    drugs?: TypeaheadSuggestion[];
-    pathways?: TypeaheadSuggestion[];
-    variants?: TypeaheadSuggestion[];
-  };
-  total: number;
+  groups: TypeaheadGroup[];
+  exact_present: boolean;
+  total_count: number;
 }
 
 // Search/Pivot API Types
@@ -66,6 +93,9 @@ export interface SearchResults {
     drugs?: SearchEntity[];
     pathways?: SearchEntity[];
     variants?: SearchEntity[];
+    phenotypes?: SearchEntity[];
+    studies?: SearchEntity[];
+    traits?: SearchEntity[];
   };
   total: number;
   cursor?: string;
@@ -73,8 +103,8 @@ export interface SearchResults {
     expand_took_ms?: number;
     anchor_match?: {
       id: string;
-      name: string;
-      type: EntityType;
+      display_name: string;
+      entity_type: EntityType;
     };
   };
 }
@@ -85,7 +115,7 @@ export interface TypeaheadParams {
   types?: string;
   limit?: number;
   include_links?: boolean;
-  include_preview?: boolean;
+  include_linked?: boolean;
   signal?: AbortSignal;
 }
 

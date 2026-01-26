@@ -82,6 +82,24 @@ const ENTITY_CONFIG: Record<
     bgColor: "bg-orange-600",
     borderColor: "border-orange-200",
   },
+  phenotypes: {
+    label: "PHENOTYPES",
+    textColor: "text-pink-700",
+    bgColor: "bg-pink-600",
+    borderColor: "border-pink-200",
+  },
+  studies: {
+    label: "STUDIES",
+    textColor: "text-cyan-700",
+    bgColor: "bg-cyan-600",
+    borderColor: "border-cyan-200",
+  },
+  traits: {
+    label: "TRAITS",
+    textColor: "text-amber-700",
+    bgColor: "bg-amber-600",
+    borderColor: "border-amber-200",
+  },
 };
 
 export function UniversalSearch() {
@@ -109,7 +127,7 @@ export function UniversalSearch() {
     debounce: 300,
     limit: 3,
     includeLinks: true,
-    includePreview: true,
+    includeLinked: true,
   });
 
   // Sync typeahead query - use deferredQuery for smooth transitions
@@ -174,7 +192,10 @@ export function UniversalSearch() {
 
         // For variants, use the query (rsID if available) instead of raw ID
         // This ensures "rs7412" routes to /variant/rs7412 not /variant/19-44908822-C-T
-        if (suggestion.type === "variants" && isRoutableQuery(selectedQuery)) {
+        if (
+          suggestion.entity_type === "variants" &&
+          isRoutableQuery(selectedQuery)
+        ) {
           const success = await navigateToQuery(selectedQuery, genome, router);
           if (success) {
             clear();
@@ -187,8 +208,8 @@ export function UniversalSearch() {
         // For other entities, use the standard URL generation
         const url =
           suggestion.url ||
-          getEntityUrl(suggestion.type, suggestion.id, { genome });
-        if (url && hasEntityPage(suggestion.type)) {
+          getEntityUrl(suggestion.entity_type, suggestion.id, { genome });
+        if (url && hasEntityPage(suggestion.entity_type)) {
           router.push(url);
           clear();
           setSearchState({ mode: "idle" });
@@ -209,19 +230,10 @@ export function UniversalSearch() {
       }
 
       // 3. Fall back to first typeahead suggestion (populate, don't navigate)
-      if (results && results.total > 0) {
-        const entityTypes: EntityType[] = [
-          "genes",
-          "variants",
-          "diseases",
-          "drugs",
-          "pathways",
-        ];
-
-        for (const type of entityTypes) {
-          const entities = results.suggestions[type];
-          if (entities && entities.length > 0) {
-            handleSelectSuggestion(entities[0]);
+      if (results && results.total_count > 0) {
+        for (const group of results.groups) {
+          if (group.suggestions.length > 0) {
+            handleSelectSuggestion(group.suggestions[0]);
             return;
           }
         }
@@ -305,7 +317,7 @@ export function UniversalSearch() {
 
   // Get primary anchor based on intent
   let anchorEntity: TypeaheadSuggestion | null = null;
-  if (results && results.total > 0) {
+  if (results && results.total_count > 0) {
     let entityTypes: EntityType[];
 
     if (queryIntent === "variant") {
@@ -318,9 +330,9 @@ export function UniversalSearch() {
     }
 
     for (const type of entityTypes) {
-      const entities = results.suggestions[type];
-      if (entities && entities.length > 0) {
-        anchorEntity = entities[0];
+      const group = results.groups.find((g) => g.entity_type === type);
+      if (group && group.suggestions.length > 0) {
+        anchorEntity = group.suggestions[0];
         break;
       }
     }
@@ -332,21 +344,15 @@ export function UniversalSearch() {
     items: TypeaheadSuggestion[];
   }> = [];
 
-  if (results && results.total > 0) {
-    const entityTypes: EntityType[] = [
-      "genes",
-      "variants",
-      "diseases",
-      "drugs",
-      "pathways",
-    ];
-
-    entityTypes.forEach((type) => {
-      const items = results.suggestions[type];
-      if (items && items.length > 0) {
-        groupedSuggestions.push({ type, items });
+  if (results && results.total_count > 0) {
+    for (const group of results.groups) {
+      if (group.suggestions.length > 0) {
+        groupedSuggestions.push({
+          type: group.entity_type,
+          items: group.suggestions,
+        });
       }
-    });
+    }
   }
 
   return (
@@ -453,65 +459,77 @@ export function UniversalSearch() {
                       {/* Anchor Card */}
                       {anchorEntity &&
                         (() => {
-                          const config = ENTITY_CONFIG[anchorEntity.type];
+                          const config = ENTITY_CONFIG[anchorEntity.entity_type];
                           const linkCounts = [
                             {
                               label: "genes",
-                              count: anchorEntity.links?.gene_count,
+                              count: anchorEntity.links?.genes,
                             },
                             {
                               label: "variants",
-                              count: anchorEntity.links?.variant_count,
+                              count: anchorEntity.links?.variants,
                             },
                             {
                               label: "diseases",
-                              count: anchorEntity.links?.disease_count,
+                              count: anchorEntity.links?.diseases,
                             },
                             {
                               label: "drugs",
-                              count: anchorEntity.links?.drug_count,
+                              count: anchorEntity.links?.drugs,
                             },
                             {
                               label: "pathways",
-                              count: anchorEntity.links?.pathway_count,
+                              count: anchorEntity.links?.pathways,
+                            },
+                            {
+                              label: "phenotypes",
+                              count: anchorEntity.links?.phenotypes,
+                            },
+                            {
+                              label: "studies",
+                              count: anchorEntity.links?.studies,
+                            },
+                            {
+                              label: "traits",
+                              count: anchorEntity.links?.traits,
                             },
                           ].filter((link) => link.count && link.count > 0);
 
                           const previews = [];
                           if (
-                            anchorEntity.preview?.genes &&
-                            anchorEntity.preview.genes.length > 0
+                            anchorEntity.linked?.genes &&
+                            anchorEntity.linked.genes.length > 0
                           ) {
                             previews.push({
                               label: "Genes",
-                              items: anchorEntity.preview.genes,
+                              items: anchorEntity.linked.genes,
                             });
                           }
                           if (
-                            anchorEntity.preview?.diseases &&
-                            anchorEntity.preview.diseases.length > 0
+                            anchorEntity.linked?.diseases &&
+                            anchorEntity.linked.diseases.length > 0
                           ) {
                             previews.push({
                               label: "Diseases",
-                              items: anchorEntity.preview.diseases,
+                              items: anchorEntity.linked.diseases,
                             });
                           }
                           if (
-                            anchorEntity.preview?.drugs &&
-                            anchorEntity.preview.drugs.length > 0
+                            anchorEntity.linked?.drugs &&
+                            anchorEntity.linked.drugs.length > 0
                           ) {
                             previews.push({
                               label: "Drugs",
-                              items: anchorEntity.preview.drugs,
+                              items: anchorEntity.linked.drugs,
                             });
                           }
                           if (
-                            anchorEntity.preview?.pathways &&
-                            anchorEntity.preview.pathways.length > 0
+                            anchorEntity.linked?.pathways &&
+                            anchorEntity.linked.pathways.length > 0
                           ) {
                             previews.push({
                               label: "Pathways",
-                              items: anchorEntity.preview.pathways,
+                              items: anchorEntity.linked.pathways,
                             });
                           }
 
@@ -534,12 +552,34 @@ export function UniversalSearch() {
                                           config.textColor,
                                         )}
                                       >
-                                        {anchorEntity.name}
+                                        {anchorEntity.display_name}
                                       </h3>
-                                      {anchorEntity.match_type === "prefix" && (
+                                      {/* Match Quality Indicator */}
+                                      {(anchorEntity.match_reason === "id_exact" ||
+                                        anchorEntity.match_reason === "name_exact" ||
+                                        anchorEntity.match_reason === "synonym_exact") && (
                                         <span
                                           className="inline-flex h-2 w-2 rounded-full bg-green-500"
                                           title="Exact match"
+                                        />
+                                      )}
+                                      {anchorEntity.match_reason === "prefix" && (
+                                        <span
+                                          className="inline-flex h-2 w-2 rounded-full bg-yellow-500"
+                                          title="Prefix match"
+                                        />
+                                      )}
+                                      {(anchorEntity.match_reason === "fuzzy" ||
+                                        anchorEntity.match_reason === "contains") && (
+                                        <span
+                                          className="inline-flex h-2 w-2 rounded-full bg-orange-500"
+                                          title="Fuzzy match"
+                                        />
+                                      )}
+                                      {anchorEntity.match_reason === "pivot" && (
+                                        <span
+                                          className="inline-flex h-2 w-2 rounded-full bg-blue-500"
+                                          title="Related"
                                         />
                                       )}
                                     </div>
@@ -627,29 +667,41 @@ export function UniversalSearch() {
                             {/* Entity Cards - Two Column Grid on Desktop */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                               {group.items.map((item) => {
-                                const hasUrl = hasEntityPage(item.type);
+                                const hasUrl = hasEntityPage(item.entity_type);
 
                                 // Count how many link types have data
                                 const linkCounts = [
                                   {
                                     label: "genes",
-                                    count: item.links?.gene_count,
+                                    count: item.links?.genes,
                                   },
                                   {
                                     label: "variants",
-                                    count: item.links?.variant_count,
+                                    count: item.links?.variants,
                                   },
                                   {
                                     label: "diseases",
-                                    count: item.links?.disease_count,
+                                    count: item.links?.diseases,
                                   },
                                   {
                                     label: "drugs",
-                                    count: item.links?.drug_count,
+                                    count: item.links?.drugs,
                                   },
                                   {
                                     label: "pathways",
-                                    count: item.links?.pathway_count,
+                                    count: item.links?.pathways,
+                                  },
+                                  {
+                                    label: "phenotypes",
+                                    count: item.links?.phenotypes,
+                                  },
+                                  {
+                                    label: "studies",
+                                    count: item.links?.studies,
+                                  },
+                                  {
+                                    label: "traits",
+                                    count: item.links?.traits,
                                   },
                                 ].filter(
                                   (link) => link.count && link.count > 0,
@@ -658,48 +710,48 @@ export function UniversalSearch() {
                                 // Get relevant previews based on entity type
                                 const previews = [];
                                 if (
-                                  item.preview?.genes &&
-                                  item.preview.genes.length > 0
+                                  item.linked?.genes &&
+                                  item.linked.genes.length > 0
                                 ) {
                                   previews.push({
                                     label: "Genes",
-                                    items: item.preview.genes,
+                                    items: item.linked.genes,
                                   });
                                 }
                                 if (
-                                  item.preview?.diseases &&
-                                  item.preview.diseases.length > 0
+                                  item.linked?.diseases &&
+                                  item.linked.diseases.length > 0
                                 ) {
                                   previews.push({
                                     label: "Diseases",
-                                    items: item.preview.diseases,
+                                    items: item.linked.diseases,
                                   });
                                 }
                                 if (
-                                  item.preview?.drugs &&
-                                  item.preview.drugs.length > 0
+                                  item.linked?.drugs &&
+                                  item.linked.drugs.length > 0
                                 ) {
                                   previews.push({
                                     label: "Drugs",
-                                    items: item.preview.drugs,
+                                    items: item.linked.drugs,
                                   });
                                 }
                                 if (
-                                  item.preview?.pathways &&
-                                  item.preview.pathways.length > 0
+                                  item.linked?.pathways &&
+                                  item.linked.pathways.length > 0
                                 ) {
                                   previews.push({
                                     label: "Pathways",
-                                    items: item.preview.pathways,
+                                    items: item.linked.pathways,
                                   });
                                 }
                                 if (
-                                  item.preview?.variants &&
-                                  item.preview.variants.length > 0
+                                  item.linked?.variants &&
+                                  item.linked.variants.length > 0
                                 ) {
                                   previews.push({
                                     label: "Variants",
-                                    items: item.preview.variants,
+                                    items: item.linked.variants,
                                   });
                                 }
 
@@ -720,26 +772,34 @@ export function UniversalSearch() {
                                                 config.textColor,
                                               )}
                                             >
-                                              {item.name}
+                                              {item.display_name}
                                             </span>
                                             {/* Match Quality Indicator */}
-                                            {item.match_type === "prefix" && (
+                                            {(item.match_reason === "id_exact" ||
+                                              item.match_reason === "name_exact" ||
+                                              item.match_reason === "synonym_exact") && (
                                               <span
                                                 className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"
                                                 title="Exact match"
                                               />
                                             )}
-                                            {item.match_type ===
-                                              "substring" && (
+                                            {item.match_reason === "prefix" && (
                                               <span
                                                 className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500"
-                                                title="Substring match"
+                                                title="Prefix match"
                                               />
                                             )}
-                                            {item.match_type === "fuzzy" && (
+                                            {(item.match_reason === "fuzzy" ||
+                                              item.match_reason === "contains") && (
                                               <span
                                                 className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500"
                                                 title="Fuzzy match"
+                                              />
+                                            )}
+                                            {item.match_reason === "pivot" && (
+                                              <span
+                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"
+                                                title="Related"
                                               />
                                             )}
                                           </div>

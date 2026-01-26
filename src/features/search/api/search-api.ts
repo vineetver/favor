@@ -31,8 +31,8 @@ export async function fetchTypeahead(
     searchParams.append("include_links", params.include_links.toString());
   }
 
-  if (params.include_preview !== undefined) {
-    searchParams.append("include_preview", params.include_preview.toString());
+  if (params.include_linked !== undefined) {
+    searchParams.append("include_linked", params.include_linked.toString());
   }
 
   const response = await fetch(

@@ -38,6 +38,18 @@ export function getEntityUrl(
       // Pathway pages: /pathway/[id]
       return `/pathway/${id}`;
 
+    case "phenotypes":
+      // Phenotype pages: /phenotype/[id]
+      return `/phenotype/${id}`;
+
+    case "studies":
+      // Study pages: /study/[id]
+      return `/study/${id}`;
+
+    case "traits":
+      // Trait pages: /trait/[id]
+      return `/trait/${id}`;
+
     default:
       return "/";
   }
@@ -48,7 +60,7 @@ export function getEntityUrl(
  */
 export function hasEntityPage(type: EntityType): boolean {
   // Variants, genes, diseases, and drugs have dedicated pages
-  // Pathways use pivot explorer
+  // Pathways, phenotypes, studies, traits use pivot explorer
   return (
     type === "variants" ||
     type === "genes" ||
@@ -67,6 +79,9 @@ export function getEntityLabel(type: EntityType, singular = false): string {
     diseases: { singular: "Disease", plural: "Diseases" },
     drugs: { singular: "Drug", plural: "Drugs" },
     pathways: { singular: "Pathway", plural: "Pathways" },
+    phenotypes: { singular: "Phenotype", plural: "Phenotypes" },
+    studies: { singular: "Study", plural: "Studies" },
+    traits: { singular: "Trait", plural: "Traits" },
   };
 
   return singular ? labels[type].singular : labels[type].plural;

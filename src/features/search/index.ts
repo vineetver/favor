@@ -7,13 +7,15 @@ export { UniversalSearch } from "./components";
 export { SearchProvider, useSearch } from "./context/search-context";
 // Types
 export type {
+  EntityLinked,
   EntityLinks,
-  EntityPreview,
   EntityType,
-  MatchType,
+  MatchReason,
+  MatchTier,
   SearchEntity,
   SearchParams,
   SearchResults,
+  TypeaheadGroup,
   TypeaheadParams,
   TypeaheadResponse,
   TypeaheadSuggestion,

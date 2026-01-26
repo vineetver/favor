@@ -193,18 +193,79 @@ export function useVariantSummary({
     }
   }, [enabled, state.status, isLoading, triggerGeneration]);
 
+  // Re-subscribe to SSE when component mounts with pending/generating state
+  // This handles the case where user navigated away and came back
+  useEffect(() => {
+    if (
+      !enabled ||
+      isLoading ||
+      (state.status !== "pending" && state.status !== "generating")
+    ) {
+      return;
+    }
+
+    // Already have an active SSE subscription
+    if (sseCleanupRef.current) {
+      return;
+    }
+
+    const requestId = state.requestId;
+
+    sseCleanupRef.current = subscribeToStream(
+      requestId,
+      (event) => {
+        if (!isMountedRef.current) return;
+
+        switch (event.status) {
+          case "pending":
+            queryClient.setQueryData<VariantSummaryState>(
+              ["variant-summary", vcf],
+              { status: "pending", requestId: event.request_id },
+            );
+            break;
+          case "generating":
+            queryClient.setQueryData<VariantSummaryState>(
+              ["variant-summary", vcf],
+              { status: "generating", requestId: event.request_id },
+            );
+            break;
+          case "completed":
+            queryClient.setQueryData<VariantSummaryState>(
+              ["variant-summary", vcf],
+              { status: "completed", summary: event.content },
+            );
+            break;
+          case "failed":
+            queryClient.setQueryData<VariantSummaryState>(
+              ["variant-summary", vcf],
+              { status: "failed", error: event.error },
+            );
+            break;
+        }
+      },
+      (error) => {
+        if (!isMountedRef.current) return;
+        console.error("SSE reconnection error:", error);
+        // On SSE error, refetch from server to get current state
+        queryClient.invalidateQueries({ queryKey: ["variant-summary", vcf] });
+      },
+    );
+  }, [enabled, isLoading, state, vcf, queryClient]);
+
   // Cleanup SSE on unmount and track mounted state
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
       sseCleanupRef.current?.();
+      sseCleanupRef.current = null;
     };
   }, []);
 
   // Retry function
   const retry = useCallback(() => {
     sseCleanupRef.current?.();
+    sseCleanupRef.current = null;
     triggeredForRef.current = null;
     queryClient.setQueryData<VariantSummaryState>(["variant-summary", vcf], {
       status: "idle",
