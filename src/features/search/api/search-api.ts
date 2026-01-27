@@ -99,6 +99,14 @@ export async function fetchSearch(
     searchParams.append("anchor_type", params.anchor_type);
   }
 
+  if (params.include_links !== undefined) {
+    searchParams.append("include_links", params.include_links.toString());
+  }
+
+  if (params.include_linked !== undefined) {
+    searchParams.append("include_linked", params.include_linked.toString());
+  }
+
   const response = await fetch(
     `${API_BASE_URL}/search?${searchParams.toString()}`,
     {
@@ -107,11 +115,58 @@ export async function fetchSearch(
       },
       // Cache search results for 5 minutes
       next: { revalidate: 300 },
+      signal: params.signal,
     },
   );
 
   if (!response.ok) {
     throw new Error(`Search request failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Pivot expansion - fetch related entities for a selected anchor
+ * Used after user selects an entity to show what's connected to it
+ * Returns TypeaheadResponse format (groups with suggestions)
+ */
+export async function fetchPivotExpansion(params: {
+  anchor_id: string;
+  anchor_type: string;
+  types?: string;
+  limit?: number;
+  signal?: AbortSignal;
+}): Promise<TypeaheadResponse> {
+  const searchParams = new URLSearchParams();
+
+  searchParams.append("anchor_id", params.anchor_id);
+  searchParams.append("anchor_type", params.anchor_type);
+  searchParams.append("expand", "true");
+  searchParams.append("include_links", "true");
+  searchParams.append("include_linked", "true");
+
+  if (params.types !== undefined) {
+    searchParams.append("types", params.types);
+  }
+
+  if (params.limit !== undefined) {
+    searchParams.append("limit", params.limit.toString());
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/search?${searchParams.toString()}`,
+    {
+      headers: {
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: params.signal,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Pivot request failed: ${response.statusText}`);
   }
 
   return response.json();

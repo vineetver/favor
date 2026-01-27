@@ -174,6 +174,13 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
     setIsLoading(false);
   }, []);
 
+  // Force refetch with current query (useful after clearing anchor)
+  const refetch = useCallback(() => {
+    if (query.length >= minLength) {
+      search(query);
+    }
+  }, [query, minLength, search]);
+
   return {
     query,
     setQuery,
@@ -181,6 +188,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
     isLoading,
     error,
     clear,
+    refetch,
     hasResults: results !== null && results.total_count > 0,
   };
 }

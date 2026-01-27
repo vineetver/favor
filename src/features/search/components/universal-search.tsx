@@ -7,7 +7,7 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { cn } from "@infra/utils";
-import { ExternalLink, Loader2, Search } from "lucide-react";
+import { ExternalLink, Loader2, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
@@ -18,6 +18,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import { usePivotExpansion } from "../hooks/use-pivot-expansion";
 import { useTypeahead } from "../hooks/use-typeahead";
 import type { EntityType, TypeaheadSuggestion } from "../types/api";
 import {
@@ -31,17 +32,16 @@ import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
 
 type GenomeBuild = "hg38" | "hg19";
 
-// Discriminated union - makes invalid states impossible
-// State transitions (the contract):
-//   idle -> typing: user types anything
-//   typing -> idle: user deletes all text
-//   typing -> selected: user clicks a suggestion
-//   selected -> typing: user types anything (clears previous selection)
-//   selected -> selected: user clicks a different suggestion (overwrites)
-type SearchState =
-  | { mode: "idle" }
-  | { mode: "typing"; query: string }
-  | { mode: "selected"; query: string; suggestion: TypeaheadSuggestion };
+// State machine for search modes
+// typing: user is typing, show typeahead suggestions
+// selected: user has selected an anchor, show pivot results
+type SearchMode = "idle" | "typing" | "selected";
+
+interface SearchState {
+  mode: SearchMode;
+  query: string;
+  anchor: TypeaheadSuggestion | null;
+}
 
 const ENTITY_CONFIG: Record<
   EntityType,
@@ -105,55 +105,85 @@ const ENTITY_CONFIG: Record<
 export function UniversalSearch() {
   const router = useRouter();
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
-  const [searchState, setSearchState] = useState<SearchState>({ mode: "idle" });
+  const [searchState, setSearchState] = useState<SearchState>({
+    mode: "idle",
+    query: "",
+    anchor: null,
+  });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
-  // React 19: useRef for click-outside detection
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // React 19: useTransition for non-blocking state updates
-  // Keeps UI responsive during selection updates
   const [isPending, startTransition] = useTransition();
 
-  // Derive query from state - Single Source of Truth
-  const query = searchState.mode === "idle" ? "" : searchState.query;
-
-  // React 19: useDeferredValue for smooth transitions
-  // Delays non-urgent updates to prevent choppy UI
+  // Derive query from state
+  const query = searchState.query;
   const deferredQuery = useDeferredValue(query);
 
-  const { setQuery, results, isLoading, clear } = useTypeahead({
+  // Typeahead hook - only active in typing mode
+  const {
+    setQuery: setTypeaheadQuery,
+    results: typeaheadResults,
+    isLoading: isTypeaheadLoading,
+    clear: clearTypeahead,
+    refetch: refetchTypeahead,
+  } = useTypeahead({
     minLength: 2,
     debounce: 300,
-    limit: 3,
+    limit: 4,
     includeLinks: true,
     includeLinked: true,
   });
 
-  // Sync typeahead query - use deferredQuery for smooth transitions
+  // Pivot expansion hook - only active in selected mode
+  const {
+    setAnchor: setPivotAnchor,
+    results: pivotResults,
+    isLoading: isPivotLoading,
+    error: pivotError,
+    clear: clearPivot,
+  } = usePivotExpansion({
+    limit: 5,
+  });
+
+  // Sync typeahead query only when in typing mode
   useEffect(() => {
-    setQuery(deferredQuery);
-  }, [deferredQuery, setQuery]);
+    if (searchState.mode === "typing") {
+      setTypeaheadQuery(deferredQuery);
+    }
+  }, [deferredQuery, searchState.mode, setTypeaheadQuery]);
+
+  // Sync pivot anchor when in selected mode
+  useEffect(() => {
+    if (searchState.mode === "selected" && searchState.anchor) {
+      setPivotAnchor({
+        id: searchState.anchor.id,
+        type: searchState.anchor.entity_type,
+      });
+    } else if (searchState.mode !== "selected") {
+      clearPivot();
+    }
+  }, [searchState.mode, searchState.anchor, setPivotAnchor, clearPivot]);
 
   const handleInputChange = useCallback((value: string) => {
-    // ANY user typing transitions to typing mode - clears previous selections
     if (value.trim().length === 0) {
-      setSearchState({ mode: "idle" });
+      setSearchState({ mode: "idle", query: "", anchor: null });
       setIsDropdownOpen(false);
     } else {
-      // Transition to typing mode - invalidates any previous selection
-      setSearchState({ mode: "typing", query: value });
+      // Any typing clears selection and returns to typing mode
+      setSearchState({ mode: "typing", query: value, anchor: null });
       if (value.trim().length >= 2) {
         setIsDropdownOpen(true);
       }
     }
+    setHighlightedIndex(-1);
   }, []);
 
-  // Preload variant data when user types a complete VCF
+  // Preload variant data when user types a complete VCF (only in typing mode)
   useEffect(() => {
-    const parsed = parseQuery(query);
+    if (searchState.mode !== "typing") return;
 
-    // Only preload if it's a valid, complete variant query
+    const parsed = parseQuery(query);
     if (
       parsed.isValid &&
       (parsed.type === "variant_vcf" || parsed.type === "variant_rsid")
@@ -162,7 +192,7 @@ export function UniversalSearch() {
         // Silently fail - preloading is optional optimization
       });
     }
-  }, [query]);
+  }, [query, searchState.mode]);
 
   const handleGenomeChange = useCallback((value: GenomeBuild) => {
     setGenome(value);
@@ -170,15 +200,96 @@ export function UniversalSearch() {
 
   const handleSelectSuggestion = useCallback(
     (suggestion: TypeaheadSuggestion) => {
-      // React 19: Use transition for smooth, non-blocking update
       startTransition(() => {
-        const identifier = getPopulateIdentifier(suggestion);
-        setSearchState({ mode: "selected", query: identifier, suggestion });
-        setIsDropdownOpen(false);
+        const displayText = getPopulateIdentifier(suggestion);
+        setSearchState({
+          mode: "selected",
+          query: displayText,
+          anchor: suggestion,
+        });
+        setHighlightedIndex(-1);
+        // Keep dropdown open to show pivot results
       });
     },
     [],
   );
+
+  const handleClearAnchor = useCallback(() => {
+    startTransition(() => {
+      // Clear pivot results immediately to prevent stale data flash
+      clearPivot();
+
+      // Clear anchor, return to typing mode, keep query text
+      setSearchState((prev) => {
+        const newMode = prev.query.trim().length >= 2 ? "typing" : "idle";
+        return {
+          mode: newMode,
+          query: prev.query,
+          anchor: null,
+        };
+      });
+
+      // Force re-fetch typeahead since query didn't change
+      // (setTypeaheadQuery won't trigger fetch if query is same)
+      refetchTypeahead();
+    });
+  }, [clearPivot, refetchTypeahead]);
+
+  // Handle clicking a pivot result - can navigate or pivot-hop
+  const handlePivotItemClick = useCallback(
+    (item: TypeaheadSuggestion) => {
+      if (hasEntityPage(item.entity_type)) {
+        // Navigate to entity page
+        const url = item.url || getEntityUrl(item.entity_type, item.id, { genome });
+        router.push(url);
+        clearTypeahead();
+        clearPivot();
+        setSearchState({ mode: "idle", query: "", anchor: null });
+        setIsDropdownOpen(false);
+      } else {
+        // Pivot-hop: set this as new anchor
+        handleSelectSuggestion(item);
+      }
+    },
+    [genome, router, clearTypeahead, clearPivot, handleSelectSuggestion],
+  );
+
+  // Navigate to anchor entity page (used in selected mode)
+  const navigateToAnchor = useCallback(async () => {
+    if (searchState.mode !== "selected" || !searchState.anchor) return false;
+
+    const { anchor } = searchState;
+
+    if (!hasEntityPage(anchor.entity_type)) {
+      // No entity page - stay in pivot view
+      return false;
+    }
+
+    // For variants, try routing via rsID if available
+    if (anchor.entity_type === "variants") {
+      // Check if display_name is an rsID
+      const rsIdMatch = anchor.display_name.match(/^rs\d+$/i);
+      if (rsIdMatch) {
+        const success = await navigateToQuery(anchor.display_name, genome, router);
+        if (success) {
+          clearTypeahead();
+          clearPivot();
+          setSearchState({ mode: "idle", query: "", anchor: null });
+          setIsDropdownOpen(false);
+          return true;
+        }
+      }
+    }
+
+    // Standard URL navigation using anchor.id (not display_name)
+    const url = anchor.url || getEntityUrl(anchor.entity_type, anchor.id, { genome });
+    router.push(url);
+    clearTypeahead();
+    clearPivot();
+    setSearchState({ mode: "idle", query: "", anchor: null });
+    setIsDropdownOpen(false);
+    return true;
+  }, [searchState, genome, router, clearTypeahead, clearPivot]);
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
@@ -186,81 +297,57 @@ export function UniversalSearch() {
 
       if (searchState.mode === "idle") return;
 
-      // 1. If user has selected a suggestion, navigate to it
+      // Selected mode: Enter navigates to anchor entity page (if available)
       if (searchState.mode === "selected") {
-        const { suggestion, query: selectedQuery } = searchState;
-
-        // For variants, use the query (rsID if available) instead of raw ID
-        // This ensures "rs7412" routes to /variant/rs7412 not /variant/19-44908822-C-T
-        if (
-          suggestion.entity_type === "variants" &&
-          isRoutableQuery(selectedQuery)
-        ) {
-          const success = await navigateToQuery(selectedQuery, genome, router);
-          if (success) {
-            clear();
-            setSearchState({ mode: "idle" });
-            setIsDropdownOpen(false);
-            return;
-          }
-        }
-
-        // For other entities, use the standard URL generation
-        const url =
-          suggestion.url ||
-          getEntityUrl(suggestion.entity_type, suggestion.id, { genome });
-        if (url && hasEntityPage(suggestion.entity_type)) {
-          router.push(url);
-          clear();
-          setSearchState({ mode: "idle" });
-          setIsDropdownOpen(false);
-        }
+        await navigateToAnchor();
         return;
       }
 
-      // 2. Try direct routing for complete VCF/rsID queries
+      // Typing mode: try direct routing for VCF/rsID first
       if (isRoutableQuery(query)) {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
-          clear();
-          setSearchState({ mode: "idle" });
+          clearTypeahead();
+          setSearchState({ mode: "idle", query: "", anchor: null });
           setIsDropdownOpen(false);
           return;
         }
       }
 
-      // 3. Fall back to first typeahead suggestion (populate, don't navigate)
-      if (results && results.total_count > 0) {
-        for (const group of results.groups) {
+      // Fall back to selecting first typeahead suggestion (if any)
+      // Note: If Combobox has a highlighted option, this won't be reached
+      // because Combobox will fire onChange instead
+      if (typeaheadResults && typeaheadResults.total_count > 0) {
+        for (const group of typeaheadResults.groups) {
           if (group.suggestions.length > 0) {
             handleSelectSuggestion(group.suggestions[0]);
             return;
           }
         }
       }
+
+      // No suggestions - do nothing (graceful handling of zero results)
     },
     [
       searchState,
-      results,
+      typeaheadResults,
       genome,
       router,
-      clear,
+      clearTypeahead,
       handleSelectSuggestion,
       query,
+      navigateToAnchor,
     ],
   );
 
-  // React 19: Proper click-outside detection with event listeners
-  // Using ref to track dropdown state avoids stale closure issues
+  // Click-outside detection
   const isDropdownOpenRef = useRef(isDropdownOpen);
   isDropdownOpenRef.current = isDropdownOpen;
 
   useEffect(() => {
-    // Only attach listener when dropdown is open
     if (!isDropdownOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      // Check ref for current state to avoid stale closure
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
@@ -270,90 +357,69 @@ export function UniversalSearch() {
       }
     };
 
-    // Use capture phase to ensure we catch the event before other handlers
     document.addEventListener("mousedown", handleClickOutside, true);
-
-    // Cleanup
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
     };
   }, [isDropdownOpen]);
 
   const handleFocus = () => {
-    if (query.trim().length >= 2) {
+    if (query.trim().length >= 2 || searchState.mode === "selected") {
       setIsDropdownOpen(true);
     }
   };
 
-  // Smart heuristics to detect query intent
-  const getQueryIntent = (q: string): "variant" | "gene" | "general" => {
-    const trimmed = q.trim();
-
-    // Detect rsID patterns (complete or partial)
-    if (/^rs\d/i.test(trimmed)) {
-      return "variant";
-    }
-
-    // Detect VCF-like patterns (chr-pos-ref-alt or partial)
-    // Matches: "19-440908822-C", "19-440908822", "chr1-1000-A-T", etc.
-    if (/^(chr)?(\d{1,2}|X|Y|MT?)[-:]\d+/i.test(trimmed)) {
-      return "variant";
-    }
-
-    // Detect genomic regions
-    if (/^(chr)?(\d{1,2}|X|Y|MT?):\d+-\d+$/i.test(trimmed)) {
-      return "variant";
-    }
-
-    // Gene-like patterns (all caps, short)
-    if (/^[A-Z][A-Z0-9-]{1,10}$/.test(trimmed)) {
-      return "gene";
-    }
-
-    return "general";
-  };
-
-  const queryIntent = getQueryIntent(query);
-
-  // Get primary anchor based on intent
-  let anchorEntity: TypeaheadSuggestion | null = null;
-  if (results && results.total_count > 0) {
-    let entityTypes: EntityType[];
-
-    if (queryIntent === "variant") {
-      entityTypes = ["variants", "genes", "diseases", "drugs", "pathways"];
-    } else if (queryIntent === "gene") {
-      entityTypes = ["genes", "variants", "diseases", "drugs", "pathways"];
-    } else {
-      // General search - prioritize diseases/drugs/pathways for text queries
-      entityTypes = ["diseases", "genes", "drugs", "pathways", "variants"];
-    }
-
-    for (const type of entityTypes) {
-      const group = results.groups.find((g) => g.entity_type === type);
-      if (group && group.suggestions.length > 0) {
-        anchorEntity = group.suggestions[0];
-        break;
-      }
+  // Build flat list of typeahead suggestions for keyboard navigation
+  const flatTypeaheadSuggestions: TypeaheadSuggestion[] = [];
+  if (searchState.mode === "typing" && typeaheadResults) {
+    for (const group of typeaheadResults.groups) {
+      flatTypeaheadSuggestions.push(...group.suggestions);
     }
   }
 
-  // Group remaining suggestions by entity type
-  const groupedSuggestions: Array<{
+  // Build grouped suggestions for display (no reordering - trust backend)
+  const groupedTypeaheadSuggestions: Array<{
     type: EntityType;
     items: TypeaheadSuggestion[];
   }> = [];
 
-  if (results && results.total_count > 0) {
-    for (const group of results.groups) {
+  // Best match is the first item from the first group (trust backend ordering)
+  let bestMatch: TypeaheadSuggestion | null = null;
+
+  if (typeaheadResults && typeaheadResults.total_count > 0) {
+    for (const group of typeaheadResults.groups) {
       if (group.suggestions.length > 0) {
-        groupedSuggestions.push({
+        // First suggestion of first group is best match
+        if (!bestMatch) {
+          bestMatch = group.suggestions[0];
+        }
+        groupedTypeaheadSuggestions.push({
           type: group.entity_type,
           items: group.suggestions,
         });
       }
     }
   }
+
+  // Build pivot groups for display (no reordering - trust backend)
+  // Pivot API returns same format as typeahead: groups with suggestions
+  const pivotGroups: Array<{
+    type: EntityType;
+    items: TypeaheadSuggestion[];
+  }> = [];
+
+  if (pivotResults && pivotResults.total_count > 0) {
+    for (const group of pivotResults.groups) {
+      if (group.suggestions.length > 0) {
+        pivotGroups.push({
+          type: group.entity_type,
+          items: group.suggestions,
+        });
+      }
+    }
+  }
+
+  const isLoading = searchState.mode === "typing" ? isTypeaheadLoading : isPivotLoading;
 
   return (
     <div className="w-full" ref={containerRef}>
@@ -406,16 +472,47 @@ export function UniversalSearch() {
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
                   onKeyDown={(e) => {
-                    // Allow Enter to submit form even when dropdown is open
                     if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleSubmit(e as unknown as FormEvent);
+                      // In selected mode: always handle navigation ourselves
+                      if (searchState.mode === "selected") {
+                        e.preventDefault();
+                        handleSubmit(e as unknown as FormEvent);
+                        return;
+                      }
+
+                      // In typing mode with routable query (VCF/rsID): handle direct routing
+                      if (searchState.mode === "typing" && isRoutableQuery(query)) {
+                        e.preventDefault();
+                        handleSubmit(e as unknown as FormEvent);
+                        return;
+                      }
+
+                      // In typing mode with no suggestions: do nothing
+                      if (searchState.mode === "typing" && (!typeaheadResults || typeaheadResults.total_count === 0)) {
+                        e.preventDefault();
+                        return;
+                      }
+
+                      // Otherwise: let Combobox handle Enter (selects highlighted option)
+                      // Combobox will fire onChange with the highlighted item
                     }
                   }}
                   placeholder="Search genes, variants, diseases, drugs, pathways..."
                   autoComplete="off"
                   spellCheck={false}
                 />
+
+                {/* Clear button when anchor is selected */}
+                {searchState.mode === "selected" && (
+                  <button
+                    type="button"
+                    onClick={handleClearAnchor}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Clear selection"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               <button
@@ -430,452 +527,104 @@ export function UniversalSearch() {
               </button>
             </div>
 
-            {/* Dropdown with fixed positioning to prevent overflow */}
+            {/* Dropdown */}
             {isDropdownOpen && (
               <ComboboxOptions
                 static
                 className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
                 style={{ maxHeight: "calc(100vh - 400px)" }}
               >
-                {/* Subtle loading bar when updating results */}
-                {(isLoading || isPending) && groupedSuggestions.length > 0 && (
+                {/* Loading bar */}
+                {(isLoading || isPending) && (
                   <div className="h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 animate-pulse" />
                 )}
+
                 <div
                   className="overflow-y-auto"
                   style={{ maxHeight: "calc(100vh - 400px)" }}
                 >
-                  {isLoading && groupedSuggestions.length === 0 ? (
-                    <div className="py-8 px-6 text-center text-slate-400">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                      <div className="text-sm">Searching...</div>
-                    </div>
-                  ) : groupedSuggestions.length === 0 && query.trim() !== "" ? (
-                    <div className="py-8 px-6 text-center text-slate-400">
-                      <div className="text-sm">No results found</div>
-                    </div>
-                  ) : (
+                  {/* TYPING MODE: Show typeahead suggestions */}
+                  {searchState.mode === "typing" && (
                     <>
-                      {/* Anchor Card */}
-                      {anchorEntity &&
-                        (() => {
-                          const config = ENTITY_CONFIG[anchorEntity.entity_type];
-                          const linkCounts = [
-                            {
-                              label: "genes",
-                              count: anchorEntity.links?.genes,
-                            },
-                            {
-                              label: "variants",
-                              count: anchorEntity.links?.variants,
-                            },
-                            {
-                              label: "diseases",
-                              count: anchorEntity.links?.diseases,
-                            },
-                            {
-                              label: "drugs",
-                              count: anchorEntity.links?.drugs,
-                            },
-                            {
-                              label: "pathways",
-                              count: anchorEntity.links?.pathways,
-                            },
-                            {
-                              label: "phenotypes",
-                              count: anchorEntity.links?.phenotypes,
-                            },
-                            {
-                              label: "studies",
-                              count: anchorEntity.links?.studies,
-                            },
-                            {
-                              label: "traits",
-                              count: anchorEntity.links?.traits,
-                            },
-                          ].filter((link) => link.count && link.count > 0);
+                      {isTypeaheadLoading && groupedTypeaheadSuggestions.length === 0 ? (
+                        <div className="py-8 px-6 text-center text-slate-400">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                          <div className="text-sm">Searching...</div>
+                        </div>
+                      ) : groupedTypeaheadSuggestions.length === 0 && query.trim() !== "" ? (
+                        <div className="py-8 px-6 text-center text-slate-400">
+                          <div className="text-sm">No results found</div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Best Match Card */}
+                          {bestMatch && (
+                            <BestMatchCard
+                              item={bestMatch}
+                              onSelect={handleSelectSuggestion}
+                            />
+                          )}
 
-                          const previews = [];
-                          if (
-                            anchorEntity.linked?.genes &&
-                            anchorEntity.linked.genes.length > 0
-                          ) {
-                            previews.push({
-                              label: "Genes",
-                              items: anchorEntity.linked.genes,
-                            });
-                          }
-                          if (
-                            anchorEntity.linked?.diseases &&
-                            anchorEntity.linked.diseases.length > 0
-                          ) {
-                            previews.push({
-                              label: "Diseases",
-                              items: anchorEntity.linked.diseases,
-                            });
-                          }
-                          if (
-                            anchorEntity.linked?.drugs &&
-                            anchorEntity.linked.drugs.length > 0
-                          ) {
-                            previews.push({
-                              label: "Drugs",
-                              items: anchorEntity.linked.drugs,
-                            });
-                          }
-                          if (
-                            anchorEntity.linked?.pathways &&
-                            anchorEntity.linked.pathways.length > 0
-                          ) {
-                            previews.push({
-                              label: "Pathways",
-                              items: anchorEntity.linked.pathways,
-                            });
-                          }
-
-                          return (
-                            <ComboboxOption
-                              value={anchorEntity}
-                              className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
-                            >
-                              <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                                  Best Match
-                                </div>
-                                <div className="space-y-2.5">
-                                  {/* Name + ID */}
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h3
-                                        className={cn(
-                                          "font-semibold text-base leading-tight",
-                                          config.textColor,
-                                        )}
-                                      >
-                                        {anchorEntity.display_name}
-                                      </h3>
-                                      {/* Match Quality Indicator */}
-                                      {(anchorEntity.match_reason === "id_exact" ||
-                                        anchorEntity.match_reason === "name_exact" ||
-                                        anchorEntity.match_reason === "synonym_exact") && (
-                                        <span
-                                          className="inline-flex h-2 w-2 rounded-full bg-green-500"
-                                          title="Exact match"
-                                        />
-                                      )}
-                                      {anchorEntity.match_reason === "prefix" && (
-                                        <span
-                                          className="inline-flex h-2 w-2 rounded-full bg-yellow-500"
-                                          title="Prefix match"
-                                        />
-                                      )}
-                                      {(anchorEntity.match_reason === "fuzzy" ||
-                                        anchorEntity.match_reason === "contains") && (
-                                        <span
-                                          className="inline-flex h-2 w-2 rounded-full bg-orange-500"
-                                          title="Fuzzy match"
-                                        />
-                                      )}
-                                      {anchorEntity.match_reason === "pivot" && (
-                                        <span
-                                          className="inline-flex h-2 w-2 rounded-full bg-blue-500"
-                                          title="Related"
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                      {anchorEntity.id}
-                                    </div>
-                                  </div>
-
-                                  {/* Description */}
-                                  {anchorEntity.description && (
-                                    <p className="text-sm text-slate-600 leading-relaxed">
-                                      {anchorEntity.description}
-                                    </p>
-                                  )}
-
-                                  {/* Link Counts */}
-                                  {linkCounts.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {linkCounts.map((link) => (
-                                        <span
-                                          key={link.label}
-                                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
-                                        >
-                                          <span className="font-bold text-slate-900">
-                                            {link.count?.toLocaleString()}
-                                          </span>
-                                          {link.label}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Previews */}
-                                  {previews.length > 0 && (
-                                    <div className="space-y-1.5 pt-1">
-                                      {previews.slice(0, 3).map((preview) => (
-                                        <div
-                                          key={preview.label}
-                                          className="text-[11px]"
-                                        >
-                                          <span className="font-bold text-slate-500 uppercase tracking-wide">
-                                            {preview.label}:
-                                          </span>{" "}
-                                          <span className="text-slate-600">
-                                            {preview.items
-                                              .slice(0, 5)
-                                              .join(", ")}
-                                            {preview.items.length > 5 &&
-                                              ` +${preview.items.length - 5} more`}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </ComboboxOption>
-                          );
-                        })()}
-
-                      {/* Grouped Results */}
-                      {groupedSuggestions.map((group) => {
-                        const config = ENTITY_CONFIG[group.type];
-
-                        return (
-                          <div
-                            key={group.type}
-                            className="border-b border-slate-100 last:border-0"
-                          >
-                            {/* Section Header - Colored */}
-                            <div
-                              className={cn(
-                                "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
-                                config.bgColor,
-                              )}
-                            >
-                              <span className="text-xs font-bold uppercase tracking-widest text-white">
-                                {config.label}
-                              </span>
-                              <span className="text-xs text-white/70">
-                                ({group.items.length})
-                              </span>
-                            </div>
-
-                            {/* Entity Cards - Two Column Grid on Desktop */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                              {group.items.map((item) => {
-                                const hasUrl = hasEntityPage(item.entity_type);
-
-                                // Count how many link types have data
-                                const linkCounts = [
-                                  {
-                                    label: "genes",
-                                    count: item.links?.genes,
-                                  },
-                                  {
-                                    label: "variants",
-                                    count: item.links?.variants,
-                                  },
-                                  {
-                                    label: "diseases",
-                                    count: item.links?.diseases,
-                                  },
-                                  {
-                                    label: "drugs",
-                                    count: item.links?.drugs,
-                                  },
-                                  {
-                                    label: "pathways",
-                                    count: item.links?.pathways,
-                                  },
-                                  {
-                                    label: "phenotypes",
-                                    count: item.links?.phenotypes,
-                                  },
-                                  {
-                                    label: "studies",
-                                    count: item.links?.studies,
-                                  },
-                                  {
-                                    label: "traits",
-                                    count: item.links?.traits,
-                                  },
-                                ].filter(
-                                  (link) => link.count && link.count > 0,
-                                );
-
-                                // Get relevant previews based on entity type
-                                const previews = [];
-                                if (
-                                  item.linked?.genes &&
-                                  item.linked.genes.length > 0
-                                ) {
-                                  previews.push({
-                                    label: "Genes",
-                                    items: item.linked.genes,
-                                  });
-                                }
-                                if (
-                                  item.linked?.diseases &&
-                                  item.linked.diseases.length > 0
-                                ) {
-                                  previews.push({
-                                    label: "Diseases",
-                                    items: item.linked.diseases,
-                                  });
-                                }
-                                if (
-                                  item.linked?.drugs &&
-                                  item.linked.drugs.length > 0
-                                ) {
-                                  previews.push({
-                                    label: "Drugs",
-                                    items: item.linked.drugs,
-                                  });
-                                }
-                                if (
-                                  item.linked?.pathways &&
-                                  item.linked.pathways.length > 0
-                                ) {
-                                  previews.push({
-                                    label: "Pathways",
-                                    items: item.linked.pathways,
-                                  });
-                                }
-                                if (
-                                  item.linked?.variants &&
-                                  item.linked.variants.length > 0
-                                ) {
-                                  previews.push({
-                                    label: "Variants",
-                                    items: item.linked.variants,
-                                  });
-                                }
-
-                                return (
-                                  <ComboboxOption
-                                    key={item.id}
-                                    className="cursor-pointer transition-all duration-150 data-focus:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 md:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0 [&:nth-last-child(1)]:border-b-0"
-                                    value={item}
-                                  >
-                                    <div className="p-3.5 h-full">
-                                      {/* Header: Name + Match Quality */}
-                                      <div className="flex items-start justify-between gap-2 mb-2">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-1.5 mb-0.5">
-                                            <span
-                                              className={cn(
-                                                "font-semibold text-sm leading-tight",
-                                                config.textColor,
-                                              )}
-                                            >
-                                              {item.display_name}
-                                            </span>
-                                            {/* Match Quality Indicator */}
-                                            {(item.match_reason === "id_exact" ||
-                                              item.match_reason === "name_exact" ||
-                                              item.match_reason === "synonym_exact") && (
-                                              <span
-                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"
-                                                title="Exact match"
-                                              />
-                                            )}
-                                            {item.match_reason === "prefix" && (
-                                              <span
-                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500"
-                                                title="Prefix match"
-                                              />
-                                            )}
-                                            {(item.match_reason === "fuzzy" ||
-                                              item.match_reason === "contains") && (
-                                              <span
-                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500"
-                                                title="Fuzzy match"
-                                              />
-                                            )}
-                                            {item.match_reason === "pivot" && (
-                                              <span
-                                                className="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"
-                                                title="Related"
-                                              />
-                                            )}
-                                          </div>
-                                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                            {item.id}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                          {!hasUrl && (
-                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">
-                                              Soon
-                                            </span>
-                                          )}
-                                          {hasUrl && (
-                                            <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Description */}
-                                      {item.description && (
-                                        <p className="text-xs text-slate-600 line-clamp-2 mb-2.5 leading-relaxed">
-                                          {item.description}
-                                        </p>
-                                      )}
-
-                                      {/* Link Counts - Badge Pills */}
-                                      {linkCounts.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mb-2">
-                                          {linkCounts.map((link) => (
-                                            <span
-                                              key={link.label}
-                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
-                                            >
-                                              <span className="font-semibold text-slate-900">
-                                                {link.count?.toLocaleString()}
-                                              </span>
-                                              {link.label}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      {/* Previews */}
-                                      {previews.length > 0 && (
-                                        <div className="space-y-1">
-                                          {previews
-                                            .slice(0, 2)
-                                            .map((preview) => (
-                                              <div
-                                                key={preview.label}
-                                                className="text-[10px]"
-                                              >
-                                                <span className="font-semibold text-slate-500 uppercase tracking-wide">
-                                                  {preview.label}:
-                                                </span>{" "}
-                                                <span className="text-slate-600">
-                                                  {preview.items
-                                                    .slice(0, 4)
-                                                    .join(", ")}
-                                                  {preview.items.length > 4 &&
-                                                    ` +${preview.items.length - 4}`}
-                                                </span>
-                                              </div>
-                                            ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </ComboboxOption>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          {/* Grouped Results */}
+                          {groupedTypeaheadSuggestions.map((group) => (
+                            <TypeaheadGroupSection
+                              key={group.type}
+                              group={group}
+                              onSelect={handleSelectSuggestion}
+                            />
+                          ))}
+                        </>
+                      )}
                     </>
+                  )}
+
+                  {/* SELECTED MODE: Show anchor card + pivot results */}
+                  {searchState.mode === "selected" && searchState.anchor && (
+                    <>
+                      {/* Anchor Card - always shown immediately */}
+                      <AnchorCard
+                        anchor={searchState.anchor}
+                        onClear={handleClearAnchor}
+                      />
+
+                      {/* Pivot Results Section */}
+                      {isPivotLoading ? (
+                        // Loading skeleton while pivot fetches
+                        <div className="py-8 px-6 text-center text-slate-400">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                          <div className="text-sm">Loading related entities...</div>
+                        </div>
+                      ) : pivotError ? (
+                        // Error state - show message without collapsing
+                        <div className="py-8 px-6 text-center text-red-400">
+                          <div className="text-sm">Failed to load related entities</div>
+                          <div className="text-xs mt-1 text-slate-400">
+                            {pivotError.message}
+                          </div>
+                        </div>
+                      ) : pivotGroups.length === 0 ? (
+                        // No results
+                        <div className="py-8 px-6 text-center text-slate-400">
+                          <div className="text-sm">No related entities found</div>
+                        </div>
+                      ) : (
+                        // Pivot groups
+                        pivotGroups.map((group) => (
+                          <PivotGroupSection
+                            key={group.type}
+                            group={group}
+                            onItemClick={handlePivotItemClick}
+                          />
+                        ))
+                      )}
+                    </>
+                  )}
+
+                  {/* IDLE MODE: Show prompt */}
+                  {searchState.mode === "idle" && (
+                    <div className="py-8 px-6 text-center text-slate-400">
+                      <div className="text-sm">Start typing to search...</div>
+                    </div>
                   )}
                 </div>
               </ComboboxOptions>
@@ -892,9 +641,8 @@ export function UniversalSearch() {
             key={search}
             className="hover:text-purple-600 cursor-pointer transition-colors"
             onClick={() => {
-              // React 19: Use transition for smooth helper text clicks
               startTransition(() => {
-                setSearchState({ mode: "typing", query: search });
+                setSearchState({ mode: "typing", query: search, anchor: null });
                 setIsDropdownOpen(true);
               });
             }}
@@ -904,5 +652,476 @@ export function UniversalSearch() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Anchor Card Component
+function AnchorCard({
+  anchor,
+  onClear,
+}: {
+  anchor: TypeaheadSuggestion;
+  onClear: () => void;
+}) {
+  const config = ENTITY_CONFIG[anchor.entity_type];
+
+  const linkCounts = [
+    { label: "genes", count: anchor.links?.genes },
+    { label: "variants", count: anchor.links?.variants },
+    { label: "diseases", count: anchor.links?.diseases },
+    { label: "drugs", count: anchor.links?.drugs },
+    { label: "pathways", count: anchor.links?.pathways },
+    { label: "phenotypes", count: anchor.links?.phenotypes },
+    { label: "studies", count: anchor.links?.studies },
+    { label: "traits", count: anchor.links?.traits },
+  ].filter((link) => link.count && link.count > 0);
+
+  return (
+    <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
+      <div className="flex items-start justify-between mb-3">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          Selected Entity
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+          title="Clear selection"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="space-y-2.5">
+        {/* Name + ID */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white",
+                config.bgColor,
+              )}
+            >
+              {config.label}
+            </span>
+            <h3
+              className={cn(
+                "font-semibold text-base leading-tight",
+                config.textColor,
+              )}
+            >
+              {anchor.display_name}
+            </h3>
+          </div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+            {anchor.id}
+          </div>
+        </div>
+
+        {/* Description */}
+        {anchor.description && (
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {anchor.description}
+          </p>
+        )}
+
+        {/* Link Counts */}
+        {linkCounts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {linkCounts.map((link) => (
+              <span
+                key={link.label}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
+              >
+                <span className="font-bold text-slate-900">
+                  {link.count?.toLocaleString()}
+                </span>
+                {link.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Best Match Card Component (for typing mode)
+function BestMatchCard({
+  item,
+  onSelect,
+}: {
+  item: TypeaheadSuggestion;
+  onSelect: (item: TypeaheadSuggestion) => void;
+}) {
+  const config = ENTITY_CONFIG[item.entity_type];
+
+  const linkCounts = [
+    { label: "genes", count: item.links?.genes },
+    { label: "variants", count: item.links?.variants },
+    { label: "diseases", count: item.links?.diseases },
+    { label: "drugs", count: item.links?.drugs },
+    { label: "pathways", count: item.links?.pathways },
+    { label: "phenotypes", count: item.links?.phenotypes },
+    { label: "studies", count: item.links?.studies },
+    { label: "traits", count: item.links?.traits },
+  ].filter((link) => link.count && link.count > 0);
+
+  const previews = [];
+  if (item.linked?.genes && item.linked.genes.length > 0) {
+    previews.push({ label: "Genes", items: item.linked.genes });
+  }
+  if (item.linked?.diseases && item.linked.diseases.length > 0) {
+    previews.push({ label: "Diseases", items: item.linked.diseases });
+  }
+  if (item.linked?.drugs && item.linked.drugs.length > 0) {
+    previews.push({ label: "Drugs", items: item.linked.drugs });
+  }
+  if (item.linked?.pathways && item.linked.pathways.length > 0) {
+    previews.push({ label: "Pathways", items: item.linked.pathways });
+  }
+
+  return (
+    <ComboboxOption
+      as="div"
+      value={item}
+      onClick={() => onSelect(item)}
+      className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
+    >
+      <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+          Best Match
+        </div>
+        <div className="space-y-2.5">
+          {/* Name + ID */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white",
+                  config.bgColor,
+                )}
+              >
+                {config.label}
+              </span>
+              <h3
+                className={cn(
+                  "font-semibold text-base leading-tight",
+                  config.textColor,
+                )}
+              >
+                {item.display_name}
+              </h3>
+              {/* Match Quality Indicator */}
+              {(item.match_reason === "id_exact" ||
+                item.match_reason === "name_exact" ||
+                item.match_reason === "synonym_exact") && (
+                <span
+                  className="inline-flex h-2 w-2 rounded-full bg-green-500"
+                  title="Exact match"
+                />
+              )}
+              {item.match_reason === "prefix" && (
+                <span
+                  className="inline-flex h-2 w-2 rounded-full bg-yellow-500"
+                  title="Prefix match"
+                />
+              )}
+              {(item.match_reason === "fuzzy" ||
+                item.match_reason === "contains") && (
+                <span
+                  className="inline-flex h-2 w-2 rounded-full bg-orange-500"
+                  title="Fuzzy match"
+                />
+              )}
+            </div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+              {item.id}
+            </div>
+          </div>
+
+          {/* Description */}
+          {item.description && (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {item.description}
+            </p>
+          )}
+
+          {/* Link Counts */}
+          {linkCounts.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {linkCounts.map((link) => (
+                <span
+                  key={link.label}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
+                >
+                  <span className="font-bold text-slate-900">
+                    {link.count?.toLocaleString()}
+                  </span>
+                  {link.label}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Previews */}
+          {previews.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              {previews.slice(0, 3).map((preview) => (
+                <div key={preview.label} className="text-[11px]">
+                  <span className="font-bold text-slate-500 uppercase tracking-wide">
+                    {preview.label}:
+                  </span>{" "}
+                  <span className="text-slate-600">
+                    {preview.items.slice(0, 5).join(", ")}
+                    {preview.items.length > 5 &&
+                      ` +${preview.items.length - 5} more`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </ComboboxOption>
+  );
+}
+
+// Typeahead Group Section Component
+function TypeaheadGroupSection({
+  group,
+  onSelect,
+}: {
+  group: { type: EntityType; items: TypeaheadSuggestion[] };
+  onSelect: (item: TypeaheadSuggestion) => void;
+}) {
+  const config = ENTITY_CONFIG[group.type];
+
+  return (
+    <div className="border-b border-slate-100 last:border-0">
+      {/* Section Header */}
+      <div
+        className={cn(
+          "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
+          config.bgColor,
+        )}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest text-white">
+          {config.label}
+        </span>
+        <span className="text-xs text-white/70">({group.items.length})</span>
+      </div>
+
+      {/* Entity Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+        {group.items.map((item) => (
+          <SuggestionCard
+            key={item.id}
+            item={item}
+            config={config}
+            onClick={() => onSelect(item)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Pivot Group Section Component
+function PivotGroupSection({
+  group,
+  onItemClick,
+}: {
+  group: { type: EntityType; items: TypeaheadSuggestion[] };
+  onItemClick: (item: TypeaheadSuggestion) => void;
+}) {
+  const config = ENTITY_CONFIG[group.type];
+
+  return (
+    <div className="border-b border-slate-100 last:border-0">
+      {/* Section Header */}
+      <div
+        className={cn(
+          "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
+          config.bgColor,
+        )}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest text-white">
+          Related {config.label}
+        </span>
+        <span className="text-xs text-white/70">({group.items.length})</span>
+      </div>
+
+      {/* Entity Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+        {group.items.map((item) => (
+          <SuggestionCard
+            key={item.id}
+            item={item}
+            config={config}
+            onClick={() => onItemClick(item)}
+            showPivotHint={!hasEntityPage(item.entity_type)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Shared Suggestion Card Component
+function SuggestionCard({
+  item,
+  config,
+  onClick,
+  showPivotHint = false,
+}: {
+  item: TypeaheadSuggestion;
+  config: (typeof ENTITY_CONFIG)[EntityType];
+  onClick: () => void;
+  showPivotHint?: boolean;
+}) {
+  const hasUrl = hasEntityPage(item.entity_type);
+
+  const linkCounts = [
+    { label: "genes", count: item.links?.genes },
+    { label: "variants", count: item.links?.variants },
+    { label: "diseases", count: item.links?.diseases },
+    { label: "drugs", count: item.links?.drugs },
+    { label: "pathways", count: item.links?.pathways },
+    { label: "phenotypes", count: item.links?.phenotypes },
+    { label: "studies", count: item.links?.studies },
+    { label: "traits", count: item.links?.traits },
+  ].filter((link) => link.count && link.count > 0);
+
+  const previews = [];
+  if (item.linked?.genes && item.linked.genes.length > 0) {
+    previews.push({ label: "Genes", items: item.linked.genes });
+  }
+  if (item.linked?.diseases && item.linked.diseases.length > 0) {
+    previews.push({ label: "Diseases", items: item.linked.diseases });
+  }
+  if (item.linked?.drugs && item.linked.drugs.length > 0) {
+    previews.push({ label: "Drugs", items: item.linked.drugs });
+  }
+  if (item.linked?.pathways && item.linked.pathways.length > 0) {
+    previews.push({ label: "Pathways", items: item.linked.pathways });
+  }
+  if (item.linked?.variants && item.linked.variants.length > 0) {
+    previews.push({ label: "Variants", items: item.linked.variants });
+  }
+
+  return (
+    <ComboboxOption
+      as="div"
+      className="cursor-pointer transition-all duration-150 hover:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 md:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0 [&:nth-last-child(1)]:border-b-0"
+      value={item}
+      onClick={onClick}
+    >
+      <div className="p-3.5 h-full">
+        {/* Header: Name + Match Quality */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span
+                className={cn(
+                  "font-semibold text-sm leading-tight",
+                  config.textColor,
+                )}
+              >
+                {item.display_name}
+              </span>
+              {/* Match Quality Indicator */}
+              {(item.match_reason === "id_exact" ||
+                item.match_reason === "name_exact" ||
+                item.match_reason === "synonym_exact") && (
+                <span
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"
+                  title="Exact match"
+                />
+              )}
+              {item.match_reason === "prefix" && (
+                <span
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500"
+                  title="Prefix match"
+                />
+              )}
+              {(item.match_reason === "fuzzy" ||
+                item.match_reason === "contains") && (
+                <span
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500"
+                  title="Fuzzy match"
+                />
+              )}
+              {item.match_reason === "pivot" && (
+                <span
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"
+                  title="Related"
+                />
+              )}
+            </div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+              {item.id}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {showPivotHint && (
+              <span className="text-[9px] font-semibold text-blue-600 uppercase tracking-wide px-1.5 py-0.5 bg-blue-50 rounded">
+                Pivot
+              </span>
+            )}
+            {!hasUrl && !showPivotHint && (
+              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">
+                Soon
+              </span>
+            )}
+            {hasUrl && (
+              <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        {item.description && (
+          <p className="text-xs text-slate-600 line-clamp-2 mb-2.5 leading-relaxed">
+            {item.description}
+          </p>
+        )}
+
+        {/* Link Counts */}
+        {linkCounts.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {linkCounts.map((link) => (
+              <span
+                key={link.label}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
+              >
+                <span className="font-semibold text-slate-900">
+                  {link.count?.toLocaleString()}
+                </span>
+                {link.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Previews */}
+        {previews.length > 0 && (
+          <div className="space-y-1">
+            {previews.slice(0, 2).map((preview) => (
+              <div key={preview.label} className="text-[10px]">
+                <span className="font-semibold text-slate-500 uppercase tracking-wide">
+                  {preview.label}:
+                </span>{" "}
+                <span className="text-slate-600">
+                  {preview.items.slice(0, 4).join(", ")}
+                  {preview.items.length > 4 &&
+                    ` +${preview.items.length - 4}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </ComboboxOption>
   );
 }

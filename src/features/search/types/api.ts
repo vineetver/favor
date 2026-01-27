@@ -129,4 +129,7 @@ export interface SearchParams {
   debug?: boolean;
   anchor_id?: string;
   anchor_type?: EntityType;
+  include_links?: boolean;
+  include_linked?: boolean;
+  signal?: AbortSignal;
 }
