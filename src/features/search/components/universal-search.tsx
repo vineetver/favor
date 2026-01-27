@@ -665,6 +665,7 @@ function AnchorCard({
 }) {
   const config = ENTITY_CONFIG[anchor.entity_type];
 
+  // Only show top 4 link counts, sorted by count
   const linkCounts = [
     { label: "genes", count: anchor.links?.genes },
     { label: "variants", count: anchor.links?.variants },
@@ -674,73 +675,67 @@ function AnchorCard({
     { label: "phenotypes", count: anchor.links?.phenotypes },
     { label: "studies", count: anchor.links?.studies },
     { label: "traits", count: anchor.links?.traits },
-  ].filter((link) => link.count && link.count > 0);
+  ]
+    .filter((link) => link.count && link.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .slice(0, 4);
+
+  // Truncate description to ~150 chars
+  const truncatedDescription = anchor.description
+    ? anchor.description.length > 150
+      ? anchor.description.slice(0, 150).trim() + "..."
+      : anchor.description
+    : null;
 
   return (
-    <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
-      <div className="flex items-start justify-between mb-3">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-          Selected Entity
-        </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-          title="Clear selection"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      <div className="space-y-2.5">
-        {/* Name + ID */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
+    <div className="border-b border-slate-100 px-5 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Entity name and type */}
+          <div className="flex items-center gap-2.5 mb-1">
+            <h3 className={cn("text-lg font-semibold", config.textColor)}>
+              {anchor.display_name}
+            </h3>
             <span
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white",
+                "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide text-white/90",
                 config.bgColor,
               )}
             >
               {config.label}
             </span>
-            <h3
-              className={cn(
-                "font-semibold text-base leading-tight",
-                config.textColor,
-              )}
-            >
-              {anchor.display_name}
-            </h3>
           </div>
-          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-            {anchor.id}
-          </div>
+
+          {/* Description - 2 lines max */}
+          {truncatedDescription && (
+            <p className="text-sm text-slate-500 leading-relaxed mb-3">
+              {truncatedDescription}
+            </p>
+          )}
+
+          {/* Link counts - subtle, inline */}
+          {linkCounts.length > 0 && (
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              {linkCounts.map((link) => (
+                <span key={link.label}>
+                  <span className="font-medium text-slate-600">
+                    {link.count?.toLocaleString()}
+                  </span>{" "}
+                  {link.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Description */}
-        {anchor.description && (
-          <p className="text-sm text-slate-600 leading-relaxed">
-            {anchor.description}
-          </p>
-        )}
-
-        {/* Link Counts */}
-        {linkCounts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {linkCounts.map((link) => (
-              <span
-                key={link.label}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
-              >
-                <span className="font-bold text-slate-900">
-                  {link.count?.toLocaleString()}
-                </span>
-                {link.label}
-              </span>
-            ))}
-          </div>
-        )}
+        {/* Clear button */}
+        <button
+          type="button"
+          onClick={onClear}
+          className="p-1.5 -mr-1.5 -mt-1 rounded-full hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
@@ -756,131 +751,78 @@ function BestMatchCard({
 }) {
   const config = ENTITY_CONFIG[item.entity_type];
 
+  // Top 3 link counts
   const linkCounts = [
     { label: "genes", count: item.links?.genes },
     { label: "variants", count: item.links?.variants },
     { label: "diseases", count: item.links?.diseases },
     { label: "drugs", count: item.links?.drugs },
     { label: "pathways", count: item.links?.pathways },
-    { label: "phenotypes", count: item.links?.phenotypes },
-    { label: "studies", count: item.links?.studies },
-    { label: "traits", count: item.links?.traits },
-  ].filter((link) => link.count && link.count > 0);
+  ]
+    .filter((link) => link.count && link.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .slice(0, 3);
 
-  const previews = [];
-  if (item.linked?.genes && item.linked.genes.length > 0) {
-    previews.push({ label: "Genes", items: item.linked.genes });
-  }
-  if (item.linked?.diseases && item.linked.diseases.length > 0) {
-    previews.push({ label: "Diseases", items: item.linked.diseases });
-  }
-  if (item.linked?.drugs && item.linked.drugs.length > 0) {
-    previews.push({ label: "Drugs", items: item.linked.drugs });
-  }
-  if (item.linked?.pathways && item.linked.pathways.length > 0) {
-    previews.push({ label: "Pathways", items: item.linked.pathways });
-  }
+  // Truncate description
+  const truncatedDescription = item.description
+    ? item.description.length > 120
+      ? item.description.slice(0, 120).trim() + "..."
+      : item.description
+    : null;
 
   return (
     <ComboboxOption
       as="div"
       value={item}
       onClick={() => onSelect(item)}
-      className="cursor-pointer hover:bg-slate-50 transition-colors duration-150"
+      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50"
     >
-      <div className="border-b border-slate-200 p-4 bg-gradient-to-br from-slate-50 to-white">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-          Best Match
-        </div>
-        <div className="space-y-2.5">
-          {/* Name + ID */}
-          <div>
+      <div className="border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            {/* Name and type */}
             <div className="flex items-center gap-2 mb-1">
+              <h3 className={cn("font-semibold", config.textColor)}>
+                {item.display_name}
+              </h3>
               <span
                 className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide text-white",
+                  "px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase text-white/90",
                   config.bgColor,
                 )}
               >
                 {config.label}
               </span>
-              <h3
-                className={cn(
-                  "font-semibold text-base leading-tight",
-                  config.textColor,
-                )}
-              >
-                {item.display_name}
-              </h3>
-              {/* Match Quality Indicator */}
-              {(item.match_reason === "id_exact" ||
-                item.match_reason === "name_exact" ||
-                item.match_reason === "synonym_exact") && (
-                <span
-                  className="inline-flex h-2 w-2 rounded-full bg-green-500"
-                  title="Exact match"
-                />
-              )}
-              {item.match_reason === "prefix" && (
-                <span
-                  className="inline-flex h-2 w-2 rounded-full bg-yellow-500"
-                  title="Prefix match"
-                />
-              )}
-              {(item.match_reason === "fuzzy" ||
-                item.match_reason === "contains") && (
-                <span
-                  className="inline-flex h-2 w-2 rounded-full bg-orange-500"
-                  title="Fuzzy match"
-                />
-              )}
             </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-              {item.id}
-            </div>
+
+            {/* Description */}
+            {truncatedDescription && (
+              <p className="text-sm text-slate-500 leading-relaxed mb-2">
+                {truncatedDescription}
+              </p>
+            )}
+
+            {/* Link counts */}
+            {linkCounts.length > 0 && (
+              <div className="flex items-center gap-3 text-xs text-slate-400">
+                {linkCounts.map((link) => (
+                  <span key={link.label}>
+                    <span className="font-medium text-slate-500">
+                      {link.count?.toLocaleString()}
+                    </span>{" "}
+                    {link.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Description */}
-          {item.description && (
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {item.description}
-            </p>
-          )}
-
-          {/* Link Counts */}
-          {linkCounts.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {linkCounts.map((link) => (
-                <span
-                  key={link.label}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-600 shadow-sm"
-                >
-                  <span className="font-bold text-slate-900">
-                    {link.count?.toLocaleString()}
-                  </span>
-                  {link.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Previews */}
-          {previews.length > 0 && (
-            <div className="space-y-1.5 pt-1">
-              {previews.slice(0, 3).map((preview) => (
-                <div key={preview.label} className="text-[11px]">
-                  <span className="font-bold text-slate-500 uppercase tracking-wide">
-                    {preview.label}:
-                  </span>{" "}
-                  <span className="text-slate-600">
-                    {preview.items.slice(0, 5).join(", ")}
-                    {preview.items.length > 5 &&
-                      ` +${preview.items.length - 5} more`}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Arrow indicator */}
+          <div className="text-slate-300 pt-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
       </div>
     </ComboboxOption>
@@ -899,21 +841,15 @@ function TypeaheadGroupSection({
 
   return (
     <div className="border-b border-slate-100 last:border-0">
-      {/* Section Header */}
-      <div
-        className={cn(
-          "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
-          config.bgColor,
-        )}
-      >
-        <span className="text-xs font-bold uppercase tracking-widest text-white">
+      {/* Section Header - subtle */}
+      <div className="px-4 pt-3 pb-1">
+        <span className={cn("text-[10px] font-semibold uppercase tracking-wider", config.textColor)}>
           {config.label}
         </span>
-        <span className="text-xs text-white/70">({group.items.length})</span>
       </div>
 
       {/* Entity Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+      <div>
         {group.items.map((item) => (
           <SuggestionCard
             key={item.id}
@@ -939,21 +875,15 @@ function PivotGroupSection({
 
   return (
     <div className="border-b border-slate-100 last:border-0">
-      {/* Section Header */}
-      <div
-        className={cn(
-          "sticky top-0 z-10 px-4 py-2.5 flex items-center gap-2",
-          config.bgColor,
-        )}
-      >
-        <span className="text-xs font-bold uppercase tracking-widest text-white">
-          Related {config.label}
+      {/* Section Header - subtle */}
+      <div className="px-4 pt-3 pb-1">
+        <span className={cn("text-[10px] font-semibold uppercase tracking-wider", config.textColor)}>
+          {config.label}
         </span>
-        <span className="text-xs text-white/70">({group.items.length})</span>
       </div>
 
       {/* Entity Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+      <div>
         {group.items.map((item) => (
           <SuggestionCard
             key={item.id}
@@ -982,142 +912,60 @@ function SuggestionCard({
 }) {
   const hasUrl = hasEntityPage(item.entity_type);
 
+  // Top 2 link counts only
   const linkCounts = [
     { label: "genes", count: item.links?.genes },
     { label: "variants", count: item.links?.variants },
     { label: "diseases", count: item.links?.diseases },
     { label: "drugs", count: item.links?.drugs },
-    { label: "pathways", count: item.links?.pathways },
-    { label: "phenotypes", count: item.links?.phenotypes },
-    { label: "studies", count: item.links?.studies },
-    { label: "traits", count: item.links?.traits },
-  ].filter((link) => link.count && link.count > 0);
+  ]
+    .filter((link) => link.count && link.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .slice(0, 2);
 
-  const previews = [];
-  if (item.linked?.genes && item.linked.genes.length > 0) {
-    previews.push({ label: "Genes", items: item.linked.genes });
-  }
-  if (item.linked?.diseases && item.linked.diseases.length > 0) {
-    previews.push({ label: "Diseases", items: item.linked.diseases });
-  }
-  if (item.linked?.drugs && item.linked.drugs.length > 0) {
-    previews.push({ label: "Drugs", items: item.linked.drugs });
-  }
-  if (item.linked?.pathways && item.linked.pathways.length > 0) {
-    previews.push({ label: "Pathways", items: item.linked.pathways });
-  }
-  if (item.linked?.variants && item.linked.variants.length > 0) {
-    previews.push({ label: "Variants", items: item.linked.variants });
-  }
+  // Truncate description to 80 chars for cards
+  const truncatedDescription = item.description
+    ? item.description.length > 80
+      ? item.description.slice(0, 80).trim() + "..."
+      : item.description
+    : null;
 
   return (
     <ComboboxOption
       as="div"
-      className="cursor-pointer transition-all duration-150 hover:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 md:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0 [&:nth-last-child(1)]:border-b-0"
+      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50 border-b border-slate-50 last:border-0"
       value={item}
       onClick={onClick}
     >
-      <div className="p-3.5 h-full">
-        {/* Header: Name + Match Quality */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span
-                className={cn(
-                  "font-semibold text-sm leading-tight",
-                  config.textColor,
-                )}
-              >
-                {item.display_name}
-              </span>
-              {/* Match Quality Indicator */}
-              {(item.match_reason === "id_exact" ||
-                item.match_reason === "name_exact" ||
-                item.match_reason === "synonym_exact") && (
-                <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"
-                  title="Exact match"
-                />
-              )}
-              {item.match_reason === "prefix" && (
-                <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-yellow-500"
-                  title="Prefix match"
-                />
-              )}
-              {(item.match_reason === "fuzzy" ||
-                item.match_reason === "contains") && (
-                <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-orange-500"
-                  title="Fuzzy match"
-                />
-              )}
-              {item.match_reason === "pivot" && (
-                <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"
-                  title="Related"
-                />
-              )}
-            </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-              {item.id}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {showPivotHint && (
-              <span className="text-[9px] font-semibold text-blue-600 uppercase tracking-wide px-1.5 py-0.5 bg-blue-50 rounded">
-                Pivot
-              </span>
-            )}
-            {!hasUrl && !showPivotHint && (
-              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">
-                Soon
-              </span>
-            )}
-            {hasUrl && (
-              <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
-            )}
-          </div>
+      <div className="px-4 py-3">
+        {/* Name */}
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          <span className={cn("font-medium text-sm", config.textColor)}>
+            {item.display_name}
+          </span>
+          {hasUrl ? (
+            <ExternalLink className="w-3 h-3 text-slate-300 shrink-0" />
+          ) : showPivotHint ? (
+            <span className="text-[9px] font-medium text-slate-400">
+              explore
+            </span>
+          ) : null}
         </div>
 
-        {/* Description */}
-        {item.description && (
-          <p className="text-xs text-slate-600 line-clamp-2 mb-2.5 leading-relaxed">
-            {item.description}
+        {/* Description - single line */}
+        {truncatedDescription && (
+          <p className="text-xs text-slate-400 leading-relaxed line-clamp-1">
+            {truncatedDescription}
           </p>
         )}
 
-        {/* Link Counts */}
+        {/* Link counts - minimal */}
         {linkCounts.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
+          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
             {linkCounts.map((link) => (
-              <span
-                key={link.label}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
-              >
-                <span className="font-semibold text-slate-900">
-                  {link.count?.toLocaleString()}
-                </span>
-                {link.label}
+              <span key={link.label}>
+                {link.count?.toLocaleString()} {link.label}
               </span>
-            ))}
-          </div>
-        )}
-
-        {/* Previews */}
-        {previews.length > 0 && (
-          <div className="space-y-1">
-            {previews.slice(0, 2).map((preview) => (
-              <div key={preview.label} className="text-[10px]">
-                <span className="font-semibold text-slate-500 uppercase tracking-wide">
-                  {preview.label}:
-                </span>{" "}
-                <span className="text-slate-600">
-                  {preview.items.slice(0, 4).join(", ")}
-                  {preview.items.length > 4 &&
-                    ` +${preview.items.length - 4}`}
-                </span>
-              </div>
             ))}
           </div>
         )}
