@@ -16,6 +16,11 @@ interface UsePivotExpansionOptions {
   limit?: number;
 
   /**
+   * Expanded limit when user clicks "Show more" (default: 50)
+   */
+  expandedLimit?: number;
+
+  /**
    * Callback when pivot results are fetched
    */
   onResults?: (results: TypeaheadResponse) => void;
@@ -32,12 +37,14 @@ interface AnchorEntity {
 }
 
 export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
-  const { types, limit = 5, onResults, onError } = options;
+  const { types, limit = 5, expandedLimit = 50, onResults, onError } = options;
 
   const [anchor, setAnchor] = useState<AnchorEntity | null>(null);
   const [results, setResults] = useState<TypeaheadResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [expandedTypes, setExpandedTypes] = useState<Set<EntityType>>(new Set());
+  const [expandingType, setExpandingType] = useState<EntityType | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -103,6 +110,8 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
   // Fetch pivot when anchor changes
   useEffect(() => {
     if (anchor) {
+      // Reset expanded types when anchor changes
+      setExpandedTypes(new Set());
       fetchPivot(anchor);
     } else {
       setResults(null);
@@ -119,11 +128,69 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
     };
   }, []);
 
+  // Fetch more results for a specific entity type
+  const fetchMoreForType = useCallback(
+    async (entityType: EntityType) => {
+      if (!anchor || expandedTypes.has(entityType)) return;
+
+      setExpandingType(entityType);
+
+      try {
+        const response = await fetchPivotExpansion({
+          anchor_id: anchor.id,
+          anchor_type: anchor.type,
+          types: entityType,
+          limit: expandedLimit,
+        });
+
+        // Merge expanded results into existing results
+        setResults((prev) => {
+          if (!prev) return response;
+
+          // Replace the group for this entity type with the expanded results
+          const updatedGroups = prev.groups.map((group) => {
+            if (group.entity_type === entityType) {
+              const expandedGroup = response.groups.find(
+                (g) => g.entity_type === entityType
+              );
+              return expandedGroup || group;
+            }
+            return group;
+          });
+
+          // Recalculate total count
+          const newTotalCount = updatedGroups.reduce(
+            (sum, g) => sum + g.suggestions.length,
+            0
+          );
+
+          return {
+            ...prev,
+            groups: updatedGroups,
+            total_count: newTotalCount,
+          };
+        });
+
+        setExpandedTypes((prev) => new Set([...prev, entityType]));
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Fetch more failed");
+        if (error.name !== "AbortError") {
+          console.error("Failed to fetch more for type:", entityType, error);
+        }
+      } finally {
+        setExpandingType(null);
+      }
+    },
+    [anchor, expandedTypes, expandedLimit]
+  );
+
   const clear = useCallback(() => {
     setAnchor(null);
     setResults(null);
     setError(null);
     setIsLoading(false);
+    setExpandedTypes(new Set());
+    setExpandingType(null);
   }, []);
 
   return {
@@ -134,5 +201,8 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
     error,
     clear,
     hasResults: results !== null && results.total_count > 0,
+    expandedTypes,
+    expandingType,
+    fetchMoreForType,
   };
 }

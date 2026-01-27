@@ -7,7 +7,7 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { cn } from "@infra/utils";
-import { ExternalLink, Loader2, Search, X } from "lucide-react";
+import { ArrowRight, Loader2, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
@@ -40,7 +40,7 @@ type SearchMode = "idle" | "typing" | "selected";
 interface SearchState {
   mode: SearchMode;
   query: string;
-  anchor: TypeaheadSuggestion | null;
+  anchors: TypeaheadSuggestion[];
 }
 
 const ENTITY_CONFIG: Record<
@@ -102,13 +102,39 @@ const ENTITY_CONFIG: Record<
   },
 };
 
+// AnchorChip Component - displays selected anchor as a chip inside the input
+// Styled to match HG38/HG19 toggle height and aesthetic
+function AnchorChip({
+  anchor,
+  onRemove,
+}: {
+  anchor: TypeaheadSuggestion;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2 bg-slate-100 rounded-xl pl-4 pr-2 py-2">
+      <span className="text-sm font-semibold text-slate-900">{anchor.display_name}</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </span>
+  );
+}
+
 export function UniversalSearch() {
   const router = useRouter();
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
   const [searchState, setSearchState] = useState<SearchState>({
     mode: "idle",
     query: "",
-    anchor: null,
+    anchors: [],
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -142,8 +168,12 @@ export function UniversalSearch() {
     isLoading: isPivotLoading,
     error: pivotError,
     clear: clearPivot,
+    expandedTypes,
+    expandingType,
+    fetchMoreForType,
   } = usePivotExpansion({
     limit: 5,
+    expandedLimit: 50,
   });
 
   // Sync typeahead query only when in typing mode
@@ -153,31 +183,42 @@ export function UniversalSearch() {
     }
   }, [deferredQuery, searchState.mode, setTypeaheadQuery]);
 
-  // Sync pivot anchor when in selected mode
+  // Sync pivot anchor when in selected mode (use last anchor for pivot queries)
   useEffect(() => {
-    if (searchState.mode === "selected" && searchState.anchor) {
+    const lastAnchor = searchState.anchors[searchState.anchors.length - 1];
+    if (searchState.mode === "selected" && lastAnchor) {
       setPivotAnchor({
-        id: searchState.anchor.id,
-        type: searchState.anchor.entity_type,
+        id: lastAnchor.id,
+        type: lastAnchor.entity_type,
       });
     } else if (searchState.mode !== "selected") {
       clearPivot();
     }
-  }, [searchState.mode, searchState.anchor, setPivotAnchor, clearPivot]);
+  }, [searchState.mode, searchState.anchors, setPivotAnchor, clearPivot]);
 
   const handleInputChange = useCallback((value: string) => {
-    if (value.trim().length === 0) {
-      setSearchState({ mode: "idle", query: "", anchor: null });
-      setIsDropdownOpen(false);
-    } else {
-      // Any typing clears selection and returns to typing mode
-      setSearchState({ mode: "typing", query: value, anchor: null });
-      if (value.trim().length >= 2) {
-        setIsDropdownOpen(true);
+    setSearchState((prev) => {
+      if (value.trim().length === 0 && prev.anchors.length === 0) {
+        return { mode: "idle", query: "", anchors: [] };
+      } else if (value.trim().length === 0 && prev.anchors.length > 0) {
+        // Keep anchors, stay in selected mode with empty query
+        return { mode: "selected", query: "", anchors: prev.anchors };
+      } else if (prev.anchors.length > 0) {
+        // Has anchors - stay in selected mode while typing to filter
+        return { mode: "selected", query: value, anchors: prev.anchors };
+      } else {
+        // No anchors - typing mode
+        return { mode: "typing", query: value, anchors: [] };
       }
+    });
+
+    if (value.trim().length >= 2 || searchState.anchors.length > 0) {
+      setIsDropdownOpen(true);
+    } else if (value.trim().length === 0 && searchState.anchors.length === 0) {
+      setIsDropdownOpen(false);
     }
     setHighlightedIndex(-1);
-  }, []);
+  }, [searchState.anchors.length]);
 
   // Preload variant data when user types a complete VCF (only in typing mode)
   useEffect(() => {
@@ -201,12 +242,11 @@ export function UniversalSearch() {
   const handleSelectSuggestion = useCallback(
     (suggestion: TypeaheadSuggestion) => {
       startTransition(() => {
-        const displayText = getPopulateIdentifier(suggestion);
-        setSearchState({
+        setSearchState((prev) => ({
           mode: "selected",
-          query: displayText,
-          anchor: suggestion,
-        });
+          query: "",  // Clear query after selection
+          anchors: [...prev.anchors, suggestion],
+        }));
         setHighlightedIndex(-1);
         // Keep dropdown open to show pivot results
       });
@@ -214,18 +254,20 @@ export function UniversalSearch() {
     [],
   );
 
-  const handleClearAnchor = useCallback(() => {
+  const handleRemoveAnchorAt = useCallback((index: number) => {
     startTransition(() => {
       // Clear pivot results immediately to prevent stale data flash
       clearPivot();
 
-      // Clear anchor, return to typing mode, keep query text
       setSearchState((prev) => {
-        const newMode = prev.query.trim().length >= 2 ? "typing" : "idle";
+        const newAnchors = prev.anchors.slice(0, index);
+        const newMode = newAnchors.length > 0
+          ? "selected"
+          : (prev.query.trim().length >= 2 ? "typing" : "idle");
         return {
           mode: newMode,
           query: prev.query,
-          anchor: null,
+          anchors: newAnchors,
         };
       });
 
@@ -244,37 +286,36 @@ export function UniversalSearch() {
         router.push(url);
         clearTypeahead();
         clearPivot();
-        setSearchState({ mode: "idle", query: "", anchor: null });
+        setSearchState({ mode: "idle", query: "", anchors: [] });
         setIsDropdownOpen(false);
       } else {
-        // Pivot-hop: set this as new anchor
+        // Pivot-hop: add this as new anchor
         handleSelectSuggestion(item);
       }
     },
     [genome, router, clearTypeahead, clearPivot, handleSelectSuggestion],
   );
 
-  // Navigate to anchor entity page (used in selected mode)
+  // Navigate to last anchor entity page (used in selected mode)
   const navigateToAnchor = useCallback(async () => {
-    if (searchState.mode !== "selected" || !searchState.anchor) return false;
+    const lastAnchor = searchState.anchors[searchState.anchors.length - 1];
+    if (searchState.mode !== "selected" || !lastAnchor) return false;
 
-    const { anchor } = searchState;
-
-    if (!hasEntityPage(anchor.entity_type)) {
+    if (!hasEntityPage(lastAnchor.entity_type)) {
       // No entity page - stay in pivot view
       return false;
     }
 
     // For variants, try routing via rsID if available
-    if (anchor.entity_type === "variants") {
+    if (lastAnchor.entity_type === "variants") {
       // Check if display_name is an rsID
-      const rsIdMatch = anchor.display_name.match(/^rs\d+$/i);
+      const rsIdMatch = lastAnchor.display_name.match(/^rs\d+$/i);
       if (rsIdMatch) {
-        const success = await navigateToQuery(anchor.display_name, genome, router);
+        const success = await navigateToQuery(lastAnchor.display_name, genome, router);
         if (success) {
           clearTypeahead();
           clearPivot();
-          setSearchState({ mode: "idle", query: "", anchor: null });
+          setSearchState({ mode: "idle", query: "", anchors: [] });
           setIsDropdownOpen(false);
           return true;
         }
@@ -282,11 +323,11 @@ export function UniversalSearch() {
     }
 
     // Standard URL navigation using anchor.id (not display_name)
-    const url = anchor.url || getEntityUrl(anchor.entity_type, anchor.id, { genome });
+    const url = lastAnchor.url || getEntityUrl(lastAnchor.entity_type, lastAnchor.id, { genome });
     router.push(url);
     clearTypeahead();
     clearPivot();
-    setSearchState({ mode: "idle", query: "", anchor: null });
+    setSearchState({ mode: "idle", query: "", anchors: [] });
     setIsDropdownOpen(false);
     return true;
   }, [searchState, genome, router, clearTypeahead, clearPivot]);
@@ -308,7 +349,7 @@ export function UniversalSearch() {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
           clearTypeahead();
-          setSearchState({ mode: "idle", query: "", anchor: null });
+          setSearchState({ mode: "idle", query: "", anchors: [] });
           setIsDropdownOpen(false);
           return;
         }
@@ -364,7 +405,7 @@ export function UniversalSearch() {
   }, [isDropdownOpen]);
 
   const handleFocus = () => {
-    if (query.trim().length >= 2 || searchState.mode === "selected") {
+    if (query.trim().length >= 2 || searchState.anchors.length > 0) {
       setIsDropdownOpen(true);
     }
   };
@@ -465,13 +506,30 @@ export function UniversalSearch() {
                 </button>
               </div>
 
-              <div className="flex-1 w-full relative">
+              <div className="flex-1 w-full relative flex items-center gap-2 flex-wrap px-2 py-1.5 min-h-14">
+                {/* Anchor chips */}
+                {searchState.anchors.map((anchor, index) => (
+                  <AnchorChip
+                    key={anchor.id}
+                    anchor={anchor}
+                    onRemove={() => handleRemoveAnchorAt(index)}
+                  />
+                ))}
+
+                {/* Text input */}
                 <ComboboxInput
-                  className="w-full bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-lg h-14 px-2 font-medium tracking-tight focus:outline-none"
+                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-lg py-2 font-medium tracking-tight focus:outline-none"
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
                   onKeyDown={(e) => {
+                    // Backspace on empty input removes last anchor
+                    if (e.key === "Backspace" && query === "" && searchState.anchors.length > 0) {
+                      e.preventDefault();
+                      handleRemoveAnchorAt(searchState.anchors.length - 1);
+                      return;
+                    }
+
                     if (e.key === "Enter") {
                       // In selected mode: always handle navigation ourselves
                       if (searchState.mode === "selected") {
@@ -497,22 +555,10 @@ export function UniversalSearch() {
                       // Combobox will fire onChange with the highlighted item
                     }
                   }}
-                  placeholder="Search genes, variants, diseases, drugs, pathways..."
+                  placeholder={searchState.anchors.length > 0 ? "Continue searching..." : "Search genes, variants, diseases, drugs, pathways..."}
                   autoComplete="off"
                   spellCheck={false}
                 />
-
-                {/* Clear button when anchor is selected */}
-                {searchState.mode === "selected" && (
-                  <button
-                    type="button"
-                    onClick={handleClearAnchor}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Clear selection"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
               </div>
 
               <button
@@ -578,13 +624,21 @@ export function UniversalSearch() {
                     </>
                   )}
 
-                  {/* SELECTED MODE: Show anchor card + pivot results */}
-                  {searchState.mode === "selected" && searchState.anchor && (
+                  {/* SELECTED MODE: Show pivot results (anchor chips are in input) */}
+                  {searchState.mode === "selected" && searchState.anchors.length > 0 && (
                     <>
-                      {/* Anchor Card - always shown immediately */}
-                      <AnchorCard
-                        anchor={searchState.anchor}
-                        onClear={handleClearAnchor}
+                      {/* Pivot Anchor Info Card */}
+                      <PivotAnchorCard
+                        anchor={searchState.anchors[searchState.anchors.length - 1]}
+                        onLinkedClick={(name) => {
+                          // Search for the clicked linked entity
+                          setSearchState(prev => ({
+                            ...prev,
+                            mode: "typing",
+                            query: name,
+                          }));
+                          setTypeaheadQuery(name);
+                        }}
                       />
 
                       {/* Pivot Results Section */}
@@ -608,14 +662,33 @@ export function UniversalSearch() {
                           <div className="text-sm">No related entities found</div>
                         </div>
                       ) : (
-                        // Pivot groups
-                        pivotGroups.map((group) => (
-                          <PivotGroupSection
-                            key={group.type}
-                            group={group}
-                            onItemClick={handlePivotItemClick}
-                          />
-                        ))
+                        // Pivot context header + groups
+                        <>
+                          {/* Related to header */}
+                          <div className="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+                            <span className="text-sm text-slate-500">
+                              Related to{" "}
+                              <span className={cn("font-semibold", ENTITY_CONFIG[searchState.anchors[searchState.anchors.length - 1].entity_type].textColor)}>
+                                {searchState.anchors[searchState.anchors.length - 1].display_name}
+                              </span>
+                            </span>
+                          </div>
+                          {pivotGroups.map((group) => {
+                            const lastAnchor = searchState.anchors[searchState.anchors.length - 1];
+                            const totalAvailable = lastAnchor.links?.[group.type] ?? group.items.length;
+                            return (
+                              <PivotGroupSection
+                                key={group.type}
+                                group={group}
+                                onItemClick={handlePivotItemClick}
+                                totalAvailable={totalAvailable}
+                                isExpanded={expandedTypes.has(group.type)}
+                                isExpanding={expandingType === group.type}
+                                onShowMore={() => fetchMoreForType(group.type)}
+                              />
+                            );
+                          })}
+                        </>
                       )}
                     </>
                   )}
@@ -642,7 +715,7 @@ export function UniversalSearch() {
             className="hover:text-purple-600 cursor-pointer transition-colors"
             onClick={() => {
               startTransition(() => {
-                setSearchState({ mode: "typing", query: search, anchor: null });
+                setSearchState({ mode: "typing", query: search, anchors: [] });
                 setIsDropdownOpen(true);
               });
             }}
@@ -655,17 +728,40 @@ export function UniversalSearch() {
   );
 }
 
-// Anchor Card Component
-function AnchorCard({
+// Pivot Anchor Card - shows info about the current pivot anchor at the top of dropdown
+function PivotAnchorCard({
   anchor,
-  onClear,
+  onLinkedClick,
 }: {
   anchor: TypeaheadSuggestion;
-  onClear: () => void;
+  onLinkedClick?: (name: string, type: EntityType) => void;
 }) {
   const config = ENTITY_CONFIG[anchor.entity_type];
 
-  // Only show top 4 link counts, sorted by count
+  // Truncate description
+  const truncatedDescription = anchor.description
+    ? anchor.description.length > 120
+      ? anchor.description.slice(0, 120).trim() + "..."
+      : anchor.description
+    : null;
+
+  // Build linked entity groups with their entity types
+  const linkedGroups: Array<{ type: EntityType; names: string[]; config: typeof config }> = [];
+
+  if (anchor.linked?.genes && anchor.linked.genes.length > 0) {
+    linkedGroups.push({ type: "genes", names: anchor.linked.genes.slice(0, 4), config: ENTITY_CONFIG.genes });
+  }
+  if (anchor.linked?.diseases && anchor.linked.diseases.length > 0) {
+    linkedGroups.push({ type: "diseases", names: anchor.linked.diseases.slice(0, 4), config: ENTITY_CONFIG.diseases });
+  }
+  if (anchor.linked?.drugs && anchor.linked.drugs.length > 0) {
+    linkedGroups.push({ type: "drugs", names: anchor.linked.drugs.slice(0, 3), config: ENTITY_CONFIG.drugs });
+  }
+  if (anchor.linked?.pathways && anchor.linked.pathways.length > 0) {
+    linkedGroups.push({ type: "pathways", names: anchor.linked.pathways.slice(0, 3), config: ENTITY_CONFIG.pathways });
+  }
+
+  // Show all link counts
   const linkCounts = [
     { label: "genes", count: anchor.links?.genes },
     { label: "variants", count: anchor.links?.variants },
@@ -677,66 +773,69 @@ function AnchorCard({
     { label: "traits", count: anchor.links?.traits },
   ]
     .filter((link) => link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 4);
-
-  // Truncate description to ~150 chars
-  const truncatedDescription = anchor.description
-    ? anchor.description.length > 150
-      ? anchor.description.slice(0, 150).trim() + "..."
-      : anchor.description
-    : null;
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   return (
-    <div className="border-b border-slate-100 px-5 py-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          {/* Entity name and type */}
-          <div className="flex items-center gap-2.5 mb-1">
-            <h3 className={cn("text-lg font-semibold", config.textColor)}>
-              {anchor.display_name}
-            </h3>
-            <span
-              className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide text-white/90",
-                config.bgColor,
-              )}
-            >
-              {config.label}
-            </span>
-          </div>
-
-          {/* Description - 2 lines max */}
-          {truncatedDescription && (
-            <p className="text-sm text-slate-500 leading-relaxed mb-3">
-              {truncatedDescription}
-            </p>
+    <div className="px-5 py-5 border-b border-slate-100 bg-gradient-to-br from-slate-50/80 to-white">
+      {/* Entity name and type badge */}
+      <div className="flex items-center gap-3 mb-2">
+        <h3 className={cn("text-xl font-bold tracking-tight", config.textColor)}>
+          {anchor.display_name}
+        </h3>
+        <span
+          className={cn(
+            "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white shadow-sm",
+            config.bgColor,
           )}
-
-          {/* Link counts - subtle, inline */}
-          {linkCounts.length > 0 && (
-            <div className="flex items-center gap-3 text-xs text-slate-400">
-              {linkCounts.map((link) => (
-                <span key={link.label}>
-                  <span className="font-medium text-slate-600">
-                    {link.count?.toLocaleString()}
-                  </span>{" "}
-                  {link.label}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Clear button */}
-        <button
-          type="button"
-          onClick={onClear}
-          className="p-1.5 -mr-1.5 -mt-1 rounded-full hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors"
         >
-          <X className="w-4 h-4" />
-        </button>
+          {config.label}
+        </span>
       </div>
+
+      {/* Description */}
+      {truncatedDescription && (
+        <p className="text-sm text-slate-500 leading-relaxed mb-4">
+          {truncatedDescription}
+        </p>
+      )}
+
+      {/* Link counts - show all available */}
+      {linkCounts.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {linkCounts.map((link) => (
+            <span
+              key={link.label}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 rounded-lg text-xs"
+            >
+              <span className="font-semibold text-slate-700">
+                {link.count?.toLocaleString()}
+              </span>
+              <span className="text-slate-500">{link.label}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Linked entity chips - clickable previews */}
+      {linkedGroups.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-100 space-y-2.5">
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Quick links</span>
+          <div className="flex flex-wrap gap-1.5">
+            {linkedGroups.flatMap((group) =>
+              group.names.map((name) => (
+                <button
+                  key={`${group.type}-${name}`}
+                  type="button"
+                  onClick={() => onLinkedClick?.(name, group.type)}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                >
+                  {name}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -750,6 +849,15 @@ function BestMatchCard({
   onSelect: (item: TypeaheadSuggestion) => void;
 }) {
   const config = ENTITY_CONFIG[item.entity_type];
+
+  // Build linked entity previews from item.linked
+  const linkedPreviews: string[] = [];
+  if (item.linked) {
+    if (item.linked.genes) linkedPreviews.push(...item.linked.genes);
+    if (item.linked.diseases) linkedPreviews.push(...item.linked.diseases);
+    if (item.linked.drugs) linkedPreviews.push(...item.linked.drugs);
+    if (item.linked.pathways) linkedPreviews.push(...item.linked.pathways);
+  }
 
   // Top 3 link counts
   const linkCounts = [
@@ -815,6 +923,15 @@ function BestMatchCard({
                 ))}
               </div>
             )}
+
+            {/* Linked entity previews */}
+            {linkedPreviews.length > 0 && (
+              <div className="text-xs text-slate-500 mt-2">
+                <span className="font-medium">Linked:</span>{" "}
+                {linkedPreviews.slice(0, 3).join(", ")}
+                {linkedPreviews.length > 3 && ` +${linkedPreviews.length - 3} more`}
+              </div>
+            )}
           </div>
 
           {/* Arrow indicator */}
@@ -841,15 +958,23 @@ function TypeaheadGroupSection({
 
   return (
     <div className="border-b border-slate-100 last:border-0">
-      {/* Section Header - subtle */}
-      <div className="px-4 pt-3 pb-1">
-        <span className={cn("text-[10px] font-semibold uppercase tracking-wider", config.textColor)}>
+      {/* Section Header - Colored */}
+      <div
+        className={cn(
+          "sticky top-0 z-10 px-4 py-2 flex items-center gap-2",
+          config.bgColor,
+        )}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest text-white">
           {config.label}
+        </span>
+        <span className="text-xs text-white/70">
+          ({group.items.length})
         </span>
       </div>
 
-      {/* Entity Cards */}
-      <div>
+      {/* Entity Cards - Two Column Grid on Desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {group.items.map((item) => (
           <SuggestionCard
             key={item.id}
@@ -867,33 +992,71 @@ function TypeaheadGroupSection({
 function PivotGroupSection({
   group,
   onItemClick,
+  totalAvailable,
+  isExpanded,
+  isExpanding,
+  onShowMore,
 }: {
   group: { type: EntityType; items: TypeaheadSuggestion[] };
   onItemClick: (item: TypeaheadSuggestion) => void;
+  totalAvailable: number;
+  isExpanded: boolean;
+  isExpanding: boolean;
+  onShowMore: () => void;
 }) {
   const config = ENTITY_CONFIG[group.type];
+  const hasMore = !isExpanded && totalAvailable > group.items.length;
+  const remainingCount = totalAvailable - group.items.length;
 
   return (
     <div className="border-b border-slate-100 last:border-0">
-      {/* Section Header - subtle */}
-      <div className="px-4 pt-3 pb-1">
-        <span className={cn("text-[10px] font-semibold uppercase tracking-wider", config.textColor)}>
+      {/* Section Header - Colored */}
+      <div
+        className={cn(
+          "sticky top-0 z-10 px-4 py-2 flex items-center gap-2",
+          config.bgColor,
+        )}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest text-white">
           {config.label}
+        </span>
+        <span className="text-xs text-white/70">
+          ({group.items.length}{totalAvailable > group.items.length ? ` of ${totalAvailable.toLocaleString()}` : ""})
         </span>
       </div>
 
-      {/* Entity Cards */}
-      <div>
+      {/* Entity Cards - Two Column Grid on Desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {group.items.map((item) => (
           <SuggestionCard
             key={item.id}
             item={item}
             config={config}
             onClick={() => onItemClick(item)}
-            showPivotHint={!hasEntityPage(item.entity_type)}
           />
         ))}
       </div>
+
+      {/* Show more button when there are more results */}
+      {hasMore && (
+        <button
+          type="button"
+          onClick={onShowMore}
+          disabled={isExpanding}
+          className="w-full px-4 py-2.5 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isExpanding ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading...</span>
+            </>
+          ) : (
+            <span>
+              Show more {config.label.toLowerCase()} ({remainingCount.toLocaleString()} more)
+            </span>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -903,15 +1066,11 @@ function SuggestionCard({
   item,
   config,
   onClick,
-  showPivotHint = false,
 }: {
   item: TypeaheadSuggestion;
   config: (typeof ENTITY_CONFIG)[EntityType];
   onClick: () => void;
-  showPivotHint?: boolean;
 }) {
-  const hasUrl = hasEntityPage(item.entity_type);
-
   // Top 2 link counts only
   const linkCounts = [
     { label: "genes", count: item.links?.genes },
@@ -933,23 +1092,17 @@ function SuggestionCard({
   return (
     <ComboboxOption
       as="div"
-      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50 border-b border-slate-50 last:border-0"
+      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 last:border-b-0"
       value={item}
       onClick={onClick}
     >
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 h-full">
         {/* Name */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <span className={cn("font-medium text-sm", config.textColor)}>
             {item.display_name}
           </span>
-          {hasUrl ? (
-            <ExternalLink className="w-3 h-3 text-slate-300 shrink-0" />
-          ) : showPivotHint ? (
-            <span className="text-[9px] font-medium text-slate-400">
-              explore
-            </span>
-          ) : null}
+          <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
         </div>
 
         {/* Description - single line */}
