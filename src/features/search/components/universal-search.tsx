@@ -156,7 +156,7 @@ export function UniversalSearch() {
   } = useTypeahead({
     minLength: 2,
     debounce: 300,
-    limit: 4,
+    limit: 5, // Request 5 so after best match deduplication, we still show 4
     includeLinks: true,
     includeLinked: true,
   });
@@ -434,10 +434,22 @@ export function UniversalSearch() {
         if (!bestMatch) {
           bestMatch = group.suggestions[0];
         }
-        groupedTypeaheadSuggestions.push({
-          type: group.entity_type,
-          items: group.suggestions,
-        });
+
+        // Filter out best match from its group to avoid duplication
+        const filteredItems = bestMatch && group.entity_type === bestMatch.entity_type
+          ? group.suggestions.filter(item => item.id !== bestMatch.id)
+          : group.suggestions;
+
+        // Limit to 4 items max for consistent display
+        const limitedItems = filteredItems.slice(0, 4);
+
+        // Only add group if it has items after filtering
+        if (limitedItems.length > 0) {
+          groupedTypeaheadSuggestions.push({
+            type: group.entity_type,
+            items: limitedItems,
+          });
+        }
       }
     }
   }
@@ -1082,12 +1094,23 @@ function SuggestionCard({
     .sort((a, b) => (b.count || 0) - (a.count || 0))
     .slice(0, 2);
 
-  // Truncate description to 80 chars for cards
-  const truncatedDescription = item.description
-    ? item.description.length > 80
+  // For studies: show ID, then display_name as "description"
+  const isStudy = item.entity_type === "studies";
+  const primaryText = isStudy ? item.id : item.display_name;
+
+  // Build description text
+  let descriptionText = null;
+  if (isStudy && item.display_name !== item.id) {
+    // For studies, show the study name (display_name) as description
+    descriptionText = item.display_name.length > 80
+      ? item.display_name.slice(0, 80).trim() + "..."
+      : item.display_name;
+  } else if (item.description) {
+    // For other entities, use actual description
+    descriptionText = item.description.length > 80
       ? item.description.slice(0, 80).trim() + "..."
-      : item.description
-    : null;
+      : item.description;
+  }
 
   return (
     <ComboboxOption
@@ -1100,15 +1123,15 @@ function SuggestionCard({
         {/* Name */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <span className={cn("font-medium text-sm", config.textColor)}>
-            {item.display_name}
+            {primaryText}
           </span>
           <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
         </div>
 
         {/* Description - single line */}
-        {truncatedDescription && (
+        {descriptionText && (
           <p className="text-xs text-slate-400 leading-relaxed line-clamp-1">
-            {truncatedDescription}
+            {descriptionText}
           </p>
         )}
 
