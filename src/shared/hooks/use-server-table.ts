@@ -118,13 +118,17 @@ export function useServerTable({
     [filters],
   );
 
-  // Initialize local state from server filters (single source of truth)
+  // Initialize local state from URL (single source of truth)
   const [localTextFilters, setLocalTextFilters] = useState<
     Record<string, string>
   >(() => {
     const state: Record<string, string> = {};
+    // Read initial values from URL, fallback to serverFilters for SSR compatibility
     for (const filterId of textFilterIds) {
-      state[filterId] = serverFilters[filterId] ?? "";
+      const urlValue = typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get(filterId)
+        : null;
+      state[filterId] = urlValue ?? serverFilters[filterId] ?? "";
     }
     return state;
   });
@@ -151,7 +155,7 @@ export function useServerTable({
       let hasChanged = false;
 
       for (const filterId of textFilterIds) {
-        const urlValue = serverFilters[filterId] ?? "";
+        const urlValue = searchParams.get(filterId) ?? "";
         updated[filterId] = urlValue;
         if (prev[filterId] !== urlValue) {
           hasChanged = true;
@@ -160,7 +164,7 @@ export function useServerTable({
 
       return hasChanged ? updated : prev;
     });
-  }, [serverFilters, textFilterIds]);
+  }, [searchParams, textFilterIds]);
 
   // ============================================================================
   // URL Update Logic (using window.history to avoid server navigation)
@@ -286,20 +290,22 @@ export function useServerTable({
   // Computed Values (derived state, not stored)
   // ============================================================================
 
-  // Combined filter values: local for text (instant), server for select
+  // Combined filter values: local for text (instant), URL for select (current state)
   const filterValues = useMemo(() => {
     const values: Record<string, unknown> = {};
 
     for (const filter of filters) {
       if (filter.type === "text") {
+        // Text filters: use local state for instant feedback
         values[filter.id] = localTextFilters[filter.id] ?? "";
       } else {
-        values[filter.id] = serverFilters[filter.id] ?? "";
+        // Select filters: read from current URL (source of truth)
+        values[filter.id] = searchParams.get(filter.id) ?? "";
       }
     }
 
     return values;
-  }, [filters, localTextFilters, serverFilters]);
+  }, [filters, localTextFilters, searchParams]);
 
   // Generate filter chips from current values
   const filterChips = useMemo((): FilterChip[] => {
