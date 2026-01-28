@@ -1,14 +1,34 @@
 // Gene column configurations
 // Barrel exports for all gene column categories
 
-export { geneInfoAndIdsColumns, geneInfoAndIdsGroup } from "./info-and-ids";
-export { geneFunctionColumns, geneFunctionGroup } from "./function";
-export { geneHumanPhenotypeColumns, geneHumanPhenotypeGroup } from "./human-phenotype";
-export { geneAnimalPhenotypeColumns, geneAnimalPhenotypeGroup } from "./animal-phenotype";
-export { geneExpressionColumns, geneExpressionGroup } from "./expression";
-export { geneProteinInteractionsColumns, geneProteinInteractionsGroup } from "./protein-interactions";
-export { genePathwaysColumns, genePathwaysGroup } from "./pathways";
-export { geneConstraintsColumns, geneConstraintsGroup } from "./constraints";
+import { geneInfoAndIdsColumns, geneInfoAndIdsGroup } from "./columns/info-and-ids";
+import { geneFunctionColumns, geneFunctionGroup } from "./columns/function";
+import { geneHumanPhenotypeColumns, geneHumanPhenotypeGroup } from "./columns/human-phenotype";
+import { geneAnimalPhenotypeColumns, geneAnimalPhenotypeGroup } from "./columns/animal-phenotype";
+import { geneExpressionColumns, geneExpressionGroup } from "./columns/expression";
+import { geneProteinInteractionsColumns, geneProteinInteractionsGroup } from "./columns/protein-interactions";
+import { genePathwaysColumns, genePathwaysGroup } from "./columns/pathways";
+import { geneConstraintsColumns, geneConstraintsGroup } from "./columns/constraints";
+
+// Re-export all columns and groups
+export {
+  geneInfoAndIdsColumns,
+  geneInfoAndIdsGroup,
+  geneFunctionColumns,
+  geneFunctionGroup,
+  geneHumanPhenotypeColumns,
+  geneHumanPhenotypeGroup,
+  geneAnimalPhenotypeColumns,
+  geneAnimalPhenotypeGroup,
+  geneExpressionColumns,
+  geneExpressionGroup,
+  geneProteinInteractionsColumns,
+  geneProteinInteractionsGroup,
+  genePathwaysColumns,
+  genePathwaysGroup,
+  geneConstraintsColumns,
+  geneConstraintsGroup,
+};
 
 // Combined column groups for gene tables
 export const geneColumnGroups = {

@@ -437,7 +437,7 @@ export function UniversalSearch() {
 
         // Filter out best match from its group to avoid duplication
         const filteredItems = bestMatch && group.entity_type === bestMatch.entity_type
-          ? group.suggestions.filter(item => item.id !== bestMatch.id)
+          ? group.suggestions.filter(item => item.id !== bestMatch?.id)
           : group.suggestions;
 
         // Limit to 4 items max for consistent display
