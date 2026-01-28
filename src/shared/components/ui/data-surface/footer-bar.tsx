@@ -3,16 +3,89 @@
 import { cn } from "@infra/utils";
 import type { Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ServerPaginationProps } from "./types";
 
 interface FooterBarProps<TData> {
   table: Table<TData>;
   pageSizeOptions?: number[];
+  serverPagination?: ServerPaginationProps;
 }
 
 export function FooterBar<TData>({
   table,
   pageSizeOptions = [10, 20, 50, 100],
+  serverPagination,
 }: FooterBarProps<TData>) {
+  // Server pagination mode
+  if (serverPagination) {
+    const { pageSize, totalCount, canGoNext, canGoPrevious, onNextPage, onPreviousPage, onPageSizeChange } = serverPagination;
+    const currentDataCount = table.getRowModel().rows.length;
+    const showPageSizeSelector = totalCount ? totalCount > Math.min(...pageSizeOptions) : true;
+
+    return (
+      <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white">
+        <div className="text-sm text-slate-500">
+          {totalCount !== undefined ? (
+            <>
+              Showing up to{" "}
+              <span className="font-medium text-slate-700">{currentDataCount}</span>
+              {" of "}
+              <span className="font-medium text-slate-700">{totalCount.toLocaleString()}</span>
+            </>
+          ) : (
+            <>
+              Showing{" "}
+              <span className="font-medium text-slate-700">{currentDataCount}</span>
+              {canGoNext && " (more available)"}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onPreviousPage}
+              disabled={!canGoPrevious}
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onNextPage}
+              disabled={!canGoNext}
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {showPageSizeSelector && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">Rows</span>
+              <select
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className="h-8 px-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Client pagination mode (existing logic)
   const { pageIndex, pageSize } = table.getState().pagination;
   const totalRows = table.getFilteredRowModel().rows.length;
   const pageCount = table.getPageCount();

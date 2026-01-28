@@ -68,6 +68,8 @@ export function DataSurface<TData, TValue>({
   onRetry,
   stickyHeader = false,
   className,
+  // Server pagination props
+  serverPagination,
   // Transposed mode props
   transposed = false,
   sourceObject,
@@ -268,10 +270,15 @@ export function DataSurface<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // Only use client pagination if NOT in server pagination mode
+    getPaginationRowModel: serverPagination ? undefined : getPaginationRowModel(),
     initialState: {
-      pagination: { pageSize: effectivePageSize },
+      pagination: serverPagination
+        ? undefined
+        : { pageSize: effectivePageSize },
     },
+    manualPagination: serverPagination ? true : false,
+    pageCount: serverPagination ? -1 : undefined,
   });
 
   // ============================================================================
@@ -441,14 +448,19 @@ export function DataSurface<TData, TValue>({
         />
       )}
 
-      {/* Footer - hidden in chart view or when all rows fit on one page */}
+      {/* Footer - hidden in chart view or when no data */}
       {!error &&
         !loading &&
         viewMode !== "chart" &&
         table.getRowModel().rows.length > 0 &&
-        table.getFilteredRowModel().rows.length >
-          table.getState().pagination.pageSize && (
-          <FooterBar table={table} pageSizeOptions={pageSizeOptions} />
+        (serverPagination ||
+          table.getFilteredRowModel().rows.length >
+            table.getState().pagination.pageSize) && (
+          <FooterBar
+            table={table}
+            pageSizeOptions={pageSizeOptions}
+            serverPagination={serverPagination}
+          />
         )}
 
       {/* Filter Drawer */}

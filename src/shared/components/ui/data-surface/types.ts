@@ -77,6 +77,25 @@ export interface ColumnMeta {
   align?: "left" | "center" | "right";
 }
 
+export interface ServerPaginationProps {
+  /** Total count across all pages */
+  totalCount?: number;
+  /** Current page size */
+  pageSize: number;
+  /** Whether there are more pages */
+  hasMore?: boolean;
+  /** Handler for next page */
+  onNextPage: () => void;
+  /** Handler for previous page */
+  onPreviousPage: () => void;
+  /** Handler for page size change */
+  onPageSizeChange: (size: number) => void;
+  /** Can navigate to next page */
+  canGoNext: boolean;
+  /** Can navigate to previous page */
+  canGoPrevious: boolean;
+}
+
 export interface DataSurfaceProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -114,6 +133,9 @@ export interface DataSurfaceProps<TData, TValue> {
   onRetry?: () => void;
   stickyHeader?: boolean;
   className?: string;
+  // Server pagination props
+  /** Enable server-side pagination mode */
+  serverPagination?: ServerPaginationProps;
   // Transposed mode props
   /** Enable transposed mode - columns become rows */
   transposed?: boolean;

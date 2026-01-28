@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FilterDrawerProps } from "./types";
 
 export function FilterDrawer({
@@ -12,6 +13,75 @@ export function FilterDrawer({
   onApply,
   onReset,
 }: FilterDrawerProps) {
+  // Internal state for text inputs (prevents parent re-renders on every keystroke)
+  const [localTextValues, setLocalTextValues] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    for (const filter of filters) {
+      if (filter.type === "text") {
+        initial[filter.id] = (filterValues[filter.id] as string) ?? "";
+      }
+    }
+    return initial;
+  });
+
+  // Debounce timers for text inputs
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Sync internal state with external filterValues when they change from outside
+  // (e.g., when clearing filters or browser back/forward)
+  const prevFilterValues = useRef(filterValues);
+  useEffect(() => {
+    // Only sync if values actually changed from outside
+    if (prevFilterValues.current !== filterValues) {
+      setLocalTextValues((prev) => {
+        const updated: Record<string, string> = {};
+        let hasChanged = false;
+
+        for (const filter of filters) {
+          if (filter.type === "text") {
+            const newValue = (filterValues[filter.id] as string) ?? "";
+            updated[filter.id] = newValue;
+            if (prev[filter.id] !== newValue) {
+              hasChanged = true;
+            }
+          }
+        }
+
+        return hasChanged ? updated : prev;
+      });
+      prevFilterValues.current = filterValues;
+    }
+  }, [filterValues, filters]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  const handleTextInputChange = useCallback(
+    (filterId: string, value: string) => {
+      // Update local state immediately (instant UI feedback)
+      setLocalTextValues((prev) => {
+        if (prev[filterId] === value) return prev;
+        return { ...prev, [filterId]: value };
+      });
+
+      // Clear existing timer for this filter
+      if (debounceTimers.current[filterId]) {
+        clearTimeout(debounceTimers.current[filterId]);
+      }
+
+      // Debounce the parent callback (300ms)
+      debounceTimers.current[filterId] = setTimeout(() => {
+        onFilterChange(filterId, value);
+        delete debounceTimers.current[filterId];
+      }, 300);
+    },
+    [onFilterChange],
+  );
+
   if (!open) return null;
 
   return (
@@ -59,8 +129,8 @@ export function FilterDrawer({
               {filter.type === "text" && (
                 <input
                   type="text"
-                  value={(filterValues[filter.id] as string) ?? ""}
-                  onChange={(e) => onFilterChange(filter.id, e.target.value)}
+                  value={localTextValues[filter.id] ?? ""}
+                  onChange={(e) => handleTextInputChange(filter.id, e.target.value)}
                   placeholder={filter.placeholder}
                   className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
