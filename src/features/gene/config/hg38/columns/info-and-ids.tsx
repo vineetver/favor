@@ -8,69 +8,152 @@ import {
 const col = createColumns<Gene>();
 
 export const geneInfoAndIdsColumns = [
-  col.accessor("chromosome", {
-    accessor: "chromosome",
-    header: "Chromosome",
+  col.accessor("ot_name_synonyms", {
+    accessor: (row) => row.opentargets?.name_synonyms,
+    header: "Name Synonyms",
     description: tooltip({
-      title: "Chromosome Number",
-      description: "Chromosome Number (from HGNC).",
+      title: "Name Synonyms",
+      description: "Alternative gene names from OpenTargets.",
     }),
-    cell: cell.link(
-      (val) => `https://www.ncbi.nlm.nih.gov/projects/homology/maps/human/chr${val}`
-    ),
+    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
+      if (!synonyms || synonyms.length === 0) return null;
+      return (
+        <ul>
+          {synonyms.map((syn, index) => (
+            <li key={index}>
+              {syn.label} ({syn.source})
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
-  col.accessor("start_position", {
-    accessor: "start_position",
-    header: "Genomic Start Position",
+  col.accessor("ot_synonyms", {
+    accessor: (row) => row.opentargets?.synonyms,
+    header: "Synonyms",
     description: tooltip({
-      title: "Genomic Start Position",
-      description: "Genomic Start Position.",
+      title: "Gene Synonyms",
+      description: "Alternative gene names and symbols from multiple sources (OpenTargets).",
     }),
-    cell: cell.text(),
+    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
+      if (!synonyms || synonyms.length === 0) return null;
+      return (
+        <ul>
+          {synonyms.map((syn, index) => (
+            <li key={index}>
+              {syn.label} ({syn.source})
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
-  col.accessor("end_position", {
-    accessor: "end_position",
-    header: "Genomic End Position",
+  col.accessor("ot_symbol_synonyms", {
+    accessor: (row) => row.opentargets?.symbol_synonyms,
+    header: "Symbol Synonyms",
     description: tooltip({
-      title: "Genomic End Position",
-      description: "Genomic End Position.",
+      title: "Symbol Synonyms",
+      description: "Alternative gene symbols from OpenTargets.",
     }),
-    cell: cell.text(),
+    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
+      if (!synonyms || synonyms.length === 0) return null;
+      return (
+        <ul>
+          {synonyms.map((syn, index) => (
+            <li key={index}>
+              {syn.label} ({syn.source})
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
-  col.accessor("function_description", {
-    accessor: "function_description",
-    header: "Gene Description",
+  col.accessor("ot_obsolete_symbols", {
+    accessor: (row) => row.opentargets?.obsolete_symbols,
+    header: "Obsolete Symbols",
     description: tooltip({
-      title: "Gene Description",
-      description: "Gene Description.",
+      title: "Obsolete Symbols",
+      description: "Previously used gene symbols that are now obsolete.",
     }),
-    cell: cell.text(),
+    cell: cell.custom<Gene, any>((obsolete: Array<{ label: string; source: string }>) => {
+      if (!obsolete || obsolete.length === 0) return null;
+      return (
+        <ul>
+          {obsolete.map((obs, index) => (
+            <li key={index}>
+              {obs.label} ({obs.source})
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
-  col.accessor("aliases", {
-    accessor: "aliases",
-    header: "Gene Synonym",
-    description: tooltip({
-      title: "Gene Synonym",
-      description: "Gene Synonym.",
-    }),
-    cell: cell.text(),
-  }),
+  // col.accessor("ot_protein_ids", {
+  //   accessor: (row) => row.opentargets?.protein_ids,
+  //   header: "Protein IDs (OT)",
+  //   description: tooltip({
+  //     title: "Protein IDs",
+  //     description: "Protein identifiers from multiple databases (OpenTargets).",
+  //   }),
+  //   cell: cell.custom<Gene, any>((proteinIds: Array<{ id: string; source: string }>) => {
+  //     if (!proteinIds || proteinIds.length === 0) return null;
+  //     return (
+  //       <ul className="flex flex-col gap-1">
+  //         {proteinIds.map((protein, index) => (
+  //           <li key={index} className="text-sm">
+  //             <span className="font-mono text-xs">{protein.id}</span>
+  //             <span className="text-xs text-gray-500 ml-2">({protein.source})</span>
+  //           </li>
+  //         ))}
+  //       </ul>
+  //     );
+  //   }),
+  // }),
 
-  col.accessor("ensembl_gene", {
-    accessor: (row) => row.ensembl_gene,
-    header: "Ensembl Gene",
+  // col.accessor("ot_db_xrefs", {
+  //   accessor: (row) => row.opentargets?.db_xrefs,
+  //   header: "Database Cross-References (OT)",
+  //   description: tooltip({
+  //     title: "Database Cross-References",
+  //     description: "External database identifiers from OpenTargets.",
+  //   }),
+  //   cell: cell.custom<Gene, any>((xrefs: Array<{ id: string; source: string }>) => {
+  //     if (!xrefs || xrefs.length === 0) return null;
+  //     return (
+  //       <ul className="flex flex-col gap-1">
+  //         {xrefs.map((xref, index) => (
+  //           <li key={index} className="text-sm">
+  //             <span className="font-mono text-xs">{xref.id}</span>
+  //             <span className="text-xs text-gray-500 ml-2">({xref.source})</span>
+  //           </li>
+  //         ))}
+  //       </ul>
+  //     );
+  //   }),
+  // }),
+
+  col.accessor("ot_canonical_transcript", {
+    accessor: (row) => row.opentargets?.canonical_transcript,
+    header: "Canonical Transcript",
     description: tooltip({
-      title: "Ensembl Gene",
-      description: "Ensembl Gene Name (from HGNC).",
+      title: "Canonical Transcript",
+      description: "The canonical transcript for this gene from OpenTargets.",
     }),
-    cell: cell.link(
-      (val) =>
-        `http://useast.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g=${val}`,
-    ),
+    cell: cell.custom<Gene, any>((transcript: { id: string; chromosome: string; start: number; end: number; strand: string }) => {
+      if (!transcript) return null;
+      return (
+        <div>
+          <div>{transcript.id}</div>
+          <div>
+            {transcript.chromosome}:{transcript.start}-{transcript.end} ({transcript.strand})
+          </div>
+        </div>
+      );
+    }),
   }),
 
   col.accessor("uniprot_acc_hgnc_uniprot", {
@@ -100,25 +183,7 @@ export const geneInfoAndIdsColumns = [
       title: "CCDS ID",
       description: "CCDS ID (from HGNC).",
     }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
-        {str
-          .split(";")
-          .filter(Boolean)
-          .map((item, index) => (
-            <li className="capitalize" key={index}>
-              <a
-                href={`https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&GO=MainBrowse&DATA=${item}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                {item}
-              </a>
-            </li>
-          ))}
-      </ul>
-    )),
+    cell: cell.link((val) => `https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&GO=MainBrowse&DATA=${val}`),
   }),
 
   col.accessor("refseq_id", {
@@ -183,9 +248,7 @@ export const geneInfoAndIdsColumns = [
       title: "Status",
       description: "Status",
     }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <span className="capitalize">{str}</span>
-    )),
+    cell: cell.capitalize(),
   }),
 
   col.accessor("locus_type", {
@@ -195,30 +258,7 @@ export const geneInfoAndIdsColumns = [
       title: "Locus type",
       description: "Locus type",
     }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <span className="capitalize">{str}</span>
-    )),
-  }),
-
-  col.accessor("gene_family", {
-    accessor: (row) => row.gene_family,
-    header: "Gene Family",
-    description: tooltip({
-      title: "Gene family",
-      description: "Gene family",
-    }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
-        {str
-          .split("|")
-          .filter(Boolean)
-          .map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
-          ))}
-      </ul>
-    )),
+    cell: cell.capitalize(),
   }),
 
   col.accessor("entrez_id", {
@@ -260,25 +300,7 @@ export const geneInfoAndIdsColumns = [
       title: "Pubmed ID",
       description: "Pubmed ID",
     }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
-        {str
-          .split("|")
-          .filter(Boolean)
-          .map((item, index) => (
-            <li className="capitalize" key={index}>
-              <a
-                href={`https://pubmed.ncbi.nlm.nih.gov/${item}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                {item}
-              </a>
-            </li>
-          ))}
-      </ul>
-    )),
+    cell: cell.link((val) => `https://pubmed.ncbi.nlm.nih.gov/${val}`)
   }),
 
   col.accessor("lsdb", {
@@ -302,12 +324,11 @@ export const geneInfoAndIdsColumns = [
         if (name && url && !uniqueNames.has(lowerCaseName)) {
           uniqueNames.add(lowerCaseName);
           results.push(
-            <li className="capitalize" key={i}>
+            <li key={i}>
               <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
               >
                 {name}
               </a>
@@ -316,7 +337,7 @@ export const geneInfoAndIdsColumns = [
         }
       }
 
-      return <ul className="flex flex-col gap-1">{results}</ul>;
+      return <ul>{results}</ul>;
     }),
   }),
 

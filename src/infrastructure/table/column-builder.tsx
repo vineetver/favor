@@ -152,12 +152,141 @@ export function Badge({
   );
 }
 
-export const cell = {
-  /** Plain text */
-  text<TData>() {
+/** Chainable text transformer builder */
+class TextBuilder<TData> {
+  private transforms: Array<(str: string) => string> = [];
+
+  /** Capitalize first letter of each word */
+  capitalize(): this {
+    this.transforms.push((str) =>
+      str
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    );
+    return this;
+  }
+
+  /** Uppercase */
+  upper(): this {
+    this.transforms.push((str) => str.toUpperCase());
+    return this;
+  }
+
+  /** Lowercase */
+  lower(): this {
+    this.transforms.push((str) => str.toLowerCase());
+    return this;
+  }
+
+  /** Trim whitespace */
+  trim(): this {
+    this.transforms.push((str) => str.trim());
+    return this;
+  }
+
+  /** Split string and optionally get specific part */
+  split(separator: string, index?: number): this {
+    this.transforms.push((str) => {
+      const parts = str.split(separator);
+      if (index !== undefined) {
+        return parts[index] ?? '';
+      }
+      return parts.filter(Boolean).join(', ');
+    });
+    return this;
+  }
+
+  /** Replace text */
+  replace(search: string | RegExp, replacement: string): this {
+    this.transforms.push((str) => str.replace(search, replacement));
+    return this;
+  }
+
+  /** Build the final cell renderer */
+  private build() {
     return ({ getValue }: CellContext<TData, unknown>) => {
       const v = getValue();
-      return isEmpty(v) ? EMPTY : String(v);
+      if (isEmpty(v)) return EMPTY;
+      let result = String(v);
+      for (const transform of this.transforms) {
+        result = transform(result);
+      }
+      return result;
+    };
+  }
+
+  /** Allow using the builder directly as a cell renderer */
+  [Symbol.for('tanstack.cell')]() {
+    return this.build();
+  }
+}
+
+export const cell = {
+  /** Plain text - returns cell renderer */
+  text<TData>(): (ctx: CellContext<TData, unknown>) => ReactNode {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      if (isEmpty(v)) return EMPTY;
+      return String(v);
+    };
+  },
+
+  /** Capitalize first letter of each word (standalone) */
+  capitalize<TData>() {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      if (isEmpty(v)) return EMPTY;
+      const str = String(v);
+      return str
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
+  },
+
+  /** Uppercase (standalone) */
+  upper<TData>() {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      return isEmpty(v) ? EMPTY : String(v).toUpperCase();
+    };
+  },
+
+  /** Lowercase (standalone) */
+  lower<TData>() {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      return isEmpty(v) ? EMPTY : String(v).toLowerCase();
+    };
+  },
+
+  /** Trim whitespace (standalone) */
+  trim<TData>() {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      return isEmpty(v) ? EMPTY : String(v).trim();
+    };
+  },
+
+  /** Split string and optionally get specific part (standalone) */
+  split<TData>(separator: string, index?: number) {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      if (isEmpty(v)) return EMPTY;
+      const parts = String(v).split(separator);
+      if (index !== undefined) {
+        return parts[index] ?? EMPTY;
+      }
+      return parts.filter(Boolean).join(', ');
+    };
+  },
+
+  /** Replace text (standalone) */
+  replace<TData>(search: string | RegExp, replacement: string) {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      return isEmpty(v) ? EMPTY : String(v).replace(search, replacement);
     };
   },
 

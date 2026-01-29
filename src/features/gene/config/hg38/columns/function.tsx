@@ -1,78 +1,33 @@
 import type { Gene } from "@features/gene/types";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   cell,
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { FunctionDetailView } from "@features/gene/components/function-detail-view";
 
 const col = createColumns<Gene>();
 
 export const geneFunctionColumns = [
-  col.accessor("function_description", {
-    accessor: "function_description",
-    header: "Function Description",
+  // OpenTargets data (prioritized)
+  col.accessor("ot_function_descriptions", {
+    accessor: (row) => row.opentargets?.function_descriptions,
+    header: "Function Descriptions",
     description: tooltip({
-      title: "Function Description",
-      description: "Function description of the gene (from Uniprot).",
+      title: "Function Descriptions",
+      description: "Detailed function descriptions from OpenTargets (curated from multiple sources).",
     }),
-    cell: cell.custom<Gene, any>((str: string) => {
-      const ecoRegex = /ECO:(\d+)/g;
-      const pubmedRegex = /PubMed:(\d+)/g;
-
-      const ecoIds: string[] = [];
-      const pubmedIds: string[] = [];
-
-      let match;
-      while ((match = ecoRegex.exec(str)) !== null) {
-        ecoIds.push(match[1]);
-      }
-      while ((match = pubmedRegex.exec(str)) !== null) {
-        pubmedIds.push(match[1]);
-      }
-
-      const description = str
-        .replace(/\s*\{ECO:[^}]+}\./g, "")
-        .replace(/\s*\{PubMed:[^}]+}\./g, "")
-        .trim();
-
+    cell: cell.custom<Gene, any>((descriptions: string[], row: Gene) => {
+      if (!descriptions || descriptions.length === 0) return null;
+      const locations = row.opentargets?.subcellular_locations;
+      const goTerms = row.opentargets?.go;
       return (
-        <div className="normal-case">
-          <div>{description}</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2">
-            {ecoIds.length > 0 && (
-              <ul className="flex flex-col gap-1">
-                {ecoIds.map((item, index) => (
-                  <li key={`eco-${index}`}>
-                    <a
-                      href={`https://www.ebi.ac.uk/QuickGO/term/ECO:${item}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline"
-                    >
-                      ECO:{item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {pubmedIds.length > 0 && (
-              <ul className="flex flex-col gap-1">
-                {pubmedIds.map((item, index) => (
-                  <li key={`pubmed-${index}`}>
-                    <a
-                      href={`https://pubmed.ncbi.nlm.nih.gov/${item}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline"
-                    >
-                      PubMed:{item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+        <FunctionDetailView
+          descriptions={descriptions}
+          sources={locations}
+          goTerms={goTerms}
+        />
       );
     }),
   }),
@@ -105,23 +60,21 @@ export const geneFunctionColumns = [
       description: "ID(s) of the Pathway(s) the gene belongs to (from KEGG).",
     }),
     cell: cell.custom<Gene, any>((val: string) => (
-      <ul className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         {val
           .split(";")
           .filter(Boolean)
           .map((item, index) => (
-            <li className="capitalize" key={index}>
-              <a
-                href={`https://www.genome.jp/pathway/${item}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                {item}
-              </a>
-            </li>
+            <ExternalLink
+              key={index}
+              href={`https://www.genome.jp/pathway/${item.trim()}`}
+              className="text-sm text-primary hover:underline"
+              iconSize="sm"
+            >
+              {item.trim()}
+            </ExternalLink>
           ))}
-      </ul>
+      </div>
     )),
   }),
 
@@ -133,16 +86,16 @@ export const geneFunctionColumns = [
       description: "Full name(s) of the Pathway(s) the gene belongs to (from KEGG).",
     }),
     cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         {str
           .split(";")
           .filter(Boolean)
           .map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
+            <span key={index} className="text-sm text-slate-700 capitalize">
+              {item.trim()}
+            </span>
           ))}
-      </ul>
+      </div>
     )),
   }),
 
@@ -154,16 +107,16 @@ export const geneFunctionColumns = [
       description: "Pathway(s) the gene belongs to (from ConsensusPathDB).",
     }),
     cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         {str
           .split(";")
           .filter(Boolean)
           .map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
+            <span key={index} className="text-sm text-slate-700 capitalize">
+              {item.trim()}
+            </span>
           ))}
-      </ul>
+      </div>
     )),
   }),
 
@@ -175,16 +128,16 @@ export const geneFunctionColumns = [
       description: "Protein Class.",
     }),
     cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         {str
           .split(",")
           .filter(Boolean)
           .map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
+            <span key={index} className="text-sm text-slate-700 capitalize">
+              {item.trim()}
+            </span>
           ))}
-      </ul>
+      </div>
     )),
   }),
 
@@ -198,36 +151,6 @@ export const geneFunctionColumns = [
     cell: cell.text(),
   }),
 
-  col.accessor("subcellular_location", {
-    accessor: (row) => row.protein?.subcellular_location,
-    header: "Subcellular Location",
-    description: tooltip({
-      title: "Subcellular Location",
-      description: "Subcellular Location",
-    }),
-    cell: cell.text(),
-  }),
-
-  col.accessor("secretome_location", {
-    accessor: (row) => row.protein?.secretome_location,
-    header: "Secretome Location",
-    description: tooltip({
-      title: "Secretome Location",
-      description: "Secretome Location",
-    }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <ul className="flex flex-col gap-1">
-        {str
-          .split(",")
-          .filter(Boolean)
-          .map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
-          ))}
-      </ul>
-    )),
-  }),
 ];
 
 export const geneFunctionGroup = col.group("function", "Function", geneFunctionColumns);

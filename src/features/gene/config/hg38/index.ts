@@ -9,6 +9,11 @@ import { geneExpressionColumns, geneExpressionGroup } from "./columns/expression
 import { geneProteinInteractionsColumns, geneProteinInteractionsGroup } from "./columns/protein-interactions";
 import { genePathwaysColumns, genePathwaysGroup } from "./columns/pathways";
 import { geneConstraintsColumns, geneConstraintsGroup } from "./columns/constraints";
+import { geneTractabilityTargetClassColumns, geneTractabilityTargetClassGroup } from "./columns/tractability-and-target-class";
+import { geneChemicalProbesColumns, geneChemicalProbesGroup } from "./columns/chemical-probes";
+import { geneSafetyLiabilitiesColumns, geneSafetyLiabilitiesGroup } from "./columns/safety-liabilities";
+import { geneCancerHallmarksColumns, geneCancerHallmarksGroup } from "./columns/cancer-hallmarks";
+import { geneTepColumns, geneTepGroup } from "./columns/tep";
 
 // Re-export all columns and groups
 export {
@@ -28,6 +33,16 @@ export {
   genePathwaysGroup,
   geneConstraintsColumns,
   geneConstraintsGroup,
+  geneTractabilityTargetClassColumns,
+  geneTractabilityTargetClassGroup,
+  geneChemicalProbesColumns,
+  geneChemicalProbesGroup,
+  geneSafetyLiabilitiesColumns,
+  geneSafetyLiabilitiesGroup,
+  geneCancerHallmarksColumns,
+  geneCancerHallmarksGroup,
+  geneTepColumns,
+  geneTepGroup,
 };
 
 // Combined column groups for gene tables (as array for proper serialization)
@@ -40,4 +55,9 @@ export const geneColumnGroups = [
   // geneProteinInteractionsGroup, // Removed due to serialization issues with renderInteractions
   // genePathwaysGroup, // Removed due to serialization issues with renderPathways
   geneConstraintsGroup,
-];
+  geneTractabilityTargetClassGroup,
+  geneChemicalProbesGroup,
+  geneSafetyLiabilitiesGroup,
+  geneCancerHallmarksGroup,
+  geneTepGroup,
+] as const;

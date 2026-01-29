@@ -24,6 +24,64 @@ const hiPredCategories = categories([
 ]);
 
 export const geneConstraintsColumns = [
+  // OpenTargets constraint data (prioritized)
+  col.accessor("ot_constraints", {
+    accessor: (row) => row.opentargets?.constraint,
+    header: "Genetic Constraints (OT)",
+    description: tooltip({
+      title: "Genetic Constraints from OpenTargets",
+      description: "Comprehensive genetic constraint scores from gnomAD and other sources via OpenTargets.",
+    }),
+    cell: cell.custom<Gene, any>((constraints: Array<{
+      constraintType: string;
+      score: number;
+      exp: number;
+      obs: number;
+      oe: number;
+      oeLower: number;
+      oeUpper: number;
+      upperRank: number;
+      upperBin: number;
+      upperBin6: number;
+    }>) => {
+      if (!constraints || constraints.length === 0) return null;
+
+      return (
+        <div>
+          {constraints.map((constraint, index) => (
+            <div key={index}>
+              <div>{constraint.constraintType}</div>
+              <div>
+                {constraint.score !== undefined && (
+                  <div>Score: {constraint.score.toFixed(4)}</div>
+                )}
+                {constraint.oe !== undefined && (
+                  <div>O/E: {constraint.oe.toFixed(4)}</div>
+                )}
+                {constraint.obs !== undefined && (
+                  <div>Observed: {constraint.obs.toFixed(2)}</div>
+                )}
+                {constraint.exp !== undefined && (
+                  <div>Expected: {constraint.exp.toFixed(2)}</div>
+                )}
+                {constraint.oeLower !== undefined && constraint.oeUpper !== undefined && (
+                  <div>90% CI: {constraint.oeLower.toFixed(4)} - {constraint.oeUpper.toFixed(4)}</div>
+                )}
+                {constraint.upperBin !== undefined && (
+                  <div>Upper Bin: {constraint.upperBin}</div>
+                )}
+                {constraint.upperBin6 !== undefined && (
+                  <div>Upper Bin (6): {constraint.upperBin6}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }),
+  }),
+
+  // Original constraint fields (kept for completeness)
   col.accessor("p_hi", {
     accessor: (row) => row.constraint_scores?.damage?.p_hi,
     header: "P HI",

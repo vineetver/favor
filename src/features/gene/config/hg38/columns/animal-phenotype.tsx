@@ -8,6 +8,64 @@ import {
 const col = createColumns<Gene>();
 
 export const geneAnimalPhenotypeColumns = [
+  // OpenTargets homologues data (prioritized)
+  col.accessor("ot_homologues", {
+    accessor: (row) => row.opentargets?.homologues,
+    header: "Model Organism Homologues (OT)",
+    description: tooltip({
+      title: "Model Organism Homologues",
+      description: "Homologous genes in model organisms from OpenTargets with sequence identity and confidence scores.",
+    }),
+    cell: cell.custom<Gene, any>((homologues: Array<{
+      speciesId: string;
+      speciesName: string;
+      homologyType: string;
+      targetGeneId: string;
+      isHighConfidence: string;
+      targetGeneSymbol: string;
+      queryPercentageIdentity: number;
+      targetPercentageIdentity: number;
+      priority: number;
+    }>) => {
+      if (!homologues || homologues.length === 0) return null;
+
+      // Group by species
+      const grouped = homologues.reduce((acc, homologue) => {
+        const species = homologue.speciesName || "Unknown";
+        if (!acc[species]) acc[species] = [];
+        acc[species].push(homologue);
+        return acc;
+      }, {} as Record<string, typeof homologues>);
+
+      return (
+        <div>
+          {Object.entries(grouped).map(([species, homologueList]) => (
+            <div key={species}>
+              <div>{species}</div>
+              <ul>
+                {homologueList.map((homologue, index) => (
+                  <li key={index}>
+                    <div>
+                      {homologue.targetGeneSymbol}
+                      {homologue.isHighConfidence === "1" && " (High Confidence)"}
+                    </div>
+                    <div>{homologue.targetGeneId}</div>
+                    <div>Type: {homologue.homologyType.replace(/_/g, " ")}</div>
+                    <div>
+                      Query Identity: {homologue.queryPercentageIdentity?.toFixed(1)}% |
+                      Target Identity: {homologue.targetPercentageIdentity?.toFixed(1)}%
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      );
+    }),
+  }),
+
+  // Original model organism fields (kept for completeness)
   col.accessor("mgi_mouse_gene", {
     accessor: (row) => row.model_organisms?.mouse?.gene,
     header: "MGI Mouse Gene",
