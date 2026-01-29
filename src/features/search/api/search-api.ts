@@ -108,7 +108,7 @@ export async function fetchSearch(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/search?${searchParams.toString()}`,
+    `${API_BASE_URL}/pivot?${searchParams.toString()}`,
     {
       headers: {
         Accept: "application/json",
@@ -155,7 +155,7 @@ export async function fetchPivotExpansion(params: {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/search?${searchParams.toString()}`,
+    `${API_BASE_URL}/pivot?${searchParams.toString()}`,
     {
       headers: {
         Accept: "application/json",

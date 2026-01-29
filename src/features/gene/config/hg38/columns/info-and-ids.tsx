@@ -4,7 +4,6 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Gene>();
 
@@ -16,13 +15,9 @@ export const geneInfoAndIdsColumns = [
       title: "Chromosome Number",
       description: "Chromosome Number (from HGNC).",
     }),
-    cell: cell.custom<Gene, string>((value) => (
-      <ExternalLink
-        href={`https://www.ncbi.nlm.nih.gov/projects/homology/maps/human/chr${value}`}
-      >
-        {value}
-      </ExternalLink>
-    )),
+    cell: cell.link(
+      (val) => `https://www.ncbi.nlm.nih.gov/projects/homology/maps/human/chr${val}`
+    ),
   }),
 
   col.accessor("start_position", {
@@ -85,7 +80,7 @@ export const geneInfoAndIdsColumns = [
       title: "Uniprot Accession",
       description: "Uniprot accession number (from HGNC and Uniprot).",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.uniprot.org/uniprotkb/${val}/entry`),
+    cell: cell.link((val) => `https://www.uniprot.org/uniprotkb/${val}/entry`),
   }),
 
   col.accessor("uniprot_id_hgnc_uniprot", {
@@ -95,7 +90,7 @@ export const geneInfoAndIdsColumns = [
       title: "Uniprot ID",
       description: "Uniprot ID (from HGNC and Uniprot)",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.uniprot.org/uniprotkb?query=${val}`),
+    cell: cell.link((val) => `https://www.uniprot.org/uniprotkb?query=${val}`),
   }),
 
   col.accessor("ccds_id", {
@@ -112,11 +107,14 @@ export const geneInfoAndIdsColumns = [
           .filter(Boolean)
           .map((item, index) => (
             <li className="capitalize" key={index}>
-              <ExternalLink
+              <a
                 href={`https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&GO=MainBrowse&DATA=${item}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
               >
                 {item}
-              </ExternalLink>
+              </a>
             </li>
           ))}
       </ul>
@@ -130,7 +128,7 @@ export const geneInfoAndIdsColumns = [
       title: "RefSeq ID",
       description: "Refseq ID (from HGNC).",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.ncbi.nlm.nih.gov/nuccore/${val}`),
+    cell: cell.link((val) => `https://www.ncbi.nlm.nih.gov/nuccore/${val}`),
   }),
 
   col.accessor("ucsc_id", {
@@ -152,7 +150,7 @@ export const geneInfoAndIdsColumns = [
       title: "OMIM ID",
       description: "OMIM ID (from HGNC).",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.omim.org/entry/${val}`),
+    cell: cell.link((val) => `https://www.omim.org/entry/${val}`),
   }),
 
   col.accessor("cyto_location", {
@@ -175,7 +173,7 @@ export const geneInfoAndIdsColumns = [
       title: "HGNC ID",
       description: "HGNC ID",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.alliancegenome.org/gene/${val}`),
+    cell: cell.link((val) => `https://www.alliancegenome.org/gene/${val}`),
   }),
 
   col.accessor("locus_group", {
@@ -230,7 +228,7 @@ export const geneInfoAndIdsColumns = [
       title: "Entrez ID",
       description: "Entrez ID",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.ncbi.nlm.nih.gov/gene/${val}`),
+    cell: cell.link((val) => `https://www.ncbi.nlm.nih.gov/gene/${val}`),
   }),
 
   col.accessor("vega_id", {
@@ -252,7 +250,7 @@ export const geneInfoAndIdsColumns = [
       title: "European Nucleotide Archive",
       description: "European Nucleotide Archive",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.ebi.ac.uk/ena/browser/view/${val}`),
+    cell: cell.link((val) => `https://www.ebi.ac.uk/ena/browser/view/${val}`),
   }),
 
   col.accessor("pubmed_id", {
@@ -269,9 +267,14 @@ export const geneInfoAndIdsColumns = [
           .filter(Boolean)
           .map((item, index) => (
             <li className="capitalize" key={index}>
-              <ExternalLink href={`https://pubmed.ncbi.nlm.nih.gov/${item}`}>
+              <a
+                href={`https://pubmed.ncbi.nlm.nih.gov/${item}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
                 {item}
-              </ExternalLink>
+              </a>
             </li>
           ))}
       </ul>
@@ -300,7 +303,14 @@ export const geneInfoAndIdsColumns = [
           uniqueNames.add(lowerCaseName);
           results.push(
             <li className="capitalize" key={i}>
-              <ExternalLink href={url}>{name}</ExternalLink>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                {name}
+              </a>
             </li>,
           );
         }
@@ -498,7 +508,7 @@ export const geneInfoAndIdsColumns = [
       description:
         "The NHGRI-EBI Catalog of human genome-wide association studies",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.ebi.ac.uk/gwas/search?query=${val}`),
+    cell: cell.link((val) => `https://www.ebi.ac.uk/gwas/search?query=${val}`),
   }),
 ];
 

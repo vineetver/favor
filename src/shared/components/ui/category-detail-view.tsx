@@ -1,7 +1,5 @@
 "use client";
 
-import { variantColumnGroups } from "@features/variant/config/hg38";
-import type { Variant } from "@features/variant/types";
 import type { ColumnMeta } from "@infra/table/column-builder";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
@@ -11,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   flexRender,
   getCoreRowModel,
@@ -18,18 +17,33 @@ import {
 } from "@tanstack/react-table";
 import { Info } from "lucide-react";
 
-interface CategoryDetailViewProps {
-  data: Variant;
+export interface ColumnGroup<TData> {
+  id?: string;
+  name?: string;
+  columns: ColumnDef<TData, any>[];
+}
+
+interface CategoryDetailViewProps<TData> {
+  data: TData;
   categoryId: string;
+  columnGroups: readonly ColumnGroup<TData>[] | ColumnGroup<TData>[] | Record<string, ColumnGroup<TData>>;
   className?: string;
 }
 
-export function CategoryDetailView({
+/**
+ * Generic category detail view component for displaying entity data in a card layout
+ * Works with any entity type (Variant, Gene, etc.)
+ */
+export function CategoryDetailView<TData>({
   data,
   categoryId,
+  columnGroups,
   className = "",
-}: CategoryDetailViewProps) {
-  const group = variantColumnGroups.find((g) => g.id === categoryId);
+}: CategoryDetailViewProps<TData>) {
+  // Support both array and object column group formats
+  const group: ColumnGroup<TData> | undefined = Array.isArray(columnGroups)
+    ? (columnGroups as ColumnGroup<TData>[]).find((g) => g.id === categoryId)
+    : columnGroups[categoryId as keyof typeof columnGroups] as ColumnGroup<TData> | undefined;
 
   const table = useReactTable({
     data: [data],

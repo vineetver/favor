@@ -1,5 +1,6 @@
-import { CategoryDetailView } from "@features/variant/components/category-detail-view";
+import { variantColumnGroups } from "@features/variant/config/hg38";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
+import { CategoryDetailView } from "@shared/components/ui/category-detail-view";
 import { notFound } from "next/navigation";
 
 interface VariantPageProps {
@@ -19,5 +20,11 @@ export default async function VariantPage({ params }: VariantPageProps) {
     notFound();
   }
 
-  return <CategoryDetailView data={result.selected} categoryId={subcategory} />;
+  return (
+    <CategoryDetailView
+      data={result.selected}
+      categoryId={subcategory}
+      columnGroups={variantColumnGroups}
+    />
+  );
 }

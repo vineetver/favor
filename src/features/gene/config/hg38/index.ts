@@ -30,17 +30,14 @@ export {
   geneConstraintsGroup,
 };
 
-// Combined column groups for gene tables
-export const geneColumnGroups = {
-  "info-and-ids": geneInfoAndIdsGroup,
-  "function": geneFunctionGroup,
-  "human-phenotype": geneHumanPhenotypeGroup,
-  "animal-phenotype": geneAnimalPhenotypeGroup,
-  "expression": geneExpressionGroup,
-  "protein-interactions": geneProteinInteractionsGroup,
-  "pathways": genePathwaysGroup,
-  "constraints-and-heplo": geneConstraintsGroup,
-} as const;
-
-// Type for gene column group keys
-export type GeneColumnGroupKey = keyof typeof geneColumnGroups;
+// Combined column groups for gene tables (as array for proper serialization)
+export const geneColumnGroups = [
+  geneInfoAndIdsGroup,
+  geneFunctionGroup,
+  geneHumanPhenotypeGroup,
+  geneAnimalPhenotypeGroup,
+  geneExpressionGroup,
+  // geneProteinInteractionsGroup, // Removed due to serialization issues with renderInteractions
+  // genePathwaysGroup, // Removed due to serialization issues with renderPathways
+  geneConstraintsGroup,
+];

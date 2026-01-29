@@ -15,9 +15,12 @@ export function getEntityUrl(
   const { genome = "hg38", category, subcategory } = options || {};
 
   switch (type) {
-    case "genes":
-      // Gene pages: /gene/[ensembl_id]
-      return `/gene/${id}`;
+    case "genes": {
+      // Gene pages: /hg38/gene/[ensembl_id]/[category]/[subcategory]
+      const geneCategory = category || "gene-level-annotation";
+      const geneSubcategory = subcategory || "llm-summary";
+      return `/${genome}/gene/${id}/${geneCategory}/${geneSubcategory}`;
+    }
 
     case "variants": {
       // Variant pages: /hg38/variant/[vcf]/[category]/[subcategory]

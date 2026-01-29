@@ -4,7 +4,6 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Gene>();
 
@@ -45,9 +44,14 @@ export const geneHumanPhenotypeColumns = [
         <ul className="flex flex-col gap-1">
           {mimIds.map((item, index) => (
             <li className="capitalize" key={index}>
-              <ExternalLink href={`https://www.omim.org/entry/${item}`}>
+              <a
+                href={`https://www.omim.org/entry/${item}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
                 {item}
-              </ExternalLink>
+              </a>
             </li>
           ))}
         </ul>

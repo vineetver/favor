@@ -281,8 +281,8 @@ export function UniversalSearch() {
   const handlePivotItemClick = useCallback(
     (item: TypeaheadSuggestion) => {
       if (hasEntityPage(item.entity_type)) {
-        // Navigate to entity page
-        const url = item.url || getEntityUrl(item.entity_type, item.id, { genome });
+        // Navigate to entity page - always use getEntityUrl for consistent routing
+        const url = getEntityUrl(item.entity_type, item.id, { genome });
         router.push(url);
         clearTypeahead();
         clearPivot();
@@ -322,8 +322,8 @@ export function UniversalSearch() {
       }
     }
 
-    // Standard URL navigation using anchor.id (not display_name)
-    const url = lastAnchor.url || getEntityUrl(lastAnchor.entity_type, lastAnchor.id, { genome });
+    // Standard URL navigation using anchor.id (not display_name) - always use getEntityUrl for consistent routing
+    const url = getEntityUrl(lastAnchor.entity_type, lastAnchor.id, { genome });
     router.push(url);
     clearTypeahead();
     clearPivot();
@@ -454,7 +454,7 @@ export function UniversalSearch() {
     }
   }
 
-  // Build pivot groups for display (no reordering - trust backend)
+  // Build pivot groups for display (trust backend ordering)
   // Pivot API returns same format as typeahead: groups with suggestions
   const pivotGroups: Array<{
     type: EntityType;
@@ -871,17 +871,19 @@ function BestMatchCard({
     if (item.linked.pathways) linkedPreviews.push(...item.linked.pathways);
   }
 
-  // Top 3 link counts
+  // All link counts except own entity type
   const linkCounts = [
     { label: "genes", count: item.links?.genes },
     { label: "variants", count: item.links?.variants },
     { label: "diseases", count: item.links?.diseases },
     { label: "drugs", count: item.links?.drugs },
     { label: "pathways", count: item.links?.pathways },
+    { label: "phenotypes", count: item.links?.phenotypes },
+    { label: "studies", count: item.links?.studies },
+    { label: "traits", count: item.links?.traits },
   ]
-    .filter((link) => link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 3);
+    .filter((link) => link.label !== item.entity_type && link.count && link.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   // Truncate description
   const truncatedDescription = item.description
@@ -901,8 +903,8 @@ function BestMatchCard({
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             {/* Name and type */}
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className={cn("font-semibold", config.textColor)}>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className={cn("font-bold text-base", config.textColor)}>
                 {item.display_name}
               </h3>
               <span
@@ -917,20 +919,20 @@ function BestMatchCard({
 
             {/* Description */}
             {truncatedDescription && (
-              <p className="text-sm text-slate-500 leading-relaxed mb-2">
+              <p className="text-sm text-slate-700 leading-relaxed mb-3">
                 {truncatedDescription}
               </p>
             )}
 
             {/* Link counts */}
             {linkCounts.length > 0 && (
-              <div className="flex items-center gap-3 text-xs text-slate-400">
+              <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
                 {linkCounts.map((link) => (
-                  <span key={link.label}>
-                    <span className="font-medium text-slate-500">
+                  <span key={link.label} className="inline-flex items-center gap-1">
+                    <span className="font-semibold text-slate-500">
                       {link.count?.toLocaleString()}
-                    </span>{" "}
-                    {link.label}
+                    </span>
+                    <span className="text-slate-500">{link.label}</span>
                   </span>
                 ))}
               </div>
@@ -1083,16 +1085,19 @@ function SuggestionCard({
   config: (typeof ENTITY_CONFIG)[EntityType];
   onClick: () => void;
 }) {
-  // Top 2 link counts only
+  // All link counts except own entity type
   const linkCounts = [
     { label: "genes", count: item.links?.genes },
     { label: "variants", count: item.links?.variants },
     { label: "diseases", count: item.links?.diseases },
     { label: "drugs", count: item.links?.drugs },
+    { label: "pathways", count: item.links?.pathways },
+    { label: "phenotypes", count: item.links?.phenotypes },
+    { label: "studies", count: item.links?.studies },
+    { label: "traits", count: item.links?.traits },
   ]
-    .filter((link) => link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 2);
+    .filter((link) => link.label !== item.entity_type && link.count && link.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   // For studies: show ID, then display_name as "description"
   const isStudy = item.entity_type === "studies";
@@ -1119,28 +1124,31 @@ function SuggestionCard({
       value={item}
       onClick={onClick}
     >
-      <div className="px-4 py-3 h-full">
+      <div className="px-4 py-4 h-full">
         {/* Name */}
-        <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn("font-medium text-sm", config.textColor)}>
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className={cn("font-semibold text-sm", config.textColor)}>
             {primaryText}
           </span>
           <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
         </div>
 
-        {/* Description - single line */}
+        {/* Description - two lines max */}
         {descriptionText && (
-          <p className="text-xs text-slate-400 leading-relaxed line-clamp-1">
+          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-2.5">
             {descriptionText}
           </p>
         )}
 
-        {/* Link counts - minimal */}
+        {/* Link counts */}
         {linkCounts.length > 0 && (
-          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+          <div className="flex items-center gap-2.5 flex-wrap text-xs text-slate-400">
             {linkCounts.map((link) => (
-              <span key={link.label}>
-                {link.count?.toLocaleString()} {link.label}
+              <span key={link.label} className="inline-flex items-center gap-1">
+                <span className="font-medium text-slate-500">
+                  {link.count?.toLocaleString()}
+                </span>
+                <span className="text-slate-400">{link.label}</span>
               </span>
             ))}
           </div>

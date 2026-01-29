@@ -7,20 +7,6 @@ import {
 
 const col = createColumns<Gene>();
 
-const renderPathways = cell.custom<Gene, string>((str) => {
-  const items = str.split(/[;|]/).filter(Boolean);
-  if (items.length === 0) return "—";
-  return (
-    <ul className="flex flex-col gap-1">
-      {items.map((item, index) => (
-        <li className="normal-case" key={index}>
-          {item.trim()}
-        </li>
-      ))}
-    </ul>
-  );
-});
-
 export const genePathwaysColumns = [
   col.accessor("pathway_kegg_full", {
     accessor: (row) => row.pathways?.kegg_full,
@@ -29,7 +15,19 @@ export const genePathwaysColumns = [
       title: "KEGG Pathways",
       description: "KEGG pathway annotations",
     }),
-    cell: renderPathways,
+    cell: cell.custom<Gene, string>((str) => {
+      const items = str.split(/[;|]/).filter(Boolean);
+      if (items.length === 0) return "—";
+      return (
+        <ul className="flex flex-col gap-1">
+          {items.map((item, index) => (
+            <li className="normal-case" key={index}>
+              {item.trim()}
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
   col.accessor("pathway_bio_carta_full", {
@@ -39,7 +37,19 @@ export const genePathwaysColumns = [
       title: "BioCarta Pathways",
       description: "BioCarta pathway annotations",
     }),
-    cell: renderPathways,
+    cell: cell.custom<Gene, string>((str) => {
+      const items = str.split(/[;|]/).filter(Boolean);
+      if (items.length === 0) return "—";
+      return (
+        <ul className="flex flex-col gap-1">
+          {items.map((item, index) => (
+            <li className="normal-case" key={index}>
+              {item.trim()}
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
   col.accessor("pathway_uniprot", {
@@ -49,7 +59,19 @@ export const genePathwaysColumns = [
       title: "UniProt Pathways",
       description: "UniProt pathway annotations",
     }),
-    cell: renderPathways,
+    cell: cell.custom<Gene, string>((str) => {
+      const items = str.split(/[;|]/).filter(Boolean);
+      if (items.length === 0) return "—";
+      return (
+        <ul className="flex flex-col gap-1">
+          {items.map((item, index) => (
+            <li className="normal-case" key={index}>
+              {item.trim()}
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 
   col.accessor("pathway_consensus_path_db", {
@@ -59,7 +81,19 @@ export const genePathwaysColumns = [
       title: "ConsensusPathDB",
       description: "ConsensusPathDB pathway annotations",
     }),
-    cell: renderPathways,
+    cell: cell.custom<Gene, string>((str) => {
+      const items = str.split(/[;|]/).filter(Boolean);
+      if (items.length === 0) return "—";
+      return (
+        <ul className="flex flex-col gap-1">
+          {items.map((item, index) => (
+            <li className="normal-case" key={index}>
+              {item.trim()}
+            </li>
+          ))}
+        </ul>
+      );
+    }),
   }),
 ];
 

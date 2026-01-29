@@ -4,7 +4,6 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Gene>();
 
@@ -26,7 +25,7 @@ export const geneAnimalPhenotypeColumns = [
       title: "MGI ID",
       description: "MGD (Mouse Genome Database) ID",
     }),
-    cell: cell.link<Gene, any>((val) => `https://www.informatics.jax.org/marker/${val}`),
+    cell: cell.link((val) => `https://www.informatics.jax.org/marker/${val}`),
   }),
 
   col.accessor("mgi_mouse_phenotype", {
@@ -61,7 +60,7 @@ export const geneAnimalPhenotypeColumns = [
       title: "RGD ID",
       description: "RGD (Rat Genome Database) ID",
     }),
-    cell: cell.link<Gene, any>((val) => `https://rgd.mcw.edu/rgdweb/report/gene/main.html?id=${val}`),
+    cell: cell.link((val) => `https://rgd.mcw.edu/rgdweb/report/gene/main.html?id=${val}`),
   }),
 
   col.accessor("zfin_zebrafish_gene", {
@@ -74,9 +73,14 @@ export const geneAnimalPhenotypeColumns = [
     cell: cell.custom<Gene, any>((value: any) => {
       if (!value) return null;
       return (
-        <ExternalLink href={`https://zfin.org/search?q=${value}`}>
+        <a
+          href={`https://zfin.org/search?q=${value}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
           <span className="capitalize">{value}</span>
-        </ExternalLink>
+        </a>
       );
     }),
   }),

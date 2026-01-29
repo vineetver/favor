@@ -4,7 +4,6 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Gene>();
 
@@ -44,11 +43,14 @@ export const geneFunctionColumns = [
               <ul className="flex flex-col gap-1">
                 {ecoIds.map((item, index) => (
                   <li key={`eco-${index}`}>
-                    <ExternalLink
+                    <a
                       href={`https://www.ebi.ac.uk/QuickGO/term/ECO:${item}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
                     >
                       ECO:{item}
-                    </ExternalLink>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -57,11 +59,14 @@ export const geneFunctionColumns = [
               <ul className="flex flex-col gap-1">
                 {pubmedIds.map((item, index) => (
                   <li key={`pubmed-${index}`}>
-                    <ExternalLink
+                    <a
                       href={`https://pubmed.ncbi.nlm.nih.gov/${item}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
                     >
                       PubMed:{item}
-                    </ExternalLink>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -106,9 +111,14 @@ export const geneFunctionColumns = [
           .filter(Boolean)
           .map((item, index) => (
             <li className="capitalize" key={index}>
-              <ExternalLink href={`https://www.genome.jp/pathway/${item}`}>
+              <a
+                href={`https://www.genome.jp/pathway/${item}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
                 {item}
-              </ExternalLink>
+              </a>
             </li>
           ))}
       </ul>

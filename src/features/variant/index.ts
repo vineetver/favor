@@ -3,7 +3,6 @@
 // API
 export * from "./api";
 // Components
-export { CategoryDetailView } from "./components/category-detail-view";
 export { ChromatinStateView } from "./components/chromatin-state-view";
 export { GencodeExonicInfo } from "./components/gencode-exonic-info";
 export { VariantHeader } from "./components/header/variant-header";
