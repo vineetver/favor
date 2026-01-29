@@ -112,8 +112,8 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
   const allPubmedIds = [...new Set(parsed.flatMap(p => p.citations.pubmed))];
   const allEcoIds = [...new Set(parsed.flatMap(p => p.citations.eco))];
   const hasCitations = allPubmedIds.length > 0 || allEcoIds.length > 0;
-  const hasGoTerms = goTerms && goTerms.length > 0;
-  const groupedGoTerms = hasGoTerms ? groupGoTermsByAspect(goTerms) : {};
+  const hasGoTerms = Boolean(goTerms && goTerms.length > 0);
+  const groupedGoTerms = hasGoTerms ? groupGoTermsByAspect(goTerms!) : {};
 
   const tabs: TabConfig[] = [
     { id: "function", label: "Function", show: true },

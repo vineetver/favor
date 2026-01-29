@@ -58,16 +58,16 @@ export const geneChemicalProbesColumns = [
               )}
 
               <div>
-                {probe.probesDrugsScore !== undefined && (
+                {typeof probe.probesDrugsScore === 'number' && (
                   <div>Probes & Drugs Score: {probe.probesDrugsScore.toFixed(2)}</div>
                 )}
-                {probe.probeMinerScore !== undefined && (
+                {typeof probe.probeMinerScore === 'number' && (
                   <div>Probe Miner Score: {probe.probeMinerScore.toFixed(2)}</div>
                 )}
-                {probe.scoreInCells !== undefined && (
+                {typeof probe.scoreInCells === 'number' && (
                   <div>Score in Cells: {probe.scoreInCells.toFixed(2)}</div>
                 )}
-                {probe.scoreInOrganisms !== undefined && (
+                {typeof probe.scoreInOrganisms === 'number' && (
                   <div>Score in Organisms: {probe.scoreInOrganisms.toFixed(2)}</div>
                 )}
               </div>
