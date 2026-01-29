@@ -14,13 +14,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Input } from "@shared/components/ui/input";
 import type { Gene } from "@features/gene/types";
 import {
   adaptGtexToTissueArray,
   TISSUE_GROUPS,
 } from "@features/gene/utils/tissue-expression";
-import { Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 const GROUP_PALETTE = [
@@ -114,27 +112,18 @@ export function TissueExpressionChart({
   gtex,
   className,
 }: TissueExpressionChartProps) {
-  const [search, setSearch] = useState("");
   const [groupMode, setGroupMode] = useState<GroupMode>("system");
   const [limit, setLimit] = useState<LimitOption>("25");
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("linear");
+  const [scaleMode, setScaleMode] = useState<ScaleMode>("log");
 
   const tissueRows = useMemo(() => adaptGtexToTissueArray(gtex), [gtex]);
 
   const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
     return tissueRows.filter((row) => {
       if (row.value === null || row.value === undefined) return false;
-      if (!query) return true;
-
-      return (
-        row.label.toLowerCase().includes(query) ||
-        row.tissue.toLowerCase().includes(query) ||
-        row.group.toLowerCase().includes(query)
-      );
+      return true;
     });
-  }, [search, tissueRows]);
+  }, [tissueRows]);
 
   const sortedRows = useMemo(() => {
     return [...filteredRows].sort((a, b) => {
@@ -186,13 +175,6 @@ export function TissueExpressionChart({
     [scaleMode],
   );
 
-  const summaryLabel = useMemo(() => {
-    if (tissueRows.length === 0) return "No tissue expression data";
-
-    const suffix = search.trim() ? ` matching "${search.trim()}"` : "";
-    return `Showing ${limitedRows.length} of ${sortedRows.length} tissues${suffix}`;
-  }, [limitedRows.length, search, sortedRows.length, tissueRows.length]);
-
   return (
     <Card className={cn("border border-slate-200", className)}>
       <CardHeader className="border-b border-slate-200">
@@ -204,16 +186,6 @@ export function TissueExpressionChart({
       <CardContent className="p-0">
         <div className="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-slate-200">
           <div className="flex items-center gap-3 flex-1 min-w-[220px]">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search tissues..."
-                className="pl-9 text-sm"
-              />
-            </div>
-            <span className="text-body-sm text-subtle">{summaryLabel}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">

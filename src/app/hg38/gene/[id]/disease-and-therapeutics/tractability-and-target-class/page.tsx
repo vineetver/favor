@@ -116,9 +116,9 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
   const ensemblId = gene.gene_id_versioned?.split(".")[0] || id;
 
   return (
-    <div className="space-y-5">
+    <Card className="overflow-hidden p-0">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
         <div>
           <h1 className="text-[15px] font-semibold text-heading">
             Tractability & Target Class
@@ -138,98 +138,96 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
 
       {/* Tractability Matrix */}
       {tractability.length > 0 && (
-        <Card className="overflow-hidden p-0">
-          <table className="w-full">
-            {/* Header Row */}
-            <thead>
-              <tr className="border-b border-slate-200">
+        <table className="w-full">
+          {/* Header Row */}
+          <thead>
+            <tr className="border-b border-slate-200">
+              {MODALITIES.map((modality) => {
+                const counts = getCounts(modality);
+                return (
+                  <th
+                    key={modality}
+                    className="text-left px-5 py-4 border-r border-slate-100 last:border-r-0"
+                  >
+                    <span className="text-[13px] font-semibold text-heading">
+                      {MODALITY_LABELS[modality]}
+                    </span>
+                    <span className="ml-1.5 text-[11px] font-normal text-subtle">
+                      ({counts.supported}/{counts.total})
+                    </span>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Clinical Section Header */}
+            <tr className="border-b border-slate-100">
+              {MODALITIES.map((modality) => (
+                <td key={modality} className="px-5 pt-4 pb-2 border-r border-slate-100 last:border-r-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Clinical
+                  </span>
+                </td>
+              ))}
+            </tr>
+            {/* Clinical Rows */}
+            {CLINICAL_CRITERIA.map((criteria) => (
+              <tr key={criteria} className="border-b border-slate-50">
+                {MODALITIES.map((modality) => (
+                  <td key={modality} className="px-5 py-1.5 border-r border-slate-100 last:border-r-0">
+                    <CriteriaRow
+                      label={SHORT_LABELS[criteria] || criteria}
+                      value={getValue(modality, criteria)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {/* Evidence Section Header */}
+            <tr className="border-b border-slate-100">
+              {MODALITIES.map((modality) => (
+                <td key={modality} className="px-5 pt-4 pb-2 border-r border-slate-100 last:border-r-0">
+                  {EVIDENCE_CRITERIA[modality]?.length > 0 && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Evidence
+                    </span>
+                  )}
+                </td>
+              ))}
+            </tr>
+            {/* Evidence Rows - padded to max length */}
+            {Array.from({ length: maxEvidenceRows }).map((_, rowIndex) => (
+              <tr key={`evidence-${rowIndex}`} className="border-b border-slate-50 last:border-b-0">
                 {MODALITIES.map((modality) => {
-                  const counts = getCounts(modality);
+                  const criteria = EVIDENCE_CRITERIA[modality]?.[rowIndex];
                   return (
-                    <th
-                      key={modality}
-                      className="text-left px-5 py-4 border-r border-slate-100 last:border-r-0"
-                    >
-                      <span className="text-[13px] font-semibold text-heading">
-                        {MODALITY_LABELS[modality]}
-                      </span>
-                      <span className="ml-1.5 text-[11px] font-normal text-subtle">
-                        ({counts.supported}/{counts.total})
-                      </span>
-                    </th>
+                    <td key={modality} className="px-5 py-1.5 border-r border-slate-100 last:border-r-0">
+                      {criteria ? (
+                        <CriteriaRow
+                          label={SHORT_LABELS[criteria] || criteria}
+                          value={getValue(modality, criteria)}
+                        />
+                      ) : null}
+                    </td>
                   );
                 })}
               </tr>
-            </thead>
-            <tbody>
-              {/* Clinical Section Header */}
-              <tr className="border-b border-slate-100">
-                {MODALITIES.map((modality) => (
-                  <td key={modality} className="px-5 pt-4 pb-2 border-r border-slate-100 last:border-r-0">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                      Clinical
-                    </span>
-                  </td>
-                ))}
-              </tr>
-              {/* Clinical Rows */}
-              {CLINICAL_CRITERIA.map((criteria) => (
-                <tr key={criteria} className="border-b border-slate-50">
-                  {MODALITIES.map((modality) => (
-                    <td key={modality} className="px-5 py-1.5 border-r border-slate-100 last:border-r-0">
-                      <CriteriaRow
-                        label={SHORT_LABELS[criteria] || criteria}
-                        value={getValue(modality, criteria)}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {/* Evidence Section Header */}
-              <tr className="border-b border-slate-100">
-                {MODALITIES.map((modality) => (
-                  <td key={modality} className="px-5 pt-4 pb-2 border-r border-slate-100 last:border-r-0">
-                    {EVIDENCE_CRITERIA[modality]?.length > 0 && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        Evidence
-                      </span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              {/* Evidence Rows - padded to max length */}
-              {Array.from({ length: maxEvidenceRows }).map((_, rowIndex) => (
-                <tr key={`evidence-${rowIndex}`} className="border-b border-slate-50 last:border-b-0">
-                  {MODALITIES.map((modality) => {
-                    const criteria = EVIDENCE_CRITERIA[modality]?.[rowIndex];
-                    return (
-                      <td key={modality} className="px-5 py-1.5 border-r border-slate-100 last:border-r-0">
-                        {criteria ? (
-                          <CriteriaRow
-                            label={SHORT_LABELS[criteria] || criteria}
-                            value={getValue(modality, criteria)}
-                          />
-                        ) : null}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+            ))}
+          </tbody>
+        </table>
       )}
 
-      {/* Target Class Chips */}
+      {/* Target Class */}
       {targetClass.length > 0 && (
-        <Card className="p-5">
+        <div className="px-5 py-4 border-t border-slate-200">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-3">
             Target Class
           </h2>
           <div className="flex flex-wrap gap-1.5">
-            {targetClass.map((item) => (
+            {targetClass.map((item, index) => (
               <span
-                key={item.id}
+                key={`${item.id}-${item.level}-${index}`}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md text-[12px] font-medium text-slate-700"
               >
                 {item.label}
@@ -239,18 +237,18 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
               </span>
             ))}
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Empty State */}
       {tractability.length === 0 && targetClass.length === 0 && (
-        <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="text-center py-12">
           <p className="text-[13px] text-slate-400">
             No tractability or target class data available.
           </p>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

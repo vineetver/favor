@@ -9,7 +9,6 @@ import {
   CardHeader,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
-import { ControlBar } from "@shared/components/ui/data-surface/control-bar";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import {
@@ -128,10 +127,10 @@ function toSlug(value: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
-function getLiabilityKey(item: SafetyLiability) {
+function getLiabilityKey(item: SafetyLiability, index: number) {
   const base = item.eventId || item.event || "event";
   const source = item.datasource || "source";
-  return `${base}::${source}`;
+  return `${base}::${source}::${index}`;
 }
 
 const VARIANT_TOKEN_REGEX =
@@ -280,7 +279,6 @@ export function SafetyLiabilitiesAccordion({
   geneSymbol,
   className,
 }: SafetyLiabilitiesAccordionProps) {
-  const [search, setSearch] = useState("");
   const [datasourceFilter, setDatasourceFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
   const [studyFilter, setStudyFilter] = useState("all");
@@ -357,14 +355,9 @@ export function SafetyLiabilitiesAccordion({
   const filteredLiabilities = useMemo(() => {
     if (!liabilities) return [];
 
-    const query = search.trim().toLowerCase();
-
-    return liabilities.filter((item) => {
-      const matchesSearch = query
-        ? item.event?.toLowerCase().includes(query) ||
-          item.eventId?.toLowerCase().includes(query)
-        : true;
-
+    return liabilities
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => {
       const matchesDatasource =
         datasourceFilter === "all" || item.datasource === datasourceFilter;
 
@@ -378,13 +371,12 @@ export function SafetyLiabilitiesAccordion({
         (studyFilter === "with" ? hasStudies : !hasStudies);
 
       return (
-        matchesSearch &&
         matchesDatasource &&
         matchesDirection &&
         matchesStudies
       );
     });
-  }, [datasourceFilter, directionFilter, liabilities, search, studyFilter]);
+  }, [datasourceFilter, directionFilter, liabilities, studyFilter]);
 
   useEffect(() => {
     if (filteredLiabilities.length === 0) {
@@ -394,28 +386,29 @@ export function SafetyLiabilitiesAccordion({
 
     if (!selectedKey) {
       const next = filteredLiabilities[0];
-      setSelectedKey(getLiabilityKey(next));
+      if (!next) return;
+      setSelectedKey(getLiabilityKey(next.item, next.index));
       return;
     }
 
     const stillExists = filteredLiabilities.some(
-      (item) => getLiabilityKey(item) === selectedKey,
+      (entry) => getLiabilityKey(entry.item, entry.index) === selectedKey,
     );
 
     if (!stillExists) {
       const next = filteredLiabilities[0];
-      setSelectedKey(getLiabilityKey(next));
+      if (!next) return;
+      setSelectedKey(getLiabilityKey(next.item, next.index));
     }
   }, [filteredLiabilities, selectedKey]);
 
   const selected = useMemo(() => {
-    if (!selectedKey) return filteredLiabilities[0] ?? null;
+    if (!selectedKey) return filteredLiabilities[0]?.item ?? null;
 
-    return (
-      filteredLiabilities.find((item) => getLiabilityKey(item) === selectedKey) ??
-      filteredLiabilities[0] ??
-      null
+    const matched = filteredLiabilities.find(
+      (entry) => getLiabilityKey(entry.item, entry.index) === selectedKey,
     );
+    return matched?.item ?? filteredLiabilities[0]?.item ?? null;
   }, [filteredLiabilities, selectedKey]);
 
   const selectedDirections = useMemo((): Array<{
@@ -492,18 +485,11 @@ export function SafetyLiabilitiesAccordion({
         </div>
       </div>
 
-      <Card className="border border-slate-200 py-0">
-        <ControlBar
-          searchPlaceholder="Search events..."
-          searchValue={search}
-          onSearchChange={setSearch}
-          showViewSwitch={false}
-          showSearch
-        />
+      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
         <ScopeBar dimensions={dimensions} />
       </Card>
 
-      <Card className="border border-slate-200 py-0">
+      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
           <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
             <CardHeader className="py-4 border-b border-slate-200">
@@ -516,11 +502,11 @@ export function SafetyLiabilitiesAccordion({
                     No events match your filters.
                   </div>
                 )}
-                {filteredLiabilities.map((item) => {
-                  const key = getLiabilityKey(item);
+                {filteredLiabilities.map(({ item, index }) => {
+                  const key = getLiabilityKey(item, index);
                   const chips = getDirectionChips(item.effects);
                   const anchor = toSlug(
-                    `${item.event || item.eventId || "event"}-${item.datasource || "source"}`,
+                    `${item.event || item.eventId || "event"}-${item.datasource || "source"}-${index}`,
                   );
 
                   return (
@@ -776,8 +762,14 @@ export function SafetyLiabilitiesAccordion({
                       onClick={async () => {
                         if (!selected.event && !selected.eventId) return;
                         if (!navigator?.clipboard) return;
+                        const selectedIndex = filteredLiabilities.findIndex(
+                          (entry) => entry.item === selected,
+                        );
                         const anchor = toSlug(
-                          `${selected.event || selected.eventId || "event"}-${selected.datasource || "source"}`,
+                          `${selected.event || selected.eventId || "event"}-${selected.datasource || "source"}-${Math.max(
+                            selectedIndex,
+                            0,
+                          )}`,
                         );
                         const url = `${window.location.href.split("#")[0]}#event-${anchor}`;
                         await navigator.clipboard.writeText(url);
