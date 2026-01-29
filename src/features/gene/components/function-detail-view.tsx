@@ -157,7 +157,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
               View details
             </Button>
           </SheetTrigger>
-          <SheetContent className="sm:max-w-lg flex flex-col overflow-hidden !bg-white">
+          <SheetContent className="sm:max-w-lg flex flex-col overflow-hidden">
             <SheetHeader>
               <SheetTitle className="text-lg font-semibold text-slate-900">
                 Function Details
