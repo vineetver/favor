@@ -7,10 +7,32 @@ const API_BASE =
 /**
  * API response structure for gene queries
  */
-interface GeneApiResponse {
+export interface GeneApiResponse {
   data: Gene;
-  meta?: Record<string, any>;
-  included?: Record<string, any> | null;
+  meta?: {
+    direction?: string;
+    limitPerEdgeType?: number;
+    edgeTypes?: string[] | string | null;
+    nextCursorEdges?: Record<string, string> | null;
+    summaryEdgeTypesUsed?: {
+      agreements?: string[] | null;
+      rollups?: string[] | null;
+    } | null;
+    warnings?: Array<Record<string, unknown>> | null;
+    [key: string]: unknown;
+  };
+  included?: {
+    agreements?: Record<string, unknown> | null;
+    counts?: Record<string, unknown> | null;
+    relations?: Record<string, unknown> | null;
+    rollups?: Record<string, unknown> | null;
+    [key: string]: unknown;
+  } | null;
+  relations?: Record<string, unknown> | null;
+  edges?: unknown;
+  counts?: Record<string, unknown> | null;
+  rollups?: Record<string, unknown> | null;
+  agreements?: Record<string, unknown> | null;
 }
 
 /**
@@ -52,7 +74,7 @@ export interface FetchGeneOptions {
 export async function fetchGene(
   id: string,
   options?: FetchGeneOptions,
-): Promise<Gene | null> {
+): Promise<GeneApiResponse | null> {
   if (!id) return null;
 
   const params = new URLSearchParams();
@@ -78,5 +100,5 @@ export async function fetchGene(
   const url = `${API_BASE}/genes/${encodeURIComponent(id)}${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetchOrNull<GeneApiResponse>(url);
-  return response?.data ?? null;
+  return response ?? null;
 }

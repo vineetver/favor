@@ -29,7 +29,8 @@ export default async function GeneLayout({
   }
 
   // Fetch gene data
-  const gene = await fetchGene(id);
+  const geneResponse = await fetchGene(id);
+  const gene = geneResponse?.data;
 
   if (!gene) {
     notFound();
@@ -78,6 +79,7 @@ export default async function GeneLayout({
               items={currentCategory.subCategories}
               groups={currentCategory.groups}
               basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
+              showIcons={currentCategory.showIcons}
             />
           )}
 

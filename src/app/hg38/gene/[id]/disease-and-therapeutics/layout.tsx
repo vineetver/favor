@@ -29,7 +29,8 @@ export default async function DiseaseTherapeuticsLayout({
     notFound();
   }
 
-  const gene = await fetchGene(id);
+  const geneResponse = await fetchGene(id);
+  const gene = geneResponse?.data;
 
   if (!gene) {
     notFound();
@@ -78,6 +79,7 @@ export default async function DiseaseTherapeuticsLayout({
               items={currentCategory.subCategories}
               groups={currentCategory.groups}
               basePath={`/hg38/gene/${encodeURIComponent(id)}/${CATEGORY_SLUG}`}
+              showIcons={currentCategory.showIcons}
             />
           )}
 

@@ -24,4 +24,5 @@ export interface NavigationSection {
   slug: string;
   subCategories: NavigationLink[]; // Keep for mobile nav
   groups?: NavigationGroup[]; // For grouped sidebar
+  showIcons?: boolean; // Set to false to hide icons in this section (default: true)
 }

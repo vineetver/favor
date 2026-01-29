@@ -32,13 +32,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       ],
     },
     {
-      name: "Gene Biology",
+      name: "Biology",
       defaultExpanded: true,
       items: [
         { text: "Function", slug: "function", icon: "dna" },
         { text: "Expression", slug: "expression", icon: "activity" },
-        { text: "Protein-Protein Interactions", slug: "protein-protein-interactions", icon: "share-2" },
-        { text: "Pathways", slug: "pathways", icon: "git-branch" },
+        { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo", icon: "shield-alert" },
       ],
     },
     {
@@ -50,19 +49,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       ],
     },
     {
-      name: "Genetic Constraint",
-      defaultExpanded: true,
-      items: [
-        { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo", icon: "shield-alert" },
-      ],
-    },
-    {
       name: "Graph Tools",
       defaultExpanded: true,
       items: [
         { text: "Graph Explorer", slug: "graph-explorer", icon: "network" },
         { text: "Interaction Neighborhood", slug: "interaction-neighborhood", icon: "share-2" },
-        { text: "Pathway Leverage Map", slug: "pathway-leverage-map", icon: "git-branch" },
+        { text: "Pathways", slug: "pathway-leverage-map", icon: "git-branch" },
       ],
     },
   ],
@@ -85,21 +77,20 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     ],
     groups: [
       {
-        name: "Evidence (OpenTargets-first)",
+        name: "Evidence",
         defaultExpanded: true,
         items: [
-          { text: "Evidence Command Center", slug: "evidence-command-center", icon: "badge-check" },
           { text: "Disease Portfolio", slug: "disease-portfolio", icon: "layers" },
           { text: "Phenotype Signature", slug: "phenotype-signature", icon: "layout-grid" },
         ],
       },
       {
-        name: "Therapeutics",
+        name: "Therapeutic Readiness",
         defaultExpanded: true,
         items: [
-          { text: "Drugs & Targeting", slug: "drugs-and-targeting", icon: "pill" },
           { text: "Tractability & Target Class", slug: "tractability-and-target-class", icon: "radar" },
           { text: "Chemical Probes", slug: "chemical-probes", icon: "flask-conical" },
+          { text: "Target Enabling Package (TEP)", slug: "tep", icon: "package" },
         ],
       },
       {
@@ -112,7 +103,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Cancer Hallmarks", slug: "cancer-hallmarks", icon: "flame" },
-          { text: "Target Enabling Package (TEP)", slug: "tep", icon: "package" },
+          
         ],
       },
     ],

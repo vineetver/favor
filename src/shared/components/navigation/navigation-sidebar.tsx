@@ -105,6 +105,7 @@ interface NavigationSidebarProps {
   groups?: NavigationGroup[];
   basePath: string;
   queryString?: string;
+  showIcons?: boolean; // Set to false to hide icons (default: true)
 }
 
 export function NavigationSidebar({
@@ -112,6 +113,7 @@ export function NavigationSidebar({
   groups,
   basePath,
   queryString = "",
+  showIcons = true,
 }: NavigationSidebarProps) {
   const params = useParams();
   const pathname = usePathname();
@@ -194,7 +196,7 @@ export function NavigationSidebar({
                   <CollapsibleContent className="space-y-0.5 overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                     {group.items.map((item) => {
                       const isActive = item.slug === activeSlug;
-                      const Icon = item.icon ? iconMap[item.icon] : null;
+                      const Icon = showIcons && item.icon ? iconMap[item.icon] : null;
 
                       return (
                         <Link

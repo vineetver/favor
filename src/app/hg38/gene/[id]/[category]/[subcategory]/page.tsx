@@ -14,7 +14,8 @@ interface GenePageProps {
 export default async function GenePage({ params }: GenePageProps) {
   const { id, category, subcategory } = await params;
 
-  const gene = await fetchGene(id);
+  const geneResponse = await fetchGene(id);
+  const gene = geneResponse?.data;
 
   if (!gene) {
     notFound();

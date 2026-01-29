@@ -13,7 +13,8 @@ export default async function CancerHallmarksPage({
 }: CancerHallmarksPageProps) {
   const { id } = await params;
 
-  const gene = await fetchGene(id);
+  const geneResponse = await fetchGene(id);
+  const gene = geneResponse?.data;
 
   if (!gene) {
     notFound();

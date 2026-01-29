@@ -7,9 +7,12 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
-import { DimensionSelector } from "@shared/components/ui/data-surface/dimension-selector";
+import { Chip, StatusBadge, type BadgeVariant } from "@shared/components/ui/status-badge";
+import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import {
   Table,
   TableBody,
@@ -18,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface ChemicalProbesOverviewProps {
@@ -66,31 +69,15 @@ function QualityBadge({ probe }: { probe: ChemicalProbe }) {
   const isCalculated = probe.origin?.includes("calculated");
 
   const label = isHigh ? "High" : isCalculated ? "Calc" : "Standard";
-  const className = isHigh
-    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+  const variant: BadgeVariant = isHigh
+    ? "positive"
     : isCalculated
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : "bg-slate-50 text-slate-600 border-slate-200";
+      ? "warning"
+      : "neutral";
 
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
-        className,
-      )}
-    >
-      {label}
-    </span>
-  );
+  return <StatusBadge variant={variant}>{label}</StatusBadge>;
 }
 
-function Chip({ children }: { children: string }) {
-  return (
-    <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-      {children}
-    </span>
-  );
-}
 
 export function ChemicalProbesOverview({
   probes,
@@ -137,12 +124,47 @@ export function ChemicalProbesOverview({
     );
   }, [probes]);
 
-  const qualityOptions = [
-    { value: "all", label: "All" },
-    { value: "high", label: "High" },
-    { value: "calc", label: "Calculated" },
-    { value: "standard", label: "Standard" },
-  ];
+  const qualityOptions = useMemo(
+    () => [
+      { value: "all", label: "All" },
+      { value: "high", label: "High" },
+      { value: "calc", label: "Calculated" },
+      { value: "standard", label: "Standard" },
+    ],
+    [],
+  );
+
+  const dimensions = useMemo<DimensionConfig[]>(
+    () => [
+      {
+        label: "Quality",
+        options: qualityOptions,
+        value: qualityFilter,
+        onChange: setQualityFilter,
+        presentation: "segmented",
+      },
+      {
+        label: "Mechanism",
+        options: mechanismOptions,
+        value: mechanismFilter,
+        onChange: setMechanismFilter,
+      },
+      {
+        label: "Origin",
+        options: originOptions,
+        value: originFilter,
+        onChange: setOriginFilter,
+      },
+    ],
+    [
+      qualityOptions,
+      qualityFilter,
+      mechanismOptions,
+      mechanismFilter,
+      originOptions,
+      originFilter,
+    ],
+  );
 
   const filteredProbes = useMemo(() => {
     return sortedProbes.filter((probe) => {
@@ -234,245 +256,236 @@ export function ChemicalProbesOverview({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-label text-subtle">
-          Chemical Probes Overview{geneSymbol ? ` (${geneSymbol})` : ""}
-        </div>
-        <div className="text-body-sm text-subtle">
-          Source: <span className="text-body">{sources}</span>
-        </div>
-      </div>
-
-      <Card className="border border-slate-200">
-        <CardHeader className="border-b border-slate-200">
-          <div className="text-label text-subtle">Top Probes & Scores</div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <div className="text-body-sm text-subtle">Top probes by P&amp;D score</div>
-            {topProbes.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2 text-body-sm text-body">
-                {topProbes.map((probe, index) => (
-                  <span key={getProbeKey(probe)} className="inline-flex items-center gap-2">
-                    {index > 0 && <span className="text-slate-300">•</span>}
-                    <span className="font-medium text-heading">{probe.id || "—"}</span>
-                    <span className="text-subtle">({formatScore(probe.probesDrugsScore)})</span>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="text-body-sm text-subtle">No probes match your filters.</div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div className="text-body-sm text-subtle">Score distributions</div>
-            <div className="space-y-2">
-              <ScoreBar label="P&amp;D score" value={scoreAverages.probesDrugsScore} />
-              <ScoreBar label="ProbeMiner" value={scoreAverages.probeMinerScore} />
-              <ScoreBar label="Cells score" value={scoreAverages.scoreInCells} />
-              <ScoreBar label="Organisms" value={scoreAverages.scoreInOrganisms} />
+    <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
+      <CardHeader className="border-b border-slate-200 px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold text-heading">
+              Chemical Probes{geneSymbol ? ` (${geneSymbol})` : ""}
+            </CardTitle>
+            <div className="text-xs text-subtle">
+              Quality scores and mechanisms of action
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-start gap-4 px-6 py-3 bg-slate-50/50 border-b border-slate-200">
-          <DimensionSelector
-            label="Quality"
-            options={qualityOptions}
-            value={qualityFilter}
-            onChange={setQualityFilter}
-            presentation="segmented"
-          />
-          <DimensionSelector
-            label="Mechanism"
-            options={mechanismOptions}
-            value={mechanismFilter}
-            onChange={setMechanismFilter}
-          />
-          <DimensionSelector
-            label="Origin"
-            options={originOptions}
-            value={originFilter}
-            onChange={setOriginFilter}
-          />
+          <div className="text-xs text-subtle">{sources}</div>
         </div>
-      </Card>
-
-      <Card className="border border-slate-200 py-0 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
-          <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
-            <CardHeader className="py-4 border-b border-slate-200">
-              <div className="text-label text-subtle">Probe List</div>
-            </CardHeader>
-            <CardContent className="px-0 py-0">
-              <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
-                {filteredProbes.length === 0 && (
-                  <div className="px-6 py-8 text-body-sm text-subtle">
-                    No probes match your filters.
-                  </div>
-                )}
-                {filteredProbes.map((probe) => {
-                  const key = getProbeKey(probe);
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setSelectedKey(key)}
-                      className={cn(
-                        "w-full px-6 py-3 text-left transition-colors",
-                        "hover:bg-slate-50",
-                        selectedKey === key && "bg-primary/5",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-2">
-                          <div className="text-sm font-semibold text-heading">
-                            {probe.id || "—"}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <QualityBadge probe={probe} />
-                            {probe.mechanismOfAction?.map((item) => (
-                              <Chip key={`${key}-${item}`}>{item}</Chip>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-right text-body-sm text-subtle space-y-1">
-                          <div>P&amp;D {formatScore(probe.probesDrugsScore)}</div>
-                          {probe.probeMinerScore != null && (
-                            <div>PM {formatScore(probe.probeMinerScore)}</div>
-                          )}
-                          <div>Cells {formatScore(probe.scoreInCells)}</div>
-                          <div>Org {formatScore(probe.scoreInOrganisms)}</div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Summary Panel */}
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <div className="text-label text-subtle">Top Probes & Scores</div>
           </div>
-
-          <div>
-            <CardHeader className="py-4 border-b border-slate-200">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-label text-subtle">Inspector</div>
-                <div className="text-body-sm text-subtle">
-                  {selected?.id ? `Selected: ${selected.id}` : "No selection"}
+          <div className="px-6 py-4 space-y-6">
+            <div className="space-y-2">
+              <div className="text-body-sm text-subtle">Top probes by P&amp;D score</div>
+              {topProbes.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-2 text-body-sm text-body">
+                  {topProbes.map((probe, index) => (
+                    <span key={getProbeKey(probe)} className="inline-flex items-center gap-2">
+                      {index > 0 && <span className="text-subtle">•</span>}
+                      <span className="font-medium text-heading">{probe.id || "—"}</span>
+                      <span className="text-subtle">({formatScore(probe.probesDrugsScore)})</span>
+                    </span>
+                  ))}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 py-5">
-              {!selected && (
-                <div className="text-body-sm text-subtle">
-                  Select a probe to inspect details.
-                </div>
+              ) : (
+                <div className="text-body-sm text-subtle">No probes match your filters.</div>
               )}
+            </div>
 
-              {selected && (
-                <>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <QualityBadge probe={selected} />
-                    {selected.origin?.map((item) => (
-                      <Chip key={`origin-${item}`}>{item}</Chip>
-                    ))}
-                  </div>
+            <div className="space-y-3">
+              <div className="text-body-sm text-subtle">Score distributions</div>
+              <div className="space-y-2">
+                <ScoreBar label="P&amp;D score" value={scoreAverages.probesDrugsScore} />
+                <ScoreBar label="ProbeMiner" value={scoreAverages.probeMinerScore} />
+                <ScoreBar label="Cells score" value={scoreAverages.scoreInCells} />
+                <ScoreBar label="Organisms" value={scoreAverages.scoreInOrganisms} />
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  <div className="flex flex-wrap items-center gap-6 text-body-sm text-body">
-                    <div>
-                      <span className="text-subtle">Target ID:</span>{" "}
-                      <span className="text-data">{selected.targetFromSourceId || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-subtle">Drug ID:</span>{" "}
-                      <span className="text-data">{selected.drugId || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-subtle">Control:</span>{" "}
-                      <span className="text-body">{selected.control || "—"}</span>
-                    </div>
-                  </div>
+        {/* Filter Bar */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <ScopeBar dimensions={dimensions} />
+        </div>
 
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">Score Snapshot</div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-label text-subtle">Metric</TableHead>
-                          <TableHead className="text-label text-subtle">Score</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className="text-body-sm text-body">P&amp;D score</TableCell>
-                          <TableCell className="text-body-sm text-heading">
-                            {formatScore(selected.probesDrugsScore)}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="text-body-sm text-body">ProbeMiner</TableCell>
-                          <TableCell className="text-body-sm text-heading">
-                            {formatScore(selected.probeMinerScore)}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="text-body-sm text-body">Cells score</TableCell>
-                          <TableCell className="text-body-sm text-heading">
-                            {formatScore(selected.scoreInCells)}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="text-body-sm text-body">Organisms score</TableCell>
-                          <TableCell className="text-body-sm text-heading">
-                            {formatScore(selected.scoreInOrganisms)}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">Mechanism of Action</div>
-                    {selected.mechanismOfAction && selected.mechanismOfAction.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {selected.mechanismOfAction.map((item) => (
-                          <Chip key={`moa-${item}`}>{item}</Chip>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-body-sm text-subtle">—</div>
-                    )}
-                  </div>
-
-                  {selected.urls && selected.urls.some((link) => link.url) && (
-                    <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-                      {selected.urls
-                        .filter((link) => Boolean(link.url))
-                        .map((link, index) => (
-                          <Button key={`${link.niceName}-${index}`} variant="outline" size="sm" asChild>
-                            <a
-                              href={link.url as string}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              {link.niceName || "Source"}
-                            </a>
-                          </Button>
-                        ))}
+        {/* Master-Detail Panel */}
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            {/* List Panel */}
+            <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
+              <div className="px-6 py-4 border-b border-slate-200">
+                <div className="text-label text-subtle">Probe List</div>
+              </div>
+              <div>
+                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
+                  {filteredProbes.length === 0 && (
+                    <div className="px-6 py-8 text-body-sm text-subtle">
+                      No probes match your filters.
                     </div>
                   )}
-                </>
-              )}
-            </CardContent>
+                  {filteredProbes.map((probe) => {
+                    const key = getProbeKey(probe);
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSelectedKey(key)}
+                        className={cn(
+                          "w-full px-6 py-3 text-left transition-colors",
+                          "hover:bg-slate-50",
+                          selectedKey === key && "bg-primary/5",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold text-heading">
+                              {probe.id || "—"}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <QualityBadge probe={probe} />
+                              {probe.mechanismOfAction?.map((item) => (
+                                <Chip key={`${key}-${item}`}>{item}</Chip>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right text-body-sm text-subtle space-y-1">
+                            <div>P&amp;D {formatScore(probe.probesDrugsScore)}</div>
+                            {probe.probeMinerScore != null && (
+                              <div>PM {formatScore(probe.probeMinerScore)}</div>
+                            )}
+                            <div>Cells {formatScore(probe.scoreInCells)}</div>
+                            <div>Org {formatScore(probe.scoreInOrganisms)}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Detail Panel */}
+            <div>
+              <div className="px-6 py-4 border-b border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-label text-subtle">Inspector</div>
+                  <div className="text-body-sm text-subtle">
+                    {selected?.id ? `Selected: ${selected.id}` : "No selection"}
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-6 space-y-6">
+                {!selected && (
+                  <div className="text-body-sm text-subtle">
+                    Select a probe to inspect details.
+                  </div>
+                )}
+
+                {selected && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <QualityBadge probe={selected} />
+                      {selected.origin?.map((item) => (
+                        <Chip key={`origin-${item}`}>{item}</Chip>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-6 text-body-sm text-body">
+                      <div>
+                        <span className="text-subtle">Target ID:</span>{" "}
+                        <span className="text-data">{selected.targetFromSourceId || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-subtle">Drug ID:</span>{" "}
+                        <span className="text-data">{selected.drugId || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-subtle">Control:</span>{" "}
+                        <span className="text-body">{selected.control || "—"}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">Score Snapshot</div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-label text-subtle">Metric</TableHead>
+                            <TableHead className="text-label text-subtle">Score</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="text-body-sm text-body">P&amp;D score</TableCell>
+                            <TableCell className="text-body-sm text-heading">
+                              {formatScore(selected.probesDrugsScore)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="text-body-sm text-body">ProbeMiner</TableCell>
+                            <TableCell className="text-body-sm text-heading">
+                              {formatScore(selected.probeMinerScore)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="text-body-sm text-body">Cells score</TableCell>
+                            <TableCell className="text-body-sm text-heading">
+                              {formatScore(selected.scoreInCells)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="text-body-sm text-body">Organisms score</TableCell>
+                            <TableCell className="text-body-sm text-heading">
+                              {formatScore(selected.scoreInOrganisms)}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">Mechanism of Action</div>
+                      {selected.mechanismOfAction && selected.mechanismOfAction.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selected.mechanismOfAction.map((item) => (
+                            <Chip key={`moa-${item}`}>{item}</Chip>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-body-sm text-subtle">—</div>
+                      )}
+                    </div>
+
+                    {selected.urls && selected.urls.some((link) => link.url) && (
+                      <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                        {selected.urls
+                          .filter((link) => Boolean(link.url))
+                          .map((link, index) => (
+                            <Button key={`${link.niceName}-${index}`} variant="outline" size="sm" asChild>
+                              <a
+                                href={link.url as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2"
+                              >
+                                <ExternalLinkIcon className="h-4 w-4" />
+                                {link.niceName || "Source"}
+                              </a>
+                            </Button>
+                          ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

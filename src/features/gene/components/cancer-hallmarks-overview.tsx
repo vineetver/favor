@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
@@ -77,7 +78,7 @@ function ImpactBadge({ impact }: { impact: ImpactKey }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-caption font-semibold",
         meta.chip,
       )}
     >
@@ -100,7 +101,7 @@ function ImpactCountBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-caption font-semibold",
         meta.chip,
       )}
     >
@@ -162,11 +163,6 @@ export function CancerHallmarksOverview({
       .filter((group) => group.items.length > 0);
   }, [groups, impactFilter]);
 
-  const totalItems = useMemo(
-    () => filteredGroups.reduce((sum, group) => sum + group.items.length, 0),
-    [filteredGroups],
-  );
-
   const dimensions: DimensionConfig[] = useMemo(
     () => [
       {
@@ -207,101 +203,114 @@ export function CancerHallmarksOverview({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-label text-subtle">
-          Cancer Hallmarks{geneSymbol ? ` (${geneSymbol})` : ""}
-        </div>
-        <div className="text-body-sm text-subtle">
-          Source: <span className="text-body">Open Targets</span>
-        </div>
-      </div>
-
-      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
-        <ScopeBar dimensions={dimensions} />
-      </Card>
-
-      {filteredGroups.length === 0 && (
-        <Card className="border border-slate-200">
-          <CardContent className="py-10 text-body-sm text-subtle text-center">
-            No hallmarks match the selected filters.
-          </CardContent>
-        </Card>
-      )}
-
-      {filteredGroups.map((group) => (
-        <Card key={group.label} className="border border-slate-200 gap-0 overflow-hidden">
-          <CardHeader className="border-b border-slate-200 pb-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="text-section-header">{group.label}</div>
-                <div className="text-body-sm text-subtle">
-                  {group.items.length} items
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <ImpactCountBadge impact="promotes" count={group.counts.promotes} />
-                <ImpactCountBadge impact="suppresses" count={group.counts.suppresses} />
-                <ImpactCountBadge impact="unknown" count={group.counts.unknown} />
-              </div>
+    <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
+      <CardHeader className="border-b border-slate-200 px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold text-heading">
+              Cancer Hallmarks{geneSymbol ? ` (${geneSymbol})` : ""}
+            </CardTitle>
+            <div className="text-xs text-subtle">
+              Literature evidence grouped by hallmark and impact
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-5">
-            {group.items.map((item, index) => {
-              const key = getEvidenceKey(group.label, item, index);
-              const normalizedImpact = normalizeImpact(item.impact);
-              const description = item.description?.trim() || "No description available.";
-              const isExpanded = expanded.has(key);
-              const shouldTruncate = description.length > 180;
+          </div>
+          <div className="text-xs text-subtle">Open Targets</div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Filter Bar - flat panel, no shadow */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <ScopeBar dimensions={dimensions} />
+        </div>
 
-              return (
-                <div
-                  key={key}
-                  className={cn(
-                    "rounded-xl border border-slate-200 bg-white p-4 space-y-3",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <div className="text-sm font-semibold text-heading leading-snug">
-                        {shouldTruncate && !isExpanded
-                          ? truncateText(description, 180)
-                          : description}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4 text-body-sm text-subtle">
-                        <ImpactBadge impact={normalizedImpact} />
-                        <div>
-                          PMID: <span className="text-data">{item.pmid ?? "N/A"}</span>
-                        </div>
-                      </div>
-                      {shouldTruncate && (
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(key)}
-                          className="text-body-sm text-primary hover:underline"
-                        >
-                          {isExpanded ? "Show less" : "Show more"}
-                        </button>
-                      )}
-                    </div>
-                    {item.pmid && (
-                      <ExternalLink
-                        href={`https://pubmed.ncbi.nlm.nih.gov/${item.pmid}`}
-                        className="shrink-0 text-body-sm text-subtle hover:text-primary"
-                        iconSize="sm"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Open PMID
-                      </ExternalLink>
-                    )}
+        {/* Empty Filter State */}
+        {filteredGroups.length === 0 && (
+          <div className="py-10 text-body-sm text-subtle text-center">
+            No hallmarks match the selected filters.
+          </div>
+        )}
+
+        {/* Hallmark Groups */}
+        {filteredGroups.map((group) => (
+          <div
+            key={group.label}
+            className="rounded-xl border border-slate-200 bg-white overflow-hidden"
+          >
+            {/* Group Header */}
+            <div className="px-6 py-4 border-b border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="text-section-header">{group.label}</div>
+                  <div className="text-body-sm text-subtle">
+                    {group.items.length} evidence items
                   </div>
                 </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ImpactCountBadge impact="promotes" count={group.counts.promotes} />
+                  <ImpactCountBadge impact="suppresses" count={group.counts.suppresses} />
+                  <ImpactCountBadge impact="unknown" count={group.counts.unknown} />
+                </div>
+              </div>
+            </div>
+
+            {/* Evidence Items */}
+            <div className="p-6 space-y-3">
+              {group.items.map((item, index) => {
+                const key = getEvidenceKey(group.label, item, index);
+                const normalizedImpact = normalizeImpact(item.impact);
+                const description = item.description?.trim() || "No description available.";
+                const isExpanded = expanded.has(key);
+                const shouldTruncate = description.length > 180;
+
+                return (
+                  <div
+                    key={key}
+                    className={cn(
+                      "rounded-xl border border-slate-200 bg-white p-4 space-y-3",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="text-sm font-semibold text-heading leading-snug">
+                          {shouldTruncate && !isExpanded
+                            ? truncateText(description, 180)
+                            : description}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-body-sm text-subtle">
+                          <ImpactBadge impact={normalizedImpact} />
+                          <div>
+                            PMID: <span className="text-data">{item.pmid ?? "N/A"}</span>
+                          </div>
+                        </div>
+                        {shouldTruncate && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(key)}
+                            className="text-body-sm text-primary hover:underline"
+                          >
+                            {isExpanded ? "Show less" : "Show more"}
+                          </button>
+                        )}
+                      </div>
+                      {item.pmid && (
+                        <ExternalLink
+                          href={`https://pubmed.ncbi.nlm.nih.gov/${item.pmid}`}
+                          className="shrink-0 text-body-sm text-subtle hover:text-primary"
+                          iconSize="sm"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          PubMed
+                        </ExternalLink>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

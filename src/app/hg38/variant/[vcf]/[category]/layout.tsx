@@ -79,6 +79,7 @@ export default async function VariantLayout({
               items={currentCategory.subCategories}
               groups={currentCategory.groups}
               basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
+              showIcons={currentCategory.showIcons}
             />
           )}
 

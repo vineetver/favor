@@ -7,8 +7,10 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
+import { Chip, LinkChip, StatusBadge, type BadgeVariant } from "@shared/components/ui/status-badge";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import {
@@ -19,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
-import { ChevronDown, ChevronRight, Copy, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface SafetyLiabilitiesAccordionProps {
@@ -34,23 +36,11 @@ type SafetyLiability = NonNullable<
 
 type DirectionCategory = "increase" | "decrease" | "mixed" | "unknown";
 
-const DIRECTION_META: Record<DirectionCategory, { label: string; chip: string }> = {
-  increase: {
-    label: "↑",
-    chip: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  },
-  decrease: {
-    label: "↓",
-    chip: "bg-rose-50 text-rose-700 border-rose-200",
-  },
-  mixed: {
-    label: "↔",
-    chip: "bg-amber-50 text-amber-700 border-amber-200",
-  },
-  unknown: {
-    label: "•",
-    chip: "bg-slate-50 text-slate-600 border-slate-200",
-  },
+const DIRECTION_META: Record<DirectionCategory, { label: string; variant: BadgeVariant }> = {
+  increase: { label: "↑", variant: "positive" },
+  decrease: { label: "↓", variant: "negative" },
+  mixed: { label: "↔", variant: "warning" },
+  unknown: { label: "•", variant: "neutral" },
 };
 
 function classifyDirection(text: string): DirectionCategory {
@@ -244,25 +234,20 @@ function StudyRow({
       </TableRow>
       {expanded && (
         <TableRow>
-          <TableCell colSpan={4} className="bg-slate-50/60">
-            <div className="space-y-3">
-              <div className="text-body-sm text-body">
-                <span className="text-subtle">Summary:</span> {summary}
+      <TableCell colSpan={4} className="bg-slate-50/60">
+        <div className="space-y-3">
+          <div className="text-body-sm text-body">
+            <span className="text-subtle">Summary:</span> {summary}
+          </div>
+          <div className="space-y-2">
+            <div className="text-body-sm text-subtle">Variants</div>
+            {variantTokens.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {variantTokens.map((token) => (
+                  <Chip key={token.key}>{formatVariantChip(token)}</Chip>
+                ))}
               </div>
-              <div className="space-y-2">
-                <div className="text-body-sm text-subtle">Variants</div>
-                {variantTokens.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {variantTokens.map((token) => (
-                      <span
-                        key={token.key}
-                        className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600"
-                      >
-                        {formatVariantChip(token)}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
+            ) : (
                   <div className="text-body-sm text-subtle">—</div>
                 )}
               </div>
@@ -475,317 +460,299 @@ export function SafetyLiabilitiesAccordion({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-label text-subtle">
-          Safety Liabilities{geneSymbol ? ` (${geneSymbol})` : ""}
+    <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
+      <CardHeader className="border-b border-slate-200 px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold text-heading">
+              Safety Liabilities{geneSymbol ? ` (${geneSymbol})` : ""}
+            </CardTitle>
+            <div className="text-xs text-subtle">
+              Event-level safety signals and supporting studies
+            </div>
+          </div>
+          <div className="text-xs text-subtle">{sourceSummary}</div>
         </div>
-        <div className="text-body-sm text-subtle">
-          Source: <span className="text-body">{sourceSummary}</span>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Filter Bar */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <ScopeBar dimensions={dimensions} />
         </div>
-      </div>
 
-      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
-        <ScopeBar dimensions={dimensions} />
-      </Card>
+        {/* Master-Detail Panel */}
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            {/* List Panel */}
+            <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
+              <div className="px-6 py-4 border-b border-slate-200">
+                <div className="text-label text-subtle">Event Ledger</div>
+              </div>
+              <div>
+                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
+                  {filteredLiabilities.length === 0 && (
+                    <div className="px-6 py-8 text-body-sm text-subtle">
+                      No events match your filters.
+                    </div>
+                  )}
+                  {filteredLiabilities.map(({ item, index }) => {
+                    const key = getLiabilityKey(item, index);
+                    const chips = getDirectionChips(item.effects);
+                    const anchor = toSlug(
+                      `${item.event || item.eventId || "event"}-${item.datasource || "source"}-${index}`,
+                    );
 
-      <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
-          <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
-            <CardHeader className="py-4 border-b border-slate-200">
-              <div className="text-label text-subtle">Event Ledger</div>
-            </CardHeader>
-            <CardContent className="px-0 py-0">
-              <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
-                {filteredLiabilities.length === 0 && (
-                  <div className="px-6 py-8 text-body-sm text-subtle">
-                    No events match your filters.
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        id={`event-${anchor}`}
+                        onClick={() => setSelectedKey(key)}
+                        className={cn(
+                          "w-full px-6 py-3 text-left transition-colors",
+                          "hover:bg-slate-50",
+                          selectedKey === key && "bg-primary/5",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold text-heading">
+                              {item.event || "Unnamed event"}
+                            </div>
+                            <div className="text-body-sm text-subtle">
+                              {item.datasource || "Unknown source"}
+                              {item.studies?.length
+                                ? ` • ${item.studies.length} studies`
+                                : ""}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {chips.map((chip) => (
+                              <StatusBadge
+                                key={`${key}-${chip}`}
+                                variant={DIRECTION_META[chip].variant}
+                              >
+                                {DIRECTION_META[chip].label}
+                              </StatusBadge>
+                            ))}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-200">
+                  <div className="text-label text-subtle mb-2">Legend</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(["increase", "decrease", "mixed"] as DirectionCategory[]).map(
+                      (category) => (
+                        <StatusBadge key={category} variant={DIRECTION_META[category].variant}>
+                          {DIRECTION_META[category].label} {category}
+                        </StatusBadge>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Detail Panel */}
+            <div>
+              <div className="px-6 py-4 border-b border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-label text-subtle">Inspector</div>
+                  <div className="text-body-sm text-subtle">
+                    {selected?.event ? `Selected: ${selected.event}` : "No selection"}
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-6 space-y-6">
+                {!selected && (
+                  <div className="text-body-sm text-subtle">
+                    Select an event to inspect details.
                   </div>
                 )}
-                {filteredLiabilities.map(({ item, index }) => {
-                  const key = getLiabilityKey(item, index);
-                  const chips = getDirectionChips(item.effects);
-                  const anchor = toSlug(
-                    `${item.event || item.eventId || "event"}-${item.datasource || "source"}-${index}`,
-                  );
 
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      id={`event-${anchor}`}
-                      onClick={() => setSelectedKey(key)}
-                      className={cn(
-                        "w-full px-6 py-3 text-left transition-colors",
-                        "hover:bg-slate-50",
-                        selectedKey === key && "bg-primary/5",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold text-heading">
-                            {item.event || "Unnamed event"}
-                          </div>
-                          <div className="text-body-sm text-subtle">
-                            {item.datasource || "Unknown source"}
-                            {item.studies?.length
-                              ? ` • ${item.studies.length} studies`
-                              : ""}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {chips.map((chip) => (
-                            <span
-                              key={`${key}-${chip}`}
-                              className={cn(
-                                "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold",
-                                DIRECTION_META[chip].chip,
-                              )}
-                            >
-                              {DIRECTION_META[chip].label}
-                            </span>
-                          ))}
-                        </div>
+                {selected && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-6 text-body-sm text-body">
+                      <div>
+                        <span className="text-subtle">Event ID:</span>{" "}
+                        <span className="text-data">
+                          {selected.eventId || "—"}
+                        </span>
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="px-6 py-4 border-t border-slate-200 text-body-sm text-subtle">
-                <div className="text-label text-subtle mb-2">Badges</div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {([
-                    "increase",
-                    "decrease",
-                    "mixed",
-                  ] as DirectionCategory[]).map((category) => (
-                    <span
-                      key={category}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold",
-                        DIRECTION_META[category].chip,
-                      )}
-                    >
-                      {DIRECTION_META[category].label}
-                      <span className="text-[10px] uppercase tracking-wide">
-                        {category}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </div>
-
-          <div>
-            <CardHeader className="py-4 border-b border-slate-200">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-label text-subtle">Inspector</div>
-                <div className="text-body-sm text-subtle">
-                  {selected?.event ? `Selected: ${selected.event}` : "No selection"}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 py-5">
-              {!selected && (
-                <div className="text-body-sm text-subtle">
-                  Select an event to inspect details.
-                </div>
-              )}
-
-              {selected && (
-                <>
-                  <div className="flex flex-wrap items-center gap-6 text-body-sm text-body">
-                    <div>
-                      <span className="text-subtle">Event ID:</span>{" "}
-                      <span className="text-data">
-                        {selected.eventId || "—"}
-                      </span>
+                      <div>
+                        <span className="text-subtle">Datasource:</span>{" "}
+                        <span className="text-body">
+                          {selected.datasource || "—"}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-subtle">Datasource:</span>{" "}
-                      <span className="text-body">
-                        {selected.datasource || "—"}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">Effects</div>
-                    {selectedDirections.length === 0 ? (
-                      <div className="text-body-sm text-subtle">No effects reported.</div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-label text-subtle">
-                              Direction
-                            </TableHead>
-                            <TableHead className="text-label text-subtle">
-                              Dosing
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedDirections.map((effect, index) => (
-                            <TableRow key={`${effect.direction}-${index}`}>
-                              <TableCell>
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-semibold",
-                                    DIRECTION_META[effect.category].chip,
-                                  )}
-                                >
-                                  {DIRECTION_META[effect.category].label}
-                                  {effect.direction}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-body-sm text-body">
-                                {effect.dosing}
-                              </TableCell>
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">Effects</div>
+                      {selectedDirections.length === 0 ? (
+                        <div className="text-body-sm text-subtle">No effects reported.</div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-label text-subtle">
+                                Direction
+                              </TableHead>
+                              <TableHead className="text-label text-subtle">
+                                Dosing
+                              </TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">
-                      Studies ({selected.studies?.length ?? 0})
+                          </TableHeader>
+                          <TableBody>
+                            {selectedDirections.map((effect, index) => (
+                              <TableRow key={`${effect.direction}-${index}`}>
+                                <TableCell>
+                                  <StatusBadge variant={DIRECTION_META[effect.category].variant}>
+                                    {DIRECTION_META[effect.category].label} {effect.direction}
+                                  </StatusBadge>
+                                </TableCell>
+                                <TableCell className="text-body-sm text-body">
+                                  {effect.dosing}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
-                    {selected.studies && selected.studies.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-label text-subtle">Study</TableHead>
-                            <TableHead className="text-label text-subtle">Type</TableHead>
-                            <TableHead className="text-label text-subtle">Key IDs</TableHead>
-                            <TableHead className="text-label text-subtle">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selected.studies.map((study, index) => {
-                            const studyKey = `${study.name || "study"}-${index}`;
-                            const variants = extractVariantChips(study.description);
 
-                            return (
-                              <StudyRow
-                                key={studyKey}
-                                study={study}
-                                variantTokens={variants}
-                                expanded={Boolean(expandedStudies[studyKey])}
-                                onToggle={() =>
-                                  setExpandedStudies((prev) => ({
-                                    ...prev,
-                                    [studyKey]: !prev[studyKey],
-                                  }))
-                                }
-                              />
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="text-body-sm text-subtle">—</div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">
-                      Biosamples ({selected.biosamples?.length ?? 0})
-                    </div>
-                    {groupedBiosamples.length > 0 ? (
-                      <div className="space-y-3">
-                        {groupedBiosamples.map(([tissue, cells]) => (
-                          <div key={tissue} className="space-y-2">
-                            <div className="text-sm font-semibold text-heading">
-                              {tissue}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {cells.map((cell) => (
-                                <span
-                                  key={`${tissue}-${cell}`}
-                                  className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600"
-                                >
-                                  {cell}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">
+                        Studies ({selected.studies?.length ?? 0})
                       </div>
-                    ) : (
-                      <div className="text-body-sm text-subtle">—</div>
-                    )}
-                  </div>
+                      {selected.studies && selected.studies.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-label text-subtle">Study</TableHead>
+                              <TableHead className="text-label text-subtle">Type</TableHead>
+                              <TableHead className="text-label text-subtle">Key IDs</TableHead>
+                              <TableHead className="text-label text-subtle">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selected.studies.map((study, index) => {
+                              const studyKey = `${study.name || "study"}-${index}`;
+                              const variants = extractVariantChips(study.description);
 
-                  <div className="space-y-3">
-                    <div className="text-label text-subtle">Literature</div>
-                    {literature.length > 0 ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {literature.map((reference) => (
+                              return (
+                                <StudyRow
+                                  key={studyKey}
+                                  study={study}
+                                  variantTokens={variants}
+                                  expanded={Boolean(expandedStudies[studyKey])}
+                                  onToggle={() =>
+                                    setExpandedStudies((prev) => ({
+                                      ...prev,
+                                      [studyKey]: !prev[studyKey],
+                                    }))
+                                  }
+                                />
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-body-sm text-subtle">—</div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">
+                        Biosamples ({selected.biosamples?.length ?? 0})
+                      </div>
+                      {groupedBiosamples.length > 0 ? (
+                        <div className="space-y-3">
+                          {groupedBiosamples.map(([tissue, cells]) => (
+                            <div key={tissue} className="space-y-2">
+                              <div className="text-sm font-semibold text-heading">
+                                {tissue}
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {cells.map((cell) => (
+                                  <Chip key={`${tissue}-${cell}`}>{cell}</Chip>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-body-sm text-subtle">—</div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="text-label text-subtle">Literature</div>
+                      {literature.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {literature.map((reference) => (
+                            <LinkChip
+                              key={reference}
+                              href={`https://pubmed.ncbi.nlm.nih.gov/${reference}`}
+                            >
+                              PMID {reference}
+                            </LinkChip>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-body-sm text-subtle">—</div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                      {selected.url && (
+                        <Button variant="outline" size="sm" asChild>
                           <a
-                            key={reference}
-                            href={`https://pubmed.ncbi.nlm.nih.gov/${reference}`}
+                            href={selected.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-primary hover:bg-slate-100"
+                            className="inline-flex items-center gap-2"
                           >
-                            PMID {reference}
+                            <ExternalLinkIcon className="h-4 w-4" />
+                            Open source
                           </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-body-sm text-subtle">—</div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-                    {selected.url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={selected.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Open source
-                        </a>
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (!selected.event && !selected.eventId) return;
+                          if (!navigator?.clipboard) return;
+                          const selectedIndex = filteredLiabilities.findIndex(
+                            (entry) => entry.item === selected,
+                          );
+                          const anchor = toSlug(
+                            `${selected.event || selected.eventId || "event"}-${selected.datasource || "source"}-${Math.max(
+                              selectedIndex,
+                              0,
+                            )}`,
+                          );
+                          const url = `${window.location.href.split("#")[0]}#event-${anchor}`;
+                          await navigator.clipboard.writeText(url);
+                        }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy event link
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        if (!selected.event && !selected.eventId) return;
-                        if (!navigator?.clipboard) return;
-                        const selectedIndex = filteredLiabilities.findIndex(
-                          (entry) => entry.item === selected,
-                        );
-                        const anchor = toSlug(
-                          `${selected.event || selected.eventId || "event"}-${selected.datasource || "source"}-${Math.max(
-                            selectedIndex,
-                            0,
-                          )}`,
-                        );
-                        const url = `${window.location.href.split("#")[0]}#event-${anchor}`;
-                        await navigator.clipboard.writeText(url);
-                      }}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy event link
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
