@@ -55,7 +55,7 @@ export function CategoryDetailView({
 
   return (
     <Card className={className}>
-      <CardContent className="!p-0 !py-2">
+      <CardContent className="p-0! py-2!">
         <dl className="overflow-hidden">
           {visibleCells.map((cell, index) => {
             const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
@@ -71,7 +71,7 @@ export function CategoryDetailView({
                 className={`
                   group relative px-6 py-3.5
                   transition-all duration-150 ease-out
-                  hover:bg-primary/[0.03]
+                  hover:bg-primary/3
                   ${isEven ? "bg-transparent" : "bg-slate-50/40"}
                 `}
               >
@@ -88,7 +88,7 @@ export function CategoryDetailView({
                       <TooltipProvider>
                         <Tooltip delayDuration={200}>
                           <TooltipTrigger asChild>
-                            <Info className="h-3.5 w-3.5 cursor-help flex-shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                            <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
                           </TooltipTrigger>
                           <TooltipContent
                             side="right"
@@ -102,7 +102,7 @@ export function CategoryDetailView({
                   </dt>
 
                   {/* Value Column */}
-                  <dd className="text-sm font-mono text-slate-900 tabular-nums tracking-tight min-w-0 break-words">
+                  <dd className="text-sm font-mono text-slate-900 tabular-nums tracking-tight min-w-0 wrap-break-words">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>
