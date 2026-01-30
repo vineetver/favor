@@ -2,7 +2,6 @@
 
 import type { Gene } from "@features/gene/types";
 import { cn } from "@infra/utils";
-import { Button } from "@shared/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,19 +9,14 @@ import {
   CardTitle,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
-import { Chip, StatusBadge, type BadgeVariant } from "@shared/components/ui/status-badge";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@shared/components/ui/table";
-import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface ChemicalProbesOverviewProps {
   probes?: Gene["opentargets"]["chemical_probes"] | null;
@@ -30,222 +24,142 @@ interface ChemicalProbesOverviewProps {
   className?: string;
 }
 
-type ChemicalProbe = NonNullable<
-  Gene["opentargets"]["chemical_probes"]
->[number];
+type ChemicalProbe = NonNullable<Gene["opentargets"]["chemical_probes"]>[number];
+type QualityLevel = "high" | "calculated" | "standard";
 
-function formatScore(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return Number(value).toFixed(1);
-}
+// ============================================================================
+// Constants
+// ============================================================================
 
-function getProbeKey(probe: ChemicalProbe) {
+const QUALITY_CONFIG: Record<QualityLevel, { label: string; dotClass: string }> = {
+  high: { label: "High quality", dotClass: "bg-emerald-500" },
+  calculated: { label: "Calculated", dotClass: "bg-amber-400" },
+  standard: { label: "Standard", dotClass: "bg-slate-400" },
+};
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+function getProbeKey(probe: ChemicalProbe): string {
   return `${probe.id || "probe"}::${probe.drugId || "drug"}`;
 }
 
-function ScoreBar({ label, value }: { label: string; value: number | null }) {
-  const clamped = value === null || value === undefined ? 0 : Math.max(0, Math.min(100, value));
+function getQualityLevel(probe: ChemicalProbe): QualityLevel {
+  if (probe.isHighQuality) return "high";
+  if (probe.origin?.includes("calculated")) return "calculated";
+  return "standard";
+}
+
+function formatScore(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return Number(value).toFixed(0);
+}
+
+// ============================================================================
+// Sub-components
+// ============================================================================
+
+function ScoreBar({ value, max = 100 }: { value: number | null | undefined; max?: number }) {
+  const numeric = typeof value === "number" ? value : 0;
+  const percent = Math.round((numeric / max) * 100);
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-32 text-body-sm text-subtle">{label}</div>
-      <div className="flex-1">
-        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className="h-full bg-primary/70"
-            style={{ width: `${clamped}%` }}
-          />
-        </div>
-      </div>
-      <div className="w-14 text-right text-body-sm text-body">
-        {formatScore(value)}
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-semibold text-heading w-8 tabular-nums">{formatScore(value)}</span>
+      <div className="h-1.5 w-12 rounded-full bg-slate-200 overflow-hidden">
+        <div
+          className="h-full bg-primary/60"
+          style={{ width: `${Math.min(100, percent)}%` }}
+        />
       </div>
     </div>
   );
 }
 
-function QualityBadge({ probe }: { probe: ChemicalProbe }) {
-  const isHigh = probe.isHighQuality;
-  const isCalculated = probe.origin?.includes("calculated");
-
-  const label = isHigh ? "High" : isCalculated ? "Calc" : "Standard";
-  const variant: BadgeVariant = isHigh
-    ? "positive"
-    : isCalculated
-      ? "warning"
-      : "neutral";
-
-  return <StatusBadge variant={variant}>{label}</StatusBadge>;
+function QualityDot({ level }: { level: QualityLevel }) {
+  return (
+    <span className={cn("w-2 h-2 rounded-full shrink-0", QUALITY_CONFIG[level].dotClass)} />
+  );
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export function ChemicalProbesOverview({
   probes,
-  geneSymbol,
   className,
 }: ChemicalProbesOverviewProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [qualityFilter, setQualityFilter] = useState("all");
-  const [mechanismFilter, setMechanismFilter] = useState("all");
-  const [originFilter, setOriginFilter] = useState("all");
+  const [qualityFilter, setQualityFilter] = useState<string>("all");
+  const [sortMode, setSortMode] = useState<string>("score-desc");
 
+  // Sort probes
   const sortedProbes = useMemo(() => {
-    return [...(probes ?? [])].sort((a, b) => {
-      const av = a.probesDrugsScore ?? -1;
-      const bv = b.probesDrugsScore ?? -1;
-      if (av === bv) return (a.id || "").localeCompare(b.id || "");
-      return bv - av;
-    });
-  }, [probes]);
+    const items = [...(probes ?? [])];
+    if (sortMode === "alpha") {
+      return items.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
+    }
+    return items.sort((a, b) => (b.probesDrugsScore ?? -1) - (a.probesDrugsScore ?? -1));
+  }, [probes, sortMode]);
 
-  const mechanismOptions = useMemo(() => {
-    const items = new Set<string>();
-    probes?.forEach((probe) => {
-      probe.mechanismOfAction?.forEach((item) => items.add(item));
-    });
-
-    return [{ value: "all", label: "All" }].concat(
-      Array.from(items)
-        .sort((a, b) => a.localeCompare(b))
-        .map((item) => ({ value: item, label: item })),
-    );
-  }, [probes]);
-
-  const originOptions = useMemo(() => {
-    const items = new Set<string>();
-    probes?.forEach((probe) => {
-      probe.origin?.forEach((item) => items.add(item));
-    });
-
-    return [{ value: "all", label: "All" }].concat(
-      Array.from(items)
-        .sort((a, b) => a.localeCompare(b))
-        .map((item) => ({ value: item, label: item })),
-    );
-  }, [probes]);
-
-  const qualityOptions = useMemo(
-    () => [
-      { value: "all", label: "All" },
-      { value: "high", label: "High" },
-      { value: "calc", label: "Calculated" },
-      { value: "standard", label: "Standard" },
-    ],
-    [],
-  );
-
-  const dimensions = useMemo<DimensionConfig[]>(
-    () => [
-      {
-        label: "Quality",
-        options: qualityOptions,
-        value: qualityFilter,
-        onChange: setQualityFilter,
-        presentation: "segmented",
-      },
-      {
-        label: "Mechanism",
-        options: mechanismOptions,
-        value: mechanismFilter,
-        onChange: setMechanismFilter,
-      },
-      {
-        label: "Origin",
-        options: originOptions,
-        value: originFilter,
-        onChange: setOriginFilter,
-      },
-    ],
-    [
-      qualityOptions,
-      qualityFilter,
-      mechanismOptions,
-      mechanismFilter,
-      originOptions,
-      originFilter,
-    ],
-  );
-
+  // Filter by quality
   const filteredProbes = useMemo(() => {
-    return sortedProbes.filter((probe) => {
-      const matchesQuality =
-        qualityFilter === "all" ||
-        (qualityFilter === "high" && probe.isHighQuality) ||
-        (qualityFilter === "calc" && probe.origin?.includes("calculated")) ||
-        (qualityFilter === "standard" &&
-          !probe.isHighQuality &&
-          !probe.origin?.includes("calculated"));
+    if (qualityFilter === "all") return sortedProbes;
+    return sortedProbes.filter((probe) => getQualityLevel(probe) === qualityFilter);
+  }, [sortedProbes, qualityFilter]);
 
-      const matchesMechanism =
-        mechanismFilter === "all" ||
-        probe.mechanismOfAction?.includes(mechanismFilter);
+  // Count probes by quality
+  const qualityCounts = useMemo(() => {
+    const counts = { high: 0, calculated: 0, standard: 0 };
+    for (const probe of sortedProbes) {
+      counts[getQualityLevel(probe)]++;
+    }
+    return counts;
+  }, [sortedProbes]);
 
-      const matchesOrigin =
-        originFilter === "all" || probe.origin?.includes(originFilter);
+  // Filter dimensions
+  const dimensions = useMemo<DimensionConfig[]>(() => [
+    {
+      label: "Quality",
+      value: qualityFilter,
+      onChange: setQualityFilter,
+      options: [
+        { value: "all", label: `All (${sortedProbes.length})` },
+        { value: "high", label: `High (${qualityCounts.high})` },
+        { value: "calculated", label: `Calculated (${qualityCounts.calculated})` },
+        { value: "standard", label: `Standard (${qualityCounts.standard})` },
+      ],
+    },
+    {
+      label: "Sort by",
+      value: sortMode,
+      onChange: setSortMode,
+      options: [
+        { value: "score-desc", label: "Score" },
+        { value: "alpha", label: "A-Z" },
+      ],
+      presentation: "segmented",
+    },
+  ], [qualityFilter, sortMode, sortedProbes.length, qualityCounts]);
 
-      return matchesQuality && matchesMechanism && matchesOrigin;
-    });
-  }, [mechanismFilter, originFilter, qualityFilter, sortedProbes]);
-
-  const topProbes = useMemo(
-    () => filteredProbes.slice(0, 3),
-    [filteredProbes],
-  );
-
-  const scoreAverages = useMemo(() => {
-    const takeAverage = (values: Array<number | null | undefined>) => {
-      const valid = values.filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
-      if (valid.length === 0) return null;
-      const total = valid.reduce((sum, value) => sum + value, 0);
-      return total / valid.length;
-    };
-
-    return {
-      probesDrugsScore: takeAverage(filteredProbes.map((probe) => probe.probesDrugsScore)),
-      probeMinerScore: takeAverage(filteredProbes.map((probe) => probe.probeMinerScore)),
-      scoreInCells: takeAverage(filteredProbes.map((probe) => probe.scoreInCells)),
-      scoreInOrganisms: takeAverage(filteredProbes.map((probe) => probe.scoreInOrganisms)),
-    };
-  }, [filteredProbes]);
-
-  const sources = useMemo(() => {
-    const names = new Set<string>();
-    probes?.forEach((probe) => {
-      probe.urls?.forEach((url) => {
-        if (url?.niceName) names.add(url.niceName);
-      });
-    });
-
-    if (names.size === 0) return "Open Targets";
-    return `Open Targets / ${Array.from(names).join(" / ")}`;
-  }, [probes]);
-
+  // Auto-select first probe when filter changes
   useEffect(() => {
     if (!filteredProbes.length) {
       setSelectedKey(null);
-      return;
-    }
-
-    if (!selectedKey) {
-      setSelectedKey(getProbeKey(filteredProbes[0]));
-      return;
-    }
-
-    const exists = filteredProbes.some((probe) => getProbeKey(probe) === selectedKey);
-    if (!exists) {
+    } else if (!selectedKey || !filteredProbes.some((p) => getProbeKey(p) === selectedKey)) {
       setSelectedKey(getProbeKey(filteredProbes[0]));
     }
   }, [filteredProbes, selectedKey]);
 
+  // Get selected probe
   const selected = useMemo(() => {
     if (!filteredProbes.length) return null;
-
-    return (
-      filteredProbes.find((probe) => getProbeKey(probe) === selectedKey) ??
-      filteredProbes[0]
-    );
+    return filteredProbes.find((p) => getProbeKey(p) === selectedKey) ?? filteredProbes[0];
   }, [filteredProbes, selectedKey]);
 
+  // Empty state
   if (!probes || probes.length === 0) {
     return (
       <NoDataState
@@ -256,236 +170,212 @@ export function ChemicalProbesOverview({
   }
 
   return (
-    <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-4 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
+      {/* Header */}
+      <CardHeader className="border-b border-slate-200 px-6 py-5">
+        <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold text-heading">
-              Chemical Probes{geneSymbol ? ` (${geneSymbol})` : ""}
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Chemical Probes
             </CardTitle>
-            <div className="text-xs text-subtle">
-              Quality scores and mechanisms of action
+            <div className="text-sm text-slate-500">
+              Small molecules for studying this target in cells and organisms
             </div>
           </div>
-          <div className="text-xs text-subtle">{sources}</div>
+          <div className="text-right text-sm text-slate-500">
+            <div>{sortedProbes.length} probes available</div>
+            {qualityCounts.high > 0 && (
+              <div className="text-emerald-600 font-medium">
+                {qualityCounts.high} recommended
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary Panel */}
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <div className="text-label text-subtle">Top Probes & Scores</div>
-          </div>
-          <div className="px-6 py-4 space-y-6">
-            <div className="space-y-2">
-              <div className="text-body-sm text-subtle">Top probes by P&amp;D score</div>
-              {topProbes.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-2 text-body-sm text-body">
-                  {topProbes.map((probe, index) => (
-                    <span key={getProbeKey(probe)} className="inline-flex items-center gap-2">
-                      {index > 0 && <span className="text-subtle">•</span>}
-                      <span className="font-medium text-heading">{probe.id || "—"}</span>
-                      <span className="text-subtle">({formatScore(probe.probesDrugsScore)})</span>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-body-sm text-subtle">No probes match your filters.</div>
-              )}
-            </div>
 
-            <div className="space-y-3">
-              <div className="text-body-sm text-subtle">Score distributions</div>
-              <div className="space-y-2">
-                <ScoreBar label="P&amp;D score" value={scoreAverages.probesDrugsScore} />
-                <ScoreBar label="ProbeMiner" value={scoreAverages.probeMinerScore} />
-                <ScoreBar label="Cells score" value={scoreAverages.scoreInCells} />
-                <ScoreBar label="Organisms" value={scoreAverages.scoreInOrganisms} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Bar */}
-        <div className="rounded-xl border border-slate-200 overflow-hidden">
+      <CardContent className="p-0">
+        {/* Filters */}
+        <div className="border-b border-slate-200 bg-slate-50/50">
           <ScopeBar dimensions={dimensions} />
         </div>
 
-        {/* Master-Detail Panel */}
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
-            {/* List Panel */}
-            <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
-              <div className="px-6 py-4 border-b border-slate-200">
-                <div className="text-label text-subtle">Probe List</div>
-              </div>
-              <div>
-                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
-                  {filteredProbes.length === 0 && (
-                    <div className="px-6 py-8 text-body-sm text-subtle">
-                      No probes match your filters.
-                    </div>
-                  )}
-                  {filteredProbes.map((probe) => {
-                    const key = getProbeKey(probe);
-
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setSelectedKey(key)}
-                        className={cn(
-                          "w-full px-6 py-3 text-left transition-colors",
-                          "hover:bg-slate-50",
-                          selectedKey === key && "bg-primary/5",
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-2">
-                            <div className="text-sm font-semibold text-heading">
-                              {probe.id || "—"}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <QualityBadge probe={probe} />
-                              {probe.mechanismOfAction?.map((item) => (
-                                <Chip key={`${key}-${item}`}>{item}</Chip>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="text-right text-body-sm text-subtle space-y-1">
-                            <div>P&amp;D {formatScore(probe.probesDrugsScore)}</div>
-                            {probe.probeMinerScore != null && (
-                              <div>PM {formatScore(probe.probeMinerScore)}</div>
-                            )}
-                            <div>Cells {formatScore(probe.scoreInCells)}</div>
-                            <div>Org {formatScore(probe.scoreInOrganisms)}</div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+        {/* Master-Detail Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
+          {/* Probe List */}
+          <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
+            <div className="max-h-[480px] overflow-y-auto">
+              {filteredProbes.length === 0 ? (
+                <div className="px-6 py-8 text-body-sm text-subtle">
+                  No probes match your filters.
                 </div>
-              </div>
-            </div>
+              ) : (
+                filteredProbes.map((probe) => {
+                  const key = getProbeKey(probe);
+                  const isSelected = selectedKey === key;
+                  const quality = getQualityLevel(probe);
 
-            {/* Detail Panel */}
-            <div>
-              <div className="px-6 py-4 border-b border-slate-200">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-label text-subtle">Inspector</div>
-                  <div className="text-body-sm text-subtle">
-                    {selected?.id ? `Selected: ${selected.id}` : "No selection"}
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-6 space-y-6">
-                {!selected && (
-                  <div className="text-body-sm text-subtle">
-                    Select a probe to inspect details.
-                  </div>
-                )}
-
-                {selected && (
-                  <>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <QualityBadge probe={selected} />
-                      {selected.origin?.map((item) => (
-                        <Chip key={`origin-${item}`}>{item}</Chip>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-6 text-body-sm text-body">
-                      <div>
-                        <span className="text-subtle">Target ID:</span>{" "}
-                        <span className="text-data">{selected.targetFromSourceId || "—"}</span>
-                      </div>
-                      <div>
-                        <span className="text-subtle">Drug ID:</span>{" "}
-                        <span className="text-data">{selected.drugId || "—"}</span>
-                      </div>
-                      <div>
-                        <span className="text-subtle">Control:</span>{" "}
-                        <span className="text-body">{selected.control || "—"}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="text-label text-subtle">Score Snapshot</div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-label text-subtle">Metric</TableHead>
-                            <TableHead className="text-label text-subtle">Score</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell className="text-body-sm text-body">P&amp;D score</TableCell>
-                            <TableCell className="text-body-sm text-heading">
-                              {formatScore(selected.probesDrugsScore)}
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="text-body-sm text-body">ProbeMiner</TableCell>
-                            <TableCell className="text-body-sm text-heading">
-                              {formatScore(selected.probeMinerScore)}
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="text-body-sm text-body">Cells score</TableCell>
-                            <TableCell className="text-body-sm text-heading">
-                              {formatScore(selected.scoreInCells)}
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="text-body-sm text-body">Organisms score</TableCell>
-                            <TableCell className="text-body-sm text-heading">
-                              {formatScore(selected.scoreInOrganisms)}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="text-label text-subtle">Mechanism of Action</div>
-                      {selected.mechanismOfAction && selected.mechanismOfAction.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selected.mechanismOfAction.map((item) => (
-                            <Chip key={`moa-${item}`}>{item}</Chip>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-body-sm text-subtle">—</div>
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSelectedKey(key)}
+                      className={cn(
+                        "w-full px-6 py-3 text-left border-b border-slate-100 transition-colors",
+                        "hover:bg-slate-50",
+                        isSelected && "bg-primary/5 border-l-2 border-l-primary"
                       )}
-                    </div>
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <QualityDot level={quality} />
+                          <span className="text-sm font-medium text-heading truncate">
+                            {probe.id || "Unknown"}
+                          </span>
+                        </div>
+                        <ScoreBar value={probe.probesDrugsScore} />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-                    {selected.urls && selected.urls.some((link) => link.url) && (
-                      <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-                        {selected.urls
-                          .filter((link) => Boolean(link.url))
-                          .map((link, index) => (
-                            <Button key={`${link.niceName}-${index}`} variant="outline" size="sm" asChild>
-                              <a
-                                href={link.url as string}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2"
-                              >
-                                <ExternalLinkIcon className="h-4 w-4" />
-                                {link.niceName || "Source"}
-                              </a>
-                            </Button>
-                          ))}
+          {/* Detail Panel */}
+          <div>
+            <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100">
+              <div className="text-body-sm font-medium text-subtle">Details</div>
+            </div>
+            <div className="px-6 py-6 space-y-6">
+              {!selected ? (
+                <div className="text-body-sm text-subtle">
+                  Select a probe to view details.
+                </div>
+              ) : (
+                <>
+                  {/* Probe Header */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-heading">
+                        {selected.id || "Unknown"}
+                      </h3>
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-body-sm font-medium",
+                        getQualityLevel(selected) === "high" && "bg-emerald-100 text-emerald-700",
+                        getQualityLevel(selected) === "calculated" && "bg-amber-100 text-amber-700",
+                        getQualityLevel(selected) === "standard" && "bg-slate-100 text-slate-600",
+                      )}>
+                        <QualityDot level={getQualityLevel(selected)} />
+                        {getQualityLevel(selected) === "high" ? "Recommended" : QUALITY_CONFIG[getQualityLevel(selected)].label}
+                      </span>
+                    </div>
+                    {selected.mechanismOfAction && selected.mechanismOfAction.length > 0 && (
+                      <div className="text-sm text-body">
+                        <span className="text-subtle">Mechanism: </span>
+                        {selected.mechanismOfAction.join(", ")}
                       </div>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
+
+                  {/* Scores - with explanation */}
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-body-sm font-medium text-subtle">Quality Scores</div>
+                      <div className="text-caption text-subtle">Higher scores indicate better selectivity and potency (0-100)</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <ScoreItem label="Overall" value={selected.probesDrugsScore} description="Combined quality score" />
+                      <ScoreItem label="ProbeMiner" value={selected.probeMinerScore} description="Database quality rating" />
+                      <ScoreItem label="In Cells" value={selected.scoreInCells} description="Cell assay performance" />
+                      <ScoreItem label="In Organisms" value={selected.scoreInOrganisms} description="In vivo performance" />
+                    </div>
+                  </div>
+
+                  {/* Control compound - important for experiments */}
+                  {selected.control && (
+                    <div className="space-y-2">
+                      <div className="text-body-sm font-medium text-subtle">Negative Control</div>
+                      <div className="text-sm text-body">
+                        Use <span className="font-medium">{selected.control}</span> as inactive control in experiments
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IDs for lookup */}
+                  {(selected.targetFromSourceId || selected.drugId) && (
+                    <div className="space-y-2">
+                      <div className="text-body-sm font-medium text-subtle">Identifiers</div>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.drugId && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-body-sm font-mono">
+                            {selected.drugId}
+                          </span>
+                        )}
+                        {selected.targetFromSourceId && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-body-sm font-mono">
+                            {selected.targetFromSourceId}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Links */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    {selected.urls?.map((urlObj, index) => (
+                      urlObj.url && (
+                        <ExternalLink
+                          key={`${urlObj.url}-${index}`}
+                          href={urlObj.url}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {urlObj.niceName || "Source"}
+                        </ExternalLink>
+                      )
+                    ))}
+                    <ExternalLink
+                      href="https://www.probes-drugs.org"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Probes & Drugs
+                    </ExternalLink>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ============================================================================
+// Score Item
+// ============================================================================
+
+function ScoreItem({ label, value, description }: { label: string; value: number | null | undefined; description?: string }) {
+  const formatted = formatScore(value);
+  const hasValue = formatted !== "—";
+  const percent = hasValue ? Math.min(100, value ?? 0) : 0;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-body-sm text-subtle">{label}</span>
+        <span className={cn(
+          "text-sm font-semibold tabular-nums",
+          hasValue ? "text-heading" : "text-subtle"
+        )}>
+          {formatted}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+        <div
+          className={cn("h-full", hasValue ? "bg-primary/60" : "bg-slate-200")}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
   );
 }

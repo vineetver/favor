@@ -82,7 +82,7 @@ function SegmentedControl<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-label">{label}</span>
+      <span className="text-xs font-medium text-slate-600">{label}</span>
       <div className="inline-flex items-center rounded-lg bg-slate-100 p-0.5">
         {options.map((option) => {
           const active = option.value === value;
@@ -95,8 +95,8 @@ function SegmentedControl<T extends string>({
               className={cn(
                 "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
                 active
-                  ? "bg-white text-heading shadow-sm"
-                  : "text-body hover:text-heading",
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900",
               )}
             >
               {option.label}
@@ -177,9 +177,11 @@ export function TissueExpressionChart({
 
   return (
     <Card className={cn("border border-slate-200", className)}>
-      <CardHeader className="border-b border-slate-200">
-        <CardTitle className="text-label">GTEx Tissue Expression</CardTitle>
-        <CardDescription className="text-body-sm">
+      <CardHeader className="border-b border-slate-200 pb-5">
+        <CardTitle className="text-sm font-semibold text-slate-900">
+          GTEx Tissue Expression
+        </CardTitle>
+        <CardDescription className="text-sm text-slate-500">
           Expression values across GTEx tissues (sorted by abundance)
         </CardDescription>
       </CardHeader>

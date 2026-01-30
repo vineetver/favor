@@ -8,16 +8,16 @@ import {
   CardTitle,
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import { Button } from "@shared/components/ui/button";
-import Link from "next/link";
+import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface DiseasePortfolioOverviewProps {
   relations?: unknown;
   edges?: unknown;
-  geneId: string;
+  geneId?: string;
   geneSymbol?: string | null;
   className?: string;
 }
@@ -29,20 +29,100 @@ type DiseaseEdge = {
   source: string;
   evidence: string[];
   evidenceCount?: number | null;
+  evidenceBreakdown?: Array<{ label: string; count: number }>;
+  tags?: string[];
+  description?: string | null;
+  parents?: string[];
+  ancestors?: string[];
+  synonyms?: string[];
+  therapeuticAreas?: string[];
 };
 
 const SCORE_THRESHOLDS = [
   { value: "all", label: "All", min: null },
-  { value: "0.2", label: "≥ 0.2", min: 0.2 },
-  { value: "0.4", label: "≥ 0.4", min: 0.4 },
-  { value: "0.6", label: "≥ 0.6", min: 0.6 },
-  { value: "0.8", label: "≥ 0.8", min: 0.8 },
+  { value: "0.2", label: ">= 0.2", min: 0.2 },
+  { value: "0.4", label: ">= 0.4", min: 0.4 },
+  { value: "0.6", label: ">= 0.6", min: 0.6 },
+  { value: "0.8", label: ">= 0.8", min: 0.8 },
 ];
 
+const THERAPEUTIC_AREA_LABELS: Record<string, string> = {
+  OTAR_0000017: "Immunology",
+  OTAR_0000018: "Infection",
+  OTAR_0000019: "Metabolic",
+  OTAR_0000020: "Oncology",
+  OTAR_0000021: "Cardiovascular",
+  OTAR_0000022: "Endocrine",
+  OTAR_0000023: "Gastroenterology",
+  OTAR_0000024: "Rare Disease",
+  OTAR_0000025: "Hematology",
+  OTAR_0000026: "Inflammation",
+  OTAR_0000027: "Musculoskeletal",
+  OTAR_0000028: "Neurology",
+  OTAR_0000029: "Ophthalmology",
+  OTAR_0000030: "Psychiatry",
+  OTAR_0000031: "Renal",
+  OTAR_0000032: "Respiratory",
+  OTAR_0000033: "Dermatology",
+  OTAR_0000034: "Other",
+};
+
 function formatScore(value: number | null) {
-  if (value === null || Number.isNaN(value)) return "—";
+  if (value === null || Number.isNaN(value)) return "N/A";
   return value.toFixed(2);
 }
+
+function ScoreBar({ value }: { value: number | null }) {
+  const numeric = typeof value === "number" ? value : 0;
+  const clamped = Math.max(0, Math.min(1, numeric));
+  const percent = Math.round(clamped * 100);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-body-sm font-medium text-heading w-8">{formatScore(value)}</span>
+      <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
+        <div
+          className="h-full bg-primary/60"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function EvidenceBars({
+  breakdown,
+}: {
+  breakdown: Array<{ label: string; count: number }>;
+}) {
+  if (!breakdown.length) return null;
+  const max = Math.max(...breakdown.map((item) => item.count), 1);
+
+  return (
+    <div className="space-y-2">
+      {breakdown.map((item) => {
+        const percent = Math.round((item.count / max) * 100);
+        return (
+          <div key={item.label} className="flex items-center gap-3">
+            <div className="w-28 text-body-sm text-subtle">{item.label}</div>
+            <div className="flex-1">
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full bg-primary/70"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </div>
+            <div className="w-20 text-right text-body-sm text-body">
+              {item.count.toLocaleString()}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 
 function getEdgeList(value: unknown): any[] {
   if (!value) return [];
@@ -80,6 +160,123 @@ function toStringList(value: unknown): string[] {
     return toStringList(record.types ?? record.datasources ?? record.sources);
   }
   return [];
+}
+
+function toBreakdownList(value: unknown): Array<{ label: string; count: number }> {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") return null;
+        const record = entry as Record<string, unknown>;
+        const label =
+          (record.label as string) ||
+          (record.type as string) ||
+          (record.name as string);
+        const count =
+          (record.count as number) ||
+          (record.value as number) ||
+          (record.total as number);
+        if (!label || typeof count !== "number") return null;
+        return { label, count };
+      })
+      .filter((item): item is { label: string; count: number } => Boolean(item));
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([label, count]) =>
+        typeof count === "number" ? { label, count } : null,
+      )
+      .filter((item): item is { label: string; count: number } => Boolean(item));
+  }
+  return [];
+}
+
+function toAreaLabel(areaId: string | undefined) {
+  if (!areaId) return "Uncategorized";
+  return THERAPEUTIC_AREA_LABELS[areaId] ?? areaId;
+}
+
+function normalizeLabel(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\b(disease|syndrome|disorder|neoplasm|carcinoma|cancer|tumor|tumour)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenSet(value: string) {
+  return new Set(
+    normalizeLabel(value)
+      .split(" ")
+      .map((token) => token.trim())
+      .filter(Boolean),
+  );
+}
+
+function jaccard(a: Set<string>, b: Set<string>) {
+  if (a.size === 0 || b.size === 0) return 0;
+  let intersection = 0;
+  a.forEach((token) => {
+    if (b.has(token)) intersection += 1;
+  });
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function sharesOntology(a: DiseaseEdge, b: DiseaseEdge) {
+  const aSet = new Set([...(a.parents ?? []), ...(a.ancestors ?? [])]);
+  return (b.parents ?? []).some((id) => aSet.has(id)) ||
+    (b.ancestors ?? []).some((id) => aSet.has(id));
+}
+
+function isSimilarDisease(a: DiseaseEdge, b: DiseaseEdge) {
+  const similarity = jaccard(tokenSet(a.label), tokenSet(b.label));
+  if (similarity >= 0.85) return true;
+  if (similarity >= 0.5 && sharesOntology(a, b)) return true;
+  return false;
+}
+
+type DiseaseCluster = {
+  id: string;
+  label: string;
+  representative: DiseaseEdge;
+  items: DiseaseEdge[];
+  area: string;
+};
+
+function clusterDiseases(diseases: DiseaseEdge[]): DiseaseCluster[] {
+  const clusters: DiseaseCluster[] = [];
+
+  diseases.forEach((disease) => {
+    const match = clusters.find((cluster) =>
+      isSimilarDisease(cluster.representative, disease),
+    );
+
+    if (match) {
+      match.items.push(disease);
+      if ((disease.score ?? -1) > (match.representative.score ?? -1)) {
+        match.representative = disease;
+        match.label = disease.label;
+      }
+      return;
+    }
+
+    const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
+      disease.therapeuticAreas?.[0];
+    const area = toAreaLabel(areaId);
+
+    clusters.push({
+      id: disease.id,
+      label: disease.label,
+      representative: disease,
+      items: [disease],
+      area,
+    });
+  });
+
+  return clusters;
 }
 
 function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[] {
@@ -128,6 +325,11 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
     .map((edge, index) => {
       const neighbor = edge?.neighbor ?? edge?.target ?? edge?.node ?? {};
       const link = edge?.link ?? edge?.edge ?? edge?.relation ?? edge?.props ?? {};
+      const linkProps = link?.props ?? link ?? {};
+      const therapeuticAreas = toStringList(
+        neighbor?.therapeutic_areas ??
+          neighbor?.therapeuticAreas,
+      );
       const id =
         neighbor?.id ||
         edge?.neighbor_id ||
@@ -145,7 +347,7 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         edge?.label ||
         "Unknown disease";
       const score =
-        link?.props?.score ??
+        linkProps?.score ??
         link?.score ??
         edge?.score ??
         edge?.properties?.score ??
@@ -153,10 +355,23 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         edge?.meta?.score ??
         null;
       const evidenceCount =
-        link?.props?.evidenceCount ??
+        linkProps?.evidenceCount ??
         link?.evidenceCount ??
         edge?.evidenceCount ??
         null;
+      const evidenceBreakdownRaw = toBreakdownList(
+        linkProps?.evidenceBreakdown ??
+          linkProps?.evidence_breakdown ??
+          linkProps?.evidenceCounts ??
+          linkProps?.evidence_counts ??
+          edge?.evidenceBreakdown ??
+          edge?.evidence_breakdown ??
+          edge?.evidenceCounts ??
+          edge?.evidence_counts,
+      );
+      const evidenceBreakdown = evidenceBreakdownRaw
+        .slice()
+        .sort((a, b) => b.count - a.count);
       const source =
         neighbor?.source ||
         link?.source ||
@@ -168,12 +383,20 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         "Open Targets";
       const evidence = Array.from(
         new Set(
-          toStringList(link?.props?.evidenceTypes ?? link?.evidenceTypes)
+          toStringList(linkProps?.evidenceTypes ?? link?.evidenceTypes)
             .concat(toStringList(edge?.evidence_types ?? edge?.evidenceTypes))
             .concat(toStringList(edge?.evidence))
             .concat(toStringList(edge?.evidence_summary)),
         ),
       );
+      const tags = Array.from(new Set(toStringList(neighbor?.tags)));
+      const description =
+        typeof neighbor?.description === "string"
+          ? neighbor.description
+          : null;
+      const parents = toStringList(neighbor?.parents);
+      const ancestors = toStringList(neighbor?.ancestors);
+      const synonyms = toStringList(neighbor?.synonyms);
 
       return {
         id: String(id),
@@ -182,6 +405,13 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         source: String(source),
         evidence,
         evidenceCount: typeof evidenceCount === "number" ? evidenceCount : null,
+        evidenceBreakdown,
+        tags,
+        description,
+        parents,
+        ancestors,
+        synonyms,
+        therapeuticAreas,
       } satisfies DiseaseEdge;
     })
     .sort((a, b) => {
@@ -200,7 +430,9 @@ export function DiseasePortfolioOverview({
   className,
 }: DiseasePortfolioOverviewProps) {
   const [scoreFilter, setScoreFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [areaFilter, setAreaFilter] = useState("all");
+  const [sortMode, setSortMode] = useState("score-desc");
+  const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const diseases = useMemo(
@@ -208,55 +440,148 @@ export function DiseasePortfolioOverview({
     [relations, edges],
   );
 
-  const sourceOptions = useMemo(() => {
-    const sources = Array.from(new Set(diseases.map((item) => item.source)));
+  const areaOptions = useMemo(() => {
+    const areas = Array.from(
+      new Set(
+        diseases.map((disease) => {
+          const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
+            disease.therapeuticAreas?.[0];
+          return toAreaLabel(areaId);
+        }),
+      ),
+    ).filter(Boolean);
     return [{ value: "all", label: "All" }].concat(
-      sources.map((source) => ({ value: source, label: source })),
+      areas.map((area) => ({ value: area, label: area })),
     );
   }, [diseases]);
 
   const dimensions = useMemo<DimensionConfig[]>(
     () => [
       {
-        label: "Score",
-        value: scoreFilter,
-        onChange: setScoreFilter,
-        options: SCORE_THRESHOLDS.map(({ value, label }) => ({ value, label })),
+        label: "Area",
+        value: areaFilter,
+        onChange: setAreaFilter,
+        options: areaOptions,
       },
       {
-        label: "Source",
-        value: sourceFilter,
-        onChange: setSourceFilter,
-        options: sourceOptions,
+        label: "Min score",
+        value: scoreFilter,
+        onChange: setScoreFilter,
+        options: [
+          { value: "all", label: "Any" },
+          { value: "0.2", label: "0.2+" },
+          { value: "0.4", label: "0.4+" },
+          { value: "0.6", label: "0.6+" },
+          { value: "0.8", label: "0.8+" },
+        ],
+      },
+      {
+        label: "Sort by",
+        value: sortMode,
+        onChange: setSortMode,
+        options: [
+          { value: "score-desc", label: "Score" },
+          { value: "evidence-desc", label: "Evidence" },
+          { value: "alpha", label: "A-Z" },
+        ],
+        presentation: "segmented",
       },
     ],
-    [scoreFilter, sourceFilter, sourceOptions],
+    [areaFilter, areaOptions, scoreFilter, sortMode],
   );
 
   const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
     return diseases.filter((disease) => {
       const min = SCORE_THRESHOLDS.find((opt) => opt.value === scoreFilter)?.min ?? null;
       const matchesScore = min === null || (disease.score ?? -1) >= min;
-      const matchesSource =
-        sourceFilter === "all" || disease.source === sourceFilter;
-      return matchesScore && matchesSource;
+      const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
+        disease.therapeuticAreas?.[0];
+      const areaLabel = toAreaLabel(areaId);
+      const matchesArea = areaFilter === "all" || areaLabel === areaFilter;
+      const matchesSearch =
+        query.length === 0 ||
+        disease.label.toLowerCase().includes(query) ||
+        disease.synonyms?.some((syn) => syn.toLowerCase().includes(query)) ||
+        disease.description?.toLowerCase().includes(query);
+
+      return matchesScore && matchesArea && matchesSearch;
     });
-  }, [diseases, scoreFilter, sourceFilter]);
+  }, [areaFilter, diseases, scoreFilter, search]);
+
+  const clusters = useMemo(() => clusterDiseases(filtered), [filtered]);
+
+  const sortedClusters = useMemo(() => {
+    const items = [...clusters];
+    if (sortMode === "alpha") {
+      return items.sort((a, b) => a.label.localeCompare(b.label));
+    }
+    if (sortMode === "evidence-desc") {
+      return items.sort((a, b) => {
+        const av = a.representative.evidenceCount ?? -1;
+        const bv = b.representative.evidenceCount ?? -1;
+        if (bv !== av) return bv - av;
+        return a.label.localeCompare(b.label);
+      });
+    }
+    return items.sort((a, b) => {
+      const av = a.representative.score ?? -1;
+      const bv = b.representative.score ?? -1;
+      if (bv !== av) return bv - av;
+      return a.label.localeCompare(b.label);
+    });
+  }, [clusters, sortMode]);
+
+  const groupedClusters = useMemo(() => {
+    const map = new Map<string, DiseaseCluster[]>();
+    sortedClusters.forEach((cluster) => {
+      const area = cluster.area || "Uncategorized";
+      if (!map.has(area)) {
+        map.set(area, []);
+      }
+      map.get(area)?.push(cluster);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [sortedClusters]);
+
+  const rankedGroups = useMemo(() => {
+    let rank = 1;
+    return groupedClusters.map(([area, clusters]) => ({
+      area,
+      clusters: clusters.map((cluster) => ({
+        cluster,
+        rank: rank++,
+      })),
+    }));
+  }, [groupedClusters]);
 
   useEffect(() => {
-    if (filtered.length === 0) {
+    if (sortedClusters.length === 0) {
       setSelectedId(null);
       return;
     }
-    if (!selectedId || !filtered.some((item) => item.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? null);
+    const stillExists = sortedClusters.some((cluster) =>
+      cluster.items.some((item) => item.id === selectedId),
+    );
+    if (!selectedId || !stillExists) {
+      setSelectedId(sortedClusters[0]?.representative.id ?? null);
     }
-  }, [filtered, selectedId]);
+  }, [sortedClusters, selectedId]);
 
-  const selected = useMemo(() => {
-    if (!selectedId) return filtered[0] ?? null;
-    return filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
-  }, [filtered, selectedId]);
+  const selectedCluster = useMemo(() => {
+    if (!selectedId) return sortedClusters[0] ?? null;
+    return (
+      sortedClusters.find((cluster) =>
+        cluster.items.some((item) => item.id === selectedId),
+      ) ?? sortedClusters[0] ?? null
+    );
+  }, [sortedClusters, selectedId]);
+
+  const selected = selectedCluster?.representative ?? null;
+  const inspectorTag =
+    selectedCluster?.area && selectedCluster.area !== "Uncategorized"
+      ? selectedCluster.area
+      : selected?.tags?.[0];
 
   if (!diseases.length) {
     return (
@@ -269,137 +594,169 @@ export function DiseasePortfolioOverview({
 
   return (
     <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 py-6">
+      <CardHeader className="border-b border-slate-200 px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <CardTitle className="text-label text-subtle">
-              Disease Portfolio (IMPLICATED_IN){geneSymbol ? ` (${geneSymbol})` : ""}
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Disease Portfolio
             </CardTitle>
-            <div className="text-body-sm text-subtle">
-              Ranked disease associations with evidence summary
+            <div className="text-sm text-slate-500">
+              {diseases.length} disease associations from Open Targets
             </div>
           </div>
-          <div className="text-body-sm text-subtle">
-            Source: <span className="text-body">Open Targets</span>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
+            <input
+              type="text"
+              placeholder="Search diseases..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
+
+      <CardContent className="p-0">
+        {/* Filters */}
+        <div className="border-b border-slate-200 bg-slate-50/50">
           <ScopeBar dimensions={dimensions} />
-        </Card>
+        </div>
 
-        <Card className="border border-slate-200 py-0 gap-0 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
-            <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
-              <CardHeader className="py-4 border-b border-slate-200">
-                <div className="text-label text-subtle">Diseases (ranked)</div>
-              </CardHeader>
-              <CardContent className="px-0 py-0">
-                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-200">
-                  {filtered.length === 0 && (
-                    <div className="px-6 py-8 text-body-sm text-subtle">
-                      No diseases match your filters.
-                    </div>
-                  )}
-                  {filtered.map((disease) => (
-                    <button
-                      key={disease.id}
-                      type="button"
-                      onClick={() => setSelectedId(disease.id)}
-                      className={cn(
-                        "w-full px-6 py-3 text-left transition-colors",
-                        "hover:bg-slate-50",
-                        selectedId === disease.id && "bg-primary/5",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="text-sm font-semibold text-heading">
-                          {disease.label}
-                        </div>
-                        <div className="text-body-sm text-subtle">
-                          {formatScore(disease.score)}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+        {/* Master-Detail Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
+          {/* Disease List */}
+          <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
+            <div className="max-h-[520px] overflow-y-auto">
+              {rankedGroups.length === 0 && (
+                <div className="px-6 py-8 text-body-sm text-subtle">
+                  No diseases match your filters.
                 </div>
-              </CardContent>
-            </div>
-
-            <div>
-              <CardHeader className="py-4 border-b border-slate-200">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-label text-subtle">Inspector</div>
-                  <div className="text-body-sm text-subtle">
-                    {selected ? "Selected disease" : "No selection"}
+              )}
+              {rankedGroups.map((group) => (
+                <div key={group.area}>
+                  <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100 sticky top-0 z-10">
+                    <div className="text-body-sm font-medium text-subtle">
+                      {group.area} ({group.clusters.length})
+                    </div>
                   </div>
+                  {group.clusters.map(({ cluster }) => {
+                    const representative = cluster.representative;
+                    const isSelected = selectedId
+                      ? cluster.items.some((item) => item.id === selectedId)
+                      : false;
+                    const relatedCount = cluster.items.length - 1;
+
+                    return (
+                      <button
+                        key={cluster.id}
+                        type="button"
+                        onClick={() => setSelectedId(representative.id)}
+                        className={cn(
+                          "w-full px-6 py-3 text-left transition-colors border-b border-slate-100",
+                          "hover:bg-slate-50",
+                          isSelected && "bg-primary/5 border-l-2 border-l-primary",
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-heading truncate">
+                              {cluster.label}
+                              {relatedCount > 0 && (
+                                <span className="ml-1 text-subtle font-normal">+{relatedCount}</span>
+                              )}
+                            </div>
+                          </div>
+                          <ScoreBar value={representative.score} />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-5 py-5">
-                {!selected && (
-                  <div className="text-body-sm text-subtle">
-                    Select a disease to inspect details.
-                  </div>
-                )}
-
-                {selected && (
-                  <>
-                    <div className="space-y-1">
-                      <div className="text-sm font-semibold text-heading">
-                        {selected.label}
-                      </div>
-                      <div className="text-body-sm text-subtle">
-                        Score: <span className="text-body">{formatScore(selected.score)}</span>
-                        <span className="text-subtle"> • </span>
-                        Source: <span className="text-body">{selected.source}</span>
-                        {selected.evidenceCount ? (
-                          <>
-                            <span className="text-subtle"> • </span>
-                            Evidence: <span className="text-body">{selected.evidenceCount}</span>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="text-label text-subtle">Evidence</div>
-                      {selected.evidence.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selected.evidence.map((item) => (
-                            <span
-                              key={`${selected.id}-${item}`}
-                              className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-caption font-medium"
-                            >
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      ) : selected.evidenceCount ? (
-                        <div className="text-body-sm text-subtle">
-                          {selected.evidenceCount} evidence items reported.
-                        </div>
-                      ) : (
-                        <div className="text-body-sm text-subtle">No evidence summary available.</div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link
-                          href={`/hg38/gene/${encodeURIComponent(geneId)}/disease-and-therapeutics/evidence-command-center`}
-                          className="inline-flex items-center gap-2"
-                        >
-                          View in Evidence Command Center
-                        </Link>
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </CardContent>
+              ))}
             </div>
           </div>
-        </Card>
+
+          {/* Inspector Panel */}
+          <div>
+            <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100">
+              <div className="text-body-sm font-medium text-subtle">Details</div>
+            </div>
+            <div className="px-6 py-6 space-y-6">
+              {!selected && (
+                <div className="text-body-sm text-subtle">
+                  Select a disease to view details.
+                </div>
+              )}
+
+              {selected && (
+                <>
+                  {/* Disease Header */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-heading">
+                      {selected.label}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-body-sm text-subtle">Score</span>
+                        <span className="text-sm font-semibold text-heading">{formatScore(selected.score)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-body-sm text-subtle">Evidence</span>
+                        <span className="text-sm font-semibold text-heading">
+                          {selected.evidenceCount?.toLocaleString() ?? "N/A"}
+                        </span>
+                      </div>
+                      {inspectorTag && (
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-body-sm text-subtle">
+                          {inspectorTag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  {selected.description && (
+                    <div className="space-y-2">
+                      <div className="text-body-sm font-medium text-subtle">Summary</div>
+                      <div className="text-sm text-body leading-relaxed">
+                        {selected.description}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Evidence Breakdown */}
+                  {selected.evidenceBreakdown && selected.evidenceBreakdown.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-body-sm font-medium text-subtle">Evidence by Type</div>
+                      <EvidenceBars breakdown={selected.evidenceBreakdown} />
+                    </div>
+                  )}
+
+                  {/* Synonyms */}
+                  {selected.synonyms && selected.synonyms.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-body-sm font-medium text-subtle">Also known as</div>
+                      <div className="text-sm text-body">
+                        {selected.synonyms.slice(0, 5).join(", ")}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <ExternalLink
+                      href={`https://platform.opentargets.org/disease/${encodeURIComponent(selected.id)}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      View on Open Targets
+                    </ExternalLink>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

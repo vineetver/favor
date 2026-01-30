@@ -17,9 +17,9 @@ export default async function DiseasePortfolioPage({
     include: "counts,edges",
     edgeTypes: "IMPLICATED_IN",
     direction: "out",
-    limitPerEdgeType: 50,
+    limitPerEdgeType: 500,
     sort: JSON.stringify({ IMPLICATED_IN: "-score" }),
-    neighborMode: "IMPLICATED_IN=summary",
+    neighborMode: "IMPLICATED_IN=full",
   });
 
   const gene = geneResponse?.data;
@@ -28,7 +28,6 @@ export default async function DiseasePortfolioPage({
     notFound();
   }
 
-  console.log("Gene Response:", geneResponse.relations);
   const relations =
     geneResponse?.relations ??
     geneResponse?.included?.relations ??
