@@ -1,0 +1,53 @@
+"use client";
+
+import { useMutation } from "@tanstack/react-query";
+import { validateInputFile } from "../api";
+import { DEFAULT_TENANT_ID } from "../config";
+import type { ValidationResponse } from "../types";
+
+interface UseBatchValidateOptions {
+  tenantId?: string;
+  onSuccess?: (validation: ValidationResponse) => void;
+  onError?: (error: Error) => void;
+}
+
+interface UseBatchValidateResult {
+  validate: (inputUri: string, dryRunLookups?: boolean) => Promise<ValidationResponse>;
+  validation: ValidationResponse | null;
+  isValidating: boolean;
+  error: Error | null;
+  reset: () => void;
+}
+
+/**
+ * Hook for validating uploaded files before creating batch jobs
+ */
+export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatchValidateResult {
+  const { tenantId = DEFAULT_TENANT_ID, onSuccess, onError } = options;
+
+  const mutation = useMutation({
+    mutationFn: validateInputFile,
+    onSuccess: (data) => {
+      onSuccess?.(data);
+    },
+    onError: (err) => {
+      onError?.(err instanceof Error ? err : new Error("Validation failed"));
+    },
+  });
+
+  const validate = async (inputUri: string, dryRunLookups = true) => {
+    return mutation.mutateAsync({
+      tenant_id: tenantId,
+      input_uri: inputUri,
+      dry_run_lookups: dryRunLookups,
+    });
+  };
+
+  return {
+    validate,
+    validation: mutation.data ?? null,
+    isValidating: mutation.isPending,
+    error: mutation.error instanceof Error ? mutation.error : null,
+    reset: mutation.reset,
+  };
+}

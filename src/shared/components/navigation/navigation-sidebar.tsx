@@ -205,7 +205,7 @@ export function NavigationSidebar({
                           className={cn(
                             "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150",
                             isActive
-                              ? "bg-primary/[0.08] text-slate-900 font-medium"
+                              ? "bg-primary/8 text-slate-900 font-medium"
                               : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                           )}
                         >
@@ -247,7 +247,7 @@ export function NavigationSidebar({
               className={cn(
                 "group flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-all duration-150",
                 isActive
-                  ? "bg-primary/[0.08] text-slate-900 font-medium"
+                  ? "bg-primary/8 text-slate-900 font-medium"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
               )}
             >
