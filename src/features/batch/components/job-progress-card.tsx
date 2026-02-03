@@ -150,16 +150,27 @@ export function JobProgressCard({
     setTimeout(() => setCopied(false), 2000);
   }, [job.job_id]);
 
-  // Calculate stats percentages
-  const totalProcessed = progress
-    ? progress.found + progress.not_found + progress.errors
-    : 0;
+  // Calculate stats percentages based on fetched count
+  const totalFetched = progress?.fetched ?? 0;
   const foundPercent =
-    totalProcessed > 0 ? ((progress?.found ?? 0) / totalProcessed) * 100 : 0;
+    totalFetched > 0 ? ((progress?.found ?? 0) / totalFetched) * 100 : 0;
   const notFoundPercent =
-    totalProcessed > 0 ? ((progress?.not_found ?? 0) / totalProcessed) * 100 : 0;
+    totalFetched > 0 ? ((progress?.not_found ?? 0) / totalFetched) * 100 : 0;
   const errorPercent =
-    totalProcessed > 0 ? ((progress?.errors ?? 0) / totalProcessed) * 100 : 0;
+    totalFetched > 0 ? ((progress?.errors ?? 0) / totalFetched) * 100 : 0;
+
+  // Get progress display based on stage
+  const getProgressDisplay = () => {
+    if (!progress) return null;
+    switch (progress.stage) {
+      case "RESOLVING":
+        return `${formatNumber(progress.rows_resolved)} rows resolved`;
+      case "PROCESSING":
+        return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants processed`;
+      default:
+        return progress.stage_description;
+    }
+  };
 
   return (
     <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
@@ -215,9 +226,8 @@ export function JobProgressCard({
             {/* Processing Status - no spinner here, status badge in header already shows running state */}
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <span className={isRunning ? "font-medium" : "font-semibold text-slate-900"}>
-                {formatNumber(progress.processed)}
+                {getProgressDisplay()}
               </span>
-              <span>variants processed</span>
             </div>
 
             {/* Stats Grid - neutral colors unless there's something notable */}

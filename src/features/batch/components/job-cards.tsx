@@ -190,11 +190,23 @@ export function RunningJobCard({
 }: RunningJobCardProps) {
   const { progress, eta } = job;
 
-  // Calculate stat percentages
-  const totalProcessed = progress.found + progress.not_found + progress.errors;
+  // Calculate stat percentages based on fetched count during PROCESSING
+  const totalProcessed = progress.fetched || 0;
   const foundPercent = totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
   const notFoundPercent = totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
   const errorPercent = totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
+
+  // Get progress label based on stage
+  const getProgressLabel = () => {
+    switch (progress.stage) {
+      case "RESOLVING":
+        return `${formatNumber(progress.rows_resolved)} rows`;
+      case "PROCESSING":
+        return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants`;
+      default:
+        return progress.stage_description;
+    }
+  };
 
   return (
     <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
@@ -223,11 +235,11 @@ export function RunningJobCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-900">
-              {formatNumber(progress.processed)} variants
+              {getProgressLabel()}
             </span>
-            <span className="text-slate-500">{Math.round(progress.percent)}%</span>
+            <span className="text-slate-500">{Math.min(100, Math.round(progress.percent ?? 0))}%</span>
           </div>
-          <Progress value={progress.percent} className="h-2" />
+          <Progress value={Math.min(100, progress.percent ?? 0)} className="h-2" />
         </div>
 
         {/* Stats grid */}

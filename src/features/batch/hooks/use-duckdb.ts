@@ -92,9 +92,14 @@ export function useDuckDB(): UseDuckDBResult {
         // Create connection
         const conn = await db.connect();
 
-        // Install and load httpfs for remote parquet files
+        // Install and load httpfs for remote files
         await conn.query(`INSTALL httpfs`);
         await conn.query(`LOAD httpfs`);
+
+        // Install and load nanoarrow extension for Arrow IPC files (from community)
+        // nanoarrow replaces the deprecated Arrow core extension
+        await conn.query(`INSTALL nanoarrow FROM community`);
+        await conn.query(`LOAD nanoarrow`);
 
         const instance = { db, conn };
         instanceRef.current = instance;
@@ -133,8 +138,8 @@ export function useDuckDB(): UseDuckDBResult {
     };
   }, [initDuckDB]);
 
-  // Load parquet file from URL (with IndexedDB caching)
-  const loadParquet = useCallback(async (url: string, tableName = "variants"): Promise<LoadParquetResult> => {
+  // Load Arrow IPC file from URL (with IndexedDB caching)
+  const loadArrow = useCallback(async (url: string, tableName = "variants"): Promise<LoadDataResult> => {
     const instance = await initDuckDB();
 
     try {
@@ -142,39 +147,40 @@ export function useDuckDB(): UseDuckDBResult {
       let fromCache = false;
 
       // Check IndexedDB cache first
-      const cached = await getCachedParquet(url);
+      const cached = await getCachedData(url);
 
       if (cached) {
         // Use cached data
         arrayBuffer = cached;
         fromCache = true;
-        console.log(`[DuckDB] Loaded parquet from cache (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`[DuckDB] Loaded Arrow IPC from cache (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
       } else {
-        // Fetch the parquet file via browser fetch
+        // Fetch the Arrow IPC file via browser fetch
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`Failed to fetch parquet file: ${response.status} ${response.statusText}`);
+          throw new Error(`Failed to fetch Arrow file: ${response.status} ${response.statusText}`);
         }
 
         // Get the file as ArrayBuffer
         arrayBuffer = await response.arrayBuffer();
-        console.log(`[DuckDB] Fetched parquet from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`[DuckDB] Fetched Arrow IPC from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
 
         // Store in cache for next time (don't await - do it in background)
-        setCachedParquet(url, arrayBuffer).catch((err) => {
-          console.warn("[DuckDB] Failed to cache parquet:", err);
+        setCachedData(url, arrayBuffer).catch((err) => {
+          console.warn("[DuckDB] Failed to cache Arrow data:", err);
         });
       }
 
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Register the file with DuckDB
-      await instance.db.registerFileBuffer("data.parquet", uint8Array);
+      // Register the file with DuckDB as Arrow IPC
+      await instance.db.registerFileBuffer("data.arrow", uint8Array);
 
-      // Create table from the registered parquet file
+      // Create table from the registered Arrow IPC file
+      // DuckDB can read Arrow IPC files directly with the arrow extension
       await instance.conn.query(`
         CREATE OR REPLACE TABLE ${tableName} AS
-        SELECT * FROM read_parquet('data.parquet')
+        SELECT * FROM 'data.arrow'
       `);
 
       return {
@@ -182,15 +188,18 @@ export function useDuckDB(): UseDuckDBResult {
         size: arrayBuffer.byteLength,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load parquet file";
+      const message = err instanceof Error ? err.message : "Failed to load Arrow file";
       throw new Error(message);
     }
   }, [initDuckDB]);
 
-  // Clear the parquet cache
+  // Backwards compatibility - loadParquet now loads Arrow IPC
+  const loadParquet = loadArrow;
+
+  // Clear the data cache
   const clearCache = useCallback(async () => {
-    await clearParquetCache();
-    console.log("[DuckDB] Parquet cache cleared");
+    await clearDataCache();
+    console.log("[DuckDB] Data cache cleared");
   }, []);
 
   // Execute SQL query
@@ -200,6 +209,35 @@ export function useDuckDB(): UseDuckDBResult {
     try {
       const result = await instance.conn.query(sql);
       const columns = result.schema.fields.map((f) => f.name);
+
+      // Convert Arrow value to plain JS object, handling nested structs and BigInt
+      const convertValue = (value: unknown): unknown => {
+        if (value === null || value === undefined) return value;
+        if (typeof value === "bigint") return Number(value);
+        if (Array.isArray(value)) return value.map(convertValue);
+        // Handle Arrow Struct rows - they have toJSON method
+        if (typeof value === "object" && value !== null) {
+          if ("toJSON" in value && typeof (value as { toJSON: unknown }).toJSON === "function") {
+            return convertValue((value as { toJSON: () => unknown }).toJSON());
+          }
+          // Handle Map-like objects from Arrow
+          if (value instanceof Map) {
+            const obj: Record<string, unknown> = {};
+            value.forEach((v, k) => {
+              obj[String(k)] = convertValue(v);
+            });
+            return obj;
+          }
+          // Handle plain objects recursively
+          const obj: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(value)) {
+            obj[k] = convertValue(v);
+          }
+          return obj;
+        }
+        return value;
+      };
+
       const rows: Record<string, unknown>[] = [];
 
       // Convert Arrow table to array of objects
@@ -207,8 +245,7 @@ export function useDuckDB(): UseDuckDBResult {
         const row: Record<string, unknown> = {};
         for (const col of columns) {
           const value = result.getChild(col)?.get(i);
-          // Handle BigInt conversion
-          row[col] = typeof value === "bigint" ? Number(value) : value;
+          row[col] = convertValue(value);
         }
         rows.push(row);
       }
@@ -240,6 +277,7 @@ export function useDuckDB(): UseDuckDBResult {
     isReady,
     error,
     loadParquet,
+    loadArrow,
     query,
     getTableSchema,
     getTables,

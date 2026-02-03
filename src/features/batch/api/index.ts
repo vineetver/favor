@@ -157,8 +157,8 @@ export function parseJob(raw: RawJobResponse): Job {
     db_version: raw.db_version ?? undefined,
   };
 
-  // Default poll hint if not provided
-  const defaultPoll: JobPollHint = { after_ms: 2000, message: "Polling..." };
+  // Default poll hint if not provided - 10 seconds to avoid rate limits
+  const defaultPoll: JobPollHint = { after_ms: 10000, message: "Polling..." };
 
   switch (raw.state) {
     case "PENDING": {

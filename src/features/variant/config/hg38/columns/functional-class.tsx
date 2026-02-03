@@ -318,7 +318,7 @@ export const functionalClassColumns = [
       citation: "Forrest et al., 2014",
       categories: cagePromoter,
     }),
-    cell: cell.badgeMap({ NO: "red" }, { NO: "NO" }, "green"),
+    cell: cell.presence("Yes", "green"),
   }),
 
   col.accessor("cage_enhancer", {
@@ -330,7 +330,7 @@ export const functionalClassColumns = [
       citation: "Forrest et al., 2014",
       categories: cageEnhancer,
     }),
-    cell: cell.badgeMap({ NO: "red" }, { NO: "NO" }, "green"),
+    cell: cell.presence("Yes", "green"),
   }),
 
   col.accessor("genehancer", {

@@ -11,6 +11,10 @@ import { apcColumns } from "@features/variant/config/hg38/columns/shared";
 import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
 import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
 import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
+import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
+import { basicColumns } from "@features/variant/config/hg38/columns/basic";
+import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
+import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDuckDB } from "../hooks/use-duckdb";
@@ -21,7 +25,8 @@ import { StatCard, type StatCardVariant } from "./stat-card";
 // ============================================================================
 
 interface JobAnalyticsReportProps {
-  parquetUrl: string;
+  /** URL to the Arrow IPC file (or parquet for backwards compatibility) */
+  dataUrl: string;
   jobId: string;
   filename?: string;
   className?: string;
@@ -60,40 +65,44 @@ interface ReportData {
 // ============================================================================
 
 const SQL_QUERIES = {
-  totalVariants: `SELECT COUNT(*) as count FROM variants`,
+  totalVariants: `SELECT COUNT(*) as count FROM variants WHERE lower(status) = 'found'`,
 
   clinvarPLP: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants) as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
     FROM variants
-    WHERE len(list_filter(clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
-      AND list_has_any(
-        list_transform(clinvar.clnsig, x -> lower(CAST(x AS VARCHAR))),
-        ['pathogenic', 'likely_pathogenic', 'pathogenic/likely_pathogenic']
-      )
+    WHERE lower(status) = 'found'
+      AND len(list_filter(
+        variant.clinvar.clnsig,
+        x -> x IS NOT NULL
+          AND lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%'
+          AND lower(CAST(x AS VARCHAR)) NOT LIKE '%benign%'
+      )) > 0
   `,
 
   ultraRare: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants) as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
     FROM variants
-    WHERE GREATEST(
-      COALESCE(gnomad_exome.af, 0),
-      COALESCE(gnomad_genome.af, 0),
-      COALESCE(bravo.bravo_af, 0)
-    ) < 0.001
+    WHERE lower(status) = 'found'
+      AND GREATEST(
+        COALESCE(variant.gnomad_exome.af, 0),
+        COALESCE(variant.gnomad_genome.af, 0),
+        COALESCE(variant.bravo.bravo_af, 0)
+      ) < 0.001
   `,
 
   highImpact: `
     WITH scored AS (
       SELECT GREATEST(
-        COALESCE(apc.conservation_v2, 0),
-        COALESCE(apc.protein_function_v3, 0),
-        COALESCE(main.cadd.phred, 0) / 2
+        COALESCE(variant.apc.conservation_v2, 0),
+        COALESCE(variant.apc.protein_function_v3, 0),
+        COALESCE(variant.main.cadd.phred, 0) / 2
       ) as integrative_max
       FROM variants
+      WHERE lower(status) = 'found'
     ),
     threshold AS (
       SELECT PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY integrative_max) as p99
@@ -101,7 +110,7 @@ const SQL_QUERIES = {
     )
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants) as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
     FROM scored, threshold
     WHERE integrative_max >= threshold.p99
   `,
@@ -109,50 +118,58 @@ const SQL_QUERIES = {
   cosmicHits: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE cosmic.sample_count IS NOT NULL AND cosmic.sample_count > 0
+    WHERE lower(status) = 'found'
+      AND variant.cosmic.sample_count IS NOT NULL
+      AND variant.cosmic.sample_count > 0
   `,
 
   spliceHigh: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE GREATEST(
-      COALESCE(gnomad_exome.functional.spliceai_ds_max, 0),
-      COALESCE(gnomad_genome.functional.spliceai_ds_max, 0),
-      COALESCE(gnomad_genome.functional.pangolin_largest_ds, 0)
-    ) >= 0.5
+    WHERE lower(status) = 'found'
+      AND GREATEST(
+        COALESCE(variant.gnomad_exome.functional.spliceai_ds_max, 0),
+        COALESCE(variant.gnomad_genome.functional.spliceai_ds_max, 0),
+        COALESCE(variant.gnomad_genome.functional.pangolin_largest_ds, 0)
+      ) >= 0.5
   `,
 
   regulatoryActive: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants) as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
     FROM variants
-    WHERE
-      COALESCE(apc.epigenetics_active, 0) >= 10
-      OR COALESCE(epigenetic_phred.dnase, 0) >= 10
-      OR COALESCE(epigenetic_phred.h3k27ac, 0) >= 10
-      OR (ccre.annotations IS NOT NULL AND ccre.annotations != '')
+    WHERE lower(status) = 'found'
+      AND (
+        COALESCE(variant.apc.epigenetics_active, 0) >= 10
+        OR COALESCE(variant.main.encode.dnase.phred, 0) >= 10
+        OR COALESCE(variant.main.encode.h3k27ac.phred, 0) >= 10
+        OR (variant.ccre.annotations IS NOT NULL AND variant.ccre.annotations != '')
+      )
   `,
 
   qcPassRate: `
     SELECT
-      COUNT(CASE WHEN bravo.filter_status IS NOT NULL AND contains(CAST(bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) as pass_count,
-      COUNT(CASE WHEN bravo.filter_status IS NOT NULL THEN 1 END) as total_annotated,
-      COUNT(CASE WHEN bravo.filter_status IS NOT NULL AND contains(CAST(bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) * 100.0 /
-        NULLIF(COUNT(CASE WHEN bravo.filter_status IS NOT NULL THEN 1 END), 0) as percentage
+      COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL AND contains(CAST(variant.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) as pass_count,
+      COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL THEN 1 END) as total_annotated,
+      COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL AND contains(CAST(variant.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) * 100.0 /
+        NULLIF(COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL THEN 1 END), 0) as percentage
     FROM variants
+    WHERE lower(status) = 'found'
   `,
 
   prioritizedVariants: `
     SELECT
-      *,
+      variant.*,
       (
-        CASE WHEN len(list_filter(clinvar.clnsig, x -> x IS NOT NULL AND lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%' AND lower(CAST(x AS VARCHAR)) NOT LIKE '%benign%')) > 0 THEN 1000 ELSE 0 END +
-        CASE WHEN cosmic.sample_count > 0 THEN 500 ELSE 0 END +
-        COALESCE(GREATEST(apc.conservation_v2, apc.protein_function_v3), 0) * 10 +
-        COALESCE(alphamissense.max_pathogenicity, 0) * 100
+        CASE WHEN len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0 THEN 1000 ELSE 0 END +
+        CASE WHEN variant.cosmic.sample_count > 0 THEN 200 ELSE 0 END +
+        COALESCE(variant.apc.protein_function_v3, 0) * 20 +
+        COALESCE(variant.apc.conservation_v2, 0) * 10 +
+        COALESCE(variant.alphamissense.max_pathogenicity, 0) * 100
       ) as priority_score
     FROM variants
+    WHERE lower(status) = 'found'
     ORDER BY priority_score DESC
     LIMIT 20
   `,
@@ -160,20 +177,23 @@ const SQL_QUERIES = {
   clinvarTotal: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE len(list_filter(clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
+    WHERE lower(status) = 'found'
+      AND len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
   `,
 
   cosmicMedian: `
-    SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cosmic.sample_count) as median
+    SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.cosmic.sample_count) as median
     FROM variants
-    WHERE cosmic.sample_count IS NOT NULL AND cosmic.sample_count > 0
+    WHERE lower(status) = 'found'
+      AND variant.cosmic.sample_count IS NOT NULL
+      AND variant.cosmic.sample_count > 0
   `,
 
   topCosmicGene: `
-    SELECT CAST(cosmic.gene AS VARCHAR) as gene, COUNT(*) as count
+    SELECT CAST(variant.cosmic.gene AS VARCHAR) as gene, COUNT(*) as count
     FROM variants
-    WHERE cosmic.gene IS NOT NULL
-    GROUP BY cosmic.gene
+    WHERE lower(status) = 'found' AND variant.cosmic.gene IS NOT NULL
+    GROUP BY variant.cosmic.gene
     ORDER BY count DESC
     LIMIT 1
   `,
@@ -273,30 +293,15 @@ const scoreColumn = col.accessor("priority_score", {
   },
 });
 
-// Variant column (custom)
-const variantColumn = col.accessor("variant_vcf", {
-  accessor: (row) => row.variant_vcf,
-  header: "Variant",
-  cell: ({ getValue }) => {
-    const v = getValue();
-    if (!v) return "—";
-    return (
-      <span className="font-mono text-xs text-slate-700 truncate max-w-32 block" title={String(v)}>
-        {String(v)}
-      </span>
-    );
-  },
-});
-
 // Gene column (custom)
 const geneColumn = col.accessor("gene", {
   accessor: (row) => row.genecode?.genes,
   header: "Gene",
   cell: ({ getValue }) => {
-    const genes = getValue() as Array<string | null> | null | undefined;
-    const filtered = genes?.filter(Boolean);
-    return filtered?.length ? (
-      <span className="font-medium text-slate-900">{filtered.join(", ")}</span>
+    const genes = getValue();
+    const genesArray = Array.isArray(genes) ? genes.filter(Boolean) : [];
+    return genesArray.length ? (
+      <span className="font-medium text-slate-900">{genesArray.join(", ")}</span>
     ) : (
       <span className="text-slate-300">—</span>
     );
@@ -307,16 +312,42 @@ const geneColumn = col.accessor("gene", {
 // Cast to PrioritizedVariant since it extends Variant
 const prioritizedVariantColumns: ColumnDef<PrioritizedVariant>[] = [
   scoreColumn,
-  variantColumn,
+  basicColumns[0] as ColumnDef<PrioritizedVariant>,
+  // Basic info
+  basicColumns[1] as ColumnDef<PrioritizedVariant>, // rsid
   geneColumn,
-  // ClinVar from existing columns
-  clinvarColumns[0] as ColumnDef<PrioritizedVariant>,
-  // aPC scores from existing columns (with progress bars built-in)
+  // Gencode annotations
+  functionalClassColumns[1] as ColumnDef<PrioritizedVariant>, // region_type
+  functionalClassColumns[3] as ColumnDef<PrioritizedVariant>, // consequence
+  // ClinVar
+  clinvarColumns[0] as ColumnDef<PrioritizedVariant>, // clnsig
+  clinvarColumns[2] as ColumnDef<PrioritizedVariant>, // clndn (disease name)
+  clinvarColumns[4] as ColumnDef<PrioritizedVariant>, // clnrevstat (review status)
+  // AlphaMissense
+  proteinFunctionColumns[1] as ColumnDef<PrioritizedVariant>, // AlphaMissense class
+  // Protein predictions
+  proteinFunctionColumns[2] as ColumnDef<PrioritizedVariant>, // SIFT
+  proteinFunctionColumns[3] as ColumnDef<PrioritizedVariant>, // PolyPhen
+  // Allele frequencies
+  basicColumns[4] as ColumnDef<PrioritizedVariant>, // bravo_af
+  basicColumns[2] as ColumnDef<PrioritizedVariant>, // bravo filter_status
+  basicColumns[7] as ColumnDef<PrioritizedVariant>, // gnomad_genome_af
+  basicColumns[6] as ColumnDef<PrioritizedVariant>, // gnomad_exome_af
+  basicColumns[5] as ColumnDef<PrioritizedVariant>, // tg_all
+  // Regulatory
+  functionalClassColumns[4] as ColumnDef<PrioritizedVariant>, // cage_promoter
+  functionalClassColumns[5] as ColumnDef<PrioritizedVariant>, // cage_enhancer
+  functionalClassColumns[6] as ColumnDef<PrioritizedVariant>, // genehancer
+  // Integrative scores
+  integrativeColumns[10] as ColumnDef<PrioritizedVariant>, // linsight
+  integrativeColumns[11] as ColumnDef<PrioritizedVariant>, // fathmm_xf
+  // aPC scores
   apcColumns.proteinFunction as ColumnDef<PrioritizedVariant>,
   apcColumns.conservation as ColumnDef<PrioritizedVariant>,
-  // SpliceAI from existing columns
+  apcColumns.epigeneticsActive as ColumnDef<PrioritizedVariant>,
+  // SpliceAI
   spliceAiColumns[0] as ColumnDef<PrioritizedVariant>,
-  // COSMIC from existing columns
+  // COSMIC
   somaticMutationColumns[0] as ColumnDef<PrioritizedVariant>,
   somaticMutationColumns[1] as ColumnDef<PrioritizedVariant>,
 ];
@@ -336,11 +367,11 @@ function PrioritizedVariantsTable({ variants }: { variants: PrioritizedVariant[]
         columns={prioritizedVariantColumns}
         data={variants}
         title={`Prioritized Variants (Top ${variants.length})`}
-        subtitle="Score = ClinVar P/LP (+1000) + COSMIC (+500) + aPC×10 + AlphaMissense×100"
+        subtitle="Score = ClinVar (+1000) + COSMIC (+200) + aPC protein×20 + aPC conservation×10 + AlphaMissense×100"
         searchable={false}
         exportable={false}
-        pageSizeOptions={[20]}
-        defaultPageSize={20}
+        pageSizeOptions={[10, 20]}
+        defaultPageSize={10}
       />
     </div>
   );
@@ -368,34 +399,34 @@ function KeyTakeaways({ takeaways }: { takeaways: string[] }) {
 // ============================================================================
 
 export function JobAnalyticsReport({
-  parquetUrl,
+  dataUrl,
   jobId: _jobId,
   filename: _filename,
   className,
 }: JobAnalyticsReportProps) {
-  const { query, loadParquet, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
+  const { query, loadArrow, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [parquetLoaded, setParquetLoaded] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load parquet file when DuckDB is ready
+  // Load Arrow IPC file when DuckDB is ready
   useEffect(() => {
-    if (!isReady || parquetLoaded) return;
+    if (!isReady || dataLoaded) return;
 
-    loadParquet(parquetUrl, "variants")
+    loadArrow(dataUrl, "variants")
       .then(() => {
-        setParquetLoaded(true);
+        setDataLoaded(true);
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load parquet file");
+        setError(err instanceof Error ? err.message : "Failed to load Arrow file");
         setIsLoading(false);
       });
-  }, [isReady, parquetUrl, loadParquet, parquetLoaded]);
+  }, [isReady, dataUrl, loadArrow, dataLoaded]);
 
   // Generate report data
   const generateReport = useCallback(async () => {
-    if (!parquetLoaded) return;
+    if (!dataLoaded) return;
 
     setIsLoading(true);
     setError(null);
@@ -509,14 +540,14 @@ export function JobAnalyticsReport({
     } finally {
       setIsLoading(false);
     }
-  }, [query, parquetLoaded]);
+  }, [query, dataLoaded]);
 
   // Generate report when parquet is loaded
   useEffect(() => {
-    if (parquetLoaded) {
+    if (dataLoaded) {
       generateReport();
     }
-  }, [parquetLoaded, generateReport]);
+  }, [dataLoaded, generateReport]);
 
   // Generate takeaways
   const takeaways = useMemo(() => {
@@ -526,7 +557,7 @@ export function JobAnalyticsReport({
 
 
   // Loading state
-  if (dbLoading || !parquetLoaded || isLoading) {
+  if (dbLoading || !dataLoaded || isLoading) {
     return (
       <Card className="border border-slate-200 py-0 gap-0">
         <CardContent className="flex flex-col items-center justify-center text-center py-16">
@@ -534,7 +565,7 @@ export function JobAnalyticsReport({
           <p className="text-sm font-medium text-slate-700">
             {dbLoading
               ? "Initializing analytics engine..."
-              : !parquetLoaded
+              : !dataLoaded
                 ? "Loading data..."
                 : "Generating report..."}
           </p>
@@ -628,7 +659,7 @@ export function JobAnalyticsReport({
           GRCh38/hg38.
         </p>
         <p className="mt-1">
-          Priority scoring: ClinVar P/LP (+1000) + COSMIC (+500) + aPC×10 + AlphaMissense×100
+          Priority scoring: ClinVar (+1000) + COSMIC (+200) + aPC protein×20 + aPC conservation×10 + AlphaMissense×100
         </p>
       </footer>
 

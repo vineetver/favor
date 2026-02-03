@@ -27,14 +27,13 @@ export type KeyType = "AUTO" | "VID" | "RSID" | "VCF";
 
 export type OutputRowStatus = "FOUND" | "NOT_FOUND" | "INVALID" | "ERROR";
 
-// Processing stages - shows pipeline progress
+// Processing stages - shows pipeline progress (4 stages)
 export type ProcessingStage =
-  | "QUEUED"    // Waiting for worker pickup
-  | "RESOLVING" // Phase 1: Converting keys to VIDs
-  | "SORTING"   // Phase 2: Sorting VIDs for efficient lookup
-  | "FETCHING"  // Phase 3: Fetching variant data
-  | "WRITING"   // Writing output to S3
-  | "DONE";     // Complete
+  | "QUEUED"     // Waiting for worker pickup
+  | "RESOLVING"  // Reading input, resolving keys to VIDs
+  | "SORTING"    // Sorting VIDs for cache locality
+  | "PROCESSING" // Fetching variants AND writing output (merged FETCHING+WRITING)
+  | "DONE";      // Complete
 
 // Structured error codes for actionable UX
 export type ErrorCode =
@@ -181,16 +180,26 @@ export interface CreateJobResponse {
 export interface JobProgress {
   stage: ProcessingStage;
   stage_description: string;
-  processed: number;
-  found: number;
-  not_found: number;
-  errors: number;
-  total_rows: number;
-  unique_vids: number;
-  duplicates: number;
-  percent: number;
-  found_rate: number;
-  error_rate: number;
+
+  // RESOLVING stage progress
+  rows_resolved: number;  // Rows read/resolved during RESOLVING
+  bytes_read: number;     // Bytes read from input file (for progress %)
+
+  // PROCESSING stage progress
+  fetched: number;        // VIDs processed during PROCESSING
+  found: number;          // Successful lookups
+  not_found: number;      // VID not in database
+  errors: number;         // Processing errors
+
+  // Stats known after each phase (optional until available)
+  total_rows?: number;    // Known after RESOLVING
+  unique_vids?: number;   // Known after SORTING
+  duplicates?: number;    // total_rows - unique_vids
+
+  // Calculated rates (optional)
+  percent?: number;       // Completion % (0-100)
+  found_rate?: number;    // % of fetched that were found
+  error_rate?: number;    // % of fetched with errors
 }
 
 export interface JobInput {

@@ -79,8 +79,8 @@ export function useJobPolling({
         return data.poll.after_ms;
       }
 
-      // Default fallback
-      return 2000;
+      // Default fallback - 10 seconds to avoid rate limits
+      return 10000;
     },
     refetchOnWindowFocus: true,
     staleTime: 0,

@@ -235,13 +235,13 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
         {/* Analytics Component */}
         {viewMode === "report" ? (
           <JobAnalyticsReport
-            parquetUrl={output.url}
+            dataUrl={output.url}
             jobId={jobId}
             filename={storedJob?.filename}
           />
         ) : (
           <JobAnalytics
-            parquetUrl={output.url}
+            dataUrl={output.url}
             jobId={jobId}
             filename={storedJob?.filename}
           />

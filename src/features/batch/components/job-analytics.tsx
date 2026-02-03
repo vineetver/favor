@@ -21,14 +21,15 @@ import {
   Table,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useDuckDB, type QueryResult, type LoadParquetResult } from "../hooks/use-duckdb";
+import { useDuckDB, type QueryResult, type LoadDataResult } from "../hooks/use-duckdb";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface JobAnalyticsProps {
-  parquetUrl: string;
+  /** URL to the Arrow IPC file (or parquet for backwards compatibility) */
+  dataUrl: string;
   jobId: string;
   filename?: string;
   className?: string;
@@ -52,7 +53,7 @@ const PRESET_QUERIES: PresetQuery[] = [
     id: "total-variants",
     name: "Total Variants",
     description: "Count of all variants in the dataset",
-    sql: "SELECT COUNT(*) as total_variants FROM variants",
+    sql: "SELECT COUNT(*) as total_variants FROM variants WHERE lower(status) = 'found'",
     category: "overview",
   },
   {
@@ -61,17 +62,18 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Distribution of variants across chromosomes",
     sql: `
       SELECT
-        chromosome,
+        variant.chromosome,
         COUNT(*) as variant_count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
-      GROUP BY chromosome
+      WHERE lower(status) = 'found'
+      GROUP BY variant.chromosome
       ORDER BY
         CASE
-          WHEN chromosome = 'X' THEN 23
-          WHEN chromosome = 'Y' THEN 24
-          WHEN chromosome = 'MT' THEN 25
-          ELSE TRY_CAST(chromosome AS INTEGER)
+          WHEN variant.chromosome = 'X' THEN 23
+          WHEN variant.chromosome = 'Y' THEN 24
+          WHEN variant.chromosome = 'MT' THEN 25
+          ELSE TRY_CAST(variant.chromosome AS INTEGER)
         END
     `,
     category: "distribution",
@@ -82,10 +84,11 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variant consequences from Gencode annotations",
     sql: `
       SELECT
-        COALESCE(genecode_consequence, 'Unknown') as consequence,
+        COALESCE(variant.genecode.consequence, 'Unknown') as consequence,
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
+      WHERE lower(status) = 'found'
       GROUP BY consequence
       ORDER BY count DESC
       LIMIT 20
@@ -99,9 +102,10 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Distribution of clinical significance classifications",
     sql: `
       SELECT
-        COALESCE(clinvar_clnsig, 'Not in ClinVar') as significance,
+        COALESCE(variant.clinvar.clnsig[1], 'Not in ClinVar') as significance,
         COUNT(*) as count
       FROM variants
+      WHERE lower(status) = 'found'
       GROUP BY significance
       ORDER BY count DESC
     `,
@@ -113,17 +117,17 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variants classified as pathogenic or likely pathogenic",
     sql: `
       SELECT
-        chromosome,
-        position,
-        variant_vcf,
-        clinvar_clnsig,
-        clinvar_clndn
+        variant.chromosome,
+        variant.position,
+        variant.variant_vcf,
+        variant.clinvar.clnsig[1] as clnsig,
+        variant.clinvar.clndn[1] as clndn
       FROM variants
-      WHERE clinvar_clnsig IS NOT NULL
-        AND (
-          clinvar_clnsig ILIKE '%pathogenic%'
-          OR clinvar_clnsig ILIKE '%likely_pathogenic%'
-        )
+      WHERE lower(status) = 'found'
+        AND variant.clinvar.clnsig IS NOT NULL
+        AND len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND (
+          lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%'
+        ))) > 0
       LIMIT 100
     `,
     category: "clinical",
@@ -136,17 +140,18 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         CASE
-          WHEN gnomad_genome_af IS NULL THEN 'Unknown'
-          WHEN gnomad_genome_af = 0 THEN 'Not observed'
-          WHEN gnomad_genome_af < 0.0001 THEN 'Ultra-rare (<0.01%)'
-          WHEN gnomad_genome_af < 0.001 THEN 'Very rare (0.01-0.1%)'
-          WHEN gnomad_genome_af < 0.01 THEN 'Rare (0.1-1%)'
-          WHEN gnomad_genome_af < 0.05 THEN 'Low frequency (1-5%)'
+          WHEN variant.gnomad_genome.af IS NULL THEN 'Unknown'
+          WHEN variant.gnomad_genome.af = 0 THEN 'Not observed'
+          WHEN variant.gnomad_genome.af < 0.0001 THEN 'Ultra-rare (<0.01%)'
+          WHEN variant.gnomad_genome.af < 0.001 THEN 'Very rare (0.01-0.1%)'
+          WHEN variant.gnomad_genome.af < 0.01 THEN 'Rare (0.1-1%)'
+          WHEN variant.gnomad_genome.af < 0.05 THEN 'Low frequency (1-5%)'
           ELSE 'Common (>5%)'
         END as frequency_bin,
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
+      WHERE lower(status) = 'found'
       GROUP BY frequency_bin
       ORDER BY
         CASE frequency_bin
@@ -168,9 +173,11 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         COUNT(*) as rare_variants,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants), 2) as percentage
+        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
       FROM variants
-      WHERE gnomad_genome_af IS NOT NULL AND gnomad_genome_af < 0.01
+      WHERE lower(status) = 'found'
+        AND variant.gnomad_genome.af IS NOT NULL
+        AND variant.gnomad_genome.af < 0.01
     `,
     category: "population",
   },
@@ -181,18 +188,20 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variants with high functional impact predictions",
     sql: `
       SELECT
-        chromosome,
-        position,
-        variant_vcf,
-        genecode_consequence,
-        main_protein_predictions_sift_cat,
-        main_protein_predictions_polyphen_cat,
-        alphamissense_max_pathogenicity as am_score
+        variant.chromosome,
+        variant.position,
+        variant.variant_vcf,
+        variant.genecode.consequence,
+        variant.main.protein_predictions.sift_cat,
+        variant.main.protein_predictions.polyphen_cat,
+        variant.alphamissense.max_pathogenicity as am_score
       FROM variants
-      WHERE
-        main_protein_predictions_sift_cat = 'D'
-        OR main_protein_predictions_polyphen_cat = 'D'
-        OR alphamissense_max_pathogenicity > 0.8
+      WHERE lower(status) = 'found'
+        AND (
+          variant.main.protein_predictions.sift_cat = 'D'
+          OR variant.main.protein_predictions.polyphen_cat = 'D'
+          OR variant.alphamissense.max_pathogenicity > 0.8
+        )
       LIMIT 100
     `,
     category: "functional",
@@ -204,15 +213,16 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         CASE
-          WHEN main_cadd_phred IS NULL THEN 'Unknown'
-          WHEN main_cadd_phred < 10 THEN 'Likely benign (<10)'
-          WHEN main_cadd_phred < 20 THEN 'Possibly deleterious (10-20)'
-          WHEN main_cadd_phred < 30 THEN 'Likely deleterious (20-30)'
+          WHEN variant.main.cadd.phred IS NULL THEN 'Unknown'
+          WHEN variant.main.cadd.phred < 10 THEN 'Likely benign (<10)'
+          WHEN variant.main.cadd.phred < 20 THEN 'Possibly deleterious (10-20)'
+          WHEN variant.main.cadd.phred < 30 THEN 'Likely deleterious (20-30)'
           ELSE 'Highly deleterious (>30)'
         END as cadd_bin,
         COUNT(*) as count,
-        ROUND(AVG(main_cadd_phred), 2) as avg_score
+        ROUND(AVG(variant.main.cadd.phred), 2) as avg_score
       FROM variants
+      WHERE lower(status) = 'found'
       GROUP BY cadd_bin
       ORDER BY avg_score DESC NULLS LAST
     `,
@@ -225,12 +235,11 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Genes with the most variants",
     sql: `
       SELECT
-        genecode_genes as gene,
-        COUNT(*) as variant_count,
-        COUNT(DISTINCT genecode_consequence) as consequence_types
+        unnest(variant.genecode.genes) as gene,
+        COUNT(*) as variant_count
       FROM variants
-      WHERE genecode_genes IS NOT NULL
-      GROUP BY genecode_genes
+      WHERE lower(status) = 'found' AND variant.genecode.genes IS NOT NULL
+      GROUP BY gene
       ORDER BY variant_count DESC
       LIMIT 50
     `,
@@ -300,11 +309,16 @@ function ResultTable({ result }: { result: QueryResult }) {
 
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
+  if (typeof value === "bigint") return value.toLocaleString();
   if (typeof value === "number") {
     if (Number.isInteger(value)) return value.toLocaleString();
     return value.toFixed(4);
   }
-  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "object") {
+    return JSON.stringify(value, (_key, val) =>
+      typeof val === "bigint" ? val.toString() : val
+    );
+  }
   return String(value);
 }
 
@@ -477,16 +491,16 @@ function CustomQuery({
 // ============================================================================
 
 export function JobAnalytics({
-  parquetUrl,
+  dataUrl,
   jobId,
   filename,
   className,
 }: JobAnalyticsProps) {
-  const { isLoading: isInitializing, isReady, error: initError, loadParquet, query, clearCache } = useDuckDB();
+  const { isLoading: isInitializing, isReady, error: initError, loadArrow, query, clearCache } = useDuckDB();
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [cacheInfo, setCacheInfo] = useState<LoadParquetResult | null>(null);
+  const [cacheInfo, setCacheInfo] = useState<LoadDataResult | null>(null);
 
   // Query results state
   const [queryResults, setQueryResults] = useState<Record<string, QueryResult | null>>({});
@@ -498,11 +512,11 @@ export function JobAnalytics({
   const [customError, setCustomError] = useState<string | null>(null);
   const [isCustomLoading, setIsCustomLoading] = useState(false);
 
-  // Load parquet file when DuckDB is ready
+  // Load Arrow IPC file when DuckDB is ready
   useEffect(() => {
     if (isReady && !dataLoaded && !isLoadingData) {
       setIsLoadingData(true);
-      loadParquet(parquetUrl)
+      loadArrow(dataUrl)
         .then((result) => {
           setCacheInfo(result);
           setDataLoaded(true);
@@ -513,7 +527,7 @@ export function JobAnalytics({
           setIsLoadingData(false);
         });
     }
-  }, [isReady, dataLoaded, isLoadingData, loadParquet, parquetUrl]);
+  }, [isReady, dataLoaded, isLoadingData, loadArrow, dataUrl]);
 
   // Handle cache clear and reload
   const handleClearCache = useCallback(async () => {

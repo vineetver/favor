@@ -359,6 +359,18 @@ export const cell = {
     };
   },
 
+  /** Presence badge - shows "Yes" if any truthy value exists, "-" if empty */
+  presence<TData>(
+    presentLabel = "Yes",
+    presentColor: BadgeColor = "green",
+  ) {
+    return ({ getValue }: CellContext<TData, unknown>) => {
+      const v = getValue();
+      if (isEmpty(v)) return EMPTY;
+      return <Badge color={presentColor}>{presentLabel}</Badge>;
+    };
+  },
+
   /** External link */
   link<TData, TValue>(urlFn: (value: TValue, row: TData) => string) {
     return ({
