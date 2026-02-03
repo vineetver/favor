@@ -370,8 +370,8 @@ function PrioritizedVariantsTable({ variants }: { variants: PrioritizedVariant[]
         subtitle="Score = ClinVar (+1000) + COSMIC (+200) + aPC protein×20 + aPC conservation×10 + AlphaMissense×100"
         searchable={false}
         exportable={false}
-        pageSizeOptions={[10, 20]}
-        defaultPageSize={10}
+        pageSizeOptions={[5, 10, 20]}
+        defaultPageSize={5}
       />
     </div>
   );
