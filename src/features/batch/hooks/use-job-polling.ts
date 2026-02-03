@@ -2,29 +2,46 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
-import { getJobStatus, isTerminalState } from "../api";
+import { getJobStatus } from "../api";
 import { updateJobStatus } from "../lib/job-storage";
-import type { JobStatusResponse } from "../types";
-
-const POLL_INTERVAL = 10000; // 10 seconds - backend updates every 10s
+import type { Job, JobProgress } from "../types";
 
 interface UseJobPollingOptions {
   jobId: string | null;
   tenantId: string;
   enabled?: boolean;
-  onComplete?: (job: JobStatusResponse) => void;
-  onFailed?: (job: JobStatusResponse) => void;
+  onComplete?: (job: Job) => void;
+  onFailed?: (job: Job) => void;
 }
 
 interface UseJobPollingResult {
-  job: JobStatusResponse | null;
+  job: Job | null;
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
 }
 
 /**
+ * Helper to extract progress from any job state that has it
+ */
+function getJobProgress(job: Job): JobProgress | undefined {
+  switch (job.state) {
+    case "RUNNING":
+    case "CANCEL_REQUESTED":
+    case "COMPLETED":
+      return job.progress;
+    case "FAILED":
+    case "CANCELLED":
+      return job.progress;
+    case "PENDING":
+      return undefined;
+  }
+}
+
+/**
  * Hook for polling job status with automatic updates to localStorage
+ *
+ * Uses server-suggested poll intervals when available (poll.after_ms)
  */
 export function useJobPolling({
   jobId,
@@ -44,17 +61,26 @@ export function useJobPolling({
       const job = await getJobStatus(jobId, tenantId, true);
 
       // Update localStorage with latest state
-      updateJobStatus(jobId, job.state, job.progress);
+      updateJobStatus(jobId, job.state, getJobProgress(job));
 
       return job;
     },
     enabled: enabled && !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data && isTerminalState(data.state)) {
+
+      // Stop polling when job reaches terminal state
+      if (data?.is_terminal) {
         return false;
       }
-      return POLL_INTERVAL;
+
+      // Use server-suggested poll interval if available
+      if (data && "poll" in data && data.poll) {
+        return data.poll.after_ms;
+      }
+
+      // Default fallback
+      return 2000;
     },
     refetchOnWindowFocus: true,
     staleTime: 0,

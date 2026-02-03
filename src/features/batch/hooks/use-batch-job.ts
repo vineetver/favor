@@ -2,25 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import {
-  cancelBatchJob,
-  createBatchJob,
-  getBatchJobStatus,
-  isTerminalState,
-} from "../api";
+import { cancelJob, createJob, getJobStatus, isTerminalState } from "../api";
 import { DEFAULT_TENANT_ID, JOB_POLL_INTERVAL_MS } from "../config";
-import type {
-  BatchJobStatusResponse,
-  CreateBatchJobRequest,
-  InputFormat,
-  KeyType,
-} from "../types";
+import type { CreateJobRequest, InputFormat, Job, KeyType } from "../types";
 
 interface UseBatchJobOptions {
   tenantId?: string;
   onJobCreated?: (jobId: string) => void;
-  onJobCompleted?: (job: BatchJobStatusResponse) => void;
-  onJobFailed?: (job: BatchJobStatusResponse) => void;
+  onJobCompleted?: (job: Job) => void;
+  onJobFailed?: (job: Job) => void;
   onError?: (error: Error) => void;
 }
 
@@ -30,7 +20,6 @@ interface CreateJobOptions {
   keyType?: KeyType;
   hasHeader?: boolean;
   delimiter?: string;
-  fields?: string[];
   includeNotFound?: boolean;
   idempotencyKey?: string;
 }
@@ -39,7 +28,7 @@ interface UseBatchJobResult {
   createJob: (options: CreateJobOptions) => Promise<string>;
   cancelJob: (reason?: string) => Promise<void>;
   jobId: string | null;
-  jobStatus: BatchJobStatusResponse | null;
+  job: Job | null;
   isCreating: boolean;
   isPolling: boolean;
   isCancelling: boolean;
@@ -65,7 +54,7 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
 
   // Create job mutation
   const createMutation = useMutation({
-    mutationFn: createBatchJob,
+    mutationFn: createJob,
     onSuccess: (data) => {
       setJobId(data.job_id);
       onJobCreated?.(data.job_id);
@@ -80,7 +69,7 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   // Cancel job mutation
   const cancelMutation = useMutation({
     mutationFn: ({ jobId, reason }: { jobId: string; reason?: string }) =>
-      cancelBatchJob(jobId, tenantId, reason),
+      cancelJob(jobId, tenantId, reason),
     onSuccess: () => {
       // Invalidate the job status query to trigger a refresh
       if (jobId) {
@@ -99,7 +88,7 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
     queryKey: ["batch-job", jobId, tenantId],
     queryFn: async () => {
       if (!jobId) throw new Error("No job ID");
-      const status = await getBatchJobStatus(
+      const job = await getJobStatus(
         jobId,
         tenantId,
         // Include URLs only when job is completed
@@ -107,24 +96,28 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
       );
 
       // Check for terminal states and fetch with URLs if completed
-      if (status.state === "COMPLETED") {
-        const completeStatus = await getBatchJobStatus(jobId, tenantId, true);
-        onJobCompleted?.(completeStatus);
-        return completeStatus;
+      if (job.state === "COMPLETED") {
+        const completeJob = await getJobStatus(jobId, tenantId, true);
+        onJobCompleted?.(completeJob);
+        return completeJob;
       }
 
-      if (status.state === "FAILED" || status.state === "CANCELLED") {
-        onJobFailed?.(status);
+      if (job.state === "FAILED" || job.state === "CANCELLED") {
+        onJobFailed?.(job);
       }
 
-      return status;
+      return job;
     },
     enabled: !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
       // Stop polling when job reaches terminal state
-      if (data && isTerminalState(data.state)) {
+      if (data?.is_terminal) {
         return false;
+      }
+      // Use server-suggested poll interval if available
+      if (data && "poll" in data && data.poll) {
+        return data.poll.after_ms;
       }
       return JOB_POLL_INTERVAL_MS;
     },
@@ -133,16 +126,15 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   });
 
   // Create job function
-  const createJob = useCallback(
+  const createJobFn = useCallback(
     async (opts: CreateJobOptions): Promise<string> => {
-      const request: CreateBatchJobRequest = {
+      const request: CreateJobRequest = {
         tenant_id: tenantId,
         input_uri: opts.inputUri,
         format: opts.format,
         key_type: opts.keyType,
         has_header: opts.hasHeader,
         delimiter: opts.delimiter,
-        fields: opts.fields,
         include_not_found: opts.includeNotFound,
         idempotency_key: opts.idempotencyKey,
       };
@@ -154,7 +146,7 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   );
 
   // Cancel job function
-  const cancelJob = useCallback(
+  const cancelJobFn = useCallback(
     async (reason?: string): Promise<void> => {
       if (!jobId) {
         throw new Error("No job to cancel");
@@ -176,12 +168,12 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   }, [jobId, createMutation, cancelMutation, queryClient]);
 
   return {
-    createJob,
-    cancelJob,
+    createJob: createJobFn,
+    cancelJob: cancelJobFn,
     jobId,
-    jobStatus: jobStatusQuery.data ?? null,
+    job: jobStatusQuery.data ?? null,
     isCreating: createMutation.isPending,
-    isPolling: jobStatusQuery.isFetching && !isTerminalState(jobStatusQuery.data?.state ?? ""),
+    isPolling: jobStatusQuery.isFetching && !jobStatusQuery.data?.is_terminal,
     isCancelling: cancelMutation.isPending,
     error: error || (jobStatusQuery.error instanceof Error ? jobStatusQuery.error : null),
     reset,

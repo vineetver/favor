@@ -1,19 +1,19 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { validateInputFile } from "../api";
+import { validateFile } from "../api";
 import { DEFAULT_TENANT_ID } from "../config";
-import type { ValidationResponse } from "../types";
+import type { ValidateResponse } from "../types";
 
 interface UseBatchValidateOptions {
   tenantId?: string;
-  onSuccess?: (validation: ValidationResponse) => void;
+  onSuccess?: (validation: ValidateResponse) => void;
   onError?: (error: Error) => void;
 }
 
 interface UseBatchValidateResult {
-  validate: (inputUri: string, dryRunLookups?: boolean) => Promise<ValidationResponse>;
-  validation: ValidationResponse | null;
+  validate: (inputUri: string, dryRunLookups?: boolean) => Promise<ValidateResponse>;
+  validation: ValidateResponse | null;
   isValidating: boolean;
   error: Error | null;
   reset: () => void;
@@ -26,7 +26,7 @@ export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatc
   const { tenantId = DEFAULT_TENANT_ID, onSuccess, onError } = options;
 
   const mutation = useMutation({
-    mutationFn: validateInputFile,
+    mutationFn: validateFile,
     onSuccess: (data) => {
       onSuccess?.(data);
     },

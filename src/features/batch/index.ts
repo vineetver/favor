@@ -26,6 +26,18 @@ export {
   JobAnalyticsReport,
   StatCard,
   type StatCardVariant,
+  // State-specific job cards
+  JobDetailView,
+  PendingJobCard,
+  RunningJobCard,
+  CancelRequestedJobCard,
+  CompletedJobCard,
+  FailedJobCard,
+  CancelledJobCard,
+  // Pipeline and progress components
+  ProcessingPipeline,
+  EtaDisplay,
+  DedupStats,
 } from "./components";
 
 // Lib

@@ -98,7 +98,7 @@ function StatusHeader({
 
 function FormatBadges({ validation }: { validation: ValidateResponse }) {
   const { suggested_patch } = validation;
-  const isRsId = validation.key_type_detected === "RS_ID";
+  const isRsId = validation.key_type_detected === "RSID";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -213,7 +213,7 @@ function DataPreview({
 // ============================================================================
 
 function RecommendationCallout({ validation }: { validation: ValidateResponse }) {
-  const isRsId = validation.key_type_detected === "RS_ID";
+  const isRsId = validation.key_type_detected === "RSID";
 
   if (!isRsId) return null;
 
@@ -241,7 +241,7 @@ export function ValidationSummary({
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
   const isLowConfidence = stats.confidence < 0.7;
-  const isRsId = validation.key_type_detected === "RS_ID";
+  const isRsId = validation.key_type_detected === "RSID";
   const needsAttention = hasWarnings || isLowConfidence || isRsId;
 
   // Calculate rates

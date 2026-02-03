@@ -1,9 +1,16 @@
 /**
  * Batch Processing API Types
  * Based on the backend API specification
+ *
+ * Key design principles:
+ * - Parse, don't validate: Parse API responses at boundary into discriminated unions
+ * - Make invalid states unrepresentable: Job is a union of state-specific types
+ * - Single source of truth: Derive UI state from job.state, don't store redundantly
  */
 
-// ============ Job States ============
+// ============================================================================
+// Core Enums & Literals
+// ============================================================================
 
 export type JobState =
   | "PENDING"
@@ -15,11 +22,38 @@ export type JobState =
 
 export type InputFormat = "AUTO" | "CSV" | "TSV" | "TXT";
 
-export type KeyType = "AUTO" | "VID" | "RS_ID" | "VCF";
+// Note: Backend uses RSID (no underscore)
+export type KeyType = "AUTO" | "VID" | "RSID" | "VCF";
 
 export type OutputRowStatus = "FOUND" | "NOT_FOUND" | "INVALID" | "ERROR";
 
-// ============ Presign Upload ============
+// Processing stages - shows pipeline progress
+export type ProcessingStage =
+  | "QUEUED"    // Waiting for worker pickup
+  | "RESOLVING" // Phase 1: Converting keys to VIDs
+  | "SORTING"   // Phase 2: Sorting VIDs for efficient lookup
+  | "FETCHING"  // Phase 3: Fetching variant data
+  | "WRITING"   // Writing output to S3
+  | "DONE";     // Complete
+
+// Structured error codes for actionable UX
+export type ErrorCode =
+  | "CANCELLED"              // User cancelled
+  | "MAX_ATTEMPTS_EXCEEDED"  // Transient failures exhausted retries
+  | "EMPTY_FILE"             // Input file has no data
+  | "INVALID_FORMAT"         // Can't parse input
+  | "NO_KEY_COLUMN"          // No variant IDs found
+  | "FILE_TOO_LARGE"         // Exceeds size limit
+  | "INPUT_NOT_FOUND"        // S3 object missing
+  | "ROCKSDB_UNAVAILABLE"    // Database down
+  | "S3_UNAVAILABLE"         // Storage down
+  | "TIMEOUT"                // Exceeded max_runtime_sec
+  | "LEASE_LOST"             // Worker interrupted
+  | "INTERNAL_ERROR";        // Unknown error
+
+// ============================================================================
+// Presign Upload
+// ============================================================================
 
 export interface PresignRequest {
   tenant_id: string;
@@ -32,7 +66,9 @@ export interface PresignResponse {
   input_uri: string;
 }
 
-// ============ Validation ============
+// ============================================================================
+// Validation
+// ============================================================================
 
 export interface ValidateRequest {
   tenant_id: string;
@@ -110,7 +146,9 @@ export interface ValidateResponse {
   dry_run?: DryRunResult;
 }
 
-// ============ Job Creation ============
+// ============================================================================
+// Job Creation
+// ============================================================================
 
 export interface CreateJobRequest {
   tenant_id: string;
@@ -132,20 +170,27 @@ export interface CreateJobRequest {
 export interface CreateJobResponse {
   job_id: string;
   state: JobState;
+  message: string;
   created_at: string;
 }
 
-// ============ Job Status ============
+// ============================================================================
+// Job Status - Shared Types
+// ============================================================================
 
 export interface JobProgress {
+  stage: ProcessingStage;
+  stage_description: string;
   processed: number;
   found: number;
   not_found: number;
   errors: number;
-  // New fields from updated API
-  percent?: number;
-  found_rate?: number;
-  error_rate?: number;
+  total_rows: number;
+  unique_vids: number;
+  duplicates: number;
+  percent: number;
+  found_rate: number;
+  error_rate: number;
 }
 
 export interface JobInput {
@@ -154,33 +199,23 @@ export interface JobInput {
   filename: string;
 }
 
-export type ParquetState = "PENDING" | "PROCESSING" | "READY" | "FAILED";
-
-export interface ParquetOutput {
-  state: ParquetState;
-  url?: string | null;
-  bytes?: number | null;
-  bytes_human?: string | null;
-  error_message?: string | null;
-}
-
+// Output is only present on COMPLETED jobs - no more parquet field
 export interface JobOutput {
+  url: string;
+  manifest_url: string;
   bytes: number;
   bytes_human: string;
   sha256: string;
-  url?: string | null;
-  manifest_url?: string | null;
-  expires_at?: string | null;
-  expires_in_seconds?: number | null;
-  parquet?: ParquetOutput | null;
+  expires_at: string;
+  expires_in_seconds: number;
 }
 
 export interface JobTiming {
   total_ms: number;
   total_human: string;
-  processing_ms?: number | null;
-  queued_ms?: number | null;
-  rows_per_sec?: number | null;
+  processing_ms?: number;
+  queued_ms?: number;
+  rows_per_sec?: number;
 }
 
 export interface JobEta {
@@ -193,26 +228,94 @@ export interface JobPollHint {
   message: string;
 }
 
-export interface JobStatusResponse {
+// ============================================================================
+// Job Status - Discriminated Union (Make Invalid States Unrepresentable)
+// ============================================================================
+
+// Base fields present in all job states
+interface JobBase {
   job_id: string;
-  state: JobState;
   attempt: number;
-  can_cancel: boolean;
-  is_terminal: boolean;
   created_at: string;
-  started_at?: string | null;
-  completed_at?: string | null;
   input: JobInput;
-  progress: JobProgress;
   timing: JobTiming;
-  output?: JobOutput | null;
-  eta?: JobEta | null;
-  poll?: JobPollHint | null;
-  error_message?: string | null;
-  db_version?: string | null;
+  db_version?: string;
 }
 
-// ============ Job Cancellation ============
+// PENDING: Waiting in queue
+export interface JobPending extends JobBase {
+  state: "PENDING";
+  is_terminal: false;
+  can_cancel: true;
+  poll: JobPollHint;
+}
+
+// RUNNING: Actively processing
+export interface JobRunning extends JobBase {
+  state: "RUNNING";
+  is_terminal: false;
+  can_cancel: true;
+  poll: JobPollHint;
+  started_at: string;
+  progress: JobProgress;
+  eta?: JobEta;
+}
+
+// CANCEL_REQUESTED: Cancellation in progress
+export interface JobCancelRequested extends JobBase {
+  state: "CANCEL_REQUESTED";
+  is_terminal: false;
+  can_cancel: false;
+  started_at: string;
+  progress: JobProgress;
+}
+
+// COMPLETED: Success with output
+export interface JobCompleted extends JobBase {
+  state: "COMPLETED";
+  is_terminal: true;
+  can_cancel: false;
+  started_at: string;
+  completed_at: string;
+  progress: JobProgress;
+  output: JobOutput;
+}
+
+// FAILED: Error with details
+export interface JobFailed extends JobBase {
+  state: "FAILED";
+  is_terminal: true;
+  can_cancel: false;
+  started_at?: string;
+  completed_at: string;
+  progress?: JobProgress;
+  error_code: ErrorCode;
+  error_message: string;
+  retryable: boolean;
+}
+
+// CANCELLED: User cancelled
+export interface JobCancelled extends JobBase {
+  state: "CANCELLED";
+  is_terminal: true;
+  can_cancel: false;
+  started_at?: string;
+  completed_at: string;
+  progress?: JobProgress;
+}
+
+// The discriminated union - TypeScript will narrow based on `state`
+export type Job =
+  | JobPending
+  | JobRunning
+  | JobCancelRequested
+  | JobCompleted
+  | JobFailed
+  | JobCancelled;
+
+// ============================================================================
+// Job Cancellation
+// ============================================================================
 
 export interface CancelResponse {
   job_id: string;
@@ -220,7 +323,9 @@ export interface CancelResponse {
   message: string;
 }
 
-// ============ Output Row (JSONL) ============
+// ============================================================================
+// Output Row (JSONL)
+// ============================================================================
 
 export interface OutputRow {
   row_id: number;
@@ -232,7 +337,9 @@ export interface OutputRow {
   error?: string;
 }
 
-// ============ Local Storage Types ============
+// ============================================================================
+// Local Storage Types
+// ============================================================================
 
 export interface StoredJob {
   job_id: string;
@@ -244,7 +351,9 @@ export interface StoredJob {
   estimated_rows?: number;
 }
 
-// ============ UI State Types ============
+// ============================================================================
+// UI State Types
+// ============================================================================
 
 export type UploadStep =
   | "select"

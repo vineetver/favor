@@ -8,6 +8,7 @@ import {
   JobAnalytics,
   useJobPolling,
 } from "@features/batch";
+import type { Job, JobOutput } from "@features/batch";
 import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
 import {
   AlertCircle,
@@ -20,6 +21,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+/**
+ * Helper to get output from completed jobs
+ */
+function getJobOutput(job: Job): JobOutput | undefined {
+  return job.state === "COMPLETED" ? job.output : undefined;
+}
 
 interface AnalyticsClientProps {
   jobId: string;
@@ -38,7 +46,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
     setHasMounted(true);
   }, [jobId]);
 
-  // Poll for job status to get parquet URL
+  // Poll for job status to get output URL
   const { job, isLoading, error } = useJobPolling({
     jobId,
     tenantId: DEFAULT_TENANT_ID,
@@ -108,13 +116,12 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
     );
   }
 
-  // Check if job is completed and has parquet
+  // Check if job is completed and has output
   const isCompleted = job?.state === "COMPLETED";
-  const parquet = job?.output?.parquet;
-  const parquetReady = parquet?.state === "READY" && parquet.url;
+  const output = job ? getJobOutput(job) : undefined;
 
-  // Parquet not ready state
-  if (!isCompleted) {
+  // Job not completed state
+  if (!isCompleted || !output) {
     return (
       <div className="min-h-screen relative overflow-hidden text-slate-900">
         <div className="fixed inset-0 -z-10 pointer-events-none">
@@ -155,68 +162,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
     );
   }
 
-  // Parquet processing state
-  if (!parquetReady) {
-    const parquetState = parquet?.state;
-
-    return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
-        <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
-          <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
-        </div>
-
-        <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-4xl mx-auto">
-          <div className="mb-8">
-            <Link
-              href={`/batch-annotation/jobs/${jobId}`}
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Job
-            </Link>
-          </div>
-
-          <Card className="border border-slate-200 py-0 gap-0">
-            <CardContent className="flex flex-col items-center justify-center text-center py-16">
-              {parquetState === "FAILED" ? (
-                <>
-                  <div className="h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                    <AlertCircle className="w-8 h-8 text-rose-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                    Analytics Generation Failed
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-2 max-w-sm">
-                    {parquet?.error_message || "Failed to generate analytics data."}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                    Preparing Analytics Data
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-2 max-w-sm">
-                    {parquetState === "PENDING"
-                      ? "Analytics data generation is queued..."
-                      : "Generating optimized analytics file..."}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    This page will automatically update when ready
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
-  // Analytics ready
+  // Analytics ready - output is available on completed jobs
   return (
     <div className="min-h-screen relative overflow-hidden text-slate-900">
       {/* Background */}
@@ -247,9 +193,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
                 </h1>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {storedJob?.filename || `Job ${jobId.slice(0, 8)}`}
-                  {parquet?.bytes_human && (
+                  {output?.bytes_human && (
                     <span className="ml-2 text-slate-400">
-                      ({parquet.bytes_human})
+                      ({output.bytes_human})
                     </span>
                   )}
                 </p>
@@ -289,13 +235,13 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
         {/* Analytics Component */}
         {viewMode === "report" ? (
           <JobAnalyticsReport
-            parquetUrl={parquet.url!}
+            parquetUrl={output.url}
             jobId={jobId}
             filename={storedJob?.filename}
           />
         ) : (
           <JobAnalytics
-            parquetUrl={parquet.url!}
+            parquetUrl={output.url}
             jobId={jobId}
             filename={storedJob?.filename}
           />

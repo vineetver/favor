@@ -7,24 +7,20 @@ import {
   cancelJob,
   DEFAULT_TENANT_ID,
   getStoredJob,
-  JobProgressCard,
+  JobDetailView,
   useJobPolling,
 } from "@features/batch";
+import type { Job } from "@features/batch";
 import {
   AlertCircle,
   ArrowLeft,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  FileSpreadsheet,
   Loader2,
   Pause,
   Play,
   RefreshCw,
-  Upload,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 interface JobDetailClientProps {
@@ -32,107 +28,7 @@ interface JobDetailClientProps {
 }
 
 // ============================================================================
-// Progress Timeline
-// ============================================================================
-
-interface TimelineStep {
-  id: string;
-  label: string;
-  icon: typeof Upload;
-  status: "completed" | "current" | "pending";
-}
-
-function ProgressTimeline({ state }: { state: string }) {
-  const steps: TimelineStep[] = [
-    {
-      id: "upload",
-      label: "Upload",
-      icon: Upload,
-      status:
-        state === "PENDING" ? "current" : ["RUNNING", "COMPLETED", "FAILED", "CANCELLED"].includes(state) ? "completed" : "pending",
-    },
-    {
-      id: "validate",
-      label: "Validate",
-      icon: FileSpreadsheet,
-      status:
-        state === "PENDING" ? "completed" : ["RUNNING", "COMPLETED", "FAILED", "CANCELLED"].includes(state) ? "completed" : "pending",
-    },
-    {
-      id: "annotate",
-      label: "Annotate",
-      icon: Zap,
-      status:
-        state === "RUNNING" || state === "CANCEL_REQUESTED"
-          ? "current"
-          : ["COMPLETED", "FAILED", "CANCELLED"].includes(state)
-            ? "completed"
-            : "pending",
-    },
-    {
-      id: "export",
-      label: "Export",
-      icon: CheckCircle2,
-      status: state === "COMPLETED" ? "completed" : "pending",
-    },
-  ];
-
-  return (
-    <div className="flex items-center justify-between">
-      {steps.map((step, index) => {
-        const Icon = step.icon;
-        const isLast = index === steps.length - 1;
-
-        return (
-          <div key={step.id} className="flex items-center flex-1 last:flex-none">
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className={`
-                  flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium
-                  ${step.status === "completed" ? "bg-emerald-100 text-emerald-600" : ""}
-                  ${step.status === "current" ? "bg-primary/10 text-primary ring-2 ring-primary" : ""}
-                  ${step.status === "pending" ? "bg-slate-100 text-slate-400" : ""}
-                `}
-              >
-                {step.status === "completed" ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : step.status === "current" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Icon className="h-4 w-4" />
-                )}
-              </div>
-              <span
-                className={`text-xs font-medium ${
-                  step.status === "current"
-                    ? "text-primary"
-                    : step.status === "completed"
-                      ? "text-slate-700"
-                      : "text-slate-400"
-                }`}
-              >
-                {step.label}
-              </span>
-            </div>
-
-            {!isLast && (
-              <div className="flex-1 mx-2 h-0.5 rounded-full bg-slate-200">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    step.status === "completed" ? "bg-emerald-400 w-full" : "w-0"
-                  }`}
-                />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ============================================================================
-// Auto-refresh Indicator
+// Auto-refresh Indicator (minimal, unobtrusive)
 // ============================================================================
 
 function RefreshIndicator({
@@ -205,6 +101,7 @@ function RefreshIndicator({
 // ============================================================================
 
 export function JobDetailClient({ jobId }: JobDetailClientProps) {
+  const router = useRouter();
   const [storedJob, setStoredJob] = useState<ReturnType<typeof getStoredJob>>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -230,12 +127,24 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     }
   }, [job]);
 
+  // Sync stored job with latest (only when job changes)
   useEffect(() => {
     if (job) {
       setStoredJob((prev) =>
         prev
-          ? { ...prev, state: job.state, progress: job.progress }
-          : null,
+          ? {
+              ...prev,
+              state: job.state,
+              progress:
+                job.state === "RUNNING" ||
+                job.state === "CANCEL_REQUESTED" ||
+                job.state === "COMPLETED"
+                  ? job.progress
+                  : job.state === "FAILED" || job.state === "CANCELLED"
+                    ? job.progress
+                    : undefined,
+            }
+          : null
       );
     }
   }, [job]);
@@ -250,7 +159,8 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
       await cancelJob(jobId, DEFAULT_TENANT_ID);
       refetch();
     } catch (err) {
-      const message = err instanceof BatchApiError ? err.message : "Failed to cancel job";
+      const message =
+        err instanceof BatchApiError ? err.message : "Failed to cancel job";
       setCancelError(message);
     } finally {
       setIsCancelling(false);
@@ -258,7 +168,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   }, [jobId, refetch]);
 
   const handleDownload = useCallback(() => {
-    if (job?.output?.url) {
+    if (job?.state === "COMPLETED" && job.output?.url) {
       const link = document.createElement("a");
       link.href = job.output.url;
       link.target = "_blank";
@@ -267,10 +177,10 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
       link.click();
       document.body.removeChild(link);
     }
-  }, [job?.output?.url]);
+  }, [job]);
 
   const handleDownloadManifest = useCallback(() => {
-    if (job?.output?.manifest_url) {
+    if (job?.state === "COMPLETED" && job.output?.manifest_url) {
       const link = document.createElement("a");
       link.href = job.output.manifest_url;
       link.target = "_blank";
@@ -279,7 +189,15 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
       link.click();
       document.body.removeChild(link);
     }
-  }, [job?.output?.manifest_url]);
+  }, [job]);
+
+  const handleOpenAnalytics = useCallback(() => {
+    router.push(`/batch-annotation/jobs/${jobId}/analytics`);
+  }, [router, jobId]);
+
+  const handleNewJob = useCallback(() => {
+    router.push("/batch-annotation");
+  }, [router]);
 
   // Loading state
   if (!hasMounted || (isLoading && !job && !storedJob)) {
@@ -294,7 +212,9 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
           <Card className="border border-slate-200 py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-base font-medium text-slate-700">Loading job details...</p>
+              <p className="text-base font-medium text-slate-700">
+                Loading job details...
+              </p>
             </CardContent>
           </Card>
         </main>
@@ -327,12 +247,18 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
               <div className="h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8 text-rose-600" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Job Not Found</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Job Not Found
+              </h3>
               <p className="text-sm text-slate-500 mb-6 max-w-sm">
-                The job you&apos;re looking for doesn&apos;t exist or may have expired.
+                The job you&apos;re looking for doesn&apos;t exist or may have
+                expired.
               </p>
               <div className="flex items-center gap-3">
-                <Button variant="outline" onClick={() => window.location.reload()}>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                >
                   <RefreshCw className="w-4 h-4" />
                   Retry
                 </Button>
@@ -350,24 +276,18 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     );
   }
 
-  const displayJob = job || (storedJob ? {
-    job_id: storedJob.job_id,
-    tenant_id: storedJob.tenant_id,
-    state: storedJob.state,
-    progress: storedJob.progress || { processed: 0, found: 0, not_found: 0, errors: 0 },
-    created_at: storedJob.created_at,
-    attempt: 1,
-    can_cancel: storedJob.state === "PENDING" || storedJob.state === "RUNNING",
-    is_terminal: storedJob.state === "COMPLETED" || storedJob.state === "FAILED" || storedJob.state === "CANCELLED",
-    input: { bytes: 0, bytes_human: "0 B", filename: storedJob.filename },
-    timing: { total_ms: 0, total_human: "0s" },
-  } : null);
-
-  if (!displayJob) {
+  // Use job from API if available, otherwise construct from stored job
+  if (!job && !storedJob) {
     return null;
   }
 
-  const isTerminal = job?.is_terminal ?? (displayJob.state === "COMPLETED" || displayJob.state === "FAILED" || displayJob.state === "CANCELLED");
+  const isTerminal =
+    job?.is_terminal ??
+    (storedJob?.state === "COMPLETED" ||
+      storedJob?.state === "FAILED" ||
+      storedJob?.state === "CANCELLED");
+
+  const filename = storedJob?.filename ?? job?.input?.filename;
 
   return (
     <div className="min-h-screen relative overflow-hidden text-slate-900">
@@ -379,16 +299,16 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
 
       <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <Link
-              href="/batch-annotation/jobs"
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Jobs
-            </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/batch-annotation/jobs"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Jobs
+          </Link>
 
+          <div className="flex items-center gap-4">
             {!isTerminal && (
               <RefreshIndicator
                 lastUpdated={lastUpdated}
@@ -397,83 +317,28 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
                 onRefresh={refetch}
               />
             )}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div />
             <Button variant="outline" size="sm" asChild>
               <Link href="/batch-annotation">New Job</Link>
             </Button>
           </div>
         </div>
 
-        {/* Progress Timeline */}
-        {!isTerminal && (
-          <Card className="mb-6 border border-slate-200 py-0 gap-0">
-            <CardContent className="p-4">
-              <ProgressTimeline state={displayJob.state} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Job Progress Card */}
-        <JobProgressCard
-          job={displayJob as any}
-          filename={storedJob?.filename}
-          onCancel={displayJob.can_cancel ? handleCancel : undefined}
-          onDownload={job?.output?.url ? handleDownload : undefined}
-          onDownloadManifest={job?.output?.manifest_url ? handleDownloadManifest : undefined}
-          isCancelling={isCancelling}
-        />
-
-        {/* Analytics Card */}
-        {job?.state === "COMPLETED" && (
-          <Card className="mt-6 border border-slate-200 py-0 gap-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Cohort Analytics</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {job.output?.parquet?.state === "READY"
-                        ? "Explore your results with SQL queries"
-                        : job.output?.parquet?.state === "PROCESSING"
-                          ? "Analytics data is being prepared..."
-                          : job.output?.parquet?.state === "FAILED"
-                            ? "Analytics generation failed"
-                            : "Analytics data is queued"}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant={job.output?.parquet?.state === "READY" ? "default" : "outline"}
-                  size="sm"
-                  asChild={job.output?.parquet?.state === "READY"}
-                  disabled={job.output?.parquet?.state !== "READY"}
-                >
-                  {job.output?.parquet?.state === "READY" ? (
-                    <Link href={`/batch-annotation/jobs/${jobId}/analytics`}>
-                      <BarChart3 className="w-4 h-4" />
-                      Open Analytics
-                    </Link>
-                  ) : job.output?.parquet?.state === "PROCESSING" ? (
-                    <>
-                      <Clock className="w-4 h-4" />
-                      Preparing...
-                    </>
-                  ) : (
-                    <>
-                      <BarChart3 className="w-4 h-4" />
-                      Not Available
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Job Card - State-specific rendering */}
+        {job && (
+          <JobDetailView
+            job={job}
+            filename={filename}
+            onCancel={job.can_cancel ? handleCancel : undefined}
+            onDownload={job.state === "COMPLETED" ? handleDownload : undefined}
+            onDownloadManifest={
+              job.state === "COMPLETED" ? handleDownloadManifest : undefined
+            }
+            onOpenAnalytics={
+              job.state === "COMPLETED" ? handleOpenAnalytics : undefined
+            }
+            onNewJob={handleNewJob}
+            isCancelling={isCancelling}
+          />
         )}
 
         {/* Cancel Error */}
@@ -489,7 +354,8 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
         {/* Safe to leave message */}
         {!isTerminal && (
           <p className="mt-6 text-center text-sm text-slate-500">
-            You can leave this page — your job will continue processing in the background.
+            You can leave this page — your job will continue processing in the
+            background.
           </p>
         )}
       </main>

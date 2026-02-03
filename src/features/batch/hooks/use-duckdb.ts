@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import {
-  getCachedParquet,
-  setCachedParquet,
-  clearParquetCache,
-} from "../lib/parquet-cache";
+  getCachedData,
+  setCachedData,
+  clearDataCache,
+} from "../lib/data-cache";
 
 // ============================================================================
 // Types
@@ -23,7 +23,7 @@ export interface QueryResult {
   rowCount: number;
 }
 
-export interface LoadParquetResult {
+export interface LoadDataResult {
   fromCache: boolean;
   size: number;
 }
@@ -32,7 +32,9 @@ export interface UseDuckDBResult {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
-  loadParquet: (url: string, tableName?: string) => Promise<LoadParquetResult>;
+  /** @deprecated Use loadArrow instead - backend now outputs Arrow IPC format */
+  loadParquet: (url: string, tableName?: string) => Promise<LoadDataResult>;
+  loadArrow: (url: string, tableName?: string) => Promise<LoadDataResult>;
   query: (sql: string) => Promise<QueryResult>;
   getTableSchema: (tableName: string) => Promise<QueryResult>;
   getTables: () => Promise<string[]>;

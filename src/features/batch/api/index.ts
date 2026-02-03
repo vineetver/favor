@@ -1,23 +1,42 @@
 /**
  * Batch Processing API Client
- * Production-grade implementation with retry logic and proper error handling
+ *
+ * Key design principle: Parse, don't validate
+ * - Raw API responses are parsed at the boundary into discriminated unions
+ * - Components receive strongly-typed Job objects where TypeScript enforces valid states
  */
 
 import type {
   CancelResponse,
   CreateJobRequest,
   CreateJobResponse,
+  ErrorCode,
+  Job,
+  JobCancelled,
+  JobCancelRequested,
+  JobCompleted,
+  JobEta,
+  JobFailed,
+  JobInput,
+  JobOutput,
+  JobPending,
+  JobPollHint,
+  JobProgress,
+  JobRunning,
   JobState,
-  JobStatusResponse,
+  JobTiming,
   PresignRequest,
   PresignResponse,
+  ProcessingStage,
   ValidateRequest,
   ValidateResponse,
 } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
-// ============ Error Classes ============
+// ============================================================================
+// Error Classes
+// ============================================================================
 
 export class BatchApiError extends Error {
   constructor(
@@ -31,7 +50,9 @@ export class BatchApiError extends Error {
   }
 }
 
-// ============ Helper Functions ============
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 function getContentType(filename: string): string {
   const ext = filename.toLowerCase().split(".").pop();
@@ -89,7 +110,184 @@ async function withRetry<T>(
   throw new Error("Unreachable");
 }
 
-// ============ API Functions ============
+// ============================================================================
+// Job Parser (Parse, Don't Validate)
+// ============================================================================
+
+/**
+ * Raw API response shape (loose types for parsing)
+ */
+interface RawJobResponse {
+  job_id: string;
+  state: string;
+  is_terminal: boolean;
+  can_cancel: boolean;
+  attempt: number;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  input: JobInput;
+  progress?: JobProgress | null;
+  timing: JobTiming;
+  output?: JobOutput | null;
+  eta?: JobEta | null;
+  poll?: JobPollHint | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  retryable?: boolean | null;
+  db_version?: string | null;
+}
+
+/**
+ * Parse raw API response into discriminated union.
+ *
+ * This is the boundary where we transform loose API data into
+ * strongly-typed Job objects. After this point, TypeScript
+ * enforces that each state has exactly the fields it needs.
+ *
+ * @throws Error if state is unknown
+ */
+export function parseJob(raw: RawJobResponse): Job {
+  const base = {
+    job_id: raw.job_id,
+    attempt: raw.attempt,
+    created_at: raw.created_at,
+    input: raw.input,
+    timing: raw.timing,
+    db_version: raw.db_version ?? undefined,
+  };
+
+  // Default poll hint if not provided
+  const defaultPoll: JobPollHint = { after_ms: 2000, message: "Polling..." };
+
+  switch (raw.state) {
+    case "PENDING": {
+      const job: JobPending = {
+        ...base,
+        state: "PENDING",
+        is_terminal: false,
+        can_cancel: true,
+        poll: raw.poll ?? defaultPoll,
+      };
+      return job;
+    }
+
+    case "RUNNING": {
+      if (!raw.progress) {
+        throw new Error("RUNNING job must have progress");
+      }
+      if (!raw.started_at) {
+        throw new Error("RUNNING job must have started_at");
+      }
+      const job: JobRunning = {
+        ...base,
+        state: "RUNNING",
+        is_terminal: false,
+        can_cancel: true,
+        poll: raw.poll ?? defaultPoll,
+        started_at: raw.started_at,
+        progress: raw.progress,
+        eta: raw.eta ?? undefined,
+      };
+      return job;
+    }
+
+    case "CANCEL_REQUESTED": {
+      if (!raw.progress) {
+        throw new Error("CANCEL_REQUESTED job must have progress");
+      }
+      if (!raw.started_at) {
+        throw new Error("CANCEL_REQUESTED job must have started_at");
+      }
+      const job: JobCancelRequested = {
+        ...base,
+        state: "CANCEL_REQUESTED",
+        is_terminal: false,
+        can_cancel: false,
+        started_at: raw.started_at,
+        progress: raw.progress,
+      };
+      return job;
+    }
+
+    case "COMPLETED": {
+      if (!raw.output) {
+        throw new Error("COMPLETED job must have output");
+      }
+      if (!raw.progress) {
+        throw new Error("COMPLETED job must have progress");
+      }
+      if (!raw.started_at) {
+        throw new Error("COMPLETED job must have started_at");
+      }
+      if (!raw.completed_at) {
+        throw new Error("COMPLETED job must have completed_at");
+      }
+      const job: JobCompleted = {
+        ...base,
+        state: "COMPLETED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: raw.started_at,
+        completed_at: raw.completed_at,
+        progress: raw.progress,
+        output: raw.output,
+      };
+      return job;
+    }
+
+    case "FAILED": {
+      if (!raw.completed_at) {
+        throw new Error("FAILED job must have completed_at");
+      }
+      if (!raw.error_code) {
+        throw new Error("FAILED job must have error_code");
+      }
+      if (raw.error_message === undefined || raw.error_message === null) {
+        throw new Error("FAILED job must have error_message");
+      }
+      if (raw.retryable === undefined || raw.retryable === null) {
+        throw new Error("FAILED job must have retryable");
+      }
+      const job: JobFailed = {
+        ...base,
+        state: "FAILED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: raw.started_at ?? undefined,
+        completed_at: raw.completed_at,
+        progress: raw.progress ?? undefined,
+        error_code: raw.error_code as ErrorCode,
+        error_message: raw.error_message,
+        retryable: raw.retryable,
+      };
+      return job;
+    }
+
+    case "CANCELLED": {
+      if (!raw.completed_at) {
+        throw new Error("CANCELLED job must have completed_at");
+      }
+      const job: JobCancelled = {
+        ...base,
+        state: "CANCELLED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: raw.started_at ?? undefined,
+        completed_at: raw.completed_at,
+        progress: raw.progress ?? undefined,
+      };
+      return job;
+    }
+
+    default:
+      throw new Error(`Unknown job state: ${raw.state}`);
+  }
+}
+
+// ============================================================================
+// API Functions
+// ============================================================================
 
 /**
  * Step 1: Get presigned URL for file upload
@@ -174,22 +372,27 @@ export async function createJob(request: CreateJobRequest): Promise<CreateJobRes
 
 /**
  * Step 5: Get job status
+ *
+ * Returns a discriminated union Job type where TypeScript
+ * will narrow the type based on job.state
  */
 export async function getJobStatus(
   jobId: string,
   tenantId: string,
   includeUrls = false,
-): Promise<JobStatusResponse> {
+): Promise<Job> {
   const params = new URLSearchParams({
     tenant_id: tenantId,
     include_urls: String(includeUrls),
   });
 
-  return withRetry(() =>
+  const raw = await withRetry(() =>
     fetch(`${API_BASE}/batch/${jobId}?${params}`).then((res) =>
-      handleResponse<JobStatusResponse>(res, `/batch/${jobId}`),
+      handleResponse<RawJobResponse>(res, `/batch/${jobId}`),
     ),
   );
+
+  return parseJob(raw);
 }
 
 /**
@@ -208,10 +411,13 @@ export async function cancelJob(
   }).then((res) => handleResponse<CancelResponse>(res, `/batch/${jobId}`));
 }
 
-// ============ Utility Functions ============
+// ============================================================================
+// Utility Functions (Derive, don't store)
+// ============================================================================
 
 /**
  * Check if a job state is terminal (no more updates expected)
+ * Prefer using job.is_terminal from the discriminated union
  */
 export function isTerminalState(state: JobState): boolean {
   return state === "COMPLETED" || state === "FAILED" || state === "CANCELLED";
@@ -219,6 +425,7 @@ export function isTerminalState(state: JobState): boolean {
 
 /**
  * Check if a job can be cancelled
+ * Prefer using job.can_cancel from the discriminated union
  */
 export function isCancellable(state: JobState): boolean {
   return state === "PENDING" || state === "RUNNING";

@@ -18,14 +18,13 @@ import {
   StopCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { isCancellable } from "../api";
 import { JOB_STATE_CONFIG } from "../constants";
 import { formatBytes, formatDuration, formatNumber, formatTime } from "../lib/format";
-import type { JobStatusResponse } from "../types";
+import type { Job, JobProgress } from "../types";
 import { StatCard } from "./stat-card";
 
 interface JobProgressCardProps {
-  job: JobStatusResponse;
+  job: Job;
   filename?: string;
   onCancel?: () => void;
   onDownload?: () => void;
@@ -34,15 +33,63 @@ interface JobProgressCardProps {
   className?: string;
 }
 
+/**
+ * Helper to extract progress from any job state that has it
+ */
+function getJobProgress(job: Job): JobProgress | undefined {
+  switch (job.state) {
+    case "RUNNING":
+    case "CANCEL_REQUESTED":
+    case "COMPLETED":
+      return job.progress;
+    case "FAILED":
+    case "CANCELLED":
+      return job.progress;
+    case "PENDING":
+      return undefined;
+  }
+}
+
+/**
+ * Helper to get started_at from job states that have it
+ */
+function getStartedAt(job: Job): string | undefined {
+  switch (job.state) {
+    case "RUNNING":
+    case "CANCEL_REQUESTED":
+    case "COMPLETED":
+      return job.started_at;
+    case "FAILED":
+    case "CANCELLED":
+      return job.started_at;
+    case "PENDING":
+      return undefined;
+  }
+}
+
+/**
+ * Helper to get completed_at from terminal job states
+ */
+function getCompletedAt(job: Job): string | undefined {
+  switch (job.state) {
+    case "COMPLETED":
+    case "FAILED":
+    case "CANCELLED":
+      return job.completed_at;
+    default:
+      return undefined;
+  }
+}
+
 function LiveDuration({
   startedAt,
   completedAt,
 }: {
   startedAt: string;
-  completedAt?: string | null;
+  completedAt?: string;
 }) {
   const [duration, setDuration] = useState(() =>
-    formatDuration(startedAt, completedAt ?? undefined),
+    formatDuration(startedAt, completedAt),
   );
 
   useEffect(() => {
@@ -75,12 +122,24 @@ export function JobProgressCard({
   className,
 }: JobProgressCardProps) {
   const [copied, setCopied] = useState(false);
-  const { state, progress, error_message, started_at, completed_at, timing, output } = job;
+
+  const { state, timing } = job;
   const stateConfig = JOB_STATE_CONFIG[state];
   const StateIcon = stateConfig.icon;
 
-  // Use can_cancel from API if available, otherwise compute from state
-  const canCancel = (job.can_cancel ?? isCancellable(state)) && onCancel;
+  // Extract optional fields using helpers
+  const progress = getJobProgress(job);
+  const started_at = getStartedAt(job);
+  const completed_at = getCompletedAt(job);
+
+  // Get error message for failed jobs
+  const error_message = job.state === "FAILED" ? job.error_message : undefined;
+
+  // Get output for completed jobs
+  const output = job.state === "COMPLETED" ? job.output : undefined;
+
+  // Derived state
+  const canCancel = job.can_cancel && onCancel;
   const isRunning = state === "RUNNING" || state === "PENDING";
   const isComplete = state === "COMPLETED";
   const isFailed = state === "FAILED";

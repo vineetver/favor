@@ -60,7 +60,7 @@ export function formatTime(dateString: string): string {
 export function getKeyTypeLabel(keyType: string): string {
   const labels: Record<string, string> = {
     VID: "VID",
-    RS_ID: "rsID",
+    RSID: "rsID",
     VCF: "VCF",
     AUTO: "Auto",
   };
