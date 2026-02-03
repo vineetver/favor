@@ -645,7 +645,7 @@ export function JobAnalytics({
               </div>
               <div>
                 <CardTitle className="text-lg font-semibold text-slate-900">
-                  Variant Analytics
+                  Cohort Analytics
                 </CardTitle>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {filename || `Job ${jobId.slice(0, 8)}`}

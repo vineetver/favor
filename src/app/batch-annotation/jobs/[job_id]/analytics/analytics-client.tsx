@@ -243,7 +243,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 print:text-xl">
-                  Variant Analytics
+                  Cohort Analytics
                 </h1>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {storedJob?.filename || `Job ${jobId.slice(0, 8)}`}

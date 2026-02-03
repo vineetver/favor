@@ -436,7 +436,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
                     <BarChart3 className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Variant Analytics</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">Cohort Analytics</h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {job.output?.parquet?.state === "READY"
                         ? "Explore your results with SQL queries"
