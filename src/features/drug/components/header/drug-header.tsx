@@ -46,7 +46,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-3 text-breadcrumb mb-4">
         <span className="text-subtle">Drugs</span>
-        <span className="text-slate-300">▸</span>
+        <span className="text-border">▸</span>
         <span className="text-breadcrumb-mono">{drug.chembl_id}</span>
       </div>
 
@@ -89,9 +89,9 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
 
           {/* Metadata Row */}
           {drug.year_first_approved ? (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-muted-foreground">
               First approved{" "}
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-foreground">
                 {drug.year_first_approved}
               </span>
             </div>

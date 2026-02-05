@@ -3,6 +3,13 @@
 import { Button } from "@shared/components/ui/button";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Label } from "@shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shared/components/ui/select";
 import { Slider } from "@shared/components/ui/slider";
 import { cn } from "@infra/utils";
 import {
@@ -57,19 +64,19 @@ function CollapsibleSection({ title, defaultOpen = true, badge, children }: Coll
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-slate-200 last:border-b-0">
+    <div className="border-b border-border last:border-b-0">
       <button
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700">{title}</span>
+          <span className="text-sm font-medium text-foreground">{title}</span>
           {badge}
         </div>
         {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-slate-400" />
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
         )}
       </button>
       {isOpen && <div className="px-4 pb-4">{children}</div>}
@@ -93,8 +100,8 @@ function RecipeButton({ recipe, onClick, disabled }: RecipeButtonProps) {
       className={cn(
         "w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all",
         disabled
-          ? "bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed"
-          : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-sm"
+          ? "bg-muted border-border opacity-50 cursor-not-allowed"
+          : "bg-background border-border hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm"
       )}
       onClick={onClick}
       disabled={disabled}
@@ -106,8 +113,8 @@ function RecipeButton({ recipe, onClick, disabled }: RecipeButtonProps) {
         {RECIPE_ICONS[recipe.icon] ?? <Route className="w-4 h-4" />}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-slate-900">{recipe.name}</div>
-        <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{recipe.description}</div>
+        <div className="text-sm font-medium text-foreground">{recipe.name}</div>
+        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{recipe.description}</div>
       </div>
     </button>
   );
@@ -140,9 +147,9 @@ function NodeTypeLegend({ counts }: NodeTypeLegendProps) {
                 borderColor: colors.border,
               }}
             />
-            <span className="flex-1 text-sm text-slate-700">{type}</span>
+            <span className="flex-1 text-sm text-foreground">{type}</span>
             {count > 0 && (
-              <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {count}
               </span>
             )}
@@ -178,11 +185,11 @@ function EdgeTypeToggle({ edgeType, enabled, count, onChange }: EdgeTypeTogglePr
         className="w-2.5 h-2.5 rounded-full"
         style={{ backgroundColor: config.color }}
       />
-      <span className="flex-1 text-sm text-slate-700 group-hover:text-slate-900">
+      <span className="flex-1 text-sm text-foreground group-hover:text-foreground">
         {config.label}
       </span>
       {count !== undefined && count > 0 && (
-        <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
           {count}
         </span>
       )}
@@ -212,8 +219,8 @@ function SliderControl({ label, value, min, max, step = 1, onChange }: SliderCon
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm text-slate-600">{label}</Label>
-        <span className="text-sm font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+        <Label className="text-sm text-muted-foreground">{label}</Label>
+        <span className="text-sm font-medium text-foreground bg-muted px-2 py-0.5 rounded">
           {value}
         </span>
       </div>
@@ -284,12 +291,12 @@ function ControlsDrawerInner({
   const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="w-72 border-r border-slate-200 bg-white flex flex-col overflow-hidden">
+    <div className="w-72 border-r border-border bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
         <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-semibold text-slate-700">Controls</span>
+          <Settings className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Controls</span>
         </div>
         <div className="flex items-center gap-2">
           {isExpanding && (
@@ -312,15 +319,15 @@ function ControlsDrawerInner({
       <div className="flex-1 overflow-y-auto">
         {/* Graph Stats */}
         {(totalNodes > 0 || totalEdges > 0) && (
-          <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200">
+          <div className="px-4 py-3 bg-gradient-to-r from-primary/5 to-purple-50 border-b border-border">
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">{totalNodes}</div>
-                <div className="text-xs text-slate-500">Nodes</div>
+                <div className="text-2xl font-bold text-primary">{totalNodes}</div>
+                <div className="text-xs text-muted-foreground">Nodes</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">{totalEdges}</div>
-                <div className="text-xs text-slate-500">Edges</div>
+                <div className="text-xs text-muted-foreground">Edges</div>
               </div>
             </div>
           </div>
@@ -345,7 +352,7 @@ function ControlsDrawerInner({
           title="Node Types"
           badge={
             totalNodes > 0 && (
-              <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {totalNodes}
               </span>
             )
@@ -403,7 +410,7 @@ function ControlsDrawerInner({
                 />
               ))}
           </div>
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
             <Button
               variant="ghost"
               size="sm"
@@ -445,7 +452,7 @@ function ControlsDrawerInner({
                 checked={filters.showOrphans}
                 onCheckedChange={(checked) => onFiltersChange({ ...filters, showOrphans: checked === true })}
               />
-              <span className="text-sm text-slate-600">Show disconnected nodes</span>
+              <span className="text-sm text-muted-foreground">Show disconnected nodes</span>
             </label>
           </div>
         </CollapsibleSection>
@@ -453,17 +460,18 @@ function ControlsDrawerInner({
         {/* Layout Settings */}
         <CollapsibleSection title="Layout" defaultOpen={false}>
           <div className="space-y-2">
-            <select
-              value={layout}
-              onChange={(e) => onLayoutChange(e.target.value as typeof layout)}
-              className="w-full h-9 px-3 text-sm bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="cose-bilkent">Force-Directed</option>
-              <option value="dagre">Hierarchical (Top-Down)</option>
-              <option value="concentric">Concentric</option>
-              <option value="circle">Circle</option>
-              <option value="grid">Grid</option>
-            </select>
+            <Select value={layout} onValueChange={onLayoutChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cose-bilkent">Force-Directed</SelectItem>
+                <SelectItem value="dagre">Hierarchical (Top-Down)</SelectItem>
+                <SelectItem value="concentric">Concentric</SelectItem>
+                <SelectItem value="circle">Circle</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CollapsibleSection>
       </div>

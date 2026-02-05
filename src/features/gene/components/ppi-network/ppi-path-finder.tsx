@@ -98,15 +98,38 @@ function PPIPathFinderInner({
   const handleHighlightPath = useCallback(
     (path: PathResult, index: number) => {
       const nodeIds = path.nodes.map((n) => n.id);
-      // Generate edge IDs in the format used by the graph
-      const edgeIds = path.edges.map((e) => `ppi-${e.from.id}-${e.to.id}`);
-      // Also include reverse edges since PPI is undirected
-      const reverseEdgeIds = path.edges.map((e) => `ppi-${e.to.id}-${e.from.id}`);
 
-      onPathHighlight(nodeIds, [...edgeIds, ...reverseEdgeIds]);
+      // Generate edge IDs based on recipe type
+      // For PPI-only: use ppi-{from}-{to} format (bidirectional)
+      // For other recipes: edges may not exist in PPI graph, only highlight Gene nodes
+      //
+      // NOTE: Non-PPI edges (TARGETS, PARTICIPATES_IN, etc.) won't exist in the
+      // PPI network graph which only contains INTERACTS_WITH edges. For therapeutic
+      // and mechanism recipes, we highlight the Gene nodes that are in the path,
+      // but intermediate Drug/Disease/Pathway nodes may not be visible in the PPI view.
+      const edgeIds: string[] = [];
+
+      if (recipe === "ppi-only") {
+        // PPI edges are bidirectional - generate both directions
+        for (const edge of path.edges) {
+          edgeIds.push(`ppi-${edge.from.id}-${edge.to.id}`);
+          edgeIds.push(`ppi-${edge.to.id}-${edge.from.id}`);
+        }
+      } else {
+        // For non-PPI recipes, only try to match edges where both nodes are Genes
+        // These might be INTERACTS_WITH edges that exist in the PPI graph
+        for (const edge of path.edges) {
+          if (edge.from.type === "Gene" && edge.to.type === "Gene") {
+            edgeIds.push(`ppi-${edge.from.id}-${edge.to.id}`);
+            edgeIds.push(`ppi-${edge.to.id}-${edge.from.id}`);
+          }
+        }
+      }
+
+      onPathHighlight(nodeIds, edgeIds);
       setSelectedPathIndex(index);
     },
-    [onPathHighlight]
+    [onPathHighlight, recipe]
   );
 
   const handleClearPath = useCallback(() => {

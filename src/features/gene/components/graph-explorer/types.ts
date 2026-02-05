@@ -156,8 +156,11 @@ export type EdgeType =
   | "PRESENTS_WITH"           // Disease -> Phenotype
   | "MAPS_TO"                 // Trait -> Disease
   // Pathway relationships
-  | "PART_OF"                 // Pathway -> Pathway
-  | "PATHWAY_CONTAINS";       // Pathway -> Pathway
+  | "PART_OF"                 // Pathway -> Pathway (child is part of parent)
+  // NOTE: PATHWAY_CONTAINS may be the inverse of PART_OF or a separate edge type.
+  // Verify with API schema endpoint: GET /api/v1/graph/schema
+  // If not returned by API, consider removing this edge type.
+  | "PATHWAY_CONTAINS";       // Pathway -> Pathway (parent contains child)
 
 /**
  * All supported edge types with metadata

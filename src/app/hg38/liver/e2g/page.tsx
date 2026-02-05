@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import { Input } from "@shared/components/ui/input";
 
 const BASE_URL =
@@ -460,14 +461,13 @@ export default function LiverE2GBrowser() {
                       key={key}
                       className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
                         selectedCellLines.includes(key)
-                          ? "border-slate-400 bg-slate-100"
-                          : "border-slate-200 hover:bg-slate-50"
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-border hover:bg-muted"
                       }`}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedCellLines.includes(key)}
-                        onChange={() => toggleCellLine(key)}
+                        onCheckedChange={() => toggleCellLine(key)}
                         className="h-3 w-3"
                       />
                       {DATASETS[key].label}
@@ -479,11 +479,10 @@ export default function LiverE2GBrowser() {
               {/* Enhancer track toggle */}
               <div className="space-y-2">
                 <div className="text-sm font-medium">Options</div>
-                <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">
-                  <input
-                    type="checkbox"
+                <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+                  <Checkbox
                     checked={showEnhancerTrack}
-                    onChange={(e) => setShowEnhancerTrack(e.target.checked)}
+                    onCheckedChange={(checked) => setShowEnhancerTrack(checked === true)}
                     className="h-3 w-3"
                   />
                   Show Enhancer Track

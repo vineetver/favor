@@ -37,7 +37,7 @@ export function VariantHeader({
   if (vcfParts.length < 4) {
     return (
       <div className="py-8">
-        <h3 className="text-2xl font-semibold text-slate-900">
+        <h3 className="text-2xl font-semibold text-foreground">
           Invalid variant format: {variant.variant_vcf}
         </h3>
       </div>
@@ -67,11 +67,11 @@ export function VariantHeader({
     <div className="py-8">
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {genome.toUpperCase()}
         </span>
-        <span className="text-slate-300">·</span>
-        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-border">·</span>
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Variant
         </span>
       </div>
@@ -86,12 +86,12 @@ export function VariantHeader({
               {isRsidSearch ? result.rsid : variant.variant_vcf}
             </h1>
             {isRsidSearch ? (
-              <span className="text-lg font-mono text-slate-400">
+              <span className="text-lg font-mono text-muted-foreground">
                 {variant.variant_vcf}
               </span>
             ) : (
               result.rsid && (
-                <span className="text-lg font-mono text-slate-400">
+                <span className="text-lg font-mono text-muted-foreground">
                   {result.rsid}
                 </span>
               )
@@ -125,8 +125,8 @@ export function VariantHeader({
                           "border focus:outline-none focus:ring-2 focus:ring-primary/50",
                           "disabled:opacity-50 disabled:cursor-not-allowed",
                           isSelected
-                            ? "bg-slate-900 text-white border-slate-900"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-background text-foreground border-border hover:border-primary/30 hover:bg-muted",
                         )}
                       >
                         {ref}→{alt}
@@ -138,13 +138,13 @@ export function VariantHeader({
             ) : (
               /* Static ref/alt display */
               <div className="inline-flex items-center gap-2 text-sm">
-                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-heading">
+                <span className="w-8 h-8 flex items-center justify-center bg-muted rounded-lg font-bold text-heading">
                   {refAllele}
                 </span>
                 <span className="text-label">
                   ref / alt
                 </span>
-                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-heading">
+                <span className="w-8 h-8 flex items-center justify-center bg-muted rounded-lg font-bold text-heading">
                   {altAllele}
                 </span>
               </div>

@@ -87,7 +87,7 @@ export function CategoryDetailViewClient({
                 }
               >
                 {/* Subtle left accent on hover */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/60 rounded-r transition-all duration-150 group-hover:h-6" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/60 rounded-r-lg transition-all duration-150 group-hover:h-6" />
 
                 <div className="grid grid-cols-1 sm:grid-cols-[minmax(200px,280px)_1fr] gap-3 sm:gap-8 items-baseline">
                   {/* Label Column */}

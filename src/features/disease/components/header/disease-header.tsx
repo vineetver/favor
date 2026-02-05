@@ -14,7 +14,7 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-3 text-breadcrumb mb-4">
         <span className="text-subtle">Diseases</span>
-        <span className="text-slate-300">▸</span>
+        <span className="text-border">▸</span>
         <span className="text-breadcrumb-mono">{disease.disease_id}</span>
       </div>
 

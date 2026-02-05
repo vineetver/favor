@@ -14,11 +14,11 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
     <div className="py-8">
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {genome.toUpperCase()}
         </span>
-        <span className="text-slate-300">·</span>
-        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-border">·</span>
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Gene
         </span>
       </div>
@@ -30,7 +30,7 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
           {/* Title */}
           <div className="flex items-baseline gap-3 flex-wrap">
             <h1 className="text-page-title">{gene.gene_symbol}</h1>
-            <span className="text-lg font-mono text-slate-400">
+            <span className="text-lg font-mono text-muted-foreground">
               {gene.gene_id_versioned}
             </span>
           </div>

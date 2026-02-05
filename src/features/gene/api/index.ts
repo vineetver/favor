@@ -481,6 +481,14 @@ interface PathwayRelationsResponse {
  * Fetches enrichment data for a pathway (genes, diseases, hierarchy).
  * Uses parallel requests for performance with direction-aware PART_OF traversal.
  *
+ * ## Edge Direction Assumptions
+ * This function assumes the following edge directions from the Graph API:
+ * - `PART_OF`: Pathway → Parent Pathway (direction=in from child gets parent)
+ * - `PARTICIPATES_IN`: Gene → Pathway (direction=in from pathway gets genes)
+ *
+ * If the API returns edges in opposite directions, the filtering will silently
+ * return empty data. Verify edge directions with test calls if data is missing.
+ *
  * @param pathwayId - Pathway ID (e.g., "R-HSA-5693532")
  * @param seedGeneId - The seed gene ID to find shared genes
  * @returns Enriched pathway data or null on error
@@ -509,7 +517,7 @@ export async function fetchPathwayEnrichment(
       ),
     ]);
 
-    // Parse responses
+    // Parse responses with defensive null checks
     const parentData: PathwayRelationsResponse | null = parentResponse.ok
       ? await parentResponse.json()
       : null;
@@ -520,24 +528,39 @@ export async function fetchPathwayEnrichment(
       ? await genesResponse.json()
       : null;
 
+    // Validate response structures - log warnings if unexpected
+    if (parentResponse.ok && !parentData?.included?.relations) {
+      console.warn(`fetchPathwayEnrichment: parent response missing relations for ${pathwayId}`);
+    }
+    if (childrenResponse.ok && !childrenData?.included?.relations) {
+      console.warn(`fetchPathwayEnrichment: children response missing relations for ${pathwayId}`);
+    }
+    if (genesResponse.ok && !genesData?.included?.relations) {
+      console.warn(`fetchPathwayEnrichment: genes response missing relations for ${pathwayId}`);
+    }
+
     // Extract parent pathway (first parent from direction=in PART_OF)
+    // Note: PART_OF direction assumptions - if empty, verify API edge direction semantics
     const parentRows = parentData?.included?.relations?.PART_OF?.rows ?? [];
     const parentPathway =
-      parentRows.length > 0
+      parentRows.length > 0 && parentRows[0]?.neighbor?.id && parentRows[0]?.neighbor?.name
         ? { id: parentRows[0].neighbor.id, name: parentRows[0].neighbor.name }
         : null;
 
     // Extract child pathways (from direction=out PART_OF)
     const childRows = childrenData?.included?.relations?.PART_OF?.rows ?? [];
-    const childPathways = childRows.map((row) => ({
-      id: row.neighbor.id,
-      name: row.neighbor.name,
-    }));
+    const childPathways = childRows
+      .filter((row) => row?.neighbor?.id && row?.neighbor?.name)
+      .map((row) => ({
+        id: row.neighbor.id,
+        name: row.neighbor.name,
+      }));
 
     // Extract genes (from direction=in PARTICIPATES_IN)
+    // Note: PARTICIPATES_IN direction assumptions - Gene → Pathway (traverse in from Pathway)
     const geneRows = genesData?.included?.relations?.PARTICIPATES_IN?.rows ?? [];
     const genes = geneRows.filter(
-      (row: { neighbor: { type: string } }) => row.neighbor.type === "Gene",
+      (row: { neighbor: { type: string } }) => row?.neighbor?.type === "Gene",
     );
     const geneCount = genes.length;
 
@@ -612,6 +635,23 @@ export interface PathwayDiseaseEnrichmentResponse {
  * Fetches disease associations for a pathway using 2-step traversal.
  * Pathway → genes → diseases, aggregated and ranked by gene overlap.
  *
+ * ## Edge Direction Assumptions (CRITICAL)
+ * This function assumes the following edge directions from the Graph API:
+ * - `PARTICIPATES_IN`: Gene → Pathway (edge.to.id === pathwayId means gene participates)
+ * - `IMPLICATED_IN`: Gene → Disease (edge.from.id is gene, edge.to is disease)
+ *
+ * **WARNING**: If the API returns edges in the opposite direction, the filtering
+ * at lines 647-665 will silently fail and return empty data. This can cause:
+ * - Empty gene sets (pathwayGenes.size === 0)
+ * - Empty disease associations (diseaseToGenes.size === 0)
+ *
+ * To verify edge directions, test with:
+ * ```bash
+ * curl "$API_URL/graph/subgraph" -X POST -H "Content-Type: application/json" \
+ *   -d '{"seeds":[{"type":"Pathway","id":"R-HSA-1059683"}],"maxDepth":1,"edgeTypes":["PARTICIPATES_IN"]}'
+ * ```
+ * Check if edges have from.type === "Gene" and to.id === pathwayId.
+ *
  * @param pathwayId - Pathway ID (e.g., "R-HSA-5693532")
  * @returns Disease enrichment data or null on error
  */
@@ -637,14 +677,28 @@ export async function fetchPathwayDiseaseEnrichment(
 
     const edges = subgraphResponse.data.graph.edges;
 
+    // Validate we have edges to process
+    if (edges.length === 0) {
+      console.warn(`fetchPathwayDiseaseEnrichment: no edges returned for ${pathwayId}`);
+      return { totalDiseases: 0, diseases: [] };
+    }
+
     // Build gene set from pathway
     const pathwayGenes = new Set<string>();
     const geneMap = new Map<string, { id: string; symbol: string }>();
 
+    // Track edge direction for debugging
+    let participatesInCount = 0;
+    let participatesInMatchCount = 0;
+
     for (const edge of edges) {
       if (edge.type === "PARTICIPATES_IN") {
+        participatesInCount++;
         // Gene participates in pathway (Gene → Pathway)
+        // CRITICAL: This assumes edge direction is Gene → Pathway
+        // If edge direction is reversed, this will silently fail
         if (edge.to.id === pathwayId && edge.from.type === "Gene") {
+          participatesInMatchCount++;
           pathwayGenes.add(edge.from.id);
           geneMap.set(edge.from.id, {
             id: edge.from.id,
@@ -654,17 +708,33 @@ export async function fetchPathwayDiseaseEnrichment(
       }
     }
 
+    // Warn if we found PARTICIPATES_IN edges but none matched our direction assumption
+    if (participatesInCount > 0 && participatesInMatchCount === 0) {
+      console.warn(
+        `fetchPathwayDiseaseEnrichment: Found ${participatesInCount} PARTICIPATES_IN edges ` +
+        `but none matched expected direction (Gene → Pathway with to.id === ${pathwayId}). ` +
+        `Check if API returns edges in reverse direction.`
+      );
+    }
+
     // Build disease -> genes map
     const diseaseToGenes = new Map<string, Set<string>>();
     const diseaseMap = new Map<string, { id: string; name: string }>();
 
+    // Track for debugging
+    let implicatedInCount = 0;
+    let implicatedInMatchCount = 0;
+
     for (const edge of edges) {
       if (edge.type === "IMPLICATED_IN") {
+        implicatedInCount++;
         // Gene implicated in disease (Gene → Disease)
+        // CRITICAL: This assumes edge direction is Gene → Disease
         const geneId = edge.from.id;
         const diseaseNode = edge.to;
 
         if (pathwayGenes.has(geneId) && diseaseNode.type === "Disease") {
+          implicatedInMatchCount++;
           if (!diseaseToGenes.has(diseaseNode.id)) {
             diseaseToGenes.set(diseaseNode.id, new Set());
             diseaseMap.set(diseaseNode.id, {
@@ -675,6 +745,14 @@ export async function fetchPathwayDiseaseEnrichment(
           diseaseToGenes.get(diseaseNode.id)!.add(geneId);
         }
       }
+    }
+
+    // Warn if we found IMPLICATED_IN edges but none matched pathway genes
+    if (implicatedInCount > 0 && implicatedInMatchCount === 0 && pathwayGenes.size > 0) {
+      console.warn(
+        `fetchPathwayDiseaseEnrichment: Found ${implicatedInCount} IMPLICATED_IN edges ` +
+        `but none matched pathway genes. Check if API returns edges in reverse direction.`
+      );
     }
 
     // Convert to array and sort by gene count
