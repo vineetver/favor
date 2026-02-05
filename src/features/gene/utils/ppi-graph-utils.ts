@@ -302,12 +302,23 @@ export function extractPPIEdges(
 /**
  * Edge colors by source count (1-4 databases)
  * Width + color intensity: thicker AND darker for more sources
+ * Using wider range for better visual distinction
  */
 const EDGE_COLORS = {
-  1: "#cbd5e1",  // slate-300 - lightest
-  2: "#94a3b8",  // slate-400
-  3: "#64748b",  // slate-500
-  4: "#475569",  // slate-600 - darkest
+  1: "#e2e8f0",  // slate-200 - very light
+  2: "#94a3b8",  // slate-400 - medium
+  3: "#475569",  // slate-600 - dark
+  4: "#1e293b",  // slate-800 - very dark
+} as const;
+
+/**
+ * Edge widths by source count - more dramatic scaling
+ */
+const EDGE_WIDTHS = {
+  1: 1,
+  2: 2,
+  3: 3.5,
+  4: 5,
 } as const;
 
 /**
@@ -316,7 +327,7 @@ const EDGE_COLORS = {
 function getEdgeStyle(numSources: number | null): { width: number; color: string } {
   const sources = Math.max(1, Math.min(numSources ?? 1, 4));
   return {
-    width: sources,  // 1-4px
+    width: EDGE_WIDTHS[sources as 1 | 2 | 3 | 4],
     color: EDGE_COLORS[sources as 1 | 2 | 3 | 4],
   };
 }

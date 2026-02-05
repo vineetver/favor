@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { fetchPaths, type PathResult } from "../../api";
+import { PathRecipeSelector } from "./path-recipe-selector";
+import { PATH_RECIPES, type PathRecipe } from "./types";
 
 interface PPIPathFinderProps {
   /** Whether the sheet is open */
@@ -50,6 +52,7 @@ function PPIPathFinderInner({
   const [error, setError] = useState<string | null>(null);
   const [paths, setPaths] = useState<PathResult[]>([]);
   const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
+  const [recipe, setRecipe] = useState<PathRecipe>("ppi-only");
 
   const handleSearch = useCallback(async () => {
     if (!targetGene.trim()) {
@@ -64,13 +67,14 @@ function PPIPathFinderInner({
     onClearPath();
 
     try {
+      const recipeConfig = PATH_RECIPES[recipe];
       const result = await fetchPaths(
         `Gene:${seedGeneId}`,
         `Gene:${targetGene.trim().toUpperCase()}`,
         {
-          maxHops: 3,
+          maxHops: recipe === "ppi-only" ? 3 : 4,
           limit: 5,
-          edgeTypes: ["INTERACTS_WITH"],
+          edgeTypes: recipeConfig.edgeTypes,
         }
       );
 
@@ -86,7 +90,7 @@ function PPIPathFinderInner({
     } finally {
       setIsLoading(false);
     }
-  }, [targetGene, seedGeneId, seedGeneSymbol, onClearPath]);
+  }, [targetGene, seedGeneId, seedGeneSymbol, onClearPath, recipe]);
 
   const handleHighlightPath = useCallback(
     (path: PathResult, index: number) => {
@@ -128,6 +132,9 @@ function PPIPathFinderInner({
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Path Recipe Selector */}
+          <PathRecipeSelector value={recipe} onChange={setRecipe} />
+
           {/* Search input */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-slate-600">

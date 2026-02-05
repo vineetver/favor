@@ -586,3 +586,120 @@ export async function fetchPathwayEnrichment(
     return null;
   }
 }
+
+// =============================================================================
+// Pathway Disease Enrichment API (2-step traversal)
+// =============================================================================
+
+/**
+ * Disease association from pathway genes
+ */
+export interface PathwayDiseaseAssociation {
+  disease: { id: string; name: string };
+  geneCount: number; // Number of pathway genes associated with this disease
+  genes: Array<{ id: string; symbol: string }>; // Up to 10 genes
+}
+
+/**
+ * Response structure for pathway disease enrichment
+ */
+export interface PathwayDiseaseEnrichmentResponse {
+  totalDiseases: number;
+  diseases: PathwayDiseaseAssociation[];
+}
+
+/**
+ * Fetches disease associations for a pathway using 2-step traversal.
+ * Pathway → genes → diseases, aggregated and ranked by gene overlap.
+ *
+ * @param pathwayId - Pathway ID (e.g., "R-HSA-5693532")
+ * @returns Disease enrichment data or null on error
+ */
+export async function fetchPathwayDiseaseEnrichment(
+  pathwayId: string,
+): Promise<PathwayDiseaseEnrichmentResponse | null> {
+  try {
+    // Use subgraph with 2-step traversal: Pathway → genes → diseases
+    // PARTICIPATES_IN: Gene → Pathway (traverse in from Pathway to get genes)
+    // IMPLICATED_IN: Gene → Disease (traverse out from genes to get diseases)
+    const subgraphResponse = await fetchSubgraph({
+      seeds: [{ type: "Pathway", id: pathwayId }],
+      maxDepth: 2,
+      edgeTypes: ["PARTICIPATES_IN", "IMPLICATED_IN"],
+      nodeLimit: 500,
+      edgeLimit: 1000,
+      includeProps: false,
+    });
+
+    if (!subgraphResponse?.data?.graph) {
+      return null;
+    }
+
+    const edges = subgraphResponse.data.graph.edges;
+
+    // Build gene set from pathway
+    const pathwayGenes = new Set<string>();
+    const geneMap = new Map<string, { id: string; symbol: string }>();
+
+    for (const edge of edges) {
+      if (edge.type === "PARTICIPATES_IN") {
+        // Gene participates in pathway (Gene → Pathway)
+        if (edge.to.id === pathwayId && edge.from.type === "Gene") {
+          pathwayGenes.add(edge.from.id);
+          geneMap.set(edge.from.id, {
+            id: edge.from.id,
+            symbol: edge.from.label,
+          });
+        }
+      }
+    }
+
+    // Build disease -> genes map
+    const diseaseToGenes = new Map<string, Set<string>>();
+    const diseaseMap = new Map<string, { id: string; name: string }>();
+
+    for (const edge of edges) {
+      if (edge.type === "IMPLICATED_IN") {
+        // Gene implicated in disease (Gene → Disease)
+        const geneId = edge.from.id;
+        const diseaseNode = edge.to;
+
+        if (pathwayGenes.has(geneId) && diseaseNode.type === "Disease") {
+          if (!diseaseToGenes.has(diseaseNode.id)) {
+            diseaseToGenes.set(diseaseNode.id, new Set());
+            diseaseMap.set(diseaseNode.id, {
+              id: diseaseNode.id,
+              name: diseaseNode.label,
+            });
+          }
+          diseaseToGenes.get(diseaseNode.id)!.add(geneId);
+        }
+      }
+    }
+
+    // Convert to array and sort by gene count
+    const diseases: PathwayDiseaseAssociation[] = Array.from(diseaseToGenes.entries())
+      .map(([diseaseId, geneIds]) => {
+        const disease = diseaseMap.get(diseaseId)!;
+        const genes = Array.from(geneIds)
+          .slice(0, 10)
+          .map((geneId) => geneMap.get(geneId) ?? { id: geneId, symbol: geneId });
+
+        return {
+          disease,
+          geneCount: geneIds.size,
+          genes,
+        };
+      })
+      .sort((a, b) => b.geneCount - a.geneCount)
+      .slice(0, 20);
+
+    return {
+      totalDiseases: diseaseToGenes.size,
+      diseases,
+    };
+  } catch (error) {
+    console.error("Pathway disease enrichment fetch error:", error);
+    return null;
+  }
+}

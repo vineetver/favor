@@ -1,5 +1,11 @@
-import { fetchGene, fetchSubgraph, type EntityRef } from "@features/gene/api";
 import {
+  fetchGene,
+  fetchSubgraph,
+  type EntityRef,
+  type SubgraphEdge,
+} from "@features/gene/api";
+import {
+  type PathwayEdgeProps,
   type PathwayHierarchyEdge,
   PathwayLeverageView,
   type PathwayNode,
@@ -156,16 +162,30 @@ export default async function PathwayLeverageMapPage({
   }
 
   // Extract pathways from PARTICIPATES_IN edges (Gene → Pathway)
-  const participatingPathwayIds = new Set(
-    edges
-      .filter((e) => e.type === "PARTICIPATES_IN" && e.from.id === geneId)
-      .map((e) => e.to.id),
-  );
+  // Build map of pathwayId -> edge props for evidence metadata
+  const pathwayEdgePropsMap = new Map<string, PathwayEdgeProps>();
+  const participatingPathwayIds = new Set<string>();
 
-  // Get pathway nodes that the gene participates in
+  for (const edge of edges) {
+    if (edge.type === "PARTICIPATES_IN" && edge.from.id === geneId) {
+      const pathwayId = edge.to.id;
+      participatingPathwayIds.add(pathwayId);
+
+      // Extract edge props for evidence
+      if (edge.props) {
+        pathwayEdgePropsMap.set(pathwayId, {
+          numSources: edge.props.num_sources,
+          numExperiments: edge.props.num_experiments,
+          confidenceScores: edge.props.confidence_scores,
+        });
+      }
+    }
+  }
+
+  // Get pathway nodes that the gene participates in, with evidence metadata
   const rawPathways: PathwayNode[] = nodes
     .filter((n) => n.type === "Pathway" && participatingPathwayIds.has(n.id))
-    .map((n) => parsePathwayFromNode(n));
+    .map((n) => parsePathwayFromNode(n, pathwayEdgePropsMap.get(n.id)));
 
   // Extract hierarchy edges from PART_OF relationships
   const hierarchyEdges: PathwayHierarchyEdge[] = edges

@@ -2,24 +2,156 @@
 
 import { cn } from "@infra/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@shared/components/ui/label";
-import { memo, useCallback } from "react";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
+import { Label } from "@shared/components/ui/label";
+import { ChevronRight } from "lucide-react";
+import { memo, useCallback, useMemo, useState } from "react";
+import {
+  buildHierarchicalCategories,
   type CategoryFilterState,
   getCategoryColor,
+  type HierarchicalCategory,
   type PathwayCategorySidebarProps,
 } from "./types";
 
 /**
+ * Recursive component for rendering hierarchical pathway items
+ */
+function HierarchyItem({
+  item,
+  level,
+  isSelected,
+  expandedItems,
+  onToggleExpand,
+  onToggleCategory,
+}: {
+  item: HierarchicalCategory;
+  level: number;
+  isSelected: boolean;
+  expandedItems: Set<string>;
+  onToggleExpand: (name: string) => void;
+  onToggleCategory: (name: string) => void;
+}) {
+  const hasChildren = item.subcategories.length > 0;
+  const isExpanded = expandedItems.has(item.name);
+  const colors = getCategoryColor(item.name);
+
+  if (hasChildren) {
+    return (
+      <Collapsible open={isExpanded} onOpenChange={() => onToggleExpand(item.name)}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-slate-50 transition-colors",
+              !isSelected && "opacity-50",
+            )}
+            style={{ paddingLeft: `${level * 12 + 12}px` }}
+          >
+            <ChevronRight
+              className={cn(
+                "w-3.5 h-3.5 text-slate-400 transition-transform shrink-0",
+                isExpanded && "rotate-90",
+              )}
+            />
+            <div
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{
+                backgroundColor: isSelected ? colors.border : "#94a3b8",
+              }}
+            />
+            <span
+              className={cn(
+                "text-sm truncate flex-1",
+                isSelected ? "text-slate-700" : "text-slate-400",
+              )}
+            >
+              {item.name}
+            </span>
+            <span
+              className={cn(
+                "text-xs tabular-nums",
+                isSelected ? "text-slate-500" : "text-slate-400",
+              )}
+            >
+              {item.count}
+            </span>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {item.subcategories.map((child) => (
+            <HierarchyItem
+              key={child.name}
+              item={child}
+              level={level + 1}
+              isSelected={isSelected}
+              expandedItems={expandedItems}
+              onToggleExpand={onToggleExpand}
+              onToggleCategory={onToggleCategory}
+            />
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
+  // Leaf node (single pathway)
+  return (
+    <button
+      type="button"
+      onClick={() => onToggleCategory(item.name)}
+      className={cn(
+        "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-slate-50 transition-colors",
+        !isSelected && "opacity-50",
+      )}
+      style={{ paddingLeft: `${level * 12 + 24}px` }}
+    >
+      <div
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{
+          backgroundColor: isSelected ? colors.border : "#94a3b8",
+        }}
+      />
+      <span
+        className={cn(
+          "text-xs truncate flex-1",
+          isSelected ? "text-slate-600" : "text-slate-400",
+        )}
+      >
+        {item.name}
+      </span>
+    </button>
+  );
+}
+
+/**
  * Category filter sidebar for pathway map.
  * Allows users to filter pathways by category and toggle hierarchy display.
+ * Supports collapsible hierarchical view.
  */
 function PathwayCategorySidebarInner({
   categories,
+  hierarchyEdges,
+  pathways,
   filterState,
   onFilterChange,
   className,
 }: PathwayCategorySidebarProps) {
+  // Track expanded state for hierarchical items
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Build hierarchical structure when hierarchy view is enabled
+  const hierarchicalCategories = useMemo(() => {
+    if (!filterState.showHierarchy || hierarchyEdges.length === 0) {
+      return null;
+    }
+    return buildHierarchicalCategories(pathways, hierarchyEdges);
+  }, [pathways, hierarchyEdges, filterState.showHierarchy]);
+
   const handleCategoryToggle = useCallback(
     (categoryName: string) => {
       const newSelected = new Set(filterState.selectedCategories);
@@ -63,6 +195,18 @@ function PathwayCategorySidebarInner({
     [filterState, onFilterChange],
   );
 
+  const handleToggleExpand = useCallback((name: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  }, []);
+
   const allSelected = filterState.selectedCategories.size === 0;
   const noneSelected =
     filterState.selectedCategories.size === categories.length;
@@ -104,47 +248,119 @@ function PathwayCategorySidebarInner({
 
         {/* Category list */}
         <div className="flex-1 overflow-y-auto py-2">
-          {categories.map((category) => {
-            const colors = getCategoryColor(category.name);
-            const isSelected =
-              filterState.selectedCategories.size === 0 ||
-              !filterState.selectedCategories.has(category.name);
+          {/* Hierarchical view */}
+          {hierarchicalCategories && hierarchicalCategories.length > 0 ? (
+            hierarchicalCategories.map((category) => {
+              const colors = getCategoryColor(category.name);
+              const isSelected =
+                filterState.selectedCategories.size === 0 ||
+                !filterState.selectedCategories.has(category.name);
+              const isExpanded = expandedItems.has(category.name);
 
-            return (
-              <button
-                key={category.name}
-                type="button"
-                onClick={() => handleCategoryToggle(category.name)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-slate-50 transition-colors",
-                  !isSelected && "opacity-50",
-                )}
-              >
-                <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: isSelected ? colors.border : "#94a3b8",
-                  }}
-                />
-                <span
+              return (
+                <Collapsible
+                  key={category.name}
+                  open={isExpanded}
+                  onOpenChange={() => handleToggleExpand(category.name)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-slate-50 transition-colors",
+                        !isSelected && "opacity-50",
+                      )}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "w-3.5 h-3.5 text-slate-400 transition-transform",
+                          isExpanded && "rotate-90",
+                        )}
+                      />
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: isSelected ? colors.border : "#94a3b8",
+                        }}
+                      />
+                      <span
+                        className={cn(
+                          "text-sm truncate flex-1 font-medium",
+                          isSelected ? "text-slate-700" : "text-slate-400",
+                        )}
+                      >
+                        {category.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums",
+                          isSelected ? "text-slate-500" : "text-slate-400",
+                        )}
+                      >
+                        {category.count}
+                      </span>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    {category.subcategories.map((child) => (
+                      <HierarchyItem
+                        key={child.name}
+                        item={child}
+                        level={1}
+                        isSelected={isSelected}
+                        expandedItems={expandedItems}
+                        onToggleExpand={handleToggleExpand}
+                        onToggleCategory={handleCategoryToggle}
+                      />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })
+          ) : (
+            // Flat view (original behavior)
+            categories.map((category) => {
+              const colors = getCategoryColor(category.name);
+              const isSelected =
+                filterState.selectedCategories.size === 0 ||
+                !filterState.selectedCategories.has(category.name);
+
+              return (
+                <button
+                  key={category.name}
+                  type="button"
+                  onClick={() => handleCategoryToggle(category.name)}
                   className={cn(
-                    "text-sm truncate flex-1",
-                    isSelected ? "text-slate-700" : "text-slate-400",
+                    "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-slate-50 transition-colors",
+                    !isSelected && "opacity-50",
                   )}
                 >
-                  {category.name}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs tabular-nums",
-                    isSelected ? "text-slate-500" : "text-slate-400",
-                  )}
-                >
-                  {category.count}
-                </span>
-              </button>
-            );
-          })}
+                  <div
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: isSelected ? colors.border : "#94a3b8",
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      "text-sm truncate flex-1",
+                      isSelected ? "text-slate-700" : "text-slate-400",
+                    )}
+                  >
+                    {category.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums",
+                      isSelected ? "text-slate-500" : "text-slate-400",
+                    )}
+                  >
+                    {category.count}
+                  </span>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 

@@ -1,5 +1,252 @@
 import type { ElementDefinition, LayoutOptions } from "cytoscape";
 
+// =============================================================================
+// Edge Filtering Types (Phase 1)
+// =============================================================================
+
+/**
+ * Display mode for filtered edges
+ * - "grey": Edges below threshold are greyed out but visible
+ * - "hide": Edges below threshold are hidden
+ * - "hide-cascade": Edges below threshold are hidden AND orphaned nodes are also hidden
+ */
+export type FilteredEdgeDisplay = "grey" | "hide" | "hide-cascade";
+
+/**
+ * Edge filter configuration
+ */
+export interface EdgeFilterConfig {
+  minSources: number; // 0-4, default 0
+  minExperiments: number; // 0+, default 0
+  display: FilteredEdgeDisplay; // Replaces greyOutBelowThreshold
+}
+
+/**
+ * Default edge filter configuration
+ */
+export const DEFAULT_EDGE_FILTER_CONFIG: EdgeFilterConfig = {
+  minSources: 0,
+  minExperiments: 0,
+  display: "grey",
+};
+
+/**
+ * Legacy edge filter state for backward compatibility
+ * @deprecated Use EdgeFilterConfig instead
+ */
+export interface EdgeFilterState {
+  minSources: number;        // 0-4, default 0
+  minExperiments: number;    // 0+, default 0
+  greyOutBelowThreshold: boolean;  // default true (grey out vs hide)
+}
+
+/**
+ * Default edge filter state
+ * @deprecated Use DEFAULT_EDGE_FILTER_CONFIG instead
+ */
+export const DEFAULT_EDGE_FILTER: EdgeFilterState = {
+  minSources: 0,
+  minExperiments: 0,
+  greyOutBelowThreshold: true,
+};
+
+/**
+ * Convert EdgeFilterConfig to legacy EdgeFilterState
+ */
+export function toEdgeFilterState(config: EdgeFilterConfig): EdgeFilterState {
+  return {
+    minSources: config.minSources,
+    minExperiments: config.minExperiments,
+    greyOutBelowThreshold: config.display === "grey",
+  };
+}
+
+/**
+ * Convert legacy EdgeFilterState to EdgeFilterConfig
+ */
+export function toEdgeFilterConfig(state: EdgeFilterState): EdgeFilterConfig {
+  return {
+    minSources: state.minSources,
+    minExperiments: state.minExperiments,
+    display: state.greyOutBelowThreshold ? "grey" : "hide",
+  };
+}
+
+// =============================================================================
+// Context Overlay Types (Phase 2)
+// =============================================================================
+
+/**
+ * Type of context overlay for interactors
+ */
+export type ContextOverlay = 'none' | 'shared-pathways' | 'shared-diseases';
+
+/**
+ * Overlay data for a node showing shared context
+ */
+export interface OverlayData {
+  nodeId: string;
+  sharedCount: number;
+  items: Array<{ id: string; name: string }>;
+}
+
+/**
+ * Context overlay state (legacy)
+ * @deprecated Use OverlayState discriminated union instead
+ */
+export interface ContextOverlayState {
+  type: ContextOverlay;
+  data: Map<string, OverlayData>;
+  isLoading: boolean;
+}
+
+/**
+ * Overlay state - discriminated union replacing 3 useState with 1
+ * Makes invalid states unrepresentable
+ */
+export type OverlayState =
+  | { status: "off" }
+  | { status: "loading"; type: "pathways" | "diseases" }
+  | { status: "loaded"; type: "pathways" | "diseases"; data: Map<string, OverlayData> }
+  | { status: "error"; type: "pathways" | "diseases"; message: string };
+
+/**
+ * Context overlay options for dropdown
+ */
+export const CONTEXT_OVERLAY_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "shared-pathways", label: "Shared Pathways" },
+  { value: "shared-diseases", label: "Shared Diseases" },
+] as const;
+
+// =============================================================================
+// Path Recipe Types (Phase 3)
+// =============================================================================
+
+/**
+ * Available path finding recipes
+ */
+export type PathRecipe = 'ppi-only' | 'mechanism' | 'therapeutic';
+
+/**
+ * Path recipe configuration
+ */
+export interface PathRecipeConfig {
+  label: string;
+  description: string;
+  edgeTypes: string[];
+  nodeTypes: string[];
+}
+
+/**
+ * Path recipe definitions
+ */
+export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
+  'ppi-only': {
+    label: 'PPI Only',
+    description: 'Protein-protein interactions only',
+    edgeTypes: ['INTERACTS_WITH'],
+    nodeTypes: ['Gene'],
+  },
+  'mechanism': {
+    label: 'Mechanism',
+    description: 'Include pathways and biological processes',
+    edgeTypes: ['INTERACTS_WITH', 'PARTICIPATES_IN', 'PART_OF'],
+    nodeTypes: ['Gene', 'Pathway', 'BiologicalProcess'],
+  },
+  'therapeutic': {
+    label: 'Therapeutic',
+    description: 'Include drugs and diseases',
+    edgeTypes: ['INTERACTS_WITH', 'TARGETS', 'ASSOCIATED_WITH'],
+    nodeTypes: ['Gene', 'Drug', 'Disease'],
+  },
+};
+
+// =============================================================================
+// Clustering Types (Phase 4)
+// =============================================================================
+
+/**
+ * Supported clustering algorithms
+ */
+export type ClusterAlgorithm = 'louvain' | 'label-propagation';
+
+/**
+ * Cluster state for community detection
+ */
+export interface ClusterState {
+  enabled: boolean;
+  algorithm: ClusterAlgorithm;
+  clusters: Map<string, string[]>;  // clusterId -> nodeIds
+  collapsedClusters: Set<string>;
+}
+
+/**
+ * Default cluster state
+ */
+export const DEFAULT_CLUSTER_STATE: ClusterState = {
+  enabled: false,
+  algorithm: 'louvain',
+  clusters: new Map(),
+  collapsedClusters: new Set(),
+};
+
+// =============================================================================
+// Hub Mode Types (Phase 5)
+// =============================================================================
+
+/**
+ * Hub mode state for centrality-driven display
+ */
+export interface HubModeState {
+  showHubsOnly: boolean;
+  hubThreshold: number;  // percentile, e.g., 90 = top 10%
+}
+
+/**
+ * Default hub mode state
+ */
+export const DEFAULT_HUB_MODE: HubModeState = {
+  showHubsOnly: false,
+  hubThreshold: 90,
+};
+
+// =============================================================================
+// Feature Mode Types (Mutually Exclusive Features)
+// =============================================================================
+
+/**
+ * Feature mode - Hub Focus and Clustering are mutually exclusive
+ * This discriminated union ensures only one can be active at a time
+ */
+export type FeatureMode =
+  | { type: "none" }
+  | { type: "hubFocus"; threshold: number }
+  | { type: "clustering"; algorithm: ClusterAlgorithm };
+
+/**
+ * Default feature mode
+ */
+export const DEFAULT_FEATURE_MODE: FeatureMode = { type: "none" };
+
+/**
+ * Helper to check if hub focus is active
+ */
+export function isHubFocusActive(mode: FeatureMode): mode is { type: "hubFocus"; threshold: number } {
+  return mode.type === "hubFocus";
+}
+
+/**
+ * Helper to check if clustering is active
+ */
+export function isClusteringActive(mode: FeatureMode): mode is { type: "clustering"; algorithm: ClusterAlgorithm } {
+  return mode.type === "clustering";
+}
+
+// =============================================================================
+// Core PPI Network Types
+// =============================================================================
+
 /**
  * A node in the PPI network graph
  */
@@ -211,6 +458,7 @@ export interface PathHighlight {
 export interface PPICytoscapeGraphProps {
   elements: ElementDefinition[];
   layout: LayoutType;
+  seedGeneId?: string;
   onNodeClick?: (node: PPINode, event?: MouseEvent) => void;
   onNodeHover?: (node: PPINode | null, position: { x: number; y: number } | null) => void;
   onEdgeClick?: (edgeId: string, position: { x: number; y: number }) => void;
@@ -225,6 +473,18 @@ export interface PPICytoscapeGraphProps {
   selectedGeneIds?: Set<string>;
   /** Shared interactor node IDs to highlight */
   sharedInteractorIds?: Set<string>;
+  /** Edge filter state for filtering/greying edges (legacy) */
+  edgeFilter?: EdgeFilterState;
+  /** Edge filter config with cascade support (new) */
+  edgeFilterConfig?: EdgeFilterConfig;
+  /** Context overlay data for node halos */
+  overlayData?: Map<string, OverlayData>;
+  /** Active context overlay type */
+  overlayType?: ContextOverlay;
+  /** Hub mode state for centrality filtering */
+  hubMode?: HubModeState;
+  /** Cluster state for community visualization */
+  clusterState?: ClusterState;
   className?: string;
 }
 

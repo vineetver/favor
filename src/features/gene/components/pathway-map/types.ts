@@ -15,6 +15,10 @@ export interface PathwayNode {
   category: string;
   url: string;
   source: PathwaySource;
+  /** Evidence metadata from PARTICIPATES_IN edge */
+  numSources?: number;
+  numExperiments?: number;
+  confidenceScore?: number;
 }
 
 /**
@@ -34,6 +38,17 @@ export interface PathwayCategory {
   count: number;
 }
 
+/**
+ * Hierarchical category with nested subcategories
+ */
+export interface HierarchicalCategory {
+  name: string;
+  pathways: PathwayNode[];
+  subcategories: HierarchicalCategory[];
+  count: number; // total pathways including subcategories
+  isExpanded?: boolean;
+}
+
 // =============================================================================
 // Graph Node Types - Discriminated Union
 // =============================================================================
@@ -41,6 +56,68 @@ export interface PathwayCategory {
 export type GraphNode =
   | { type: "gene"; id: string; label: string }
   | { type: "pathway"; data: PathwayNode };
+
+// =============================================================================
+// Sort Configuration
+// =============================================================================
+
+export type PathwaySortOption = "relevance" | "name" | "category";
+
+export const PATHWAY_SORT_OPTIONS: Array<{
+  value: PathwaySortOption;
+  label: string;
+}> = [
+  { value: "relevance", label: "Evidence (default)" },
+  { value: "name", label: "Name (A-Z)" },
+  { value: "category", label: "Category" },
+];
+
+// =============================================================================
+// Expansion Level Configuration
+// =============================================================================
+
+export type ExpansionLevel = "compact" | "standard" | "detailed";
+
+export const EXPANSION_LEVEL_OPTIONS: Array<{
+  value: ExpansionLevel;
+  label: string;
+}> = [
+  { value: "compact", label: "Compact" },
+  { value: "standard", label: "Standard" },
+  { value: "detailed", label: "Detailed" },
+];
+
+/**
+ * Configuration derived from expansion level
+ */
+export interface ExpansionConfig {
+  nodeLimit: number;
+  showHierarchy: boolean;
+  autoLoadDiseases: boolean;
+}
+
+export function getExpansionConfig(level: ExpansionLevel): ExpansionConfig {
+  switch (level) {
+    case "compact":
+      return {
+        nodeLimit: 25,
+        showHierarchy: false,
+        autoLoadDiseases: false,
+      };
+    case "standard":
+      return {
+        nodeLimit: 50,
+        showHierarchy: true,
+        autoLoadDiseases: false,
+      };
+    case "detailed":
+      return {
+        nodeLimit: 100,
+        showHierarchy: true,
+        autoLoadDiseases: true,
+      };
+  }
+}
 
 // =============================================================================
 // Limit Configuration
@@ -272,16 +349,30 @@ export interface PathwayLeverageViewProps {
 
 export interface PathwayCategorySidebarProps {
   categories: PathwayCategory[];
+  hierarchyEdges: PathwayHierarchyEdge[];
+  pathways: PathwayNode[];
   filterState: CategoryFilterState;
   onFilterChange: (state: CategoryFilterState) => void;
   className?: string;
 }
 
+/**
+ * Disease enrichment fetch state - discriminated union
+ */
+export type DiseaseEnrichmentState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "loaded"; data: { totalDiseases: number; diseases: Array<{ disease: { id: string; name: string }; geneCount: number; genes: Array<{ id: string; symbol: string }> }> } }
+  | { status: "error"; error: string };
+
 export interface PathwayDetailPanelProps {
-  pathway: PathwayNode;
+  pathway: PathwayNode | null;
   enrichment: EnrichmentState;
+  diseaseEnrichment: DiseaseEnrichmentState;
   seedGeneSymbol: string;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onLoadDiseases: () => void;
 }
 
 export interface PathwayCytoscapeGraphProps {
@@ -314,14 +405,26 @@ function getPathwayUrl(pathwayId: string, source: PathwaySource): string {
 }
 
 /**
+ * Edge props from PARTICIPATES_IN relationship for evidence metadata
+ */
+export interface PathwayEdgeProps {
+  numSources?: number;
+  numExperiments?: number;
+  confidenceScores?: number[];
+}
+
+/**
  * Parse pathway from graph node.
  * Note: subtitle may contain a URL instead of category - detect and handle.
  */
-export function parsePathwayFromNode(node: {
-  id: string;
-  label: string;
-  subtitle?: string;
-}): PathwayNode {
+export function parsePathwayFromNode(
+  node: {
+    id: string;
+    label: string;
+    subtitle?: string;
+  },
+  edgeProps?: PathwayEdgeProps,
+): PathwayNode {
   const source = parsePathwaySource(node.id);
 
   // Detect if subtitle is a URL (not a real category)
@@ -330,12 +433,20 @@ export function parsePathwayFromNode(node: {
     category = node.subtitle;
   }
 
+  // Calculate confidence score from array if available
+  const confidenceScore = edgeProps?.confidenceScores?.length
+    ? Math.max(...edgeProps.confidenceScores)
+    : undefined;
+
   return {
     id: node.id,
     name: node.label,
     category,
     url: getPathwayUrl(node.id, source),
     source,
+    numSources: edgeProps?.numSources,
+    numExperiments: edgeProps?.numExperiments,
+    confidenceScore,
   };
 }
 
@@ -362,5 +473,94 @@ export function groupPathwaysByCategory(
       pathways: list.sort((a, b) => a.name.localeCompare(b.name)),
       count: list.length,
     }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Build hierarchical categories from pathways and hierarchy edges.
+ * Groups pathways by category but also nests sub-pathways under their parents.
+ */
+export function buildHierarchicalCategories(
+  pathways: PathwayNode[],
+  hierarchyEdges: PathwayHierarchyEdge[],
+): HierarchicalCategory[] {
+  // Build child -> parent map
+  const childToParent = new Map<string, string>();
+  for (const edge of hierarchyEdges) {
+    childToParent.set(edge.childId, edge.parentId);
+  }
+
+  // Build parent -> children map
+  const parentToChildren = new Map<string, Set<string>>();
+  for (const edge of hierarchyEdges) {
+    if (!parentToChildren.has(edge.parentId)) {
+      parentToChildren.set(edge.parentId, new Set());
+    }
+    parentToChildren.get(edge.parentId)!.add(edge.childId);
+  }
+
+  // Create pathway lookup
+  const pathwayMap = new Map<string, PathwayNode>();
+  for (const p of pathways) {
+    pathwayMap.set(p.id, p);
+  }
+
+  // Find root pathways (no parent in our set of pathways)
+  const pathwayIds = new Set(pathways.map((p) => p.id));
+  const rootPathways = pathways.filter((p) => {
+    const parentId = childToParent.get(p.id);
+    return !parentId || !pathwayIds.has(parentId);
+  });
+
+  // Build hierarchy recursively
+  function buildSubtree(pathway: PathwayNode): HierarchicalCategory {
+    const childIds = parentToChildren.get(pathway.id) ?? new Set();
+    const childPathways = Array.from(childIds)
+      .map((id) => pathwayMap.get(id))
+      .filter((p): p is PathwayNode => p !== undefined);
+
+    const subcategories = childPathways
+      .map(buildSubtree)
+      .sort((a, b) => b.count - a.count);
+
+    const directCount = 1; // The pathway itself
+    const totalCount =
+      directCount + subcategories.reduce((sum, sub) => sum + sub.count, 0);
+
+    return {
+      name: pathway.name,
+      pathways: [pathway],
+      subcategories,
+      count: totalCount,
+    };
+  }
+
+  // Group root pathways by category
+  const categoryGroups = new Map<string, PathwayNode[]>();
+  for (const pathway of rootPathways) {
+    const existing = categoryGroups.get(pathway.category);
+    if (existing) {
+      existing.push(pathway);
+    } else {
+      categoryGroups.set(pathway.category, [pathway]);
+    }
+  }
+
+  // Build hierarchical categories
+  return Array.from(categoryGroups.entries())
+    .map(([categoryName, catPathways]) => {
+      const subcategories = catPathways
+        .map(buildSubtree)
+        .sort((a, b) => b.count - a.count);
+
+      const totalCount = subcategories.reduce((sum, sub) => sum + sub.count, 0);
+
+      return {
+        name: categoryName,
+        pathways: [], // Category has no direct pathways, only subcategories
+        subcategories,
+        count: totalCount,
+      };
+    })
     .sort((a, b) => b.count - a.count);
 }

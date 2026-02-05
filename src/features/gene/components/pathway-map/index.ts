@@ -8,6 +8,7 @@ export type {
   EnrichmentState,
   PathwayCategorySidebarProps,
   PathwayDetailPanelProps,
+  PathwayEdgeProps,
   PathwayHierarchyEdge,
   PathwayLeverageViewProps,
   PathwayNode,

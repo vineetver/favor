@@ -12,9 +12,14 @@ import { DimensionSelector } from "@shared/components/ui/data-surface/dimension-
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
-import { GitMerge, Route } from "lucide-react";
-import { memo, useMemo, useState, useCallback, useEffect } from "react";
-import { fetchCentrality, type CentralityResponse, type EntityRef, type SubgraphEdge } from "../../api";
+import { Filter, GitMerge, Layers, Network, Route, Settings2, Zap } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { memo, useMemo, useState, useCallback } from "react";
+import type { EntityRef, SubgraphEdge } from "../../api";
 import {
   createEdgeMap,
   extractPPIEdges,
@@ -28,15 +33,30 @@ import { PPILegend } from "./ppi-legend";
 import { PPINodeTooltip } from "./ppi-node-tooltip";
 import { PPIPathFinder } from "./ppi-path-finder";
 import { PPISharedInteractors } from "./ppi-shared-interactors";
+import { EdgeFilterControls } from "./edge-filter-controls";
+import { ContextOverlaySelector } from "./context-overlay-selector";
+import { ClusterControls } from "./cluster-controls";
+import { HubModeToggle } from "./hub-mode-toggle";
+import { PPIClusterLegend } from "./ppi-cluster-legend";
+import { useCentralityQuery, useTopHubs } from "../../hooks/use-centrality-query";
+import { useContextOverlayQuery } from "../../hooks/use-context-overlay-query";
+import { detectCommunities, labelPropagation } from "../../utils/clustering";
 import {
   COLOR_MODE_OPTIONS,
+  DEFAULT_CLUSTER_STATE,
+  DEFAULT_EDGE_FILTER,
+  DEFAULT_HUB_MODE,
   LAYOUT_OPTIONS,
   LIMIT_OPTIONS,
   type ActivePanel,
   type CentralityData,
-  type CentralityState,
+  type ClusterState,
   type ColorMode,
+  type ContextOverlay,
+  type EdgeFilterState,
+  type HubModeState,
   type LayoutType,
+  type OverlayData,
   type PathHighlight,
   type PPIEdge,
   type PPINetworkViewProps,
@@ -120,6 +140,10 @@ interface GraphContainerProps {
   pathHighlight?: PathHighlight | null;
   selectedGeneIds?: Set<string>;
   sharedInteractorIds?: Set<string>;
+  edgeFilter?: EdgeFilterState;
+  overlayData?: Map<string, OverlayData>;
+  overlayType?: ContextOverlay;
+  hubMode?: HubModeState;
   onNodeClick: (node: PPINode) => void;
   onNodeHover: (node: PPINode | null, position: { x: number; y: number } | null) => void;
   onEdgeClick: (edgeId: string, position: { x: number; y: number }) => void;
@@ -134,6 +158,10 @@ const GraphContainer = memo(function GraphContainer({
   pathHighlight,
   selectedGeneIds,
   sharedInteractorIds,
+  edgeFilter,
+  overlayData,
+  overlayType,
+  hubMode,
   onNodeClick,
   onNodeHover,
   onEdgeClick,
@@ -149,6 +177,10 @@ const GraphContainer = memo(function GraphContainer({
         pathHighlight={pathHighlight}
         selectedGeneIds={selectedGeneIds}
         sharedInteractorIds={sharedInteractorIds}
+        edgeFilter={edgeFilter}
+        overlayData={overlayData}
+        overlayType={overlayType}
+        hubMode={hubMode}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover}
         onEdgeClick={onEdgeClick}
@@ -205,6 +237,15 @@ export function PPINetworkView({
   const [selectedGeneIds, setSelectedGeneIds] = useState<Set<string>>(new Set());
   const [sharedInteractorIds, setSharedInteractorIds] = useState<Set<string>>(new Set());
 
+  // Edge Filter state
+  const [edgeFilter, setEdgeFilter] = useState<EdgeFilterState>(DEFAULT_EDGE_FILTER);
+
+  // Hub Mode state
+  const [hubMode, setHubMode] = useState<HubModeState>(DEFAULT_HUB_MODE);
+
+  // Cluster state
+  const [clusterState, setClusterState] = useState<ClusterState>(DEFAULT_CLUSTER_STATE);
+
   // Extract and limit PPI edges - memoized with stable dependencies
   // Prefer subgraph data (EntityRef format) when available, fall back to legacy format
   const allEdges = useMemo(() => {
@@ -218,6 +259,29 @@ export function PPINetworkView({
     const limitNum = parseInt(limit, 10);
     return allEdges.slice(0, limitNum);
   }, [allEdges, limit]);
+
+  // Compute max experiments for slider range
+  const maxExperiments = useMemo(() => {
+    return allEdges.reduce((max, edge) => Math.max(max, edge.numExperiments ?? 0), 0);
+  }, [allEdges]);
+
+  // Compute neighbor IDs for context overlay hook
+  const neighborIds = useMemo(() => {
+    const ids = new Set<string>();
+    limitedEdges.forEach((edge) => {
+      if (edge.sourceId !== seedGeneId) ids.add(edge.sourceId);
+      if (edge.targetId !== seedGeneId) ids.add(edge.targetId);
+    });
+    return Array.from(ids);
+  }, [limitedEdges, seedGeneId]);
+
+  // Context Overlay hook
+  const {
+    overlayType,
+    overlayData,
+    isLoading: isLoadingOverlay,
+    setOverlayType,
+  } = useContextOverlay({ seedGeneId, neighborIds });
 
   // Create edge map for quick lookup
   const edgeMap = useMemo(() => createEdgeMap(limitedEdges), [limitedEdges]);
@@ -464,6 +528,15 @@ export function PPINetworkView({
     setSharedInteractorIds(new Set());
   }, []);
 
+  // Clustering handler
+  const handleRunClustering = useCallback(() => {
+    const nodeIds = [seedGeneId, ...neighborIds];
+    const clusters = clusterState.algorithm === "louvain"
+      ? detectCommunities(nodeIds, limitedEdges)
+      : labelPropagation(nodeIds, limitedEdges);
+    setClusterState((prev) => ({ ...prev, clusters }));
+  }, [seedGeneId, neighborIds, limitedEdges, clusterState.algorithm]);
+
   // No data state
   if (!allEdges.length) {
     return (
@@ -508,6 +581,81 @@ export function PPINetworkView({
 
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              {/* Context Overlay Selector */}
+              <ContextOverlaySelector
+                value={overlayType}
+                onChange={setOverlayType}
+                isLoading={isLoadingOverlay}
+              />
+
+              <div className="h-5 w-px bg-slate-200" />
+
+              {/* Edge Filter Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={edgeFilter.minSources > 0 || edgeFilter.minExperiments > 0 ? "default" : "outline"}
+                    size="sm"
+                    className="h-8"
+                  >
+                    <Filter className="w-4 h-4 mr-1.5" />
+                    Filter
+                    {(edgeFilter.minSources > 0 || edgeFilter.minExperiments > 0) && (
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                        Active
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="end">
+                  <EdgeFilterControls
+                    filter={edgeFilter}
+                    onChange={setEdgeFilter}
+                    maxExperiments={maxExperiments}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Advanced Settings Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={clusterState.enabled || hubMode.showHubsOnly ? "default" : "outline"}
+                    size="sm"
+                    className="h-8"
+                  >
+                    <Settings2 className="w-4 h-4 mr-1.5" />
+                    Advanced
+                    {(clusterState.enabled || hubMode.showHubsOnly) && (
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                        Active
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-6">
+                    {/* Clustering Controls */}
+                    <ClusterControls
+                      clusterState={clusterState}
+                      onChange={setClusterState}
+                      onRunClustering={handleRunClustering}
+                    />
+
+                    <div className="border-t border-slate-200" />
+
+                    {/* Hub Mode Toggle */}
+                    <HubModeToggle
+                      hubMode={hubMode}
+                      onChange={setHubMode}
+                      disabled={colorMode !== "hub"}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <div className="h-5 w-px bg-slate-200" />
+
               <Button
                 variant="outline"
                 size="sm"
@@ -544,6 +692,10 @@ export function PPINetworkView({
             pathHighlight={pathHighlight}
             selectedGeneIds={selectedGeneIds}
             sharedInteractorIds={sharedInteractorIds}
+            edgeFilter={edgeFilter}
+            overlayData={overlayData}
+            overlayType={overlayType}
+            hubMode={colorMode === "hub" ? hubMode : undefined}
             onNodeClick={handleNodeClick}
             onNodeHover={handleNodeHover}
             onEdgeClick={handleEdgeClick}

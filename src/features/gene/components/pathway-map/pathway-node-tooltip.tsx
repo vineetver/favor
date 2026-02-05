@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { Beaker, Database } from "lucide-react";
 import { memo } from "react";
 import { getCategoryColor, type PathwayNode } from "./types";
 
@@ -13,6 +14,7 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
   if (!node || !position) return null;
 
   const colors = getCategoryColor(node.category);
+  const hasEvidence = node.numSources || node.numExperiments;
 
   return (
     <div
@@ -30,6 +32,25 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
         {node.name}
       </div>
       <div className="text-xs font-mono text-slate-500 mb-2">{node.id}</div>
+
+      {/* Evidence badges */}
+      {hasEvidence && (
+        <div className="flex items-center gap-2 mb-2">
+          {node.numSources && node.numSources > 0 && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">
+              <Database className="w-3 h-3" />
+              {node.numSources} source{node.numSources > 1 ? "s" : ""}
+            </span>
+          )}
+          {node.numExperiments && node.numExperiments > 0 && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-xs">
+              <Beaker className="w-3 h-3" />
+              {node.numExperiments} exp{node.numExperiments > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 flex-wrap">
         <span
           className="text-xs px-2 py-0.5 rounded-full"

@@ -12,7 +12,16 @@ import coseBilkent from "cytoscape-cose-bilkent";
 import { memo, useEffect, useMemo, useRef } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import { getHubColor, getHubNodeSize, nodeToData } from "../../utils/ppi-graph-utils";
-import { getLayoutOptions, type PPICytoscapeGraphProps, type CentralityData } from "./types";
+import {
+  getLayoutOptions,
+  type PPICytoscapeGraphProps,
+  type CentralityData,
+  type EdgeFilterState,
+  type EdgeFilterConfig,
+  type ClusterState,
+  DEFAULT_EDGE_FILTER,
+} from "./types";
+import { getClusterColor } from "../../utils/clustering";
 
 // Register the CoSE-Bilkent layout extension
 if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
@@ -81,47 +90,15 @@ const STYLESHEET: StylesheetStyle[] = [
       opacity: 0.3,
     },
   },
-  // Base edge style
+  // Base edge style - fallback values, actual colors applied programmatically
   {
     selector: "edge.ppi-edge",
     style: {
       "curve-style": "bezier",
       opacity: 0.7,
       "target-arrow-shape": "none",
-      "line-color": "#cbd5e1",
-      width: 1,
-    },
-  },
-  // Edge style by source count - 1 source (lightest)
-  {
-    selector: "edge.sources-1",
-    style: {
-      "line-color": "#cbd5e1",  // slate-300
-      width: 1,
-    },
-  },
-  // Edge style by source count - 2 sources
-  {
-    selector: "edge.sources-2",
-    style: {
-      "line-color": "#94a3b8",  // slate-400
-      width: 2,
-    },
-  },
-  // Edge style by source count - 3 sources
-  {
-    selector: "edge.sources-3",
-    style: {
-      "line-color": "#64748b",  // slate-500
-      width: 3,
-    },
-  },
-  // Edge style by source count - 4+ sources (darkest)
-  {
-    selector: "edge.sources-4",
-    style: {
-      "line-color": "#475569",  // slate-600
-      width: 4,
+      "line-color": "#cbd5e1",  // Fallback, overridden by applyEdgeStyles
+      width: 1,                  // Fallback, overridden by applyEdgeStyles
     },
   },
   {
@@ -168,11 +145,138 @@ const STYLESHEET: StylesheetStyle[] = [
       opacity: 0.2,
     },
   },
+  // Edge filter: greyed out edges below threshold
+  {
+    selector: "edge.ppi-edge.filter-greyed",
+    style: {
+      "line-color": "#e2e8f0",  // slate-200
+      opacity: 0.3,
+      width: 1,
+      "z-index": 1,
+    },
+  },
+  // Edge filter: hidden edges (via display: none alternative)
+  {
+    selector: "edge.ppi-edge.filter-hidden",
+    style: {
+      opacity: 0,
+      "events": "no" as never,
+    },
+  },
+  // Context overlay: node halo for shared pathways
+  {
+    selector: "node.overlay-pathways",
+    style: {
+      "border-width": 4,
+      "border-color": "#6366f1",  // indigo-500
+      "border-opacity": 0.7,
+    },
+  },
+  // Context overlay: node halo for shared diseases
+  {
+    selector: "node.overlay-diseases",
+    style: {
+      "border-width": 4,
+      "border-color": "#f43f5e",  // rose-500
+      "border-opacity": 0.7,
+    },
+  },
+  // Hub mode: hidden nodes below threshold
+  {
+    selector: "node.hub-hidden",
+    style: {
+      opacity: 0,
+      "events": "no" as never,
+    },
+  },
+  // Cluster visualization styles (8 distinct colors)
+  {
+    selector: "node.cluster-0",
+    style: {
+      "background-color": "#dbeafe",
+      "border-color": "#3b82f6",
+    },
+  },
+  {
+    selector: "node.cluster-1",
+    style: {
+      "background-color": "#dcfce7",
+      "border-color": "#22c55e",
+    },
+  },
+  {
+    selector: "node.cluster-2",
+    style: {
+      "background-color": "#fef3c7",
+      "border-color": "#f59e0b",
+    },
+  },
+  {
+    selector: "node.cluster-3",
+    style: {
+      "background-color": "#fce7f3",
+      "border-color": "#ec4899",
+    },
+  },
+  {
+    selector: "node.cluster-4",
+    style: {
+      "background-color": "#e0e7ff",
+      "border-color": "#6366f1",
+    },
+  },
+  {
+    selector: "node.cluster-5",
+    style: {
+      "background-color": "#ffedd5",
+      "border-color": "#f97316",
+    },
+  },
+  {
+    selector: "node.cluster-6",
+    style: {
+      "background-color": "#f3e8ff",
+      "border-color": "#a855f7",
+    },
+  },
+  {
+    selector: "node.cluster-7",
+    style: {
+      "background-color": "#ccfbf1",
+      "border-color": "#14b8a6",
+    },
+  },
+  // Hide-cascade mode: hidden orphan nodes
+  {
+    selector: "node.cascade-hidden",
+    style: {
+      opacity: 0,
+      "events": "no" as never,
+    },
+  },
 ];
+
+/**
+ * Apply edge styles based on source count data stored in element data.
+ * This is needed because react-cytoscapejs doesn't reliably support data() mappers.
+ */
+function applyEdgeStyles(cy: Core): void {
+  cy.edges(".ppi-edge").forEach((edge) => {
+    const lineColor = edge.data("lineColor");
+    const edgeWidth = edge.data("edgeWidth");
+    if (lineColor && edgeWidth) {
+      edge.style({
+        "line-color": lineColor,
+        width: edgeWidth,
+      });
+    }
+  });
+}
 
 function PPICytoscapeGraphInner({
   elements,
   layout,
+  seedGeneId,
   onNodeClick,
   onNodeHover,
   onEdgeClick,
@@ -182,6 +286,12 @@ function PPICytoscapeGraphInner({
   pathHighlight,
   selectedGeneIds,
   sharedInteractorIds,
+  edgeFilter = DEFAULT_EDGE_FILTER,
+  edgeFilterConfig,
+  overlayData,
+  overlayType = "none",
+  hubMode,
+  clusterState,
   className,
 }: PPICytoscapeGraphProps) {
   const cyRef = useRef<Core | null>(null);
@@ -341,6 +451,168 @@ function PPICytoscapeGraphInner({
     }
   }, [sharedInteractorIds]);
 
+  // Handle edge filtering
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Clear all filter classes
+    cy.edges().removeClass("filter-greyed filter-hidden");
+
+    // Apply filter to edges
+    cy.edges().forEach((edge) => {
+      const numSources = edge.data("numSources") ?? 0;
+      const numExperiments = edge.data("numExperiments") ?? 0;
+
+      const belowThreshold =
+        numSources < edgeFilter.minSources ||
+        numExperiments < edgeFilter.minExperiments;
+
+      if (belowThreshold) {
+        if (edgeFilter.greyOutBelowThreshold) {
+          edge.addClass("filter-greyed");
+        } else {
+          edge.addClass("filter-hidden");
+        }
+      }
+    });
+  }, [edgeFilter]);
+
+  // Handle context overlay (node halos)
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Clear all overlay classes
+    cy.nodes().removeClass("overlay-pathways overlay-diseases");
+
+    if (overlayType !== "none" && overlayData && overlayData.size > 0) {
+      cy.nodes().forEach((node) => {
+        const data = overlayData.get(node.id());
+        if (data && data.sharedCount > 0) {
+          if (overlayType === "shared-pathways") {
+            node.addClass("overlay-pathways");
+          } else if (overlayType === "shared-diseases") {
+            node.addClass("overlay-diseases");
+          }
+        }
+      });
+    }
+  }, [overlayType, overlayData]);
+
+  // Handle hub mode (centrality filtering)
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Clear all hub mode classes
+    cy.nodes().removeClass("hub-hidden");
+    cy.edges().removeClass("filter-hidden");
+
+    if (hubMode?.showHubsOnly && centralityData && centralityData.size > 0) {
+      const threshold = hubMode.hubThreshold;
+
+      // Hide nodes below percentile threshold (except seed)
+      cy.nodes().forEach((node) => {
+        const isSeed = node.data("isSeed");
+        if (isSeed) return; // Never hide seed
+
+        const nodeData = centralityData.get(node.id());
+        if (!nodeData || nodeData.percentile.total < threshold) {
+          node.addClass("hub-hidden");
+        }
+      });
+
+      // Hide edges connected to hidden nodes
+      cy.edges().forEach((edge) => {
+        const sourceHidden = edge.source().hasClass("hub-hidden");
+        const targetHidden = edge.target().hasClass("hub-hidden");
+        if (sourceHidden || targetHidden) {
+          edge.addClass("filter-hidden");
+        }
+      });
+    }
+  }, [hubMode, centralityData]);
+
+  // Handle cluster visualization
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Clear all cluster classes
+    for (let i = 0; i < 8; i++) {
+      cy.nodes().removeClass(`cluster-${i}`);
+    }
+
+    if (clusterState?.enabled && clusterState.clusters.size > 0) {
+      // Build a reverse map: nodeId -> clusterIndex
+      const nodeToCluster = new Map<string, number>();
+      let clusterIndex = 0;
+
+      clusterState.clusters.forEach((nodeIds) => {
+        nodeIds.forEach((nodeId) => {
+          nodeToCluster.set(nodeId, clusterIndex);
+        });
+        clusterIndex++;
+      });
+
+      // Apply cluster classes to nodes
+      cy.nodes().forEach((node) => {
+        const clusterId = nodeToCluster.get(node.id());
+        if (clusterId !== undefined) {
+          // Use modulo 8 to cycle through available cluster colors
+          node.addClass(`cluster-${clusterId % 8}`);
+        }
+      });
+    }
+  }, [clusterState]);
+
+  // Handle edge filter with cascade mode
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Clear all cascade-hidden classes (different from filter-hidden)
+    cy.nodes().removeClass("cascade-hidden");
+
+    // Only apply cascade logic if edgeFilterConfig is provided with hide-cascade
+    if (!edgeFilterConfig || edgeFilterConfig.display !== "hide-cascade") return;
+    if (edgeFilterConfig.minSources === 0 && edgeFilterConfig.minExperiments === 0) return;
+
+    // Find nodes connected by visible edges
+    const connectedNodes = new Set<string>();
+    if (seedGeneId) connectedNodes.add(seedGeneId); // Seed is always visible
+
+    cy.edges().forEach((edge) => {
+      // Skip edges that are already hidden by filter
+      if (edge.hasClass("filter-greyed") || edge.hasClass("filter-hidden")) return;
+
+      const numSources = edge.data("numSources") ?? 0;
+      const numExperiments = edge.data("numExperiments") ?? 0;
+
+      const passesFilter =
+        numSources >= edgeFilterConfig.minSources &&
+        numExperiments >= edgeFilterConfig.minExperiments;
+
+      if (passesFilter) {
+        connectedNodes.add(edge.source().id());
+        connectedNodes.add(edge.target().id());
+      }
+    });
+
+    // Hide orphaned nodes (nodes not connected by any visible edge)
+    cy.nodes().forEach((node) => {
+      if (!connectedNodes.has(node.id())) {
+        node.addClass("cascade-hidden");
+      }
+    });
+  }, [edgeFilterConfig, seedGeneId]);
+
   // Handle layout changes only
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
@@ -383,10 +655,12 @@ function PPICytoscapeGraphInner({
     const currentIds = cy.nodes().map((n) => n.id()).sort().join(",");
 
     // Re-run layout if node IDs changed OR element count changed
-    // Edge styles are handled by stylesheet classes (sources-1, sources-2, etc.)
     if (currentIds !== elementsKey || elementCountChanged) {
       cy.elements().remove();
       cy.add(elements);
+
+      // Apply edge styles from element data (data mappers don't work reliably with react-cytoscapejs)
+      applyEdgeStyles(cy);
 
       const layoutOptions = getLayoutOptions(layout);
       cy.layout(layoutOptions).run();
@@ -403,8 +677,10 @@ function PPICytoscapeGraphInner({
     initializedRef.current = true;
 
     // Manually apply stylesheet - react-cytoscapejs doesn't reliably apply stylesheet prop
-    // Edge styles are handled by stylesheet classes (sources-1, sources-2, etc.)
     cy.style().fromJson(STYLESHEET).update();
+
+    // Apply edge styles from element data (data mappers don't work reliably with react-cytoscapejs)
+    applyEdgeStyles(cy);
 
     // Initial layout
     const layoutOptions = getLayoutOptions(layoutRef.current);

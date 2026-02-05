@@ -1,6 +1,9 @@
 "use client";
 
-import { fetchPathwayEnrichment } from "@features/gene/api";
+import {
+  fetchPathwayDiseaseEnrichment,
+  fetchPathwayEnrichment,
+} from "@features/gene/api";
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -22,7 +25,11 @@ import { PathwayListPanel } from "./pathway-list-panel";
 import { PathwayNodeTooltip } from "./pathway-node-tooltip";
 import {
   type CategoryFilterState,
+  type DiseaseEnrichmentState,
   type EnrichmentState,
+  EXPANSION_LEVEL_OPTIONS,
+  type ExpansionLevel,
+  getExpansionConfig,
   type GraphNode,
   groupPathwaysByCategory,
   PATHWAY_LAYOUT_OPTIONS,
@@ -31,6 +38,8 @@ import {
   type PathwayLeverageViewProps,
   type PathwayNode,
   type PathwaySelection,
+  PATHWAY_SORT_OPTIONS,
+  type PathwaySortOption,
 } from "./types";
 
 // =============================================================================
@@ -95,7 +104,12 @@ function PathwayLeverageViewInner({
   // View state - graph first
   const [viewMode, setViewMode] = useState<ViewMode>("graph");
   const [layout, setLayout] = useState<PathwayLayoutType>("cose-bilkent");
-  const [limit, setLimit] = useState("50");
+  const [sortOption, setSortOption] = useState<PathwaySortOption>("relevance");
+  const [expansionLevel, setExpansionLevel] = useState<ExpansionLevel>("standard");
+
+  // Derive limit from expansion level
+  const expansionConfig = getExpansionConfig(expansionLevel);
+  const limit = String(expansionConfig.nodeLimit);
 
   // Selection state - discriminated union
   const [selection, setSelection] = useState<PathwaySelection>({ type: "none" });
@@ -109,10 +123,10 @@ function PathwayLeverageViewInner({
     y: number;
   } | null>(null);
 
-  // Filter state
+  // Filter state - showHierarchy derived from expansion level
   const [filterState, setFilterState] = useState<CategoryFilterState>({
     selectedCategories: new Set(),
-    showHierarchy: true,
+    showHierarchy: expansionConfig.showHierarchy,
   });
 
   // Enrichment state (lazy loaded)
@@ -120,12 +134,47 @@ function PathwayLeverageViewInner({
     status: "idle",
   });
 
-  // Apply limit to pathways
+  // Disease enrichment state (lazy loaded on demand)
+  const [diseaseEnrichment, setDiseaseEnrichment] = useState<DiseaseEnrichmentState>({
+    status: "idle",
+  });
+
+  // Sort pathways based on selected sort option
+  const sortedPathways = useMemo(() => {
+    const sorted = [...pathways];
+    switch (sortOption) {
+      case "relevance":
+        // Sort by evidence: numExperiments desc, then numSources desc, then name
+        return sorted.sort((a, b) => {
+          const expA = a.numExperiments ?? 0;
+          const expB = b.numExperiments ?? 0;
+          if (expB !== expA) return expB - expA;
+
+          const srcA = a.numSources ?? 0;
+          const srcB = b.numSources ?? 0;
+          if (srcB !== srcA) return srcB - srcA;
+
+          return a.name.localeCompare(b.name);
+        });
+      case "name":
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case "category":
+        return sorted.sort((a, b) => {
+          const catCompare = a.category.localeCompare(b.category);
+          if (catCompare !== 0) return catCompare;
+          return a.name.localeCompare(b.name);
+        });
+      default:
+        return sorted;
+    }
+  }, [pathways, sortOption]);
+
+  // Apply limit to sorted pathways
   const limitedPathways = useMemo(() => {
-    if (limit === "all") return pathways;
+    if (limit === "all") return sortedPathways;
     const limitNum = parseInt(limit, 10);
-    return pathways.slice(0, limitNum);
-  }, [pathways, limit]);
+    return sortedPathways.slice(0, limitNum);
+  }, [sortedPathways, limit]);
 
   // Group pathways by category for sidebar (uses limited pathways)
   const categories = useMemo(
@@ -149,16 +198,40 @@ function PathwayLeverageViewInner({
   useEffect(() => {
     if (selection.type !== "pathway") {
       setEnrichment({ status: "idle" });
+      setDiseaseEnrichment({ status: "idle" });
       return;
     }
 
     const pathwayId = selection.pathway.id;
     setEnrichment({ status: "loading", pathwayId });
+    setDiseaseEnrichment({ status: "idle" }); // Reset disease enrichment for new selection
 
     fetchPathwayEnrichment(pathwayId, seedGeneId)
       .then((data) => {
         if (data) {
           setEnrichment({ status: "loaded", pathwayId, data });
+
+          // Auto-load diseases if in "detailed" mode
+          if (expansionConfig.autoLoadDiseases) {
+            setDiseaseEnrichment({ status: "loading" });
+            fetchPathwayDiseaseEnrichment(pathwayId)
+              .then((diseaseData) => {
+                if (diseaseData) {
+                  setDiseaseEnrichment({ status: "loaded", data: diseaseData });
+                } else {
+                  setDiseaseEnrichment({
+                    status: "error",
+                    error: "Failed to fetch disease data",
+                  });
+                }
+              })
+              .catch((err) => {
+                setDiseaseEnrichment({
+                  status: "error",
+                  error: err instanceof Error ? err.message : "Unknown error",
+                });
+              });
+          }
         } else {
           setEnrichment({
             status: "error",
@@ -174,15 +247,25 @@ function PathwayLeverageViewInner({
           error: err instanceof Error ? err.message : "Unknown error",
         });
       });
-  }, [selection, seedGeneId]);
+  }, [selection, seedGeneId, expansionConfig.autoLoadDiseases]);
 
   // Handlers
   const handleLayoutChange = useCallback((value: string) => {
     setLayout(value as PathwayLayoutType);
   }, []);
 
-  const handleLimitChange = useCallback((value: string) => {
-    setLimit(value);
+  const handleSortChange = useCallback((value: string) => {
+    setSortOption(value as PathwaySortOption);
+  }, []);
+
+  const handleExpansionChange = useCallback((value: string) => {
+    const newLevel = value as ExpansionLevel;
+    setExpansionLevel(newLevel);
+    const config = getExpansionConfig(newLevel);
+    setFilterState((prev) => ({
+      ...prev,
+      showHierarchy: config.showHierarchy,
+    }));
   }, []);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
@@ -206,6 +289,31 @@ function PathwayLeverageViewInner({
   const handleClearSelection = useCallback(() => {
     setSelection({ type: "none" });
   }, []);
+
+  const handleLoadDiseases = useCallback(() => {
+    if (selection.type !== "pathway") return;
+
+    const pathwayId = selection.pathway.id;
+    setDiseaseEnrichment({ status: "loading" });
+
+    fetchPathwayDiseaseEnrichment(pathwayId)
+      .then((data) => {
+        if (data) {
+          setDiseaseEnrichment({ status: "loaded", data });
+        } else {
+          setDiseaseEnrichment({
+            status: "error",
+            error: "Failed to fetch disease data",
+          });
+        }
+      })
+      .catch((err) => {
+        setDiseaseEnrichment({
+          status: "error",
+          error: err instanceof Error ? err.message : "Unknown error",
+        });
+      });
+  }, [selection]);
 
   const handleFilterChange = useCallback((newState: CategoryFilterState) => {
     setFilterState(newState);
@@ -266,9 +374,9 @@ function PathwayLeverageViewInner({
             <p className="text-sm text-slate-500 mt-0.5">
               {filteredPathways.length} of {pathways.length} pathways involving{" "}
               {seedGeneSymbol}
-              {limit !== "all" && limitedPathways.length < pathways.length && (
+              {limitedPathways.length < pathways.length && (
                 <span className="text-slate-400">
-                  {" "}(showing {limitedPathways.length})
+                  {" "}({expansionLevel} view: {limitedPathways.length})
                 </span>
               )}
             </p>
@@ -311,11 +419,19 @@ function PathwayLeverageViewInner({
         <div className="flex items-center justify-between gap-4 px-6 py-3 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-4">
             <DimensionSelector
-              label="Limit"
-              options={PATHWAY_LIMIT_OPTIONS}
-              value={limit}
-              onChange={handleLimitChange}
+              label="Detail"
+              options={EXPANSION_LEVEL_OPTIONS}
+              value={expansionLevel}
+              onChange={handleExpansionChange}
               presentation="segmented"
+            />
+            <div className="h-5 w-px bg-slate-200" />
+            <DimensionSelector
+              label="Sort"
+              options={PATHWAY_SORT_OPTIONS}
+              value={sortOption}
+              onChange={handleSortChange}
+              presentation="dropdown"
             />
             {viewMode === "graph" && (
               <>
@@ -341,6 +457,8 @@ function PathwayLeverageViewInner({
           {/* Sidebar */}
           <PathwayCategorySidebar
             categories={categories}
+            hierarchyEdges={hierarchyEdges}
+            pathways={limitedPathways}
             filterState={filterState}
             onFilterChange={handleFilterChange}
             className="w-56 border-r border-slate-200 shrink-0 h-[600px]"
@@ -368,15 +486,18 @@ function PathwayLeverageViewInner({
           </div>
         </div>
 
-        {/* Detail panel at bottom */}
-        {selection.type === "pathway" && (
-          <PathwayDetailPanel
-            pathway={selection.pathway}
-            enrichment={enrichment}
-            seedGeneSymbol={seedGeneSymbol}
-            onClose={handleClearSelection}
-          />
-        )}
+        {/* Detail drawer (Sheet) */}
+        <PathwayDetailPanel
+          pathway={selection.type === "pathway" ? selection.pathway : null}
+          enrichment={enrichment}
+          diseaseEnrichment={diseaseEnrichment}
+          seedGeneSymbol={seedGeneSymbol}
+          open={selection.type === "pathway"}
+          onOpenChange={(open) => {
+            if (!open) handleClearSelection();
+          }}
+          onLoadDiseases={handleLoadDiseases}
+        />
       </CardContent>
 
       {/* Tooltip (only in graph view) */}
