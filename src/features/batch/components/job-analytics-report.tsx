@@ -8,10 +8,17 @@ import { Card, CardContent } from "@shared/components/ui/card";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { Variant } from "@features/variant/types";
 import { apcColumns } from "@features/variant/config/hg38/columns/shared";
-import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
+import {
+  clinvarColumns,
+  clinicalSignificance,
+  reviewStatus,
+} from "@features/variant/config/hg38/columns/clinvar";
 import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
 import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
-import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
+import {
+  proteinFunctionColumns,
+  alphaMissense,
+} from "@features/variant/config/hg38/columns/protein-function";
 import { basicColumns } from "@features/variant/config/hg38/columns/basic";
 import {
   functionalClassColumns,
@@ -93,6 +100,52 @@ interface IntegrativeScoreData {
   caddVsApcCorrelation: Array<{ cadd: number; apc: number }>;
 }
 
+/** ClinVar clinical significance distribution */
+interface ClinSigDistribution {
+  clnsig: string;
+  count: number;
+  percentage: number;
+}
+
+/** ClinVar review status distribution */
+interface ReviewStatusDistribution {
+  review_status: string;
+  count: number;
+  percentage: number;
+}
+
+/** Disease frequency */
+interface DiseaseFrequency {
+  disease: string;
+  count: number;
+}
+
+interface ClinVarData {
+  clinSigDistribution: ClinSigDistribution[];
+  reviewStatusDistribution: ReviewStatusDistribution[];
+  topDiseases: DiseaseFrequency[];
+  totalWithClinvar: number;
+}
+
+/** AlphaMissense class distribution */
+interface AlphaMissenseDistribution {
+  am_class: string;
+  count: number;
+  percentage: number;
+}
+
+/** Top missense gene */
+interface MissenseGene {
+  gene: string;
+  variant_count: number;
+}
+
+interface ProteinFunctionData {
+  alphaMissenseDistribution: AlphaMissenseDistribution[];
+  topMissenseGenes: MissenseGene[];
+  totalMissense: number;
+}
+
 interface ReportData {
   totalVariants: number;
   metrics: {
@@ -113,6 +166,10 @@ interface ReportData {
   functionalClass: FunctionalClassData;
   // Integrative score data
   integrativeScore: IntegrativeScoreData;
+  // ClinVar data
+  clinvar: ClinVarData;
+  // Protein Function data
+  proteinFunction: ProteinFunctionData;
 }
 
 // ============================================================================
@@ -375,6 +432,145 @@ const SQL_QUERIES = {
     ORDER BY RANDOM()
     LIMIT 200
   `,
+
+  // ClinVar queries
+  clinSigDistribution: `
+    WITH clinvar_variants AS (
+      SELECT variant.clinvar.clnsig[1] as clnsig
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.clinvar.clnsig IS NOT NULL
+        AND len(variant.clinvar.clnsig) > 0
+        AND variant.clinvar.clnsig[1] IS NOT NULL
+    ),
+    total AS (
+      SELECT COUNT(*) as n FROM clinvar_variants
+    )
+    SELECT
+      clnsig,
+      COUNT(*) as count,
+      ROUND(COUNT(*) * 100.0 / total.n, 2) as percentage
+    FROM clinvar_variants, total
+    GROUP BY clnsig, total.n
+    ORDER BY count DESC
+    LIMIT 10
+  `,
+
+  reviewStatusDistribution: `
+    WITH clinvar_variants AS (
+      SELECT variant.clinvar.clnrevstat as review_status
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.clinvar.clnrevstat IS NOT NULL
+        AND variant.clinvar.clnrevstat != ''
+    ),
+    total AS (
+      SELECT COUNT(*) as n FROM clinvar_variants
+    )
+    SELECT
+      review_status,
+      COUNT(*) as count,
+      ROUND(COUNT(*) * 100.0 / total.n, 2) as percentage
+    FROM clinvar_variants, total
+    GROUP BY review_status, total.n
+    ORDER BY count DESC
+    LIMIT 10
+  `,
+
+  topDiseases: `
+    WITH disease_list AS (
+      SELECT variant.clinvar.clndn as diseases
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.clinvar.clndn IS NOT NULL
+        AND len(variant.clinvar.clndn) > 0
+    ),
+    unnested AS (
+      SELECT unnest(diseases) as disease FROM disease_list
+    )
+    SELECT
+      disease,
+      COUNT(*) as count
+    FROM unnested
+    WHERE disease IS NOT NULL
+      AND disease != ''
+      AND lower(disease) != 'not_provided'
+      AND lower(disease) != 'not_specified'
+    GROUP BY disease
+    ORDER BY count DESC
+    LIMIT 15
+  `,
+
+  totalWithClinvar: `
+    SELECT COUNT(*) as count
+    FROM variants
+    WHERE lower(status) = 'found'
+      AND variant.clinvar.clnsig IS NOT NULL
+      AND len(variant.clinvar.clnsig) > 0
+  `,
+
+  // Protein Function queries
+  alphaMissenseDistribution: `
+    WITH am_variants AS (
+      SELECT
+        CASE
+          WHEN variant.alphamissense.max_pathogenicity > 0.564 THEN 'Likely Pathogenic'
+          WHEN variant.alphamissense.max_pathogenicity >= 0.34 THEN 'Ambiguous'
+          WHEN variant.alphamissense.max_pathogenicity IS NOT NULL THEN 'Likely Benign'
+          ELSE NULL
+        END as am_class
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.alphamissense.max_pathogenicity IS NOT NULL
+    ),
+    total AS (
+      SELECT COUNT(*) as n FROM am_variants WHERE am_class IS NOT NULL
+    )
+    SELECT
+      am_class,
+      COUNT(*) as count,
+      ROUND(COUNT(*) * 100.0 / total.n, 2) as percentage
+    FROM am_variants, total
+    WHERE am_class IS NOT NULL
+    GROUP BY am_class, total.n
+    ORDER BY
+      CASE am_class
+        WHEN 'Likely Pathogenic' THEN 1
+        WHEN 'Ambiguous' THEN 2
+        WHEN 'Likely Benign' THEN 3
+      END
+  `,
+
+  topMissenseGenes: `
+    WITH missense_variants AS (
+      SELECT variant.genecode.genes as genes
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.genecode.consequence IS NOT NULL
+        AND lower(variant.genecode.consequence) LIKE '%nonsynonymous%'
+        AND variant.genecode.genes IS NOT NULL
+        AND len(variant.genecode.genes) > 0
+    ),
+    unnested AS (
+      SELECT unnest(genes) as gene FROM missense_variants
+    )
+    SELECT
+      gene,
+      COUNT(*) as variant_count
+    FROM unnested
+    WHERE gene IS NOT NULL AND gene != ''
+    GROUP BY gene
+    ORDER BY variant_count DESC
+    LIMIT 10
+  `,
+
+  totalMissense: `
+    SELECT COUNT(*) as count
+    FROM variants
+    WHERE lower(status) = 'found'
+      AND variant.genecode.consequence IS NOT NULL
+      AND lower(variant.genecode.consequence) LIKE '%nonsynonymous%'
+  `,
 };
 
 // ============================================================================
@@ -579,40 +775,65 @@ function DistributionTable({
   data,
   title,
   categoryDefs,
+  total,
 }: {
   data: Array<{ label: string; value: number; percentage: number }>;
   title: string;
-  categoryDefs: ReturnType<typeof gencodeComprehensive>;
+  categoryDefs: typeof gencodeComprehensive;
+  total: number;
 }) {
-  if (data.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
-        No data available
-      </div>
-    );
-  }
+  // Create entries for all defined categories
+  const allCategories = categoryDefs.items.map((cat) => {
+    // Find matching data by checking if the category label matches any key
+    const matchingEntry = data.find((d) => {
+      const match = cat.match;
+      if (match instanceof RegExp) {
+        return match.test(d.label);
+      }
+      return d.label.toLowerCase() === String(match).toLowerCase();
+    });
+
+    return {
+      label: cat.label,
+      value: matchingEntry?.value ?? 0,
+      percentage: total > 0 ? ((matchingEntry?.value ?? 0) / total) * 100 : 0,
+      color: cat.color,
+      description: cat.description,
+    };
+  });
+
+  // Sort by value descending, but keep 0s at the end
+  const sorted = [...allCategories].sort((a, b) => {
+    if (a.value === 0 && b.value === 0) return 0;
+    if (a.value === 0) return 1;
+    if (b.value === 0) return -1;
+    return b.value - a.value;
+  });
 
   return (
     <div>
       <h4 className="text-sm font-medium text-slate-700 mb-3">{title}</h4>
       <div className="space-y-1.5">
-        {data.slice(0, 8).map((item) => {
-          const cat = categoryDefs.getCategory(item.label);
-          const colorClass = cat ? DOT_COLORS[cat.color] : "bg-slate-400";
+        {sorted.map((item) => {
+          const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
           return (
             <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
                 <span
                   className="text-sm text-slate-700 truncate"
-                  title={cat?.description || item.label}
+                  title={item.description}
                 >
                   {item.label}
                 </span>
               </div>
               <div className="text-sm tabular-nums shrink-0 ml-2">
-                <span className="font-medium text-slate-900">{item.value.toLocaleString()}</span>
-                <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                  {item.value.toLocaleString()}
+                </span>
+                {item.value > 0 && (
+                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                )}
               </div>
             </div>
           );
@@ -706,6 +927,10 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
     percentage: c.percentage,
   }));
 
+  // Calculate totals for proper percentages
+  const totalRegion = data.regionDistribution.reduce((sum, r) => sum + r.count, 0);
+  const totalConsequence = data.consequenceDistribution.reduce((sum, c) => sum + c.count, 0);
+
   return (
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-slate-900 mb-4">Functional Class</h2>
@@ -718,6 +943,7 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
               data={regionData}
               title="Region Type (GENCODE)"
               categoryDefs={gencodeComprehensive}
+              total={totalRegion}
             />
           </CardContent>
         </Card>
@@ -728,6 +954,7 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
               data={consequenceData}
               title="Exonic Consequence"
               categoryDefs={gencodeExonic}
+              total={totalConsequence}
             />
           </CardContent>
         </Card>
@@ -829,6 +1056,397 @@ function IntegrativeScoreSection({ data }: { data: IntegrativeScoreData }) {
 }
 
 // ============================================================================
+// ClinVar Section
+// ============================================================================
+
+function ClinSigTable({
+  data,
+  total,
+}: {
+  data: Array<{ label: string; value: number; percentage: number }>;
+  total: number;
+}) {
+  // Build a map from the query results
+  const dataMap = new Map(data.map((d) => [d.label.toLowerCase(), d]));
+
+  // Create entries for all defined categories
+  const allCategories = clinicalSignificance.items.map((cat) => {
+    // Find matching data by checking if the category label matches any key
+    const matchingEntry = data.find((d) => {
+      const match = cat.match;
+      if (match instanceof RegExp) {
+        return match.test(d.label);
+      }
+      return d.label.toLowerCase() === String(match).toLowerCase();
+    });
+
+    return {
+      label: cat.label,
+      value: matchingEntry?.value ?? 0,
+      percentage: total > 0 ? ((matchingEntry?.value ?? 0) / total) * 100 : 0,
+      color: cat.color,
+      description: cat.description,
+    };
+  });
+
+  // Sort by value descending, but keep 0s at the end
+  const sorted = [...allCategories].sort((a, b) => {
+    if (a.value === 0 && b.value === 0) return 0;
+    if (a.value === 0) return 1;
+    if (b.value === 0) return -1;
+    return b.value - a.value;
+  });
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Clinical Significance</h4>
+      <div className="space-y-1.5">
+        {sorted.map((item) => {
+          const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
+          return (
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
+                <span
+                  className="text-sm text-slate-700 truncate"
+                  title={item.description}
+                >
+                  {item.label}
+                </span>
+              </div>
+              <div className="text-sm tabular-nums shrink-0 ml-2">
+                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                  {item.value.toLocaleString()}
+                </span>
+                {item.value > 0 && (
+                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewStatusTable({
+  data,
+  total,
+}: {
+  data: Array<{ label: string; value: number; percentage: number }>;
+  total: number;
+}) {
+  // Create entries for all defined categories
+  const allCategories = reviewStatus.items.map((cat) => {
+    // Find matching data by checking if the category label matches any key
+    const matchingEntry = data.find((d) => {
+      const match = cat.match;
+      if (match instanceof RegExp) {
+        return match.test(d.label);
+      }
+      return d.label.toLowerCase() === String(match).toLowerCase();
+    });
+
+    return {
+      label: cat.label,
+      value: matchingEntry?.value ?? 0,
+      percentage: total > 0 ? ((matchingEntry?.value ?? 0) / total) * 100 : 0,
+      color: cat.color,
+      description: cat.description,
+    };
+  });
+
+  // Sort by value descending, but keep 0s at the end
+  const sorted = [...allCategories].sort((a, b) => {
+    if (a.value === 0 && b.value === 0) return 0;
+    if (a.value === 0) return 1;
+    if (b.value === 0) return -1;
+    return b.value - a.value;
+  });
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Review Status</h4>
+      <div className="space-y-1.5">
+        {sorted.map((item) => {
+          const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
+          return (
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
+                <span
+                  className="text-sm text-slate-700 truncate"
+                  title={item.description}
+                >
+                  {item.label}
+                </span>
+              </div>
+              <div className="text-sm tabular-nums shrink-0 ml-2">
+                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                  {item.value.toLocaleString()}
+                </span>
+                {item.value > 0 && (
+                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function formatDiseaseName(name: string): string {
+  // Replace underscores with spaces
+  let formatted = name.replace(/_/g, " ");
+  // Capitalize first letter
+  formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1).toLowerCase();
+  return formatted;
+}
+
+function TopDiseasesTable({ diseases }: { diseases: DiseaseFrequency[] }) {
+  if (diseases.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+        No disease data available
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Associated Diseases</h4>
+      <div className="space-y-1.5">
+        {diseases.slice(0, 10).map((disease, idx) => (
+          <div key={disease.disease} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span
+                className="text-sm text-slate-700 truncate"
+                title={disease.disease}
+              >
+                {formatDiseaseName(disease.disease)}
+              </span>
+            </div>
+            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
+              {disease.count.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClinVarSection({ data }: { data: ClinVarData }) {
+  const clinSigData = data.clinSigDistribution.map((c) => ({
+    label: c.clnsig,
+    value: c.count,
+    percentage: c.percentage,
+  }));
+
+  const reviewData = data.reviewStatusDistribution.map((r) => ({
+    label: r.review_status,
+    value: r.count,
+    percentage: r.percentage,
+  }));
+
+  // Count pathogenic variants
+  const pathogenicCount = data.clinSigDistribution
+    .filter((c) => /pathogenic/i.test(c.clnsig) && !/benign/i.test(c.clnsig))
+    .reduce((sum, c) => sum + c.count, 0);
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-semibold text-slate-900 mb-4">ClinVar</h2>
+
+      {/* Summary stats */}
+      <div className="flex items-center gap-6 mb-4 text-sm">
+        <div>
+          <span className="text-slate-500">Total with ClinVar: </span>
+          <span className="font-medium text-slate-900">{data.totalWithClinvar.toLocaleString()}</span>
+        </div>
+        {pathogenicCount > 0 && (
+          <div>
+            <span className="text-slate-500">Pathogenic/Likely Path: </span>
+            <span className="font-medium text-rose-600">{pathogenicCount.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 2x2 grid layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <ClinSigTable data={clinSigData} total={data.totalWithClinvar} />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <ReviewStatusTable data={reviewData} total={data.totalWithClinvar} />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0 md:col-span-2">
+          <CardContent className="p-4">
+            <TopDiseasesTable diseases={data.topDiseases} />
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// Protein Function Section
+// ============================================================================
+
+function AlphaMissenseTable({
+  data,
+  total,
+}: {
+  data: Array<{ label: string; value: number; percentage: number }>;
+  total: number;
+}) {
+  // Create entries for all defined categories in the defined order
+  const allCategories = alphaMissense.items.map((cat) => {
+    const matchingEntry = data.find((d) => d.label === cat.label);
+
+    return {
+      label: cat.label,
+      value: matchingEntry?.value ?? 0,
+      percentage: total > 0 ? ((matchingEntry?.value ?? 0) / total) * 100 : 0,
+      color: cat.color,
+      description: cat.description,
+    };
+  });
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">AlphaMissense Classification</h4>
+      <div className="space-y-1.5">
+        {allCategories.map((item) => {
+          const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
+          return (
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
+                <span
+                  className="text-sm text-slate-700 truncate"
+                  title={item.description}
+                >
+                  {item.label}
+                </span>
+              </div>
+              <div className="text-sm tabular-nums shrink-0 ml-2">
+                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                  {item.value.toLocaleString()}
+                </span>
+                {item.value > 0 && (
+                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TopMissenseGenesTable({ genes }: { genes: MissenseGene[] }) {
+  if (genes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+        No missense gene data available
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Genes by Missense Variants</h4>
+      <div className="space-y-1.5">
+        {genes.slice(0, 8).map((gene, idx) => (
+          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span
+                className="text-sm font-mono text-slate-700 truncate max-w-[180px]"
+                title={gene.gene}
+              >
+                {gene.gene}
+              </span>
+            </div>
+            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
+              {gene.variant_count.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProteinFunctionSection({ data }: { data: ProteinFunctionData }) {
+  const amData = data.alphaMissenseDistribution.map((a) => ({
+    label: a.am_class,
+    value: a.count,
+    percentage: a.percentage,
+  }));
+
+  // Total with AlphaMissense scores
+  const totalWithAM = data.alphaMissenseDistribution.reduce((sum, a) => sum + a.count, 0);
+
+  // Count likely pathogenic
+  const pathogenicCount = data.alphaMissenseDistribution
+    .filter((a) => /pathogenic/i.test(a.am_class))
+    .reduce((sum, a) => sum + a.count, 0);
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-semibold text-slate-900 mb-4">Protein Function</h2>
+
+      {/* Summary stats */}
+      <div className="flex items-center gap-6 mb-4 text-sm">
+        <div>
+          <span className="text-slate-500">Total Missense: </span>
+          <span className="font-medium text-slate-900">{data.totalMissense.toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-slate-500">With AlphaMissense: </span>
+          <span className="font-medium text-slate-900">{totalWithAM.toLocaleString()}</span>
+        </div>
+        {pathogenicCount > 0 && (
+          <div>
+            <span className="text-slate-500">Likely Pathogenic: </span>
+            <span className="font-medium text-rose-600">{pathogenicCount.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 2-column grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <AlphaMissenseTable data={amData} total={totalWithAM} />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <TopMissenseGenesTable genes={data.topMissenseGenes} />
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -888,6 +1506,15 @@ export function JobAnalyticsReport({
         // Integrative score queries
         integrativeStatsResult,
         caddVsApcResult,
+        // ClinVar queries
+        clinSigDistributionResult,
+        reviewStatusDistributionResult,
+        topDiseasesResult,
+        totalWithClinvarResult,
+        // Protein Function queries
+        alphaMissenseDistributionResult,
+        topMissenseGenesResult,
+        totalMissenseResult,
       ] = await Promise.all([
         query(SQL_QUERIES.totalVariants),
         query(SQL_QUERIES.clinvarPLP),
@@ -909,6 +1536,15 @@ export function JobAnalyticsReport({
         // Integrative score queries
         query(SQL_QUERIES.integrativeScoreStats),
         query(SQL_QUERIES.caddVsApcSample),
+        // ClinVar queries
+        query(SQL_QUERIES.clinSigDistribution),
+        query(SQL_QUERIES.reviewStatusDistribution),
+        query(SQL_QUERIES.topDiseases),
+        query(SQL_QUERIES.totalWithClinvar),
+        // Protein Function queries
+        query(SQL_QUERIES.alphaMissenseDistribution),
+        query(SQL_QUERIES.topMissenseGenes),
+        query(SQL_QUERIES.totalMissense),
       ]);
 
       // Parse results
@@ -1002,6 +1638,21 @@ export function JobAnalyticsReport({
         caddVsApcCorrelation: caddVsApcResult.rows as unknown as Array<{ cadd: number; apc: number }>,
       };
 
+      // ClinVar data
+      const clinvarData: ClinVarData = {
+        clinSigDistribution: clinSigDistributionResult.rows as unknown as ClinSigDistribution[],
+        reviewStatusDistribution: reviewStatusDistributionResult.rows as unknown as ReviewStatusDistribution[],
+        topDiseases: topDiseasesResult.rows as unknown as DiseaseFrequency[],
+        totalWithClinvar: (totalWithClinvarResult.rows[0]?.count as number) || 0,
+      };
+
+      // Protein Function data
+      const proteinFunctionData: ProteinFunctionData = {
+        alphaMissenseDistribution: alphaMissenseDistributionResult.rows as unknown as AlphaMissenseDistribution[],
+        topMissenseGenes: topMissenseGenesResult.rows as unknown as MissenseGene[],
+        totalMissense: (totalMissenseResult.rows[0]?.count as number) || 0,
+      };
+
       setReportData({
         totalVariants,
         clinvarTotal,
@@ -1057,6 +1708,8 @@ export function JobAnalyticsReport({
         },
         prioritizedVariants,
         topCosmicGene,
+        clinvar: clinvarData,
+        proteinFunction: proteinFunctionData,
       });
     } catch (err) {
       console.error("Report generation error:", err);
@@ -1181,6 +1834,12 @@ export function JobAnalyticsReport({
 
       {/* Integrative Score Section */}
       <IntegrativeScoreSection data={reportData.integrativeScore} />
+
+      {/* ClinVar Section */}
+      <ClinVarSection data={reportData.clinvar} />
+
+      {/* Protein Function Section */}
+      <ProteinFunctionSection data={reportData.proteinFunction} />
 
       {/* Footer */}
       <footer className="pt-6 border-t border-slate-200 text-xs text-slate-400 print:mt-8">

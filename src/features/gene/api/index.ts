@@ -102,3 +102,333 @@ export async function fetchGene(
   const response = await fetchOrNull<GeneApiResponse>(url);
   return response ?? null;
 }
+
+/**
+ * Entity reference format returned by subgraph endpoint
+ */
+export interface EntityRef {
+  type: string;
+  id: string;
+  label: string;
+  subtitle?: string;
+}
+
+/**
+ * Edge in subgraph response (TraverseEdge from API)
+ */
+export interface SubgraphEdge {
+  type: string;
+  direction: "out" | "in";
+  from: EntityRef;
+  to: EntityRef;
+  /** Edge properties (when includeProps: true) */
+  props?: {
+    src_symbol?: string;
+    dst_symbol?: string;
+    sources?: string[];
+    num_sources?: number;
+    num_experiments?: number;
+    confidence_scores?: number[];
+    pubmed_ids?: string[];
+    detection_methods?: string[];
+    interaction_type?: string;
+    [key: string]: unknown;
+  };
+  /** Evidence data extracted from props */
+  evidence?: {
+    pubmedIds?: string[];
+  };
+}
+
+/**
+ * Subgraph API response structure
+ */
+export interface SubgraphApiResponse {
+  meta: {
+    requestId: string;
+    generatedAt: string;
+    warnings: string[];
+  };
+  data: {
+    seeds: EntityRef[];
+    graph: {
+      nodes: EntityRef[];
+      edges: SubgraphEdge[];
+    };
+    summary: {
+      nodeCounts: Record<string, number>;
+      edgeCounts: Record<string, number>;
+      depthReached: number;
+    };
+  };
+}
+
+/**
+ * Options for fetching subgraph data
+ */
+export interface FetchSubgraphOptions {
+  /** Seed nodes to start traversal from */
+  seeds: Array<{ type: string; id: string }>;
+  /** Maximum traversal depth (default: 1) */
+  maxDepth?: number;
+  /** Edge types to traverse */
+  edgeTypes?: string[];
+  /** Maximum nodes to return */
+  nodeLimit?: number;
+  /** Maximum edges to return */
+  edgeLimit?: number;
+  /** Include edge properties in response (default: false) */
+  includeProps?: boolean;
+}
+
+/**
+ * Fetches subgraph data from the graph API
+ * Returns nodes and edges in EntityRef format, ideal for visualization
+ */
+export async function fetchSubgraph(
+  options: FetchSubgraphOptions,
+): Promise<SubgraphApiResponse | null> {
+  const url = `${API_BASE}/graph/subgraph`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        seeds: options.seeds,
+        maxDepth: options.maxDepth ?? 1,
+        edgeTypes: options.edgeTypes,
+        nodeLimit: options.nodeLimit ?? 100,
+        edgeLimit: options.edgeLimit ?? 200,
+        includeProps: options.includeProps ?? false,
+      }),
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+
+    if (!response.ok) {
+      console.error(`Subgraph fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Subgraph fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Centrality API (Hub Spotlight)
+// =============================================================================
+
+/**
+ * Centrality response from the graph API
+ */
+export interface CentralityResponse {
+  data: {
+    entity: { type: string; id: string; label: string };
+    degree: { in: number; out: number; total: number };
+    percentile: { in: number; out: number; total: number };
+    hubScore: number;
+  };
+}
+
+/**
+ * Fetches centrality metrics for a gene
+ * @param type - Entity type (e.g., "Gene")
+ * @param id - Entity ID (e.g., Ensembl gene ID)
+ * @returns Centrality data or null if not found
+ */
+export async function fetchCentrality(
+  type: string,
+  id: string,
+): Promise<CentralityResponse | null> {
+  const url = `${API_BASE}/graph/${encodeURIComponent(type)}/${encodeURIComponent(id)}/centrality`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // Cache for 1 hour (centrality is stable)
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.error(`Centrality fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Centrality fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Paths API (Connectivity Bridge)
+// =============================================================================
+
+/**
+ * Path node in a path response
+ */
+export interface PathNode {
+  type: string;
+  id: string;
+  label: string;
+}
+
+/**
+ * Path edge in a path response
+ */
+export interface PathEdge {
+  type: string;
+  from: PathNode;
+  to: PathNode;
+}
+
+/**
+ * Single path in the paths response
+ */
+export interface PathResult {
+  rank: number;
+  length: number;
+  pathText: string;
+  nodes: PathNode[];
+  edges: PathEdge[];
+}
+
+/**
+ * Paths API response structure
+ */
+export interface PathsResponse {
+  data: {
+    from: PathNode;
+    to: PathNode;
+    paths: PathResult[];
+  };
+}
+
+/**
+ * Options for fetching paths between entities
+ */
+export interface FetchPathsOptions {
+  maxHops?: number;
+  limit?: number;
+  edgeTypes?: string[];
+}
+
+/**
+ * Fetches shortest paths between two entities
+ * @param from - Source entity in format "Type:id" (e.g., "Gene:ENSG00000012048")
+ * @param to - Target entity in format "Type:id"
+ * @param options - Optional query parameters
+ * @returns Paths data or null if not found
+ */
+export async function fetchPaths(
+  from: string,
+  to: string,
+  options?: FetchPathsOptions,
+): Promise<PathsResponse | null> {
+  const params = new URLSearchParams();
+  params.set("from", from);
+  params.set("to", to);
+
+  if (options?.maxHops) params.set("maxHops", String(options.maxHops));
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.edgeTypes?.length) {
+    params.set("edgeTypes", options.edgeTypes.join(","));
+  }
+
+  const url = `${API_BASE}/graph/paths?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.error(`Paths fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Paths fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Intersection API (Shared Interactors)
+// =============================================================================
+
+/**
+ * Shared neighbor in intersection response
+ */
+export interface SharedNeighbor {
+  neighbor: { type: string; id: string; label: string };
+  support: Array<{
+    from: { type: string; id: string; label: string };
+    edge: { type: string };
+  }>;
+}
+
+/**
+ * Intersection API response structure
+ */
+export interface IntersectResponse {
+  data: {
+    inputs: Array<{ type: string; id: string; label: string }>;
+    neighborType: string;
+    sharedNeighbors: SharedNeighbor[];
+    counts: { shared: number; limit: number };
+  };
+}
+
+/**
+ * Options for fetching intersection
+ */
+export interface FetchIntersectionOptions {
+  /** Direction to traverse edges. Default: "out" */
+  direction?: "in" | "out";
+  limit?: number;
+}
+
+/**
+ * Fetches shared neighbors (intersection) for multiple entities
+ * @param entities - Array of entities to intersect
+ * @param edgeType - Edge type to consider (e.g., "INTERACTS_WITH")
+ * @param options - Optional query parameters
+ * @returns Intersection data or null on error
+ */
+export async function fetchIntersection(
+  entities: Array<{ type: string; id: string }>,
+  edgeType: string,
+  options?: FetchIntersectionOptions,
+): Promise<IntersectResponse | null> {
+  const url = `${API_BASE}/graph/intersect`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entities,
+        edgeType,
+        direction: options?.direction ?? "out",
+        limit: options?.limit ?? 50,
+      }),
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+
+    if (!response.ok) {
+      console.error(`Intersection fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Intersection fetch error:", error);
+    return null;
+  }
+}

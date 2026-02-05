@@ -4,3 +4,5 @@ export { SafetyLiabilitiesAccordion } from "./safety-liabilities-accordion";
 export { ChemicalProbesOverview } from "./chemical-probes-overview";
 export { CancerHallmarksOverview } from "./cancer-hallmarks-overview";
 export { DiseasePortfolioOverview } from "./disease-portfolio-overview";
+export { PPINetworkView } from "./ppi-network";
+export { PathwayLeverageView } from "./pathway-map";

@@ -18,7 +18,7 @@ const col = createColumns<Variant>();
 // Category Definitions
 // ============================================================================
 
-const clinicalSignificance = categories([
+export const clinicalSignificance = categories([
   {
     label: "Pathogenic",
     match: /pathogenic/i,
@@ -81,7 +81,7 @@ const clinicalSignificance = categories([
   },
 ]);
 
-const reviewStatus = categories([
+export const reviewStatus = categories([
   {
     label: "Practice Guideline",
     match: /practice[_\s]guideline/i,

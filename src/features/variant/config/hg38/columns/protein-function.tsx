@@ -14,7 +14,7 @@ const col = createColumns<Variant>();
 // Category Definitions
 // ============================================================================
 
-const alphaMissense = categories([
+export const alphaMissense = categories([
   {
     label: "Likely Pathogenic",
     match: /likely[_\s]pathogenic/i,
