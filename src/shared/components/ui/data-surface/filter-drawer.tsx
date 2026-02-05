@@ -123,14 +123,14 @@ export function FilterDrawer({
 
               {filter.type === "select" && filter.options && (
                 <Select
-                  value={(filterValues[filter.id] as string) ?? ""}
-                  onValueChange={(value) => onFilterChange(filter.id, value)}
+                  value={(filterValues[filter.id] as string) || "__all__"}
+                  onValueChange={(value) => onFilterChange(filter.id, value === "__all__" ? "" : value)}
                 >
                   <SelectTrigger className="w-full h-10">
                     <SelectValue placeholder={filter.placeholder ?? "All"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{filter.placeholder ?? "All"}</SelectItem>
+                    <SelectItem value="__all__">{filter.placeholder ?? "All"}</SelectItem>
                     {filter.options.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
