@@ -2,7 +2,7 @@ import type { GeneNavigationSection } from "@features/gene/types";
 
 export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
 {
-  name: "Gene Level Annotation",
+  name: "Gene Annotation",
   slug: "gene-level-annotation",
   subCategories: [
     { text: "LLM Summary", slug: "llm-summary" },
@@ -110,7 +110,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
   },
 
   {
-    name: "Variant Rollups",
+    name: "Variants",
     slug: "variant-rollups",
     subCategories: [
       // SNV rollups
@@ -162,7 +162,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
   },
 
   {
-    name: "Cell/Tissue Annotation",
+    name: "Cell/Tissue",
     slug: "tissue-specific",
     subCategories: [
       { text: "cCREs", slug: "ccres" },
@@ -204,31 +204,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "cV2F", slug: "cv2f", icon: "link" },
           { text: "pgBoost", slug: "pgboost", icon: "zap" },
         ],
-      },
-    ],
-  },
-
-  {
-    name: "Full Tables",
-    slug: "full-tables",
-    subCategories: [
-      { text: "SNV Table", slug: "SNV-table" },
-      { text: "InDel Table", slug: "InDel-table" },
-      { text: "Somatic Mutation", slug: "cosmic" },
-    ],
-    groups: [
-      {
-        name: "Germline Variants",
-        defaultExpanded: true,
-        items: [
-          { text: "SNV Table", slug: "SNV-table", icon: "table" },
-          { text: "InDel Table", slug: "InDel-table", icon: "table" },
-        ],
-      },
-      {
-        name: "Somatic & Cancer",
-        defaultExpanded: true,
-        items: [{ text: "Somatic Mutation", slug: "cosmic", icon: "target" }],
       },
     ],
   },

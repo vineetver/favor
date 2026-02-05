@@ -97,7 +97,7 @@ export async function fetchGene(
     params.set("cursorAgreements", options.cursorAgreements);
 
   const queryString = params.toString();
-  const url = `${API_BASE}/genes/${encodeURIComponent(id)}${queryString ? `?${queryString}` : ""}`;
+  const url = `${API_BASE}/graph/gene/${encodeURIComponent(id)}${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetchOrNull<GeneApiResponse>(url);
   return response ?? null;

@@ -52,7 +52,7 @@
     "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular, Menlo,
     Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  --radius: 1rem;
+  --radius: 0.5rem;
 
   --shadow-2xs: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01);
   --shadow-xs: 0px 1px 3px 0px oklch(0 0 0 / 1% / 0.01);

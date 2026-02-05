@@ -3,6 +3,7 @@
 import type { VariantFetchResult } from "@features/variant/api";
 import { setVariantSelectionCookie } from "@features/variant/actions/variant-selection";
 import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import { Download, Share2 } from "lucide-react";
 import { useOptimistic, useTransition } from "react";
 
@@ -152,22 +153,15 @@ export function VariantHeader({
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="Share variant"
-          >
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" size="icon" aria-label="Share variant">
             <Share2 className="w-5 h-5" />
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-primary/25"
-          >
-            <Download className="w-4 h-4" />
+          <Button variant="outline">
+            <Download />
             Generate Report
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Gene } from "@features/gene/types";
+import { Button } from "@shared/components/ui/button";
 import { Download, Share2 } from "lucide-react";
 
 interface GeneHeaderProps {
@@ -35,61 +36,33 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
           </div>
 
           {/* Gene Info Row */}
-          <div className="flex items-center gap-6 flex-wrap text-sm">
-            {/* Gene Name */}
+          <div className="flex items-center gap-4 flex-wrap text-sm">
             {gene.gene_name && (
-              <div className="flex items-center gap-2">
-                <span className="text-label">Name</span>
-                <span className="font-medium text-slate-700">
-                  {gene.gene_name}
-                </span>
-              </div>
+              <span className="text-body">{gene.gene_name}</span>
             )}
 
-            {/* Location */}
-            <div className="flex items-center gap-2">
-              <span className="text-label">Location</span>
-              <span className="font-mono text-slate-700">
-                {gene.chromosome}:{gene.start_position}-
-                {gene.end_position}
-              </span>
-            </div>
+            <span className="font-mono text-subtle">
+              {gene.chromosome}:{gene.start_position}-{gene.end_position}
+            </span>
 
-            {/* Strand */}
-            <div className="flex items-center gap-2">
-              <span className="text-label">Strand</span>
-              <span className="font-mono text-slate-700">{gene.strand}</span>
-            </div>
-
-            {/* Gene Type */}
             {gene.gene_type && (
-              <div className="flex items-center gap-2">
-                <span className="text-label">Type</span>
-                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-medium">
-                  {gene.gene_type}
-                </span>
-              </div>
+              <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-medium">
+                {gene.gene_type}
+              </span>
             )}
           </div>
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="Share gene"
-          >
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" size="icon" aria-label="Share gene">
             <Share2 className="w-5 h-5" />
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-primary/25"
-          >
-            <Download className="w-4 h-4" />
+          <Button variant="outline">
+            <Download />
             Generate Report
-          </button>
+          </Button>
         </div>
       </div>
     </div>

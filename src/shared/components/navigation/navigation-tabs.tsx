@@ -1,15 +1,6 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import {
-  Activity,
-  Database,
-  Dna,
-  LayoutDashboard,
-  Microscope,
-  ScanLine,
-  Table2,
-} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -26,19 +17,6 @@ interface NavigationTabsProps {
   basePath: string;
   queryString?: string;
 }
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  summary: LayoutDashboard,
-  "global-annotation": Database,
-  "single-cell-tissue": Microscope,
-  "genome-browser": ScanLine,
-  "gene-level-annotation": Dna,
-  "SNV-summary": Activity,
-  "InDel-summary": Activity,
-  "tissue-specific": Microscope,
-  "full-tables": Table2,
-  "open-targets": Database,
-};
 
 // Scroll state as single object (Commandment II: fewer invalid states)
 type ScrollState = { left: boolean; right: boolean };
@@ -87,7 +65,6 @@ export function NavigationTabs({
       <div ref={scrollContainerRef} className="overflow-x-auto scrollbar-hide">
         <div className="inline-flex items-center gap-2 min-w-fit">
           {items.map((item) => {
-            const Icon = iconMap[item.slug];
             const isActive = activeItem === item.slug;
 
             return (
@@ -95,7 +72,7 @@ export function NavigationTabs({
                 key={item.slug}
                 href={`${basePath}/${item.slug}${item.hasSubCategories ? `/${item.defaultSubCategory || "basic"}` : ""}${queryString}`}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2.5",
+                  "relative px-4 py-2.5",
                   "rounded-xl whitespace-nowrap touch-manipulation",
                   "text-sm font-medium transition-all duration-200",
                   isActive && [
@@ -108,15 +85,7 @@ export function NavigationTabs({
                   ],
                 )}
               >
-                {Icon && (
-                  <Icon
-                    className={cn(
-                      "w-4 h-4 shrink-0 transition-colors",
-                      !isActive && "text-slate-400 group-hover:text-slate-600",
-                    )}
-                  />
-                )}
-                <span>{item.name}</span>
+                {item.name}
               </Link>
             );
           })}
