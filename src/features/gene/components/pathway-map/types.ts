@@ -43,67 +43,38 @@ export type GraphNode =
   | { type: "pathway"; data: PathwayNode };
 
 // =============================================================================
+// Limit Configuration
+// =============================================================================
+
+/**
+ * Limit options for number of pathways to display
+ */
+export const PATHWAY_LIMIT_OPTIONS = [
+  { value: "25", label: "25" },
+  { value: "50", label: "50" },
+  { value: "100", label: "100" },
+  { value: "all", label: "All" },
+];
+
+// =============================================================================
 // Layout Configuration
 // =============================================================================
 
-export type PathwayLayoutType =
-  | "dagre"
-  | "breadthfirst"
-  | "concentric"
-  | "cose-bilkent";
+export type PathwayLayoutType = "cose-bilkent" | "dagre-tb" | "dagre-lr";
 
 export const PATHWAY_LAYOUT_OPTIONS: Array<{
   value: PathwayLayoutType;
   label: string;
 }> = [
-  { value: "dagre", label: "Hierarchical" },
   { value: "cose-bilkent", label: "Force-directed" },
-  { value: "concentric", label: "Concentric" },
-  { value: "breadthfirst", label: "Breadth-first" },
+  { value: "dagre-tb", label: "Tree (top-down)" },
+  { value: "dagre-lr", label: "Tree (left-right)" },
 ];
 
 export function getPathwayLayoutOptions(
   type: PathwayLayoutType,
 ): LayoutOptions {
   switch (type) {
-    case "dagre":
-      return {
-        name: "dagre",
-        rankDir: "TB",
-        nodeSep: 60,
-        rankSep: 100,
-        animate: true,
-        animationDuration: 400,
-        fit: true,
-        padding: 50,
-      } as LayoutOptions;
-
-    case "breadthfirst":
-      return {
-        name: "breadthfirst",
-        directed: true,
-        spacingFactor: 1.5,
-        animate: true,
-        animationDuration: 400,
-        fit: true,
-        padding: 50,
-      } as LayoutOptions;
-
-    case "concentric":
-      return {
-        name: "concentric",
-        animate: true,
-        animationDuration: 400,
-        concentric: (node: { data: (key: string) => boolean | number }) => {
-          if (node.data("isGene")) return 10;
-          return 1;
-        },
-        levelWidth: () => 2,
-        minNodeSpacing: 60,
-        fit: true,
-        padding: 50,
-      } as LayoutOptions;
-
     case "cose-bilkent":
       return {
         name: "cose-bilkent",
@@ -114,12 +85,38 @@ export function getPathwayLayoutOptions(
         fit: true,
         padding: 50,
         randomize: true,
-        nodeRepulsion: 5000,
-        idealEdgeLength: 100,
+        nodeRepulsion: 4500,
+        idealEdgeLength: 80,
         edgeElasticity: 0.45,
         nestingFactor: 0.1,
         gravity: 0.25,
         numIter: 2500,
+      } as LayoutOptions;
+
+    case "dagre-tb":
+      return {
+        name: "dagre",
+        rankDir: "TB",
+        nodeSep: 50,
+        rankSep: 80,
+        ranker: "tight-tree",
+        animate: true,
+        animationDuration: 400,
+        fit: true,
+        padding: 50,
+      } as LayoutOptions;
+
+    case "dagre-lr":
+      return {
+        name: "dagre",
+        rankDir: "LR",
+        nodeSep: 40,
+        rankSep: 100,
+        ranker: "tight-tree",
+        animate: true,
+        animationDuration: 400,
+        fit: true,
+        padding: 50,
       } as LayoutOptions;
   }
 }

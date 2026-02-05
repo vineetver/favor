@@ -6,7 +6,6 @@ import {
   Network,
   TrendingUp,
   Users,
-  X,
 } from "lucide-react";
 import { memo } from "react";
 import type { CentralityData } from "./types";
@@ -20,8 +19,6 @@ interface PPIHubPanelProps {
   isLoading?: boolean;
   /** Callback when a hub is clicked */
   onHubClick?: (geneId: string) => void;
-  /** Callback to close the panel */
-  onClose?: () => void;
   className?: string;
 }
 
@@ -30,7 +27,6 @@ function PPIHubPanelInner({
   topHubs,
   isLoading,
   onHubClick,
-  onClose,
   className,
 }: PPIHubPanelProps) {
   if (isLoading) {
@@ -57,22 +53,11 @@ function PPIHubPanelInner({
   return (
     <div className={cn("border-t border-slate-200 bg-white", className)}>
       {/* Header - matches edge detail panel */}
-      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Network className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-700">
-            Network Importance
-          </span>
-        </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-200 rounded transition-colors"
-            aria-label="Close panel"
-          >
-            <X className="w-4 h-4 text-slate-500" />
-          </button>
-        )}
+      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+        <Network className="w-4 h-4 text-slate-500" />
+        <span className="text-sm font-medium text-slate-700">
+          Network Importance
+        </span>
       </div>
 
       {/* Content - matches edge detail panel spacing */}

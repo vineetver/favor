@@ -383,41 +383,10 @@ function PPICytoscapeGraphInner({
     const currentIds = cy.nodes().map((n) => n.id()).sort().join(",");
 
     // Re-run layout if node IDs changed OR element count changed
+    // Edge styles are handled by stylesheet classes (sources-1, sources-2, etc.)
     if (currentIds !== elementsKey || elementCountChanged) {
       cy.elements().remove();
       cy.add(elements);
-
-      // Apply edge styles after adding elements
-      cy.batch(() => {
-        cy.edges().forEach((edge) => {
-          const numSources = edge.data("numSources") ?? 1;
-          const sources = Math.max(1, Math.min(numSources, 4));
-
-          let color: string;
-          let width: number;
-
-          if (sources >= 4) {
-            color = "#475569";
-            width = 4;
-          } else if (sources >= 3) {
-            color = "#64748b";
-            width = 3;
-          } else if (sources >= 2) {
-            color = "#94a3b8";
-            width = 2;
-          } else {
-            color = "#cbd5e1";
-            width = 1;
-          }
-
-          edge.style({
-            "line-color": color,
-            "width": width,
-            "opacity": 0.7,
-            "curve-style": "bezier",
-          });
-        });
-      });
 
       const layoutOptions = getLayoutOptions(layout);
       cy.layout(layoutOptions).run();
@@ -434,40 +403,8 @@ function PPICytoscapeGraphInner({
     initializedRef.current = true;
 
     // Manually apply stylesheet - react-cytoscapejs doesn't reliably apply stylesheet prop
+    // Edge styles are handled by stylesheet classes (sources-1, sources-2, etc.)
     cy.style().fromJson(STYLESHEET).update();
-
-    // Manually apply edge styles based on numSources (like reference biogrid code)
-    cy.batch(() => {
-      cy.edges().forEach((edge) => {
-        const numSources = edge.data("numSources") ?? 1;
-        const sources = Math.max(1, Math.min(numSources, 4));
-
-        let color: string;
-        let width: number;
-
-        if (sources >= 4) {
-          color = "#475569";  // slate-600
-          width = 4;
-        } else if (sources >= 3) {
-          color = "#64748b";  // slate-500
-          width = 3;
-        } else if (sources >= 2) {
-          color = "#94a3b8";  // slate-400
-          width = 2;
-        } else {
-          color = "#cbd5e1";  // slate-300
-          width = 1;
-        }
-
-        edge.style({
-          "line-color": color,
-          "width": width,
-          "opacity": 0.7,
-          "curve-style": "bezier",
-          "target-arrow-shape": "none",
-        });
-      });
-    });
 
     // Initial layout
     const layoutOptions = getLayoutOptions(layoutRef.current);

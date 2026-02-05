@@ -9,7 +9,7 @@ import cytoscape, {
 } from "cytoscape";
 import coseBilkent from "cytoscape-cose-bilkent";
 import dagre from "cytoscape-dagre";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import {
   type GraphNode,
@@ -19,17 +19,11 @@ import {
 } from "./types";
 
 // Register layout extensions (only once)
-if (typeof window !== "undefined") {
-  try {
-    cytoscape.use(coseBilkent);
-  } catch {
-    // Already registered
-  }
-  try {
-    cytoscape.use(dagre);
-  } catch {
-    // Already registered
-  }
+if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
+  cytoscape.use(coseBilkent);
+}
+if (typeof cytoscape("layout", "dagre") === "undefined") {
+  cytoscape.use(dagre);
 }
 
 const STYLESHEET: StylesheetStyle[] = [
@@ -131,10 +125,19 @@ function PathwayCytoscapeGraphInner({
 }: PathwayCytoscapeGraphProps) {
   const cyRef = useRef<Core | null>(null);
   const layoutRef = useRef(layout);
+  const initializedRef = useRef(false);
 
   // Store callbacks in refs to avoid re-bindings
   const onNodeClickRef = useRef(onNodeClick);
   const onNodeHoverRef = useRef(onNodeHover);
+
+  // Reset initialization state on unmount
+  useEffect(() => {
+    return () => {
+      initializedRef.current = false;
+      cyRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
@@ -146,8 +149,9 @@ function PathwayCytoscapeGraphInner({
 
   // Handle selected node highlighting (imperative via cy API)
   useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
-    if (!cy) return;
+    if (cy.destroyed()) return;
 
     cy.nodes().removeClass("selected");
     if (selectedNodeId) {
@@ -157,31 +161,67 @@ function PathwayCytoscapeGraphInner({
 
   // Handle layout changes
   useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
-    if (!cy) return;
+    if (cy.destroyed()) return;
     if (layoutRef.current === layout) return;
 
     layoutRef.current = layout;
-    try {
-      cy.layout(getPathwayLayoutOptions(layout)).run();
-    } catch {
-      // Layout may fail if cy is destroyed
-    }
+    cy.layout(getPathwayLayoutOptions(layout)).run();
   }, [layout]);
 
-  const handleCy = useCallback((cy: Core) => {
+  // Memoize elements key to detect changes (nodes only for comparison)
+  const elementsKey = useMemo(
+    () =>
+      elements
+        .filter((el) => !el.data.source)
+        .map((el) => el.data.id)
+        .sort()
+        .join(","),
+    [elements]
+  );
+
+  // Track previous element count for forced layout re-run on limit change
+  const prevElementCountRef = useRef(elements.length);
+
+  // Handle element changes imperatively
+  useEffect(() => {
+    if (!cyRef.current || !initializedRef.current) return;
+    const cy = cyRef.current;
+    if (cy.destroyed()) return;
+
+    // Detect if element count changed (e.g., limit dropdown changed)
+    const elementCountChanged = elements.length !== prevElementCountRef.current;
+    prevElementCountRef.current = elements.length;
+
+    const currentIds = cy
+      .nodes()
+      .map((n) => n.id())
+      .sort()
+      .join(",");
+
+    // Re-run layout if node IDs changed OR element count changed
+    if (currentIds !== elementsKey || elementCountChanged) {
+      cy.elements().remove();
+      cy.add(elements);
+      cy.layout(getPathwayLayoutOptions(layout)).run();
+    }
+  }, [elementsKey, elements, layout]);
+
+  // Cy callback - runs when CytoscapeComponent initializes or reinitializes
+  const handleCy = (cy: Core) => {
+    // Skip if same instance is already initialized
+    if (initializedRef.current && cyRef.current === cy) return;
+
+    // Store the new instance
     cyRef.current = cy;
+    initializedRef.current = true;
 
-    // Run initial layout after a tick to ensure elements are added
-    setTimeout(() => {
-      try {
-        cy.layout(getPathwayLayoutOptions(layoutRef.current)).run();
-      } catch {
-        // Ignore if cy is destroyed
-      }
-    }, 0);
+    // Run initial layout
+    const layoutOptions = getPathwayLayoutOptions(layoutRef.current);
+    cy.layout(layoutOptions).run();
 
-    // Node click handler
+    // Node click handler - uses ref so always has latest callback
     cy.on("tap", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
@@ -232,13 +272,9 @@ function PathwayCytoscapeGraphInner({
 
     // Fit after layout
     cy.on("layoutstop", () => {
-      try {
-        cy.fit(undefined, 50);
-      } catch {
-        // Ignore if cy is destroyed
-      }
+      cy.fit(undefined, 50);
     });
-  }, []);
+  };
 
   return (
     <div className={cn("relative w-full h-full min-h-[500px]")}>

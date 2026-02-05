@@ -1,15 +1,10 @@
 "use client";
 
-import { cn } from "@infra/utils";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Loader2, X } from "lucide-react";
 import { memo } from "react";
 import { getCategoryColor, type PathwayDetailPanelProps } from "./types";
 
-/**
- * Rich detail panel showing pathway enrichment data.
- * Displays gene counts, shared genes, diseases, and hierarchy info.
- */
 function PathwayDetailPanelInner({
   pathway,
   enrichment,
@@ -18,185 +13,114 @@ function PathwayDetailPanelInner({
   const colors = getCategoryColor(pathway.category);
 
   return (
-    <div className="border-t border-slate-200 bg-slate-50">
+    <div className="border-t border-slate-200 bg-white">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 bg-white">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1 min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: colors.border }}
-              />
-              <h3 className="font-semibold text-slate-900 truncate">
-                {pathway.name}
-              </h3>
-              <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded shrink-0">
-                {pathway.source === "reactome" ? "Reactome" : "WikiPathways"}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-slate-500 pl-6">
-              <span className="font-mono">{pathway.id}</span>
-              <span>-</span>
-              <span>{pathway.category}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <ExternalLink
-              href={pathway.url}
-              className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
-            >
-              View{" "}
-              {pathway.source === "reactome" ? "Reactome" : "WikiPathways"}
-            </ExternalLink>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600"
-              aria-label="Close detail panel"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-2.5 h-2.5 rounded-full"
+            style={{ backgroundColor: colors.border }}
+          />
+          <span className="font-medium text-slate-900">{pathway.name}</span>
+          <span className="text-xs text-slate-500 font-mono">{pathway.id}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <ExternalLink
+            href={pathway.url}
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            {pathway.source === "reactome" ? "Reactome" : "WikiPathways"} →
+          </ExternalLink>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 hover:bg-slate-200 rounded"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
         </div>
       </div>
 
-      {/* Enrichment content */}
-      {enrichment.status === "loading" && (
-        <div className="px-6 py-8 flex items-center justify-center gap-2 text-slate-500">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Loading enrichment data...</span>
-        </div>
-      )}
-
-      {enrichment.status === "error" && (
-        <div className="px-6 py-4 text-sm text-amber-700 bg-amber-50">
-          Unable to load enrichment data: {enrichment.error}
-        </div>
-      )}
-
-      {enrichment.status === "loaded" && (
-        <>
-          {/* Stats bar */}
-          <div className="px-6 py-3 flex items-center gap-6 border-b border-slate-200 bg-white">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-slate-900">
-                {enrichment.data.geneCount}
-              </span>
-              <span className="text-sm text-slate-500">genes</span>
-            </div>
-            <div className="w-px h-5 bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-slate-900">
-                {enrichment.data.sharedGenes.length}
-              </span>
-              <span className="text-sm text-slate-500">shared genes</span>
-            </div>
-            <div className="w-px h-5 bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-slate-900">
-                {enrichment.data.relatedDiseases.length}
-              </span>
-              <span className="text-sm text-slate-500">diseases</span>
-            </div>
+      {/* Content */}
+      <div className="px-6 py-4">
+        {/* Loading */}
+        {enrichment.status === "loading" && (
+          <div className="flex items-center gap-2 py-2 text-slate-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Loading...</span>
           </div>
+        )}
 
-          {/* Three-column details */}
-          <div className="px-6 py-4 grid grid-cols-3 gap-6">
-            {/* Shared Genes */}
-            <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                Shared Genes
-              </h4>
-              {enrichment.data.sharedGenes.length === 0 ? (
-                <p className="text-sm text-slate-400">No shared genes</p>
-              ) : (
-                <ul className="space-y-1">
-                  {enrichment.data.sharedGenes.map((gene) => (
-                    <li key={gene.id} className="text-sm text-slate-700">
-                      {gene.symbol}
-                    </li>
-                  ))}
-                </ul>
+        {/* Error */}
+        {enrichment.status === "error" && (
+          <div className="text-sm text-amber-700">
+            Unable to load details
+          </div>
+        )}
+
+        {/* Loaded */}
+        {enrichment.status === "loaded" && (
+          <div className="flex gap-12">
+            {/* Stats */}
+            <div className="flex gap-8 text-sm">
+              <div>
+                <div className="text-2xl font-semibold text-slate-900">
+                  {enrichment.data.geneCount}
+                </div>
+                <div className="text-slate-500">genes in pathway</div>
+              </div>
+              {enrichment.data.sharedGenes.length > 0 && (
+                <div>
+                  <div className="text-2xl font-semibold text-indigo-600">
+                    {enrichment.data.sharedGenes.length}
+                  </div>
+                  <div className="text-slate-500">interactors in pathway</div>
+                </div>
+              )}
+              {enrichment.data.relatedDiseases.length > 0 && (
+                <div>
+                  <div className="text-2xl font-semibold text-slate-900">
+                    {enrichment.data.relatedDiseases.length}
+                  </div>
+                  <div className="text-slate-500">diseases</div>
+                </div>
               )}
             </div>
 
-            {/* Related Diseases */}
-            <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                Related Diseases
-              </h4>
-              {enrichment.data.relatedDiseases.length === 0 ? (
-                <p className="text-sm text-slate-400">No related diseases</p>
-              ) : (
-                <ul className="space-y-1">
-                  {enrichment.data.relatedDiseases.map((disease) => (
-                    <li
-                      key={disease.id}
-                      className="text-sm text-slate-700 truncate"
-                      title={disease.name}
+            {/* Interactors also in this pathway */}
+            {enrichment.data.sharedGenes.length > 0 && (
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-slate-500 mb-1.5">
+                  Interactors also in this pathway
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {enrichment.data.sharedGenes.slice(0, 10).map((gene) => (
+                    <span
+                      key={gene.id}
+                      className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs rounded"
                     >
-                      {disease.name}
-                    </li>
+                      {gene.symbol}
+                    </span>
                   ))}
-                </ul>
-              )}
-            </div>
+                  {enrichment.data.sharedGenes.length > 10 && (
+                    <span className="px-2 py-0.5 text-slate-400 text-xs">
+                      +{enrichment.data.sharedGenes.length - 10}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Hierarchy */}
-            <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                Hierarchy
-              </h4>
-              <div className="space-y-2">
-                {enrichment.data.parentPathway ? (
-                  <div>
-                    <span className="text-xs text-slate-500">Parent:</span>
-                    <p
-                      className="text-sm text-slate-700 truncate"
-                      title={enrichment.data.parentPathway.name}
-                    >
-                      {enrichment.data.parentPathway.name}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-400">No parent pathway</p>
-                )}
-
-                {enrichment.data.childPathways.length > 0 && (
-                  <div>
-                    <span className="text-xs text-slate-500">
-                      Children: {enrichment.data.childPathways.length}
-                    </span>
-                    <ul className="mt-1 space-y-0.5">
-                      {enrichment.data.childPathways.slice(0, 3).map((child) => (
-                        <li
-                          key={child.id}
-                          className="text-sm text-slate-600 truncate"
-                          title={child.name}
-                        >
-                          {child.name}
-                        </li>
-                      ))}
-                      {enrichment.data.childPathways.length > 3 && (
-                        <li className="text-sm text-slate-400">
-                          +{enrichment.data.childPathways.length - 3} more
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                )}
+            {enrichment.data.parentPathway && (
+              <div className="text-sm text-slate-500">
+                Part of <span className="text-slate-700">{enrichment.data.parentPathway.name}</span>
               </div>
-            </div>
+            )}
           </div>
-        </>
-      )}
-
-      {enrichment.status === "idle" && (
-        <div className="px-6 py-4 text-sm text-slate-500">
-          Select a pathway to view enrichment details.
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

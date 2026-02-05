@@ -17,17 +17,14 @@ function getEdgeList(value: unknown): unknown[] {
   return [];
 }
 
+// Common PPI database names for synthetic source generation
+const COMMON_SOURCES = ["IntAct", "BioGRID", "STRING", "MINT", "DIP", "HPRD", "Reactome", "KEGG"];
+
 /**
- * Extract sources from edge data
+ * Extract sources from props object
  */
-function extractSources(edgeRecord: Record<string, unknown>, linkProps: Record<string, unknown>): PPIEvidenceSource[] {
-  const sourcesRaw =
-    linkProps?.sources ??
-    linkProps?.evidence_sources ??
-    edgeRecord?.sources ??
-    edgeRecord?.evidence_sources ??
-    (edgeRecord?.properties as Record<string, unknown>)?.sources ??
-    [];
+function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSource[] {
+  const sourcesRaw = props.sources ?? props.evidence_sources ?? [];
 
   if (Array.isArray(sourcesRaw)) {
     return sourcesRaw.map((src) => {
@@ -47,26 +44,19 @@ function extractSources(edgeRecord: Record<string, unknown>, linkProps: Record<s
   }
 
   // Generate synthetic sources based on num_sources if no explicit sources
-  const numSources = linkProps?.num_sources ?? edgeRecord?.num_sources;
+  const numSources = props.num_sources;
   if (typeof numSources === "number" && numSources > 0) {
-    // Common PPI database names
-    const commonSources = ["IntAct", "BioGRID", "STRING", "MINT", "DIP", "HPRD", "Reactome", "KEGG"];
-    return commonSources.slice(0, Math.min(numSources, commonSources.length)).map((name) => ({ name }));
+    return COMMON_SOURCES.slice(0, Math.min(numSources, COMMON_SOURCES.length)).map((name) => ({ name }));
   }
 
   return [];
 }
 
 /**
- * Extract detection methods from edge data
+ * Extract detection methods from props object
  */
-function extractDetectionMethods(edgeRecord: Record<string, unknown>, linkProps: Record<string, unknown>): string[] {
-  const methodsRaw =
-    linkProps?.detection_methods ??
-    linkProps?.methods ??
-    edgeRecord?.detection_methods ??
-    edgeRecord?.methods ??
-    [];
+function extractDetectionMethodsFromProps(props: Record<string, unknown>): string[] {
+  const methodsRaw = props.detection_methods ?? props.methods ?? [];
 
   if (Array.isArray(methodsRaw)) {
     return methodsRaw
@@ -77,23 +67,31 @@ function extractDetectionMethods(edgeRecord: Record<string, unknown>, linkProps:
 }
 
 /**
- * Extract PubMed IDs from edge data
+ * Extract PubMed IDs from props object
  */
-function extractPubmedIds(edgeRecord: Record<string, unknown>, linkProps: Record<string, unknown>): string[] {
-  const pubmedRaw =
-    linkProps?.pubmed_ids ??
-    linkProps?.pmids ??
-    linkProps?.publications ??
-    edgeRecord?.pubmed_ids ??
-    edgeRecord?.pmids ??
-    [];
+function extractPubmedIdsFromProps(props: Record<string, unknown>): string[] {
+  const pubmedRaw = props.pubmed_ids ?? props.pmids ?? props.publications ?? [];
 
   if (Array.isArray(pubmedRaw)) {
-    return pubmedRaw
-      .map((p) => String(p))
-      .filter((p) => /^\d+$/.test(p));
+    return pubmedRaw.map((p) => String(p)).filter((p) => /^\d+$/.test(p));
   }
   return [];
+}
+
+/**
+ * Merge props from multiple sources for legacy format extraction
+ */
+function mergePropsFromLegacy(
+  edgeRecord: Record<string, unknown>,
+  linkProps: Record<string, unknown>
+): Record<string, unknown> {
+  const properties = edgeRecord?.properties as Record<string, unknown> | undefined;
+  return {
+    sources: linkProps?.sources ?? linkProps?.evidence_sources ?? edgeRecord?.sources ?? edgeRecord?.evidence_sources ?? properties?.sources,
+    detection_methods: linkProps?.detection_methods ?? linkProps?.methods ?? edgeRecord?.detection_methods ?? edgeRecord?.methods,
+    pubmed_ids: linkProps?.pubmed_ids ?? linkProps?.pmids ?? linkProps?.publications ?? edgeRecord?.pubmed_ids ?? edgeRecord?.pmids,
+    num_sources: linkProps?.num_sources ?? edgeRecord?.num_sources,
+  };
 }
 
 /**
@@ -167,64 +165,6 @@ export function extractPPIEdgesFromSubgraph(
     });
 }
 
-/**
- * Helper to extract sources from edge props
- */
-function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSource[] {
-  const sourcesRaw = props.sources ?? props.evidence_sources ?? [];
-
-  if (Array.isArray(sourcesRaw)) {
-    return sourcesRaw.map((src) => {
-      if (typeof src === "string") {
-        return { name: src };
-      }
-      if (typeof src === "object" && src) {
-        const srcObj = src as Record<string, unknown>;
-        return {
-          name: String(srcObj.name ?? srcObj.source ?? srcObj.database ?? "Unknown"),
-          score: typeof srcObj.score === "number" ? srcObj.score : undefined,
-          experimentCount: typeof srcObj.experiment_count === "number" ? srcObj.experiment_count : undefined,
-        };
-      }
-      return { name: "Unknown" };
-    });
-  }
-
-  // Generate synthetic sources based on num_sources if no explicit sources
-  const numSources = props.num_sources;
-  if (typeof numSources === "number" && numSources > 0) {
-    const commonSources = ["IntAct", "BioGRID", "STRING", "MINT", "DIP", "HPRD", "Reactome", "KEGG"];
-    return commonSources.slice(0, Math.min(numSources, commonSources.length)).map((name) => ({ name }));
-  }
-
-  return [];
-}
-
-/**
- * Helper to extract detection methods from edge props
- */
-function extractDetectionMethodsFromProps(props: Record<string, unknown>): string[] {
-  const methodsRaw = props.detection_methods ?? props.methods ?? [];
-
-  if (Array.isArray(methodsRaw)) {
-    return methodsRaw
-      .map((m) => (typeof m === "string" ? m : typeof m === "object" && m ? String((m as Record<string, unknown>).name ?? m) : null))
-      .filter((m): m is string => Boolean(m));
-  }
-  return [];
-}
-
-/**
- * Helper to extract PubMed IDs from edge props
- */
-function extractPubmedIdsFromProps(props: Record<string, unknown>): string[] {
-  const pubmedRaw = props.pubmed_ids ?? props.pmids ?? props.publications ?? [];
-
-  if (Array.isArray(pubmedRaw)) {
-    return pubmedRaw.map((p) => String(p)).filter((p) => /^\d+$/.test(p));
-  }
-  return [];
-}
 
 /**
  * Extract PPI edges from legacy API response format
@@ -329,10 +269,11 @@ export function extractPPIEdges(
         ? confidenceScoresRaw.filter((v): v is number => typeof v === "number")
         : [];
 
-      // Extract provenance data
-      const sources = extractSources(edgeRecord, linkProps);
-      const detectionMethods = extractDetectionMethods(edgeRecord, linkProps);
-      const pubmedIds = extractPubmedIds(edgeRecord, linkProps);
+      // Extract provenance data using merged props
+      const mergedProps = mergePropsFromLegacy(edgeRecord, linkProps);
+      const sources = extractSourcesFromProps(mergedProps);
+      const detectionMethods = extractDetectionMethodsFromProps(mergedProps);
+      const pubmedIds = extractPubmedIdsFromProps(mergedProps);
 
       const edgeId = `ppi-${seedGeneId}-${String(neighborId)}`;
 

@@ -27,6 +27,7 @@ import {
   groupPathwaysByCategory,
   PATHWAY_LAYOUT_OPTIONS,
   type PathwayLayoutType,
+  PATHWAY_LIMIT_OPTIONS,
   type PathwayLeverageViewProps,
   type PathwayNode,
   type PathwaySelection,
@@ -37,6 +38,49 @@ import {
 // =============================================================================
 
 type ViewMode = "graph" | "list";
+
+// =============================================================================
+// Memoized Graph Container - isolates graph from hover state updates
+// =============================================================================
+
+interface GraphContainerProps {
+  elements: ReturnType<typeof buildCytoscapeElements>;
+  layout: PathwayLayoutType;
+  selectedNodeId: string | null;
+  onNodeClick: (node: GraphNode) => void;
+  onNodeHover: (
+    node: PathwayNode | null,
+    position: { x: number; y: number } | null
+  ) => void;
+}
+
+const GraphContainer = memo(function GraphContainer({
+  elements,
+  layout,
+  selectedNodeId,
+  onNodeClick,
+  onNodeHover,
+}: GraphContainerProps) {
+  return (
+    <div className="relative h-[600px] bg-slate-50/30">
+      <PathwayCytoscapeGraph
+        elements={elements}
+        layout={layout}
+        selectedNodeId={selectedNodeId}
+        onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover}
+      />
+      <PathwayLegend />
+      {/* Instructions */}
+      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm px-3 py-2">
+        <div className="text-xs text-slate-500 space-y-0.5">
+          <div>Click pathway to see details</div>
+          <div>Scroll to zoom - Drag to pan</div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 // =============================================================================
 // Main Component
@@ -51,6 +95,7 @@ function PathwayLeverageViewInner({
   // View state - graph first
   const [viewMode, setViewMode] = useState<ViewMode>("graph");
   const [layout, setLayout] = useState<PathwayLayoutType>("cose-bilkent");
+  const [limit, setLimit] = useState("50");
 
   // Selection state - discriminated union
   const [selection, setSelection] = useState<PathwaySelection>({ type: "none" });
@@ -75,22 +120,29 @@ function PathwayLeverageViewInner({
     status: "idle",
   });
 
-  // Group pathways by category for sidebar
+  // Apply limit to pathways
+  const limitedPathways = useMemo(() => {
+    if (limit === "all") return pathways;
+    const limitNum = parseInt(limit, 10);
+    return pathways.slice(0, limitNum);
+  }, [pathways, limit]);
+
+  // Group pathways by category for sidebar (uses limited pathways)
   const categories = useMemo(
-    () => groupPathwaysByCategory(pathways),
-    [pathways],
+    () => groupPathwaysByCategory(limitedPathways),
+    [limitedPathways],
   );
 
-  // Build cytoscape elements with filter state
+  // Build cytoscape elements with filter state (uses limited pathways)
   const elements = useMemo(
     () =>
       buildCytoscapeElements(
         { id: seedGeneId, symbol: seedGeneSymbol },
-        pathways,
+        limitedPathways,
         hierarchyEdges,
         { filterState },
       ),
-    [seedGeneId, seedGeneSymbol, pathways, hierarchyEdges, filterState],
+    [seedGeneId, seedGeneSymbol, limitedPathways, hierarchyEdges, filterState],
   );
 
   // Lazy enrichment fetch when pathway is selected
@@ -127,6 +179,10 @@ function PathwayLeverageViewInner({
   // Handlers
   const handleLayoutChange = useCallback((value: string) => {
     setLayout(value as PathwayLayoutType);
+  }, []);
+
+  const handleLimitChange = useCallback((value: string) => {
+    setLimit(value);
   }, []);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
@@ -188,15 +244,15 @@ function PathwayLeverageViewInner({
   const selectedPathwayId =
     selection.type === "pathway" ? selection.pathway.id : null;
 
-  // Filter pathways for list view
+  // Filter pathways by category (limit already applied via limitedPathways)
   const filteredPathways = useMemo(() => {
     if (filterState.selectedCategories.size === 0) {
-      return pathways;
+      return limitedPathways;
     }
-    return pathways.filter(
+    return limitedPathways.filter(
       (p) => !filterState.selectedCategories.has(p.category),
     );
-  }, [pathways, filterState.selectedCategories]);
+  }, [limitedPathways, filterState.selectedCategories]);
 
   return (
     <Card className={cn("border border-slate-200 py-0 gap-0")}>
@@ -210,6 +266,11 @@ function PathwayLeverageViewInner({
             <p className="text-sm text-slate-500 mt-0.5">
               {filteredPathways.length} of {pathways.length} pathways involving{" "}
               {seedGeneSymbol}
+              {limit !== "all" && limitedPathways.length < pathways.length && (
+                <span className="text-slate-400">
+                  {" "}(showing {limitedPathways.length})
+                </span>
+              )}
             </p>
           </div>
 
@@ -249,14 +310,24 @@ function PathwayLeverageViewInner({
         {/* Controls bar */}
         <div className="flex items-center justify-between gap-4 px-6 py-3 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-4">
+            <DimensionSelector
+              label="Limit"
+              options={PATHWAY_LIMIT_OPTIONS}
+              value={limit}
+              onChange={handleLimitChange}
+              presentation="segmented"
+            />
             {viewMode === "graph" && (
-              <DimensionSelector
-                label="Layout"
-                options={PATHWAY_LAYOUT_OPTIONS}
-                value={layout}
-                onChange={handleLayoutChange}
-                presentation="dropdown"
-              />
+              <>
+                <div className="h-5 w-px bg-slate-200" />
+                <DimensionSelector
+                  label="Layout"
+                  options={PATHWAY_LAYOUT_OPTIONS}
+                  value={layout}
+                  onChange={handleLayoutChange}
+                  presentation="dropdown"
+                />
+              </>
             )}
           </div>
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
@@ -278,23 +349,13 @@ function PathwayLeverageViewInner({
           {/* Graph/List content */}
           <div className="flex-1 min-w-0">
             {viewMode === "graph" ? (
-              <div className="relative h-[600px] bg-slate-50/30">
-                <PathwayCytoscapeGraph
-                  elements={elements}
-                  layout={layout}
-                  selectedNodeId={selectedPathwayId}
-                  onNodeClick={handleNodeClick}
-                  onNodeHover={handleNodeHover}
-                />
-                <PathwayLegend />
-                {/* Instructions */}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm px-3 py-2">
-                  <div className="text-xs text-slate-500 space-y-0.5">
-                    <div>Click pathway to see details</div>
-                    <div>Scroll to zoom - Drag to pan</div>
-                  </div>
-                </div>
-              </div>
+              <GraphContainer
+                elements={elements}
+                layout={layout}
+                selectedNodeId={selectedPathwayId}
+                onNodeClick={handleNodeClick}
+                onNodeHover={handleNodeHover}
+              />
             ) : (
               <div className="h-[600px]">
                 <PathwayListPanel
