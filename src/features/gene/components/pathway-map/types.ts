@@ -280,6 +280,7 @@ export interface PathwayCategorySidebarProps {
 export interface PathwayDetailPanelProps {
   pathway: PathwayNode;
   enrichment: EnrichmentState;
+  seedGeneSymbol: string;
   onClose: () => void;
 }
 

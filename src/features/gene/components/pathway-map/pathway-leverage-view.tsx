@@ -373,6 +373,7 @@ function PathwayLeverageViewInner({
           <PathwayDetailPanel
             pathway={selection.pathway}
             enrichment={enrichment}
+            seedGeneSymbol={seedGeneSymbol}
             onClose={handleClearSelection}
           />
         )}
