@@ -53,13 +53,13 @@ export type Selection =
 /**
  * Color mode for graph visualization
  */
-export type ColorMode = "confidence" | "hub";
+export type ColorMode = "experiments" | "hub";
 
 /**
  * Color mode options for the dropdown
  */
 export const COLOR_MODE_OPTIONS = [
-  { value: "confidence", label: "Confidence" },
+  { value: "experiments", label: "Experiments" },
   { value: "hub", label: "Hub Score" },
 ] as const;
 
@@ -272,19 +272,21 @@ export interface PPINodeTooltipProps {
 }
 
 /**
- * Source count thresholds for node coloring
+ * Experiment count thresholds for node coloring
  */
-export const SOURCE_THRESHOLDS = {
-  HIGH: 5,
-  MEDIUM: 2,
+export const EXPERIMENT_THRESHOLDS = {
+  HIGH: 51,    // 51+ experiments
+  GOOD: 21,    // 21-50 experiments
+  MODERATE: 6, // 6-20 experiments
+  // 0-5 = low
 } as const;
 
 /**
- * Get confidence tier based on number of sources
+ * Get experiment tier based on number of experiments
  */
-export function getConfidenceTier(numSources: number | null): "high" | "medium" | "low" {
-  if (numSources === null) return "low";
-  if (numSources >= SOURCE_THRESHOLDS.HIGH) return "high";
-  if (numSources >= SOURCE_THRESHOLDS.MEDIUM) return "medium";
-  return "low";
+export function getExperimentTier(numExperiments: number | null): "low" | "moderate" | "good" | "high" {
+  if (numExperiments === null || numExperiments <= 5) return "low";
+  if (numExperiments <= 20) return "moderate";
+  if (numExperiments <= 50) return "good";
+  return "high";
 }

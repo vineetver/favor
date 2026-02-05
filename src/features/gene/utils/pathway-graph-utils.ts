@@ -1,20 +1,34 @@
 import type { ElementDefinition } from "cytoscape";
 import {
+  type CategoryFilterState,
   getCategoryColor,
   type PathwayHierarchyEdge,
   type PathwayNode,
 } from "../components/pathway-map/types";
 
 /**
+ * Options for building Cytoscape elements
+ */
+export interface BuildCytoscapeElementsOptions {
+  filterState?: CategoryFilterState;
+}
+
+/**
  * Transform pathway data to Cytoscape elements.
  * Gene node in center, pathway nodes around it with edges.
+ * Supports category filtering and hierarchy display options.
  */
 export function buildCytoscapeElements(
   seedGene: { id: string; symbol: string },
   pathways: PathwayNode[],
   hierarchyEdges: PathwayHierarchyEdge[] = [],
+  options?: BuildCytoscapeElementsOptions,
 ): ElementDefinition[] {
   const elements: ElementDefinition[] = [];
+  const filterState = options?.filterState;
+
+  // Filter pathways by category if filter is active
+  const filteredPathways = filterPathwaysByCategory(pathways, filterState);
 
   // Add seed gene node (center)
   elements.push({
@@ -28,10 +42,10 @@ export function buildCytoscapeElements(
   });
 
   // Build depth map from hierarchy
-  const depthMap = buildDepthMap(pathways, hierarchyEdges);
+  const depthMap = buildDepthMap(filteredPathways, hierarchyEdges);
 
   // Add pathway nodes
-  for (const pathway of pathways) {
+  for (const pathway of filteredPathways) {
     const colors = getCategoryColor(pathway.category);
     const depth = depthMap.get(pathway.id) ?? 0;
     const nodeSize = Math.max(32, 44 - depth * 4);
@@ -63,22 +77,92 @@ export function buildCytoscapeElements(
     });
   }
 
-  // Add hierarchy edges (pathway to pathway)
-  const pathwayIds = new Set(pathways.map((p) => p.id));
-  for (const edge of hierarchyEdges) {
-    if (pathwayIds.has(edge.parentId) && pathwayIds.has(edge.childId)) {
-      elements.push({
-        data: {
-          id: `hier-${edge.childId}-${edge.parentId}`,
-          source: edge.childId,
-          target: edge.parentId,
-          type: "part_of",
-        },
-      });
+  // Add hierarchy edges (pathway to pathway) if showHierarchy is enabled
+  const showHierarchy = filterState?.showHierarchy ?? true;
+  if (showHierarchy) {
+    const pathwayIds = new Set(filteredPathways.map((p) => p.id));
+    for (const edge of hierarchyEdges) {
+      if (pathwayIds.has(edge.parentId) && pathwayIds.has(edge.childId)) {
+        elements.push({
+          data: {
+            id: `hier-${edge.childId}-${edge.parentId}`,
+            source: edge.childId,
+            target: edge.parentId,
+            type: "part_of",
+          },
+        });
+      }
     }
   }
 
   return elements;
+}
+
+/**
+ * Filter pathways by category based on filter state.
+ * If selectedCategories is empty, all pathways are included.
+ */
+export function filterPathwaysByCategory(
+  pathways: PathwayNode[],
+  filterState?: CategoryFilterState,
+): PathwayNode[] {
+  if (!filterState || filterState.selectedCategories.size === 0) {
+    return pathways;
+  }
+
+  // When categories are in selectedCategories, they are filtered OUT
+  return pathways.filter(
+    (p) => !filterState.selectedCategories.has(p.category),
+  );
+}
+
+/**
+ * Find root pathways (pathways with no parent in the current set)
+ */
+export function findRootPathways(
+  pathways: PathwayNode[],
+  hierarchyEdges: PathwayHierarchyEdge[],
+): PathwayNode[] {
+  const pathwayIds = new Set(pathways.map((p) => p.id));
+
+  // Build set of pathways that have a parent within our set
+  const hasParent = new Set<string>();
+  for (const edge of hierarchyEdges) {
+    if (pathwayIds.has(edge.parentId) && pathwayIds.has(edge.childId)) {
+      hasParent.add(edge.childId);
+    }
+  }
+
+  // Root pathways are those without a parent
+  return pathways.filter((p) => !hasParent.has(p.id));
+}
+
+/**
+ * Build hierarchy tree as adjacency map
+ */
+export function buildHierarchyTree(
+  pathways: PathwayNode[],
+  hierarchyEdges: PathwayHierarchyEdge[],
+): Map<string, string[]> {
+  const pathwayIds = new Set(pathways.map((p) => p.id));
+  const tree = new Map<string, string[]>();
+
+  // Initialize all pathways with empty children arrays
+  for (const pathway of pathways) {
+    tree.set(pathway.id, []);
+  }
+
+  // Add children based on hierarchy edges
+  for (const edge of hierarchyEdges) {
+    if (pathwayIds.has(edge.parentId) && pathwayIds.has(edge.childId)) {
+      const children = tree.get(edge.parentId);
+      if (children) {
+        children.push(edge.childId);
+      }
+    }
+  }
+
+  return tree;
 }
 
 /**

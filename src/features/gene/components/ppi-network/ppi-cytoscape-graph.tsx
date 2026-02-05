@@ -81,18 +81,51 @@ const STYLESHEET: StylesheetStyle[] = [
       opacity: 0.3,
     },
   },
+  // Base edge style
   {
-    selector: "edge",
+    selector: "edge.ppi-edge",
     style: {
-      width: 2,
-      "line-color": "#cbd5e1",
       "curve-style": "bezier",
-      opacity: 0.6,
+      opacity: 0.7,
       "target-arrow-shape": "none",
+      "line-color": "#cbd5e1",
+      width: 1,
+    },
+  },
+  // Edge style by source count - 1 source (lightest)
+  {
+    selector: "edge.sources-1",
+    style: {
+      "line-color": "#cbd5e1",  // slate-300
+      width: 1,
+    },
+  },
+  // Edge style by source count - 2 sources
+  {
+    selector: "edge.sources-2",
+    style: {
+      "line-color": "#94a3b8",  // slate-400
+      width: 2,
+    },
+  },
+  // Edge style by source count - 3 sources
+  {
+    selector: "edge.sources-3",
+    style: {
+      "line-color": "#64748b",  // slate-500
+      width: 3,
+    },
+  },
+  // Edge style by source count - 4+ sources (darkest)
+  {
+    selector: "edge.sources-4",
+    style: {
+      "line-color": "#475569",  // slate-600
+      width: 4,
     },
   },
   {
-    selector: "edge:hover",
+    selector: "edge.ppi-edge:hover",
     style: {
       "line-color": "#6366f1",
       width: 3,
@@ -101,7 +134,7 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "edge.selected",
+    selector: "edge.ppi-edge.selected",
     style: {
       "line-color": "#6366f1",
       width: 4,
@@ -110,7 +143,7 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "edge:selected",
+    selector: "edge.ppi-edge:selected",
     style: {
       "line-color": "#6366f1",
       width: 4,
@@ -119,7 +152,7 @@ const STYLESHEET: StylesheetStyle[] = [
   },
   // Path mode: edges in path
   {
-    selector: "edge.path-edge",
+    selector: "edge.ppi-edge.path-edge",
     style: {
       "line-color": "#f59e0b",
       width: 4,
@@ -130,7 +163,7 @@ const STYLESHEET: StylesheetStyle[] = [
   },
   // Path mode: dimmed edges not in path
   {
-    selector: "edge.path-dimmed",
+    selector: "edge.ppi-edge.path-dimmed",
     style: {
       opacity: 0.2,
     },
@@ -144,7 +177,7 @@ function PPICytoscapeGraphInner({
   onNodeHover,
   onEdgeClick,
   selectedEdgeId,
-  colorMode = "confidence",
+  colorMode = "experiments",
   centralityData,
   pathHighlight,
   selectedGeneIds,
@@ -199,7 +232,7 @@ function PPICytoscapeGraphInner({
     }
   }, [selectedEdgeId]);
 
-  // Handle color mode changes (hub vs confidence)
+  // Handle color mode changes (hub vs experiments)
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -230,7 +263,7 @@ function PPICytoscapeGraphInner({
         }
       });
     } else {
-      // Restore confidence-based coloring from element data
+      // Restore experiment-based coloring from element data
       cy.nodes().forEach((node) => {
         node.style({
           "background-color": node.data("backgroundColor"),
@@ -353,6 +386,39 @@ function PPICytoscapeGraphInner({
     if (currentIds !== elementsKey || elementCountChanged) {
       cy.elements().remove();
       cy.add(elements);
+
+      // Apply edge styles after adding elements
+      cy.batch(() => {
+        cy.edges().forEach((edge) => {
+          const numSources = edge.data("numSources") ?? 1;
+          const sources = Math.max(1, Math.min(numSources, 4));
+
+          let color: string;
+          let width: number;
+
+          if (sources >= 4) {
+            color = "#475569";
+            width = 4;
+          } else if (sources >= 3) {
+            color = "#64748b";
+            width = 3;
+          } else if (sources >= 2) {
+            color = "#94a3b8";
+            width = 2;
+          } else {
+            color = "#cbd5e1";
+            width = 1;
+          }
+
+          edge.style({
+            "line-color": color,
+            "width": width,
+            "opacity": 0.7,
+            "curve-style": "bezier",
+          });
+        });
+      });
+
       const layoutOptions = getLayoutOptions(layout);
       cy.layout(layoutOptions).run();
     }
@@ -366,6 +432,42 @@ function PPICytoscapeGraphInner({
     // Store the new instance
     cyRef.current = cy;
     initializedRef.current = true;
+
+    // Manually apply stylesheet - react-cytoscapejs doesn't reliably apply stylesheet prop
+    cy.style().fromJson(STYLESHEET).update();
+
+    // Manually apply edge styles based on numSources (like reference biogrid code)
+    cy.batch(() => {
+      cy.edges().forEach((edge) => {
+        const numSources = edge.data("numSources") ?? 1;
+        const sources = Math.max(1, Math.min(numSources, 4));
+
+        let color: string;
+        let width: number;
+
+        if (sources >= 4) {
+          color = "#475569";  // slate-600
+          width = 4;
+        } else if (sources >= 3) {
+          color = "#64748b";  // slate-500
+          width = 3;
+        } else if (sources >= 2) {
+          color = "#94a3b8";  // slate-400
+          width = 2;
+        } else {
+          color = "#cbd5e1";  // slate-300
+          width = 1;
+        }
+
+        edge.style({
+          "line-color": color,
+          "width": width,
+          "opacity": 0.7,
+          "curve-style": "bezier",
+          "target-arrow-shape": "none",
+        });
+      });
+    });
 
     // Initial layout
     const layoutOptions = getLayoutOptions(layoutRef.current);

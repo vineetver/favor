@@ -432,3 +432,157 @@ export async function fetchIntersection(
     return null;
   }
 }
+
+// =============================================================================
+// Pathway Enrichment API
+// =============================================================================
+
+/**
+ * Response structure for pathway enrichment data
+ */
+export interface PathwayEnrichmentResponse {
+  geneCount: number;
+  sharedGenes: Array<{ id: string; symbol: string }>;
+  relatedDiseases: Array<{ id: string; name: string }>;
+  parentPathway: { id: string; name: string } | null;
+  childPathways: Array<{ id: string; name: string }>;
+}
+
+/**
+ * Pathway relations response structure
+ */
+interface PathwayRelationsResponse {
+  data: {
+    pathway_id: string;
+    pathway_name: string;
+  };
+  included?: {
+    relations?: {
+      PART_OF?: {
+        rows: Array<{
+          neighbor: { id: string; name: string; type: string };
+        }>;
+      };
+      PARTICIPATES_IN?: {
+        rows: Array<{
+          neighbor: {
+            id: string;
+            name?: string;
+            symbol?: string;
+            type: string;
+          };
+        }>;
+      };
+    };
+  };
+}
+
+/**
+ * Fetches enrichment data for a pathway (genes, diseases, hierarchy).
+ * Uses parallel requests for performance with direction-aware PART_OF traversal.
+ *
+ * @param pathwayId - Pathway ID (e.g., "R-HSA-5693532")
+ * @param seedGeneId - The seed gene ID to find shared genes
+ * @returns Enriched pathway data or null on error
+ */
+export async function fetchPathwayEnrichment(
+  pathwayId: string,
+  seedGeneId: string,
+): Promise<PathwayEnrichmentResponse | null> {
+  try {
+    // Parallel fetch: parent (direction=in), children (direction=out), and genes
+    const [parentResponse, childrenResponse, genesResponse] = await Promise.all([
+      // Get parent pathway using direction=in (traverse UP the hierarchy)
+      fetch(
+        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=5`,
+        { next: { revalidate: 300 } },
+      ),
+      // Get child pathways using direction=out (traverse DOWN the hierarchy)
+      fetch(
+        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=20`,
+        { next: { revalidate: 300 } },
+      ),
+      // Get genes participating in this pathway
+      fetch(
+        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PARTICIPATES_IN&direction=in&limitPerEdgeType=100`,
+        { next: { revalidate: 300 } },
+      ),
+    ]);
+
+    // Parse responses
+    const parentData: PathwayRelationsResponse | null = parentResponse.ok
+      ? await parentResponse.json()
+      : null;
+    const childrenData: PathwayRelationsResponse | null = childrenResponse.ok
+      ? await childrenResponse.json()
+      : null;
+    const genesData: PathwayRelationsResponse | null = genesResponse.ok
+      ? await genesResponse.json()
+      : null;
+
+    // Extract parent pathway (first parent from direction=in PART_OF)
+    const parentRows = parentData?.included?.relations?.PART_OF?.rows ?? [];
+    const parentPathway =
+      parentRows.length > 0
+        ? { id: parentRows[0].neighbor.id, name: parentRows[0].neighbor.name }
+        : null;
+
+    // Extract child pathways (from direction=out PART_OF)
+    const childRows = childrenData?.included?.relations?.PART_OF?.rows ?? [];
+    const childPathways = childRows.map((row) => ({
+      id: row.neighbor.id,
+      name: row.neighbor.name,
+    }));
+
+    // Extract genes (from direction=in PARTICIPATES_IN)
+    const geneRows = genesData?.included?.relations?.PARTICIPATES_IN?.rows ?? [];
+    const genes = geneRows.filter(
+      (row: { neighbor: { type: string } }) => row.neighbor.type === "Gene",
+    );
+    const geneCount = genes.length;
+
+    // Find shared genes (exclude the seed gene)
+    // Note: gene symbol is in neighbor.symbol, not neighbor.name
+    const sharedGenes = genes
+      .filter(
+        (g: { neighbor: { id: string } }) => g.neighbor.id !== seedGeneId,
+      )
+      .slice(0, 10)
+      .map(
+        (g: { neighbor: { id: string; symbol?: string; name?: string } }) => ({
+          id: g.neighbor.id,
+          symbol: g.neighbor.symbol ?? g.neighbor.name ?? g.neighbor.id,
+        }),
+      );
+
+    // For diseases, use the subgraph approach (ASSOCIATED_WITH is less common)
+    const subgraphResponse = await fetchSubgraph({
+      seeds: [{ type: "Pathway", id: pathwayId }],
+      maxDepth: 1,
+      edgeTypes: ["ASSOCIATED_WITH"],
+      nodeLimit: 50,
+      edgeLimit: 50,
+      includeProps: false,
+    });
+
+    const diseaseNodes = subgraphResponse?.data?.graph?.nodes ?? [];
+    const relatedDiseases = diseaseNodes
+      .filter((n) => n.type === "Disease")
+      .slice(0, 10)
+      .map((d) => ({
+        id: d.id,
+        name: d.label,
+      }));
+
+    return {
+      geneCount,
+      sharedGenes,
+      relatedDiseases,
+      parentPathway,
+      childPathways,
+    };
+  } catch (error) {
+    console.error("Pathway enrichment fetch error:", error);
+    return null;
+  }
+}

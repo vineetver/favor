@@ -1,7 +1,7 @@
 import type { ElementDefinition } from "cytoscape";
 import type { EntityRef, SubgraphEdge } from "../api";
 import type { PPIEdge, PPIEvidenceSource, PPINode } from "../components/ppi-network/types";
-import { getConfidenceTier } from "../components/ppi-network/types";
+import { getExperimentTier } from "../components/ppi-network/types";
 
 /**
  * Helper to extract an array from various possible response structures
@@ -359,13 +359,38 @@ export function extractPPIEdges(
 }
 
 /**
- * Node style colors based on type and score
+ * Edge colors by source count (1-4 databases)
+ * Width + color intensity: thicker AND darker for more sources
+ */
+const EDGE_COLORS = {
+  1: "#cbd5e1",  // slate-300 - lightest
+  2: "#94a3b8",  // slate-400
+  3: "#64748b",  // slate-500
+  4: "#475569",  // slate-600 - darkest
+} as const;
+
+/**
+ * Get edge styling based on source count
+ */
+function getEdgeStyle(numSources: number | null): { width: number; color: string } {
+  const sources = Math.max(1, Math.min(numSources ?? 1, 4));
+  return {
+    width: sources,  // 1-4px
+    color: EDGE_COLORS[sources as 1 | 2 | 3 | 4],
+  };
+}
+
+/**
+ * Node style colors based on experiment count
+ * Uses warm color family (orange→amber→yellow) for natural hierarchy
+ * More experiments = more intense/saturated color
  */
 const NODE_COLORS = {
-  seed: { background: "#6366f1", border: "#4f46e5" },
-  high: { background: "#22c55e", border: "#16a34a" },
-  medium: { background: "#eab308", border: "#ca8a04" },
-  low: { background: "#94a3b8", border: "#64748b" },
+  seed: { background: "#6366f1", border: "#4f46e5" },      // Indigo - query gene (distinct)
+  low: { background: "#e2e8f0", border: "#cbd5e1" },       // Slate-200/300 - 0-5 experiments (muted)
+  moderate: { background: "#fef3c7", border: "#fcd34d" },  // Amber-100/300 - 6-20 experiments (soft warm)
+  good: { background: "#fcd34d", border: "#fbbf24" },      // Amber-300/400 - 21-50 experiments (warm)
+  high: { background: "#f97316", border: "#ea580c" },      // Orange-500/600 - 51+ experiments (intense)
 } as const;
 
 /**
@@ -398,8 +423,9 @@ export function transformToCytoscapeElements(
   // Add all nodes from edges (both source and target, not just target)
   // This properly handles neighbor↔neighbor edges
   ppiEdges.forEach((edge) => {
-    const tier = getConfidenceTier(edge.numSources);
+    const tier = getExperimentTier(edge.numExperiments);
     const colors = NODE_COLORS[tier];
+    const edgeStyle = getEdgeStyle(edge.numSources);
 
     // Add source node if not already added (could be a neighbor in cross-connections)
     if (!addedNodes.has(edge.sourceId)) {
@@ -440,6 +466,11 @@ export function transformToCytoscapeElements(
     }
 
     // Add edge with actual source/target (could be neighbor↔neighbor)
+    // Include edge styling based on source count
+    // Use classes for reliable stylesheet targeting
+    const sourceCount = Math.max(1, Math.min(edge.numSources ?? 1, 4));
+    const edgeClass = `ppi-edge sources-${sourceCount}`;
+
     elements.push({
       data: {
         id: edge.id,
@@ -448,7 +479,11 @@ export function transformToCytoscapeElements(
         numSources: edge.numSources,
         numExperiments: edge.numExperiments,
         sourceCount: edge.sources.length,
+        // Style data for stylesheet
+        lineColor: edgeStyle.color,
+        edgeWidth: edgeStyle.width,
       },
+      classes: edgeClass,
     });
   });
 

@@ -218,6 +218,49 @@ export function getCategoryColor(category: string) {
 }
 
 // =============================================================================
+// Enrichment Types
+// =============================================================================
+
+/**
+ * Enriched pathway with additional context from API
+ */
+export interface EnrichedPathwayData {
+  geneCount: number;
+  sharedGenes: Array<{ id: string; symbol: string }>;
+  relatedDiseases: Array<{ id: string; name: string }>;
+  parentPathway: { id: string; name: string } | null;
+  childPathways: Array<{ id: string; name: string }>;
+}
+
+/**
+ * Enrichment fetch state - discriminated union
+ */
+export type EnrichmentState =
+  | { status: "idle" }
+  | { status: "loading"; pathwayId: string }
+  | { status: "loaded"; pathwayId: string; data: EnrichedPathwayData }
+  | { status: "error"; pathwayId: string; error: string };
+
+// =============================================================================
+// Filter State Types
+// =============================================================================
+
+/**
+ * Category filter state for sidebar
+ */
+export interface CategoryFilterState {
+  selectedCategories: Set<string>; // empty = all selected
+  showHierarchy: boolean;
+}
+
+/**
+ * Selection state - discriminated union
+ */
+export type PathwaySelection =
+  | { type: "none" }
+  | { type: "pathway"; pathway: PathwayNode };
+
+// =============================================================================
 // Component Props
 // =============================================================================
 
@@ -228,6 +271,19 @@ export interface PathwayLeverageViewProps {
   pathways: PathwayNode[];
   /** Hierarchy edges from PART_OF relationships */
   hierarchyEdges: PathwayHierarchyEdge[];
+}
+
+export interface PathwayCategorySidebarProps {
+  categories: PathwayCategory[];
+  filterState: CategoryFilterState;
+  onFilterChange: (state: CategoryFilterState) => void;
+  className?: string;
+}
+
+export interface PathwayDetailPanelProps {
+  pathway: PathwayNode;
+  enrichment: EnrichmentState;
+  onClose: () => void;
 }
 
 export interface PathwayCytoscapeGraphProps {
@@ -260,7 +316,8 @@ function getPathwayUrl(pathwayId: string, source: PathwaySource): string {
 }
 
 /**
- * Parse pathway from graph node
+ * Parse pathway from graph node.
+ * Note: subtitle may contain a URL instead of category - detect and handle.
  */
 export function parsePathwayFromNode(node: {
   id: string;
@@ -268,10 +325,17 @@ export function parsePathwayFromNode(node: {
   subtitle?: string;
 }): PathwayNode {
   const source = parsePathwaySource(node.id);
+
+  // Detect if subtitle is a URL (not a real category)
+  let category = "Uncategorized";
+  if (node.subtitle && !node.subtitle.startsWith("http")) {
+    category = node.subtitle;
+  }
+
   return {
     id: node.id,
     name: node.label,
-    category: node.subtitle || "Other",
+    category,
     url: getPathwayUrl(node.id, source),
     source,
   };

@@ -183,7 +183,7 @@ export function PPINetworkView({
   const [selection, setSelection] = useState<Selection>({ type: "none" });
 
   // Hub Spotlight state - discriminated union for fetch state
-  const [colorMode, setColorMode] = useState<ColorMode>("confidence");
+  const [colorMode, setColorMode] = useState<ColorMode>("experiments");
   const [centralityState, setCentralityState] = useState<CentralityState>({ status: "idle" });
 
   // Derive topHubs from centrality data (was stored, now computed)
