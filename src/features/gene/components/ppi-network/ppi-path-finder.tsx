@@ -68,11 +68,14 @@ function PPIPathFinderInner({
 
     try {
       const recipeConfig = PATH_RECIPES[recipe];
+      // Therapeutic paths are longer: Gene ← Drug → Disease ← Drug → Gene (4 hops)
+      // Mechanism paths: Gene → Pathway → Gene or Gene → Pathway ← Pathway ← Gene (2-4 hops)
+      const maxHops = recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4;
       const result = await fetchPaths(
         `Gene:${seedGeneId}`,
         `Gene:${targetGene.trim().toUpperCase()}`,
         {
-          maxHops: recipe === "ppi-only" ? 3 : 4,
+          maxHops,
           limit: 5,
           edgeTypes: recipeConfig.edgeTypes,
         }
@@ -231,25 +234,39 @@ function PPIPathFinderInner({
 
                     {/* Visual path */}
                     <div className="flex flex-wrap items-center gap-1">
-                      {path.nodes.map((node, nodeIndex) => (
-                        <span key={node.id} className="flex items-center gap-1">
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 rounded text-xs font-medium",
-                              nodeIndex === 0
-                                ? "bg-indigo-100 text-indigo-700"
-                                : nodeIndex === path.nodes.length - 1
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-slate-100 text-slate-700"
+                      {path.nodes.map((node, nodeIndex) => {
+                        // Color by node type, with special colors for start/end genes
+                        const isStart = nodeIndex === 0;
+                        const isEnd = nodeIndex === path.nodes.length - 1;
+                        const nodeStyle = isStart
+                          ? "bg-indigo-100 text-indigo-700"
+                          : isEnd
+                            ? "bg-emerald-100 text-emerald-700"
+                            : node.type === "Drug"
+                              ? "bg-purple-100 text-purple-700"
+                              : node.type === "Disease"
+                                ? "bg-rose-100 text-rose-700"
+                                : node.type === "Pathway"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-slate-100 text-slate-700";
+
+                        return (
+                          <span key={node.id} className="flex items-center gap-1">
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded text-xs font-medium",
+                                nodeStyle
+                              )}
+                              title={`${node.type}: ${node.label}`}
+                            >
+                              {node.label}
+                            </span>
+                            {nodeIndex < path.nodes.length - 1 && (
+                              <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
                             )}
-                          >
-                            {node.label}
                           </span>
-                          {nodeIndex < path.nodes.length - 1 && (
-                            <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
-                          )}
-                        </span>
-                      ))}
+                        );
+                      })}
                     </div>
                   </button>
                 ))}
@@ -262,7 +279,9 @@ function PPIPathFinderInner({
             <div className="text-center py-8 text-sm text-slate-500">
               <Route className="w-8 h-8 mx-auto mb-2 text-slate-300" />
               <p>Enter a target gene to find interaction paths</p>
-              <p className="text-xs mt-1">Maximum 3 hops</p>
+              <p className="text-xs mt-1">
+                Maximum {recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4} hops
+              </p>
             </div>
           )}
         </div>

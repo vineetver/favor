@@ -343,10 +343,16 @@ function PPICytoscapeGraphInner({
   }, [selectedEdgeId]);
 
   // Handle color mode changes (hub vs experiments)
+  // Skip when clustering is enabled - clustering takes precedence
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
     if (cy.destroyed()) return;
+
+    // Skip color mode styling when clustering is enabled
+    if (clusterState?.enabled && clusterState.clusters.size > 0) {
+      return;
+    }
 
     if (colorMode === "hub" && centralityData && centralityData.size > 0) {
       // Find max degree for scaling
@@ -383,7 +389,7 @@ function PPICytoscapeGraphInner({
         });
       });
     }
-  }, [colorMode, centralityData]);
+  }, [colorMode, centralityData, clusterState]);
 
   // Handle path highlighting
   useEffect(() => {
@@ -537,7 +543,7 @@ function PPICytoscapeGraphInner({
     }
   }, [hubMode, centralityData]);
 
-  // Handle cluster visualization
+  // Handle cluster visualization - uses node.style() to override other coloring
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -547,6 +553,7 @@ function PPICytoscapeGraphInner({
     for (let i = 0; i < 8; i++) {
       cy.nodes().removeClass(`cluster-${i}`);
     }
+    cy.nodes().removeClass("cluster-unclustered");
 
     if (clusterState?.enabled && clusterState.clusters.size > 0) {
       // Build a reverse map: nodeId -> clusterIndex
@@ -560,13 +567,42 @@ function PPICytoscapeGraphInner({
         clusterIndex++;
       });
 
-      // Apply cluster classes to nodes
+      // Apply cluster colors to ALL nodes
       cy.nodes().forEach((node) => {
+        const isSeed = node.data("isSeed");
+        if (isSeed) return; // Don't change seed node color
+
         const clusterId = nodeToCluster.get(node.id());
         if (clusterId !== undefined) {
-          // Use modulo 8 to cycle through available cluster colors
-          node.addClass(`cluster-${clusterId % 8}`);
+          // Node belongs to a cluster - use cluster color
+          const colorIndex = clusterId % 8;
+          const colors = getClusterColor(colorIndex);
+          node.addClass(`cluster-${colorIndex}`);
+          node.style({
+            "background-color": colors.background,
+            "border-color": colors.border,
+          });
+        } else {
+          // Node is unclustered - use neutral grey
+          node.addClass("cluster-unclustered");
+          node.style({
+            "background-color": "#f1f5f9", // slate-100
+            "border-color": "#94a3b8",     // slate-400
+          });
         }
+      });
+    } else {
+      // Restore original colors when clustering is disabled
+      cy.nodes().forEach((node) => {
+        const isSeed = node.data("isSeed");
+        if (isSeed) return;
+
+        node.style({
+          "background-color": node.data("backgroundColor"),
+          "border-color": node.data("borderColor"),
+          width: node.data("nodeSize"),
+          height: node.data("nodeSize"),
+        });
       });
     }
   }, [clusterState]);

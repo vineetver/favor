@@ -140,6 +140,16 @@ export interface PathRecipeConfig {
 
 /**
  * Path recipe definitions
+ *
+ * Edge directions in the graph:
+ * - INTERACTS_WITH: Gene ↔ Gene (bidirectional PPI)
+ * - PARTICIPATES_IN: Gene → Pathway
+ * - PART_OF: Pathway → Pathway (hierarchy)
+ * - TARGETS: Drug → Gene
+ * - KNOWN_TO_TARGET: Drug → Gene
+ * - INDICATED_FOR: Drug → Disease
+ * - APPROVED_FOR: Drug → Disease
+ * - IMPLICATED_IN: Gene → Disease
  */
 export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
   'ppi-only': {
@@ -156,8 +166,11 @@ export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
   },
   'therapeutic': {
     label: 'Therapeutic',
-    description: 'Include drugs and diseases',
-    edgeTypes: ['INTERACTS_WITH', 'TARGETS', 'ASSOCIATED_WITH'],
+    description: 'Find drug-mediated paths between genes',
+    // Only drug-specific edges to force paths through Drug nodes
+    // Excludes INTERACTS_WITH to avoid shorter Gene→Gene paths
+    // Typical path: Gene ← Drug → Disease ← Drug → Gene
+    edgeTypes: ['TARGETS', 'KNOWN_TO_TARGET', 'INDICATED_FOR', 'APPROVED_FOR'],
     nodeTypes: ['Gene', 'Drug', 'Disease'],
   },
 };

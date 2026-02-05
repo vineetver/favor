@@ -703,3 +703,151 @@ export async function fetchPathwayDiseaseEnrichment(
     return null;
   }
 }
+
+// =============================================================================
+// Graph Schema API (Graph Explorer)
+// =============================================================================
+
+/**
+ * Graph schema response structure
+ */
+export interface GraphSchemaResponse {
+  data: {
+    nodeTypes: string[];
+    edgeTypes: Array<{
+      type: string;
+      count: number;
+      sourceTypes: string[];
+      targetTypes: string[];
+    }>;
+    lastUpdated?: string;
+  };
+}
+
+/**
+ * Fetches the graph schema (available node/edge types)
+ * @returns Graph schema or null if not found
+ */
+export async function fetchGraphSchema(): Promise<GraphSchemaResponse | null> {
+  const url = `${API_BASE}/graph/schema`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // Cache for 1 hour (schema is stable)
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.error(`Graph schema fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Graph schema fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Graph Stats API (Graph Explorer)
+// =============================================================================
+
+/**
+ * Graph stats response structure
+ */
+export interface GraphStatsResponse {
+  data: {
+    totalNodes: number;
+    totalEdges: number;
+    nodeCounts: Record<string, number>;
+    edgeCounts: Record<string, number>;
+  };
+}
+
+/**
+ * Fetches global graph statistics
+ * @returns Graph stats or null if not found
+ */
+export async function fetchGraphStats(): Promise<GraphStatsResponse | null> {
+  const url = `${API_BASE}/graph/stats`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.error(`Graph stats fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Graph stats fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Entity Search API (Graph Explorer)
+// =============================================================================
+
+/**
+ * Search result entity
+ */
+export interface SearchResultEntity {
+  type: string;
+  id: string;
+  label: string;
+  score: number;
+}
+
+/**
+ * Entity search response
+ */
+export interface EntitySearchResponse {
+  data: {
+    results: SearchResultEntity[];
+    totalCount: number;
+  };
+}
+
+/**
+ * Search for entities in the knowledge graph
+ * @param query - Search query
+ * @param types - Entity types to search (optional)
+ * @param limit - Maximum results (default: 20)
+ * @returns Search results or null on error
+ */
+export async function searchEntities(
+  query: string,
+  types?: string[],
+  limit: number = 20,
+): Promise<EntitySearchResponse | null> {
+  const params = new URLSearchParams();
+  params.set("q", query);
+  params.set("limit", String(limit));
+  if (types?.length) {
+    params.set("types", types.join(","));
+  }
+
+  const url = `${API_BASE}/graph/search?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 60 }, // Cache for 1 minute
+    });
+
+    if (!response.ok) {
+      console.error(`Entity search failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Entity search error:", error);
+    return null;
+  }
+}

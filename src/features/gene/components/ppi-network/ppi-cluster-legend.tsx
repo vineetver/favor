@@ -7,10 +7,12 @@ import type { ClusterState } from "./types";
 
 interface PPIClusterLegendProps {
   clusterState: ClusterState;
+  /** Total number of nodes in the graph (to calculate unclustered count) */
+  totalNodes?: number;
   className?: string;
 }
 
-function PPIClusterLegendInner({ clusterState, className }: PPIClusterLegendProps) {
+function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClusterLegendProps) {
   // Don't show legend if clustering is disabled or no clusters
   if (!clusterState.enabled || clusterState.clusters.size === 0) {
     return null;
@@ -18,6 +20,10 @@ function PPIClusterLegendInner({ clusterState, className }: PPIClusterLegendProp
 
   const stats = getClusterStats(clusterState.clusters);
   const clusterEntries = Array.from(clusterState.clusters.entries());
+
+  // Calculate unclustered nodes count
+  const clusteredNodeCount = clusterEntries.reduce((sum, [, nodes]) => sum + nodes.length, 0);
+  const unclusteredCount = totalNodes ? Math.max(0, totalNodes - clusteredNodeCount - 1) : 0; // -1 for seed
 
   return (
     <div
@@ -62,12 +68,22 @@ function PPIClusterLegendInner({ clusterState, className }: PPIClusterLegendProp
             +{clusterEntries.length - 8} more clusters
           </div>
         )}
+        {/* Unclustered nodes */}
+        {unclusteredCount > 0 && (
+          <div className="flex items-center gap-2 text-xs pt-1 border-t border-slate-100 mt-1">
+            <div
+              className="w-3 h-3 rounded-sm border-2 shrink-0"
+              style={{
+                backgroundColor: "#f1f5f9",
+                borderColor: "#94a3b8",
+              }}
+            />
+            <span className="text-slate-500 truncate">
+              {unclusteredCount} unclustered
+            </span>
+          </div>
+        )}
       </div>
-      {stats.numClusters > 0 && (
-        <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
-          Avg: {stats.avgSize.toFixed(1)} nodes/cluster
-        </div>
-      )}
     </div>
   );
 }

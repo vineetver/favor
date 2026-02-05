@@ -134,6 +134,7 @@ const NodeDetailPanel = memo(function NodeDetailPanel({ node }: NodeDetailPanelP
 interface GraphContainerProps {
   elements: ReturnType<typeof transformToCytoscapeElements>;
   layout: LayoutType;
+  seedGeneId: string;
   selectedEdgeId: string | null;
   colorMode?: ColorMode;
   centralityData?: Map<string, CentralityData>;
@@ -144,6 +145,7 @@ interface GraphContainerProps {
   overlayData?: Map<string, OverlayData>;
   overlayType?: ContextOverlay;
   hubMode?: HubModeState;
+  clusterState?: ClusterState;
   onNodeClick: (node: PPINode) => void;
   onNodeHover: (node: PPINode | null, position: { x: number; y: number } | null) => void;
   onEdgeClick: (edgeId: string, position: { x: number; y: number }) => void;
@@ -152,6 +154,7 @@ interface GraphContainerProps {
 const GraphContainer = memo(function GraphContainer({
   elements,
   layout,
+  seedGeneId,
   selectedEdgeId,
   colorMode,
   centralityData,
@@ -162,6 +165,7 @@ const GraphContainer = memo(function GraphContainer({
   overlayData,
   overlayType,
   hubMode,
+  clusterState,
   onNodeClick,
   onNodeHover,
   onEdgeClick,
@@ -171,6 +175,7 @@ const GraphContainer = memo(function GraphContainer({
       <PPICytoscapeGraph
         elements={elements}
         layout={layout}
+        seedGeneId={seedGeneId}
         selectedEdgeId={selectedEdgeId}
         colorMode={colorMode}
         centralityData={centralityData}
@@ -181,11 +186,22 @@ const GraphContainer = memo(function GraphContainer({
         overlayData={overlayData}
         overlayType={overlayType}
         hubMode={hubMode}
+        clusterState={clusterState}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover}
         onEdgeClick={onEdgeClick}
       />
-      <PPILegend colorMode={colorMode} />
+      {/* Experiments/Hub Legend - hidden when clustering is enabled */}
+      {(!clusterState?.enabled || clusterState.clusters.size === 0) && (
+        <PPILegend colorMode={colorMode} />
+      )}
+      {/* Cluster Legend - shown when clustering is enabled */}
+      {clusterState?.enabled && clusterState.clusters.size > 0 && (
+        <PPIClusterLegend
+          clusterState={clusterState}
+          totalNodes={elements.filter(el => !el.data.source).length}
+        />
+      )}
       {/* Hint for interactions */}
       <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm px-3 py-2">
         <div className="text-xs text-slate-500 space-y-1">
@@ -214,18 +230,8 @@ export function PPINetworkView({
   // Selection state - discriminated union: only one selection type at a time
   const [selection, setSelection] = useState<Selection>({ type: "none" });
 
-  // Hub Spotlight state - discriminated union for fetch state
+  // Hub Spotlight state
   const [colorMode, setColorMode] = useState<ColorMode>("experiments");
-  const [centralityState, setCentralityState] = useState<CentralityState>({ status: "idle" });
-
-  // Derive topHubs from centrality data (was stored, now computed)
-  const topHubs = useMemo(() => {
-    if (centralityState.status !== "loaded") return [];
-    return Array.from(centralityState.data.values())
-      .filter((data) => data.entity.id !== seedGeneId) // Exclude seed from top hubs list
-      .sort((a, b) => b.hubScore - a.hubScore)
-      .slice(0, 5);
-  }, [centralityState, seedGeneId]);
 
   // Path Discovery state
   const [pathHighlight, setPathHighlight] = useState<PathHighlight | null>(null);
@@ -275,13 +281,27 @@ export function PPINetworkView({
     return Array.from(ids);
   }, [limitedEdges, seedGeneId]);
 
-  // Context Overlay hook
+  // Context Overlay hook (TanStack Query)
   const {
     overlayType,
     overlayData,
     isLoading: isLoadingOverlay,
     setOverlayType,
-  } = useContextOverlay({ seedGeneId, neighborIds });
+  } = useContextOverlayQuery({ seedGeneId, neighborIds });
+
+  // Centrality data hook (TanStack Query) - only fetches when colorMode is "hub"
+  const {
+    data: centralityData,
+    seedCentrality,
+    isLoading: isLoadingCentrality,
+  } = useCentralityQuery({
+    seedGeneId,
+    neighborIds,
+    enabled: colorMode === "hub",
+  });
+
+  // Derive topHubs from centrality data
+  const topHubs = useTopHubs(centralityData, seedGeneId);
 
   // Create edge map for quick lookup
   const edgeMap = useMemo(() => createEdgeMap(limitedEdges), [limitedEdges]);
@@ -298,10 +318,6 @@ export function PPINetworkView({
   // Get selected edge ID for graph highlighting
   const selectedEdgeId = selection.type === "edge" ? selection.edgeId : null;
 
-  // Get centrality data for the graph (derived from centrality state)
-  const centralityData = centralityState.status === "loaded" ? centralityState.data : undefined;
-  const seedCentrality = centralityState.status === "loaded" ? centralityState.seedCentrality : null;
-  const isLoadingCentrality = centralityState.status === "loading";
 
   // Transform to Cytoscape elements - memoized
   const elements = useMemo(
@@ -342,61 +358,6 @@ export function PPINetworkView({
     return genes;
   }, [selectedGeneIds, seedGeneId, seedGeneSymbol, limitedEdges]);
 
-  // Fetch centrality data for seed gene and neighbors
-  useEffect(() => {
-    if (colorMode !== "hub") {
-      // Reset to idle when not in hub mode
-      setCentralityState({ status: "idle" });
-      return;
-    }
-
-    const fetchCentralityData = async () => {
-      setCentralityState({ status: "loading" });
-
-      try {
-        // Fetch seed gene centrality
-        const seedResult = await fetchCentrality("Gene", seedGeneId);
-
-        // Fetch centrality for visible neighbors (limited edges)
-        const neighborIds = limitedEdges.map((e) => e.targetId);
-        const centralityMap = new Map<string, CentralityData>();
-
-        // Fetch in batches to avoid too many concurrent requests
-        const batchSize = 10;
-        for (let i = 0; i < neighborIds.length; i += batchSize) {
-          const batch = neighborIds.slice(i, i + batchSize);
-          const results = await Promise.all(
-            batch.map((id) => fetchCentrality("Gene", id))
-          );
-
-          results.forEach((result, idx) => {
-            if (result?.data) {
-              centralityMap.set(batch[idx], result.data);
-            }
-          });
-        }
-
-        // Add seed to centrality map
-        if (seedResult?.data) {
-          centralityMap.set(seedGeneId, seedResult.data);
-        }
-
-        setCentralityState({
-          status: "loaded",
-          data: centralityMap,
-          seedCentrality: seedResult?.data ?? null,
-        });
-      } catch (error) {
-        console.error("Failed to fetch centrality data:", error);
-        setCentralityState({
-          status: "error",
-          error: error instanceof Error ? error.message : "Failed to fetch centrality data",
-        });
-      }
-    };
-
-    fetchCentralityData();
-  }, [colorMode, seedGeneId, limitedEdges]);
 
   // Stable layout change handler
   const handleLayoutChange = useCallback((value: string) => {
@@ -686,6 +647,7 @@ export function PPINetworkView({
           <GraphContainer
             elements={elements}
             layout={layout}
+            seedGeneId={seedGeneId}
             selectedEdgeId={selectedEdgeId}
             colorMode={colorMode}
             centralityData={centralityData}
@@ -696,6 +658,7 @@ export function PPINetworkView({
             overlayData={overlayData}
             overlayType={overlayType}
             hubMode={colorMode === "hub" ? hubMode : undefined}
+            clusterState={clusterState}
             onNodeClick={handleNodeClick}
             onNodeHover={handleNodeHover}
             onEdgeClick={handleEdgeClick}

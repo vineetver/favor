@@ -44,7 +44,7 @@ export interface DrugEntity extends BaseEntity {
  */
 export interface PathwayEntity extends BaseEntity {
   type: "Pathway";
-  source: "reactome" | "wikipathways" | "kegg";
+  source?: "reactome" | "wikipathways" | "kegg";
   category?: string;
 }
 
@@ -67,6 +67,14 @@ export interface TraitEntity extends BaseEntity {
 }
 
 /**
+ * Phenotype entity
+ */
+export interface PhenotypeEntity extends BaseEntity {
+  type: "Phenotype";
+  definition?: string;
+}
+
+/**
  * Entity discriminated union - all supported entity types
  */
 export type ExplorerEntity =
@@ -75,7 +83,8 @@ export type ExplorerEntity =
   | DrugEntity
   | PathwayEntity
   | VariantEntity
-  | TraitEntity;
+  | TraitEntity
+  | PhenotypeEntity;
 
 /**
  * Entity type string union
@@ -92,6 +101,7 @@ export const ENTITY_TYPES: EntityType[] = [
   "Pathway",
   "Variant",
   "Trait",
+  "Phenotype",
 ];
 
 // =============================================================================
@@ -105,6 +115,7 @@ export interface ExplorerNode {
   id: string;
   type: EntityType;
   label: string;
+  subtitle?: string;
   /** Original entity data */
   entity: ExplorerEntity;
   /** Whether this is a seed node (starting point) */
@@ -120,76 +131,142 @@ export interface ExplorerNode {
 }
 
 /**
- * Edge types in the knowledge graph
+ * Edge types in the knowledge graph - matching actual API schema
  */
 export type EdgeType =
-  | "INTERACTS_WITH"
-  | "ASSOCIATED_WITH"
-  | "IMPLICATED_IN"
-  | "PARTICIPATES_IN"
-  | "TARGETS"
-  | "TREATS"
-  | "PART_OF"
-  | "GWAS_ASSOCIATED"
-  | "HAS_VARIANT";
+  // Gene relationships
+  | "IMPLICATED_IN"           // Gene -> Disease
+  | "CAUSES"                  // Gene -> Disease
+  | "CURATED_FOR"             // Gene -> Disease
+  | "PARTICIPATES_IN"         // Gene -> Pathway
+  | "MANIFESTS_AS"            // Gene -> Phenotype
+  | "ANNOTATED_IN"            // Gene -> Variant
+  // Drug relationships
+  | "TARGETS"                 // Drug -> Gene
+  | "KNOWN_TO_TARGET"         // Drug -> Gene
+  | "INTERACTS_WITH_GENE"     // Drug -> Gene
+  | "APPROVED_FOR"            // Drug -> Disease
+  | "INDICATED_FOR"           // Drug -> Disease
+  | "INVESTIGATED_FOR"        // Drug -> Disease
+  // Variant/GWAS relationships
+  | "ASSOCIATED_WITH"         // Variant -> Trait
+  | "REPORTED_IN"             // Variant -> Study
+  | "AFFECTS_RESPONSE_TO"     // Variant -> Drug
+  // Disease relationships
+  | "PRESENTS_WITH"           // Disease -> Phenotype
+  | "MAPS_TO"                 // Trait -> Disease
+  // Pathway relationships
+  | "PART_OF"                 // Pathway -> Pathway
+  | "PATHWAY_CONTAINS";       // Pathway -> Pathway
 
 /**
  * All supported edge types with metadata
  */
-export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; sourceTypes: EntityType[]; targetTypes: EntityType[] }> = {
-  INTERACTS_WITH: {
-    label: "Interacts With",
-    color: "#6366f1",
-    sourceTypes: ["Gene"],
-    targetTypes: ["Gene"],
-  },
-  ASSOCIATED_WITH: {
-    label: "Associated With",
-    color: "#ef4444",
-    sourceTypes: ["Gene", "Pathway"],
-    targetTypes: ["Disease", "Trait"],
-  },
+export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; description: string }> = {
+  // Gene -> Disease (Orange/Red family)
   IMPLICATED_IN: {
     label: "Implicated In",
-    color: "#f97316",
-    sourceTypes: ["Gene"],
-    targetTypes: ["Disease"],
+    color: "#f97316", // orange-500
+    description: "Gene implicated in disease",
   },
+  CAUSES: {
+    label: "Causes",
+    color: "#ef4444", // red-500
+    description: "Gene causes disease",
+  },
+  CURATED_FOR: {
+    label: "Curated For",
+    color: "#dc2626", // red-600
+    description: "Gene curated for disease association",
+  },
+  // Gene -> Pathway (Purple family)
   PARTICIPATES_IN: {
     label: "Participates In",
-    color: "#8b5cf6",
-    sourceTypes: ["Gene"],
-    targetTypes: ["Pathway"],
+    color: "#8b5cf6", // violet-500
+    description: "Gene participates in pathway",
   },
+  // Gene -> Phenotype (Pink family)
+  MANIFESTS_AS: {
+    label: "Manifests As",
+    color: "#ec4899", // pink-500
+    description: "Gene manifests as phenotype",
+  },
+  // Gene -> Variant (Amber family)
+  ANNOTATED_IN: {
+    label: "Annotated In",
+    color: "#f59e0b", // amber-500
+    description: "Gene annotated in variant",
+  },
+  // Drug -> Gene (Green family)
   TARGETS: {
     label: "Targets",
-    color: "#22c55e",
-    sourceTypes: ["Drug"],
-    targetTypes: ["Gene"],
+    color: "#22c55e", // green-500
+    description: "Drug targets gene",
   },
-  TREATS: {
-    label: "Treats",
-    color: "#14b8a6",
-    sourceTypes: ["Drug"],
-    targetTypes: ["Disease"],
+  KNOWN_TO_TARGET: {
+    label: "Known to Target",
+    color: "#16a34a", // green-600
+    description: "Drug known to target gene",
   },
+  INTERACTS_WITH_GENE: {
+    label: "Interacts With Gene",
+    color: "#15803d", // green-700
+    description: "Drug interacts with gene",
+  },
+  // Drug -> Disease (Teal family)
+  APPROVED_FOR: {
+    label: "Approved For",
+    color: "#14b8a6", // teal-500
+    description: "Drug approved for disease",
+  },
+  INDICATED_FOR: {
+    label: "Indicated For",
+    color: "#0d9488", // teal-600
+    description: "Drug indicated for disease",
+  },
+  INVESTIGATED_FOR: {
+    label: "Investigated For",
+    color: "#0f766e", // teal-700
+    description: "Drug being investigated for disease",
+  },
+  // Variant relationships (Yellow family)
+  ASSOCIATED_WITH: {
+    label: "Associated With",
+    color: "#eab308", // yellow-500
+    description: "Variant associated with trait",
+  },
+  REPORTED_IN: {
+    label: "Reported In",
+    color: "#ca8a04", // yellow-600
+    description: "Variant reported in study",
+  },
+  AFFECTS_RESPONSE_TO: {
+    label: "Affects Response To",
+    color: "#a16207", // yellow-700
+    description: "Variant affects response to drug",
+  },
+  // Disease -> Phenotype (Rose family)
+  PRESENTS_WITH: {
+    label: "Presents With",
+    color: "#f43f5e", // rose-500
+    description: "Disease presents with phenotype",
+  },
+  // Trait -> Disease (Fuchsia family)
+  MAPS_TO: {
+    label: "Maps To",
+    color: "#d946ef", // fuchsia-500
+    description: "Trait maps to disease",
+  },
+  // Pathway relationships (Indigo family)
   PART_OF: {
     label: "Part Of",
-    color: "#a855f7",
-    sourceTypes: ["Pathway"],
-    targetTypes: ["Pathway"],
+    color: "#6366f1", // indigo-500
+    description: "Pathway part of parent pathway",
   },
-  GWAS_ASSOCIATED: {
-    label: "GWAS Associated",
-    color: "#eab308",
-    sourceTypes: ["Variant"],
-    targetTypes: ["Trait"],
-  },
-  HAS_VARIANT: {
-    label: "Has Variant",
-    color: "#f59e0b",
-    sourceTypes: ["Gene"],
-    targetTypes: ["Variant"],
+  PATHWAY_CONTAINS: {
+    label: "Contains",
+    color: "#4f46e5", // indigo-600
+    description: "Pathway contains sub-pathway",
   },
 };
 
@@ -309,7 +386,7 @@ export interface GraphStats {
 }
 
 // =============================================================================
-// Recipe System
+// Recipe System - Focus on Interesting Traversals (NOT PPI)
 // =============================================================================
 
 /**
@@ -329,61 +406,79 @@ export interface TraversalRecipe {
   startTypes: EntityType[];
   /** Icon name (lucide-react) */
   icon: string;
+  /** Color theme */
+  color: string;
 }
 
 /**
- * Predefined traversal recipes
+ * Predefined traversal recipes - Focus on biological insights, NOT PPI
  */
 export const TRAVERSAL_RECIPES: TraversalRecipe[] = [
   {
     id: "gene-diseases",
-    name: "Gene → Diseases",
-    description: "Find diseases associated with this gene",
-    edgeTypes: ["ASSOCIATED_WITH", "IMPLICATED_IN"],
+    name: "Disease Associations",
+    description: "Find all diseases this gene is implicated in",
+    edgeTypes: ["IMPLICATED_IN", "CAUSES", "CURATED_FOR"],
     maxDepth: 1,
-    nodeLimit: 50,
-    startTypes: ["Gene"],
-    icon: "heart-pulse",
-  },
-  {
-    id: "gene-diseases-drugs",
-    name: "Gene → Diseases → Drugs",
-    description: "Find drugs that treat diseases associated with this gene",
-    edgeTypes: ["ASSOCIATED_WITH", "IMPLICATED_IN", "TREATS", "TARGETS"],
-    maxDepth: 2,
     nodeLimit: 100,
     startTypes: ["Gene"],
-    icon: "pill",
+    icon: "heart-pulse",
+    color: "#ef4444", // red
   },
   {
-    id: "gene-pathways-genes",
-    name: "Gene → Pathways → Genes",
-    description: "Find genes in shared pathways",
-    edgeTypes: ["PARTICIPATES_IN"],
+    id: "gene-pathways",
+    name: "Pathway Membership",
+    description: "Explore pathways this gene participates in",
+    edgeTypes: ["PARTICIPATES_IN", "PART_OF"],
     maxDepth: 2,
     nodeLimit: 100,
     startTypes: ["Gene"],
     icon: "route",
+    color: "#8b5cf6", // violet
   },
   {
-    id: "ppi-neighborhood",
-    name: "PPI Neighborhood",
-    description: "Explore protein-protein interactions",
-    edgeTypes: ["INTERACTS_WITH"],
+    id: "gene-phenotypes",
+    name: "Phenotype Manifestations",
+    description: "See phenotypes this gene manifests as",
+    edgeTypes: ["MANIFESTS_AS"],
     maxDepth: 1,
     nodeLimit: 50,
     startTypes: ["Gene"],
-    icon: "network",
+    icon: "activity",
+    color: "#ec4899", // pink
   },
   {
-    id: "variant-trait-disease",
-    name: "Variant → Trait → Disease",
-    description: "Trace variant associations through GWAS traits",
-    edgeTypes: ["GWAS_ASSOCIATED", "ASSOCIATED_WITH"],
+    id: "disease-drugs",
+    name: "Disease Treatments",
+    description: "Find drugs approved/indicated for diseases",
+    edgeTypes: ["IMPLICATED_IN", "APPROVED_FOR", "INDICATED_FOR", "INVESTIGATED_FOR"],
     maxDepth: 2,
+    nodeLimit: 150,
+    startTypes: ["Gene"],
+    icon: "pill",
+    color: "#14b8a6", // teal
+  },
+  {
+    id: "drug-targets",
+    name: "Drug Targets",
+    description: "Find drugs that target this gene",
+    edgeTypes: ["TARGETS", "KNOWN_TO_TARGET", "INTERACTS_WITH_GENE"],
+    maxDepth: 1,
     nodeLimit: 50,
-    startTypes: ["Variant"],
-    icon: "dna",
+    startTypes: ["Gene"],
+    icon: "target",
+    color: "#22c55e", // green
+  },
+  {
+    id: "disease-phenotypes",
+    name: "Disease Phenotypes",
+    description: "Explore disease presentations and phenotypes",
+    edgeTypes: ["IMPLICATED_IN", "PRESENTS_WITH"],
+    maxDepth: 2,
+    nodeLimit: 100,
+    startTypes: ["Gene"],
+    icon: "clipboard-list",
+    color: "#f43f5e", // rose
   },
 ];
 
@@ -471,8 +566,8 @@ export function getExplorerLayoutOptions(type: ExplorerLayoutType): LayoutOption
         name: "concentric",
         animate: true,
         animationDuration: 500,
-        concentric: (node: { data: (key: string) => boolean }) =>
-          node.data("isSeed") ? 2 : 1,
+        concentric: (node: { data: (key: string) => unknown }) =>
+          node.data("isSeed") ? 100 : 100 - (node.data("depth") as number || 1) * 20,
         levelWidth: () => 1,
         minNodeSpacing: 50,
         fit: true,
@@ -507,37 +602,78 @@ export function getExplorerLayoutOptions(type: ExplorerLayoutType): LayoutOption
 }
 
 // =============================================================================
-// Node Styling by Entity Type
+// Node Styling by Entity Type - Enhanced Color Coding
 // =============================================================================
 
 /**
- * Node colors by entity type
+ * Node colors by entity type - distinct and meaningful colors
  */
-export const NODE_TYPE_COLORS: Record<EntityType, { background: string; border: string }> = {
-  Gene: { background: "#dbeafe", border: "#3b82f6" },
-  Disease: { background: "#fecaca", border: "#ef4444" },
-  Drug: { background: "#d9f99d", border: "#84cc16" },
-  Pathway: { background: "#e0e7ff", border: "#6366f1" },
-  Variant: { background: "#fef3c7", border: "#f59e0b" },
-  Trait: { background: "#fce7f3", border: "#ec4899" },
+export const NODE_TYPE_COLORS: Record<EntityType, { background: string; border: string; text: string }> = {
+  Gene: {
+    background: "#dbeafe", // blue-100
+    border: "#3b82f6",     // blue-500
+    text: "#1e40af",       // blue-800
+  },
+  Disease: {
+    background: "#fee2e2", // red-100
+    border: "#ef4444",     // red-500
+    text: "#991b1b",       // red-800
+  },
+  Drug: {
+    background: "#d1fae5", // emerald-100
+    border: "#10b981",     // emerald-500
+    text: "#065f46",       // emerald-800
+  },
+  Pathway: {
+    background: "#ede9fe", // violet-100
+    border: "#8b5cf6",     // violet-500
+    text: "#5b21b6",       // violet-800
+  },
+  Variant: {
+    background: "#fef3c7", // amber-100
+    border: "#f59e0b",     // amber-500
+    text: "#92400e",       // amber-800
+  },
+  Trait: {
+    background: "#fce7f3", // pink-100
+    border: "#ec4899",     // pink-500
+    text: "#9d174d",       // pink-800
+  },
+  Phenotype: {
+    background: "#fae8ff", // fuchsia-100
+    border: "#d946ef",     // fuchsia-500
+    text: "#86198f",       // fuchsia-800
+  },
+};
+
+/**
+ * Seed node colors (distinct from regular nodes)
+ */
+export const SEED_NODE_COLORS = {
+  background: "#6366f1", // indigo-500
+  border: "#4338ca",     // indigo-700
+  text: "#ffffff",
 };
 
 /**
  * Get node color by entity type (with seed override)
  */
-export function getNodeColors(type: EntityType, isSeed: boolean): { background: string; border: string } {
+export function getNodeColors(type: EntityType, isSeed: boolean): { background: string; border: string; text: string } {
   if (isSeed) {
-    return { background: "#6366f1", border: "#4f46e5" }; // Indigo for seed
+    return SEED_NODE_COLORS;
   }
-  return NODE_TYPE_COLORS[type] ?? { background: "#e2e8f0", border: "#94a3b8" };
+  return NODE_TYPE_COLORS[type] ?? { background: "#f1f5f9", border: "#64748b", text: "#334155" };
 }
 
 /**
- * Get node size based on entity type and seed status
+ * Get node size based on entity type, seed status, and depth
  */
-export function getNodeSize(type: EntityType, isSeed: boolean): number {
-  if (isSeed) return 48;
-  return 36;
+export function getNodeSize(type: EntityType, isSeed: boolean, depth: number): number {
+  if (isSeed) return 52;
+  // Nodes closer to seed are larger
+  const baseSize = 36;
+  const depthReduction = Math.min(depth, 3) * 4;
+  return baseSize - depthReduction;
 }
 
 // =============================================================================
@@ -555,10 +691,10 @@ export function getEdgeColor(type: EdgeType): string {
  * Get edge width based on evidence strength
  */
 export function getEdgeWidth(numSources: number | undefined): number {
-  if (!numSources || numSources <= 1) return 1;
+  if (!numSources || numSources <= 1) return 1.5;
   if (numSources <= 2) return 2;
-  if (numSources <= 3) return 3;
-  return 4;
+  if (numSources <= 3) return 2.5;
+  return 3;
 }
 
 // =============================================================================
@@ -588,7 +724,7 @@ export const DEFAULT_FILTERS: GraphFilters = {
   edgeTypes: new Set(Object.keys(EDGE_TYPE_CONFIG) as EdgeType[]),
   minSources: 0,
   minExperiments: 0,
-  maxDepth: 3,
+  maxDepth: 4,
   showOrphans: true,
 };
 
@@ -695,8 +831,12 @@ export interface ControlsDrawerProps {
   onLayoutChange: (layout: ExplorerLayoutType) => void;
   /** Apply recipe */
   onApplyRecipe: (recipe: TraversalRecipe) => void;
+  /** Reset graph to seed only */
+  onReset: () => void;
   /** Edge type counts for badges */
   edgeTypeCounts?: Record<EdgeType, number>;
+  /** Node type counts for stats */
+  nodeTypeCounts?: Record<EntityType, number>;
   /** Whether expansion is loading */
   isExpanding: boolean;
 }
@@ -738,12 +878,17 @@ export function createEdgeId(type: EdgeType, sourceId: string, targetId: string)
  * Parse edge ID back to components
  */
 export function parseEdgeId(edgeId: string): { type: EdgeType; sourceId: string; targetId: string } | null {
-  const match = edgeId.match(/^([A-Z_]+)-(.+)-(.+)$/);
-  if (!match) return null;
+  const parts = edgeId.split("-");
+  if (parts.length < 3) return null;
+  const type = parts[0] as EdgeType;
+  // Handle IDs that may contain dashes
+  const rest = parts.slice(1).join("-");
+  const lastDash = rest.lastIndexOf("-");
+  if (lastDash === -1) return null;
   return {
-    type: match[1] as EdgeType,
-    sourceId: match[2],
-    targetId: match[3],
+    type,
+    sourceId: rest.substring(0, lastDash),
+    targetId: rest.substring(lastDash + 1),
   };
 }
 
@@ -752,12 +897,13 @@ export function parseEdgeId(edgeId: string): { type: EdgeType; sourceId: string;
  */
 export function nodeToElementData(node: ExplorerNode): Record<string, unknown> {
   const colors = getNodeColors(node.type, node.isSeed);
-  const size = getNodeSize(node.type, node.isSeed);
+  const size = getNodeSize(node.type, node.isSeed, node.depth);
 
   return {
     id: node.id,
     label: node.label,
     type: node.type,
+    subtitle: node.subtitle,
     isSeed: node.isSeed,
     depth: node.depth,
     degree: node.degree,
@@ -765,6 +911,7 @@ export function nodeToElementData(node: ExplorerNode): Record<string, unknown> {
     percentile: node.percentile,
     backgroundColor: colors.background,
     borderColor: colors.border,
+    textColor: colors.text,
     nodeSize: size,
   };
 }
@@ -840,9 +987,30 @@ export function transformToElements(
 
     elements.push({
       data: edgeToElementData(edge),
-      classes: `edge-${edge.type.toLowerCase().replace(/_/g, "-")}`,
+      classes: `edge-type edge-${edge.type.toLowerCase().replace(/_/g, "-")}`,
     });
   });
 
   return elements;
+}
+
+/**
+ * Get summary of graph contents by type
+ */
+export function getGraphSummary(nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>): {
+  nodeTypeCounts: Record<EntityType, number>;
+  edgeTypeCounts: Record<EdgeType, number>;
+} {
+  const nodeTypeCounts: Record<EntityType, number> = {} as Record<EntityType, number>;
+  const edgeTypeCounts: Record<EdgeType, number> = {} as Record<EdgeType, number>;
+
+  nodes.forEach((node) => {
+    nodeTypeCounts[node.type] = (nodeTypeCounts[node.type] ?? 0) + 1;
+  });
+
+  edges.forEach((edge) => {
+    edgeTypeCounts[edge.type] = (edgeTypeCounts[edge.type] ?? 0) + 1;
+  });
+
+  return { nodeTypeCounts, edgeTypeCounts };
 }

@@ -101,6 +101,7 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Gene.background,
       "border-color": NODE_TYPE_COLORS.Gene.border,
+      color: NODE_TYPE_COLORS.Gene.text,
     },
   },
   {
@@ -108,6 +109,7 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Disease.background,
       "border-color": NODE_TYPE_COLORS.Disease.border,
+      color: NODE_TYPE_COLORS.Disease.text,
     },
   },
   {
@@ -115,6 +117,7 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Drug.background,
       "border-color": NODE_TYPE_COLORS.Drug.border,
+      color: NODE_TYPE_COLORS.Drug.text,
     },
   },
   {
@@ -122,6 +125,7 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Pathway.background,
       "border-color": NODE_TYPE_COLORS.Pathway.border,
+      color: NODE_TYPE_COLORS.Pathway.text,
     },
   },
   {
@@ -129,6 +133,7 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Variant.background,
       "border-color": NODE_TYPE_COLORS.Variant.border,
+      color: NODE_TYPE_COLORS.Variant.text,
     },
   },
   {
@@ -136,6 +141,15 @@ const STYLESHEET: StylesheetStyle[] = [
     style: {
       "background-color": NODE_TYPE_COLORS.Trait.background,
       "border-color": NODE_TYPE_COLORS.Trait.border,
+      color: NODE_TYPE_COLORS.Trait.text,
+    },
+  },
+  {
+    selector: "node.entity-phenotype",
+    style: {
+      "background-color": NODE_TYPE_COLORS.Phenotype.background,
+      "border-color": NODE_TYPE_COLORS.Phenotype.border,
+      color: NODE_TYPE_COLORS.Phenotype.text,
     },
   },
   // Base edge style
@@ -198,22 +212,7 @@ const STYLESHEET: StylesheetStyle[] = [
       opacity: 0.2,
     },
   },
-  // Edge type specific colors
-  {
-    selector: "edge.edge-interacts-with",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.INTERACTS_WITH.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.INTERACTS_WITH.color,
-      "target-arrow-shape": "none", // PPI is undirected
-    },
-  },
-  {
-    selector: "edge.edge-associated-with",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
-    },
-  },
+  // Edge type specific colors - Gene -> Disease (Orange/Red family)
   {
     selector: "edge.edge-implicated-in",
     style: {
@@ -222,12 +221,42 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
+    selector: "edge.edge-causes",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.CAUSES.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.CAUSES.color,
+    },
+  },
+  {
+    selector: "edge.edge-curated-for",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.CURATED_FOR.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.CURATED_FOR.color,
+    },
+  },
+  // Gene -> Pathway/Phenotype/Variant (Purple/Pink family)
+  {
     selector: "edge.edge-participates-in",
     style: {
       "line-color": EDGE_TYPE_CONFIG.PARTICIPATES_IN.color,
       "target-arrow-color": EDGE_TYPE_CONFIG.PARTICIPATES_IN.color,
     },
   },
+  {
+    selector: "edge.edge-manifests-as",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.MANIFESTS_AS.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.MANIFESTS_AS.color,
+    },
+  },
+  {
+    selector: "edge.edge-annotated-in",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.ANNOTATED_IN.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.ANNOTATED_IN.color,
+    },
+  },
+  // Drug -> Gene (Green family)
   {
     selector: "edge.edge-targets",
     style: {
@@ -236,12 +265,80 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "edge.edge-treats",
+    selector: "edge.edge-known-to-target",
     style: {
-      "line-color": EDGE_TYPE_CONFIG.TREATS.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.TREATS.color,
+      "line-color": EDGE_TYPE_CONFIG.KNOWN_TO_TARGET.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.KNOWN_TO_TARGET.color,
     },
   },
+  {
+    selector: "edge.edge-interacts-with-gene",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.INTERACTS_WITH_GENE.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.INTERACTS_WITH_GENE.color,
+    },
+  },
+  // Drug -> Disease (Teal family)
+  {
+    selector: "edge.edge-approved-for",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.APPROVED_FOR.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.APPROVED_FOR.color,
+    },
+  },
+  {
+    selector: "edge.edge-indicated-for",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.INDICATED_FOR.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.INDICATED_FOR.color,
+    },
+  },
+  {
+    selector: "edge.edge-investigated-for",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.INVESTIGATED_FOR.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.INVESTIGATED_FOR.color,
+    },
+  },
+  // Variant relationships (Yellow family)
+  {
+    selector: "edge.edge-associated-with",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
+    },
+  },
+  {
+    selector: "edge.edge-reported-in",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.REPORTED_IN.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.REPORTED_IN.color,
+    },
+  },
+  {
+    selector: "edge.edge-affects-response-to",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.AFFECTS_RESPONSE_TO.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.AFFECTS_RESPONSE_TO.color,
+    },
+  },
+  // Disease -> Phenotype (Rose family)
+  {
+    selector: "edge.edge-presents-with",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.PRESENTS_WITH.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.PRESENTS_WITH.color,
+    },
+  },
+  // Trait -> Disease (Fuchsia family)
+  {
+    selector: "edge.edge-maps-to",
+    style: {
+      "line-color": EDGE_TYPE_CONFIG.MAPS_TO.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.MAPS_TO.color,
+    },
+  },
+  // Pathway relationships (Indigo family)
   {
     selector: "edge.edge-part-of",
     style: {
@@ -250,17 +347,10 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "edge.edge-gwas-associated",
+    selector: "edge.edge-pathway-contains",
     style: {
-      "line-color": EDGE_TYPE_CONFIG.GWAS_ASSOCIATED.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.GWAS_ASSOCIATED.color,
-    },
-  },
-  {
-    selector: "edge.edge-has-variant",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.HAS_VARIANT.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.HAS_VARIANT.color,
+      "line-color": EDGE_TYPE_CONFIG.PATHWAY_CONTAINS.color,
+      "target-arrow-color": EDGE_TYPE_CONFIG.PATHWAY_CONTAINS.color,
     },
   },
 ];
@@ -428,11 +518,10 @@ function ExplorerCytoscapeInner({
     cy.layout(layoutOptions).run();
   }, [layout]);
 
-  // Memoize elements key to detect changes
+  // Memoize elements key to detect changes - include BOTH nodes AND edges
   const elementsKey = useMemo(
     () =>
       elements
-        .filter((el) => !el.data.source)
         .map((el) => el.data.id)
         .sort()
         .join(","),
@@ -447,12 +536,13 @@ function ExplorerCytoscapeInner({
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
+    // Compare current Cytoscape elements with new elements
+    const currentElementIds = cy.elements().map((el) => el.id()).sort().join(",");
     const elementCountChanged = elements.length !== prevElementCountRef.current;
     prevElementCountRef.current = elements.length;
 
-    const currentIds = cy.nodes().map((n) => n.id()).sort().join(",");
-
-    if (currentIds !== elementsKey || elementCountChanged) {
+    // Trigger update if element IDs changed or count changed
+    if (currentElementIds !== elementsKey || elementCountChanged) {
       cy.elements().remove();
       cy.add(elements);
 
