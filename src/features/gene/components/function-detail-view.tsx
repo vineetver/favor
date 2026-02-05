@@ -128,7 +128,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
     <div>
       {/* Summary View */}
       <div className="space-y-2.5">
-        <p className="text-sm text-slate-900 leading-relaxed">
+        <p className="text-sm text-foreground leading-relaxed">
           {summary}
         </p>
 
@@ -138,13 +138,13 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
             {allPubmedIds.slice(0, 3).map((id) => (
               <span
                 key={`pm-${id}`}
-                className="text-xs px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded-md font-medium"
+                className="text-xs px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-md font-medium"
               >
                 PMID:{id}
               </span>
             ))}
             {allPubmedIds.length > 3 && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 +{allPubmedIds.length - 3} more
               </span>
             )}
@@ -159,13 +159,13 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
           </SheetTrigger>
           <SheetContent className="sm:max-w-lg flex flex-col overflow-hidden">
             <SheetHeader>
-              <SheetTitle className="text-lg font-semibold text-slate-900">
+              <SheetTitle className="text-lg font-semibold text-foreground">
                 Function Details
               </SheetTitle>
             </SheetHeader>
 
             {/* Tabs */}
-            <div className="flex gap-6 border-b border-slate-200 mt-4 overflow-x-auto flex-shrink-0">
+            <div className="flex gap-6 border-b border-border mt-4 overflow-x-auto flex-shrink-0">
               {visibleTabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -174,7 +174,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                     "pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px",
                     activeTab === tab.id
                       ? "border-primary text-primary"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {tab.label}
@@ -189,8 +189,8 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                   <ul className="space-y-4">
                     {parsed.map((item, index) => (
                       <li key={index} className="flex gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 flex-shrink-0" />
-                        <span className="text-sm text-slate-700 leading-relaxed">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0" />
+                        <span className="text-sm text-foreground leading-relaxed">
                           {item.text}
                         </span>
                       </li>
@@ -203,10 +203,10 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                 <div className="space-y-3">
                   {sources.map((loc, index) => (
                     <div key={index} className="flex gap-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0" />
                       <div>
-                        <p className="text-sm text-slate-700">{loc.location}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-sm text-foreground">{loc.location}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Source: {loc.source}
                         </p>
                       </div>
@@ -219,13 +219,13 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                 <div className="space-y-6">
                   {Object.entries(groupedGoTerms).map(([aspect, terms]) => (
                     <div key={aspect} className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {ASPECT_LABELS[aspect] || aspect.replace(/_/g, " ")}
                       </h4>
                       <div className="space-y-2">
                         {terms.map((term, index) => (
                           <div key={index} className="flex gap-3">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 flex-shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0" />
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <ExternalLink
@@ -236,12 +236,12 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                                   {term.id}
                                 </ExternalLink>
                                 {term.geneProduct && (
-                                  <span className="text-sm text-slate-600">
+                                  <span className="text-sm text-muted-foreground">
                                     {term.geneProduct}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-400 mt-0.5">
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                 Evidence: {term.evidence}
                                 {term.source && ` · Source: ${term.source}`}
                               </p>
@@ -258,7 +258,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                 <div className="space-y-6">
                   {allPubmedIds.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         PubMed References
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                           <ExternalLink
                             key={`pubmed-${id}`}
                             href={`https://pubmed.ncbi.nlm.nih.gov/${id}`}
-                            className="text-xs px-2.5 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-md font-medium hover:bg-sky-100 transition-colors"
+                            className="text-xs px-2.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-md font-medium hover:bg-primary/15 transition-colors"
                             iconSize="sm"
                           >
                             PMID:{id}
@@ -277,7 +277,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                   )}
                   {allEcoIds.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Evidence Codes
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -285,7 +285,7 @@ export function FunctionDetailView({ descriptions, sources, goTerms }: FunctionD
                           <ExternalLink
                             key={`eco-${id}`}
                             href={`https://www.ebi.ac.uk/QuickGO/term/ECO:${id}`}
-                            className="text-xs px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md font-medium hover:bg-emerald-100 transition-colors"
+                            className="text-xs px-2.5 py-1.5 bg-success/10 text-success border border-success/20 rounded-md font-medium hover:bg-success/15 transition-colors"
                             iconSize="sm"
                           >
                             ECO:{id}

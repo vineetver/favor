@@ -52,10 +52,10 @@ export function DimensionSelector({
   if (mode === "segmented") {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {label}
         </span>
-        <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg">
+        <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
           {options.map((option) => (
             <Button
               key={option.value}
@@ -67,7 +67,7 @@ export function DimensionSelector({
                 handleSelect(option.value);
               }}
               className={cn(
-                value === option.value && "bg-white shadow-sm",
+                value === option.value && "bg-background shadow-sm",
               )}
             >
               {option.label}
@@ -80,21 +80,21 @@ export function DimensionSelector({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="sm">
             {selectedOption?.label ?? "Select..."}
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56 p-0" align="start">
           {searchable && (
-            <div className="p-2 border-b border-slate-100">
+            <div className="p-2 border-b border-border">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search..."

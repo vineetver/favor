@@ -47,7 +47,7 @@ interface ViewToggleProps {
 
 function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
   return (
-    <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
       <Button
         variant={viewMode === "graph" ? "secondary" : "ghost"}
         size="sm"
@@ -93,7 +93,7 @@ function LayoutSelector({ layout, onLayoutChange }: LayoutSelectorProps) {
     <select
       value={layout}
       onChange={(e) => onLayoutChange(e.target.value as ExplorerLayoutType)}
-      className="h-8 px-2 text-sm bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      className="h-8 px-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
     >
       {EXPLORER_LAYOUT_OPTIONS.map((option) => (
         <option key={option.value} value={option.value}>
@@ -470,9 +470,9 @@ function GraphExplorerViewInner({
   // ==========================================================================
 
   return (
-    <div className={cn("flex flex-col h-full bg-white", className)}>
+    <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -484,14 +484,14 @@ function GraphExplorerViewInner({
           </Button>
 
           <div className="flex items-center gap-2">
-            <Network className="w-5 h-5 text-indigo-600" />
-            <h1 className="text-lg font-semibold text-slate-900">Graph Explorer</h1>
-            <span className="text-sm text-slate-500">|</span>
-            <span className="text-sm font-medium text-indigo-600">{seedGeneSymbol}</span>
+            <Network className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold text-foreground">Graph Explorer</h1>
+            <span className="text-sm text-muted-foreground">|</span>
+            <span className="text-sm font-medium text-primary">{seedGeneSymbol}</span>
           </div>
 
           {isExpanding && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Loading...</span>
             </div>
@@ -548,15 +548,15 @@ function GraphExplorerViewInner({
 
           {viewMode === "list" && (
             <div className="absolute inset-0 overflow-auto p-4">
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-muted-foreground">
                 List view coming soon...
               </div>
             </div>
           )}
 
           {viewMode === "split" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 border-t border-slate-200 bg-white overflow-auto p-4">
-              <div className="text-sm text-slate-500">
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 border-t border-border bg-background overflow-auto p-4">
+              <div className="text-sm text-muted-foreground">
                 Split view list coming soon...
               </div>
             </div>
@@ -565,10 +565,10 @@ function GraphExplorerViewInner({
           {/* Empty state hint */}
           {nodes.size === 1 && edges.size === 0 && !isExpanding && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
-                <Network className="w-12 h-12 text-indigo-300 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Start Exploring</h3>
-                <p className="text-sm text-slate-600 mb-3">
+              <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
+                <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Start Exploring</h3>
+                <p className="text-sm text-muted-foreground mb-3">
                   Click one of the relationship buttons on the left to explore connections for <strong>{seedGeneSymbol}</strong>.
                 </p>
                 <p className="text-xs text-slate-400">

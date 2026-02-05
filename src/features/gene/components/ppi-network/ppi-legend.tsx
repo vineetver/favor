@@ -41,12 +41,12 @@ function PPILegendInner({ colorMode = "experiments", className }: PPILegendProps
   return (
     <div
       className={cn(
-        "absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm p-3",
+        "absolute bottom-4 left-4 z-10 bg-background/95 backdrop-blur-sm rounded-lg border border-border shadow-sm p-3",
         className,
       )}
     >
       {/* Node Legend */}
-      <div className="text-xs font-medium text-slate-600 mb-2">
+      <div className="text-xs font-medium text-muted-foreground mb-2">
         {colorMode === "hub" ? "Hub Score" : "Nodes (Experiments)"}
       </div>
       <div className="space-y-1.5">
@@ -59,13 +59,13 @@ function PPILegendInner({ colorMode = "experiments", className }: PPILegendProps
                 border: `2px solid ${item.border}`,
               }}
             />
-            <span className="text-xs text-slate-600">{item.label}</span>
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
       </div>
 
       {/* Edge Legend */}
-      <div className="text-xs font-medium text-slate-600 mt-3 mb-2">
+      <div className="text-xs font-medium text-muted-foreground mt-3 mb-2">
         Edges (Sources)
       </div>
       <div className="space-y-1.5">
@@ -80,7 +80,7 @@ function PPILegendInner({ colorMode = "experiments", className }: PPILegendProps
                 borderRadius: 1,
               }}
             />
-            <span className="text-xs text-slate-600">{item.label}</span>
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
       </div>

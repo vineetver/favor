@@ -113,7 +113,7 @@ function StepIndicator({
                   "flex h-8 w-8 items-center justify-center rounded-full transition-all text-sm font-medium",
                   isCompleted && "bg-primary text-white",
                   isCurrent && "bg-primary text-white",
-                  !isCompleted && !isCurrent && "bg-slate-100 text-slate-400",
+                  !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
                 )}
               >
                 {isCompleted ? (
@@ -126,7 +126,7 @@ function StepIndicator({
                 <span
                   className={cn(
                     "text-sm font-medium",
-                    isCurrent ? "text-slate-900" : isCompleted ? "text-slate-600" : "text-slate-400",
+                    isCurrent ? "text-foreground" : isCompleted ? "text-muted-foreground" : "text-muted-foreground",
                   )}
                 >
                   {step.label}
@@ -264,14 +264,14 @@ export function BatchWizard({ className }: BatchWizardProps) {
   const wizardStep = getWizardStep(step);
 
   return (
-    <div className={cn("bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col", className)}>
+    <div className={cn("bg-background rounded-xl border border-border overflow-hidden flex flex-col", className)}>
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
         {/* Title Row */}
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Batch Annotation</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <h1 className="text-lg font-semibold text-foreground">Batch Annotation</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {wizardStep === "upload" && "Upload your variant file to get started"}
               {wizardStep === "validate" && "Checking file format and previewing data"}
               {wizardStep === "configure" && "Configure output options before processing"}
@@ -287,7 +287,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
         </div>
 
         {/* Step Indicator */}
-        <div className="px-6 py-3 bg-slate-50/80 border-t border-slate-100">
+        <div className="px-6 py-3 bg-muted/80 border-t border-border">
           <StepIndicator currentStep={step} />
         </div>
       </div>
@@ -329,7 +329,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
               <ValidationSummary validation={validation} filename={file?.name} />
 
               {/* Divider */}
-              <div className="border-t border-slate-200" />
+              <div className="border-t border-border" />
 
               {/* Configuration */}
               <JobConfiguration
@@ -339,8 +339,8 @@ export function BatchWizard({ className }: BatchWizardProps) {
               />
 
               {error && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
-                  <p className="text-sm text-rose-700">{error}</p>
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
             </div>
@@ -354,8 +354,8 @@ export function BatchWizard({ className }: BatchWizardProps) {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <Loader2 className="h-8 w-8 text-primary animate-spin" />
               </div>
-              <p className="text-lg font-medium text-slate-900 mb-1">Starting batch job...</p>
-              <p className="text-sm text-slate-500">You'll be redirected to track progress</p>
+              <p className="text-lg font-medium text-foreground mb-1">Starting batch job...</p>
+              <p className="text-sm text-muted-foreground">You'll be redirected to track progress</p>
             </div>
           )}
         </div>

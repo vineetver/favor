@@ -30,7 +30,7 @@ export function ControlBar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-3 px-6 py-4 border-b border-slate-100 bg-white",
+        "flex flex-wrap items-center gap-3 px-6 py-4 border-b border-border bg-background",
         sticky && "sticky top-0 z-20",
       )}
     >
@@ -38,13 +38,13 @@ export function ControlBar({
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {showSearch && onSearchChange && (
           <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 pr-4 bg-slate-50 focus:bg-white"
+              className="pl-10 pr-4 bg-muted focus:bg-background"
             />
           </div>
         )}
@@ -68,9 +68,9 @@ export function ControlBar({
             {filterChips.map((chip) => (
               <span
                 key={chip.id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-full"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted text-foreground rounded-full"
               >
-                <span className="text-slate-400">{chip.label}:</span>
+                <span className="text-muted-foreground">{chip.label}:</span>
                 {chip.value}
                 {onRemoveFilterChip && (
                   <Button
@@ -114,13 +114,13 @@ function ViewSwitch({
   onChange: (mode: ViewMode) => void;
 }) {
   return (
-    <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg">
+    <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
       <Button
         variant={value === "table" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => onChange("table")}
         className={cn(
-          value === "table" && "bg-white shadow-sm",
+          value === "table" && "bg-background shadow-sm",
         )}
       >
         <TableIcon className="w-4 h-4" />
@@ -131,7 +131,7 @@ function ViewSwitch({
         size="sm"
         onClick={() => onChange("chart")}
         className={cn(
-          value === "chart" && "bg-white shadow-sm",
+          value === "chart" && "bg-background shadow-sm",
         )}
       >
         <BarChart3 className="w-4 h-4" />

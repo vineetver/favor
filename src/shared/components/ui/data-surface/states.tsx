@@ -13,21 +13,21 @@ export function LoadingState({ rows = 5, columns = 4 }: LoadingStateProps) {
     <div className="overflow-hidden">
       <table className="min-w-full">
         <thead>
-          <tr className="border-b border-slate-100">
+          <tr className="border-b border-border">
             {Array.from({ length: columns }).map((_, i) => (
-              <th key={i} className="px-6 py-3 bg-slate-50/80">
-                <div className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+              <th key={i} className="px-6 py-3 bg-muted/50">
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: rows }).map((_, rowIdx) => (
-            <tr key={rowIdx} className="border-b border-slate-50">
+            <tr key={rowIdx} className="border-b border-border/50">
               {Array.from({ length: columns }).map((_, colIdx) => (
                 <td key={colIdx} className="px-6 py-3">
                   <div
-                    className="h-4 bg-slate-100 rounded animate-pulse"
+                    className="h-4 bg-muted rounded animate-pulse"
                     style={{ width: `${60 + Math.random() * 40}%` }}
                   />
                 </td>
@@ -51,11 +51,11 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6">
-      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-        <FileSearch className="w-6 h-6 text-slate-400" />
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <FileSearch className="w-6 h-6 text-muted-foreground" />
       </div>
-      <h3 className="text-base font-semibold text-slate-900 mb-1">{message}</h3>
-      <p className="text-sm text-slate-500">{description}</p>
+      <h3 className="text-base font-semibold text-foreground mb-1">{message}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -70,13 +70,13 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6">
-      <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
-        <AlertCircle className="w-6 h-6 text-red-500" />
+      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+        <AlertCircle className="w-6 h-6 text-destructive" />
       </div>
-      <h3 className="text-base font-semibold text-slate-900 mb-1">
+      <h3 className="text-base font-semibold text-foreground mb-1">
         Something went wrong
       </h3>
-      <p className="text-sm text-slate-500 mb-4 max-w-sm text-center">
+      <p className="text-sm text-muted-foreground mb-4 max-w-sm text-center">
         {message}
       </p>
       {onRetry && (

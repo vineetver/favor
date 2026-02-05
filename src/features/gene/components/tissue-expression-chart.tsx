@@ -82,8 +82,8 @@ function SegmentedControl<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-slate-600">{label}</span>
-      <div className="inline-flex items-center rounded-lg bg-slate-100 p-0.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="inline-flex items-center rounded-lg bg-muted p-0.5">
         {options.map((option) => {
           const active = option.value === value;
 
@@ -95,8 +95,8 @@ function SegmentedControl<T extends string>({
               className={cn(
                 "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
                 active
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900",
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {option.label}
@@ -176,17 +176,17 @@ export function TissueExpressionChart({
   );
 
   return (
-    <Card className={cn("border border-slate-200", className)}>
-      <CardHeader className="border-b border-slate-200 pb-5">
-        <CardTitle className="text-sm font-semibold text-slate-900">
+    <Card className={cn("border border-border", className)}>
+      <CardHeader className="border-b border-border pb-5">
+        <CardTitle className="text-sm font-semibold text-foreground">
           GTEx Tissue Expression
         </CardTitle>
-        <CardDescription className="text-sm text-slate-500">
+        <CardDescription className="text-sm text-muted-foreground">
           Expression values across GTEx tissues (sorted by abundance)
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-slate-200">
+        <div className="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 flex-1 min-w-[220px]">
           </div>
 

@@ -55,14 +55,14 @@ function GraphLegendInner({
     <div
       className={cn(
         "absolute z-10",
-        "bg-white/95 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm",
+        "bg-background/95 backdrop-blur-sm rounded-lg border border-border shadow-sm",
         "p-3",
         positionClasses[position],
         className
       )}
     >
       {title && (
-        <div className="text-xs font-medium text-slate-700 mb-2">{title}</div>
+        <div className="text-xs font-medium text-foreground mb-2">{title}</div>
       )}
       <div
         className={cn(
@@ -109,9 +109,9 @@ function LegendItemRow({ item }: LegendItemRowProps) {
 
       {/* Label and description */}
       <div className="flex flex-col">
-        <span className="text-xs text-slate-600">{label}</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {description && (
-          <span className="text-[10px] text-slate-400">{description}</span>
+          <span className="text-[10px] text-muted-foreground/70">{description}</span>
         )}
       </div>
     </div>

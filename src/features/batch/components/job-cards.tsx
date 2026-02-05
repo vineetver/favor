@@ -271,11 +271,13 @@ export function RunningJobCard({
             </span>
             <EtaDisplay eta={eta} />
           </div>
-          <DedupStats
-            totalRows={progress.total_rows}
-            uniqueVids={progress.unique_vids}
-            duplicates={progress.duplicates}
-          />
+          {progress.total_rows != null && (
+            <DedupStats
+              totalRows={progress.total_rows}
+              uniqueVids={progress.unique_vids ?? 0}
+              duplicates={progress.duplicates ?? 0}
+            />
+          )}
         </div>
       </CardContent>
 
@@ -457,11 +459,13 @@ export function CompletedJobCard({
               Duration: {job.timing.total_human || formatDuration(job.started_at, job.completed_at)}
             </span>
           </div>
-          <DedupStats
-            totalRows={progress.total_rows}
-            uniqueVids={progress.unique_vids}
-            duplicates={progress.duplicates}
-          />
+          {progress.total_rows != null && (
+            <DedupStats
+              totalRows={progress.total_rows}
+              uniqueVids={progress.unique_vids ?? 0}
+              duplicates={progress.duplicates ?? 0}
+            />
+          )}
         </div>
       </CardContent>
 

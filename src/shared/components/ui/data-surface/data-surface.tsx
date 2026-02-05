@@ -140,7 +140,7 @@ export function DataSurface<TData, TValue>({
           const { label, description } = row.original;
           return (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-700">
+              <span className="text-sm font-medium text-foreground">
                 {label}
               </span>
               {description && (
@@ -148,7 +148,7 @@ export function DataSurface<TData, TValue>({
                   <Tooltip delayDuration={200}>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
-                        <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                        <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-xs text-sm">
@@ -211,7 +211,7 @@ export function DataSurface<TData, TValue>({
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
                     <span className="inline-flex">
-                      <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                      <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs text-sm">
@@ -365,7 +365,7 @@ export function DataSurface<TData, TValue>({
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden",
+        "bg-card rounded-2xl border border-border shadow-sm overflow-hidden",
         className,
       )}
     >
@@ -382,7 +382,7 @@ export function DataSurface<TData, TValue>({
                 <button
                   type="button"
                   onClick={handleExport}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   title="Export"
                 >
                   <Download className="w-5 h-5" />

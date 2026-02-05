@@ -55,7 +55,7 @@ function PathwayDetailPanelInner({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:max-w-[450px] overflow-y-auto">
-        <SheetHeader className="pb-4 border-b border-slate-200">
+        <SheetHeader className="pb-4 border-b border-border">
           <div className="flex items-center gap-2 mb-1">
             <div
               className="w-3 h-3 rounded-full shrink-0"
@@ -68,16 +68,16 @@ function PathwayDetailPanelInner({
               {pathway.category}
             </span>
           </div>
-          <SheetTitle className="text-lg font-semibold text-slate-900 leading-tight">
+          <SheetTitle className="text-lg font-semibold text-foreground leading-tight">
             {pathway.name}
           </SheetTitle>
-          <SheetDescription className="text-xs font-mono text-slate-500">
+          <SheetDescription className="text-xs font-mono text-muted-foreground">
             {pathway.id}
           </SheetDescription>
           <div className="pt-2">
             <ExternalLink
               href={pathway.url}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               View on {pathway.source === "reactome" ? "Reactome" : "WikiPathways"} →
             </ExternalLink>
@@ -86,36 +86,36 @@ function PathwayDetailPanelInner({
 
         {/* Evidence Stats Grid */}
         {(pathway.numSources || pathway.numExperiments || pathway.confidenceScore) && (
-          <div className="py-4 border-b border-slate-200">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          <div className="py-4 border-b border-border">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Evidence
             </h3>
             <div className="grid grid-cols-3 gap-3">
               {pathway.numSources !== undefined && (
-                <div className="bg-blue-50 rounded-lg p-3 text-center">
-                  <Database className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                  <div className="text-xl font-semibold text-blue-700">
+                <div className="bg-primary/10 rounded-lg p-3 text-center">
+                  <Database className="w-4 h-4 text-primary mx-auto mb-1" />
+                  <div className="text-xl font-semibold text-primary">
                     {pathway.numSources}
                   </div>
-                  <div className="text-xs text-blue-600">Sources</div>
+                  <div className="text-xs text-primary">Sources</div>
                 </div>
               )}
               {pathway.numExperiments !== undefined && (
-                <div className="bg-emerald-50 rounded-lg p-3 text-center">
-                  <Beaker className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-                  <div className="text-xl font-semibold text-emerald-700">
+                <div className="bg-success/10 rounded-lg p-3 text-center">
+                  <Beaker className="w-4 h-4 text-success mx-auto mb-1" />
+                  <div className="text-xl font-semibold text-success">
                     {pathway.numExperiments}
                   </div>
-                  <div className="text-xs text-emerald-600">Experiments</div>
+                  <div className="text-xs text-success">Experiments</div>
                 </div>
               )}
               {pathway.confidenceScore !== undefined && (
-                <div className="bg-amber-50 rounded-lg p-3 text-center">
-                  <ShieldCheck className="w-4 h-4 text-amber-600 mx-auto mb-1" />
-                  <div className="text-xl font-semibold text-amber-700">
+                <div className="bg-warning/10 rounded-lg p-3 text-center">
+                  <ShieldCheck className="w-4 h-4 text-warning mx-auto mb-1" />
+                  <div className="text-xl font-semibold text-warning">
                     {pathway.confidenceScore.toFixed(2)}
                   </div>
-                  <div className="text-xs text-amber-600">Confidence</div>
+                  <div className="text-xs text-warning">Confidence</div>
                 </div>
               )}
             </div>
@@ -124,7 +124,7 @@ function PathwayDetailPanelInner({
 
         {/* Loading State */}
         {enrichment.status === "loading" && (
-          <div className="flex items-center gap-2 py-6 text-slate-500 justify-center">
+          <div className="flex items-center gap-2 py-6 text-muted-foreground justify-center">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-sm">Loading pathway details...</span>
           </div>
@@ -132,7 +132,7 @@ function PathwayDetailPanelInner({
 
         {/* Error State */}
         {enrichment.status === "error" && (
-          <div className="py-4 text-sm text-amber-700 bg-amber-50 rounded-lg px-3 my-4">
+          <div className="py-4 text-sm text-warning bg-warning/10 rounded-lg px-3 my-4">
             Unable to load pathway details
           </div>
         )}
@@ -141,26 +141,26 @@ function PathwayDetailPanelInner({
         {enrichment.status === "loaded" && (
           <div className="space-y-4 py-4">
             {/* Gene participation stats */}
-            <div className="bg-slate-50 rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Network className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">
+                <Network className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">
                   Pathway Involvement
                 </span>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-slate-600">Total genes in pathway</span>
-                  <span className="text-lg font-semibold text-slate-900">
+                  <span className="text-sm text-muted-foreground">Total genes in pathway</span>
+                  <span className="text-lg font-semibold text-foreground">
                     {enrichment.data.geneCount}
                   </span>
                 </div>
                 {uniqueSharedGenes.length > 0 && (
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-muted-foreground">
                       {seedGeneSymbol}'s interactors also here
                     </span>
-                    <span className="text-lg font-semibold text-indigo-600">
+                    <span className="text-lg font-semibold text-primary">
                       {uniqueSharedGenes.length}
                     </span>
                   </div>
@@ -171,20 +171,20 @@ function PathwayDetailPanelInner({
             {/* Shared Genes / Interactors */}
             {uniqueSharedGenes.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Shared Interactors
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueSharedGenes.slice(0, 20).map((gene) => (
                     <span
                       key={gene.id}
-                      className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded font-medium"
+                      className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded font-medium"
                     >
                       {gene.symbol}
                     </span>
                   ))}
                   {uniqueSharedGenes.length > 20 && (
-                    <span className="px-2 py-0.5 text-slate-400 text-xs">
+                    <span className="px-2 py-0.5 text-muted-foreground text-xs">
                       +{uniqueSharedGenes.length - 20} more
                     </span>
                   )}
@@ -194,22 +194,22 @@ function PathwayDetailPanelInner({
 
             {/* Hierarchy context */}
             {(enrichment.data.parentPathway || enrichment.data.childPathways.length > 0) && (
-              <div className="pt-3 border-t border-slate-100">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <div className="pt-3 border-t border-border">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Pathway Hierarchy
                 </h3>
                 {enrichment.data.parentPathway && (
-                  <div className="text-sm text-slate-600 mb-2">
-                    <span className="text-slate-400">Parent: </span>
-                    <span className="font-medium text-slate-700">
+                  <div className="text-sm text-muted-foreground mb-2">
+                    <span className="text-muted-foreground">Parent: </span>
+                    <span className="font-medium text-foreground">
                       {enrichment.data.parentPathway.name}
                     </span>
                   </div>
                 )}
                 {enrichment.data.childPathways.length > 0 && (
-                  <div className="text-sm text-slate-600">
-                    <span className="text-slate-400">Sub-pathways: </span>
-                    <span className="text-slate-700">
+                  <div className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground">Sub-pathways: </span>
+                    <span className="text-foreground">
                       {enrichment.data.childPathways.slice(0, 3).map((c) => c.name).join(", ")}
                       {enrichment.data.childPathways.length > 3 &&
                         ` and ${enrichment.data.childPathways.length - 3} more`}
@@ -220,9 +220,9 @@ function PathwayDetailPanelInner({
             )}
 
             {/* Disease Context Section */}
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-border">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <HeartPulse className="w-3.5 h-3.5" />
                   Disease Context
                 </h3>
@@ -239,14 +239,14 @@ function PathwayDetailPanelInner({
               </div>
 
               {diseaseEnrichment.status === "loading" && (
-                <div className="flex items-center gap-2 py-3 text-slate-500">
+                <div className="flex items-center gap-2 py-3 text-muted-foreground">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span className="text-xs">Loading disease associations...</span>
                 </div>
               )}
 
               {diseaseEnrichment.status === "error" && (
-                <div className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1.5">
+                <div className="text-xs text-warning bg-warning/10 rounded px-2 py-1.5">
                   Unable to load disease associations
                 </div>
               )}
@@ -254,24 +254,24 @@ function PathwayDetailPanelInner({
               {diseaseEnrichment.status === "loaded" && (
                 <>
                   {diseaseEnrichment.data.diseases.length === 0 ? (
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       No disease associations found for genes in this pathway.
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-500 mb-2">
+                      <p className="text-xs text-muted-foreground mb-2">
                         {diseaseEnrichment.data.totalDiseases} diseases associated with pathway genes
                       </p>
                       {displayedDiseases.map((assoc) => (
                         <div
                           key={assoc.disease.id}
-                          className="bg-rose-50/50 rounded-lg p-2.5 border border-rose-100"
+                          className="bg-destructive/5 rounded-lg p-2.5 border border-destructive/20"
                         >
                           <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-sm font-medium text-rose-900">
+                            <span className="text-sm font-medium text-foreground">
                               {assoc.disease.name}
                             </span>
-                            <span className="text-xs text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">
                               {assoc.geneCount} gene{assoc.geneCount > 1 ? "s" : ""}
                             </span>
                           </div>
@@ -279,13 +279,13 @@ function PathwayDetailPanelInner({
                             {assoc.genes.slice(0, 5).map((gene) => (
                               <span
                                 key={gene.id}
-                                className="text-xs text-rose-700"
+                                className="text-xs text-destructive"
                               >
                                 {gene.symbol}
                               </span>
                             ))}
                             {assoc.geneCount > 5 && (
-                              <span className="text-xs text-rose-400">
+                              <span className="text-xs text-muted-foreground">
                                 +{assoc.geneCount - 5}
                               </span>
                             )}
@@ -297,7 +297,7 @@ function PathwayDetailPanelInner({
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowAllDiseases(!showAllDiseases)}
-                          className="w-full text-xs h-7 text-slate-500"
+                          className="w-full text-xs h-7 text-muted-foreground"
                         >
                           {showAllDiseases ? (
                             <>

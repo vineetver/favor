@@ -229,7 +229,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
             href={row.original.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm"
+            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 text-sm"
           >
             View <ExternalLink className="w-3 h-3" />
           </a>
@@ -278,10 +278,10 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
         : "Unknown";
   const withdrawnClasses =
     drug.is_withdrawn === true
-      ? "bg-red-100 text-red-700"
+      ? "bg-destructive/10 text-destructive"
       : drug.is_withdrawn === false
-        ? "bg-slate-100 text-slate-600"
-        : "bg-slate-50 text-slate-500";
+        ? "bg-muted text-muted-foreground"
+        : "bg-muted text-muted-foreground";
   const blackBoxStatus =
     drug.has_black_box_warning === true
       ? "Yes"
@@ -290,22 +290,22 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
         : "Unknown";
   const blackBoxClasses =
     drug.has_black_box_warning === true
-      ? "bg-orange-100 text-orange-700"
+      ? "bg-warning/10 text-warning"
       : drug.has_black_box_warning === false
-        ? "bg-slate-100 text-slate-600"
-        : "bg-slate-50 text-slate-500";
+        ? "bg-muted text-muted-foreground"
+        : "bg-muted text-muted-foreground";
 
   return (
     <div className="space-y-6">
       {/* Summary */}
       {drug.description && (
         <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Summary
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-700 leading-relaxed">
+          <CardContent className="text-sm text-foreground leading-relaxed">
             {drug.description}
           </CardContent>
         </Card>
@@ -316,18 +316,18 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
         {/* Basic Info Card */}
         {drug.parent_id && (
           <Card>
-            <CardHeader className="border-b border-slate-200">
-              <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 Basic Info
               </CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Parent Molecule
                   </dt>
-                  <dd className="text-sm font-mono font-medium text-slate-900 mt-0.5">
+                  <dd className="text-sm font-mono font-medium text-foreground mt-0.5">
                     {drug.parent_id}
                   </dd>
                 </div>
@@ -339,8 +339,8 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
         {/* Chemistry Card */}
         {(drug.canonical_smiles || drug.inchi_key) && (
           <Card>
-            <CardHeader className="border-b border-slate-200">
-              <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 Chemistry
               </CardTitle>
             </CardHeader>
@@ -349,7 +349,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                 {/* Molecule Structure Visualization */}
                 {drug.canonical_smiles && (
                   <div>
-                    <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                    <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                       Structure
                     </dt>
                     <dd className="flex justify-center">
@@ -365,7 +365,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                 {drug.inchi_key && (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         InChIKey
                       </dt>
                       <Button
@@ -377,7 +377,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                         Copy
                       </Button>
                     </div>
-                    <dd className="text-xs font-mono text-slate-700 bg-slate-50 rounded-lg p-2.5 break-all">
+                    <dd className="text-xs font-mono text-foreground bg-muted rounded-lg p-2.5 break-all">
                       {drug.inchi_key}
                     </dd>
                   </div>
@@ -389,15 +389,15 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
 
         {/* Safety Card */}
         <Card>
-          <CardHeader className="border-b border-slate-200">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Safety
             </CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
               <div>
-                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Withdrawn
                 </dt>
                 <dd className="text-sm font-medium mt-0.5">
@@ -412,7 +412,7 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Black Box Warning
                 </dt>
                 <dd className="text-sm font-medium mt-0.5">

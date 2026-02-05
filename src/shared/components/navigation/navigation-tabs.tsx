@@ -80,8 +80,8 @@ export function NavigationTabs({
                     "shadow-lg shadow-primary/25",
                   ],
                   !isActive && [
-                    "text-slate-500 bg-slate-100/60",
-                    "hover:text-slate-700 hover:bg-slate-100",
+                    "text-muted-foreground bg-muted/60",
+                    "hover:text-foreground hover:bg-muted",
                   ],
                 )}
               >

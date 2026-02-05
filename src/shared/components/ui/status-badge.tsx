@@ -3,10 +3,10 @@ import { cn } from "@infra/utils";
 export type BadgeVariant = "positive" | "negative" | "warning" | "neutral" | "primary";
 
 const BADGE_VARIANTS: Record<BadgeVariant, string> = {
-  positive: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  negative: "bg-rose-50 text-rose-700 border-rose-200",
-  warning: "bg-amber-50 text-amber-700 border-amber-200",
-  neutral: "bg-slate-50 text-slate-600 border-slate-200",
+  positive: "bg-success/10 text-success border-success/20",
+  negative: "bg-destructive/10 text-destructive border-destructive/20",
+  warning: "bg-warning/10 text-warning border-warning/20",
+  neutral: "bg-muted text-muted-foreground border-border",
   primary: "bg-primary/10 text-primary border-primary/20",
 };
 
@@ -39,7 +39,7 @@ export function Chip({ children, className }: ChipProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-caption font-medium",
+        "inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-caption font-medium",
         className
       )}
     >
@@ -61,7 +61,7 @@ export function LinkChip({ href, children, className }: LinkChipProps) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-caption font-medium text-primary hover:bg-slate-100 transition-colors",
+        "inline-flex items-center rounded-md border border-border bg-muted px-2.5 py-1 text-caption font-medium text-primary hover:bg-muted/80 transition-colors",
         className
       )}
     >

@@ -81,7 +81,7 @@ function ScoreBar({ value }: { value: number | null }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-body-sm font-medium text-heading w-8">{formatScore(value)}</span>
-      <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
         <div
           className="h-full bg-primary/60"
           style={{ width: `${percent}%` }}
@@ -107,7 +107,7 @@ function EvidenceBars({
           <div key={item.label} className="flex items-center gap-3">
             <div className="w-28 text-body-sm text-subtle">{item.label}</div>
             <div className="flex-1">
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full bg-primary/70"
                   style={{ width: `${percent}%` }}
@@ -594,14 +594,14 @@ export function DiseasePortfolioOverview({
   }
 
   return (
-    <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-6 py-5">
+    <Card className={cn("border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold text-slate-900">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Disease Portfolio
             </CardTitle>
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-muted-foreground">
               {diseases.length} disease associations from Open Targets
             </div>
           </div>
@@ -620,14 +620,14 @@ export function DiseasePortfolioOverview({
 
       <CardContent className="p-0">
         {/* Filters */}
-        <div className="border-b border-slate-200 bg-slate-50/50">
+        <div className="border-b border-border bg-muted/50">
           <ScopeBar dimensions={dimensions} />
         </div>
 
         {/* Master-Detail Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
           {/* Disease List */}
-          <div className="border-b border-slate-200 lg:border-b-0 lg:border-r">
+          <div className="border-b border-border lg:border-b-0 lg:border-r">
             <div className="max-h-[520px] overflow-y-auto">
               {rankedGroups.length === 0 && (
                 <div className="px-6 py-8 text-body-sm text-subtle">
@@ -636,7 +636,7 @@ export function DiseasePortfolioOverview({
               )}
               {rankedGroups.map((group) => (
                 <div key={group.area}>
-                  <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100 sticky top-0 z-10">
+                  <div className="px-6 py-2.5 border-b border-border bg-muted sticky top-0 z-10">
                     <div className="text-body-sm font-medium text-subtle">
                       {group.area} ({group.clusters.length})
                     </div>
@@ -654,8 +654,8 @@ export function DiseasePortfolioOverview({
                         type="button"
                         onClick={() => setSelectedId(representative.id)}
                         className={cn(
-                          "w-full px-6 py-3 text-left transition-colors border-b border-slate-100",
-                          "hover:bg-slate-50",
+                          "w-full px-6 py-3 text-left transition-colors border-b border-border",
+                          "hover:bg-muted",
                           isSelected && "bg-primary/5 border-l-2 border-l-primary",
                         )}
                       >
@@ -680,7 +680,7 @@ export function DiseasePortfolioOverview({
 
           {/* Inspector Panel */}
           <div>
-            <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100">
+            <div className="px-6 py-2.5 border-b border-border bg-muted">
               <div className="text-body-sm font-medium text-subtle">Details</div>
             </div>
             <div className="px-6 py-6 space-y-6">
@@ -709,7 +709,7 @@ export function DiseasePortfolioOverview({
                         </span>
                       </div>
                       {inspectorTag && (
-                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-body-sm text-subtle">
+                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-body-sm text-subtle">
                           {inspectorTag}
                         </span>
                       )}

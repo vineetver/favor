@@ -31,19 +31,19 @@ export function FooterBar<TData>({
     const showPageSizeSelector = totalCount ? totalCount > Math.min(...pageSizeOptions) : true;
 
     return (
-      <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white">
-        <div className="text-sm text-slate-500">
+      <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-background">
+        <div className="text-sm text-muted-foreground">
           {totalCount !== undefined ? (
             <>
               Showing up to{" "}
-              <span className="font-medium text-slate-700">{currentDataCount}</span>
+              <span className="font-medium text-foreground">{currentDataCount}</span>
               {" of "}
-              <span className="font-medium text-slate-700">{totalCount.toLocaleString()}</span>
+              <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
             </>
           ) : (
             <>
               Showing{" "}
-              <span className="font-medium text-slate-700">{currentDataCount}</span>
+              <span className="font-medium text-foreground">{currentDataCount}</span>
               {canGoNext && " (more available)"}
             </>
           )}
@@ -74,7 +74,7 @@ export function FooterBar<TData>({
 
           {showPageSizeSelector && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500">Rows</span>
+              <span className="text-sm text-muted-foreground">Rows</span>
               <Select
                 value={String(pageSize)}
                 onValueChange={(value) => onPageSizeChange(Number(value))}
@@ -127,12 +127,12 @@ export function FooterBar<TData>({
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white">
-      <div className="text-sm text-slate-500">
-        Showing <span className="font-medium text-slate-700">{startRow}</span>–
-        <span className="font-medium text-slate-700">{endRow}</span>
+    <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-background">
+      <div className="text-sm text-muted-foreground">
+        Showing <span className="font-medium text-foreground">{startRow}</span>–
+        <span className="font-medium text-foreground">{endRow}</span>
         {" of "}
-        <span className="font-medium text-slate-700">{totalRows}</span>
+        <span className="font-medium text-foreground">{totalRows}</span>
       </div>
 
       <div className="flex items-center gap-4">
@@ -150,7 +150,7 @@ export function FooterBar<TData>({
 
             {getPageNumbers().map((page, idx) =>
               page === "ellipsis" ? (
-                <span key={`ellipsis-${idx}`} className="px-1 text-slate-400">
+                <span key={`ellipsis-${idx}`} className="px-1 text-muted-foreground">
                   ...
                 </span>
               ) : (
@@ -180,7 +180,7 @@ export function FooterBar<TData>({
 
         {showPageSizeSelector && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Rows</span>
+            <span className="text-sm text-muted-foreground">Rows</span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => table.setPageSize(Number(value))}

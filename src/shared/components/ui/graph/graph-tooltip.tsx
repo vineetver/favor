@@ -69,7 +69,7 @@ function GraphTooltipInner({
     <div
       className={cn(
         "fixed z-50 pointer-events-none",
-        "bg-white rounded-lg border border-slate-200 shadow-lg",
+        "bg-background rounded-lg border border-border shadow-lg",
         "px-3 py-2 max-w-[240px]",
         "animate-in fade-in-0 zoom-in-95 duration-100",
         className
@@ -98,8 +98,8 @@ interface TooltipRowProps {
 export function TooltipRow({ label, value, className }: TooltipRowProps) {
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className="text-xs font-medium text-slate-900">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground">{value}</span>
     </div>
   );
 }
@@ -118,11 +118,11 @@ export function TooltipHeader({ title, subtitle, badge, className }: TooltipHead
   return (
     <div className={cn("mb-2", className)}>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-slate-900">{title}</span>
+        <span className="text-sm font-medium text-foreground">{title}</span>
         {badge}
       </div>
       {subtitle && (
-        <div className="text-[10px] text-slate-500 font-mono mt-0.5">{subtitle}</div>
+        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{subtitle}</div>
       )}
     </div>
   );

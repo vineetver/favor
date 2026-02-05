@@ -180,14 +180,14 @@ export function NavigationSidebar({
                         "text-xs font-bold tracking-widest uppercase transition-colors text-left",
                         hasActiveItem
                           ? "text-primary"
-                          : "text-slate-500 group-hover:text-slate-700",
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {group.name}
                     </span>
                     <ChevronDown
                       className={cn(
-                        "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
+                        "w-3.5 h-3.5 text-muted-foreground transition-transform duration-200",
                         isExpanded && "rotate-180",
                       )}
                     />
@@ -205,8 +205,8 @@ export function NavigationSidebar({
                           className={cn(
                             "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150",
                             isActive
-                              ? "bg-primary/8 text-slate-800 font-medium"
-                              : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+                              ? "bg-primary/8 text-foreground font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
                           )}
                         >
                           {Icon && (
@@ -215,7 +215,7 @@ export function NavigationSidebar({
                                 "w-4 h-4 shrink-0 transition-colors",
                                 isActive
                                   ? "text-primary"
-                                  : "text-slate-400 group-hover:text-slate-500",
+                                  : "text-muted-foreground group-hover:text-foreground",
                               )}
                             />
                           )}
@@ -247,8 +247,8 @@ export function NavigationSidebar({
               className={cn(
                 "group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-150",
                 isActive
-                  ? "bg-primary/8 text-slate-800 font-medium"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+                  ? "bg-primary/8 text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <span>{item.text}</span>

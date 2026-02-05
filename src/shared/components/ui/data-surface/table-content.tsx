@@ -40,7 +40,7 @@ function SortIcon({
   if (sortEntry?.desc === true)
     return <ArrowDown className="w-3.5 h-3.5 text-primary" />;
   return (
-    <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
+    <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
   );
 }
 
@@ -55,7 +55,7 @@ export function TableContent<TData>({
   return (
     <div className="overflow-x-auto relative">
       {loading && (
-        <div className="absolute inset-0 bg-white/60 z-10 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 bg-background/60 z-10 backdrop-blur-sm flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       )}
@@ -63,7 +63,7 @@ export function TableContent<TData>({
       <table className="min-w-full">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-slate-100">
+            <tr key={headerGroup.id} className="border-b border-border">
               {headerGroup.headers.map((header) => {
                 const meta = header.column.columnDef.meta as
                   | ColumnMeta
@@ -81,11 +81,11 @@ export function TableContent<TData>({
                         : undefined
                     }
                     className={cn(
-                      "px-6 py-3.5 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider",
+                      "px-6 py-3.5 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
                       align === "center" && "text-center",
                       align === "right" && "text-right",
                       canSort &&
-                        "cursor-pointer select-none hover:text-slate-700 hover:bg-slate-100/80 transition-colors",
+                        "cursor-pointer select-none hover:text-foreground hover:bg-muted transition-colors",
                     )}
                   >
                     {header.isPlaceholder ? null : (
@@ -108,12 +108,12 @@ export function TableContent<TData>({
                                   className="inline-flex"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <Info className="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 cursor-help transition-colors" />
+                                  <Info className="w-3.5 h-3.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent
                                 side="top"
-                                className="max-w-xs text-sm bg-slate-900 text-slate-100 border-slate-800"
+                                className="max-w-xs text-sm"
                               >
                                 {meta.description}
                               </TooltipContent>
@@ -143,8 +143,8 @@ export function TableContent<TData>({
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
                   className={cn(
-                    "group relative transition-colors border-b border-slate-50",
-                    isEven ? "bg-white" : "bg-slate-50/30",
+                    "group relative transition-colors border-b border-border/50",
+                    isEven ? "bg-background" : "bg-muted/30",
                     onRowClick ? "cursor-pointer" : "",
                     "hover:bg-primary/[0.03]",
                   )}
@@ -159,7 +159,7 @@ export function TableContent<TData>({
                       <td
                         key={cell.id}
                         className={cn(
-                          "px-6 py-3.5 text-sm text-slate-700",
+                          "px-6 py-3.5 text-sm text-foreground",
                           align === "center" && "text-center",
                           align === "right" && "text-right",
                           cellIndex === 0 && "relative",
@@ -182,10 +182,10 @@ export function TableContent<TData>({
             <tr>
               <td
                 colSpan={table.getAllColumns().length}
-                className="px-6 py-12 text-center text-slate-400 text-sm"
+                className="px-6 py-12 text-center text-muted-foreground text-sm"
               >
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <Search className="w-8 h-8 text-slate-200" />
+                  <Search className="w-8 h-8 text-muted-foreground/30" />
                   <p>{emptyMessage}</p>
                 </div>
               </td>

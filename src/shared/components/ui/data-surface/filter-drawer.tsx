@@ -100,10 +100,10 @@ export function FilterDrawer({
       <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
+      <div className="fixed right-0 top-0 bottom-0 w-80 bg-background shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h3 className="text-base font-semibold text-slate-900">Filters</h3>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">Filters</h3>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -117,7 +117,7 @@ export function FilterDrawer({
         <div className="flex-1 overflow-auto p-5 space-y-5">
           {filters.map((filter) => (
             <div key={filter.id}>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 {filter.label}
               </label>
 
@@ -171,7 +171,7 @@ export function FilterDrawer({
                             onFilterChange(filter.id, next);
                           }}
                         />
-                        <span className="text-sm text-slate-700">
+                        <span className="text-sm text-foreground">
                           {opt.label}
                         </span>
                       </label>
@@ -184,7 +184,7 @@ export function FilterDrawer({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 px-5 py-4 border-t border-slate-100">
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-border">
           {onReset && (
             <Button
               variant="secondary"
