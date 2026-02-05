@@ -17,7 +17,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@shared/components/ui/popover";
 import { memo, useMemo, useState, useCallback } from "react";
 import type { EntityRef, SubgraphEdge } from "../../api";
 import {

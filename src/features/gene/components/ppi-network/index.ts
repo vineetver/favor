@@ -12,8 +12,6 @@ export { PathRecipeSelector } from "./path-recipe-selector";
 export { ClusterControls } from "./cluster-controls";
 export { HubModeToggle } from "./hub-mode-toggle";
 
-// New components
-export { PPISettingsPanel } from "./ppi-settings-panel";
 export { PPIClusterLegend } from "./ppi-cluster-legend";
 
 export * from "./types";

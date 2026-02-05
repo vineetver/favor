@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@shared/components/ui/select";
 import type { ServerPaginationProps } from "./types";
 
 interface FooterBarProps<TData> {

@@ -9,6 +9,7 @@ import {
 } from "@shared/components/ui/card";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
+import { Input } from "@shared/components/ui/input";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { Search } from "lucide-react";
@@ -605,13 +606,13 @@ export function DiseasePortfolioOverview({
             </div>
           </div>
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle z-10" />
+            <Input
               type="text"
               placeholder="Search diseases..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="pl-9"
             />
           </div>
         </div>

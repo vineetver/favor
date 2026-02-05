@@ -51,7 +51,7 @@ export function Navbar() {
             : "bg-transparent border-b border-transparent py-6",
         )}
       >
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+        <div className="max-w-page mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-between h-10 relative">
             {/* Left: Brand */}
             <div className="flex-1 flex justify-start z-10">

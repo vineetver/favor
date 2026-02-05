@@ -22,17 +22,13 @@ interface SummaryCardProps {
 
 const colorStyles = {
   default: "bg-muted/50 border-border/50",
-  red: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50",
-  orange:
-    "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
-  amber:
-    "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
-  emerald:
-    "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
-  blue: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50",
-  purple:
-    "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50",
-  gray: "bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800/50",
+  red: "bg-red-50 border-red-200",
+  orange: "bg-orange-50 border-orange-200",
+  amber: "bg-amber-50 border-amber-200",
+  emerald: "bg-emerald-50 border-emerald-200",
+  blue: "bg-blue-50 border-blue-200",
+  purple: "bg-purple-50 border-purple-200",
+  gray: "bg-slate-50 border-slate-200",
 };
 
 export function SummaryCard({

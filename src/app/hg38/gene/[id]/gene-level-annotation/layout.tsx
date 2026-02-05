@@ -40,7 +40,7 @@ export default async function GeneLayout({
     <div className="min-h-screen bg-background">
       {/* Header Section */}
       <div className="bg-background">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+        <div className="max-w-page mx-auto px-6 lg:px-12">
           <GeneHeader gene={gene} />
 
           <div className="hidden lg:block mb-6">
@@ -71,7 +71,7 @@ export default async function GeneLayout({
       </div>
 
       {/* Main Content Section */}
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 pb-12">
+      <div className="max-w-page mx-auto px-6 lg:px-12 pb-12">
         <div className="flex gap-6">
           {(currentCategory.groups ||
             currentCategory.subCategories.length > 0) && (

@@ -21,7 +21,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150"></div>
       </div>
 
-      <main className="relative z-10 pt-32 sm:pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-[1400px] mx-auto flex flex-col items-center">
+      <main className="relative z-10 pt-32 sm:pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-page mx-auto flex flex-col items-center">
         <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Hero Section */}
           <div className="text-center max-w-4xl mx-auto relative">

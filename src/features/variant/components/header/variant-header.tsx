@@ -67,11 +67,11 @@ export function VariantHeader({
     <div className="py-8">
       {/* Breadcrumb Row */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
           {genome.toUpperCase()}
         </span>
         <span className="text-slate-300">·</span>
-        <span className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
           Variant
         </span>
       </div>

@@ -2,6 +2,7 @@
 
 import type { CrossReference, Drug } from "@features/drug/types/drug";
 import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import {
   Card,
   CardContent,
@@ -367,14 +368,14 @@ export function DrugOverview({ drug }: DrugOverviewProps) {
                       <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                         InChIKey
                       </dt>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => copyToClipboard(drug.inchi_key ?? "")}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
                       >
                         <Copy className="w-3 h-3" />
                         Copy
-                      </button>
+                      </Button>
                     </div>
                     <dd className="text-xs font-mono text-slate-700 bg-slate-50 rounded-lg p-2.5 break-all">
                       {drug.inchi_key}

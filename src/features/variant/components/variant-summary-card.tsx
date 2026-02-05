@@ -1,3 +1,4 @@
+import { Button } from "@shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@shared/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -23,14 +24,15 @@ export function VariantSummaryCard({
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             AI-Powered Analysis by{" "}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onChatClick}
-              className="inline-flex items-center rounded-lg text-slate-900 hover:bg-slate-100 hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 px-1.5 py-0.5"
               aria-label="Open FAVOR-GPT chat"
+              className="text-slate-900 hover:text-purple-600"
             >
               FAVOR-GPT
-            </button>
+            </Button>
           </h2>
           {isUpdating && (
             <div className="flex items-center gap-2 text-sm text-slate-400">

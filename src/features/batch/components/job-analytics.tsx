@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@shared/components/ui/textarea";
 import {
   AlertCircle,
   BarChart3,

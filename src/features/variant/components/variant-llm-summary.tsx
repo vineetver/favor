@@ -60,7 +60,7 @@ export function VariantLLMSummary({
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200/60">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] text-subtle font-medium">
+            <span className="text-sm text-subtle font-medium">
               Powered by FAVOR-GPT
             </span>
           </div>
@@ -69,7 +69,7 @@ export function VariantLLMSummary({
               <>
                 <button
                   onClick={handleCopy}
-                  className="text-[13px] text-subtle hover:text-heading flex items-center gap-1.5 transition-colors"
+                  className="text-sm text-subtle hover:text-heading flex items-center gap-1.5 transition-colors"
                   title="Copy to clipboard"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -80,7 +80,7 @@ export function VariantLLMSummary({
             )}
             <button
               onClick={openChat}
-              className="text-[13px] text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"
+              className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               Ask follow-up
@@ -118,10 +118,10 @@ function SummaryContent({ state, retry }: SummaryContentProps) {
             </div>
             <div className="absolute inset-0 rounded-full bg-primary/5 animate-ping" />
           </div>
-          <p className="text-[15px] font-medium text-heading mb-1">
+          <p className="text-base font-medium text-heading mb-1">
             {state.status === "pending" ? "Queued" : "Generating analysis"}
           </p>
-          <p className="text-[13px] text-subtle max-w-sm">
+          <p className="text-sm text-subtle max-w-sm">
             {state.status === "generating" && state.estimatedSeconds
               ? `This usually takes about ${state.estimatedSeconds} seconds`
               : "You can navigate away — we'll save your results"}
@@ -147,10 +147,10 @@ function SummaryContent({ state, retry }: SummaryContentProps) {
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
             <AlertCircle className="w-5 h-5 text-destructive" />
           </div>
-          <p className="text-[15px] font-medium text-heading mb-1">
+          <p className="text-base font-medium text-heading mb-1">
             Unable to generate analysis
           </p>
-          <p className="text-[13px] text-subtle max-w-sm mb-4">
+          <p className="text-sm text-subtle max-w-sm mb-4">
             {state.error || "Something went wrong. Please try again."}
           </p>
           <Button

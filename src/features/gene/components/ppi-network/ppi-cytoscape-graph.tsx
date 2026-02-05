@@ -314,33 +314,67 @@ function PPICytoscapeGraphInner({
   // Update refs when callbacks change
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
-  }, [onNodeClick]);
-
-  useEffect(() => {
     onNodeHoverRef.current = onNodeHover;
-  }, [onNodeHover]);
-
-  useEffect(() => {
     onEdgeClickRef.current = onEdgeClick;
-  }, [onEdgeClick]);
+  }, [onNodeClick, onNodeHover, onEdgeClick]);
 
-  // Handle selected edge highlighting
+  // Handle all highlighting in one batched effect for performance
+  // Combines: selected edge, path highlight, multi-select, shared interactors
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    // Remove selected class from all edges
-    cy.edges().removeClass("selected");
+    cy.batch(() => {
+      // Clear all highlight classes
+      cy.edges().removeClass("selected path-edge path-dimmed");
+      cy.nodes().removeClass("path-node path-dimmed multi-selected shared-interactor");
 
-    // Add selected class to the selected edge
-    if (selectedEdgeId) {
-      const edge = cy.getElementById(selectedEdgeId);
-      if (edge.length > 0) {
-        edge.addClass("selected");
+      // Selected edge
+      if (selectedEdgeId) {
+        const edge = cy.getElementById(selectedEdgeId);
+        if (edge.length > 0) {
+          edge.addClass("selected");
+        }
       }
-    }
-  }, [selectedEdgeId]);
+
+      // Path highlighting
+      if (pathHighlight && (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)) {
+        cy.nodes().forEach((node) => {
+          if (pathHighlight.nodeIds.has(node.id())) {
+            node.addClass("path-node");
+          } else {
+            node.addClass("path-dimmed");
+          }
+        });
+        cy.edges().forEach((edge) => {
+          if (pathHighlight.edgeIds.has(edge.id())) {
+            edge.addClass("path-edge");
+          } else {
+            edge.addClass("path-dimmed");
+          }
+        });
+      }
+
+      // Multi-select highlighting
+      if (selectedGeneIds && selectedGeneIds.size > 0) {
+        cy.nodes().forEach((node) => {
+          if (selectedGeneIds.has(node.id())) {
+            node.addClass("multi-selected");
+          }
+        });
+      }
+
+      // Shared interactor highlighting
+      if (sharedInteractorIds && sharedInteractorIds.size > 0) {
+        cy.nodes().forEach((node) => {
+          if (sharedInteractorIds.has(node.id())) {
+            node.addClass("shared-interactor");
+          }
+        });
+      }
+    });
+  }, [selectedEdgeId, pathHighlight, selectedGeneIds, sharedInteractorIds]);
 
   // Handle color mode changes (hub vs experiments)
   // Skip when clustering is enabled - clustering takes precedence
@@ -354,159 +388,89 @@ function PPICytoscapeGraphInner({
       return;
     }
 
-    if (colorMode === "hub" && centralityData && centralityData.size > 0) {
-      // Find max degree for scaling
-      let maxDegree = 0;
-      centralityData.forEach((data) => {
-        if (data.degree.total > maxDegree) maxDegree = data.degree.total;
-      });
-
-      // Update node styles based on hub data
-      cy.nodes().forEach((node) => {
-        const nodeId = node.id();
-        const data = centralityData.get(nodeId);
-        const isSeed = node.data("isSeed");
-
-        if (data && !isSeed) {
-          const colors = getHubColor(data.percentile.total);
-          const size = getHubNodeSize(data.degree.total, maxDegree);
-          node.style({
-            "background-color": colors.background,
-            "border-color": colors.border,
-            width: size,
-            height: size,
-          });
-        }
-      });
-    } else {
-      // Restore experiment-based coloring from element data
-      cy.nodes().forEach((node) => {
-        node.style({
-          "background-color": node.data("backgroundColor"),
-          "border-color": node.data("borderColor"),
-          width: node.data("nodeSize"),
-          height: node.data("nodeSize"),
+    cy.batch(() => {
+      if (colorMode === "hub" && centralityData && centralityData.size > 0) {
+        // Find max degree for scaling
+        let maxDegree = 0;
+        centralityData.forEach((data) => {
+          if (data.degree.total > maxDegree) maxDegree = data.degree.total;
         });
-      });
-    }
-  }, [colorMode, centralityData, clusterState]);
 
-  // Handle path highlighting
-  useEffect(() => {
-    if (!cyRef.current || !initializedRef.current) return;
-    const cy = cyRef.current;
-    if (cy.destroyed()) return;
+        // Update node styles based on hub data
+        cy.nodes().forEach((node) => {
+          const nodeId = node.id();
+          const data = centralityData.get(nodeId);
+          const isSeed = node.data("isSeed");
 
-    // Clear all path classes
-    cy.nodes().removeClass("path-node path-dimmed");
-    cy.edges().removeClass("path-edge path-dimmed");
-
-    if (pathHighlight && (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)) {
-      // Apply path highlighting
-      cy.nodes().forEach((node) => {
-        if (pathHighlight.nodeIds.has(node.id())) {
-          node.addClass("path-node");
-        } else {
-          node.addClass("path-dimmed");
-        }
-      });
-
-      cy.edges().forEach((edge) => {
-        if (pathHighlight.edgeIds.has(edge.id())) {
-          edge.addClass("path-edge");
-        } else {
-          edge.addClass("path-dimmed");
-        }
-      });
-    }
-  }, [pathHighlight]);
-
-  // Handle multi-select highlighting
-  useEffect(() => {
-    if (!cyRef.current || !initializedRef.current) return;
-    const cy = cyRef.current;
-    if (cy.destroyed()) return;
-
-    // Clear all multi-select classes
-    cy.nodes().removeClass("multi-selected");
-
-    if (selectedGeneIds && selectedGeneIds.size > 0) {
-      cy.nodes().forEach((node) => {
-        if (selectedGeneIds.has(node.id())) {
-          node.addClass("multi-selected");
-        }
-      });
-    }
-  }, [selectedGeneIds]);
-
-  // Handle shared interactor highlighting
-  useEffect(() => {
-    if (!cyRef.current || !initializedRef.current) return;
-    const cy = cyRef.current;
-    if (cy.destroyed()) return;
-
-    // Clear all shared interactor classes
-    cy.nodes().removeClass("shared-interactor");
-
-    if (sharedInteractorIds && sharedInteractorIds.size > 0) {
-      cy.nodes().forEach((node) => {
-        if (sharedInteractorIds.has(node.id())) {
-          node.addClass("shared-interactor");
-        }
-      });
-    }
-  }, [sharedInteractorIds]);
-
-  // Handle edge filtering
-  useEffect(() => {
-    if (!cyRef.current || !initializedRef.current) return;
-    const cy = cyRef.current;
-    if (cy.destroyed()) return;
-
-    // Clear all filter classes
-    cy.edges().removeClass("filter-greyed filter-hidden");
-
-    // Apply filter to edges
-    cy.edges().forEach((edge) => {
-      const numSources = edge.data("numSources") ?? 0;
-      const numExperiments = edge.data("numExperiments") ?? 0;
-
-      const belowThreshold =
-        numSources < edgeFilter.minSources ||
-        numExperiments < edgeFilter.minExperiments;
-
-      if (belowThreshold) {
-        if (edgeFilter.greyOutBelowThreshold) {
-          edge.addClass("filter-greyed");
-        } else {
-          edge.addClass("filter-hidden");
-        }
+          if (data && !isSeed) {
+            const colors = getHubColor(data.percentile.total);
+            const size = getHubNodeSize(data.degree.total, maxDegree);
+            node.style({
+              "background-color": colors.background,
+              "border-color": colors.border,
+              width: size,
+              height: size,
+            });
+          }
+        });
+      } else {
+        // Restore experiment-based coloring from element data
+        cy.nodes().forEach((node) => {
+          node.style({
+            "background-color": node.data("backgroundColor"),
+            "border-color": node.data("borderColor"),
+            width: node.data("nodeSize"),
+            height: node.data("nodeSize"),
+          });
+        });
       }
     });
-  }, [edgeFilter]);
+  }, [colorMode, centralityData, clusterState]);
 
-  // Handle context overlay (node halos)
+  // Handle edge filtering and context overlay in one batched effect
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    // Clear all overlay classes
-    cy.nodes().removeClass("overlay-pathways overlay-diseases");
+    cy.batch(() => {
+      // Clear all filter and overlay classes
+      cy.edges().removeClass("filter-greyed filter-hidden");
+      cy.nodes().removeClass("overlay-pathways overlay-diseases");
 
-    if (overlayType !== "none" && overlayData && overlayData.size > 0) {
-      cy.nodes().forEach((node) => {
-        const data = overlayData.get(node.id());
-        if (data && data.sharedCount > 0) {
-          if (overlayType === "shared-pathways") {
-            node.addClass("overlay-pathways");
-          } else if (overlayType === "shared-diseases") {
-            node.addClass("overlay-diseases");
+      // Apply edge filter
+      cy.edges().forEach((edge) => {
+        const numSources = edge.data("numSources") ?? 0;
+        const numExperiments = edge.data("numExperiments") ?? 0;
+
+        const belowThreshold =
+          numSources < edgeFilter.minSources ||
+          numExperiments < edgeFilter.minExperiments;
+
+        if (belowThreshold) {
+          if (edgeFilter.greyOutBelowThreshold) {
+            edge.addClass("filter-greyed");
+          } else {
+            edge.addClass("filter-hidden");
           }
         }
       });
-    }
-  }, [overlayType, overlayData]);
+
+      // Apply context overlay (node halos)
+      if (overlayType !== "none" && overlayData && overlayData.size > 0) {
+        cy.nodes().forEach((node) => {
+          const data = overlayData.get(node.id());
+          if (data && data.sharedCount > 0) {
+            if (overlayType === "shared-pathways") {
+              node.addClass("overlay-pathways");
+            } else if (overlayType === "shared-diseases") {
+              node.addClass("overlay-diseases");
+            }
+          }
+        });
+      }
+    });
+  }, [edgeFilter, overlayType, overlayData]);
 
   // Handle hub mode (centrality filtering)
   useEffect(() => {
@@ -514,33 +478,35 @@ function PPICytoscapeGraphInner({
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    // Clear all hub mode classes
-    cy.nodes().removeClass("hub-hidden");
-    cy.edges().removeClass("filter-hidden");
+    cy.batch(() => {
+      // Clear all hub mode classes
+      cy.nodes().removeClass("hub-hidden");
+      cy.edges().removeClass("filter-hidden");
 
-    if (hubMode?.showHubsOnly && centralityData && centralityData.size > 0) {
-      const threshold = hubMode.hubThreshold;
+      if (hubMode?.showHubsOnly && centralityData && centralityData.size > 0) {
+        const threshold = hubMode.hubThreshold;
 
-      // Hide nodes below percentile threshold (except seed)
-      cy.nodes().forEach((node) => {
-        const isSeed = node.data("isSeed");
-        if (isSeed) return; // Never hide seed
+        // Hide nodes below percentile threshold (except seed)
+        cy.nodes().forEach((node) => {
+          const isSeed = node.data("isSeed");
+          if (isSeed) return; // Never hide seed
 
-        const nodeData = centralityData.get(node.id());
-        if (!nodeData || nodeData.percentile.total < threshold) {
-          node.addClass("hub-hidden");
-        }
-      });
+          const nodeData = centralityData.get(node.id());
+          if (!nodeData || nodeData.percentile.total < threshold) {
+            node.addClass("hub-hidden");
+          }
+        });
 
-      // Hide edges connected to hidden nodes
-      cy.edges().forEach((edge) => {
-        const sourceHidden = edge.source().hasClass("hub-hidden");
-        const targetHidden = edge.target().hasClass("hub-hidden");
-        if (sourceHidden || targetHidden) {
-          edge.addClass("filter-hidden");
-        }
-      });
-    }
+        // Hide edges connected to hidden nodes
+        cy.edges().forEach((edge) => {
+          const sourceHidden = edge.source().hasClass("hub-hidden");
+          const targetHidden = edge.target().hasClass("hub-hidden");
+          if (sourceHidden || targetHidden) {
+            edge.addClass("filter-hidden");
+          }
+        });
+      }
+    });
   }, [hubMode, centralityData]);
 
   // Handle cluster visualization - uses node.style() to override other coloring
@@ -549,62 +515,61 @@ function PPICytoscapeGraphInner({
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    // Clear all cluster classes
-    for (let i = 0; i < 8; i++) {
-      cy.nodes().removeClass(`cluster-${i}`);
-    }
-    cy.nodes().removeClass("cluster-unclustered");
+    cy.batch(() => {
+      // Clear all cluster classes
+      cy.nodes().removeClass("cluster-0 cluster-1 cluster-2 cluster-3 cluster-4 cluster-5 cluster-6 cluster-7 cluster-unclustered");
 
-    if (clusterState?.enabled && clusterState.clusters.size > 0) {
-      // Build a reverse map: nodeId -> clusterIndex
-      const nodeToCluster = new Map<string, number>();
-      let clusterIndex = 0;
+      if (clusterState?.enabled && clusterState.clusters.size > 0) {
+        // Build a reverse map: nodeId -> clusterIndex
+        const nodeToCluster = new Map<string, number>();
+        let clusterIndex = 0;
 
-      clusterState.clusters.forEach((nodeIds) => {
-        nodeIds.forEach((nodeId) => {
-          nodeToCluster.set(nodeId, clusterIndex);
-        });
-        clusterIndex++;
-      });
-
-      // Apply cluster colors to ALL nodes
-      cy.nodes().forEach((node) => {
-        const isSeed = node.data("isSeed");
-        if (isSeed) return; // Don't change seed node color
-
-        const clusterId = nodeToCluster.get(node.id());
-        if (clusterId !== undefined) {
-          // Node belongs to a cluster - use cluster color
-          const colorIndex = clusterId % 8;
-          const colors = getClusterColor(colorIndex);
-          node.addClass(`cluster-${colorIndex}`);
-          node.style({
-            "background-color": colors.background,
-            "border-color": colors.border,
+        clusterState.clusters.forEach((nodeIds) => {
+          nodeIds.forEach((nodeId) => {
+            nodeToCluster.set(nodeId, clusterIndex);
           });
-        } else {
-          // Node is unclustered - use neutral grey
-          node.addClass("cluster-unclustered");
-          node.style({
-            "background-color": "#f1f5f9", // slate-100
-            "border-color": "#94a3b8",     // slate-400
-          });
-        }
-      });
-    } else {
-      // Restore original colors when clustering is disabled
-      cy.nodes().forEach((node) => {
-        const isSeed = node.data("isSeed");
-        if (isSeed) return;
-
-        node.style({
-          "background-color": node.data("backgroundColor"),
-          "border-color": node.data("borderColor"),
-          width: node.data("nodeSize"),
-          height: node.data("nodeSize"),
+          clusterIndex++;
         });
-      });
-    }
+
+        // Apply cluster colors to ALL nodes
+        cy.nodes().forEach((node) => {
+          const isSeed = node.data("isSeed");
+          if (isSeed) return; // Don't change seed node color
+
+          const clusterId = nodeToCluster.get(node.id());
+          if (clusterId !== undefined) {
+            // Node belongs to a cluster - use cluster color
+            const colorIndex = clusterId % 8;
+            const colors = getClusterColor(colorIndex);
+            node.addClass(`cluster-${colorIndex}`);
+            node.style({
+              "background-color": colors.background,
+              "border-color": colors.border,
+            });
+          } else {
+            // Node is unclustered - use neutral grey
+            node.addClass("cluster-unclustered");
+            node.style({
+              "background-color": "#f1f5f9", // slate-100
+              "border-color": "#94a3b8",     // slate-400
+            });
+          }
+        });
+      } else {
+        // Restore original colors when clustering is disabled
+        cy.nodes().forEach((node) => {
+          const isSeed = node.data("isSeed");
+          if (isSeed) return;
+
+          node.style({
+            "background-color": node.data("backgroundColor"),
+            "border-color": node.data("borderColor"),
+            width: node.data("nodeSize"),
+            height: node.data("nodeSize"),
+          });
+        });
+      }
+    });
   }, [clusterState]);
 
   // Handle edge filter with cascade mode

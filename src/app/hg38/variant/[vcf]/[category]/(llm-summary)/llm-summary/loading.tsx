@@ -10,11 +10,11 @@ export default function Loading() {
         <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200/60">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-[13px] text-subtle font-medium">
+            <span className="text-sm text-subtle font-medium">
               Powered by FAVOR-GPT
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[13px] text-subtle">
+          <div className="flex items-center gap-1.5 text-sm text-subtle">
             <MessageSquare className="w-4 h-4" />
             Ask follow-up
           </div>

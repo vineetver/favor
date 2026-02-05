@@ -81,7 +81,7 @@ export function TableContent<TData>({
                         : undefined
                     }
                     className={cn(
-                      "px-6 py-3.5 bg-slate-50/80 text-[11px] font-semibold text-slate-500 uppercase tracking-wider",
+                      "px-6 py-3.5 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider",
                       align === "center" && "text-center",
                       align === "right" && "text-right",
                       canSort &&
@@ -159,7 +159,7 @@ export function TableContent<TData>({
                       <td
                         key={cell.id}
                         className={cn(
-                          "px-6 py-3.5 text-[13px] text-slate-700",
+                          "px-6 py-3.5 text-sm text-slate-700",
                           align === "center" && "text-center",
                           align === "right" && "text-right",
                           cellIndex === 0 && "relative",

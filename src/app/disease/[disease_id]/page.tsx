@@ -17,7 +17,7 @@ export default async function DiseasePage({ params }: DiseasePageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-page mx-auto px-6 lg:px-12">
         <DiseaseHeader disease={disease} />
         <DiseaseOverview disease={disease} />
       </div>

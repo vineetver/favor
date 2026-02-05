@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@shared/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 
@@ -36,22 +37,17 @@ export default function VariantError({ error, reset }: ErrorProps) {
         )}
 
         <div className="flex gap-3 justify-center">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Reload Page
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors"
-          >
+          <Button onClick={reset}>
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,

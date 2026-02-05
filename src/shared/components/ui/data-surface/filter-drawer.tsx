@@ -4,14 +4,14 @@ import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@shared/components/ui/select";
 import type { FilterDrawerProps } from "./types";
 
 export function FilterDrawer({

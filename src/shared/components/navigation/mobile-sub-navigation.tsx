@@ -47,7 +47,7 @@ export function MobileSubNavigation({
         <Button
           variant="outline"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between h-11 px-4 text-[13px] font-medium rounded-xl border-slate-200 touch-manipulation"
+          className="w-full justify-between h-11 px-4 text-sm font-medium rounded-xl border-slate-200 touch-manipulation"
         >
           <span className="truncate text-heading">{displayText}</span>
           <ChevronDown
@@ -66,7 +66,7 @@ export function MobileSubNavigation({
                   <Link
                     key={item.slug}
                     href={`${basePath}/${item.slug}${queryString}`}
-                    className={`block w-full text-left px-3.5 py-2.5 text-[13px] rounded-lg transition-all duration-150 touch-manipulation ${
+                    className={`block w-full text-left px-3.5 py-2.5 text-sm rounded-lg transition-all duration-150 touch-manipulation ${
                       isActive
                         ? "bg-primary/[0.08] text-slate-900 font-medium"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"

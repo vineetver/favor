@@ -2,7 +2,7 @@
 
 import { cn } from "@infra/utils";
 import { Label } from "@shared/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Slider } from "@shared/components/ui/slider";
 import { Switch } from "@shared/components/ui/switch";
 import {
   Tooltip,

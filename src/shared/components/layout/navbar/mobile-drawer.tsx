@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import { Logo } from "@shared/components/ui/logo";
 import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
@@ -104,19 +105,15 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
             <Link href="/" onClick={onClose}>
               <Logo className="h-7 w-auto" />
             </Link>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
-              className={cn(
-                "p-2 -mr-2 rounded-full",
-                "text-slate-400 hover:text-slate-900",
-                "hover:bg-primary/10",
-                "transition-colors",
-              )}
+              className="-mr-2"
               aria-label="Close menu"
             >
               <X className="h-6 w-6" />
-            </button>
+            </Button>
           </div>
 
           {/* Content */}

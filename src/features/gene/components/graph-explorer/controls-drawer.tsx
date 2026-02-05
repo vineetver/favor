@@ -1,6 +1,9 @@
 "use client";
 
 import { Button } from "@shared/components/ui/button";
+import { Checkbox } from "@shared/components/ui/checkbox";
+import { Label } from "@shared/components/ui/label";
+import { Slider } from "@shared/components/ui/slider";
 import { cn } from "@infra/utils";
 import {
   Activity,
@@ -15,7 +18,7 @@ import {
   Settings,
   Target,
 } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import {
   type ControlsDrawerProps,
   type EdgeType,
@@ -167,11 +170,9 @@ function EdgeTypeToggle({ edgeType, enabled, count, onChange }: EdgeTypeTogglePr
 
   return (
     <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-      <input
-        type="checkbox"
+      <Checkbox
         checked={enabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+        onCheckedChange={(checked) => onChange(checked === true)}
       />
       <div
         className="w-2.5 h-2.5 rounded-full"
@@ -203,22 +204,26 @@ interface SliderControlProps {
 }
 
 function SliderControl({ label, value, min, max, step = 1, onChange }: SliderControlProps) {
+  const handleChange = useCallback(
+    (values: number[]) => onChange(values[0]),
+    [onChange]
+  );
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-600">{label}</span>
+        <Label className="text-sm text-slate-600">{label}</Label>
         <span className="text-sm font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
           {value}
         </span>
       </div>
-      <input
-        type="range"
+      <Slider
+        value={[value]}
+        onValueChange={handleChange}
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+        className="w-full"
       />
     </div>
   );
@@ -436,11 +441,9 @@ function ControlsDrawerInner({
               onChange={(value) => onFiltersChange({ ...filters, minSources: value })}
             />
             <label className="flex items-center gap-2 cursor-pointer pt-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={filters.showOrphans}
-                onChange={(e) => onFiltersChange({ ...filters, showOrphans: e.target.checked })}
-                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                onCheckedChange={(checked) => onFiltersChange({ ...filters, showOrphans: checked === true })}
               />
               <span className="text-sm text-slate-600">Show disconnected nodes</span>
             </label>
