@@ -316,14 +316,14 @@ export function BatchWizard({ className }: BatchWizardProps) {
           {validation && step === "configuring" && !isCreating && (
             <div className="space-y-6">
               {/* Back button */}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleBackToUpload}
-                className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Upload different file
-              </button>
+              </Button>
 
               {/* Validation Summary */}
               <ValidationSummary validation={validation} filename={file?.name} />

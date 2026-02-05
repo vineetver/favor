@@ -1,3 +1,4 @@
+import { Button } from "@shared/components/ui/button";
 import { Check, Copy } from "lucide-react";
 import Link from "next/link";
 import { memo, useEffect, useRef, useState } from "react";
@@ -71,13 +72,15 @@ const NonMemoizedMarkdown = ({ children, showCopy = true }: MarkdownProps) => {
   return (
     <div className="relative group">
       {showCopy && (
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onCopy}
-          className="absolute right-0 top-0 p-1.5 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
+          className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
           aria-label="Copy to clipboard"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        </button>
+        </Button>
       )}
       <Streamdown components={components}>{children}</Streamdown>
     </div>

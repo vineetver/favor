@@ -8,6 +8,8 @@ import {
 } from "@shared/components/ui/dropdown-menu";
 import { Check, ChevronDown, Search } from "lucide-react";
 import * as React from "react";
+import { Button } from "../button";
+import { Input } from "../input";
 import type { DimensionOption } from "./types";
 
 interface DimensionSelectorProps {
@@ -55,23 +57,21 @@ export function DimensionSelector({
         </span>
         <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg">
           {options.map((option) => (
-            <button
+            <Button
               key={option.value}
-              type="button"
+              variant={value === option.value ? "secondary" : "ghost"}
+              size="sm"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleSelect(option.value);
               }}
               className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-                value === option.value
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900",
+                value === option.value && "bg-white shadow-sm",
               )}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -85,48 +85,44 @@ export function DimensionSelector({
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-          >
+          <Button variant="secondary" size="sm">
             {selectedOption?.label ?? "Select..."}
             <ChevronDown className="w-4 h-4 text-slate-400" />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56 p-0" align="start">
           {searchable && (
             <div className="p-2 border-b border-slate-100">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
+                <Input
                   type="text"
                   placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="pl-8 h-8"
                 />
               </div>
             </div>
           )}
           <div className="max-h-60 overflow-auto p-1">
             {filteredOptions.map((option) => (
-              <button
+              <Button
                 key={option.value}
-                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   handleSelect(option.value);
                   setSearch("");
                 }}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors",
-                  value === option.value
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-700 hover:bg-slate-50",
+                  "w-full justify-between",
+                  value === option.value && "bg-primary/10 text-primary",
                 )}
               >
                 {option.label}
                 {value === option.value && <Check className="w-4 h-4" />}
-              </button>
+              </Button>
             ))}
           </div>
         </DropdownMenuContent>

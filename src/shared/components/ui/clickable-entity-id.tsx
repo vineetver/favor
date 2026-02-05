@@ -2,6 +2,7 @@
 
 import { useSearch } from "@features/search";
 import { cn } from "@infra/utils";
+import { Button } from "./button";
 
 interface ClickableEntityIdProps {
   id: string;
@@ -17,16 +18,17 @@ export function ClickableEntityId({
   const { openSearch } = useSearch();
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="sm"
       onClick={() => openSearch(id)}
       className={cn(
-        "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors cursor-pointer",
+        "h-auto px-2.5 py-1 rounded-full text-xs",
         mono && "font-mono",
         className,
       )}
     >
       {id}
-    </button>
+    </Button>
   );
 }

@@ -63,17 +63,11 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     name: "Disease & Therapeutics",
     slug: "disease-and-therapeutics",
     subCategories: [
-      { text: "Evidence Command Center", slug: "evidence-command-center" },
       { text: "Disease Portfolio", slug: "disease-portfolio" },
-      { text: "Phenotype Signature", slug: "phenotype-signature" },
-
-      { text: "Drugs & Targeting", slug: "drugs-and-targeting" },
       { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
       { text: "Chemical Probes", slug: "chemical-probes" },
       { text: "Safety Liabilities", slug: "safety-liabilities" },
-
       { text: "Cancer Hallmarks", slug: "cancer-hallmarks" },
-      { text: "Target Enabling Package (TEP)", slug: "tep" },
     ],
     groups: [
       {

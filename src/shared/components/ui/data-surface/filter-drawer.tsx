@@ -2,6 +2,16 @@
 
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "../button";
+import { Input } from "../input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { FilterDrawerProps } from "./types";
 
 export function FilterDrawer({
@@ -94,13 +104,13 @@ export function FilterDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-900">Filters</h3>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Filter Content */}
@@ -112,27 +122,30 @@ export function FilterDrawer({
               </label>
 
               {filter.type === "select" && filter.options && (
-                <select
+                <Select
                   value={(filterValues[filter.id] as string) ?? ""}
-                  onChange={(e) => onFilterChange(filter.id, e.target.value)}
-                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onValueChange={(value) => onFilterChange(filter.id, value)}
                 >
-                  <option value="">{filter.placeholder ?? "All"}</option>
-                  {filter.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-10">
+                    <SelectValue placeholder={filter.placeholder ?? "All"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{filter.placeholder ?? "All"}</SelectItem>
+                    {filter.options.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
 
               {filter.type === "text" && (
-                <input
+                <Input
                   type="text"
                   value={localTextValues[filter.id] ?? ""}
                   onChange={(e) => handleTextInputChange(filter.id, e.target.value)}
                   placeholder={filter.placeholder}
-                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               )}
 
@@ -147,18 +160,16 @@ export function FilterDrawer({
                         key={opt.value}
                         className="flex items-center gap-2 cursor-pointer"
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selected}
-                          onChange={(e) => {
+                          onCheckedChange={(checked) => {
                             const current =
                               (filterValues[filter.id] as string[]) ?? [];
-                            const next = e.target.checked
+                            const next = checked
                               ? [...current, opt.value]
                               : current.filter((v) => v !== opt.value);
                             onFilterChange(filter.id, next);
                           }}
-                          className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20"
                         />
                         <span className="text-sm text-slate-700">
                           {opt.label}
@@ -175,31 +186,29 @@ export function FilterDrawer({
         {/* Footer */}
         <div className="flex items-center gap-3 px-5 py-4 border-t border-slate-100">
           {onReset && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onReset}
-              className="flex-1 h-10 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="flex-1"
             >
               Reset
-            </button>
+            </Button>
           )}
           {onApply && (
-            <button
-              type="button"
+            <Button
               onClick={onApply}
-              className="flex-1 h-10 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+              className="flex-1"
             >
               Apply
-            </button>
+            </Button>
           )}
           {!onApply && !onReset && (
-            <button
-              type="button"
+            <Button
               onClick={onClose}
-              className="flex-1 h-10 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+              className="flex-1"
             >
               Done
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -72,7 +72,7 @@ export default async function VariantLayout({
 
       {/* Main Content Section */}
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12 pb-12">
-        <div className="flex gap-8">
+        <div className="flex gap-6">
           {(currentCategory.groups ||
             currentCategory.subCategories.length > 0) && (
             <NavigationSidebar

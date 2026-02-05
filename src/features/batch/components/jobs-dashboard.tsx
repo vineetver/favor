@@ -64,15 +64,13 @@ function StatusTabs({
   return (
     <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
       {tabs.map((tab) => (
-        <button
+        <Button
           key={tab.id}
-          type="button"
+          variant={active === tab.id ? "secondary" : "ghost"}
+          size="sm"
           onClick={() => onChange(tab.id)}
           className={cn(
-            "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-            active === tab.id
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-600 hover:text-slate-900",
+            active === tab.id && "bg-white shadow-sm",
           )}
         >
           {tab.label}
@@ -86,7 +84,7 @@ function StatusTabs({
               {counts[tab.id]}
             </span>
           )}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -116,14 +114,14 @@ function SortDropdown({
 
   return (
     <div className="relative">
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg bg-white"
       >
         <ArrowUpDown className="w-3.5 h-3.5" />
         {current?.label}
-      </button>
+      </Button>
 
       {open && (
         <>
@@ -133,20 +131,21 @@ function SortDropdown({
           />
           <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
             {options.map((option) => (
-              <button
+              <Button
                 key={option.id}
-                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   onChange(option.id);
                   setOpen(false);
                 }}
                 className={cn(
-                  "w-full px-3 py-1.5 text-sm text-left hover:bg-slate-50",
+                  "w-full justify-start",
                   value === option.id && "text-primary font-medium",
                 )}
               >
                 {option.label}
-              </button>
+              </Button>
             ))}
           </div>
         </>
@@ -300,32 +299,34 @@ function JobCard({
                     View details
                   </Link>
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText(job.job_id);
                       setMenuOpen(false);
                     }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    className="w-full justify-start"
                   >
                     <Copy className="w-4 h-4" />
                     Copy job ID
-                  </button>
+                  </Button>
 
                   {!isActive && (
                     <>
                       <div className="my-1 border-t border-slate-100" />
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={handleDelete}
                         className={cn(
-                          "flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-50",
-                          confirmDelete ? "text-rose-600" : "text-slate-700",
+                          "w-full justify-start",
+                          confirmDelete && "text-rose-600",
                         )}
                       >
                         <Trash2 className="w-4 h-4" />
                         {confirmDelete ? "Confirm delete?" : "Remove from list"}
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

@@ -485,10 +485,10 @@ export function UniversalSearch() {
             onChange={(val) => val && handleSelectSuggestion(val)}
           >
             <div className="relative flex flex-col sm:flex-row items-center bg-white p-2.5 rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/80 ring-1 ring-slate-100">
-              <div className="grid grid-cols-2 bg-slate-100 rounded-xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
+              <div className="grid grid-cols-2 bg-slate-100 rounded-2xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
                 <div
                   className={cn(
-                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out",
+                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ease-out",
                     genome === "hg38" ? "left-1" : "right-1",
                   )}
                 />
@@ -496,7 +496,7 @@ export function UniversalSearch() {
                   type="button"
                   onClick={() => handleGenomeChange("hg38")}
                   className={cn(
-                    "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
+                    "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
                     genome === "hg38"
                       ? "text-slate-900"
                       : "text-slate-500 hover:text-slate-700",
@@ -508,7 +508,7 @@ export function UniversalSearch() {
                   type="button"
                   onClick={() => handleGenomeChange("hg19")}
                   className={cn(
-                    "relative z-10 px-4 py-3 rounded-lg text-sm font-semibold transition-colors duration-200",
+                    "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
                     genome === "hg19"
                       ? "text-slate-900"
                       : "text-slate-500 hover:text-slate-700",

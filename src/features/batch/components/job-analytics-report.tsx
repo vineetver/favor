@@ -42,6 +42,36 @@ interface MetricTile {
 // PrioritizedVariant - full Variant with computed priority_score
 type PrioritizedVariant = Variant & { priority_score: number };
 
+interface RegionDistribution {
+  region_type: string;
+  count: number;
+  percentage: number;
+}
+
+interface ConsequenceDistribution {
+  consequence: string;
+  count: number;
+  percentage: number;
+}
+
+interface GeneByVariantCount {
+  gene: string;
+  variant_count: number;
+}
+
+interface GeneHancerTarget {
+  gene: string;
+  total_score: number;
+  variant_count: number;
+}
+
+interface FunctionalClassData {
+  regionDistribution: RegionDistribution[];
+  consequenceDistribution: ConsequenceDistribution[];
+  topGenes: GeneByVariantCount[];
+  topGeneHancerTargets: GeneHancerTarget[];
+}
+
 interface ReportData {
   totalVariants: number;
   metrics: {
@@ -58,6 +88,8 @@ interface ReportData {
   cosmicMedianSampleCount: number | null;
   prioritizedVariants: PrioritizedVariant[];
   topCosmicGene: string | null;
+  // Functional class data
+  functionalClass: FunctionalClassData;
 }
 
 // ============================================================================
@@ -196,6 +228,74 @@ const SQL_QUERIES = {
     GROUP BY variant.cosmic.gene
     ORDER BY count DESC
     LIMIT 1
+  `,
+
+  // Functional Class queries
+  regionDistribution: `
+    SELECT
+      COALESCE(variant.genecode.region_type, 'Unknown') as region_type,
+      COUNT(*) as count,
+      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
+    FROM variants
+    WHERE lower(status) = 'found'
+    GROUP BY region_type
+    ORDER BY count DESC
+  `,
+
+  consequenceDistribution: `
+    SELECT
+      COALESCE(variant.genecode.consequence, 'Unknown') as consequence,
+      COUNT(*) as count,
+      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
+    FROM variants
+    WHERE lower(status) = 'found'
+      AND variant.genecode.consequence IS NOT NULL
+      AND variant.genecode.consequence != ''
+    GROUP BY consequence
+    ORDER BY count DESC
+    LIMIT 10
+  `,
+
+  topGenesByVariantCount: `
+    WITH gene_list AS (
+      SELECT variant.genecode.genes as genes
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.genecode.genes IS NOT NULL
+        AND len(variant.genecode.genes) > 0
+    ),
+    unnested AS (
+      SELECT unnest(genes) as gene FROM gene_list
+    )
+    SELECT gene, COUNT(*) as variant_count
+    FROM unnested
+    WHERE gene IS NOT NULL AND gene != ''
+    GROUP BY gene
+    ORDER BY variant_count DESC
+    LIMIT 10
+  `,
+
+  topGeneHancerTargets: `
+    WITH targets_list AS (
+      SELECT variant.genehancer.targets as targets
+      FROM variants
+      WHERE lower(status) = 'found'
+        AND variant.genehancer IS NOT NULL
+        AND variant.genehancer.targets IS NOT NULL
+        AND len(variant.genehancer.targets) > 0
+    ),
+    unnested AS (
+      SELECT unnest(targets) as target FROM targets_list
+    )
+    SELECT
+      target.gene as gene,
+      ROUND(SUM(target.score), 3) as total_score,
+      COUNT(*) as variant_count
+    FROM unnested
+    WHERE target.gene IS NOT NULL
+    GROUP BY target.gene
+    ORDER BY variant_count DESC, total_score DESC
+    LIMIT 10
   `,
 };
 
@@ -393,6 +493,197 @@ function KeyTakeaways({ takeaways }: { takeaways: string[] }) {
   );
 }
 
+// ============================================================================
+// Functional Class Section
+// ============================================================================
+
+/** Color scheme for region types */
+const REGION_TYPE_COLORS: Record<string, string> = {
+  exonic: "#8b5cf6",
+  intronic: "#22c55e",
+  intergenic: "#06b6d4",
+  UTR5: "#f59e0b",
+  UTR3: "#f97316",
+  "upstream;downstream": "#6366f1",
+  upstream: "#14b8a6",
+  downstream: "#ec4899",
+  splicing: "#eab308",
+  ncRNA: "#64748b",
+};
+
+/** Color scheme for exonic consequences */
+const CONSEQUENCE_COLORS: Record<string, string> = {
+  "synonymous SNV": "#22c55e",
+  "nonsynonymous SNV": "#f59e0b",
+  stopgain: "#ef4444",
+  stoploss: "#dc2626",
+  "frameshift deletion": "#f97316",
+  "frameshift insertion": "#fb923c",
+  "nonframeshift deletion": "#fbbf24",
+  "nonframeshift insertion": "#fcd34d",
+  unknown: "#94a3b8",
+};
+
+function DistributionTable({
+  data,
+  title,
+  colorMap,
+}: {
+  data: Array<{ label: string; value: number; percentage: number }>;
+  title: string;
+  colorMap: Record<string, string>;
+}) {
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+        No data available
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">{title}</h4>
+      <div className="space-y-1.5">
+        {data.slice(0, 8).map((item) => (
+          <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: colorMap[item.label.toLowerCase()] || "#94a3b8" }}
+              />
+              <span className="text-sm text-slate-700">{item.label}</span>
+            </div>
+            <div className="text-sm tabular-nums">
+              <span className="font-medium text-slate-900">{item.value.toLocaleString()}</span>
+              <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopGenesTable({ genes }: { genes: GeneByVariantCount[] }) {
+  if (genes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+        No gene data available
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Genes by Variant Count</h4>
+      <div className="space-y-1.5">
+        {genes.slice(0, 8).map((gene, idx) => (
+          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-4">{idx + 1}.</span>
+              <span className="text-sm font-mono text-slate-700 truncate" title={gene.gene}>
+                {gene.gene}
+              </span>
+            </div>
+            <span className="text-sm font-medium tabular-nums text-slate-900">
+              {gene.variant_count.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GeneHancerTargetsTable({ targets }: { targets: GeneHancerTarget[] }) {
+  if (targets.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+        No GeneHancer targets found
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium text-slate-700 mb-3">Top GeneHancer Targets</h4>
+      <div className="space-y-1.5">
+        {targets.slice(0, 8).map((target, idx) => (
+          <div key={target.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-4">{idx + 1}.</span>
+              <span className="text-sm font-mono text-slate-700 truncate" title={target.gene}>
+                {target.gene}
+              </span>
+            </div>
+            <div className="text-sm tabular-nums">
+              <span className="font-medium text-slate-900">{target.variant_count}</span>
+              <span className="text-slate-400 ml-2">
+                ({typeof target.total_score === "number" ? target.total_score.toFixed(1) : target.total_score})
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
+  const regionData = data.regionDistribution.map((r) => ({
+    label: r.region_type,
+    value: r.count,
+    percentage: r.percentage,
+  }));
+
+  const consequenceData = data.consequenceDistribution.map((c) => ({
+    label: c.consequence,
+    value: c.count,
+    percentage: c.percentage,
+  }));
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-semibold text-slate-900 mb-4">Functional Class</h2>
+
+      {/* 2x2 grid layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <DistributionTable
+              data={regionData}
+              title="Region Type (GENCODE)"
+              colorMap={REGION_TYPE_COLORS}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <DistributionTable
+              data={consequenceData}
+              title="Exonic Consequence"
+              colorMap={CONSEQUENCE_COLORS}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <TopGenesTable genes={data.topGenes} />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 py-0 gap-0">
+          <CardContent className="p-4">
+            <GeneHancerTargetsTable targets={data.topGeneHancerTargets} />
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
 
 // ============================================================================
 // Main Component
@@ -446,6 +737,11 @@ export function JobAnalyticsReport({
         qcPassRateResult,
         prioritizedResult,
         topCosmicGeneResult,
+        // Functional class queries
+        regionDistributionResult,
+        consequenceDistributionResult,
+        topGenesResult,
+        topGeneHancerTargetsResult,
       ] = await Promise.all([
         query(SQL_QUERIES.totalVariants),
         query(SQL_QUERIES.clinvarPLP),
@@ -459,6 +755,11 @@ export function JobAnalyticsReport({
         query(SQL_QUERIES.qcPassRate),
         query(SQL_QUERIES.prioritizedVariants),
         query(SQL_QUERIES.topCosmicGene),
+        // Functional class queries
+        query(SQL_QUERIES.regionDistribution),
+        query(SQL_QUERIES.consequenceDistribution),
+        query(SQL_QUERIES.topGenesByVariantCount),
+        query(SQL_QUERIES.topGeneHancerTargets),
       ]);
 
       // Parse results
@@ -480,10 +781,19 @@ export function JobAnalyticsReport({
       // Top COSMIC gene
       const topCosmicGene = (topCosmicGeneResult.rows[0]?.gene as string) || null;
 
+      // Functional class data
+      const functionalClass: FunctionalClassData = {
+        regionDistribution: regionDistributionResult.rows as unknown as RegionDistribution[],
+        consequenceDistribution: consequenceDistributionResult.rows as unknown as ConsequenceDistribution[],
+        topGenes: topGenesResult.rows as unknown as GeneByVariantCount[],
+        topGeneHancerTargets: topGeneHancerTargetsResult.rows as unknown as GeneHancerTarget[],
+      };
+
       setReportData({
         totalVariants,
         clinvarTotal,
         cosmicMedianSampleCount,
+        functionalClass,
         metrics: {
           clinvarPLP: {
             label: "ClinVar P/LP",
@@ -651,6 +961,9 @@ export function JobAnalyticsReport({
         {/* Prioritized Variants Table */}
         <PrioritizedVariantsTable variants={reportData.prioritizedVariants} />
       </section>
+
+      {/* Functional Class Section */}
+      <FunctionalClassSection data={reportData.functionalClass} />
 
       {/* Footer */}
       <footer className="pt-6 border-t border-slate-200 text-xs text-slate-400 print:mt-8">

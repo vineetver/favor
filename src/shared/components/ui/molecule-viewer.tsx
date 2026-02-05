@@ -2,6 +2,7 @@
 
 import { AlertCircle, Check, Copy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "./button";
 
 interface MoleculeViewerProps {
   smiles: string;
@@ -187,10 +188,11 @@ export function MoleculeViewer({
 
       {/* Copy SMILES Button - shows on hover */}
       {!loading && !error && (
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={copyToClipboard}
-          className="absolute top-2 right-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white/90 hover:bg-white border border-slate-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
         >
           {copied ? (
             <>
@@ -203,7 +205,7 @@ export function MoleculeViewer({
               Copy SMILES
             </>
           )}
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -3,6 +3,14 @@
 import { cn } from "@infra/utils";
 import type { Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ServerPaginationProps } from "./types";
 
 interface FooterBarProps<TData> {
@@ -43,41 +51,45 @@ export function FooterBar<TData>({
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={onPreviousPage}
               disabled={!canGoPrevious}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={onNextPage}
               disabled={!canGoNext}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
 
           {showPageSizeSelector && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500">Rows</span>
-              <select
-                value={pageSize}
-                onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                className="h-8 px-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => onPageSizeChange(Number(value))}
               >
-                {pageSizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-20" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>
@@ -126,14 +138,15 @@ export function FooterBar<TData>({
       <div className="flex items-center gap-4">
         {pageCount > 1 && (
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
-            </button>
+            </Button>
 
             {getPageNumbers().map((page, idx) =>
               page === "ellipsis" ? (
@@ -141,47 +154,48 @@ export function FooterBar<TData>({
                   ...
                 </span>
               ) : (
-                <button
+                <Button
                   key={page}
-                  type="button"
+                  variant={page === pageIndex ? "default" : "ghost"}
+                  size="sm"
                   onClick={() => table.setPageIndex(page)}
-                  className={cn(
-                    "min-w-[32px] h-8 px-2.5 text-sm font-medium rounded-md transition-colors",
-                    page === pageIndex
-                      ? "bg-primary text-white"
-                      : "text-slate-600 hover:bg-slate-100",
-                  )}
+                  className="min-w-[32px]"
                 >
                   {page + 1}
-                </button>
+                </Button>
               ),
             )}
 
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         )}
 
         {showPageSizeSelector && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-500">Rows</span>
-            <select
-              value={pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              className="h-8 px-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => table.setPageSize(Number(value))}
             >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 w-20" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>

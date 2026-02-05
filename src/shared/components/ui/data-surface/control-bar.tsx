@@ -8,6 +8,8 @@ import {
   Table as TableIcon,
   X,
 } from "lucide-react";
+import { Button } from "../button";
+import { Input } from "../input";
 import type { ControlBarProps, ViewMode } from "./types";
 
 export function ControlBar({
@@ -37,30 +39,27 @@ export function ControlBar({
         {showSearch && onSearchChange && (
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
+            <Input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] border border-slate-200 rounded-lg bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all"
+              className="pl-10 pr-4 bg-slate-50 focus:bg-white"
             />
           </div>
         )}
 
         {onFilterClick && (
-          <button
-            type="button"
+          <Button
+            variant={hasActiveFilters ? "outline" : "outline"}
             onClick={onFilterClick}
             className={cn(
-              "inline-flex items-center gap-2 px-3.5 py-2.5 text-[13px] font-medium rounded-lg border transition-colors",
-              hasActiveFilters
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-slate-200 text-slate-600 hover:bg-slate-50",
+              hasActiveFilters && "border-primary bg-primary/5 text-primary",
             )}
           >
             <SlidersHorizontal className="w-4 h-4" />
             Filter
-          </button>
+          </Button>
         )}
 
         {/* Filter Chips */}
@@ -74,24 +73,26 @@ export function ControlBar({
                 <span className="text-slate-400">{chip.label}:</span>
                 {chip.value}
                 {onRemoveFilterChip && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => onRemoveFilterChip(chip.id)}
-                    className="hover:text-slate-900 transition-colors"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 )}
               </span>
             ))}
             {onClearFilters && filterChips.length > 1 && (
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
                 onClick={onClearFilters}
-                className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                className="text-xs h-auto p-0"
               >
                 Clear all
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -114,32 +115,28 @@ function ViewSwitch({
 }) {
   return (
     <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg">
-      <button
-        type="button"
+      <Button
+        variant={value === "table" ? "secondary" : "ghost"}
+        size="sm"
         onClick={() => onChange("table")}
         className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-          value === "table"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700",
+          value === "table" && "bg-white shadow-sm",
         )}
       >
         <TableIcon className="w-4 h-4" />
         Table
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant={value === "chart" ? "secondary" : "ghost"}
+        size="sm"
         onClick={() => onChange("chart")}
         className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-          value === "chart"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700",
+          value === "chart" && "bg-white shadow-sm",
         )}
       >
         <BarChart3 className="w-4 h-4" />
         Chart
-      </button>
+      </Button>
     </div>
   );
 }

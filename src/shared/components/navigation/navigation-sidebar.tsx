@@ -159,8 +159,8 @@ export function NavigationSidebar({
   // Render grouped navigation
   if (groups && groups.length > 0) {
     return (
-      <aside className="hidden lg:block w-64 shrink-0 pr-8">
-        <nav className="space-y-6">
+      <aside className="hidden lg:block w-52 shrink-0">
+        <nav className="space-y-5">
           {groups.map((group) => {
             const isExpanded = isGroupExpanded(group);
             const hasActiveItem = group.items.some(
@@ -177,7 +177,7 @@ export function NavigationSidebar({
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 group cursor-pointer focus:outline-none focus-visible:outline-none">
                     <span
                       className={cn(
-                        "text-[11px] font-bold tracking-widest uppercase transition-colors text-left",
+                        "text-xs font-bold tracking-widest uppercase transition-colors text-left",
                         hasActiveItem
                           ? "text-primary"
                           : "text-slate-500 group-hover:text-slate-700",
@@ -203,10 +203,10 @@ export function NavigationSidebar({
                           key={item.slug}
                           href={`${basePath}/${item.slug}${queryString}`}
                           className={cn(
-                            "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150",
+                            "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150",
                             isActive
-                              ? "bg-primary/8 text-slate-900 font-medium"
-                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                              ? "bg-primary/8 text-slate-800 font-medium"
+                              : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
                           )}
                         >
                           {Icon && (
@@ -235,7 +235,7 @@ export function NavigationSidebar({
 
   // Fallback: flat items
   return (
-    <aside className="hidden lg:block w-64 shrink-0 pr-8">
+    <aside className="hidden lg:block w-52 shrink-0">
       <nav className="space-y-0.5">
         {items?.map((item) => {
           const isActive = item.slug === activeSlug;
@@ -245,10 +245,10 @@ export function NavigationSidebar({
               key={item.slug}
               href={`${basePath}/${item.slug}${queryString}`}
               className={cn(
-                "group flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-all duration-150",
+                "group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-150",
                 isActive
-                  ? "bg-primary/8 text-slate-900 font-medium"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                  ? "bg-primary/8 text-slate-800 font-medium"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
               )}
             >
               <span>{item.text}</span>

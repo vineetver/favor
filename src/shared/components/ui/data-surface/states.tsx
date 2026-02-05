@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, FileSearch, RefreshCw } from "lucide-react";
+import { Button } from "../button";
 
 interface LoadingStateProps {
   rows?: number;
@@ -79,14 +80,10 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
         {message}
       </p>
       {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
-        >
+        <Button variant="secondary" onClick={onRetry}>
           <RefreshCw className="w-4 h-4" />
           Try again
-        </button>
+        </Button>
       )}
     </div>
   );
