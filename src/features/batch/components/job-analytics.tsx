@@ -444,11 +444,11 @@ function CustomQuery({
       <CardContent className="p-0">
         <form onSubmit={handleSubmit}>
           <div className="p-4">
-            <textarea
+            <Textarea
               value={sql}
               onChange={(e) => setSql(e.target.value)}
               placeholder="SELECT * FROM variants LIMIT 10"
-              className="w-full h-32 px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="h-32 font-mono bg-slate-50 resize-none"
             />
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-slate-500">

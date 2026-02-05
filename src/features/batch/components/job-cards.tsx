@@ -51,14 +51,15 @@ function JobIdCopyButton({ jobId }: { jobId: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleCopy}
-        className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+        className="h-auto px-2 py-0.5 text-xs font-mono bg-slate-100 hover:bg-slate-200"
       >
         {jobId.slice(0, 8)}...
         <Copy className="w-3 h-3" />
-      </button>
+      </Button>
       {copied && <span className="text-xs text-emerald-600">Copied!</span>}
     </div>
   );

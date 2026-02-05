@@ -25,7 +25,7 @@ const col = createColumns<Variant>();
 // Category Definitions
 // ============================================================================
 
-const gencodeComprehensive = categories([
+export const gencodeComprehensive = categories([
   {
     label: "Exonic",
     match: /(exonic)/i,
@@ -70,7 +70,7 @@ const gencodeComprehensive = categories([
   },
 ]);
 
-const gencodeExonic = categories([
+export const gencodeExonic = categories([
   {
     label: "Stopgain",
     match: /(stopgain)/i,

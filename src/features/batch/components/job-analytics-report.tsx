@@ -13,7 +13,12 @@ import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai
 import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
 import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
 import { basicColumns } from "@features/variant/config/hg38/columns/basic";
-import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
+import {
+  functionalClassColumns,
+  gencodeComprehensive,
+  gencodeExonic,
+} from "@features/variant/config/hg38/columns/functional-class";
+import { DOT_COLORS } from "@infra/table/column-builder";
 import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -72,6 +77,22 @@ interface FunctionalClassData {
   topGeneHancerTargets: GeneHancerTarget[];
 }
 
+/** Statistics for a single integrative score */
+interface ScoreStats {
+  name: string;
+  label: string;
+  coverage: number;
+  coveragePct: number;
+  p50: number | null;
+  p90: number | null;
+  topDecileCount: number;
+}
+
+interface IntegrativeScoreData {
+  scoreStats: ScoreStats[];
+  caddVsApcCorrelation: Array<{ cadd: number; apc: number }>;
+}
+
 interface ReportData {
   totalVariants: number;
   metrics: {
@@ -90,6 +111,8 @@ interface ReportData {
   topCosmicGene: string | null;
   // Functional class data
   functionalClass: FunctionalClassData;
+  // Integrative score data
+  integrativeScore: IntegrativeScoreData;
 }
 
 // ============================================================================
@@ -297,6 +320,61 @@ const SQL_QUERIES = {
     ORDER BY variant_count DESC, total_score DESC
     LIMIT 10
   `,
+
+  // Integrative Score queries
+  integrativeScoreStats: `
+    WITH total AS (
+      SELECT COUNT(*) as n FROM variants WHERE lower(status) = 'found'
+    ),
+    stats AS (
+      SELECT
+        -- CADD
+        COUNT(CASE WHEN variant.main.cadd.phred IS NOT NULL THEN 1 END) as cadd_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.main.cadd.phred) as cadd_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.main.cadd.phred) as cadd_p90,
+        COUNT(CASE WHEN variant.main.cadd.phred >= 20 THEN 1 END) as cadd_top_decile,
+        -- LINSIGHT
+        COUNT(CASE WHEN variant.linsight IS NOT NULL THEN 1 END) as linsight_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.linsight) as linsight_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.linsight) as linsight_p90,
+        COUNT(CASE WHEN variant.linsight >= 0.5 THEN 1 END) as linsight_top_decile,
+        -- FATHMM-XF
+        COUNT(CASE WHEN variant.fathmm_xf IS NOT NULL THEN 1 END) as fathmm_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.fathmm_xf) as fathmm_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.fathmm_xf) as fathmm_p90,
+        COUNT(CASE WHEN variant.fathmm_xf >= 0.5 THEN 1 END) as fathmm_top_decile,
+        -- aPC Protein Function (check apc struct exists OR specific field)
+        COUNT(CASE WHEN variant.apc IS NOT NULL THEN 1 END) as apc_pf_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.apc.protein_function_v3) as apc_pf_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.apc.protein_function_v3) as apc_pf_p90,
+        COUNT(CASE WHEN variant.apc.protein_function_v3 >= 10 THEN 1 END) as apc_pf_top_decile,
+        -- aPC Conservation
+        COUNT(CASE WHEN variant.apc IS NOT NULL THEN 1 END) as apc_cons_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.apc.conservation_v2) as apc_cons_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.apc.conservation_v2) as apc_cons_p90,
+        COUNT(CASE WHEN variant.apc.conservation_v2 >= 10 THEN 1 END) as apc_cons_top_decile,
+        -- aPC Epigenetics Active
+        COUNT(CASE WHEN variant.apc IS NOT NULL THEN 1 END) as apc_epi_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.apc.epigenetics_active) as apc_epi_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.apc.epigenetics_active) as apc_epi_p90,
+        COUNT(CASE WHEN variant.apc.epigenetics_active >= 10 THEN 1 END) as apc_epi_top_decile
+      FROM variants
+      WHERE lower(status) = 'found'
+    )
+    SELECT stats.*, total.n as total_variants FROM stats, total
+  `,
+
+  caddVsApcSample: `
+    SELECT
+      variant.main.cadd.phred as cadd,
+      variant.apc.protein_function_v3 as apc
+    FROM variants
+    WHERE lower(status) = 'found'
+      AND variant.main.cadd.phred IS NOT NULL
+      AND variant.apc.protein_function_v3 IS NOT NULL
+    ORDER BY RANDOM()
+    LIMIT 200
+  `,
 };
 
 // ============================================================================
@@ -497,41 +575,14 @@ function KeyTakeaways({ takeaways }: { takeaways: string[] }) {
 // Functional Class Section
 // ============================================================================
 
-/** Color scheme for region types */
-const REGION_TYPE_COLORS: Record<string, string> = {
-  exonic: "#8b5cf6",
-  intronic: "#22c55e",
-  intergenic: "#06b6d4",
-  UTR5: "#f59e0b",
-  UTR3: "#f97316",
-  "upstream;downstream": "#6366f1",
-  upstream: "#14b8a6",
-  downstream: "#ec4899",
-  splicing: "#eab308",
-  ncRNA: "#64748b",
-};
-
-/** Color scheme for exonic consequences */
-const CONSEQUENCE_COLORS: Record<string, string> = {
-  "synonymous SNV": "#22c55e",
-  "nonsynonymous SNV": "#f59e0b",
-  stopgain: "#ef4444",
-  stoploss: "#dc2626",
-  "frameshift deletion": "#f97316",
-  "frameshift insertion": "#fb923c",
-  "nonframeshift deletion": "#fbbf24",
-  "nonframeshift insertion": "#fcd34d",
-  unknown: "#94a3b8",
-};
-
 function DistributionTable({
   data,
   title,
-  colorMap,
+  categoryDefs,
 }: {
   data: Array<{ label: string; value: number; percentage: number }>;
   title: string;
-  colorMap: Record<string, string>;
+  categoryDefs: ReturnType<typeof gencodeComprehensive>;
 }) {
   if (data.length === 0) {
     return (
@@ -545,21 +596,27 @@ function DistributionTable({
     <div>
       <h4 className="text-sm font-medium text-slate-700 mb-3">{title}</h4>
       <div className="space-y-1.5">
-        {data.slice(0, 8).map((item) => (
-          <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: colorMap[item.label.toLowerCase()] || "#94a3b8" }}
-              />
-              <span className="text-sm text-slate-700">{item.label}</span>
+        {data.slice(0, 8).map((item) => {
+          const cat = categoryDefs.getCategory(item.label);
+          const colorClass = cat ? DOT_COLORS[cat.color] : "bg-slate-400";
+          return (
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
+                <span
+                  className="text-sm text-slate-700 truncate"
+                  title={cat?.description || item.label}
+                >
+                  {item.label}
+                </span>
+              </div>
+              <div className="text-sm tabular-nums shrink-0 ml-2">
+                <span className="font-medium text-slate-900">{item.value.toLocaleString()}</span>
+                <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+              </div>
             </div>
-            <div className="text-sm tabular-nums">
-              <span className="font-medium text-slate-900">{item.value.toLocaleString()}</span>
-              <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -580,13 +637,16 @@ function TopGenesTable({ genes }: { genes: GeneByVariantCount[] }) {
       <div className="space-y-1.5">
         {genes.slice(0, 8).map((gene, idx) => (
           <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 w-4">{idx + 1}.</span>
-              <span className="text-sm font-mono text-slate-700 truncate" title={gene.gene}>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span
+                className="text-sm font-mono text-slate-700 truncate max-w-[140px]"
+                title={gene.gene}
+              >
                 {gene.gene}
               </span>
             </div>
-            <span className="text-sm font-medium tabular-nums text-slate-900">
+            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
               {gene.variant_count.toLocaleString()}
             </span>
           </div>
@@ -611,15 +671,18 @@ function GeneHancerTargetsTable({ targets }: { targets: GeneHancerTarget[] }) {
       <div className="space-y-1.5">
         {targets.slice(0, 8).map((target, idx) => (
           <div key={target.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 w-4">{idx + 1}.</span>
-              <span className="text-sm font-mono text-slate-700 truncate" title={target.gene}>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span
+                className="text-sm font-mono text-slate-700 truncate max-w-[140px]"
+                title={target.gene}
+              >
                 {target.gene}
               </span>
             </div>
-            <div className="text-sm tabular-nums">
+            <div className="text-sm tabular-nums shrink-0 ml-2">
               <span className="font-medium text-slate-900">{target.variant_count}</span>
-              <span className="text-slate-400 ml-2">
+              <span className="text-slate-400 ml-1.5">
                 ({typeof target.total_score === "number" ? target.total_score.toFixed(1) : target.total_score})
               </span>
             </div>
@@ -654,7 +717,7 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
             <DistributionTable
               data={regionData}
               title="Region Type (GENCODE)"
-              colorMap={REGION_TYPE_COLORS}
+              categoryDefs={gencodeComprehensive}
             />
           </CardContent>
         </Card>
@@ -664,7 +727,7 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
             <DistributionTable
               data={consequenceData}
               title="Exonic Consequence"
-              colorMap={CONSEQUENCE_COLORS}
+              categoryDefs={gencodeExonic}
             />
           </CardContent>
         </Card>
@@ -681,6 +744,86 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
           </CardContent>
         </Card>
       </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// Integrative Score Section
+// ============================================================================
+
+function ScoreStatsTable({ stats }: { stats: ScoreStats[] }) {
+  const formatNum = (n: number | null, decimals = 1) => {
+    if (n === null) return "—";
+    return n < 1 ? n.toFixed(3) : n.toFixed(decimals);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200">
+            <th className="px-3 py-2 text-left font-medium text-slate-600">Score</th>
+            <th className="px-3 py-2 text-right font-medium text-slate-600">Coverage</th>
+            <th className="px-3 py-2 text-right font-medium text-slate-600">P50</th>
+            <th className="px-3 py-2 text-right font-medium text-slate-600">P90</th>
+            <th className="px-3 py-2 text-right font-medium text-slate-600">High Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.map((stat) => (
+            <tr key={stat.name} className="border-b border-slate-100 last:border-0">
+              <td className="px-3 py-2 font-medium text-slate-900">{stat.label}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-slate-500">
+                {stat.coveragePct.toFixed(0)}%
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-slate-700">
+                {formatNum(stat.p50)}
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-slate-700">
+                {formatNum(stat.p90)}
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums font-medium text-amber-600">
+                {stat.topDecileCount.toLocaleString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function IntegrativeScoreSection({ data }: { data: IntegrativeScoreData }) {
+  // Calculate high-impact summary
+  const totalHighImpact = data.scoreStats.reduce((sum, s) => sum + s.topDecileCount, 0);
+  const avgCoverage = data.scoreStats.reduce((sum, s) => sum + s.coveragePct, 0) / data.scoreStats.length;
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-semibold text-slate-900 mb-4">Integrative Score</h2>
+
+      {/* Summary stats */}
+      <div className="flex items-center gap-6 mb-4 text-sm">
+        <div>
+          <span className="text-slate-500">Avg Coverage: </span>
+          <span className="font-medium text-slate-900">{avgCoverage.toFixed(0)}%</span>
+        </div>
+        <div>
+          <span className="text-slate-500">Total High-Impact: </span>
+          <span className="font-medium text-amber-600">{totalHighImpact.toLocaleString()}</span>
+        </div>
+        <div className="text-xs text-slate-400">
+          High = CADD≥20, LINSIGHT≥0.5, FATHMM≥0.5, aPC≥10
+        </div>
+      </div>
+
+      {/* Score statistics table */}
+      <Card className="border border-slate-200 py-0 gap-0">
+        <CardContent className="p-4">
+          <ScoreStatsTable stats={data.scoreStats} />
+        </CardContent>
+      </Card>
     </section>
   );
 }
@@ -742,6 +885,9 @@ export function JobAnalyticsReport({
         consequenceDistributionResult,
         topGenesResult,
         topGeneHancerTargetsResult,
+        // Integrative score queries
+        integrativeStatsResult,
+        caddVsApcResult,
       ] = await Promise.all([
         query(SQL_QUERIES.totalVariants),
         query(SQL_QUERIES.clinvarPLP),
@@ -760,6 +906,9 @@ export function JobAnalyticsReport({
         query(SQL_QUERIES.consequenceDistribution),
         query(SQL_QUERIES.topGenesByVariantCount),
         query(SQL_QUERIES.topGeneHancerTargets),
+        // Integrative score queries
+        query(SQL_QUERIES.integrativeScoreStats),
+        query(SQL_QUERIES.caddVsApcSample),
       ]);
 
       // Parse results
@@ -789,11 +938,76 @@ export function JobAnalyticsReport({
         topGeneHancerTargets: topGeneHancerTargetsResult.rows as unknown as GeneHancerTarget[],
       };
 
+      // Integrative score data
+      const statsRow = integrativeStatsResult.rows[0] || {};
+      const totalN = (statsRow.total_variants as number) || totalVariants || 1;
+
+      const integrativeScore: IntegrativeScoreData = {
+        scoreStats: [
+          {
+            name: "cadd",
+            label: "CADD",
+            coverage: (statsRow.cadd_coverage as number) || 0,
+            coveragePct: ((statsRow.cadd_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.cadd_p50 as number | null,
+            p90: statsRow.cadd_p90 as number | null,
+            topDecileCount: (statsRow.cadd_top_decile as number) || 0,
+          },
+          {
+            name: "linsight",
+            label: "LINSIGHT",
+            coverage: (statsRow.linsight_coverage as number) || 0,
+            coveragePct: ((statsRow.linsight_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.linsight_p50 as number | null,
+            p90: statsRow.linsight_p90 as number | null,
+            topDecileCount: (statsRow.linsight_top_decile as number) || 0,
+          },
+          {
+            name: "fathmm",
+            label: "FATHMM-XF",
+            coverage: (statsRow.fathmm_coverage as number) || 0,
+            coveragePct: ((statsRow.fathmm_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.fathmm_p50 as number | null,
+            p90: statsRow.fathmm_p90 as number | null,
+            topDecileCount: (statsRow.fathmm_top_decile as number) || 0,
+          },
+          {
+            name: "apc_pf",
+            label: "aPC Protein Function",
+            coverage: (statsRow.apc_pf_coverage as number) || 0,
+            coveragePct: ((statsRow.apc_pf_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.apc_pf_p50 as number | null,
+            p90: statsRow.apc_pf_p90 as number | null,
+            topDecileCount: (statsRow.apc_pf_top_decile as number) || 0,
+          },
+          {
+            name: "apc_cons",
+            label: "aPC Conservation",
+            coverage: (statsRow.apc_cons_coverage as number) || 0,
+            coveragePct: ((statsRow.apc_cons_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.apc_cons_p50 as number | null,
+            p90: statsRow.apc_cons_p90 as number | null,
+            topDecileCount: (statsRow.apc_cons_top_decile as number) || 0,
+          },
+          {
+            name: "apc_epi",
+            label: "aPC Epigenetics Active",
+            coverage: (statsRow.apc_epi_coverage as number) || 0,
+            coveragePct: ((statsRow.apc_epi_coverage as number) || 0) / totalN * 100,
+            p50: statsRow.apc_epi_p50 as number | null,
+            p90: statsRow.apc_epi_p90 as number | null,
+            topDecileCount: (statsRow.apc_epi_top_decile as number) || 0,
+          },
+        ],
+        caddVsApcCorrelation: caddVsApcResult.rows as unknown as Array<{ cadd: number; apc: number }>,
+      };
+
       setReportData({
         totalVariants,
         clinvarTotal,
         cosmicMedianSampleCount,
         functionalClass,
+        integrativeScore,
         metrics: {
           clinvarPLP: {
             label: "ClinVar P/LP",
@@ -964,6 +1178,9 @@ export function JobAnalyticsReport({
 
       {/* Functional Class Section */}
       <FunctionalClassSection data={reportData.functionalClass} />
+
+      {/* Integrative Score Section */}
+      <IntegrativeScoreSection data={reportData.integrativeScore} />
 
       {/* Footer */}
       <footer className="pt-6 border-t border-slate-200 text-xs text-slate-400 print:mt-8">
