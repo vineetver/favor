@@ -103,10 +103,10 @@ const POPULATIONS: Array<{
 function PopulationBadge({ code, name }: { code: string; name: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="inline-flex items-center justify-center min-w-[40px] px-2 py-0.5 text-xs font-semibold rounded bg-slate-100 text-slate-600 border border-slate-200">
+      <span className="inline-flex items-center justify-center min-w-[40px] px-2 py-0.5 text-xs font-semibold rounded bg-muted text-muted-foreground border border-border">
         {code}
       </span>
-      <span className="text-sm text-slate-700">{name}</span>
+      <span className="text-sm text-foreground">{name}</span>
     </div>
   );
 }
@@ -121,7 +121,7 @@ function FrequencyCell({
   max: number;
 }) {
   if (value === null || value === undefined) {
-    return <span className="text-slate-400">—</span>;
+    return <span className="text-muted-foreground">—</span>;
   }
 
   // Scale based on actual data range
@@ -130,10 +130,10 @@ function FrequencyCell({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-mono font-medium tabular-nums text-slate-900">
+      <span className="text-sm font-mono font-medium tabular-nums text-foreground">
         {value.toFixed(6)}
       </span>
-      <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
         <div
           className="h-full rounded-full bg-primary transition-all duration-300"
           style={{ width: `${percentage}%` }}

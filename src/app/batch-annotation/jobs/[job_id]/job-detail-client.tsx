@@ -64,7 +64,7 @@ function RefreshIndicator({
   }, [lastUpdated]);
 
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-500">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <span>Updated {timeAgo}</span>
       <div className="flex items-center gap-1">
         <Button
@@ -202,17 +202,17 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   // Loading state
   if (!hasMounted || (isLoading && !job && !storedJob)) {
     return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
+      <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
           <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
         </div>
 
         <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-4xl mx-auto">
-          <Card className="border border-slate-200 py-0 gap-0">
+          <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-base font-medium text-slate-700">
+              <p className="text-base font-medium text-foreground">
                 Loading job details...
               </p>
             </CardContent>
@@ -225,9 +225,9 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   // Error state
   if (error && !job && !storedJob) {
     return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
+      <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
           <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
         </div>
 
@@ -235,22 +235,22 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
           <div className="mb-8">
             <Link
               href="/batch-annotation/jobs"
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Jobs
             </Link>
           </div>
 
-          <Card className="border border-slate-200 py-0 gap-0">
+          <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
-              <div className="h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                <AlertCircle className="w-8 h-8 text-rose-600" />
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Job Not Found
               </h3>
-              <p className="text-sm text-slate-500 mb-6 max-w-sm">
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
                 The job you&apos;re looking for doesn&apos;t exist or may have
                 expired.
               </p>
@@ -290,10 +290,10 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   const filename = storedJob?.filename ?? job?.input?.filename;
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-slate-900">
+    <div className="min-h-screen relative overflow-hidden text-foreground">
       {/* Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
         <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
       </div>
 
@@ -302,7 +302,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/batch-annotation/jobs"
-            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Jobs
@@ -343,17 +343,17 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
 
         {/* Cancel Error */}
         {cancelError && (
-          <div className="mt-6 rounded-xl bg-rose-50 border border-rose-200 px-6 py-5">
+          <div className="mt-6 rounded-xl bg-destructive/10 border border-destructive/20 px-6 py-5">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600" />
-              <p className="text-sm text-rose-700">{cancelError}</p>
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <p className="text-sm text-destructive">{cancelError}</p>
             </div>
           </div>
         )}
 
         {/* Safe to leave message */}
         {!isTerminal && (
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             You can leave this page — your job will continue processing in the
             background.
           </p>

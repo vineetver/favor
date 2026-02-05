@@ -439,7 +439,7 @@ export default function LiverE2GBrowser() {
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Liver E2G Browser</h1>
+          <h1 className="text-page-title">Liver E2G Browser</h1>
           <p className="text-muted-foreground mt-2">
             Explore enhancer-to-gene links in liver cell types (hg38)
           </p>
@@ -561,15 +561,15 @@ export default function LiverE2GBrowser() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-6 rounded bg-slate-500" />
+                    <div className="h-3 w-6 rounded bg-muted-foreground" />
                     <span className="text-xs">Enhancer region</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-slate-700" />
+                    <div className="h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-foreground" />
                     <span className="text-xs">Gene TSS</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-[2px] w-6 bg-slate-600 rounded" />
+                    <div className="h-[2px] w-6 bg-muted-foreground rounded" />
                     <span className="text-xs">E2G link (arc)</span>
                   </div>
                 </div>
@@ -616,7 +616,7 @@ export default function LiverE2GBrowser() {
                                 {g.regionClass}
                               </span>
                               {g.cellType && (
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs text-muted-foreground">
                                   ({g.cellType})
                                 </span>
                               )}

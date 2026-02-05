@@ -56,17 +56,17 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   // Loading state
   if (!hasMounted || (isLoading && !job)) {
     return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
+      <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
           <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
         </div>
 
         <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-4xl mx-auto">
-          <Card className="border border-slate-200 py-0 gap-0">
+          <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-base font-medium text-slate-700">Loading job data...</p>
+              <p className="text-base font-medium text-foreground">Loading job data...</p>
             </CardContent>
           </Card>
         </main>
@@ -77,9 +77,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   // Error state
   if (error && !job) {
     return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
+      <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
           <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
         </div>
 
@@ -87,20 +87,20 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
           <div className="mb-8">
             <Link
               href={`/batch-annotation/jobs/${jobId}`}
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Job
             </Link>
           </div>
 
-          <Card className="border border-slate-200 py-0 gap-0">
+          <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
-              <div className="h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                <AlertCircle className="w-8 h-8 text-rose-600" />
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Job Not Found</h3>
-              <p className="text-sm text-slate-500 mb-6 max-w-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Job Not Found</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
                 The job you&apos;re looking for doesn&apos;t exist or may have expired.
               </p>
               <Button variant="outline" asChild>
@@ -123,9 +123,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   // Job not completed state
   if (!isCompleted || !output) {
     return (
-      <div className="min-h-screen relative overflow-hidden text-slate-900">
+      <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
           <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
         </div>
 
@@ -133,20 +133,20 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
           <div className="mb-8">
             <Link
               href={`/batch-annotation/jobs/${jobId}`}
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Job
             </Link>
           </div>
 
-          <Card className="border border-slate-200 py-0 gap-0">
+          <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
-              <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-                <Clock className="w-8 h-8 text-amber-600" />
+              <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-warning" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Job Not Complete</h3>
-              <p className="text-sm text-slate-500 mb-6 max-w-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Job Not Complete</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
                 Analytics are available once the job has completed processing.
               </p>
               <Button variant="outline" asChild>
@@ -164,10 +164,10 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
 
   // Analytics ready - output is available on completed jobs
   return (
-    <div className="min-h-screen relative overflow-hidden text-slate-900">
+    <div className="min-h-screen relative overflow-hidden text-foreground">
       {/* Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none print:hidden">
-        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
+        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
         <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
       </div>
 
@@ -176,7 +176,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
         <div className="mb-8 print:mb-4">
           <Link
             href={`/batch-annotation/jobs/${jobId}`}
-            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-6 print:hidden"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 print:hidden"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Job
@@ -188,13 +188,13 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
                 <BarChart3 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 print:text-xl">
+                <h1 className="text-2xl font-bold text-foreground print:text-xl">
                   Cohort Analytics
                 </h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {storedJob?.filename || `Job ${jobId.slice(0, 8)}`}
                   {output?.bytes_human && (
-                    <span className="ml-2 text-slate-400">
+                    <span className="ml-2 text-muted-foreground">
                       ({output.bytes_human})
                     </span>
                   )}
@@ -203,14 +203,14 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg print:hidden">
+            <div className="flex items-center gap-1 p-1 bg-muted rounded-lg print:hidden">
               <button
                 type="button"
                 onClick={() => setViewMode("report")}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === "report"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <FileText className="w-4 h-4" />
@@ -221,8 +221,8 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
                 onClick={() => setViewMode("query")}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === "query"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Database className="w-4 h-4" />

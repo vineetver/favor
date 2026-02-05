@@ -131,20 +131,20 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
   const ensemblId = gene.gene_id_versioned?.split(".")[0] || id;
 
   return (
-    <Card className="overflow-hidden border border-slate-200 py-0 gap-0">
-      <CardHeader className="border-b border-slate-200 px-6 py-5">
+    <Card className="overflow-hidden border border-border py-0 gap-0">
+      <CardHeader className="border-b border-border px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold text-slate-900">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Tractability & Target Class
             </CardTitle>
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-muted-foreground">
               Druggability assessment across different therapeutic modalities
             </div>
           </div>
           <ExternalLink
             href={`https://platform.opentargets.org/target/${ensemblId}`}
-            className="text-sm text-slate-500 hover:text-primary"
+            className="text-sm text-muted-foreground hover:text-primary"
             iconSize="sm"
           >
             Open Targets
@@ -172,14 +172,14 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
             </div>
 
             {/* Legend */}
-            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/30">
-              <div className="flex items-center gap-4 text-xs text-slate-500">
+            <div className="px-6 py-3 border-t border-border bg-muted/30">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="w-2 h-2 rounded-full bg-success" />
                   <span>Supported</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full border-[1.5px] border-slate-300" />
+                  <span className="w-2 h-2 rounded-full border-[1.5px] border-border" />
                   <span>Not supported</span>
                 </div>
               </div>
@@ -189,11 +189,11 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
 
         {/* Target Class */}
         {targetClass.length > 0 && (
-          <div className="px-6 py-5 border-t border-slate-200">
+          <div className="px-6 py-5 border-t border-border">
             <div className="space-y-3">
               <div>
-                <h2 className="text-sm font-medium text-slate-600">Target Class</h2>
-                <div className="text-sm text-slate-500">
+                <h2 className="text-sm font-medium text-muted-foreground">Target Class</h2>
+                <div className="text-sm text-muted-foreground">
                   Protein family classification from ChEMBL
                 </div>
               </div>
@@ -201,10 +201,10 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
                 {targetClass.map((item, index) => (
                   <span
                     key={`${item.id}-${item.level}-${index}`}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
                   >
-                    <span className="text-slate-900 font-medium">{item.label}</span>
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                    <span className="text-foreground font-medium">{item.label}</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                       L{item.level}
                     </span>
                   </span>
@@ -222,11 +222,11 @@ function CriteriaRow({ label, value }: { label: string; value: boolean }) {
   return (
     <div className={cn("flex items-center gap-2.5", !value && "opacity-40")}>
       {value ? (
-        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-success shrink-0" />
       ) : (
-        <span className="w-2 h-2 rounded-full border-[1.5px] border-slate-300 shrink-0" />
+        <span className="w-2 h-2 rounded-full border-[1.5px] border-border shrink-0" />
       )}
-      <span className="text-sm text-slate-700">{label}</span>
+      <span className="text-sm text-foreground">{label}</span>
     </div>
   );
 }
@@ -253,27 +253,27 @@ function ModalityColumn({
   const isActive = counts.supported > 0;
 
   return (
-    <div className={cn("flex flex-col", isActive && "bg-emerald-50/30")}>
+    <div className={cn("flex flex-col", isActive && "bg-success/10")}>
       {/* Column Header */}
-      <div className="px-6 py-3.5 bg-slate-50/50 border-b border-slate-200">
+      <div className="px-6 py-3.5 bg-muted/50 border-b border-border">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-900">
+            <span className="text-sm font-semibold text-foreground">
               {modalityLabel}
             </span>
             {isActive && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-success" />
             )}
           </div>
-          <div className="text-sm text-slate-500">
+          <div className="text-sm text-muted-foreground">
             {counts.supported}/{counts.total} criteria
           </div>
         </div>
       </div>
 
       {/* Clinical Section */}
-      <div className="bg-slate-100/80 px-6 py-1.5">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+      <div className="bg-muted/80 px-6 py-1.5">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Clinical
         </span>
       </div>
@@ -290,8 +290,8 @@ function ModalityColumn({
       {/* Evidence Section - only if modality has evidence criteria */}
       {evidenceCriteria.length > 0 && (
         <>
-          <div className="bg-slate-100/80 px-6 py-1.5">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <div className="bg-muted/80 px-6 py-1.5">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Evidence
             </span>
           </div>

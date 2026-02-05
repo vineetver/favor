@@ -62,7 +62,7 @@ function StatusTabs({
   ];
 
   return (
-    <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+    <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
       {tabs.map((tab) => (
         <Button
           key={tab.id}
@@ -70,7 +70,7 @@ function StatusTabs({
           size="sm"
           onClick={() => onChange(tab.id)}
           className={cn(
-            active === tab.id && "bg-white shadow-sm",
+            active === tab.id && "bg-background shadow-sm",
           )}
         >
           {tab.label}
@@ -78,7 +78,7 @@ function StatusTabs({
             <span
               className={cn(
                 "ml-1.5 text-xs",
-                active === tab.id ? "text-slate-500" : "text-slate-400",
+                active === tab.id ? "text-muted-foreground" : "text-muted-foreground",
               )}
             >
               {counts[tab.id]}
@@ -129,7 +129,7 @@ function SortDropdown({
             className="fixed inset-0 z-10"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+          <div className="absolute right-0 top-full mt-1 z-20 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[140px]">
             {options.map((option) => (
               <Button
                 key={option.id}
@@ -197,7 +197,7 @@ function JobCard({
   return (
     <div
       className={cn(
-        "relative px-4 py-3 rounded-lg border bg-white transition-all hover:shadow-sm group",
+        "relative px-4 py-3 rounded-lg border bg-background transition-all hover:shadow-sm group",
         isActive && "border-l-2 border-l-primary",
       )}
     >
@@ -209,10 +209,10 @@ function JobCard({
             isActive
               ? "bg-primary/10"
               : isComplete
-                ? "bg-emerald-50"
+                ? "bg-success/10"
                 : isFailed
-                  ? "bg-rose-50"
-                  : "bg-slate-100",
+                  ? "bg-destructive/10"
+                  : "bg-muted",
           )}
         >
           <FileSpreadsheet
@@ -221,10 +221,10 @@ function JobCard({
               isActive
                 ? "text-primary"
                 : isComplete
-                  ? "text-emerald-600"
+                  ? "text-success"
                   : isFailed
-                    ? "text-rose-500"
-                    : "text-slate-400",
+                    ? "text-destructive"
+                    : "text-muted-foreground",
             )}
           />
         </div>
@@ -232,7 +232,7 @@ function JobCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-medium text-slate-900 truncate">
+            <span className="text-sm font-medium text-foreground truncate">
               {job.filename}
             </span>
             <StatusBadge variant={stateConfig.variant} className="shrink-0">
@@ -247,17 +247,17 @@ function JobCard({
           </div>
 
           {/* Metadata line */}
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{formatDate(job.created_at)}</span>
             {job.estimated_rows && (
               <>
-                <span className="text-slate-300">·</span>
+                <span className="text-border">·</span>
                 <span>{formatNumber(job.estimated_rows)} rows</span>
               </>
             )}
             {job.progress && (
               <>
-                <span className="text-slate-300">·</span>
+                <span className="text-border">·</span>
                 <span>{formatNumber(job.progress.found)} found</span>
               </>
             )}
@@ -279,7 +279,7 @@ function JobCard({
               variant="ghost"
               size="icon-sm"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-slate-400 hover:text-slate-600"
+              className="text-muted-foreground hover:text-slate-600"
             >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
@@ -290,10 +290,10 @@ function JobCard({
                   className="fixed inset-0 z-10"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                <div className="absolute right-0 top-full mt-1 z-20 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[160px]">
                   <Link
                     href={`/batch-annotation/jobs/${job.job_id}`}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted"
                   >
                     <ExternalLink className="w-4 h-4" />
                     View details
@@ -314,14 +314,14 @@ function JobCard({
 
                   {!isActive && (
                     <>
-                      <div className="my-1 border-t border-slate-100" />
+                      <div className="my-1 border-t border-border" />
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleDelete}
                         className={cn(
                           "w-full justify-start",
-                          confirmDelete && "text-rose-600",
+                          confirmDelete && "text-destructive",
                         )}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -367,11 +367,11 @@ function EmptyState({ filter }: { filter: StatusFilter }) {
 
   return (
     <div className="flex flex-col items-center text-center py-12">
-      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-        <FileSpreadsheet className="w-5 h-5 text-slate-400" />
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <FileSpreadsheet className="w-5 h-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold text-slate-900 mb-1">{msg.title}</h3>
-      <p className="text-sm text-slate-500 mb-6 max-w-xs">{msg.desc}</p>
+      <h3 className="text-sm font-semibold text-foreground mb-1">{msg.title}</h3>
+      <p className="text-sm text-muted-foreground mb-6 max-w-xs">{msg.desc}</p>
       {filter === "all" && (
         <Button variant="outline" size="sm" asChild>
           <Link href="/batch-annotation">
@@ -390,12 +390,12 @@ function EmptyState({ filter }: { filter: StatusFilter }) {
 
 function StorageBanner() {
   return (
-    <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
-      <HardDrive className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+    <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+      <HardDrive className="w-4 h-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-blue-800">
+        <p className="text-sm text-foreground">
           <span className="font-medium">Jobs stored locally.</span>{" "}
-          <span className="text-blue-600">
+          <span className="text-muted-foreground">
             Job history is saved in your browser. Clearing browser data will remove this list,
             but your results remain available via direct links.
           </span>
@@ -497,14 +497,14 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
   }, [searchFilteredJobs, sortOption]);
 
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
       {/* Header */}
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Batch Jobs</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Batch Jobs</CardTitle>
             {hasMounted && jobs.length > 0 && (
-              <p className="text-sm text-slate-500 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {counts.active} active · {counts.completed} completed
               </p>
             )}
@@ -520,20 +520,20 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
 
       {/* Filters Bar */}
       {hasMounted && jobs.length > 0 && (
-        <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/50">
+        <div className="px-6 py-3 border-b border-border bg-muted/50">
           <div className="flex items-center justify-between gap-4">
             <StatusTabs active={statusFilter} onChange={setStatusFilter} counts={counts} />
 
             <div className="flex items-center gap-3">
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-48 bg-white"
+                  className="pl-9 w-48 bg-background"
                 />
               </div>
 
@@ -548,7 +548,7 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
         {/* Loading State */}
         {!hasMounted && (
           <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-slate-200 border-t-primary rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
           </div>
         )}
 
