@@ -173,13 +173,13 @@ export function JobProgressCard({
   };
 
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
       {/* Header */}
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -187,7 +187,7 @@ export function JobProgressCard({
               <button
                 type="button"
                 onClick={handleCopyJobId}
-                className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+                className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded hover:bg-muted transition-colors flex items-center gap-1"
               >
                 {job.job_id.slice(0, 8)}...
                 <Copy className="w-3 h-3" />
@@ -224,8 +224,8 @@ export function JobProgressCard({
         {progress && (
           <div className="space-y-4">
             {/* Processing Status - no spinner here, status badge in header already shows running state */}
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <span className={isRunning ? "font-medium" : "font-semibold text-slate-900"}>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className={isRunning ? "font-medium" : "font-semibold text-foreground"}>
                 {getProgressDisplay()}
               </span>
             </div>
@@ -253,7 +253,7 @@ export function JobProgressCard({
         )}
 
         {/* Timing Info */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
           <div className="flex items-center gap-4">
             {started_at && (
               <span>
@@ -312,11 +312,11 @@ export function JobProgressCard({
             </div>
 
             {output.manifest_url && onDownloadManifest && (
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="p-4 bg-muted rounded-xl border border-border">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-700">Manifest File</p>
-                    <p className="text-xs text-slate-500">Job metadata and checksums</p>
+                    <p className="text-sm font-medium text-foreground">Manifest File</p>
+                    <p className="text-xs text-muted-foreground">Job metadata and checksums</p>
                   </div>
                   <Button
                     type="button"
@@ -336,7 +336,7 @@ export function JobProgressCard({
 
       {/* Footer Actions */}
       {canCancel && (
-        <CardFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+        <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
           <div className="flex items-center justify-end w-full gap-3">
             <Button
               type="button"

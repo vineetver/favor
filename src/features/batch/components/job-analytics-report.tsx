@@ -660,7 +660,7 @@ const scoreColumn = col.accessor("priority_score", {
     const v = getValue();
     if (v === null || v === undefined) return "—";
     return (
-      <span className="font-mono text-xs font-semibold tabular-nums text-slate-900">
+      <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
         {Math.round(Number(v))}
       </span>
     );
@@ -675,9 +675,9 @@ const geneColumn = col.accessor("gene", {
     const genes = getValue();
     const genesArray = Array.isArray(genes) ? genes.filter(Boolean) : [];
     return genesArray.length ? (
-      <span className="font-medium text-slate-900">{genesArray.join(", ")}</span>
+      <span className="font-medium text-foreground">{genesArray.join(", ")}</span>
     ) : (
-      <span className="text-slate-300">—</span>
+      <span className="text-muted-foreground">—</span>
     );
   },
 });
@@ -729,7 +729,7 @@ const prioritizedVariantColumns: ColumnDef<PrioritizedVariant>[] = [
 function PrioritizedVariantsTable({ variants }: { variants: PrioritizedVariant[] }) {
   if (variants.length === 0) {
     return (
-      <div className="text-sm text-slate-500 text-center py-4">
+      <div className="text-sm text-muted-foreground text-center py-4">
         No prioritized variants found.
       </div>
     );
@@ -753,9 +753,9 @@ function PrioritizedVariantsTable({ variants }: { variants: PrioritizedVariant[]
 
 function KeyTakeaways({ takeaways }: { takeaways: string[] }) {
   return (
-    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
-      <h3 className="text-sm font-semibold text-slate-700 mb-2">Key Takeaways</h3>
-      <ul className="text-sm text-slate-600 space-y-1.5">
+    <div className="bg-muted rounded-lg p-4 border border-border mb-6">
+      <h3 className="text-sm font-semibold text-foreground mb-2">Key Takeaways</h3>
+      <ul className="text-sm text-muted-foreground space-y-1.5">
         {takeaways.map((takeaway, idx) => (
           <li key={idx} className="flex gap-2">
             <span className="text-primary font-bold">•</span>
@@ -812,27 +812,27 @@ function DistributionTable({
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">{title}</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">{title}</h4>
       <div className="space-y-1.5">
         {sorted.map((item) => {
           const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
           return (
-            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-border last:border-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
                 <span
-                  className="text-sm text-slate-700 truncate"
+                  className="text-sm text-foreground truncate"
                   title={item.description}
                 >
                   {item.label}
                 </span>
               </div>
               <div className="text-sm tabular-nums shrink-0 ml-2">
-                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                <span className={cn("font-medium", item.value > 0 ? "text-foreground" : "text-muted-foreground")}>
                   {item.value.toLocaleString()}
                 </span>
                 {item.value > 0 && (
-                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                  <span className="text-muted-foreground ml-1.5">({item.percentage.toFixed(1)}%)</span>
                 )}
               </div>
             </div>
@@ -846,7 +846,7 @@ function DistributionTable({
 function TopGenesTable({ genes }: { genes: GeneByVariantCount[] }) {
   if (genes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+      <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
         No gene data available
       </div>
     );
@@ -854,20 +854,20 @@ function TopGenesTable({ genes }: { genes: GeneByVariantCount[] }) {
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Genes by Variant Count</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Top Genes by Variant Count</h4>
       <div className="space-y-1.5">
         {genes.slice(0, 8).map((gene, idx) => (
-          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-border last:border-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span className="text-xs text-muted-foreground w-4 shrink-0">{idx + 1}.</span>
               <span
-                className="text-sm font-mono text-slate-700 truncate max-w-[140px]"
+                className="text-sm font-mono text-foreground truncate max-w-[140px]"
                 title={gene.gene}
               >
                 {gene.gene}
               </span>
             </div>
-            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
+            <span className="text-sm font-medium tabular-nums text-foreground shrink-0 ml-2">
               {gene.variant_count.toLocaleString()}
             </span>
           </div>
@@ -880,7 +880,7 @@ function TopGenesTable({ genes }: { genes: GeneByVariantCount[] }) {
 function GeneHancerTargetsTable({ targets }: { targets: GeneHancerTarget[] }) {
   if (targets.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+      <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
         No GeneHancer targets found
       </div>
     );
@@ -888,22 +888,22 @@ function GeneHancerTargetsTable({ targets }: { targets: GeneHancerTarget[] }) {
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Top GeneHancer Targets</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Top GeneHancer Targets</h4>
       <div className="space-y-1.5">
         {targets.slice(0, 8).map((target, idx) => (
-          <div key={target.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+          <div key={target.gene} className="flex items-center justify-between py-1 border-b border-border last:border-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span className="text-xs text-muted-foreground w-4 shrink-0">{idx + 1}.</span>
               <span
-                className="text-sm font-mono text-slate-700 truncate max-w-[140px]"
+                className="text-sm font-mono text-foreground truncate max-w-[140px]"
                 title={target.gene}
               >
                 {target.gene}
               </span>
             </div>
             <div className="text-sm tabular-nums shrink-0 ml-2">
-              <span className="font-medium text-slate-900">{target.variant_count}</span>
-              <span className="text-slate-400 ml-1.5">
+              <span className="font-medium text-foreground">{target.variant_count}</span>
+              <span className="text-muted-foreground ml-1.5">
                 ({typeof target.total_score === "number" ? target.total_score.toFixed(1) : target.total_score})
               </span>
             </div>
@@ -933,11 +933,11 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Functional Class</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Functional Class</h2>
 
       {/* 2x2 grid layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <DistributionTable
               data={regionData}
@@ -948,7 +948,7 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <DistributionTable
               data={consequenceData}
@@ -959,13 +959,13 @@ function FunctionalClassSection({ data }: { data: FunctionalClassData }) {
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <TopGenesTable genes={data.topGenes} />
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <GeneHancerTargetsTable targets={data.topGeneHancerTargets} />
           </CardContent>
@@ -986,28 +986,28 @@ function ScoreStatsTable({ stats }: { stats: ScoreStats[] }) {
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
+    <div className="overflow-hidden rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="px-3 py-2 text-left font-medium text-slate-600">Score</th>
-            <th className="px-3 py-2 text-right font-medium text-slate-600">Coverage</th>
-            <th className="px-3 py-2 text-right font-medium text-slate-600">P50</th>
-            <th className="px-3 py-2 text-right font-medium text-slate-600">P90</th>
-            <th className="px-3 py-2 text-right font-medium text-slate-600">High Impact</th>
+          <tr className="bg-muted border-b border-border">
+            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Score</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Coverage</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">P50</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">P90</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">High Impact</th>
           </tr>
         </thead>
         <tbody>
           {stats.map((stat) => (
-            <tr key={stat.name} className="border-b border-slate-100 last:border-0">
-              <td className="px-3 py-2 font-medium text-slate-900">{stat.label}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-slate-500">
+            <tr key={stat.name} className="border-b border-border last:border-0">
+              <td className="px-3 py-2 font-medium text-foreground">{stat.label}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                 {stat.coveragePct.toFixed(0)}%
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-slate-700">
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-foreground">
                 {formatNum(stat.p50)}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-slate-700">
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-foreground">
                 {formatNum(stat.p90)}
               </td>
               <td className="px-3 py-2 text-right tabular-nums font-medium text-amber-600">
@@ -1028,25 +1028,25 @@ function IntegrativeScoreSection({ data }: { data: IntegrativeScoreData }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Integrative Score</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Integrative Score</h2>
 
       {/* Summary stats */}
       <div className="flex items-center gap-6 mb-4 text-sm">
         <div>
-          <span className="text-slate-500">Avg Coverage: </span>
-          <span className="font-medium text-slate-900">{avgCoverage.toFixed(0)}%</span>
+          <span className="text-muted-foreground">Avg Coverage: </span>
+          <span className="font-medium text-foreground">{avgCoverage.toFixed(0)}%</span>
         </div>
         <div>
-          <span className="text-slate-500">Total High-Impact: </span>
+          <span className="text-muted-foreground">Total High-Impact: </span>
           <span className="font-medium text-amber-600">{totalHighImpact.toLocaleString()}</span>
         </div>
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-muted-foreground">
           High = CADD≥20, LINSIGHT≥0.5, FATHMM≥0.5, aPC≥10
         </div>
       </div>
 
       {/* Score statistics table */}
-      <Card className="border border-slate-200 py-0 gap-0">
+      <Card className="border border-border py-0 gap-0">
         <CardContent className="p-4">
           <ScoreStatsTable stats={data.scoreStats} />
         </CardContent>
@@ -1099,27 +1099,27 @@ function ClinSigTable({
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Clinical Significance</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Clinical Significance</h4>
       <div className="space-y-1.5">
         {sorted.map((item) => {
           const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
           return (
-            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-border last:border-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
                 <span
-                  className="text-sm text-slate-700 truncate"
+                  className="text-sm text-foreground truncate"
                   title={item.description}
                 >
                   {item.label}
                 </span>
               </div>
               <div className="text-sm tabular-nums shrink-0 ml-2">
-                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                <span className={cn("font-medium", item.value > 0 ? "text-foreground" : "text-muted-foreground")}>
                   {item.value.toLocaleString()}
                 </span>
                 {item.value > 0 && (
-                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                  <span className="text-muted-foreground ml-1.5">({item.percentage.toFixed(1)}%)</span>
                 )}
               </div>
             </div>
@@ -1167,27 +1167,27 @@ function ReviewStatusTable({
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Review Status</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Review Status</h4>
       <div className="space-y-1.5">
         {sorted.map((item) => {
           const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
           return (
-            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-border last:border-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
                 <span
-                  className="text-sm text-slate-700 truncate"
+                  className="text-sm text-foreground truncate"
                   title={item.description}
                 >
                   {item.label}
                 </span>
               </div>
               <div className="text-sm tabular-nums shrink-0 ml-2">
-                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                <span className={cn("font-medium", item.value > 0 ? "text-foreground" : "text-muted-foreground")}>
                   {item.value.toLocaleString()}
                 </span>
                 {item.value > 0 && (
-                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                  <span className="text-muted-foreground ml-1.5">({item.percentage.toFixed(1)}%)</span>
                 )}
               </div>
             </div>
@@ -1209,7 +1209,7 @@ function formatDiseaseName(name: string): string {
 function TopDiseasesTable({ diseases }: { diseases: DiseaseFrequency[] }) {
   if (diseases.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+      <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
         No disease data available
       </div>
     );
@@ -1217,20 +1217,20 @@ function TopDiseasesTable({ diseases }: { diseases: DiseaseFrequency[] }) {
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Associated Diseases</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Top Associated Diseases</h4>
       <div className="space-y-1.5">
         {diseases.slice(0, 10).map((disease, idx) => (
-          <div key={disease.disease} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+          <div key={disease.disease} className="flex items-center justify-between py-1 border-b border-border last:border-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span className="text-xs text-muted-foreground w-4 shrink-0">{idx + 1}.</span>
               <span
-                className="text-sm text-slate-700 truncate"
+                className="text-sm text-foreground truncate"
                 title={disease.disease}
               >
                 {formatDiseaseName(disease.disease)}
               </span>
             </div>
-            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
+            <span className="text-sm font-medium tabular-nums text-foreground shrink-0 ml-2">
               {disease.count.toLocaleString()}
             </span>
           </div>
@@ -1260,17 +1260,17 @@ function ClinVarSection({ data }: { data: ClinVarData }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">ClinVar</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">ClinVar</h2>
 
       {/* Summary stats */}
       <div className="flex items-center gap-6 mb-4 text-sm">
         <div>
-          <span className="text-slate-500">Total with ClinVar: </span>
-          <span className="font-medium text-slate-900">{data.totalWithClinvar.toLocaleString()}</span>
+          <span className="text-muted-foreground">Total with ClinVar: </span>
+          <span className="font-medium text-foreground">{data.totalWithClinvar.toLocaleString()}</span>
         </div>
         {pathogenicCount > 0 && (
           <div>
-            <span className="text-slate-500">Pathogenic/Likely Path: </span>
+            <span className="text-muted-foreground">Pathogenic/Likely Path: </span>
             <span className="font-medium text-rose-600">{pathogenicCount.toLocaleString()}</span>
           </div>
         )}
@@ -1278,19 +1278,19 @@ function ClinVarSection({ data }: { data: ClinVarData }) {
 
       {/* 2x2 grid layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <ClinSigTable data={clinSigData} total={data.totalWithClinvar} />
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <ReviewStatusTable data={reviewData} total={data.totalWithClinvar} />
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0 md:col-span-2">
+        <Card className="border border-border py-0 gap-0 md:col-span-2">
           <CardContent className="p-4">
             <TopDiseasesTable diseases={data.topDiseases} />
           </CardContent>
@@ -1326,27 +1326,27 @@ function AlphaMissenseTable({
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">AlphaMissense Classification</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">AlphaMissense Classification</h4>
       <div className="space-y-1.5">
         {allCategories.map((item) => {
           const colorClass = DOT_COLORS[item.color] || "bg-slate-400";
           return (
-            <div key={item.label} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+            <div key={item.label} className="flex items-center justify-between py-1 border-b border-border last:border-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
                 <span
-                  className="text-sm text-slate-700 truncate"
+                  className="text-sm text-foreground truncate"
                   title={item.description}
                 >
                   {item.label}
                 </span>
               </div>
               <div className="text-sm tabular-nums shrink-0 ml-2">
-                <span className={cn("font-medium", item.value > 0 ? "text-slate-900" : "text-slate-300")}>
+                <span className={cn("font-medium", item.value > 0 ? "text-foreground" : "text-muted-foreground")}>
                   {item.value.toLocaleString()}
                 </span>
                 {item.value > 0 && (
-                  <span className="text-slate-400 ml-1.5">({item.percentage.toFixed(1)}%)</span>
+                  <span className="text-muted-foreground ml-1.5">({item.percentage.toFixed(1)}%)</span>
                 )}
               </div>
             </div>
@@ -1360,7 +1360,7 @@ function AlphaMissenseTable({
 function TopMissenseGenesTable({ genes }: { genes: MissenseGene[] }) {
   if (genes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+      <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
         No missense gene data available
       </div>
     );
@@ -1368,20 +1368,20 @@ function TopMissenseGenesTable({ genes }: { genes: MissenseGene[] }) {
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-slate-700 mb-3">Top Genes by Missense Variants</h4>
+      <h4 className="text-sm font-medium text-foreground mb-3">Top Genes by Missense Variants</h4>
       <div className="space-y-1.5">
         {genes.slice(0, 8).map((gene, idx) => (
-          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+          <div key={gene.gene} className="flex items-center justify-between py-1 border-b border-border last:border-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs text-slate-400 w-4 shrink-0">{idx + 1}.</span>
+              <span className="text-xs text-muted-foreground w-4 shrink-0">{idx + 1}.</span>
               <span
-                className="text-sm font-mono text-slate-700 truncate max-w-[180px]"
+                className="text-sm font-mono text-foreground truncate max-w-[180px]"
                 title={gene.gene}
               >
                 {gene.gene}
               </span>
             </div>
-            <span className="text-sm font-medium tabular-nums text-slate-900 shrink-0 ml-2">
+            <span className="text-sm font-medium tabular-nums text-foreground shrink-0 ml-2">
               {gene.variant_count.toLocaleString()}
             </span>
           </div>
@@ -1408,21 +1408,21 @@ function ProteinFunctionSection({ data }: { data: ProteinFunctionData }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Protein Function</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Protein Function</h2>
 
       {/* Summary stats */}
       <div className="flex items-center gap-6 mb-4 text-sm">
         <div>
-          <span className="text-slate-500">Total Missense: </span>
-          <span className="font-medium text-slate-900">{data.totalMissense.toLocaleString()}</span>
+          <span className="text-muted-foreground">Total Missense: </span>
+          <span className="font-medium text-foreground">{data.totalMissense.toLocaleString()}</span>
         </div>
         <div>
-          <span className="text-slate-500">With AlphaMissense: </span>
-          <span className="font-medium text-slate-900">{totalWithAM.toLocaleString()}</span>
+          <span className="text-muted-foreground">With AlphaMissense: </span>
+          <span className="font-medium text-foreground">{totalWithAM.toLocaleString()}</span>
         </div>
         {pathogenicCount > 0 && (
           <div>
-            <span className="text-slate-500">Likely Pathogenic: </span>
+            <span className="text-muted-foreground">Likely Pathogenic: </span>
             <span className="font-medium text-rose-600">{pathogenicCount.toLocaleString()}</span>
           </div>
         )}
@@ -1430,13 +1430,13 @@ function ProteinFunctionSection({ data }: { data: ProteinFunctionData }) {
 
       {/* 2-column grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <AlphaMissenseTable data={amData} total={totalWithAM} />
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200 py-0 gap-0">
+        <Card className="border border-border py-0 gap-0">
           <CardContent className="p-4">
             <TopMissenseGenesTable genes={data.topMissenseGenes} />
           </CardContent>
@@ -1736,10 +1736,10 @@ export function JobAnalyticsReport({
   // Loading state
   if (dbLoading || !dataLoaded || isLoading) {
     return (
-      <Card className="border border-slate-200 py-0 gap-0">
+      <Card className="border border-border py-0 gap-0">
         <CardContent className="flex flex-col items-center justify-center text-center py-16">
           <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-foreground">
             {dbLoading
               ? "Initializing analytics engine..."
               : !dataLoaded
@@ -1754,13 +1754,13 @@ export function JobAnalyticsReport({
   // Error state
   if (error || dbError) {
     return (
-      <Card className="border border-slate-200 py-0 gap-0">
+      <Card className="border border-border py-0 gap-0">
         <CardContent className="flex flex-col items-center justify-center text-center py-16">
           <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
             <AlertCircle className="w-6 h-6 text-rose-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-900 mb-2">Report generation failed</p>
-          <p className="text-sm text-slate-500 max-w-md mb-4">{error || dbError}</p>
+          <p className="text-sm font-semibold text-foreground mb-2">Report generation failed</p>
+          <p className="text-sm text-muted-foreground max-w-md mb-4">{error || dbError}</p>
           <Button variant="outline" onClick={generateReport}>
             <RefreshCw className="w-4 h-4" />
             Retry
@@ -1776,7 +1776,7 @@ export function JobAnalyticsReport({
     <div className={cn("max-w-5xl mx-auto print:max-w-none", className)}>
       {/* Executive Summary Section */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Executive Summary</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Executive Summary</h2>
 
         {/* Key Takeaways */}
         <KeyTakeaways takeaways={takeaways} />
@@ -1842,7 +1842,7 @@ export function JobAnalyticsReport({
       <ProteinFunctionSection data={reportData.proteinFunction} />
 
       {/* Footer */}
-      <footer className="pt-6 border-t border-slate-200 text-xs text-slate-400 print:mt-8">
+      <footer className="pt-6 border-t border-border text-xs text-muted-foreground print:mt-8">
         <p>
           Data sources: ClinVar, gnomAD v4, BRAVO, AlphaMissense, ENCODE cCRE, COSMIC. Build:
           GRCh38/hg38.

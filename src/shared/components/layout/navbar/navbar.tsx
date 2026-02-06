@@ -23,8 +23,8 @@ function NavLink({ item }: { item: NavItem }) {
       href={item.href}
       className={cn(
         "px-5 py-2 text-base font-medium rounded-full",
-        "text-slate-600 transition-all duration-300",
-        "hover:text-slate-900 hover:bg-primary/10",
+        "text-muted-foreground transition-all duration-300",
+        "hover:text-foreground hover:bg-primary/10",
       )}
       {...(item.external && {
         target: "_blank",
@@ -47,7 +47,7 @@ export function Navbar() {
           "fixed w-full z-50 top-0",
           "transition-all duration-500 ease-in-out",
           scrolled
-            ? "bg-white/85 backdrop-blur-2xl border-b border-slate-200/60 py-4 shadow-sm"
+            ? "bg-white/85 backdrop-blur-2xl border-b border-border/60 py-4 shadow-sm"
             : "bg-transparent border-b border-transparent py-6",
         )}
       >
@@ -67,7 +67,7 @@ export function Navbar() {
                   "flex items-center p-1.5 rounded-full",
                   "transition-all duration-500",
                   scrolled
-                    ? "bg-slate-100/60 border border-slate-200/50"
+                    ? "bg-muted/60 border border-border/50"
                     : "bg-transparent",
                 )}
               >
@@ -83,8 +83,8 @@ export function Navbar() {
                       className={cn(
                         "flex items-center gap-1.5 px-5 py-2 rounded-full",
                         "text-base font-medium",
-                        "text-slate-600 transition-all duration-300",
-                        "hover:text-slate-900 hover:bg-primary/10",
+                        "text-muted-foreground transition-all duration-300",
+                        "hover:text-foreground hover:bg-primary/10",
                         "focus:outline-none",
                       )}
                     >
@@ -103,9 +103,9 @@ export function Navbar() {
                           href={item.href}
                           className={cn(
                             "w-full px-3 py-2.5 rounded-lg cursor-pointer",
-                            "text-base font-medium text-slate-600",
+                            "text-base font-medium text-muted-foreground",
                             "transition-colors duration-200",
-                            "hover:text-slate-900 hover:bg-slate-100/80",
+                            "hover:text-foreground hover:bg-muted/80",
                           )}
                           {...(item.external && {
                             target: "_blank",
@@ -123,20 +123,20 @@ export function Navbar() {
 
             {/* Right: Actions */}
             <div className="flex-1 flex justify-end items-center gap-6 z-10">
-              <div className="hidden md:flex h-5 w-px bg-slate-200" />
+              <div className="hidden md:flex h-5 w-px bg-border" />
 
               <Link
                 href="/whats-new"
                 className={cn(
                   "hidden md:flex items-center gap-2",
                   "px-4 py-2 rounded-full",
-                  "bg-white border border-slate-200",
+                  "bg-white border border-border",
                   "shadow-sm hover:shadow transition-all",
                   "group",
                 )}
               >
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 tracking-wide uppercase">
+                <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground tracking-wide uppercase">
                   {siteConfig.version}
                 </span>
               </Link>
@@ -147,7 +147,7 @@ export function Navbar() {
                 size="icon"
                 className={cn(
                   "md:hidden h-10 w-10 rounded-full",
-                  "text-slate-900 hover:bg-primary/10",
+                  "text-foreground hover:bg-primary/10",
                   "transition-colors",
                 )}
                 onClick={() => setDrawerOpen(true)}

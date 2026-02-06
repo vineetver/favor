@@ -31,9 +31,9 @@ function MobileNavLink({
       className={cn(
         "flex items-center justify-between",
         "px-5 py-4 rounded-2xl",
-        "text-lg font-semibold text-slate-600",
+        "text-lg font-semibold text-muted-foreground",
         "transition-colors duration-200",
-        "hover:text-slate-900 hover:bg-primary/10",
+        "hover:text-foreground hover:bg-primary/10",
       )}
       {...(item.external && {
         target: "_blank",
@@ -101,7 +101,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <Link href="/" onClick={onClose}>
               <Logo className="h-7 w-auto" />
             </Link>
@@ -133,8 +133,8 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
               ))}
 
               {/* Resources Section */}
-              <div className="pt-6 mt-6 border-t border-slate-100">
-                <span className="block px-5 py-2 text-sm font-bold text-slate-400 uppercase tracking-widest">
+              <div className="pt-6 mt-6 border-t border-border">
+                <span className="block px-5 py-2 text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   Resources
                 </span>
                 {RESOURCES.map((item) => (
@@ -144,9 +144,9 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                     onClick={onClose}
                     className={cn(
                       "block px-5 py-3 rounded-xl",
-                      "text-base font-medium text-slate-500",
+                      "text-base font-medium text-muted-foreground",
                       "transition-colors duration-200",
-                      "hover:text-slate-900 hover:bg-primary/10",
+                      "hover:text-foreground hover:bg-primary/10",
                     )}
                     {...(item.external && {
                       target: "_blank",
@@ -161,9 +161,9 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-5 border-t border-slate-100">
+          <div className="px-6 py-5 border-t border-border">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                 {siteConfig.version}
               </span>
               <Link

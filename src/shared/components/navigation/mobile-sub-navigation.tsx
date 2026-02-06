@@ -47,18 +47,18 @@ export function MobileSubNavigation({
         <Button
           variant="outline"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between h-11 px-4 text-sm font-medium rounded-xl border-slate-200 touch-manipulation"
+          className="w-full justify-between h-11 px-4 text-sm font-medium rounded-xl border-border touch-manipulation"
         >
           <span className="truncate text-heading">{displayText}</span>
           <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${
+            className={`w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
         </Button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white border border-border rounded-xl shadow-lg shadow-border/50 max-h-64 overflow-y-auto">
             <div className="p-1.5">
               {items.map((item) => {
                 const isActive = isActiveItem(item.slug);
@@ -68,8 +68,8 @@ export function MobileSubNavigation({
                     href={`${basePath}/${item.slug}${queryString}`}
                     className={`block w-full text-left px-3.5 py-2.5 text-sm rounded-lg transition-all duration-150 touch-manipulation ${
                       isActive
-                        ? "bg-primary/[0.08] text-slate-900 font-medium"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "bg-primary/[0.08] text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                     onClick={() => setIsOpen(false)}
                   >

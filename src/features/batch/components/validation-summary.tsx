@@ -102,14 +102,14 @@ function FormatBadges({ validation }: { validation: ValidateResponse }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-700">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
         <FileText className="w-3 h-3" />
         {getFormatLabel(validation.format_detected)}
       </span>
       <span
         className={cn(
           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium",
-          isRsId ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700",
+          isRsId ? "bg-amber-100 text-amber-700" : "bg-muted text-foreground",
         )}
       >
         <Zap className="w-3 h-3" />
@@ -117,7 +117,7 @@ function FormatBadges({ validation }: { validation: ValidateResponse }) {
         {isRsId && " (slower)"}
       </span>
       {suggested_patch.has_header && (
-        <span className="px-2.5 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-600">
+        <span className="px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground">
           Header detected
         </span>
       )}
@@ -162,15 +162,15 @@ function DataPreview({
   }, [displayedExamples]);
 
   return (
-    <div className="rounded-lg border border-slate-200 overflow-hidden">
-      <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500">Data preview</span>
+    <div className="rounded-lg border border-border overflow-hidden">
+      <div className="px-3 py-2 bg-muted border-b border-border flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">Data preview</span>
         <div className="flex items-center gap-2">
           {examples.length > maxRows && (
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="text-xs text-slate-500 hover:text-slate-700"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               {expanded ? "Show less" : `Show ${Math.min(25, examples.length)} rows`}
             </button>
@@ -178,7 +178,7 @@ function DataPreview({
           <button
             type="button"
             onClick={handleCopy}
-            className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <Copy className="w-3 h-3" />
             {copied ? "Copied!" : "Copy"}
@@ -189,17 +189,17 @@ function DataPreview({
         <table className="w-full text-xs font-mono">
           <tbody>
             {displayedExamples.map((example, i) => (
-              <tr key={i} className="hover:bg-slate-50">
-                <td className="pr-3 py-0.5 text-slate-400 text-right select-none w-8">
+              <tr key={i} className="hover:bg-muted">
+                <td className="pr-3 py-0.5 text-muted-foreground text-right select-none w-8">
                   {i + 1}
                 </td>
-                <td className="py-0.5 text-slate-600 truncate">{example}</td>
+                <td className="py-0.5 text-muted-foreground truncate">{example}</td>
               </tr>
             ))}
           </tbody>
         </table>
         {remainingRows > 0 && (
-          <div className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-400">
+          <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
             + {formatNumber(remainingRows)} more rows
           </div>
         )}

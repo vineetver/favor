@@ -263,7 +263,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 function ResultTable({ result }: { result: QueryResult }) {
   if (result.rowCount === 0) {
     return (
-      <div className="py-8 text-center text-sm text-slate-500">
+      <div className="py-8 text-center text-sm text-muted-foreground">
         No results found
       </div>
     );
@@ -273,11 +273,11 @@ function ResultTable({ result }: { result: QueryResult }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="border-b border-border bg-muted">
             {result.columns.map((col) => (
               <th
                 key={col}
-                className="px-4 py-2 text-left font-medium text-slate-600 whitespace-nowrap"
+                className="px-4 py-2 text-left font-medium text-muted-foreground whitespace-nowrap"
               >
                 {col}
               </th>
@@ -288,7 +288,7 @@ function ResultTable({ result }: { result: QueryResult }) {
           {result.rows.map((row, i) => (
             <tr
               key={i}
-              className="border-b border-slate-100 hover:bg-slate-50/50"
+              className="border-b border-border hover:bg-muted/50"
             >
               {result.columns.map((col) => (
                 <td key={col} className="px-4 py-2 whitespace-nowrap">
@@ -300,7 +300,7 @@ function ResultTable({ result }: { result: QueryResult }) {
         </tbody>
       </table>
       {result.rowCount > 100 && (
-        <div className="px-4 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+        <div className="px-4 py-2 text-xs text-muted-foreground bg-muted border-t border-border">
           Showing first 100 of {result.rowCount.toLocaleString()} rows
         </div>
       )}
@@ -343,12 +343,12 @@ function QueryCard({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-border bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-4">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h4 className="text-sm font-medium text-slate-900">{query.name}</h4>
-          <p className="text-xs text-slate-500 mt-0.5">{query.description}</p>
+          <h4 className="text-sm font-medium text-foreground">{query.name}</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">{query.description}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
@@ -382,8 +382,8 @@ function QueryCard({
 
       {/* SQL Preview */}
       {isExpanded && (
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-          <pre className="text-xs text-slate-600 overflow-x-auto whitespace-pre-wrap">
+        <div className="px-4 py-3 bg-muted border-b border-border">
+          <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
             {query.sql.trim()}
           </pre>
         </div>
@@ -401,7 +401,7 @@ function QueryCard({
 
       {/* Results */}
       {result && !error && (
-        <div className="border-t border-slate-200">
+        <div className="border-t border-border">
           <ResultTable result={result} />
         </div>
       )}
@@ -434,10 +434,10 @@ function CustomQuery({
   };
 
   return (
-    <Card className="border border-slate-200 py-0 gap-0">
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+    <Card className="border border-border py-0 gap-0">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-2">
-          <Database className="w-4 h-4 text-slate-400" />
+          <Database className="w-4 h-4 text-muted-foreground" />
           <CardTitle className="text-sm font-semibold">Custom SQL Query</CardTitle>
         </div>
       </CardHeader>
@@ -448,11 +448,11 @@ function CustomQuery({
               value={sql}
               onChange={(e) => setSql(e.target.value)}
               placeholder="SELECT * FROM variants LIMIT 10"
-              className="h-32 font-mono bg-slate-50 resize-none"
+              className="h-32 font-mono bg-muted resize-none"
             />
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-slate-500">
-                Table: <code className="bg-slate-100 px-1 py-0.5 rounded">variants</code>
+              <p className="text-xs text-muted-foreground">
+                Table: <code className="bg-muted px-1 py-0.5 rounded">variants</code>
               </p>
               <Button type="submit" disabled={isLoading || !sql.trim()}>
                 {isLoading ? (
@@ -478,7 +478,7 @@ function CustomQuery({
 
         {/* Results */}
         {result && !error && (
-          <div className="border-t border-slate-200">
+          <div className="border-t border-border">
             <ResultTable result={result} />
           </div>
         )}
@@ -609,13 +609,13 @@ export function JobAnalytics({
   // Loading state
   if (isInitializing || isLoadingData) {
     return (
-      <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
+      <Card className={cn("border border-border py-0 gap-0", className)}>
         <CardContent className="flex flex-col items-center justify-center py-16">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-base font-medium text-slate-700">
+          <p className="text-base font-medium text-foreground">
             {isInitializing ? "Initializing analytics engine..." : "Loading variant data..."}
           </p>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             This may take a moment for large datasets
           </p>
         </CardContent>
@@ -626,7 +626,7 @@ export function JobAnalytics({
   // Error state
   if (initError || loadError) {
     return (
-      <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
+      <Card className={cn("border border-border py-0 gap-0", className)}>
         <CardContent className="flex flex-col items-center justify-center py-16">
           <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
             <AlertCircle className="w-8 h-8 text-rose-600" />
@@ -651,18 +651,18 @@ export function JobAnalytics({
   return (
     <div className={cn("space-y-6", className)}>
       {/* Header */}
-      <Card className="border border-slate-200 py-0 gap-0">
-        <CardHeader className="border-b border-slate-200 px-6 py-5">
+      <Card className="border border-border py-0 gap-0">
+        <CardHeader className="border-b border-border px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold text-slate-900">
+                <CardTitle className="text-lg font-semibold text-foreground">
                   Cohort Analytics
                 </CardTitle>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {filename || `Job ${jobId.slice(0, 8)}`}
                 </p>
               </div>
@@ -697,7 +697,7 @@ export function JobAnalytics({
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Use the preset queries below or write custom SQL to analyze your variant data.
             All queries run locally in your browser using DuckDB WASM.
           </p>
@@ -707,8 +707,8 @@ export function JobAnalytics({
       {/* Preset Queries by Category */}
       {Object.entries(queriesByCategory).map(([category, queries]) => (
         <div key={category}>
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <Table className="w-4 h-4 text-slate-400" />
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Table className="w-4 h-4 text-muted-foreground" />
             {CATEGORY_LABELS[category]}
           </h3>
           <div className="space-y-3">
@@ -728,8 +728,8 @@ export function JobAnalytics({
 
       {/* Custom Query */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-          <Database className="w-4 h-4 text-slate-400" />
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Database className="w-4 h-4 text-muted-foreground" />
           Custom Query
         </h3>
         <CustomQuery

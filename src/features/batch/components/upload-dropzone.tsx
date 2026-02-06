@@ -63,7 +63,7 @@ function FileTypeChips() {
       {ACCEPTED_EXTENSIONS.map((ext) => (
         <span
           key={ext}
-          className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-sm"
+          className="px-3 py-1 rounded-lg bg-white border border-border text-xs font-medium text-muted-foreground shadow-sm"
         >
           {ext.toUpperCase().slice(1)}
         </span>
@@ -165,7 +165,7 @@ export function UploadDropzone({
       <div
         className={cn(
           "rounded-xl border bg-white p-6 transition-all",
-          displayError ? "border-rose-200" : "border-slate-200",
+          displayError ? "border-rose-200" : "border-border",
           className,
         )}
       >
@@ -190,10 +190,10 @@ export function UploadDropzone({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold text-foreground truncate">
               {selectedFile.name}
             </p>
-            <p className="text-sm text-slate-500">{formatFileSize(selectedFile.size)}</p>
+            <p className="text-sm text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
           </div>
           {!isProcessing && (
             <Button
@@ -201,7 +201,7 @@ export function UploadDropzone({
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className="text-slate-400 hover:text-slate-600"
+              className="text-muted-foreground hover:text-muted-foreground"
             >
               <X className="w-4 h-4" />
               <span className="sr-only">Remove file</span>
@@ -221,8 +221,8 @@ export function UploadDropzone({
         {isUploading && (
           <div className="mt-5">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-slate-600 font-medium">Uploading...</span>
-              <span className="text-slate-500">{Math.round(uploadProgress)}%</span>
+              <span className="text-muted-foreground font-medium">Uploading...</span>
+              <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
             </div>
             <Progress value={uploadProgress} className="h-2" />
           </div>
@@ -283,7 +283,7 @@ export function UploadDropzone({
         "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
         isDragOver
           ? "border-primary bg-primary/5"
-          : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50",
+          : "border-border bg-muted/50 hover:border-border hover:bg-muted",
         isDisabled && "cursor-not-allowed opacity-60",
         className,
       )}
@@ -307,28 +307,28 @@ export function UploadDropzone({
             "w-16 h-16 rounded-full flex items-center justify-center mb-6 transition-all",
             isDragOver
               ? "bg-primary/10 scale-110"
-              : "bg-white border border-slate-200 shadow-sm",
+              : "bg-white border border-border shadow-sm",
           )}
         >
           <UploadCloud
             className={cn(
               "w-7 h-7 transition-colors",
-              isDragOver ? "text-primary" : "text-slate-400",
+              isDragOver ? "text-primary" : "text-muted-foreground",
             )}
           />
         </div>
 
         {/* Text */}
-        <p className="text-base font-semibold text-slate-900 mb-1">
+        <p className="text-base font-semibold text-foreground mb-1">
           {isDragOver ? "Drop your file here" : "Drag & drop your variant file"}
         </p>
-        <p className="text-sm text-slate-500 mb-5">or click to browse</p>
+        <p className="text-sm text-muted-foreground mb-5">or click to browse</p>
 
         {/* File Type Chips */}
         <FileTypeChips />
 
         {/* Max Size Note */}
-        <p className="text-xs text-slate-400 mt-5">Maximum file size: {MAX_FILE_SIZE_MB}MB</p>
+        <p className="text-xs text-muted-foreground mt-5">Maximum file size: {MAX_FILE_SIZE_MB}MB</p>
       </div>
     </label>
   );

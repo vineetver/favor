@@ -236,18 +236,18 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
             </span>
           )}
         </div>
-        <h3 className="text-lg font-semibold text-slate-900">{node.label}</h3>
-        <p className="text-xs font-mono text-slate-500">{node.id}</p>
+        <h3 className="text-lg font-semibold text-foreground">{node.label}</h3>
+        <p className="text-xs font-mono text-muted-foreground">{node.id}</p>
       </div>
 
       {/* Stats */}
       {(node.degree !== undefined || node.hubScore !== undefined) && (
         <div className="grid grid-cols-2 gap-2">
           {node.degree !== undefined && (
-            <div className="bg-slate-50 rounded-lg p-3 text-center">
-              <Network className="w-4 h-4 text-slate-500 mx-auto mb-1" />
-              <div className="text-lg font-semibold text-slate-900">{node.degree}</div>
-              <div className="text-xs text-slate-500">Connections</div>
+            <div className="bg-muted rounded-lg p-3 text-center">
+              <Network className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
+              <div className="text-lg font-semibold text-foreground">{node.degree}</div>
+              <div className="text-xs text-muted-foreground">Connections</div>
             </div>
           )}
           {node.hubScore !== undefined && (
@@ -264,7 +264,7 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
 
       {/* External Links */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           External Resources
         </h4>
         <div className="flex flex-wrap gap-2">
@@ -313,15 +313,15 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
 
       {/* Context-Aware Expansion Options */}
       {expansionOptions.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-slate-200">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="space-y-2 pt-2 border-t border-border">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Explore Relationships
           </h4>
           <div className="space-y-1.5">
             {expansionOptions.map((option) => (
               <button
                 key={option.label}
-                className="w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 bg-white text-left hover:border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-white text-left hover:border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => onExpand(node.id, option.edgeTypes)}
                 disabled={isExpanding}
               >
@@ -332,8 +332,8 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
                   {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : option.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-800">{option.label}</div>
-                  <div className="text-xs text-slate-500 truncate">{option.description}</div>
+                  <div className="text-sm font-medium text-foreground">{option.label}</div>
+                  <div className="text-xs text-muted-foreground truncate">{option.description}</div>
                 </div>
               </button>
             ))}
@@ -342,8 +342,8 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
       )}
 
       {/* General Actions */}
-      <div className="space-y-2 pt-2 border-t border-slate-200">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <div className="space-y-2 pt-2 border-t border-border">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Actions
         </h4>
         <div className="space-y-2">
@@ -401,18 +401,18 @@ function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
             className="w-3 h-3 rounded-full"
             style={{ backgroundColor: config?.color ?? "#94a3b8" }}
           />
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-foreground">
             {config?.label ?? edge.type}
           </span>
         </div>
 
         {/* Edge Direction */}
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {sourceNode?.label ?? edge.sourceId}
           </span>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
-          <span className="font-medium text-slate-900">
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">
             {targetNode?.label ?? edge.targetId}
           </span>
         </div>
@@ -439,14 +439,14 @@ function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
       {/* Evidence Sources */}
       {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Data Sources
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {edge.evidence.sources.map((source, i) => (
               <span
                 key={`${source}-${i}`}
-                className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs rounded"
+                className="px-2 py-0.5 bg-muted text-foreground text-xs rounded"
               >
                 {source}
               </span>
@@ -458,7 +458,7 @@ function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
       {/* PubMed IDs */}
       {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Publications
           </h4>
           <div className="flex flex-wrap gap-1.5">
@@ -472,7 +472,7 @@ function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
               </ExternalLink>
             ))}
             {edge.evidence.pubmedIds.length > 5 && (
-              <span className="px-2 py-0.5 text-slate-400 text-xs">
+              <span className="px-2 py-0.5 text-muted-foreground text-xs">
                 +{edge.evidence.pubmedIds.length - 5} more
               </span>
             )}
@@ -483,14 +483,14 @@ function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
       {/* Detection Methods */}
       {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Detection Methods
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
               <span
                 key={`${method}-${i}`}
-                className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded"
+                className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded"
               >
                 {method}
               </span>
@@ -520,17 +520,17 @@ function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailP
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">
+        <h3 className="text-lg font-semibold text-foreground">
           {nodes.length} nodes selected
         </h3>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Compare nodes or find shared connections
         </p>
       </div>
 
       {/* Selected Nodes List */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Selected Nodes
         </h4>
         <div className="space-y-1.5">
@@ -539,16 +539,16 @@ function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailP
             return (
               <div
                 key={node.id}
-                className="flex items-center gap-2 p-2 bg-slate-50 rounded"
+                className="flex items-center gap-2 p-2 bg-muted rounded"
               >
                 <div
                   className="w-3 h-3 rounded-full shrink-0"
                   style={{ backgroundColor: colors.border }}
                 />
-                <span className="text-sm font-medium text-slate-900 truncate">
+                <span className="text-sm font-medium text-foreground truncate">
                   {node.label}
                 </span>
-                <span className="text-xs text-slate-500">{node.type}</span>
+                <span className="text-xs text-muted-foreground">{node.type}</span>
               </div>
             );
           })}
@@ -556,8 +556,8 @@ function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailP
       </div>
 
       {/* Actions */}
-      <div className="space-y-2 pt-2 border-t border-slate-200">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <div className="space-y-2 pt-2 border-t border-border">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Actions
         </h4>
         {nodes.length === 2 && (
@@ -607,10 +607,10 @@ function InspectorPanelInner({
   }
 
   return (
-    <div className="w-80 border-l border-slate-200 bg-white flex flex-col overflow-hidden">
+    <div className="w-80 border-l border-border bg-white flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
-        <span className="text-sm font-medium text-slate-700">Inspector</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
+        <span className="text-sm font-medium text-foreground">Inspector</span>
         <Button
           variant="ghost"
           size="sm"

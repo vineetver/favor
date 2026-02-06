@@ -112,15 +112,15 @@ function AnchorChip({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 bg-slate-100 rounded-xl pl-4 pr-2 py-2">
-      <span className="text-sm font-semibold text-slate-900">{anchor.display_name}</span>
+    <span className="inline-flex items-center gap-2 bg-muted rounded-xl pl-4 pr-2 py-2">
+      <span className="text-sm font-semibold text-foreground">{anchor.display_name}</span>
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
         }}
-        className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
+        className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
@@ -484,8 +484,8 @@ export function UniversalSearch() {
             value={null}
             onChange={(val) => val && handleSelectSuggestion(val)}
           >
-            <div className="relative flex flex-col sm:flex-row items-center bg-white p-2.5 rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/80 ring-1 ring-slate-100">
-              <div className="grid grid-cols-2 bg-slate-100 rounded-2xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
+            <div className="relative flex flex-col sm:flex-row items-center bg-white p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-white/80 ring-1 ring-border">
+              <div className="grid grid-cols-2 bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
                 <div
                   className={cn(
                     "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ease-out",
@@ -498,8 +498,8 @@ export function UniversalSearch() {
                   className={cn(
                     "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
                     genome === "hg38"
-                      ? "text-slate-900"
-                      : "text-slate-500 hover:text-slate-700",
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   HG38
@@ -510,8 +510,8 @@ export function UniversalSearch() {
                   className={cn(
                     "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
                     genome === "hg19"
-                      ? "text-slate-900"
-                      : "text-slate-500 hover:text-slate-700",
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   HG19
@@ -530,7 +530,7 @@ export function UniversalSearch() {
 
                 {/* Text input */}
                 <ComboboxInput
-                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-lg py-2 font-medium tracking-tight focus:outline-none"
+                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-slate-400 text-lg py-2 font-medium tracking-tight focus:outline-none"
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
@@ -589,7 +589,7 @@ export function UniversalSearch() {
             {isDropdownOpen && (
               <ComboboxOptions
                 static
-                className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
+                className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white border border-border shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
                 style={{ maxHeight: "calc(100vh - 400px)" }}
               >
                 {/* Loading bar */}
@@ -605,12 +605,12 @@ export function UniversalSearch() {
                   {searchState.mode === "typing" && (
                     <>
                       {isTypeaheadLoading && groupedTypeaheadSuggestions.length === 0 ? (
-                        <div className="py-8 px-6 text-center text-slate-400">
+                        <div className="py-8 px-6 text-center text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                           <div className="text-sm">Searching...</div>
                         </div>
                       ) : groupedTypeaheadSuggestions.length === 0 && query.trim() !== "" ? (
-                        <div className="py-8 px-6 text-center text-slate-400">
+                        <div className="py-8 px-6 text-center text-muted-foreground">
                           <div className="text-sm">No results found</div>
                         </div>
                       ) : (
@@ -656,7 +656,7 @@ export function UniversalSearch() {
                       {/* Pivot Results Section */}
                       {isPivotLoading ? (
                         // Loading skeleton while pivot fetches
-                        <div className="py-8 px-6 text-center text-slate-400">
+                        <div className="py-8 px-6 text-center text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                           <div className="text-sm">Loading related entities...</div>
                         </div>
@@ -664,21 +664,21 @@ export function UniversalSearch() {
                         // Error state - show message without collapsing
                         <div className="py-8 px-6 text-center text-red-400">
                           <div className="text-sm">Failed to load related entities</div>
-                          <div className="text-xs mt-1 text-slate-400">
+                          <div className="text-xs mt-1 text-muted-foreground">
                             {pivotError.message}
                           </div>
                         </div>
                       ) : pivotGroups.length === 0 ? (
                         // No results
-                        <div className="py-8 px-6 text-center text-slate-400">
+                        <div className="py-8 px-6 text-center text-muted-foreground">
                           <div className="text-sm">No related entities found</div>
                         </div>
                       ) : (
                         // Pivot context header + groups
                         <>
                           {/* Related to header */}
-                          <div className="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
-                            <span className="text-sm text-slate-500">
+                          <div className="px-5 py-3 bg-muted/80 border-b border-border">
+                            <span className="text-sm text-muted-foreground">
                               Related to{" "}
                               <span className={cn("font-semibold", ENTITY_CONFIG[searchState.anchors[searchState.anchors.length - 1].entity_type].textColor)}>
                                 {searchState.anchors[searchState.anchors.length - 1].display_name}
@@ -707,7 +707,7 @@ export function UniversalSearch() {
 
                   {/* IDLE MODE: Show prompt */}
                   {searchState.mode === "idle" && (
-                    <div className="py-8 px-6 text-center text-slate-400">
+                    <div className="py-8 px-6 text-center text-muted-foreground">
                       <div className="text-sm">Start typing to search...</div>
                     </div>
                   )}
@@ -719,7 +719,7 @@ export function UniversalSearch() {
       </form>
 
       {/* Helper Text */}
-      <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-slate-400 uppercase tracking-widest opacity-80 flex-wrap">
+      <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-muted-foreground uppercase tracking-widest opacity-80 flex-wrap">
         {["BRCA1", "rs7412", "Alzheimer", "Metformin"].map((search) => (
           <button
             type="button"
@@ -788,7 +788,7 @@ function PivotAnchorCard({
     .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   return (
-    <div className="px-5 py-5 border-b border-slate-100 bg-gradient-to-br from-slate-50/80 to-white">
+    <div className="px-5 py-5 border-b border-border bg-gradient-to-br from-slate-50/80 to-white">
       {/* Entity name and type badge */}
       <div className="flex items-center gap-3 mb-2">
         <h3 className={cn("text-xl font-bold tracking-tight", config.textColor)}>
@@ -806,7 +806,7 @@ function PivotAnchorCard({
 
       {/* Description */}
       {truncatedDescription && (
-        <p className="text-sm text-slate-500 leading-relaxed mb-4">
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
           {truncatedDescription}
         </p>
       )}
@@ -817,12 +817,12 @@ function PivotAnchorCard({
           {linkCounts.map((link) => (
             <span
               key={link.label}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 rounded-lg text-xs"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-lg text-xs"
             >
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-foreground">
                 {link.count?.toLocaleString()}
               </span>
-              <span className="text-slate-500">{link.label}</span>
+              <span className="text-muted-foreground">{link.label}</span>
             </span>
           ))}
         </div>
@@ -830,8 +830,8 @@ function PivotAnchorCard({
 
       {/* Linked entity chips - clickable previews */}
       {linkedGroups.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-100 space-y-2.5">
-          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Quick links</span>
+        <div className="mt-4 pt-4 border-t border-border space-y-2.5">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick links</span>
           <div className="flex flex-wrap gap-1.5">
             {linkedGroups.flatMap((group) =>
               group.names.map((name) => (
@@ -839,7 +839,7 @@ function PivotAnchorCard({
                   key={`${group.type}-${name}`}
                   type="button"
                   onClick={() => onLinkedClick?.(name, group.type)}
-                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  className="px-2.5 py-1 bg-white border border-border rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:border-border transition-colors"
                 >
                   {name}
                 </button>
@@ -897,9 +897,9 @@ function BestMatchCard({
       as="div"
       value={item}
       onClick={() => onSelect(item)}
-      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50"
+      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-muted"
     >
-      <div className="border-b border-slate-100 px-5 py-4">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             {/* Name and type */}
@@ -919,20 +919,20 @@ function BestMatchCard({
 
             {/* Description */}
             {truncatedDescription && (
-              <p className="text-sm text-slate-700 leading-relaxed mb-3">
+              <p className="text-sm text-foreground leading-relaxed mb-3">
                 {truncatedDescription}
               </p>
             )}
 
             {/* Link counts */}
             {linkCounts.length > 0 && (
-              <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
+              <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
                 {linkCounts.map((link) => (
                   <span key={link.label} className="inline-flex items-center gap-1">
-                    <span className="font-semibold text-slate-500">
+                    <span className="font-semibold text-muted-foreground">
                       {link.count?.toLocaleString()}
                     </span>
-                    <span className="text-slate-500">{link.label}</span>
+                    <span className="text-muted-foreground">{link.label}</span>
                   </span>
                 ))}
               </div>
@@ -940,7 +940,7 @@ function BestMatchCard({
 
             {/* Linked entity previews */}
             {linkedPreviews.length > 0 && (
-              <div className="text-xs text-slate-500 mt-2">
+              <div className="text-xs text-muted-foreground mt-2">
                 <span className="font-medium">Linked:</span>{" "}
                 {linkedPreviews.slice(0, 3).join(", ")}
                 {linkedPreviews.length > 3 && ` +${linkedPreviews.length - 3} more`}
@@ -949,7 +949,7 @@ function BestMatchCard({
           </div>
 
           {/* Arrow indicator */}
-          <div className="text-slate-300 pt-1">
+          <div className="text-muted-foreground pt-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -971,7 +971,7 @@ function TypeaheadGroupSection({
   const config = ENTITY_CONFIG[group.type];
 
   return (
-    <div className="border-b border-slate-100 last:border-0">
+    <div className="border-b border-border last:border-0">
       {/* Section Header - Colored */}
       <div
         className={cn(
@@ -1023,7 +1023,7 @@ function PivotGroupSection({
   const remainingCount = totalAvailable - group.items.length;
 
   return (
-    <div className="border-b border-slate-100 last:border-0">
+    <div className="border-b border-border last:border-0">
       {/* Section Header - Colored */}
       <div
         className={cn(
@@ -1057,7 +1057,7 @@ function PivotGroupSection({
           type="button"
           onClick={onShowMore}
           disabled={isExpanding}
-          className="w-full px-4 py-2.5 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isExpanding ? (
             <>
@@ -1120,7 +1120,7 @@ function SuggestionCard({
   return (
     <ComboboxOption
       as="div"
-      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-slate-50 border-b md:border-r border-slate-100 md:odd:border-r md:even:border-r-0 last:border-b-0"
+      className="cursor-pointer transition-colors duration-150 data-[focus]:bg-muted border-b md:border-r border-border md:odd:border-r md:even:border-r-0 last:border-b-0"
       value={item}
       onClick={onClick}
     >
@@ -1130,25 +1130,25 @@ function SuggestionCard({
           <span className={cn("font-semibold text-sm", config.textColor)}>
             {primaryText}
           </span>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         </div>
 
         {/* Description - two lines max */}
         {descriptionText && (
-          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-2.5">
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2.5">
             {descriptionText}
           </p>
         )}
 
         {/* Link counts */}
         {linkCounts.length > 0 && (
-          <div className="flex items-center gap-2.5 flex-wrap text-xs text-slate-400">
+          <div className="flex items-center gap-2.5 flex-wrap text-xs text-muted-foreground">
             {linkCounts.map((link) => (
               <span key={link.label} className="inline-flex items-center gap-1">
-                <span className="font-medium text-slate-500">
+                <span className="font-medium text-muted-foreground">
                   {link.count?.toLocaleString()}
                 </span>
-                <span className="text-slate-400">{link.label}</span>
+                <span className="text-muted-foreground">{link.label}</span>
               </span>
             ))}
           </div>

@@ -10,21 +10,21 @@
 
   --background: #fafafa;
   --foreground: oklch(0.22 0 0);
-  --card: oklch(0.96 0.01 335.69);
+  --card: oklch(0.98 0 0);
   --card-foreground: oklch(0.14 0 0);
-  --popover: oklch(0.95 0.01 316.67);
-  --popover-foreground: oklch(0.4 0.04 309.35);
+  --popover: oklch(0.98 0 0);
+  --popover-foreground: oklch(0.45 0 0);
   --primary: oklch(0.51 0.21 286.5);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.49 0.04 300.23);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.96 0.01 335.69);
-  --muted-foreground: oklch(0.14 0 0);
-  --accent: oklch(0.92 0.04 303.47);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.25 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.96 0 0);
   --accent-foreground: oklch(0.14 0 0);
   --destructive: oklch(0.57 0.23 29.21);
-  --border: oklch(0.83 0.02 308.26);
-  --input: oklch(0.57 0.02 309.68);
+  --border: oklch(0.90 0 0);
+  --input: oklch(0.90 0 0);
   --ring: oklch(0.5 0.13 293.77);
   --chart-1: oklch(0.61 0.21 279.42);
   --chart-2: oklch(0.72 0.15 157.67);
@@ -335,7 +335,7 @@
   }
 
   .ai-summary-content ol > li::marker {
-    @apply font-medium text-slate-400;
+    @apply font-medium text-muted-foreground;
   }
 
   /* Unordered lists - subtle bullets */
@@ -348,7 +348,7 @@
   }
 
   .ai-summary-content ul > li::marker {
-    @apply text-slate-300;
+    @apply text-muted-foreground;
   }
 
   /* Nested lists */
@@ -368,7 +368,7 @@
 
   /* Code */
   .ai-summary-content code {
-    @apply font-mono text-[13px] bg-slate-100 px-1.5 py-0.5 rounded text-heading;
+    @apply font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded text-heading;
   }
 
   /* Blockquotes */
@@ -378,7 +378,7 @@
 
   /* Horizontal rules */
   .ai-summary-content hr {
-    @apply my-6 border-slate-200;
+    @apply my-6 border-border;
   }
 
   /* Tables */
@@ -387,10 +387,10 @@
   }
 
   .ai-summary-content th {
-    @apply text-left font-semibold text-heading pb-2 border-b border-slate-200;
+    @apply text-left font-semibold text-heading pb-2 border-b border-border;
   }
 
   .ai-summary-content td {
-    @apply py-2 border-b border-slate-100;
+    @apply py-2 border-b border-border;
   }
 }

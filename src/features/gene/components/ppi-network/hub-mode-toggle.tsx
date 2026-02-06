@@ -48,9 +48,9 @@ function HubModeToggleInner({
         <div className="flex items-center gap-2">
           <Zap className={cn(
             "w-4 h-4",
-            hubMode.showHubsOnly ? "text-amber-500" : "text-slate-400"
+            hubMode.showHubsOnly ? "text-amber-500" : "text-muted-foreground"
           )} />
-          <span className="text-sm font-medium text-slate-700">Hub Focus</span>
+          <span className="text-sm font-medium text-foreground">Hub Focus</span>
           {hubMode.showHubsOnly && (
             <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded">
               Active
@@ -61,12 +61,12 @@ function HubModeToggleInner({
         {/* Toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="hub-mode-toggle" className="text-xs text-slate-600">
+            <Label htmlFor="hub-mode-toggle" className="text-xs text-muted-foreground">
               Show hubs only
             </Label>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                <Info className="w-3 h-3 text-muted-foreground cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
@@ -86,13 +86,13 @@ function HubModeToggleInner({
 
         {/* Threshold slider - only show when hub mode is active */}
         {hubMode.showHubsOnly && (
-          <div className="space-y-2 pt-2 border-t border-slate-100">
+          <div className="space-y-2 pt-2 border-t border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Label className="text-xs text-slate-600">Percentile Threshold</Label>
+                <Label className="text-xs text-muted-foreground">Percentile Threshold</Label>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-[200px]">
                     <p className="text-xs">
@@ -102,7 +102,7 @@ function HubModeToggleInner({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <span className="text-xs font-medium text-slate-700 tabular-nums">
+              <span className="text-xs font-medium text-foreground tabular-nums">
                 Top {100 - hubMode.hubThreshold}%
               </span>
             </div>
@@ -114,7 +114,7 @@ function HubModeToggleInner({
               step={5}
               className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-slate-400">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Top 50%</span>
               <span>Top 1%</span>
             </div>

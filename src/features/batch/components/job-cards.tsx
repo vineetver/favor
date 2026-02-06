@@ -55,7 +55,7 @@ function JobIdCopyButton({ jobId }: { jobId: string }) {
         variant="ghost"
         size="sm"
         onClick={handleCopy}
-        className="h-auto px-2 py-0.5 text-xs font-mono bg-slate-100 hover:bg-slate-200"
+        className="h-auto px-2 py-0.5 text-xs font-mono bg-muted hover:bg-muted"
       >
         {jobId.slice(0, 8)}...
         <Copy className="w-3 h-3" />
@@ -112,12 +112,12 @@ export function PendingJobCard({
   className,
 }: PendingJobCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -132,18 +132,18 @@ export function PendingJobCard({
 
       <CardContent className="p-6">
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-            <Clock className="w-6 h-6 text-slate-400" />
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Clock className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-slate-700">Waiting in queue</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm font-medium text-foreground">Waiting in queue</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Your job will start processing shortly
           </p>
         </div>
       </CardContent>
 
       {onCancel && (
-        <CardFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+        <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
           <div className="flex items-center justify-end w-full">
             <Button
               type="button"
@@ -210,12 +210,12 @@ export function RunningJobCard({
   };
 
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -235,10 +235,10 @@ export function RunningJobCard({
         {/* Progress bar with percentage */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-foreground">
               {getProgressLabel()}
             </span>
-            <span className="text-slate-500">{Math.min(100, Math.round(progress.percent ?? 0))}%</span>
+            <span className="text-muted-foreground">{Math.min(100, Math.round(progress.percent ?? 0))}%</span>
           </div>
           <Progress value={Math.min(100, progress.percent ?? 0)} className="h-2" />
         </div>
@@ -264,7 +264,7 @@ export function RunningJobCard({
         </div>
 
         {/* Footer info: Duration, ETA, Dedup */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
           <div className="flex items-center gap-3">
             <span>
               Duration: <LiveDuration startedAt={job.started_at} />
@@ -282,7 +282,7 @@ export function RunningJobCard({
       </CardContent>
 
       {onCancel && (
-        <CardFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+        <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
           <div className="flex items-center justify-end w-full">
             <Button
               type="button"
@@ -330,7 +330,7 @@ export function CancelRequestedJobCard({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -388,12 +388,12 @@ export function CompletedJobCard({
   const errorPercent = totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
 
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -452,7 +452,7 @@ export function CompletedJobCard({
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
           <div className="flex items-center gap-4">
             <span>Completed: {formatTime(job.completed_at)}</span>
             <span className="font-medium">
@@ -470,7 +470,7 @@ export function CompletedJobCard({
       </CardContent>
 
       {/* Action footer */}
-      <CardFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+      <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
         <div className="flex items-center justify-between w-full gap-3">
           {onDownloadManifest && (
             <Button type="button" variant="ghost" size="sm" onClick={onDownloadManifest}>
@@ -526,7 +526,7 @@ export function FailedJobCard({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -564,7 +564,7 @@ export function FailedJobCard({
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 mt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 mt-4 border-t border-border">
           <span>Failed at: {formatTime(job.completed_at)}</span>
           <span className="font-mono text-rose-500">{job.error_code}</span>
         </div>
@@ -616,12 +616,12 @@ export function CancelledJobCard({
   className,
 }: CancelledJobCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-slate-200 py-0 gap-0", className)}>
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {filename && (
-              <h2 className="text-base font-semibold text-slate-900 truncate mb-1">
+              <h2 className="text-base font-semibold text-foreground truncate mb-1">
                 {filename}
               </h2>
             )}
@@ -636,18 +636,18 @@ export function CancelledJobCard({
 
       <CardContent className="p-6">
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-            <StopCircle className="w-6 h-6 text-slate-400" />
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <StopCircle className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-slate-700">Job was cancelled</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm font-medium text-foreground">Job was cancelled</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Cancelled at {formatTime(job.completed_at)}
           </p>
         </div>
       </CardContent>
 
       {onNewJob && (
-        <CardFooter className="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+        <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
           <div className="flex items-center justify-end w-full">
             <Button type="button" variant="outline" onClick={onNewJob}>
               Start New Job

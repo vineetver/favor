@@ -66,7 +66,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
   };
 
   return (
-    <div className="px-4 py-6 border-b border-slate-100 space-y-1">
+    <div className="px-4 py-6 border-b border-border space-y-1">
       <span className="block px-5 py-2 text-sm font-bold text-primary uppercase tracking-widest">
         {config.title}
       </span>
@@ -90,13 +90,13 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                     "transition-colors duration-200",
                     isActiveSection
                       ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-primary/10",
+                      : "text-foreground hover:bg-primary/10",
                   )}
                 >
                   <span>{section.name}</span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-slate-400",
+                      "h-4 w-4 text-muted-foreground",
                       "transition-transform duration-200",
                       isExpanded && "rotate-180",
                     )}
@@ -111,7 +111,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                       : "max-h-0 opacity-0 overflow-hidden",
                   )}
                 >
-                  <div className="ml-4 pl-4 border-l-2 border-slate-200 space-y-0.5">
+                  <div className="ml-4 pl-4 border-l-2 border-border space-y-0.5">
                     {section.subCategories.map((sub) => {
                       const isActive =
                         category === section.slug && subcategory === sub.slug;
@@ -127,7 +127,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                             "transition-colors duration-200",
                             isActive
                               ? "bg-primary text-primary-foreground"
-                              : "text-slate-500 hover:text-slate-900 hover:bg-primary/10",
+                              : "text-muted-foreground hover:text-foreground hover:bg-primary/10",
                           )}
                         >
                           {isActive && (
@@ -150,7 +150,7 @@ export function PageNavDrawer({ onNavigate }: PageNavDrawerProps) {
                   "transition-colors duration-200",
                   isActiveSection
                     ? "bg-primary text-primary-foreground"
-                    : "text-slate-700 hover:bg-primary/10",
+                    : "text-foreground hover:bg-primary/10",
                 )}
               >
                 {section.name}

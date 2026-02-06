@@ -47,14 +47,14 @@ function HierarchyItem({
           <button
             type="button"
             className={cn(
-              "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-slate-50 transition-colors",
+              "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-muted transition-colors",
               !isSelected && "opacity-50",
             )}
             style={{ paddingLeft: `${level * 12 + 12}px` }}
           >
             <ChevronRight
               className={cn(
-                "w-3.5 h-3.5 text-slate-400 transition-transform shrink-0",
+                "w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0",
                 isExpanded && "rotate-90",
               )}
             />
@@ -67,7 +67,7 @@ function HierarchyItem({
             <span
               className={cn(
                 "text-sm truncate flex-1",
-                isSelected ? "text-slate-700" : "text-slate-400",
+                isSelected ? "text-foreground" : "text-muted-foreground",
               )}
             >
               {item.name}
@@ -75,7 +75,7 @@ function HierarchyItem({
             <span
               className={cn(
                 "text-xs tabular-nums",
-                isSelected ? "text-slate-500" : "text-slate-400",
+                isSelected ? "text-muted-foreground" : "text-muted-foreground",
               )}
             >
               {item.count}
@@ -105,7 +105,7 @@ function HierarchyItem({
       type="button"
       onClick={() => onToggleCategory(item.name)}
       className={cn(
-        "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-slate-50 transition-colors",
+        "w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-muted transition-colors",
         !isSelected && "opacity-50",
       )}
       style={{ paddingLeft: `${level * 12 + 24}px` }}
@@ -119,7 +119,7 @@ function HierarchyItem({
       <span
         className={cn(
           "text-xs truncate flex-1",
-          isSelected ? "text-slate-600" : "text-slate-400",
+          isSelected ? "text-muted-foreground" : "text-muted-foreground",
         )}
       >
         {item.name}
@@ -215,8 +215,8 @@ function PathwayCategorySidebarInner({
     <div className={cn("flex flex-col bg-white", className)}>
       {/* Categories section */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Categories
           </h3>
           <div className="flex items-center gap-2 mt-2">
@@ -226,19 +226,19 @@ function PathwayCategorySidebarInner({
               disabled={allSelected}
               className={cn(
                 "text-xs text-indigo-600 hover:text-indigo-700",
-                allSelected && "text-slate-400 cursor-not-allowed",
+                allSelected && "text-muted-foreground cursor-not-allowed",
               )}
             >
               All
             </button>
-            <span className="text-slate-300">|</span>
+            <span className="text-muted-foreground">|</span>
             <button
               type="button"
               onClick={handleClearAll}
               disabled={noneSelected}
               className={cn(
                 "text-xs text-indigo-600 hover:text-indigo-700",
-                noneSelected && "text-slate-400 cursor-not-allowed",
+                noneSelected && "text-muted-foreground cursor-not-allowed",
               )}
             >
               None
@@ -267,13 +267,13 @@ function PathwayCategorySidebarInner({
                     <button
                       type="button"
                       className={cn(
-                        "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-slate-50 transition-colors",
+                        "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-muted transition-colors",
                         !isSelected && "opacity-50",
                       )}
                     >
                       <ChevronRight
                         className={cn(
-                          "w-3.5 h-3.5 text-slate-400 transition-transform",
+                          "w-3.5 h-3.5 text-muted-foreground transition-transform",
                           isExpanded && "rotate-90",
                         )}
                       />
@@ -286,7 +286,7 @@ function PathwayCategorySidebarInner({
                       <span
                         className={cn(
                           "text-sm truncate flex-1 font-medium",
-                          isSelected ? "text-slate-700" : "text-slate-400",
+                          isSelected ? "text-foreground" : "text-muted-foreground",
                         )}
                       >
                         {category.name}
@@ -294,7 +294,7 @@ function PathwayCategorySidebarInner({
                       <span
                         className={cn(
                           "text-xs tabular-nums",
-                          isSelected ? "text-slate-500" : "text-slate-400",
+                          isSelected ? "text-muted-foreground" : "text-muted-foreground",
                         )}
                       >
                         {category.count}
@@ -331,7 +331,7 @@ function PathwayCategorySidebarInner({
                   type="button"
                   onClick={() => handleCategoryToggle(category.name)}
                   className={cn(
-                    "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-slate-50 transition-colors",
+                    "w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-muted transition-colors",
                     !isSelected && "opacity-50",
                   )}
                 >
@@ -344,7 +344,7 @@ function PathwayCategorySidebarInner({
                   <span
                     className={cn(
                       "text-sm truncate flex-1",
-                      isSelected ? "text-slate-700" : "text-slate-400",
+                      isSelected ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
                     {category.name}
@@ -352,7 +352,7 @@ function PathwayCategorySidebarInner({
                   <span
                     className={cn(
                       "text-xs tabular-nums",
-                      isSelected ? "text-slate-500" : "text-slate-400",
+                      isSelected ? "text-muted-foreground" : "text-muted-foreground",
                     )}
                   >
                     {category.count}
@@ -365,8 +365,8 @@ function PathwayCategorySidebarInner({
       </div>
 
       {/* Display options section */}
-      <div className="border-t border-slate-200 px-4 py-3">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+      <div className="border-t border-border px-4 py-3">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Display
         </h3>
         <div className="flex items-center gap-2">
@@ -377,7 +377,7 @@ function PathwayCategorySidebarInner({
           />
           <Label
             htmlFor="show-hierarchy"
-            className="text-sm text-slate-700 cursor-pointer"
+            className="text-sm text-foreground cursor-pointer"
           >
             Show hierarchy
           </Label>

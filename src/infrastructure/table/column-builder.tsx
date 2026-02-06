@@ -34,7 +34,7 @@ export const BADGE_COLORS = {
   pink: "bg-pink-50 text-pink-700 ring-1 ring-pink-200/60",
 
   // Neutral
-  gray: "bg-slate-50 text-slate-600 ring-1 ring-slate-200/60",
+  gray: "bg-muted text-muted-foreground ring-1 ring-border/60",
 } as const;
 
 // Dot colors for tooltip legends
@@ -57,7 +57,7 @@ export const DOT_COLORS: Record<BadgeColor, string> = {
   amber: "bg-amber-500",
   emerald: "bg-emerald-500",
   pink: "bg-pink-500",
-  gray: "bg-slate-400",
+  gray: "bg-muted-foreground",
 };
 
 export type BadgeColor = keyof typeof BADGE_COLORS;

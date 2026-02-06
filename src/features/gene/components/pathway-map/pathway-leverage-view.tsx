@@ -71,7 +71,7 @@ const GraphContainer = memo(function GraphContainer({
   onNodeHover,
 }: GraphContainerProps) {
   return (
-    <div className="relative h-[600px] bg-slate-50/30">
+    <div className="relative h-[600px] bg-muted/30">
       <PathwayCytoscapeGraph
         elements={elements}
         layout={layout}
@@ -81,8 +81,8 @@ const GraphContainer = memo(function GraphContainer({
       />
       <PathwayLegend />
       {/* Instructions */}
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm px-3 py-2">
-        <div className="text-xs text-slate-500 space-y-0.5">
+      <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg border border-border shadow-sm px-3 py-2">
+        <div className="text-xs text-muted-foreground space-y-0.5">
           <div>Click pathway to see details</div>
           <div>Scroll to zoom - Drag to pan</div>
         </div>
@@ -363,19 +363,19 @@ function PathwayLeverageViewInner({
   }, [limitedPathways, filterState.selectedCategories]);
 
   return (
-    <Card className={cn("border border-slate-200 py-0 gap-0")}>
+    <Card className={cn("border border-border py-0 gap-0")}>
       {/* Header */}
-      <CardHeader className="border-b border-slate-200 px-6 py-4">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-base font-semibold text-slate-900">
+            <CardTitle className="text-base font-semibold text-foreground">
               Pathway Map
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {filteredPathways.length} of {pathways.length} pathways involving{" "}
               {seedGeneSymbol}
               {limitedPathways.length < pathways.length && (
-                <span className="text-slate-400">
+                <span className="text-muted-foreground">
                   {" "}({expansionLevel} view: {limitedPathways.length})
                 </span>
               )}
@@ -383,15 +383,15 @@ function PathwayLeverageViewInner({
           </div>
 
           {/* View toggle */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
             <button
               type="button"
               onClick={() => setViewMode("graph")}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                 viewMode === "graph"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900",
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Network className="w-4 h-4" />
@@ -403,8 +403,8 @@ function PathwayLeverageViewInner({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                 viewMode === "list"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900",
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <List className="w-4 h-4" />
@@ -416,7 +416,7 @@ function PathwayLeverageViewInner({
 
       <CardContent className="p-0">
         {/* Controls bar */}
-        <div className="flex items-center justify-between gap-4 px-6 py-3 border-b border-slate-200 bg-slate-50/50">
+        <div className="flex items-center justify-between gap-4 px-6 py-3 border-b border-border bg-muted/50">
           <div className="flex items-center gap-4">
             <DimensionSelector
               label="Detail"
@@ -425,7 +425,7 @@ function PathwayLeverageViewInner({
               onChange={handleExpansionChange}
               presentation="segmented"
             />
-            <div className="h-5 w-px bg-slate-200" />
+            <div className="h-5 w-px bg-border" />
             <DimensionSelector
               label="Sort"
               options={PATHWAY_SORT_OPTIONS}
@@ -435,7 +435,7 @@ function PathwayLeverageViewInner({
             />
             {viewMode === "graph" && (
               <>
-                <div className="h-5 w-px bg-slate-200" />
+                <div className="h-5 w-px bg-border" />
                 <DimensionSelector
                   label="Layout"
                   options={PATHWAY_LAYOUT_OPTIONS}
@@ -461,7 +461,7 @@ function PathwayLeverageViewInner({
             pathways={limitedPathways}
             filterState={filterState}
             onFilterChange={handleFilterChange}
-            className="w-56 border-r border-slate-200 shrink-0 h-[600px]"
+            className="w-56 border-r border-border shrink-0 h-[600px]"
           />
 
           {/* Graph/List content */}
