@@ -206,7 +206,7 @@ export function NavigationSidebar({
                             "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150",
                             isActive
                               ? "bg-primary/8 text-foreground font-medium"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
                           )}
                         >
                           {Icon && (
@@ -248,7 +248,7 @@ export function NavigationSidebar({
                 "group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-150",
                 isActive
                   ? "bg-primary/8 text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
               <span>{item.text}</span>

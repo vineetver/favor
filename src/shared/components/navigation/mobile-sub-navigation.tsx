@@ -69,7 +69,7 @@ export function MobileSubNavigation({
                     className={`block w-full text-left px-3.5 py-2.5 text-sm rounded-lg transition-all duration-150 touch-manipulation ${
                       isActive
                         ? "bg-primary/[0.08] text-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                     onClick={() => setIsOpen(false)}
                   >

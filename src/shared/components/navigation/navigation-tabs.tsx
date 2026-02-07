@@ -81,7 +81,7 @@ export function NavigationTabs({
                   ],
                   !isActive && [
                     "text-muted-foreground bg-muted/60",
-                    "hover:text-foreground hover:bg-muted",
+                    "hover:text-foreground hover:bg-accent",
                   ],
                 )}
               >
