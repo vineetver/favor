@@ -2,18 +2,12 @@
 
 import { cn } from "@infra/utils";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@shared/components/ui/collapsible";
-import {
   Activity,
   AlertTriangle,
   BadgeCheck,
   BookOpen,
   Brain,
   Bug,
-  ChevronDown,
   ChevronRight,
   ClipboardList,
   Dna,
@@ -48,7 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   sparkles: Sparkles,
@@ -97,7 +91,6 @@ interface NavigationItem {
 interface NavigationGroup {
   name: string;
   items: NavigationItem[];
-  defaultExpanded?: boolean;
 }
 
 interface NavigationSidebarProps {
@@ -127,105 +120,66 @@ export function NavigationSidebar({
     return segments[segments.length - 1];
   }, [params.subcategory, pathname]);
 
-  // Track user overrides for group expansion state
-  const [groupOverrides, setGroupOverrides] = useState<Map<string, boolean>>(
-    new Map(),
-  );
-
-  const toggleGroup = (groupName: string, currentExpanded: boolean) => {
-    setGroupOverrides((prev) => {
-      const next = new Map(prev);
-      next.set(groupName, !currentExpanded);
-      return next;
-    });
-  };
-
-  // Derived: check if group should be expanded
-  const isGroupExpanded = (group: NavigationGroup): boolean => {
-    // User override takes priority
-    if (groupOverrides.has(group.name)) {
-      return groupOverrides.get(group.name)!;
-    }
-    // Default: use defaultExpanded or check for active item
-    if (group.defaultExpanded) return true;
-    return group.items.some((item) => item.slug === activeSlug);
-  };
-
   // Early return: no content
   if ((!items || items.length === 0) && (!groups || groups.length === 0)) {
     return null;
   }
 
-  // Render grouped navigation
+  // Render grouped navigation (always expanded, like a TOC)
   if (groups && groups.length > 0) {
     return (
       <aside className="hidden lg:block w-52 shrink-0">
         <nav className="space-y-5">
           {groups.map((group) => {
-            const isExpanded = isGroupExpanded(group);
             const hasActiveItem = group.items.some(
               (item) => item.slug === activeSlug,
             );
 
             return (
-              <Collapsible
-                key={group.name}
-                open={isExpanded}
-                onOpenChange={() => toggleGroup(group.name, isExpanded)}
-              >
-                <div className="space-y-1">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 group cursor-pointer focus:outline-none focus-visible:outline-none">
-                    <span
-                      className={cn(
-                        "text-xs font-bold tracking-widest uppercase transition-colors text-left",
-                        hasActiveItem
-                          ? "text-primary"
-                          : "text-muted-foreground group-hover:text-foreground",
-                      )}
-                    >
-                      {group.name}
-                    </span>
-                    <ChevronDown
-                      className={cn(
-                        "w-3.5 h-3.5 text-muted-foreground transition-transform duration-200",
-                        isExpanded && "rotate-180",
-                      )}
-                    />
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent className="space-y-0.5 overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
-                    {group.items.map((item) => {
-                      const isActive = item.slug === activeSlug;
-                      const Icon = showIcons && item.icon ? iconMap[item.icon] : null;
-
-                      return (
-                        <Link
-                          key={item.slug}
-                          href={`${basePath}/${item.slug}${queryString}`}
-                          className={cn(
-                            "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150",
-                            isActive
-                              ? "bg-primary/8 text-foreground font-medium"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                          )}
-                        >
-                          {Icon && (
-                            <Icon
-                              className={cn(
-                                "w-4 h-4 shrink-0 transition-colors",
-                                isActive
-                                  ? "text-primary"
-                                  : "text-muted-foreground group-hover:text-foreground",
-                              )}
-                            />
-                          )}
-                          <span>{item.text}</span>
-                        </Link>
-                      );
-                    })}
-                  </CollapsibleContent>
+              <div key={group.name} className="space-y-1">
+                <div className="px-3 py-2">
+                  <span
+                    className={cn(
+                      "text-xs font-bold tracking-widest uppercase",
+                      hasActiveItem ? "text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {group.name}
+                  </span>
                 </div>
-              </Collapsible>
+
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const isActive = item.slug === activeSlug;
+                    const Icon = showIcons && item.icon ? iconMap[item.icon] : null;
+
+                    return (
+                      <Link
+                        key={item.slug}
+                        href={`${basePath}/${item.slug}${queryString}`}
+                        className={cn(
+                          "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150",
+                          isActive
+                            ? "bg-primary/8 text-foreground font-medium"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                        )}
+                      >
+                        {Icon && (
+                          <Icon
+                            className={cn(
+                              "w-4 h-4 shrink-0 transition-colors",
+                              isActive
+                                ? "text-primary"
+                                : "text-muted-foreground group-hover:text-foreground",
+                            )}
+                          />
+                        )}
+                        <span>{item.text}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
