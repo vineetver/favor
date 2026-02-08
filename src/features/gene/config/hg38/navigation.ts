@@ -25,7 +25,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
   groups: [
     {
       name: "Overview",
-      defaultExpanded: true,
       items: [
         { text: "LLM Summary", slug: "llm-summary", icon: "sparkles" },
         { text: "Info and IDs", slug: "info-and-ids", icon: "file-text" },
@@ -33,7 +32,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     },
     {
       name: "Biology",
-      defaultExpanded: true,
       items: [
         { text: "Function", slug: "function", icon: "dna" },
         { text: "Expression", slug: "expression", icon: "activity" },
@@ -42,7 +40,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     },
     {
       name: "Phenotypes",
-      defaultExpanded: true,
       items: [
         { text: "Human Phenotype", slug: "human-phenotype", icon: "users" },
         { text: "Animal Phenotype", slug: "animal-phenotype", icon: "bug" },
@@ -50,7 +47,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     },
     {
       name: "Graph Tools",
-      defaultExpanded: true,
       items: [
         { text: "Graph Explorer", slug: "graph-explorer", icon: "network" },
         { text: "Interaction Neighborhood", slug: "interaction-neighborhood", icon: "share-2" },
@@ -72,7 +68,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     groups: [
       {
         name: "Evidence",
-        defaultExpanded: true,
         items: [
           { text: "Disease Portfolio", slug: "disease-portfolio", icon: "layers" },
           { text: "Phenotype Signature", slug: "phenotype-signature", icon: "layout-grid" },
@@ -80,7 +75,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Therapeutic Readiness",
-        defaultExpanded: true,
         items: [
           { text: "Tractability & Target Class", slug: "tractability-and-target-class", icon: "radar" },
           { text: "Chemical Probes", slug: "chemical-probes", icon: "flask-conical" },
@@ -89,15 +83,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Safety & Risk",
-        defaultExpanded: true,
         items: [{ text: "Safety Liabilities", slug: "safety-liabilities", icon: "alert-triangle" }],
       },
       {
         name: "Oncology Context",
-        defaultExpanded: true,
         items: [
           { text: "Cancer Hallmarks", slug: "cancer-hallmarks", icon: "flame" },
-          
         ],
       },
     ],
@@ -105,52 +96,43 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
 
   {
     name: "Variants",
-    slug: "variant-rollups",
+    slug: "variants",
     subCategories: [
-      // SNV rollups
-      { text: "SNV: Allele Distribution", slug: "snv-allele-distribution" },
-      { text: "SNV: Gencode Comprehensive Category", slug: "snv-genecode-comprehensive-category" },
-      { text: "SNV: Functional Consequences", slug: "snv-functional-consequences" },
-      { text: "SNV: Clinvar Clinical Significance", slug: "snv-clinvar" },
-      { text: "SNV: High Integrative Score ( >= 10)", slug: "snv-high-integrative-score" },
-
-      // InDel rollups
-      { text: "InDel: Allele Distribution", slug: "indel-allele-distribution" },
-      { text: "InDel: Genecode Comprehensive Category", slug: "indel-genecode-comprehensive-category" },
-      { text: "InDel: Functional Consequences", slug: "indel-functional-consequences" },
-      { text: "InDel: Clinvar Clinical Significance", slug: "indel-clinvar" },
+      { text: "Summary Statistics", slug: "summary-statistics" },
+      { text: "Allele Distribution", slug: "allele-distribution" },
+      { text: "Functional Consequences", slug: "functional-consequences" },
+      { text: "Gencode Categories", slug: "gencode-categories" },
+      { text: "ClinVar Significance", slug: "clinvar-significance" },
+      { text: "High Integrative Score", slug: "high-integrative-score" },
+      { text: "Variant Explorer", slug: "variant-explorer" },
     ],
     groups: [
       {
-        name: "SNV Distribution & Annotation",
-        defaultExpanded: true,
+        name: "Overview",
         items: [
-          { text: "Allele Distribution", slug: "snv-allele-distribution", icon: "pie-chart" },
-          { text: "Gencode Comprehensive Category", slug: "snv-genecode-comprehensive-category", icon: "layers" },
-          { text: "Functional Consequences", slug: "snv-functional-consequences", icon: "git-branch" },
+          { text: "Summary Statistics", slug: "summary-statistics", icon: "bar-chart-2" },
         ],
       },
       {
-        name: "SNV Clinical & Prioritization",
-        defaultExpanded: true,
+        name: "Distribution & Annotation",
         items: [
-          { text: "Clinvar Clinical Significance", slug: "snv-clinvar", icon: "heart-pulse" },
-          { text: "High Integrative Score ( >= 10)", slug: "snv-high-integrative-score", icon: "brain" },
+          { text: "Allele Distribution", slug: "allele-distribution", icon: "pie-chart" },
+          { text: "Gencode Categories", slug: "gencode-categories", icon: "layers" },
+          { text: "Functional Consequences", slug: "functional-consequences", icon: "git-branch" },
         ],
       },
       {
-        name: "InDel Distribution & Annotation",
-        defaultExpanded: true,
+        name: "Clinical & Prioritization",
         items: [
-          { text: "Allele Distribution", slug: "indel-allele-distribution", icon: "pie-chart" },
-          { text: "Genecode Comprehensive Category", slug: "indel-genecode-comprehensive-category", icon: "layers" },
-          { text: "Functional Consequences", slug: "indel-functional-consequences", icon: "git-branch" },
+          { text: "ClinVar Significance", slug: "clinvar-significance", icon: "heart-pulse" },
+          { text: "High Integrative Score", slug: "high-integrative-score", icon: "brain" },
         ],
       },
       {
-        name: "InDel Clinical",
-        defaultExpanded: true,
-        items: [{ text: "Clinvar Clinical Significance", slug: "indel-clinvar", icon: "heart-pulse" }],
+        name: "Explore",
+        items: [
+          { text: "Variant Explorer", slug: "variant-explorer", icon: "table-2" },
+        ],
       },
     ],
   },
@@ -171,7 +153,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     groups: [
       {
         name: "Regulatory Elements",
-        defaultExpanded: true,
         items: [
           { text: "cCREs", slug: "ccres", icon: "target" },
           { text: "Vista Enhancers", slug: "vista-enhancers", icon: "eye" },
@@ -179,7 +160,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Cell & Tissue Atlases",
-        defaultExpanded: true,
         items: [
           { text: "CATlas", slug: "catlas", icon: "layers" },
           { text: "ENTEx", slug: "entex", icon: "book-open" },
@@ -188,12 +168,10 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Epigenomics & Chromatin",
-        defaultExpanded: true,
         items: [{ text: "Epimap", slug: "epimap", icon: "map" }],
       },
       {
         name: "Variant-to-Function Models",
-        defaultExpanded: true,
         items: [
           { text: "cV2F", slug: "cv2f", icon: "link" },
           { text: "pgBoost", slug: "pgboost", icon: "zap" },

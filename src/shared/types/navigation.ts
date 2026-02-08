@@ -15,7 +15,6 @@ export interface NavigationItem {
 export interface NavigationGroup {
   name: string; // Displayed as uppercase header
   items: NavigationItem[];
-  defaultExpanded?: boolean;
 }
 
 // Section with both flat (legacy) and grouped navigation
