@@ -184,5 +184,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     name: "Genome Browser",
     slug: "genome-browser",
     subCategories: [],
+    groups: [],
   },
 ];

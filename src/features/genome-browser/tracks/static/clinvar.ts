@@ -1,0 +1,191 @@
+// src/features/genome-browser/tracks/static/clinvar.ts
+// ClinVar variant track using Gosling server data
+
+import { AlertTriangle } from 'lucide-react'
+import type { StaticTrack, GoslingTrackSpec } from '../../types/tracks'
+import { LINKING_ID } from './gene-annotation'
+
+const clinvarSpec: GoslingTrackSpec = {
+  alignment: 'overlay',
+  title: 'ClinVar',
+  data: {
+    url: 'https://server.gosling-lang.org/api/v1/tileset_info/?d=clinvar-beddb',
+    type: 'beddb',
+    genomicFields: [
+      { index: 1, name: 'start' },
+      { index: 2, name: 'end' },
+    ],
+    valueFields: [
+      { index: 0, name: 'chromosome', type: 'nominal' },
+      { index: 1, name: 'start_position', type: 'nominal' },
+      { index: 2, name: 'end_position', type: 'nominal' },
+      { index: 7, name: 'significance', type: 'nominal' },
+    ],
+  },
+  dataTransform: [
+    {
+      type: 'concat',
+      separator: '-',
+      newField: 'region',
+      fields: ['chromosome', 'start_position', 'end_position'],
+    },
+  ],
+  tracks: [
+    {
+      mark: 'bar',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      y: {
+        field: 'significance',
+        type: 'nominal',
+        domain: [
+          'Pathogenic',
+          'Pathogenic/Likely_pathogenic',
+          'Likely_pathogenic',
+          'Uncertain_significance',
+          'Likely_benign',
+          'Benign/Likely_benign',
+          'Benign',
+        ],
+        baseline: 'Uncertain_significance',
+        range: [150, 20],
+      },
+      size: { value: 1 },
+      color: { value: 'lightgray' },
+      stroke: { value: 'lightgray' },
+      strokeWidth: { value: 1 },
+      opacity: { value: 0.3 },
+      visibility: [
+        {
+          measure: 'zoomLevel',
+          target: 'mark',
+          threshold: 100000,
+          operation: 'LT',
+          transitionPadding: 100000,
+        },
+      ],
+    },
+    {
+      mark: 'point',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      row: {
+        field: 'significance',
+        type: 'nominal',
+        domain: [
+          'Pathogenic',
+          'Pathogenic/Likely_pathogenic',
+          'Likely_pathogenic',
+          'Uncertain_significance',
+          'Likely_benign',
+          'Benign/Likely_benign',
+          'Benign',
+        ],
+      },
+      size: { value: 7 },
+      opacity: { value: 0.8 },
+      visibility: [
+        {
+          measure: 'zoomLevel',
+          target: 'mark',
+          threshold: 1000000,
+          operation: 'LT',
+          transitionPadding: 1000000,
+        },
+      ],
+    },
+    {
+      data: {
+        url: 'https://server.gosling-lang.org/api/v1/tileset_info/?d=clinvar-multivec',
+        type: 'multivec',
+        row: 'significance',
+        column: 'position',
+        value: 'count',
+        categories: [
+          'Benign',
+          'Benign/Likely_benign',
+          'Likely_benign',
+          'Uncertain_significance',
+          'Likely_pathogenic',
+          'Pathogenic/Likely_pathogenic',
+          'Pathogenic',
+        ],
+        binSize: 4,
+      },
+      mark: 'bar',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      xe: { field: 'end', type: 'genomic', linkingId: LINKING_ID },
+      y: { field: 'count', type: 'quantitative', axis: 'none' },
+      color: {
+        field: 'significance',
+        type: 'nominal',
+        domain: [
+          'Pathogenic',
+          'Pathogenic/Likely_pathogenic',
+          'Likely_pathogenic',
+          'Uncertain_significance',
+          'Likely_benign',
+          'Benign/Likely_benign',
+          'Benign',
+        ],
+        range: [
+          '#CB3B8C',
+          '#CB71A3',
+          '#CB96B3',
+          'gray',
+          '#029F73',
+          '#5A9F8C',
+          '#5A9F8C',
+        ],
+        legend: true,
+      },
+      visibility: [
+        {
+          measure: 'zoomLevel',
+          target: 'mark',
+          threshold: 500000,
+          operation: 'GT',
+          transitionPadding: 500000,
+        },
+      ],
+    },
+  ],
+  color: {
+    field: 'significance',
+    type: 'nominal',
+    domain: [
+      'Pathogenic',
+      'Pathogenic/Likely_pathogenic',
+      'Likely_pathogenic',
+      'Uncertain_significance',
+      'Likely_benign',
+      'Benign/Likely_benign',
+      'Benign',
+    ],
+    range: [
+      '#CB3B8C',
+      '#CB71A3',
+      '#CB96B3',
+      'gray',
+      '#029F73',
+      '#5A9F8C',
+      '#5A9F8C',
+    ],
+  },
+  tooltip: [
+    { field: 'significance', type: 'nominal', alt: 'Significance' },
+    { field: 'start', type: 'genomic', alt: 'Start' },
+    { field: 'end', type: 'genomic', alt: 'End' },
+  ],
+  height: 150,
+}
+
+export const clinvarTrack: StaticTrack = {
+  kind: 'static',
+  id: 'clinvar',
+  name: 'ClinVar',
+  description: 'Clinical variant classifications from NCBI ClinVar',
+  category: 'clinical',
+  defaultHeight: 150,
+  icon: AlertTriangle,
+  curated: true,
+  spec: clinvarSpec,
+}
