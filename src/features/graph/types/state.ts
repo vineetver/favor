@@ -1,6 +1,7 @@
 import type { ExplorerNode, ExplorerEdge, ExplorerSelection, InspectorMode } from "./node";
 import type { GraphFilters } from "./filters";
 import type { NodeKey } from "./keys";
+import type { ProvenanceEvent } from "./provenance";
 import type { ExplorerLayoutType } from "../config/layout";
 import type { LensId } from "../config/lenses";
 
@@ -25,6 +26,8 @@ export interface GraphData {
   nodes: Map<string, ExplorerNode>;
   edges: Map<string, ExplorerEdge>;
   seeds: Set<string>;
+  /** Provenance events keyed by node or edge ID. Append-only. */
+  provenance: Map<string, ProvenanceEvent[]>;
 }
 
 // =============================================================================
@@ -33,7 +36,8 @@ export interface GraphData {
 
 export type ExpansionStatus =
   | { status: "idle" }
-  | { status: "loading" };
+  | { status: "loading" }
+  | { status: "error"; message: string };
 
 // =============================================================================
 // Explorer State (Discriminated Union)

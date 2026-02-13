@@ -440,6 +440,7 @@ function ExplorerCytoscapeInner({
   const cyRef = useRef<Core | null>(null);
   const layoutRef = useRef(layout);
   const initializedRef = useRef(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Stable callback refs
   const onNodeClickRef = useRef(onNodeClick);
@@ -630,60 +631,62 @@ function ExplorerCytoscapeInner({
       }
     });
 
-    // ---- Node hover: highlight 1-hop neighborhood (Phase 1.2) ----
+    // ---- Node hover: highlight 1-hop neighborhood (delayed) ----
     cy.on("mouseover", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
-      const renderedPosition = node.renderedPosition();
       const container = cy.container();
 
-      // Apply visual hover highlight
-      applyNodeHoverHighlight(cy, node);
+      // Cancel any pending hover
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
 
-      // Bubble up for external tooltip
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        onNodeHoverRef.current?.(dataToNode(data), {
-          x: rect.left + renderedPosition.x,
-          y: rect.top + renderedPosition.y,
-        });
-      }
+      hoverTimerRef.current = setTimeout(() => {
+        applyNodeHoverHighlight(cy, node);
+
+        if (container) {
+          const renderedPosition = node.renderedPosition();
+          const rect = container.getBoundingClientRect();
+          onNodeHoverRef.current?.(dataToNode(data), {
+            x: rect.left + renderedPosition.x,
+            y: rect.top + renderedPosition.y,
+          });
+        }
+      }, 1000);
     });
 
     cy.on("mouseout", "node", () => {
-      // Restore selection-based highlight instead of clearing everything
+      if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
       restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
       onNodeHoverRef.current?.(null, null);
     });
 
-    // ---- Edge hover: highlight endpoints + tooltip (Phase 1.2 + 1.3) ----
+    // ---- Edge hover: highlight endpoints + tooltip (delayed) ----
     cy.on("mouseover", "edge", (event: EventObject) => {
       const edge = event.target as EdgeSingular;
       const data = edge.data();
 
-      // Apply visual hover highlight
-      applyEdgeHoverHighlight(cy, edge);
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
 
-      // Compute edge midpoint in screen coords for tooltip
-      const container = cy.container();
-      if (container && onEdgeHoverRef.current) {
-        const midpoint = edge.midpoint();
-        const rect = container.getBoundingClientRect();
-        const pan = cy.pan();
-        const zoom = cy.zoom();
+      hoverTimerRef.current = setTimeout(() => {
+        applyEdgeHoverHighlight(cy, edge);
 
-        const renderedX = midpoint.x * zoom + pan.x;
-        const renderedY = midpoint.y * zoom + pan.y;
+        const container = cy.container();
+        if (container && onEdgeHoverRef.current) {
+          const midpoint = edge.midpoint();
+          const rect = container.getBoundingClientRect();
+          const pan = cy.pan();
+          const zoom = cy.zoom();
 
-        onEdgeHoverRef.current(dataToEdge(data), {
-          x: rect.left + renderedX,
-          y: rect.top + renderedY,
-        });
-      }
+          onEdgeHoverRef.current(dataToEdge(data), {
+            x: rect.left + midpoint.x * zoom + pan.x,
+            y: rect.top + midpoint.y * zoom + pan.y,
+          });
+        }
+      }, 1000);
     });
 
     cy.on("mouseout", "edge", () => {
-      // Restore selection-based highlight instead of clearing everything
+      if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
       restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
       onEdgeHoverRef.current?.(null, null);
     });

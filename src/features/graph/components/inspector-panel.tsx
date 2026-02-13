@@ -3,6 +3,7 @@
 import { Button } from "@shared/components/ui/button";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import {
+  ChevronDown,
   ChevronRight,
   Database,
   Beaker,
@@ -20,9 +21,10 @@ import {
   AlertTriangle,
   Microscope,
 } from "lucide-react";
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { InspectorPanelProps } from "../types/props";
 import type { ExplorerNode, ExplorerEdge } from "../types/node";
+import type { ProvenanceEvent } from "../types/provenance";
 import type { ExpansionConfig } from "../config/expansion";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
 import { NODE_TYPE_COLORS } from "../config/styling";
@@ -49,18 +51,389 @@ const EXPANSION_ICONS: Record<string, React.ReactNode> = {
 };
 
 // =============================================================================
+// Provenance Display
+// =============================================================================
+
+function ProvenanceDisplay({ events }: { events: ProvenanceEvent[] }) {
+  if (events.length === 0) return null;
+  const latest = events[events.length - 1];
+
+  return (
+    <p className="text-[11px] text-muted-foreground text-right">
+      added by {latest.label}
+    </p>
+  );
+}
+
+// =============================================================================
+// Schema-aware Edge Field Rendering
+// =============================================================================
+
+/** Fields to skip (already rendered structurally or internal) */
+const SKIP_FIELDS = new Set([
+  "num_sources", "num_experiments", "src_symbol", "dst_symbol",
+  "confidence_scores", "sources", "pubmed_ids", "detection_methods",
+]);
+
+/** Fields that are PubMed IDs */
+const PUBMED_FIELDS = new Set([
+  "pmids", "pubmed_ids", "evidence_pmids", "citation_id", "pmid", "pubmed_id",
+]);
+
+/** Fields that are URLs */
+const URL_FIELDS = new Set(["report_url", "url"]);
+
+/** Fields that are scores — render with emphasis */
+const SCORE_FIELDS = new Set([
+  "overall_score", "total_score", "combined_score", "score", "confidence",
+  "max_l2g_score", "feature_score", "target_score", "ot_mi_score",
+  "profile_evidence_score", "max_evidence_score", "max_pathogenicity",
+  "pathogenicity", "llr", "frequency",
+  "p_value_mlog", "best_p_value", "min_p_value", "p_value",
+  "or_beta", "risk_allele_freq",
+]);
+
+/** Snake_case to readable label */
+function fieldLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bId\b/g, "ID")
+    .replace(/\bIds\b/g, "IDs")
+    .replace(/\bPmid\b/g, "PMID")
+    .replace(/\bPgx\b/g, "PGx")
+    .replace(/\bOt\b/g, "OT")
+    .replace(/\bMi\b/g, "MI")
+    .replace(/\bNct\b/g, "NCT")
+    .replace(/\bL2g\b/g, "L2G")
+    .replace(/\bGo\b/g, "GO");
+}
+
+/** Format a numeric value for display */
+function formatNumber(value: number): string {
+  if (Number.isInteger(value)) return value.toLocaleString();
+  if (Math.abs(value) < 0.01 && value !== 0) return value.toExponential(2);
+  return value.toFixed(3);
+}
+
+/** Render a single field value */
+function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
+  if (value === null || value === undefined || value === "") return null;
+
+  // PubMed IDs
+  if (PUBMED_FIELDS.has(fieldKey)) {
+    const ids = Array.isArray(value) ? value : [value];
+    const pmids = ids.map(String).filter(Boolean);
+    if (pmids.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-1">
+        {pmids.slice(0, 5).map((pmid) => (
+          <ExternalLink
+            key={pmid}
+            href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
+            className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded hover:bg-indigo-100"
+          >
+            PMID:{pmid}
+          </ExternalLink>
+        ))}
+        {pmids.length > 5 && (
+          <span className="text-xs text-muted-foreground">+{pmids.length - 5} more</span>
+        )}
+      </div>
+    );
+  }
+
+  // URLs
+  if (URL_FIELDS.has(fieldKey) && typeof value === "string") {
+    return (
+      <ExternalLink href={value} className="text-xs text-indigo-600 hover:underline truncate">
+        {value}
+      </ExternalLink>
+    );
+  }
+
+  // Boolean
+  if (typeof value === "boolean") {
+    return (
+      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${value ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+        {value ? "Yes" : "No"}
+      </span>
+    );
+  }
+
+  // Score fields
+  if (SCORE_FIELDS.has(fieldKey) && typeof value === "number") {
+    return (
+      <span className="text-sm font-semibold text-foreground tabular-nums">
+        {formatNumber(value)}
+      </span>
+    );
+  }
+
+  // Number
+  if (typeof value === "number") {
+    return <span className="text-sm text-foreground tabular-nums">{formatNumber(value)}</span>;
+  }
+
+  // String arrays
+  if (Array.isArray(value)) {
+    const items = value.map(String).filter(Boolean);
+    if (items.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-1">
+        {items.slice(0, 8).map((item, i) => (
+          <span key={`${item}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
+            {item}
+          </span>
+        ))}
+        {items.length > 8 && (
+          <span className="text-xs text-muted-foreground">+{items.length - 8} more</span>
+        )}
+      </div>
+    );
+  }
+
+  // Objects
+  if (typeof value === "object") {
+    return (
+      <pre className="text-xs text-muted-foreground bg-muted rounded p-1.5 overflow-x-auto max-h-24">
+        {JSON.stringify(value, null, 1)}
+      </pre>
+    );
+  }
+
+  // Default string
+  return <span className="text-sm text-foreground break-words">{String(value)}</span>;
+}
+
+/** Render all fields from an edge's `fields` dict */
+function EdgeFields({ fields }: { fields: Record<string, unknown> }) {
+  const entries = Object.entries(fields).filter(
+    ([key, value]) =>
+      !SKIP_FIELDS.has(key) &&
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      !(Array.isArray(value) && value.length === 0),
+  );
+
+  if (entries.length === 0) return null;
+
+  // Sort: scores first, then pubmed, then rest
+  entries.sort(([a], [b]) => {
+    const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
+    const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
+    return aScore - bScore;
+  });
+
+  return (
+    <div className="space-y-2.5">
+      {entries.map(([key, value]) => (
+        <div key={key} className="space-y-0.5">
+          <div className="text-xs font-medium text-muted-foreground">{fieldLabel(key)}</div>
+          <FieldValue fieldKey={key} value={value} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
+// Single Edge Instance (collapsible within RelationshipGroup)
+// =============================================================================
+
+function EdgeInstance({
+  edge,
+  provenance,
+  defaultOpen,
+}: {
+  edge: ExplorerEdge;
+  provenance: ProvenanceEvent[];
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const config = EDGE_TYPE_CONFIG[edge.type];
+  const hasFields = edge.fields && Object.keys(edge.fields).length > 0;
+  const hasEvidence = edge.evidence?.sources?.length || edge.evidence?.pubmedIds?.length || edge.evidence?.detectionMethods?.length;
+  const hasContent = hasFields || hasEvidence || edge.numSources !== undefined || edge.numExperiments !== undefined;
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors"
+        onClick={() => setOpen(!open)}
+      >
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: config?.color ?? "#94a3b8" }}
+        />
+        <span className="text-sm font-medium text-foreground flex-1 truncate">
+          {config?.label ?? edge.type}
+        </span>
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 space-y-3 border-t border-border">
+          {config?.description && (
+            <p className="text-xs text-muted-foreground pt-2">{config.description}</p>
+          )}
+
+          {/* Quick stats */}
+          {(edge.numSources !== undefined || edge.numExperiments !== undefined) && (
+            <div className="flex gap-3 pt-1">
+              {edge.numSources !== undefined && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Database className="w-3 h-3 text-blue-600" />
+                  <span className="font-medium text-foreground">{edge.numSources}</span>
+                  <span className="text-muted-foreground">sources</span>
+                </div>
+              )}
+              {edge.numExperiments !== undefined && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Beaker className="w-3 h-3 text-emerald-600" />
+                  <span className="font-medium text-foreground">{edge.numExperiments}</span>
+                  <span className="text-muted-foreground">experiments</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Schema-driven fields */}
+          {edge.fields && Object.keys(edge.fields).length > 0 && (
+            <EdgeFields fields={edge.fields} />
+          )}
+
+          {/* Legacy evidence (from subgraph API with includeProps) */}
+          {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-muted-foreground">Data Sources</div>
+              <div className="flex flex-wrap gap-1">
+                {edge.evidence.sources.map((source, i) => (
+                  <span key={`${source}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
+                    {source}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-muted-foreground">Publications</div>
+              <div className="flex flex-wrap gap-1">
+                {edge.evidence.pubmedIds.slice(0, 5).map((pmid) => (
+                  <ExternalLink
+                    key={pmid}
+                    href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
+                    className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded hover:bg-indigo-100"
+                  >
+                    PMID:{pmid}
+                  </ExternalLink>
+                ))}
+                {edge.evidence.pubmedIds.length > 5 && (
+                  <span className="text-xs text-muted-foreground">
+                    +{edge.evidence.pubmedIds.length - 5} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-muted-foreground">Detection Methods</div>
+              <div className="flex flex-wrap gap-1">
+                {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
+                  <span key={`${method}-${i}`} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded">
+                    {method}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!hasContent && (
+            <p className="text-xs text-muted-foreground pt-1 italic">No additional data available</p>
+          )}
+
+          {provenance.length > 0 && (
+            <ProvenanceDisplay events={provenance} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Edge Detail — RelationshipGroup (all edges between a pair)
+// =============================================================================
+
+interface EdgeDetailProps {
+  edge: ExplorerEdge;
+  allEdges: ExplorerEdge[];
+  getNode: (id: string) => ExplorerNode | undefined;
+  getProvenance: (id: string) => ProvenanceEvent[];
+}
+
+function EdgeDetail({ edge, allEdges, getNode, getProvenance }: EdgeDetailProps) {
+  const sourceNode = getNode(edge.sourceId);
+  const targetNode = getNode(edge.targetId);
+
+  return (
+    <div className="space-y-4">
+      {/* Pair header */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-medium text-foreground truncate">
+            {sourceNode?.label ?? edge.sourceId}
+          </span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          <span className="font-medium text-foreground truncate">
+            {targetNode?.label ?? edge.targetId}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {allEdges.length === 1
+            ? "1 relationship"
+            : `${allEdges.length} relationships between this pair`}
+        </p>
+      </div>
+
+      {/* Edge instances */}
+      <div className="space-y-2">
+        {allEdges.map((e) => (
+          <EdgeInstance
+            key={e.id}
+            edge={e}
+            provenance={getProvenance(e.id)}
+            defaultOpen={e.id === edge.id}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Node Detail Component
 // =============================================================================
 
 interface NodeDetailProps {
   node: ExplorerNode;
+  provenance: ProvenanceEvent[];
   onExpand: (nodeId: string, expansion?: ExpansionConfig) => void;
   onRemove: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
 }
 
-function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: NodeDetailProps) {
+function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding }: NodeDetailProps) {
   const colors = NODE_TYPE_COLORS[node.type] ?? { background: "#e2e8f0", border: "#94a3b8", text: "#334155" };
   const expansionOptions = NODE_EXPANSION_CONFIG[node.type] ?? [];
 
@@ -223,128 +596,11 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
           )}
         </div>
       </div>
-    </div>
-  );
-}
 
-// =============================================================================
-// Edge Detail Component
-// =============================================================================
-
-interface EdgeDetailProps {
-  edge: ExplorerEdge;
-  getNode: (id: string) => ExplorerNode | undefined;
-}
-
-function EdgeDetail({ edge, getNode }: EdgeDetailProps) {
-  const config = EDGE_TYPE_CONFIG[edge.type];
-  const sourceNode = getNode(edge.sourceId);
-  const targetNode = getNode(edge.targetId);
-
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: config?.color ?? "#94a3b8" }}
-          />
-          <span className="text-sm font-medium text-foreground">
-            {config?.label ?? edge.type}
-          </span>
-        </div>
-
-        {/* Edge Direction */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-foreground">
-            {sourceNode?.label ?? edge.sourceId}
-          </span>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium text-foreground">
-            {targetNode?.label ?? edge.targetId}
-          </span>
-        </div>
-      </div>
-
-      {/* Evidence Stats */}
-      <div className="grid grid-cols-2 gap-2">
-        {edge.numSources !== undefined && (
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <Database className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-            <div className="text-lg font-semibold text-blue-700">{edge.numSources}</div>
-            <div className="text-xs text-blue-600">Sources</div>
-          </div>
-        )}
-        {edge.numExperiments !== undefined && (
-          <div className="bg-emerald-50 rounded-lg p-3 text-center">
-            <Beaker className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-            <div className="text-lg font-semibold text-emerald-700">{edge.numExperiments}</div>
-            <div className="text-xs text-emerald-600">Experiments</div>
-          </div>
-        )}
-      </div>
-
-      {/* Evidence Sources */}
-      {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Data Sources
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {edge.evidence.sources.map((source, i) => (
-              <span
-                key={`${source}-${i}`}
-                className="px-2 py-0.5 bg-muted text-foreground text-xs rounded"
-              >
-                {source}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* PubMed IDs */}
-      {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Publications
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {edge.evidence.pubmedIds.slice(0, 5).map((pmid) => (
-              <ExternalLink
-                key={pmid}
-                href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
-                className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded hover:bg-indigo-100"
-              >
-                PMID:{pmid}
-              </ExternalLink>
-            ))}
-            {edge.evidence.pubmedIds.length > 5 && (
-              <span className="px-2 py-0.5 text-muted-foreground text-xs">
-                +{edge.evidence.pubmedIds.length - 5} more
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Detection Methods */}
-      {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Detection Methods
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
-              <span
-                key={`${method}-${i}`}
-                className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded"
-              >
-                {method}
-              </span>
-            ))}
-          </div>
+      {/* Provenance */}
+      {provenance.length > 0 && (
+        <div className="pt-2 border-t border-border">
+          <ProvenanceDisplay events={provenance} />
         </div>
       )}
     </div>
@@ -444,6 +700,8 @@ function InspectorPanelInner({
   selection,
   getNode,
   getEdge,
+  getProvenance,
+  getEdgesBetween,
   onExpandNode,
   onRemoveNode,
   onFindPaths,
@@ -462,6 +720,7 @@ function InspectorPanelInner({
       {selection.type === "node" && (
         <NodeDetail
           node={selection.node}
+          provenance={getProvenance(selection.nodeId)}
           onExpand={onExpandNode}
           onRemove={onRemoveNode}
           onFindPaths={onFindPaths}
@@ -470,7 +729,12 @@ function InspectorPanelInner({
       )}
 
       {selection.type === "edge" && (
-        <EdgeDetail edge={selection.edge} getNode={getNode} />
+        <EdgeDetail
+          edge={selection.edge}
+          allEdges={getEdgesBetween(selection.edge.sourceId, selection.edge.targetId)}
+          getNode={getNode}
+          getProvenance={getProvenance}
+        />
       )}
 
       {selection.type === "multi" && (

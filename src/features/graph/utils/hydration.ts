@@ -103,6 +103,7 @@ export function hydrateSubgraphData(
       targetKey,
       numSources: apiEdge.numSources,
       numExperiments: apiEdge.numExperiments,
+      fields: apiEdge.fields,
     });
   }
 
@@ -238,6 +239,7 @@ export function hydrateQueryResponse(
       targetKey,
       numSources: edge.fields?.num_sources as number | undefined,
       numExperiments: edge.fields?.num_experiments as number | undefined,
+      fields: edge.fields,
     });
   }
 

@@ -1,6 +1,7 @@
 import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
+import type { ProvenanceEvent } from "../types/provenance";
 import { DEFAULT_SELECTION } from "../types/node";
 import { DEFAULT_FILTERS } from "../types/filters";
 import type {
@@ -16,13 +17,14 @@ import type {
 // =============================================================================
 
 export type ExplorerAction =
-  | { type: "HYDRATE_INITIAL"; graph: GraphData; lensId: LensId }
+  | { type: "HYDRATE_INITIAL"; graph: GraphData; lensId: LensId; provenance: ProvenanceEvent }
   | { type: "SWITCH_LENS_START"; lensId: LensId }
-  | { type: "SWITCH_LENS_SUCCESS"; graph: GraphData; lensEdgeTypes: Set<EdgeType> }
+  | { type: "SWITCH_LENS_SUCCESS"; graph: GraphData; lensEdgeTypes: Set<EdgeType>; provenance: ProvenanceEvent }
   | { type: "SWITCH_LENS_ERROR"; error: string }
   | { type: "EXPAND_START" }
-  | { type: "EXPAND_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge> }
+  | { type: "EXPAND_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
   | { type: "EXPAND_ERROR"; error: string }
+  | { type: "DISMISS_EXPANSION_ERROR" }
   | { type: "REMOVE_NODE"; nodeId: string }
   | { type: "SELECT_NODE"; nodeId: string; node: ExplorerNode }
   | { type: "SELECT_EDGE"; edgeId: string; edge: ExplorerEdge }
@@ -38,15 +40,38 @@ export type ExplorerAction =
   | { type: "SET_INSPECTOR_MODE"; mode: InspectorMode };
 
 // =============================================================================
+// HELPERS
+// =============================================================================
+
+function stampProvenance(
+  existing: Map<string, ProvenanceEvent[]>,
+  ids: Iterable<string>,
+  event: ProvenanceEvent,
+): Map<string, ProvenanceEvent[]> {
+  const result = new Map(existing);
+  for (const id of ids) {
+    const prev = result.get(id);
+    result.set(id, prev ? [...prev, event] : [event]);
+  }
+  return result;
+}
+
+// =============================================================================
 // REDUCER
 // =============================================================================
 
 export function explorerReducer(state: ExplorerState, action: ExplorerAction): ExplorerState {
   switch (action.type) {
     case "HYDRATE_INITIAL": {
+      // Stamp all initial nodes and edges with the provenance event
+      const provenance = stampProvenance(
+        new Map(),
+        [...action.graph.nodes.keys(), ...action.graph.edges.keys()],
+        action.provenance,
+      );
       return {
         status: "ready",
-        graph: action.graph,
+        graph: { ...action.graph, provenance },
         selection: DEFAULT_SELECTION,
         filters: { ...DEFAULT_FILTERS, edgeTypes: new Set(DEFAULT_FILTERS.edgeTypes) },
         layout: "cose-bilkent",
@@ -71,9 +96,14 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "SWITCH_LENS_SUCCESS": {
       if (state.status !== "ready") return state;
+      const provenance = stampProvenance(
+        new Map(),
+        [...action.graph.nodes.keys(), ...action.graph.edges.keys()],
+        action.provenance,
+      );
       return {
         ...state,
-        graph: action.graph,
+        graph: { ...action.graph, provenance },
         filters: {
           ...state.filters,
           edgeTypes: new Set([...state.filters.edgeTypes, ...action.lensEdgeTypes]),
@@ -101,14 +131,29 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
     case "EXPAND_SUCCESS": {
       if (state.status !== "ready") return state;
       const mergedNodes = new Map(state.graph.nodes);
+      const newNodeIds: string[] = [];
       action.nodes.forEach((node, id) => {
-        if (!mergedNodes.has(id)) mergedNodes.set(id, node);
+        if (!mergedNodes.has(id)) {
+          mergedNodes.set(id, node);
+          newNodeIds.push(id);
+        }
       });
 
       const mergedEdges = new Map(state.graph.edges);
+      const newEdgeIds: string[] = [];
       action.edges.forEach((edge, id) => {
-        if (!mergedEdges.has(id)) mergedEdges.set(id, edge);
+        if (!mergedEdges.has(id)) {
+          mergedEdges.set(id, edge);
+          newEdgeIds.push(id);
+        }
       });
+
+      // Only stamp provenance on newly added items
+      const provenance = stampProvenance(
+        state.graph.provenance,
+        [...newNodeIds, ...newEdgeIds],
+        action.provenance,
+      );
 
       return {
         ...state,
@@ -116,12 +161,21 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           ...state.graph,
           nodes: mergedNodes,
           edges: mergedEdges,
+          provenance,
         },
         expansion: { status: "idle" },
       };
     }
 
     case "EXPAND_ERROR": {
+      if (state.status !== "ready") return state;
+      return {
+        ...state,
+        expansion: { status: "error", message: action.error },
+      };
+    }
+
+    case "DISMISS_EXPANSION_ERROR": {
       if (state.status !== "ready") return state;
       return {
         ...state,
@@ -136,12 +190,21 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       const newNodes = new Map(state.graph.nodes);
       newNodes.delete(action.nodeId);
 
+      const removedEdgeIds: string[] = [];
       const newEdges = new Map(state.graph.edges);
       newEdges.forEach((edge, edgeId) => {
         if (edge.sourceId === action.nodeId || edge.targetId === action.nodeId) {
           newEdges.delete(edgeId);
+          removedEdgeIds.push(edgeId);
         }
       });
+
+      // Clean up provenance for removed node + edges
+      const newProvenance = new Map(state.graph.provenance);
+      newProvenance.delete(action.nodeId);
+      for (const edgeId of removedEdgeIds) {
+        newProvenance.delete(edgeId);
+      }
 
       let selection = state.selection;
       if (selection.type === "node" && selection.nodeId === action.nodeId) {
@@ -154,7 +217,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
       return {
         ...state,
-        graph: { ...state.graph, nodes: newNodes, edges: newEdges },
+        graph: { ...state.graph, nodes: newNodes, edges: newEdges, provenance: newProvenance },
         selection,
       };
     }

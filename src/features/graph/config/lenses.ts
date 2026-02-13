@@ -1,4 +1,5 @@
 import type { EdgeType } from "../types/edge";
+import { getEdgeFieldsForTypes } from "../types/edge";
 
 // =============================================================================
 // Lens System - Curated Views via /graph/query
@@ -27,6 +28,14 @@ export interface GraphLens {
 
 export const DEFAULT_LENS: LensId = "clinical";
 
+/**
+ * Compute all schema fields for a lens by unioning the fields of its edge types.
+ */
+export function getLensEdgeFields(lens: GraphLens): string[] {
+  const allEdgeTypes = lens.steps.flatMap((s) => s.edgeTypes);
+  return getEdgeFieldsForTypes(allEdgeTypes);
+}
+
 export const GRAPH_LENSES: GraphLens[] = [
   {
     id: "clinical",
@@ -39,7 +48,6 @@ export const GRAPH_LENSES: GraphLens[] = [
       { edgeTypes: ["INDICATED_FOR"], direction: "in", limit: 5 },
     ],
     limits: { maxNodes: 80, maxEdges: 200 },
-    edgeFields: ["overall_score", "evidence_count", "max_clinical_phase"],
   },
   {
     id: "regulatory",
@@ -52,7 +60,6 @@ export const GRAPH_LENSES: GraphLens[] = [
       { edgeTypes: ["CLINVAR_ASSOCIATED"], direction: "in", limit: 5 },
     ],
     limits: { maxNodes: 80, maxEdges: 200 },
-    edgeFields: ["classification", "confidence_category", "clinical_significance"],
   },
   {
     id: "pharmacology",
@@ -65,7 +72,6 @@ export const GRAPH_LENSES: GraphLens[] = [
       { edgeTypes: ["HAS_ADVERSE_REACTION", "HAS_SIDE_EFFECT"], direction: "out", limit: 5 },
     ],
     limits: { maxNodes: 100, maxEdges: 300 },
-    edgeFields: ["max_clinical_phase", "action_type", "report_count", "frequency_description"],
   },
   {
     id: "network",
@@ -77,7 +83,6 @@ export const GRAPH_LENSES: GraphLens[] = [
       { edgeTypes: ["INTERACTS_WITH", "INTERACTS_IN_PATHWAY", "FUNCTIONALLY_RELATED", "PARTICIPATES_IN"], direction: "out", limit: 30 },
     ],
     limits: { maxNodes: 100, maxEdges: 300 },
-    edgeFields: ["combined_score", "num_sources"],
   },
   {
     id: "phenotype",
@@ -90,6 +95,5 @@ export const GRAPH_LENSES: GraphLens[] = [
       { edgeTypes: ["PRESENTS_WITH"], direction: "in", limit: 5 },
     ],
     limits: { maxNodes: 80, maxEdges: 200 },
-    edgeFields: ["evidence_code", "frequency"],
   },
 ];

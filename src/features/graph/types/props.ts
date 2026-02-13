@@ -2,6 +2,7 @@ import type { ElementDefinition } from "cytoscape";
 import type { EntityType } from "./entity";
 import type { EdgeType } from "./edge";
 import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "./node";
+import type { ProvenanceEvent } from "./provenance";
 import type { GraphFilters } from "./filters";
 import type { GraphSchema, GraphStats } from "./schema";
 import type { ExplorerLayoutType, LensId } from "./state";
@@ -23,6 +24,7 @@ export interface InitialSubgraphData {
     toId: string;
     numSources?: number;
     numExperiments?: number;
+    fields?: Record<string, unknown>;
   }>;
 }
 
@@ -74,6 +76,8 @@ export interface InspectorPanelProps {
   selection: ExplorerSelection;
   getNode: (id: string) => ExplorerNode | undefined;
   getEdge: (id: string) => ExplorerEdge | undefined;
+  getProvenance: (id: string) => ProvenanceEvent[];
+  getEdgesBetween: (sourceId: string, targetId: string) => ExplorerEdge[];
   onExpandNode: (nodeId: string, expansion?: ExpansionConfig) => void;
   onRemoveNode: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;

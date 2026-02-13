@@ -11,6 +11,7 @@ import {
 import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
+import type { ProvenanceEvent } from "../types/provenance";
 import type {
   ExplorerState,
   GraphData,
@@ -35,13 +36,14 @@ type ExplorerContextValue = {
   state: ExplorerState;
   dispatch: Dispatch<ExplorerAction>;
   actions: {
-    hydrateInitial: (graph: GraphData, lensId: LensId) => void;
+    hydrateInitial: (graph: GraphData, lensId: LensId, provenance: ProvenanceEvent) => void;
     switchLensStart: (lensId: LensId) => void;
-    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>) => void;
+    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => void;
     switchLensError: (error: string) => void;
     expandStart: () => void;
-    expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>) => void;
+    expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => void;
     expandError: (error: string) => void;
+    dismissExpansionError: () => void;
     removeNode: (nodeId: string) => void;
     selectNode: (nodeId: string, node: ExplorerNode) => void;
     selectEdge: (edgeId: string, edge: ExplorerEdge) => void;
@@ -64,6 +66,8 @@ type ExplorerContextValue = {
     isExpanding: () => boolean;
     getNode: (id: string) => ExplorerNode | undefined;
     getEdge: (id: string) => ExplorerEdge | undefined;
+    getProvenance: (id: string) => ProvenanceEvent[];
+    getEdgesBetween: (sourceId: string, targetId: string) => ExplorerEdge[];
   };
 };
 
@@ -81,14 +85,14 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
   const [state, dispatch] = useReducer(explorerReducer, initialExplorerState);
 
   const actions = useMemo(() => ({
-    hydrateInitial: (graph: GraphData, lensId: LensId) => {
-      dispatch({ type: "HYDRATE_INITIAL", graph, lensId });
+    hydrateInitial: (graph: GraphData, lensId: LensId, provenance: ProvenanceEvent) => {
+      dispatch({ type: "HYDRATE_INITIAL", graph, lensId, provenance });
     },
     switchLensStart: (lensId: LensId) => {
       dispatch({ type: "SWITCH_LENS_START", lensId });
     },
-    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>) => {
-      dispatch({ type: "SWITCH_LENS_SUCCESS", graph, lensEdgeTypes });
+    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => {
+      dispatch({ type: "SWITCH_LENS_SUCCESS", graph, lensEdgeTypes, provenance });
     },
     switchLensError: (error: string) => {
       dispatch({ type: "SWITCH_LENS_ERROR", error });
@@ -96,11 +100,14 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
     expandStart: () => {
       dispatch({ type: "EXPAND_START" });
     },
-    expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>) => {
-      dispatch({ type: "EXPAND_SUCCESS", nodes, edges });
+    expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => {
+      dispatch({ type: "EXPAND_SUCCESS", nodes, edges, provenance });
     },
     expandError: (error: string) => {
       dispatch({ type: "EXPAND_ERROR", error });
+    },
+    dismissExpansionError: () => {
+      dispatch({ type: "DISMISS_EXPANSION_ERROR" });
     },
     removeNode: (nodeId: string) => {
       dispatch({ type: "REMOVE_NODE", nodeId });
@@ -168,6 +175,23 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
     getEdge: (id: string) => {
       if (state.status !== "ready") return undefined;
       return state.graph.edges.get(id);
+    },
+    getProvenance: (id: string) => {
+      if (state.status !== "ready") return [];
+      return state.graph.provenance.get(id) ?? [];
+    },
+    getEdgesBetween: (sourceId: string, targetId: string) => {
+      if (state.status !== "ready") return [];
+      const result: ExplorerEdge[] = [];
+      state.graph.edges.forEach((edge) => {
+        if (
+          (edge.sourceId === sourceId && edge.targetId === targetId) ||
+          (edge.sourceId === targetId && edge.targetId === sourceId)
+        ) {
+          result.push(edge);
+        }
+      });
+      return result;
     },
   }), [state]);
 

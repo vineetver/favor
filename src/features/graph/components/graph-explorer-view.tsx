@@ -20,6 +20,7 @@ import {
   PanelLeft,
   SplitSquareVertical,
 } from "lucide-react";
+import { toast } from "sonner";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ExplorerCytoscape } from "./explorer-cytoscape";
 import { ControlsDrawer } from "./controls-drawer";
@@ -38,6 +39,7 @@ import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
+import { createProvenanceEvent } from "../types/provenance";
 
 // =============================================================================
 // View Toggle Component
@@ -137,9 +139,13 @@ function GraphExplorerViewInner({
 
     const seedSet = new Set([seedGeneId]);
 
+    const lensId = initialLensId ?? "clinical";
+    const lensName = GRAPH_LENSES.find((l) => l.id === lensId)?.name ?? lensId;
+    const initialProv = createProvenanceEvent("lens", `${lensName} lens (initial)`, { lensId });
+
     if (initialSubgraph && initialSubgraph.edges.length > 0) {
       const { nodes, edges } = hydrateSubgraphData(initialSubgraph, seedGeneId, seedGeneSymbol, seedSet);
-      actions.hydrateInitial({ nodes, edges, seeds: seedSet }, initialLensId ?? "clinical");
+      actions.hydrateInitial({ nodes, edges, seeds: seedSet, provenance: new Map() }, lensId, initialProv);
     } else {
       // Just the seed node
       const seedKey = makeNodeKey("Gene", seedGeneId);
@@ -160,7 +166,7 @@ function GraphExplorerViewInner({
       };
       const nodes = new Map<string, ExplorerNode>();
       nodes.set(seedGeneId, seedNode);
-      actions.hydrateInitial({ nodes, edges: new Map(), seeds: seedSet }, initialLensId ?? "clinical");
+      actions.hydrateInitial({ nodes, edges: new Map(), seeds: seedSet, provenance: new Map() }, lensId, initialProv);
     }
   }, [state.status, seedGeneId, seedGeneSymbol, initialSubgraph, initialLensId, actions]);
 
@@ -206,6 +212,7 @@ function GraphExplorerViewInner({
     if (!lens) return;
 
     actions.switchLensStart(lensId);
+    const prov = createProvenanceEvent("lens", `${lens.name} lens`, { lensId });
 
     try {
       const response = await fetchGraphQuery({
@@ -217,10 +224,6 @@ function GraphExplorerViewInner({
           sort: s.sort,
           filters: s.filters,
         })),
-        select: {
-          edgeFields: lens.edgeFields,
-          includeEvidence: false,
-        },
         limits: lens.limits,
       });
 
@@ -238,8 +241,9 @@ function GraphExplorerViewInner({
         const nodes = new Map<string, ExplorerNode>();
         nodes.set(seedGeneId, seedNode);
         actions.switchLensSuccess(
-          { nodes, edges: new Map(), seeds: new Set([seedGeneId]) },
+          { nodes, edges: new Map(), seeds: new Set([seedGeneId]), provenance: new Map() },
           new Set<EdgeType>(),
+          prov,
         );
         return;
       }
@@ -255,7 +259,7 @@ function GraphExplorerViewInner({
         lensEdgeTypes.add(edge.type as EdgeType);
       }
 
-      actions.switchLensSuccess({ nodes: newNodes, edges: newEdges, seeds: seedSet }, lensEdgeTypes);
+      actions.switchLensSuccess({ nodes: newNodes, edges: newEdges, seeds: seedSet, provenance: new Map() }, lensEdgeTypes, prov);
     } catch (error) {
       console.error("Failed to switch lens:", error);
       actions.switchLensError(String(error));
@@ -320,6 +324,10 @@ function GraphExplorerViewInner({
 
     actions.expandStart();
 
+    const expandProv = expansion
+      ? createProvenanceEvent("typed_expand", `${expansion.label} from ${node.label}`, { sourceNodeId: nodeId, sourceNodeLabel: node.label })
+      : createProvenanceEvent("bfs_expand", `Expand all from ${node.label}`, { sourceNodeId: nodeId, sourceNodeLabel: node.label });
+
     try {
       if (expansion) {
         const response = await fetchGraphQuery({
@@ -334,7 +342,8 @@ function GraphExplorerViewInner({
         });
 
         if (!response?.data?.edges?.length) {
-          actions.expandError("No results");
+          actions.dismissExpansionError();
+          toast.error("No relationships found for this expansion.");
           return;
         }
 
@@ -376,10 +385,11 @@ function GraphExplorerViewInner({
             targetKey,
             numSources: apiEdge.fields?.num_sources as number | undefined,
             numExperiments: apiEdge.fields?.num_experiments as number | undefined,
+            fields: apiEdge.fields,
           });
         }
 
-        actions.expandSuccess(newNodes, newEdges);
+        actions.expandSuccess(newNodes, newEdges, expandProv);
       } else {
         const response = await fetchSubgraph({
           seeds: [{ type: node.type, id: nodeId }],
@@ -391,7 +401,8 @@ function GraphExplorerViewInner({
         });
 
         if (!response?.data?.graph) {
-          actions.expandError("No results");
+          actions.dismissExpansionError();
+          toast.error("No relationships found for this expansion.");
           return;
         }
 
@@ -434,14 +445,23 @@ function GraphExplorerViewInner({
               pubmedIds: apiEdge.props?.pubmed_ids as string[] | undefined,
               detectionMethods: apiEdge.props?.detection_methods as string[] | undefined,
             },
+            fields: apiEdge.props as Record<string, unknown> | undefined,
           });
         });
 
-        actions.expandSuccess(newNodes, newEdges);
+        actions.expandSuccess(newNodes, newEdges, expandProv);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to expand node:", error);
-      actions.expandError(String(error));
+      actions.dismissExpansionError();
+      const is404 =
+        (error instanceof Response && error.status === 404) ||
+        (error instanceof Error && (error.message.includes("404") || error.message.includes("Not Found")));
+      toast.error(
+        is404
+          ? "Entity not found — this node may not exist in the knowledge graph."
+          : `Expansion failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }, [selectors, actions, readyState]);
 
@@ -451,6 +471,8 @@ function GraphExplorerViewInner({
 
   const getNode = useCallback((id: string) => selectors.getNode(id), [selectors]);
   const getEdge = useCallback((id: string) => selectors.getEdge(id), [selectors]);
+  const getProvenance = useCallback((id: string) => selectors.getProvenance(id), [selectors]);
+  const getEdgesBetween = useCallback((sourceId: string, targetId: string) => selectors.getEdgesBetween(sourceId, targetId), [selectors]);
 
   const handleFindPaths = useCallback((_fromId: string, _toId: string) => {
     // Path finding will be implemented in a future phase
@@ -594,6 +616,8 @@ function GraphExplorerViewInner({
                 selection={selection}
                 getNode={getNode}
                 getEdge={getEdge}
+                getProvenance={getProvenance}
+                getEdgesBetween={getEdgesBetween}
                 onExpandNode={expandNode}
                 onRemoveNode={removeNode}
                 onFindPaths={handleFindPaths}

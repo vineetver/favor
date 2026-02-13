@@ -11,8 +11,7 @@ import type { EntityType } from "@features/graph/types/entity";
 import type { EdgeType } from "@features/graph/types/edge";
 import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
 import type { InitialSubgraphData } from "@features/graph/types/props";
-import { GRAPH_LENSES } from "@features/graph/config/lenses";
-import { DEFAULT_LENS } from "@features/graph/config/lenses";
+import { GRAPH_LENSES, DEFAULT_LENS } from "@features/graph/config/lenses";
 import { notFound } from "next/navigation";
 
 interface GraphExplorerPageProps {
@@ -81,10 +80,6 @@ export default async function GraphExplorerPage({
         sort: s.sort,
         filters: s.filters,
       })),
-      select: {
-        edgeFields: defaultLens.edgeFields,
-        includeEvidence: false,
-      },
       limits: defaultLens.limits,
     });
 
@@ -106,6 +101,7 @@ export default async function GraphExplorerPage({
             toId: to.id,
             numSources: e.fields?.num_sources as number | undefined,
             numExperiments: e.fields?.num_experiments as number | undefined,
+            fields: e.fields,
           };
         }),
       };
