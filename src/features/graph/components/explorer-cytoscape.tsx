@@ -12,14 +12,10 @@ import coseBilkent from "cytoscape-cose-bilkent";
 import dagre from "cytoscape-dagre";
 import { memo, useEffect, useMemo, useRef } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
-import {
-  type ExplorerCytoscapeProps,
-  type ExplorerNode,
-  type ExplorerEdge,
-  getExplorerLayoutOptions,
-  NODE_TYPE_COLORS,
-  EDGE_TYPE_CONFIG,
-} from "./types";
+import type { ExplorerCytoscapeProps } from "../types/props";
+import type { ExplorerNode, ExplorerEdge } from "../types/node";
+import { getExplorerLayoutOptions } from "../config/layout";
+import { NODE_TYPE_COLORS } from "../config/styling";
 
 // Register layout extensions
 if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
@@ -34,7 +30,6 @@ if (typeof cytoscape("layout", "dagre") === "undefined") {
 // =============================================================================
 
 const STYLESHEET: StylesheetStyle[] = [
-  // Base node style
   {
     selector: "node",
     style: {
@@ -54,7 +49,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "text-outline-width": 2,
     },
   },
-  // Seed node (larger, distinct)
   {
     selector: "node.seed",
     style: {
@@ -62,7 +56,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "font-weight": 600,
     },
   },
-  // Selected node
   {
     selector: "node:selected",
     style: {
@@ -70,7 +63,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "border-color": "#1e40af",
     },
   },
-  // Multi-selected nodes
   {
     selector: "node.multi-selected",
     style: {
@@ -79,7 +71,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "border-style": "double" as never,
     },
   },
-  // Path highlight - nodes in path
   {
     selector: "node.path-node",
     style: {
@@ -88,14 +79,12 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 100,
     },
   },
-  // Path highlight - dimmed nodes
   {
     selector: "node.path-dimmed",
     style: {
       opacity: 0.3,
     },
   },
-  // Entity type specific styles
   {
     selector: "node.entity-gene",
     style: {
@@ -152,7 +141,54 @@ const STYLESHEET: StylesheetStyle[] = [
       color: NODE_TYPE_COLORS.Phenotype.text,
     },
   },
-  // Base edge style
+  {
+    selector: "node.entity-study",
+    style: {
+      "background-color": NODE_TYPE_COLORS.Study.background,
+      "border-color": NODE_TYPE_COLORS.Study.border,
+      color: NODE_TYPE_COLORS.Study.text,
+    },
+  },
+  {
+    selector: "node.entity-goterm",
+    style: {
+      "background-color": NODE_TYPE_COLORS.GOTerm.background,
+      "border-color": NODE_TYPE_COLORS.GOTerm.border,
+      color: NODE_TYPE_COLORS.GOTerm.text,
+    },
+  },
+  {
+    selector: "node.entity-sideeffect",
+    style: {
+      "background-color": NODE_TYPE_COLORS.SideEffect.background,
+      "border-color": NODE_TYPE_COLORS.SideEffect.border,
+      color: NODE_TYPE_COLORS.SideEffect.text,
+    },
+  },
+  {
+    selector: "node.entity-ontologyterm",
+    style: {
+      "background-color": NODE_TYPE_COLORS.OntologyTerm.background,
+      "border-color": NODE_TYPE_COLORS.OntologyTerm.border,
+      color: NODE_TYPE_COLORS.OntologyTerm.text,
+    },
+  },
+  {
+    selector: "node.entity-ccre",
+    style: {
+      "background-color": NODE_TYPE_COLORS.cCRE.background,
+      "border-color": NODE_TYPE_COLORS.cCRE.border,
+      color: NODE_TYPE_COLORS.cCRE.text,
+    },
+  },
+  {
+    selector: "node.entity-metabolite",
+    style: {
+      "background-color": NODE_TYPE_COLORS.Metabolite.background,
+      "border-color": NODE_TYPE_COLORS.Metabolite.border,
+      color: NODE_TYPE_COLORS.Metabolite.text,
+    },
+  },
   {
     selector: "edge",
     style: {
@@ -165,7 +201,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "arrow-scale": 0.8,
     },
   },
-  // Edge hover
   {
     selector: "edge:hover",
     style: {
@@ -174,7 +209,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 10,
     },
   },
-  // Edge selected
   {
     selector: "edge:selected",
     style: {
@@ -194,7 +228,6 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 20,
     },
   },
-  // Path highlight - edges in path
   {
     selector: "edge.path-edge",
     style: {
@@ -205,152 +238,10 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 50,
     },
   },
-  // Path highlight - dimmed edges
   {
     selector: "edge.path-dimmed",
     style: {
       opacity: 0.2,
-    },
-  },
-  // Edge type specific colors - Gene -> Disease (Orange/Red family)
-  {
-    selector: "edge.edge-implicated-in",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.IMPLICATED_IN.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.IMPLICATED_IN.color,
-    },
-  },
-  {
-    selector: "edge.edge-causes",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.CAUSES.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.CAUSES.color,
-    },
-  },
-  {
-    selector: "edge.edge-curated-for",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.CURATED_FOR.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.CURATED_FOR.color,
-    },
-  },
-  // Gene -> Pathway/Phenotype/Variant (Purple/Pink family)
-  {
-    selector: "edge.edge-participates-in",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.PARTICIPATES_IN.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.PARTICIPATES_IN.color,
-    },
-  },
-  {
-    selector: "edge.edge-manifests-as",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.MANIFESTS_AS.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.MANIFESTS_AS.color,
-    },
-  },
-  {
-    selector: "edge.edge-annotated-in",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.ANNOTATED_IN.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.ANNOTATED_IN.color,
-    },
-  },
-  // Drug -> Gene (Green family)
-  {
-    selector: "edge.edge-targets",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.TARGETS.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.TARGETS.color,
-    },
-  },
-  {
-    selector: "edge.edge-known-to-target",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.KNOWN_TO_TARGET.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.KNOWN_TO_TARGET.color,
-    },
-  },
-  {
-    selector: "edge.edge-interacts-with-gene",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.INTERACTS_WITH_GENE.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.INTERACTS_WITH_GENE.color,
-    },
-  },
-  // Drug -> Disease (Teal family)
-  {
-    selector: "edge.edge-approved-for",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.APPROVED_FOR.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.APPROVED_FOR.color,
-    },
-  },
-  {
-    selector: "edge.edge-indicated-for",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.INDICATED_FOR.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.INDICATED_FOR.color,
-    },
-  },
-  {
-    selector: "edge.edge-investigated-for",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.INVESTIGATED_FOR.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.INVESTIGATED_FOR.color,
-    },
-  },
-  // Variant relationships (Yellow family)
-  {
-    selector: "edge.edge-associated-with",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.ASSOCIATED_WITH.color,
-    },
-  },
-  {
-    selector: "edge.edge-reported-in",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.REPORTED_IN.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.REPORTED_IN.color,
-    },
-  },
-  {
-    selector: "edge.edge-affects-response-to",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.AFFECTS_RESPONSE_TO.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.AFFECTS_RESPONSE_TO.color,
-    },
-  },
-  // Disease -> Phenotype (Rose family)
-  {
-    selector: "edge.edge-presents-with",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.PRESENTS_WITH.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.PRESENTS_WITH.color,
-    },
-  },
-  // Trait -> Disease (Fuchsia family)
-  {
-    selector: "edge.edge-maps-to",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.MAPS_TO.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.MAPS_TO.color,
-    },
-  },
-  // Pathway relationships (Indigo family)
-  {
-    selector: "edge.edge-part-of",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.PART_OF.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.PART_OF.color,
-    },
-  },
-  {
-    selector: "edge.edge-pathway-contains",
-    style: {
-      "line-color": EDGE_TYPE_CONFIG.PATHWAY_CONTAINS.color,
-      "target-arrow-color": EDGE_TYPE_CONFIG.PATHWAY_CONTAINS.color,
     },
   },
 ];
@@ -359,12 +250,10 @@ const STYLESHEET: StylesheetStyle[] = [
 // Helper Functions
 // =============================================================================
 
-/**
- * Convert Cytoscape node data back to ExplorerNode
- */
 function dataToNode(data: Record<string, unknown>): ExplorerNode {
   return {
     id: String(data.id ?? ""),
+    key: "" as ExplorerNode["key"],
     type: String(data.type ?? "Gene") as ExplorerNode["type"],
     label: String(data.label ?? "Unknown"),
     entity: {
@@ -380,15 +269,15 @@ function dataToNode(data: Record<string, unknown>): ExplorerNode {
   };
 }
 
-/**
- * Convert Cytoscape edge data back to ExplorerEdge
- */
 function dataToEdge(data: Record<string, unknown>): ExplorerEdge {
   return {
     id: String(data.id ?? ""),
-    type: String(data.type ?? "INTERACTS_WITH") as ExplorerEdge["type"],
+    key: "" as ExplorerEdge["key"],
+    type: String(data.type ?? "ASSOCIATED_WITH_DISEASE") as ExplorerEdge["type"],
     sourceId: String(data.source ?? ""),
     targetId: String(data.target ?? ""),
+    sourceKey: "" as ExplorerEdge["sourceKey"],
+    targetKey: "" as ExplorerEdge["targetKey"],
     numSources: typeof data.numSources === "number" ? data.numSources : undefined,
     numExperiments: typeof data.numExperiments === "number" ? data.numExperiments : undefined,
   };
@@ -414,13 +303,11 @@ function ExplorerCytoscapeInner({
   const layoutRef = useRef(layout);
   const initializedRef = useRef(false);
 
-  // Store callbacks in refs to avoid recreating event handlers
   const onNodeClickRef = useRef(onNodeClick);
   const onNodeHoverRef = useRef(onNodeHover);
   const onEdgeClickRef = useRef(onEdgeClick);
   const onBackgroundClickRef = useRef(onBackgroundClick);
 
-  // Reset initialization state on unmount
   useEffect(() => {
     return () => {
       initializedRef.current = false;
@@ -428,24 +315,11 @@ function ExplorerCytoscapeInner({
     };
   }, []);
 
-  // Update refs when callbacks change
-  useEffect(() => {
-    onNodeClickRef.current = onNodeClick;
-  }, [onNodeClick]);
+  useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
+  useEffect(() => { onNodeHoverRef.current = onNodeHover; }, [onNodeHover]);
+  useEffect(() => { onEdgeClickRef.current = onEdgeClick; }, [onEdgeClick]);
+  useEffect(() => { onBackgroundClickRef.current = onBackgroundClick; }, [onBackgroundClick]);
 
-  useEffect(() => {
-    onNodeHoverRef.current = onNodeHover;
-  }, [onNodeHover]);
-
-  useEffect(() => {
-    onEdgeClickRef.current = onEdgeClick;
-  }, [onEdgeClick]);
-
-  useEffect(() => {
-    onBackgroundClickRef.current = onBackgroundClick;
-  }, [onBackgroundClick]);
-
-  // Handle multi-select highlighting
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -462,7 +336,6 @@ function ExplorerCytoscapeInner({
     }
   }, [selectedNodeIds]);
 
-  // Handle selected edge highlighting
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -478,7 +351,6 @@ function ExplorerCytoscapeInner({
     }
   }, [selectedEdgeId]);
 
-  // Handle path highlighting
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -506,7 +378,6 @@ function ExplorerCytoscapeInner({
     }
   }, [pathHighlight]);
 
-  // Handle layout changes
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -518,7 +389,6 @@ function ExplorerCytoscapeInner({
     cy.layout(layoutOptions).run();
   }, [layout]);
 
-  // Memoize elements key to detect changes - include BOTH nodes AND edges
   const elementsKey = useMemo(
     () =>
       elements
@@ -528,7 +398,6 @@ function ExplorerCytoscapeInner({
     [elements]
   );
 
-  // Track previous element count for forced layout re-run
   const prevElementCountRef = useRef(elements.length);
 
   useEffect(() => {
@@ -536,12 +405,10 @@ function ExplorerCytoscapeInner({
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    // Compare current Cytoscape elements with new elements
     const currentElementIds = cy.elements().map((el) => el.id()).sort().join(",");
     const elementCountChanged = elements.length !== prevElementCountRef.current;
     prevElementCountRef.current = elements.length;
 
-    // Trigger update if element IDs changed or count changed
     if (currentElementIds !== elementsKey || elementCountChanged) {
       cy.elements().remove();
       cy.add(elements);
@@ -551,21 +418,17 @@ function ExplorerCytoscapeInner({
     }
   }, [elementsKey, elements, layout]);
 
-  // Cy callback - runs when CytoscapeComponent initializes
   const handleCy = (cy: Core) => {
     if (initializedRef.current && cyRef.current === cy) return;
 
     cyRef.current = cy;
     initializedRef.current = true;
 
-    // Apply stylesheet
     cy.style().fromJson(STYLESHEET).update();
 
-    // Initial layout
     const layoutOptions = getExplorerLayoutOptions(layoutRef.current);
     cy.layout(layoutOptions).run();
 
-    // Node click handler
     cy.on("tap", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
@@ -573,7 +436,6 @@ function ExplorerCytoscapeInner({
       onNodeClickRef.current?.(dataToNode(data), originalEvent);
     });
 
-    // Edge click handler
     cy.on("tap", "edge", (event: EventObject) => {
       const edge = event.target as EdgeSingular;
       const data = edge.data();
@@ -595,14 +457,12 @@ function ExplorerCytoscapeInner({
       }
     });
 
-    // Background click handler
     cy.on("tap", (event: EventObject) => {
       if (event.target === cy) {
         onBackgroundClickRef.current?.();
       }
     });
 
-    // Node hover handlers
     cy.on("mouseover", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
@@ -621,7 +481,6 @@ function ExplorerCytoscapeInner({
       onNodeHoverRef.current?.(null, null);
     });
 
-    // Cursor changes on hover
     cy.on("mouseover", "node, edge", () => {
       const container = cy.container();
       if (container) container.style.cursor = "pointer";
@@ -632,14 +491,13 @@ function ExplorerCytoscapeInner({
       if (container) container.style.cursor = "default";
     });
 
-    // Fit graph after layout
     cy.on("layoutstop", () => {
       cy.fit(undefined, 40);
     });
   };
 
   return (
-    <div className={cn("relative w-full h-full bg-slate-50", className)}>
+    <div className={cn("relative w-full h-full bg-muted", className)}>
       <CytoscapeComponent
         elements={elements}
         stylesheet={STYLESHEET}
@@ -655,5 +513,4 @@ function ExplorerCytoscapeInner({
   );
 }
 
-// Memoize the component to prevent re-renders
 export const ExplorerCytoscape = memo(ExplorerCytoscapeInner);

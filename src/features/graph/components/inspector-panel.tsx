@@ -2,7 +2,6 @@
 
 import { Button } from "@shared/components/ui/button";
 import { ExternalLink } from "@shared/components/ui/external-link";
-import { cn } from "@infra/utils";
 import {
   ChevronRight,
   Database,
@@ -16,188 +15,38 @@ import {
   Route,
   Target,
   Trash2,
-  X,
   Activity,
   Dna,
+  AlertTriangle,
+  Microscope,
 } from "lucide-react";
 import { memo } from "react";
-import {
-  type InspectorPanelProps,
-  type ExplorerNode,
-  type ExplorerEdge,
-  type EdgeType,
-  EDGE_TYPE_CONFIG,
-  NODE_TYPE_COLORS,
-} from "./types";
+import type { InspectorPanelProps } from "../types/props";
+import type { ExplorerNode, ExplorerEdge } from "../types/node";
+import type { ExpansionConfig } from "../config/expansion";
+import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { NODE_TYPE_COLORS } from "../config/styling";
+import { NODE_EXPANSION_CONFIG } from "../config/expansion";
 
 // =============================================================================
-// Context-Aware Expansion Options
+// Icon Map for Expansion Configs
 // =============================================================================
 
-interface ExpansionOption {
-  label: string;
-  description: string;
-  edgeTypes: EdgeType[];
-  icon: React.ReactNode;
-  color: string;
-}
-
-/**
- * Get relevant expansion options based on node type
- */
-function getExpansionOptions(nodeType: ExplorerNode["type"]): ExpansionOption[] {
-  switch (nodeType) {
-    case "Gene":
-      return [
-        {
-          label: "Find Diseases",
-          description: "Diseases this gene is implicated in",
-          edgeTypes: ["IMPLICATED_IN", "CAUSES", "CURATED_FOR"],
-          icon: <HeartPulse className="w-4 h-4" />,
-          color: "#ef4444",
-        },
-        {
-          label: "Find Pathways",
-          description: "Pathways this gene participates in",
-          edgeTypes: ["PARTICIPATES_IN", "PART_OF"],
-          icon: <Route className="w-4 h-4" />,
-          color: "#8b5cf6",
-        },
-        {
-          label: "Find Phenotypes",
-          description: "Phenotypes this gene manifests",
-          edgeTypes: ["MANIFESTS_AS"],
-          icon: <Activity className="w-4 h-4" />,
-          color: "#ec4899",
-        },
-        {
-          label: "Find Targeting Drugs",
-          description: "Drugs that target this gene",
-          edgeTypes: ["TARGETS", "KNOWN_TO_TARGET", "INTERACTS_WITH_GENE"],
-          icon: <Target className="w-4 h-4" />,
-          color: "#22c55e",
-        },
-      ];
-
-    case "Disease":
-      return [
-        {
-          label: "Find Treatments",
-          description: "Drugs approved/indicated for this disease",
-          edgeTypes: ["APPROVED_FOR", "INDICATED_FOR", "INVESTIGATED_FOR"],
-          icon: <Pill className="w-4 h-4" />,
-          color: "#14b8a6",
-        },
-        {
-          label: "Find Genes",
-          description: "Genes implicated in this disease",
-          edgeTypes: ["IMPLICATED_IN", "CAUSES", "CURATED_FOR"],
-          icon: <Dna className="w-4 h-4" />,
-          color: "#3b82f6",
-        },
-        {
-          label: "Find Phenotypes",
-          description: "Phenotypes associated with this disease",
-          edgeTypes: ["PRESENTS_WITH"],
-          icon: <Activity className="w-4 h-4" />,
-          color: "#f43f5e",
-        },
-      ];
-
-    case "Drug":
-      return [
-        {
-          label: "Find Targets",
-          description: "Genes this drug targets",
-          edgeTypes: ["TARGETS", "KNOWN_TO_TARGET", "INTERACTS_WITH_GENE"],
-          icon: <Target className="w-4 h-4" />,
-          color: "#22c55e",
-        },
-        {
-          label: "Find Indications",
-          description: "Diseases this drug treats",
-          edgeTypes: ["APPROVED_FOR", "INDICATED_FOR", "INVESTIGATED_FOR"],
-          icon: <HeartPulse className="w-4 h-4" />,
-          color: "#14b8a6",
-        },
-      ];
-
-    case "Pathway":
-      return [
-        {
-          label: "Find Genes",
-          description: "Genes that participate in this pathway",
-          edgeTypes: ["PARTICIPATES_IN"],
-          icon: <Dna className="w-4 h-4" />,
-          color: "#3b82f6",
-        },
-        {
-          label: "Find Related Pathways",
-          description: "Parent or child pathways",
-          edgeTypes: ["PART_OF", "PATHWAY_CONTAINS"],
-          icon: <Route className="w-4 h-4" />,
-          color: "#6366f1",
-        },
-      ];
-
-    case "Phenotype":
-      return [
-        {
-          label: "Find Genes",
-          description: "Genes that manifest this phenotype",
-          edgeTypes: ["MANIFESTS_AS"],
-          icon: <Dna className="w-4 h-4" />,
-          color: "#3b82f6",
-        },
-        {
-          label: "Find Diseases",
-          description: "Diseases that present with this phenotype",
-          edgeTypes: ["PRESENTS_WITH"],
-          icon: <HeartPulse className="w-4 h-4" />,
-          color: "#ef4444",
-        },
-      ];
-
-    case "Variant":
-      return [
-        {
-          label: "Find Traits",
-          description: "Traits associated with this variant",
-          edgeTypes: ["ASSOCIATED_WITH"],
-          icon: <Activity className="w-4 h-4" />,
-          color: "#eab308",
-        },
-        {
-          label: "Find Genes",
-          description: "Genes annotated with this variant",
-          edgeTypes: ["ANNOTATED_IN"],
-          icon: <Dna className="w-4 h-4" />,
-          color: "#3b82f6",
-        },
-      ];
-
-    case "Trait":
-      return [
-        {
-          label: "Find Variants",
-          description: "Variants associated with this trait",
-          edgeTypes: ["ASSOCIATED_WITH"],
-          icon: <Activity className="w-4 h-4" />,
-          color: "#f59e0b",
-        },
-        {
-          label: "Find Diseases",
-          description: "Diseases this trait maps to",
-          edgeTypes: ["MAPS_TO"],
-          icon: <HeartPulse className="w-4 h-4" />,
-          color: "#d946ef",
-        },
-      ];
-
-    default:
-      return [];
-  }
-}
+const EXPANSION_ICONS: Record<string, React.ReactNode> = {
+  "heart-pulse": <HeartPulse className="w-4 h-4" />,
+  "pill": <Pill className="w-4 h-4" />,
+  "route": <Route className="w-4 h-4" />,
+  "activity": <Activity className="w-4 h-4" />,
+  "target": <Target className="w-4 h-4" />,
+  "dna": <Dna className="w-4 h-4" />,
+  "network": <Network className="w-4 h-4" />,
+  "alert-triangle": <AlertTriangle className="w-4 h-4" />,
+  "microscope": <Microscope className="w-4 h-4" />,
+  "bar-chart": <Activity className="w-4 h-4" />,
+  "tag": <Activity className="w-4 h-4" />,
+  "book-open": <Database className="w-4 h-4" />,
+  "beaker": <Beaker className="w-4 h-4" />,
+};
 
 // =============================================================================
 // Node Detail Component
@@ -205,7 +54,7 @@ function getExpansionOptions(nodeType: ExplorerNode["type"]): ExpansionOption[] 
 
 interface NodeDetailProps {
   node: ExplorerNode;
-  onExpand: (nodeId: string, edgeTypes?: EdgeType[]) => void;
+  onExpand: (nodeId: string, expansion?: ExpansionConfig) => void;
   onRemove: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
@@ -213,7 +62,7 @@ interface NodeDetailProps {
 
 function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: NodeDetailProps) {
   const colors = NODE_TYPE_COLORS[node.type] ?? { background: "#e2e8f0", border: "#94a3b8", text: "#334155" };
-  const expansionOptions = getExpansionOptions(node.type);
+  const expansionOptions = NODE_EXPANSION_CONFIG[node.type] ?? [];
 
   return (
     <div className="space-y-4">
@@ -321,15 +170,15 @@ function NodeDetail({ node, onExpand, onRemove, onFindPaths, isExpanding }: Node
             {expansionOptions.map((option) => (
               <button
                 key={option.label}
-                className="w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-white text-left hover:border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => onExpand(node.id, option.edgeTypes)}
+                className="w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-background text-left hover:border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => onExpand(node.id, option)}
                 disabled={isExpanding}
               >
                 <div
                   className="mt-0.5 p-1 rounded"
                   style={{ backgroundColor: `${option.color}15`, color: option.color }}
                 >
-                  {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : option.icon}
+                  {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : (EXPANSION_ICONS[option.icon] ?? <Expand className="w-4 h-4" />)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground">{option.label}</div>
@@ -598,54 +447,40 @@ function InspectorPanelInner({
   onExpandNode,
   onRemoveNode,
   onFindPaths,
-  onClose,
   isExpanding,
 }: InspectorPanelProps) {
-  // Don't render if nothing selected
   if (selection.type === "none") {
-    return null;
+    return (
+      <div className="text-sm text-muted-foreground text-center py-8">
+        Click a node or edge to inspect it.
+      </div>
+    );
   }
 
   return (
-    <div className="w-80 border-l border-border bg-white flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
-        <span className="text-sm font-medium text-foreground">Inspector</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={onClose}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
+    <>
+      {selection.type === "node" && (
+        <NodeDetail
+          node={selection.node}
+          onExpand={onExpandNode}
+          onRemove={onRemoveNode}
+          onFindPaths={onFindPaths}
+          isExpanding={isExpanding}
+        />
+      )}
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {selection.type === "node" && (
-          <NodeDetail
-            node={selection.node}
-            onExpand={onExpandNode}
-            onRemove={onRemoveNode}
-            onFindPaths={onFindPaths}
-            isExpanding={isExpanding}
-          />
-        )}
+      {selection.type === "edge" && (
+        <EdgeDetail edge={selection.edge} getNode={getNode} />
+      )}
 
-        {selection.type === "edge" && (
-          <EdgeDetail edge={selection.edge} getNode={getNode} />
-        )}
-
-        {selection.type === "multi" && (
-          <MultiSelectDetail
-            nodeIds={selection.nodeIds}
-            getNode={getNode}
-            onFindPaths={onFindPaths}
-          />
-        )}
-      </div>
-    </div>
+      {selection.type === "multi" && (
+        <MultiSelectDetail
+          nodeIds={selection.nodeIds}
+          getNode={getNode}
+          onFindPaths={onFindPaths}
+        />
+      )}
+    </>
   );
 }
 

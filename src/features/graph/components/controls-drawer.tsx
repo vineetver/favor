@@ -11,43 +11,96 @@ import {
   SelectValue,
 } from "@shared/components/ui/select";
 import { Slider } from "@shared/components/ui/slider";
-import { cn } from "@infra/utils";
 import {
   Activity,
   ChevronDown,
   ChevronUp,
-  ClipboardList,
+  Dna,
   HeartPulse,
   Loader2,
+  Network,
   Pill,
   RefreshCw,
-  Route,
   Settings,
-  Target,
 } from "lucide-react";
 import { memo, useState, useCallback } from "react";
-import {
-  type ControlsDrawerProps,
-  type EdgeType,
-  type EntityType,
-  type TraversalRecipe,
-  EDGE_TYPE_CONFIG,
-  TRAVERSAL_RECIPES,
-  NODE_TYPE_COLORS,
-} from "./types";
+import type { ControlsDrawerProps } from "../types/props";
+import type { EdgeType, EntityType } from "../types";
+import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { ENTITY_TYPES } from "../types/entity";
+import { GRAPH_LENSES } from "../config/lenses";
+import { NODE_TYPE_COLORS } from "../config/styling";
 
 // =============================================================================
-// Recipe Icon Map
+// Lens Icon Map
 // =============================================================================
 
-const RECIPE_ICONS: Record<string, React.ReactNode> = {
+const LENS_ICONS: Record<string, React.ReactNode> = {
   "heart-pulse": <HeartPulse className="w-4 h-4" />,
+  "dna": <Dna className="w-4 h-4" />,
   "pill": <Pill className="w-4 h-4" />,
-  "route": <Route className="w-4 h-4" />,
+  "network": <Network className="w-4 h-4" />,
   "activity": <Activity className="w-4 h-4" />,
-  "target": <Target className="w-4 h-4" />,
-  "clipboard-list": <ClipboardList className="w-4 h-4" />,
 };
+
+// =============================================================================
+// Edge Type Groups
+// =============================================================================
+
+const EDGE_TYPE_GROUPS: Array<{ label: string; types: EdgeType[] }> = [
+  {
+    label: "Gene \u2192 Disease",
+    types: [
+      "ASSOCIATED_WITH_DISEASE", "CURATED_FOR", "CAUSES", "CIVIC_EVIDENCED_FOR",
+      "PGX_ASSOCIATED", "THERAPEUTIC_TARGET_IN", "SCORED_FOR_DISEASE",
+      "BIOMARKER_FOR", "INHERITED_CAUSE_OF", "ASSERTED_FOR_DISEASE",
+    ],
+  },
+  {
+    label: "Gene \u2192 Drug",
+    types: ["HAS_PGX_INTERACTION", "HAS_CLINICAL_DRUG_EVIDENCE", "ASSERTED_FOR_DRUG"],
+  },
+  {
+    label: "Gene \u2192 Gene",
+    types: ["INTERACTS_WITH", "INTERACTS_IN_PATHWAY", "REGULATES", "FUNCTIONALLY_RELATED"],
+  },
+  {
+    label: "Gene \u2192 Other",
+    types: [
+      "PARTICIPATES_IN", "MANIFESTS_AS", "MOUSE_MANIFESTS_AS",
+      "SCORED_FOR_TRAIT", "HAS_GWAS_VARIANT", "ANNOTATED_WITH",
+      "ASSOCIATED_WITH_SIDE_EFFECT",
+    ],
+  },
+  {
+    label: "Drug",
+    types: ["TARGETS", "TARGETS_IN_CONTEXT", "INDICATED_FOR", "HAS_SIDE_EFFECT", "HAS_ADVERSE_REACTION"],
+  },
+  {
+    label: "Variant",
+    types: [
+      "GWAS_ASSOCIATED_WITH", "AFFECTS_RESPONSE_TO", "PGX_RESPONSE_FOR",
+      "STUDIED_FOR_DRUG_RESPONSE", "FUNCTIONALLY_ASSAYED_FOR",
+      "PGX_CLINICAL_RESPONSE", "PGX_DISEASE_ASSOCIATED", "CLINVAR_ASSOCIATED",
+      "REPORTED_IN", "PREDICTED_TO_AFFECT", "POSITIONALLY_LINKED_TO",
+      "ENHANCER_LINKED_TO", "PREDICTED_REGULATORY_TARGET",
+      "MISSENSE_PATHOGENIC_FOR", "SOMATICALLY_MUTATED_IN",
+      "CLINVAR_ANNOTATED_IN", "LINKED_TO_SIDE_EFFECT", "OVERLAPS",
+    ],
+  },
+  {
+    label: "Other",
+    types: [
+      "PRESENTS_WITH", "MAPS_TO", "TRAIT_PRESENTS_WITH",
+      "INVESTIGATES", "SE_MAPS_TO",
+      "EXPERIMENTALLY_REGULATES", "COMPUTATIONALLY_REGULATES",
+      "CONTAINS_METABOLITE", "METABOLITE_IS_A",
+      "SUBCLASS_OF", "ANCESTOR_OF", "PHENOTYPE_SUBCLASS_OF",
+      "PHENOTYPE_ANCESTOR_OF", "PART_OF", "PATHWAY_ANCESTOR_OF",
+      "EFO_SUBCLASS_OF", "EFO_ANCESTOR_OF", "GO_SUBCLASS_OF", "GO_ANCESTOR_OF",
+    ],
+  },
+];
 
 // =============================================================================
 // Collapsible Section Component
@@ -66,7 +119,7 @@ function CollapsibleSection({ title, defaultOpen = true, badge, children }: Coll
   return (
     <div className="border-b border-border last:border-b-0">
       <button
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-2">
@@ -85,42 +138,6 @@ function CollapsibleSection({ title, defaultOpen = true, badge, children }: Coll
 }
 
 // =============================================================================
-// Recipe Button Component
-// =============================================================================
-
-interface RecipeButtonProps {
-  recipe: TraversalRecipe;
-  onClick: () => void;
-  disabled?: boolean;
-}
-
-function RecipeButton({ recipe, onClick, disabled }: RecipeButtonProps) {
-  return (
-    <button
-      className={cn(
-        "w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all",
-        disabled
-          ? "bg-muted border-border opacity-50 cursor-not-allowed"
-          : "bg-background border-border hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm"
-      )}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <div
-        className="mt-0.5 p-1.5 rounded-md"
-        style={{ backgroundColor: `${recipe.color}15`, color: recipe.color }}
-      >
-        {RECIPE_ICONS[recipe.icon] ?? <Route className="w-4 h-4" />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground">{recipe.name}</div>
-        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{recipe.description}</div>
-      </div>
-    </button>
-  );
-}
-
-// =============================================================================
 // Node Type Legend Component
 // =============================================================================
 
@@ -129,14 +146,15 @@ interface NodeTypeLegendProps {
 }
 
 function NodeTypeLegend({ counts }: NodeTypeLegendProps) {
-  const types: EntityType[] = ["Gene", "Disease", "Drug", "Pathway", "Phenotype", "Variant", "Trait"];
+  const typesToShow = counts
+    ? ENTITY_TYPES.filter((type) => (counts[type] ?? 0) > 0)
+    : ENTITY_TYPES.slice(0, 7);
 
   return (
     <div className="space-y-1.5">
-      {types.map((type) => {
+      {typesToShow.map((type) => {
         const colors = NODE_TYPE_COLORS[type];
         const count = counts?.[type] ?? 0;
-        if (count === 0 && !counts) return null;
 
         return (
           <div key={type} className="flex items-center gap-2">
@@ -247,7 +265,8 @@ function ControlsDrawerInner({
   onFiltersChange,
   layout,
   onLayoutChange,
-  onApplyRecipe,
+  activeLens,
+  onLensChange,
   onReset,
   edgeTypeCounts,
   nodeTypeCounts,
@@ -281,12 +300,6 @@ function ControlsDrawerInner({
     });
   };
 
-  // Group edge types by category
-  const geneEdgeTypes: EdgeType[] = ["IMPLICATED_IN", "CAUSES", "CURATED_FOR", "PARTICIPATES_IN", "MANIFESTS_AS", "ANNOTATED_IN"];
-  const drugEdgeTypes: EdgeType[] = ["TARGETS", "KNOWN_TO_TARGET", "INTERACTS_WITH_GENE", "APPROVED_FOR", "INDICATED_FOR", "INVESTIGATED_FOR"];
-  const otherEdgeTypes: EdgeType[] = ["ASSOCIATED_WITH", "PRESENTS_WITH", "MAPS_TO", "PART_OF"];
-
-  // Count total edges
   const totalEdges = Object.values(edgeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
   const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
 
@@ -300,7 +313,7 @@ function ControlsDrawerInner({
         </div>
         <div className="flex items-center gap-2">
           {isExpanding && (
-            <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
           )}
           <Button
             variant="outline"
@@ -319,7 +332,7 @@ function ControlsDrawerInner({
       <div className="flex-1 overflow-y-auto">
         {/* Graph Stats */}
         {(totalNodes > 0 || totalEdges > 0) && (
-          <div className="px-4 py-3 bg-gradient-to-r from-primary/5 to-purple-50 border-b border-border">
+          <div className="px-4 py-3 bg-primary/5 border-b border-border">
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{totalNodes}</div>
@@ -333,17 +346,44 @@ function ControlsDrawerInner({
           </div>
         )}
 
-        {/* Quick Recipes */}
-        <CollapsibleSection title="Explore Relationships">
+        {/* Our Lenses */}
+        <CollapsibleSection title="Our Lenses">
           <div className="space-y-2">
-            {TRAVERSAL_RECIPES.map((recipe) => (
-              <RecipeButton
-                key={recipe.id}
-                recipe={recipe}
-                onClick={() => onApplyRecipe(recipe)}
-                disabled={isExpanding}
-              />
-            ))}
+            {GRAPH_LENSES.map((lens) => {
+              const isActive = activeLens === lens.id;
+              return (
+                <button
+                  key={lens.id}
+                  className={
+                    isActive
+                      ? "w-full flex items-start gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-left"
+                      : "w-full flex items-start gap-3 p-3 rounded-lg border border-border bg-background text-left hover:border-primary/20 hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  }
+                  onClick={() => onLensChange(lens.id)}
+                  disabled={isExpanding || isActive}
+                >
+                  <div
+                    className="mt-0.5 p-1.5 rounded-md"
+                    style={{ backgroundColor: `${lens.color}15`, color: lens.color }}
+                  >
+                    {LENS_ICONS[lens.icon] ?? <Network className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-foreground">{lens.name}</span>
+                      {isActive && (
+                        <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {lens.description}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CollapsibleSection>
 
@@ -361,56 +401,28 @@ function ControlsDrawerInner({
           <NodeTypeLegend counts={nodeTypeCounts} />
         </CollapsibleSection>
 
-        {/* Edge Types - Gene Relationships */}
-        <CollapsibleSection title="Gene Relationships" defaultOpen={false}>
-          <div className="space-y-0.5">
-            {geneEdgeTypes
-              .filter((et) => EDGE_TYPE_CONFIG[et])
-              .map((edgeType) => (
-                <EdgeTypeToggle
-                  key={edgeType}
-                  edgeType={edgeType}
-                  enabled={filters.edgeTypes.has(edgeType)}
-                  count={edgeTypeCounts?.[edgeType]}
-                  onChange={(enabled) => handleEdgeTypeToggle(edgeType, enabled)}
-                />
-              ))}
-          </div>
-        </CollapsibleSection>
+        {/* Edge Type Groups */}
+        {EDGE_TYPE_GROUPS.map((group) => (
+          <CollapsibleSection key={group.label} title={group.label} defaultOpen={false}>
+            <div className="space-y-0.5">
+              {group.types
+                .filter((et) => EDGE_TYPE_CONFIG[et])
+                .map((edgeType) => (
+                  <EdgeTypeToggle
+                    key={edgeType}
+                    edgeType={edgeType}
+                    enabled={filters.edgeTypes.has(edgeType)}
+                    count={edgeTypeCounts?.[edgeType]}
+                    onChange={(enabled) => handleEdgeTypeToggle(edgeType, enabled)}
+                  />
+                ))}
+            </div>
+          </CollapsibleSection>
+        ))}
 
-        {/* Edge Types - Drug Relationships */}
-        <CollapsibleSection title="Drug Relationships" defaultOpen={false}>
-          <div className="space-y-0.5">
-            {drugEdgeTypes
-              .filter((et) => EDGE_TYPE_CONFIG[et])
-              .map((edgeType) => (
-                <EdgeTypeToggle
-                  key={edgeType}
-                  edgeType={edgeType}
-                  enabled={filters.edgeTypes.has(edgeType)}
-                  count={edgeTypeCounts?.[edgeType]}
-                  onChange={(enabled) => handleEdgeTypeToggle(edgeType, enabled)}
-                />
-              ))}
-          </div>
-        </CollapsibleSection>
-
-        {/* Edge Types - Other */}
-        <CollapsibleSection title="Other Relationships" defaultOpen={false}>
-          <div className="space-y-0.5">
-            {otherEdgeTypes
-              .filter((et) => EDGE_TYPE_CONFIG[et])
-              .map((edgeType) => (
-                <EdgeTypeToggle
-                  key={edgeType}
-                  edgeType={edgeType}
-                  enabled={filters.edgeTypes.has(edgeType)}
-                  count={edgeTypeCounts?.[edgeType]}
-                  onChange={(enabled) => handleEdgeTypeToggle(edgeType, enabled)}
-                />
-              ))}
-          </div>
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+        {/* Select All / Clear All */}
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -428,7 +440,7 @@ function ControlsDrawerInner({
               Clear All
             </Button>
           </div>
-        </CollapsibleSection>
+        </div>
 
         {/* Filters */}
         <CollapsibleSection title="Filters" defaultOpen={false}>

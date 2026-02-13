@@ -1,10 +1,18 @@
+import { fetchGene } from "@features/gene/api";
 import {
-  fetchGene,
   fetchGraphSchema,
   fetchGraphStats,
-} from "@features/gene/api";
-import { GraphExplorerView } from "@features/gene/components/graph-explorer";
-import type { EntityType, EdgeType, GraphSchema, GraphStats } from "@features/gene/components/graph-explorer/types";
+  fetchGraphQuery,
+  parseTypeId,
+} from "@features/graph/api";
+import { ExplorerProvider } from "@features/graph/state";
+import { GraphExplorerView } from "@features/graph/components";
+import type { EntityType } from "@features/graph/types/entity";
+import type { EdgeType } from "@features/graph/types/edge";
+import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
+import type { InitialSubgraphData } from "@features/graph/types/props";
+import { GRAPH_LENSES } from "@features/graph/config/lenses";
+import { DEFAULT_LENS } from "@features/graph/config/lenses";
 import { notFound } from "next/navigation";
 
 interface GraphExplorerPageProps {
@@ -59,15 +67,66 @@ export default async function GraphExplorerPage({
       }
     : null;
 
+  // Fetch initial subgraph for default lens via /graph/query
+  const defaultLens = GRAPH_LENSES.find((l) => l.id === DEFAULT_LENS)!;
+  let initialSubgraph: InitialSubgraphData | null = null;
+
+  try {
+    const queryResponse = await fetchGraphQuery({
+      seeds: [{ type: "Gene", id: geneId }],
+      steps: defaultLens.steps.map((s) => ({
+        edgeTypes: s.edgeTypes,
+        direction: s.direction,
+        limit: s.limit,
+        sort: s.sort,
+        filters: s.filters,
+      })),
+      select: {
+        edgeFields: defaultLens.edgeFields,
+        includeEvidence: false,
+      },
+      limits: defaultLens.limits,
+    });
+
+    if (queryResponse?.data?.edges?.length) {
+      // Convert GraphQueryResponse to InitialSubgraphData (JSON-serializable)
+      initialSubgraph = {
+        nodes: Object.values(queryResponse.data.nodes).map((n) => ({
+          id: n.entity.id,
+          type: n.entity.type,
+          label: n.entity.label,
+          subtitle: n.entity.subtitle,
+        })),
+        edges: queryResponse.data.edges.map((e) => {
+          const from = parseTypeId(e.from);
+          const to = parseTypeId(e.to);
+          return {
+            type: e.type,
+            fromId: from.id,
+            toId: to.id,
+            numSources: e.fields?.num_sources as number | undefined,
+            numExperiments: e.fields?.num_experiments as number | undefined,
+          };
+        }),
+      };
+    }
+  } catch (error) {
+    console.error("Failed to fetch initial subgraph:", error);
+  }
+
   return (
     <div className="h-full min-h-[600px]">
-      <GraphExplorerView
-        seedGeneId={geneId}
-        seedGeneSymbol={geneSymbol}
-        schema={schema}
-        stats={stats}
-        className="h-full"
-      />
+      <ExplorerProvider>
+        <GraphExplorerView
+          seedGeneId={geneId}
+          seedGeneSymbol={geneSymbol}
+          schema={schema}
+          stats={stats}
+          initialSubgraph={initialSubgraph}
+          initialLensId={DEFAULT_LENS}
+          className="h-full"
+        />
+      </ExplorerProvider>
     </div>
   );
 }

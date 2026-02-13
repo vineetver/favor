@@ -1,0 +1,49 @@
+import type { ElementDefinition } from "cytoscape";
+import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "../types/node";
+import type { GraphFilters } from "../types/filters";
+import type { EntityType } from "../types/entity";
+import type { EdgeType } from "../types/edge";
+import type { GraphData, ExplorerState } from "../types/state";
+import { transformToElements, getGraphSummary } from "../utils/elements";
+
+/**
+ * Derive Cytoscape elements from graph data + filters
+ */
+export function selectElements(graph: GraphData, filters: GraphFilters): ElementDefinition[] {
+  return transformToElements(graph.nodes, graph.edges, filters);
+}
+
+/**
+ * Derive node/edge type counts from graph data
+ */
+export function selectGraphSummary(graph: GraphData): {
+  nodeTypeCounts: Record<EntityType, number>;
+  edgeTypeCounts: Record<EdgeType, number>;
+} {
+  return getGraphSummary(graph.nodes, graph.edges);
+}
+
+/**
+ * Derive highlighted node IDs from selection
+ */
+export function selectHighlightedNodeIds(selection: ExplorerSelection): Set<string> | undefined {
+  if (selection.type === "multi") return selection.nodeIds;
+  if (selection.type === "node") return new Set([selection.nodeId]);
+  return undefined;
+}
+
+/**
+ * Derive highlighted edge ID from selection
+ */
+export function selectHighlightedEdgeId(selection: ExplorerSelection): string | undefined {
+  if (selection.type === "edge") return selection.edgeId;
+  return undefined;
+}
+
+/**
+ * Check if expansion is loading
+ */
+export function selectIsExpanding(state: ExplorerState): boolean {
+  if (state.status !== "ready") return false;
+  return state.expansion.status === "loading";
+}

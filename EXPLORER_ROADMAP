@@ -1,0 +1,217 @@
+GRAPH EXPLORER FRONTEND ROADMAP (PHASED, HIGH ROI -> LOW ROI)
+Audience: implementation agents. Style: step-by-step, minimal ambiguity.
+Goal: make graph feel premium: clarity, trust (evidence), speed, workflow.
+
+GLOBAL PRINCIPLES (apply everywhere)
+- Canvas is sacred: details should be peekable/temporary unless pinned.
+- One action = one obvious result. No “mystery state”.
+- Evidence-first UI: edges carry trust. Nodes carry identity.
+- Prefer progressive enhancement: ship scaffolds early, deepen later.
+- Avoid global relayout on every merge; favor local updates.
+
+DATA / UI TERMINOLOGY
+- Selection: none | node | edge | multi
+- Inspector: right-side sheet/drawer for selection details + actions
+- Lens: curated multi-step /graph/query expansion
+- Typed expand: per-node-type expansion button (edgeTypes + direction + limit + sort)
+- BFS expand: /graph/subgraph “Expand all neighbors”
+
+                                                                                                                     frontend merge logic would be:            
+  on expansion response:                                                                                                                
+    for each node in response.data.nodes:                                                                                               
+      if node key NOT in canvas → add node
+      if node key already in canvas → skip (already rendered)
+
+    for each edge in response.data.edges:
+      add edge (connects to existing or new nodes)
+
+================================================================
+PHASE 1 — GOD MODE FEEL (Highest ROI, simplest)
+Focus: selection UX + space + immediate clarity
+
+1.1 Replace fixed right panel with Sheet (Peek → Pin → Full)
+- Default: “Peek” overlay (does not permanently shrink canvas)
+- Pin: becomes persistent
+- Full: expands to wide details mode
+- Close: Esc + click background
+DoD:
+- Selecting node/edge opens sheet
+- Pin/unpin persists across selections
+- Sheet responsive: desktop right-sheet, mobile bottom-sheet
+
+1.2 Hover highlighting (zero-click sensemaking)
+- Hover node: highlight node + 1-hop neighbors + connecting edges; fade others
+- Hover edge: highlight endpoints + the edge; fade others
+DoD:
+- Smooth fade (no jank)
+- Works with filters + hidden nodes
+
+1.3 Edge tooltip (micro evidence)
+- On edge hover: show edgeType + direction + 2–3 key fields (schema-aware)
+Examples:
+- ASSOCIATED_WITH_DISEASE: overall_score, evidence_count, source
+- TARGETS: action_type, num_sources, max_clinical_phase
+DoD:
+- Tooltip appears near cursor, does not clip offscreen
+
+1.4 Selection polish
+- Node click: select + center (optional toggle)
+- Double click: Focus mode (see Phase 3) placeholder button ok
+- Background click: clear selection
+DoD:
+- Selection state always consistent; never “stuck”
+
+================================================================
+PHASE 2 — TRUST LAYER (Edges become real objects)
+Focus: edge inspector content + evidence scaffold
+
+2.1 Edge Inspector: Summary section
+- Header: EDGE_TYPE + direction + endpoint chips (clickable)
+- Confidence badge: derived heuristic (score + evidence_count + curated/inferred)
+- Key fields: schema-aware 3–6 fields
+DoD:
+- Clicking an edge shows meaningful info beyond type
+
+2.2 Evidence Tab (scaffold now, deepen later)
+- If includeEvidence=false: show “Load evidence” CTA
+- If includeEvidence=true: render evidence list/table
+- Always show external resources when available (e.g., DrugBank link)
+DoD:
+- Evidence area exists + supports pagination/“top N”
+
+2.3 Node Inspector: “Why am I seeing this?”
+- A short generated sentence from fields (“Supported by X sources / Y evidence”)
+DoD:
+- Present for major edge types (Gene–Disease, Drug–Gene, Drug–Disease)
+
+================================================================
+PHASE 3 — VISUAL GRAMMAR (13 types become instantly parseable)
+Focus: shape/icon/size, legends, and focus tools
+
+3.1 Node shapes + icons per entity type
+Suggested mapping:
+- Gene circle, Disease hexagon, Drug pill/round-rect, Variant diamond,
+  Pathway parallelogram/round-rect, Phenotype triangle, Trait square,
+  Study document badge, GOTerm octagon, SideEffect warning/inverted triangle,
+  OntologyTerm tag, cCRE small round-rect “DNA” badge, Metabolite circle+dot
+DoD:
+- At least shape differs across core types (Gene/Disease/Drug/Variant)
+- Legend reflects shapes + colors
+
+3.2 Meaningful node sizing (toggle)
+- Default: degree within visible graph
+- Option: lens-specific “evidence sizing” (e.g., overall_score/evidence_count)
+DoD:
+- Size toggle works without relayout chaos
+
+3.3 Focus Mode v1 (reduce getting lost)
+- Action on node: “Isolate neighborhood (depth 1/2)”
+- Action: “Restore full graph”
+DoD:
+- Users can declutter without losing state
+
+================================================================
+PHASE 4 — WORKFLOW FEATURES (Graphs for discovery, tables for decisions)
+Focus: breadcrumbs, undo/redo, tables, compare
+
+4.1 Breadcrumb trail (expansion history)
+- Append entries: Seed → edgeType/direction → results (top K by sort)
+- Click breadcrumb: re-center and/or restore that substate (lightweight ok)
+DoD:
+- Trail persists during session; clear on lens switch optional
+
+4.2 Undo/Redo (expansions + hides + filters)
+- Record actions: typed expand, BFS expand, hide/isolate, filter toggles, layout changes
+DoD:
+- Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z supported
+
+4.3 Table view (neighbors as sortable list)
+- For selected node: “Neighbors Table”
+  Columns: neighbor label, type, edgeType, key score fields, source(s)
+- For selected edge: “Evidence Table”
+DoD:
+- Sort + quick filter + copy/export CSV (export can be later)
+
+4.4 Multi-select compare (lightweight)
+- For multi nodes: shared neighbors + unique neighbors (top N)
+DoD:
+- Compare UI exists; can be basic
+
+================================================================
+PHASE 5 — PERFORMANCE + SCALE (Make it buttery)
+Focus: progressive rendering, stable layouts, virtualization
+
+5.1 Progressive render
+- Render nodes first, edges in batches
+- Show “loading edges…” indicator unobtrusive
+DoD:
+- Large merges feel responsive
+
+5.2 Layout stabilization
+- Avoid full relayout on merge
+- Local layout around newly added nodes
+- “Freeze layout” toggle
+DoD:
+- Expanding doesn’t explode the whole graph every time
+
+5.3 Virtualize long lists
+- Evidence tables, legends, edge type lists (accordion) virtualized
+DoD:
+- Inspector scroll stays smooth with large evidence
+
+================================================================
+PHASE 6 — ADVANCED EXPLORATION (Power-user tier)
+Focus: overlays, command palette, pathfinding
+
+6.1 Lens overlays (layers)
+- Allow overlay 2nd lens on same seed(s)
+- Color/line-style by lens
+DoD:
+- Overlay on/off without losing base graph
+
+6.2 Command palette (Cmd/Ctrl+K)
+Actions:
+- Jump to entity by ID/name
+- Switch lens
+- Expand typed neighbors
+- Toggle edge groups
+- Run “isolate neighborhood”
+DoD:
+- Palette searches local nodes + can trigger actions
+
+6.3 Shortest path / explain connection (optional)
+- Between two selected nodes: compute path (backend or client if available)
+- Display path with evidence highlights
+DoD:
+- Clear output; never blocks UI
+
+================================================================
+PHASE 7 — EXTRA POLISH (Lowest ROI, but delightful)
+7.1 Micro-interactions
+- Selection glow/pulse
+- “New nodes fly-in” from expanded node
+- Filter edges fade vs pop
+7.2 Saved views
+- Save current lens + filters + pinned nodes + layout
+7.3 Shareable link state
+- URL encodes seed + lens + filters + selected node/edge
+
+================================================================
+SCHEMA-AWARE FIELD PICKING (for tooltips + inspector summaries)
+- Use /graph/schema hints: sortable/filterable/heavy
+- Never show heavy STRUCT/arrays by default
+Default key fields by edge type:
+- ASSOCIATED_WITH_DISEASE: overall_score, evidence_count, num_datatypes, source
+- CURATED_FOR/CAUSES/INHERITED_CAUSE_OF: classification/confidence_category, expert_panel/panel, source
+- TARGETS: action_type, mechanism_of_action, num_sources, max_clinical_phase
+- INDICATED_FOR: max_clinical_phase, num_sources, primary_source
+- HAS_SIDE_EFFECT/HAS_ADVERSE_REACTION: frequency/report_count, llr, source
+- PREDICTED_TO_AFFECT: max_l2g_score, confidence, distance_*, n_loci
+- GO/ontology edges: distance, relationship_type
+
+================================================================
+ACCEPTANCE METRICS (simple)
+- Time-to-understand (hover): user can explain a node’s neighborhood in < 5s
+- Time-to-trust (edge click): user sees evidence summary in < 1 click
+- Expansion confidence: user can undo and not feel “lost”
+- Performance: expand merges without obvious stutter on typical graphs
