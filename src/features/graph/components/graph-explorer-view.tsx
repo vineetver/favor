@@ -8,6 +8,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@shared/components/ui/sheet";
+import {
+  TooltipProvider,
+} from "@shared/components/ui/tooltip";
 import { cn } from "@infra/utils";
 import {
   ChevronRight,
@@ -15,26 +18,25 @@ import {
   Loader2,
   Network,
   PanelLeft,
-  PanelRight,
   SplitSquareVertical,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ExplorerCytoscape } from "./explorer-cytoscape";
 import { ControlsDrawer } from "./controls-drawer";
 import { InspectorPanel } from "./inspector-panel";
+import { EdgeTooltip } from "./edge-tooltip";
 import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
 import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
 import { GRAPH_LENSES } from "../config/lenses";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
 import type { GraphExplorerViewProps } from "../types/props";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
+import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { GeneEntity, EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
-import type { EdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
 
 // =============================================================================
@@ -106,6 +108,10 @@ function LayoutSelector({ layout, onLayoutChange }: LayoutSelectorProps) {
 }
 
 // =============================================================================
+// (Sheet is used directly from shadcn — no custom wrapper needed)
+// =============================================================================
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -121,6 +127,9 @@ function GraphExplorerViewInner({
   const state = useExplorerState();
   const actions = useExplorerActions();
   const selectors = useExplorerSelectors();
+
+  // Local state for edge hover tooltip
+  const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeInfo | null>(null);
 
   // Hydrate initial data on mount
   useEffect(() => {
@@ -170,8 +179,23 @@ function GraphExplorerViewInner({
   const viewMode = readyState?.viewMode ?? "graph";
   const activeLens = readyState?.activeLens ?? "clinical";
   const leftDrawerOpen = readyState?.leftDrawerOpen ?? true;
-  const rightPanelOpen = readyState?.rightPanelOpen ?? false;
+  const inspectorMode = readyState?.inspectorMode ?? "closed";
   const graphEdgesSize = readyState?.graph.edges.size ?? 0;
+
+  // ==========================================================================
+  // Keyboard: Esc closes inspector
+  // ==========================================================================
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && inspectorMode !== "closed") {
+        actions.setInspectorMode("closed");
+        actions.clearSelection();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [inspectorMode, actions]);
 
   // ==========================================================================
   // Lens Switching (async — stays in component)
@@ -263,7 +287,27 @@ function GraphExplorerViewInner({
   }, [actions]);
 
   const handleNodeHover = useCallback((_node: ExplorerNode | null, _position: { x: number; y: number } | null) => {
-    // Tooltip handling in future
+    // Node tooltip handling in future
+  }, []);
+
+  const handleEdgeHover = useCallback((edge: ExplorerEdge | null, position: { x: number; y: number } | null) => {
+    if (!edge || !position) {
+      setHoveredEdge(null);
+      return;
+    }
+    // Look up source/target labels from graph
+    const sourceNode = selectors.getNode(edge.sourceId);
+    const targetNode = selectors.getNode(edge.targetId);
+    setHoveredEdge({
+      edge,
+      sourceLabel: sourceNode?.label ?? edge.sourceId,
+      targetLabel: targetNode?.label ?? edge.targetId,
+      position,
+    });
+  }, [selectors]);
+
+  const handleNodeDoubleClick = useCallback((_node: ExplorerNode) => {
+    // Placeholder for Focus mode (future phase)
   }, []);
 
   // ==========================================================================
@@ -417,116 +461,128 @@ function GraphExplorerViewInner({
   // ==========================================================================
 
   return (
-    <div className={cn("flex flex-col h-full bg-background", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={actions.toggleLeftDrawer}
-          >
-            {leftDrawerOpen ? <PanelLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </Button>
+    <TooltipProvider delayDuration={0}>
+      <div className={cn("flex flex-col h-full bg-background", className)}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={actions.toggleLeftDrawer}
+            >
+              {leftDrawerOpen ? <PanelLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </Button>
 
-          <div className="flex items-center gap-2">
-            <Network className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Graph Explorer</h1>
-            <span className="text-sm text-muted-foreground">|</span>
-            <span className="text-sm font-medium text-primary">{seedGeneSymbol}</span>
+            <div className="flex items-center gap-2">
+              <Network className="w-5 h-5 text-primary" />
+              <h1 className="text-lg font-semibold text-foreground">Graph Explorer</h1>
+              <span className="text-sm text-muted-foreground">|</span>
+              <span className="text-sm font-medium text-primary">{seedGeneSymbol}</span>
+            </div>
+
+            {isExpanding && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
           </div>
 
-          {isExpanding && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading...</span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            <LayoutSelector layout={layout} onLayoutChange={actions.setLayout} />
+            <ViewToggle viewMode={viewMode} onViewModeChange={actions.setViewMode} />
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <LayoutSelector layout={layout} onLayoutChange={actions.setLayout} />
-          <ViewToggle viewMode={viewMode} onViewModeChange={actions.setViewMode} />
+        {/* Main Content */}
+        <div className="flex flex-1 min-h-0">
+          {/* Left Controls Drawer */}
+          <ControlsDrawer
+            open={leftDrawerOpen}
+            onOpenChange={(open) => open !== leftDrawerOpen && actions.toggleLeftDrawer()}
+            filters={filters}
+            onFiltersChange={actions.setFilters}
+            layout={layout}
+            onLayoutChange={actions.setLayout}
+            activeLens={activeLens}
+            onLensChange={switchLens}
+            onReset={handleReset}
+            edgeTypeCounts={edgeTypeCounts}
+            nodeTypeCounts={nodeTypeCounts}
+            isExpanding={isExpanding}
+          />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={actions.toggleRightPanel}
+          {/* Graph Canvas */}
+          <div className="flex-1 min-w-0 relative">
+            {viewMode !== "list" && (
+              <ExplorerCytoscape
+                elements={elements}
+                layout={layout}
+                onNodeClick={handleNodeClick}
+                onNodeHover={handleNodeHover}
+                onEdgeClick={handleEdgeClick}
+                onEdgeHover={handleEdgeHover}
+                onNodeDoubleClick={handleNodeDoubleClick}
+                onBackgroundClick={handleBackgroundClick}
+                selectedNodeIds={selectedNodeIds}
+                selectedEdgeId={selectedEdgeId}
+                className="absolute inset-0"
+              />
+            )}
+
+            {viewMode === "list" && (
+              <div className="absolute inset-0 overflow-auto p-4">
+                <div className="text-sm text-muted-foreground">
+                  List view coming soon...
+                </div>
+              </div>
+            )}
+
+            {viewMode === "split" && (
+              <div className="absolute bottom-0 left-0 right-0 h-1/3 border-t border-border bg-background overflow-auto p-4">
+                <div className="text-sm text-muted-foreground">
+                  Split view list coming soon...
+                </div>
+              </div>
+            )}
+
+            {/* No results for this lens */}
+            {graphEdgesSize === 0 && !isExpanding && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
+                  <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No Results</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No relationships found for <strong>{seedGeneSymbol}</strong> with the current lens. Try switching to a different lens.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Edge Tooltip (follows cursor on edge hover) */}
+            <EdgeTooltip info={hoveredEdge} />
+          </div>
+        </div>
+
+        {/* Inspector Sheet (global overlay, no backdrop) */}
+        <Sheet
+          open={inspectorMode !== "closed"}
+          onOpenChange={(open) => {
+            if (!open) {
+              actions.setInspectorMode("closed");
+              actions.clearSelection();
+            }
+          }}
+          modal={false}
+        >
+          <SheetContent
+            side="right"
+            showOverlay={false}
+            showClose
+            className="w-80 sm:max-w-sm p-0 flex flex-col"
           >
-            {rightPanelOpen ? <ChevronRight className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left Controls Drawer */}
-        <ControlsDrawer
-          open={leftDrawerOpen}
-          onOpenChange={(open) => open !== leftDrawerOpen && actions.toggleLeftDrawer()}
-          filters={filters}
-          onFiltersChange={actions.setFilters}
-          layout={layout}
-          onLayoutChange={actions.setLayout}
-          activeLens={activeLens}
-          onLensChange={switchLens}
-          onReset={handleReset}
-          edgeTypeCounts={edgeTypeCounts}
-          nodeTypeCounts={nodeTypeCounts}
-          isExpanding={isExpanding}
-        />
-
-        {/* Graph Canvas */}
-        <div className="flex-1 min-w-0 relative">
-          {viewMode !== "list" && (
-            <ExplorerCytoscape
-              elements={elements}
-              layout={layout}
-              onNodeClick={handleNodeClick}
-              onNodeHover={handleNodeHover}
-              onEdgeClick={handleEdgeClick}
-              onBackgroundClick={handleBackgroundClick}
-              selectedNodeIds={selectedNodeIds}
-              selectedEdgeId={selectedEdgeId}
-              className="absolute inset-0"
-            />
-          )}
-
-          {viewMode === "list" && (
-            <div className="absolute inset-0 overflow-auto p-4">
-              <div className="text-sm text-muted-foreground">
-                List view coming soon...
-              </div>
-            </div>
-          )}
-
-          {viewMode === "split" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 border-t border-border bg-background overflow-auto p-4">
-              <div className="text-sm text-muted-foreground">
-                Split view list coming soon...
-              </div>
-            </div>
-          )}
-
-          {/* No results for this lens */}
-          {graphEdgesSize === 0 && !isExpanding && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
-                <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Results</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  No relationships found for <strong>{seedGeneSymbol}</strong> with the current lens. Try switching to a different lens.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Inspector Panel (Sheet overlay) */}
-        <Sheet open={rightPanelOpen} onOpenChange={(open) => actions.setRightPanel(open)}>
-          <SheetContent side="right" className="w-80 sm:max-w-sm p-0 flex flex-col">
             <SheetHeader className="px-4 py-3 border-b border-border bg-muted">
               <SheetTitle className="text-sm font-medium">Inspector</SheetTitle>
               <SheetDescription className="sr-only">
@@ -547,7 +603,7 @@ function GraphExplorerViewInner({
           </SheetContent>
         </Sheet>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

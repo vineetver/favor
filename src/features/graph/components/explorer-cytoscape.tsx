@@ -26,10 +26,11 @@ if (typeof cytoscape("layout", "dagre") === "undefined") {
 }
 
 // =============================================================================
-// Stylesheet
+// Stylesheet — includes Phase 1 hover highlighting classes
 // =============================================================================
 
 const STYLESHEET: StylesheetStyle[] = [
+  // Base node style — with transition for smooth hover fade
   {
     selector: "node",
     style: {
@@ -47,8 +48,11 @@ const STYLESHEET: StylesheetStyle[] = [
       color: "#334155",
       "text-outline-color": "#ffffff",
       "text-outline-width": 2,
+      "transition-property": "opacity, border-width, border-color",
+      "transition-duration": 350,
     },
   },
+  // Seed node
   {
     selector: "node.seed",
     style: {
@@ -56,6 +60,7 @@ const STYLESHEET: StylesheetStyle[] = [
       "font-weight": 600,
     },
   },
+  // Selected node
   {
     selector: "node:selected",
     style: {
@@ -63,6 +68,7 @@ const STYLESHEET: StylesheetStyle[] = [
       "border-color": "#1e40af",
     },
   },
+  // Multi-selected nodes
   {
     selector: "node.multi-selected",
     style: {
@@ -71,6 +77,7 @@ const STYLESHEET: StylesheetStyle[] = [
       "border-style": "double" as never,
     },
   },
+  // Path highlight - nodes in path
   {
     selector: "node.path-node",
     style: {
@@ -79,12 +86,40 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 100,
     },
   },
+  // Path highlight - dimmed nodes
   {
     selector: "node.path-dimmed",
     style: {
       opacity: 0.3,
     },
   },
+
+  // --- HOVER HIGHLIGHTING (Phase 1.2) ---
+  // The hovered node itself
+  {
+    selector: "node.hover-source",
+    style: {
+      "border-width": 3,
+      "z-index": 100,
+    },
+  },
+  // 1-hop neighbors of hovered node
+  {
+    selector: "node.hover-neighbor",
+    style: {
+      "z-index": 50,
+      opacity: 1,
+    },
+  },
+  // Everything else when a hover is active
+  {
+    selector: "node.hover-dimmed",
+    style: {
+      opacity: 0.15,
+    },
+  },
+
+  // Entity type specific styles
   {
     selector: "node.entity-gene",
     style: {
@@ -189,6 +224,8 @@ const STYLESHEET: StylesheetStyle[] = [
       color: NODE_TYPE_COLORS.Metabolite.text,
     },
   },
+
+  // Base edge style — with transition for smooth hover fade
   {
     selector: "edge",
     style: {
@@ -199,8 +236,11 @@ const STYLESHEET: StylesheetStyle[] = [
       "target-arrow-shape": "triangle",
       "target-arrow-color": "data(lineColor)",
       "arrow-scale": 0.8,
+      "transition-property": "opacity, width",
+      "transition-duration": 350,
     },
   },
+  // Edge hover (CSS pseudo, for when no JS highlight is active)
   {
     selector: "edge:hover",
     style: {
@@ -209,6 +249,7 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 10,
     },
   },
+  // Edge selected (Cytoscape native)
   {
     selector: "edge:selected",
     style: {
@@ -218,6 +259,7 @@ const STYLESHEET: StylesheetStyle[] = [
       opacity: 1,
     },
   },
+  // Edge selected (via class)
   {
     selector: "edge.selected",
     style: {
@@ -228,6 +270,7 @@ const STYLESHEET: StylesheetStyle[] = [
       "z-index": 20,
     },
   },
+  // Path highlight edges
   {
     selector: "edge.path-edge",
     style: {
@@ -242,6 +285,33 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "edge.path-dimmed",
     style: {
       opacity: 0.2,
+    },
+  },
+
+  // --- HOVER HIGHLIGHTING (Phase 1.2) ---
+  // Edges connecting to hovered node
+  {
+    selector: "edge.hover-highlight",
+    style: {
+      opacity: 1,
+      width: 3,
+      "z-index": 50,
+    },
+  },
+  // Edges dimmed during hover
+  {
+    selector: "edge.hover-dimmed",
+    style: {
+      opacity: 0.08,
+    },
+  },
+  // Hovered edge itself
+  {
+    selector: "edge.hover-source",
+    style: {
+      opacity: 1,
+      width: 4,
+      "z-index": 60,
     },
   },
 ];
@@ -280,7 +350,73 @@ function dataToEdge(data: Record<string, unknown>): ExplorerEdge {
     targetKey: "" as ExplorerEdge["targetKey"],
     numSources: typeof data.numSources === "number" ? data.numSources : undefined,
     numExperiments: typeof data.numExperiments === "number" ? data.numExperiments : undefined,
+    fields: typeof data.fields === "object" && data.fields !== null ? data.fields as Record<string, unknown> : undefined,
   };
+}
+
+// =============================================================================
+// Hover highlighting helpers (all internal to Cytoscape, no React re-render)
+// =============================================================================
+
+function clearHoverClasses(cy: Core) {
+  cy.batch(() => {
+    cy.elements().removeClass("hover-source hover-neighbor hover-highlight hover-dimmed");
+  });
+}
+
+function applyNodeHoverHighlight(cy: Core, node: NodeSingular) {
+  const neighborhood = node.neighborhood();
+  const neighborNodes = neighborhood.nodes();
+  const neighborEdges = neighborhood.edges();
+
+  cy.batch(() => {
+    // Dim everything
+    cy.elements().addClass("hover-dimmed");
+    // Un-dim the hovered node and its neighborhood
+    node.removeClass("hover-dimmed").addClass("hover-source");
+    neighborNodes.removeClass("hover-dimmed").addClass("hover-neighbor");
+    neighborEdges.removeClass("hover-dimmed").addClass("hover-highlight");
+  });
+}
+
+function applyEdgeHoverHighlight(cy: Core, edge: EdgeSingular) {
+  const source = edge.source();
+  const target = edge.target();
+
+  cy.batch(() => {
+    cy.elements().addClass("hover-dimmed");
+    edge.removeClass("hover-dimmed").addClass("hover-source");
+    source.removeClass("hover-dimmed").addClass("hover-neighbor");
+    target.removeClass("hover-dimmed").addClass("hover-neighbor");
+  });
+}
+
+/**
+ * After hover ends, restore the selection-based highlight (if any).
+ * If nothing is selected, just clear all hover classes.
+ */
+function restoreSelectionHighlight(
+  cy: Core,
+  selectedNodeIdsRef: { current: Set<string> | undefined },
+  selectedEdgeIdRef: { current: string | null | undefined },
+) {
+  clearHoverClasses(cy);
+
+  const nodeIds = selectedNodeIdsRef.current;
+  const edgeId = selectedEdgeIdRef.current;
+
+  if (nodeIds && nodeIds.size === 1) {
+    const nodeId = Array.from(nodeIds)[0];
+    const node = cy.getElementById(nodeId);
+    if (node.length > 0 && node.isNode()) {
+      applyNodeHoverHighlight(cy, node as NodeSingular);
+    }
+  } else if (edgeId) {
+    const edge = cy.getElementById(edgeId);
+    if (edge.length > 0 && edge.isEdge()) {
+      applyEdgeHoverHighlight(cy, edge as EdgeSingular);
+    }
+  }
 }
 
 // =============================================================================
@@ -293,6 +429,8 @@ function ExplorerCytoscapeInner({
   onNodeClick,
   onNodeHover,
   onEdgeClick,
+  onEdgeHover,
+  onNodeDoubleClick,
   onBackgroundClick,
   selectedNodeIds,
   selectedEdgeId,
@@ -303,10 +441,17 @@ function ExplorerCytoscapeInner({
   const layoutRef = useRef(layout);
   const initializedRef = useRef(false);
 
+  // Stable callback refs
   const onNodeClickRef = useRef(onNodeClick);
   const onNodeHoverRef = useRef(onNodeHover);
   const onEdgeClickRef = useRef(onEdgeClick);
+  const onEdgeHoverRef = useRef(onEdgeHover);
+  const onNodeDoubleClickRef = useRef(onNodeDoubleClick);
   const onBackgroundClickRef = useRef(onBackgroundClick);
+
+  // Selection refs (so event handlers can restore selection highlight on mouseout)
+  const selectedNodeIdsRef = useRef(selectedNodeIds);
+  const selectedEdgeIdRef = useRef(selectedEdgeId);
 
   useEffect(() => {
     return () => {
@@ -318,39 +463,48 @@ function ExplorerCytoscapeInner({
   useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
   useEffect(() => { onNodeHoverRef.current = onNodeHover; }, [onNodeHover]);
   useEffect(() => { onEdgeClickRef.current = onEdgeClick; }, [onEdgeClick]);
+  useEffect(() => { onEdgeHoverRef.current = onEdgeHover; }, [onEdgeHover]);
+  useEffect(() => { onNodeDoubleClickRef.current = onNodeDoubleClick; }, [onNodeDoubleClick]);
   useEffect(() => { onBackgroundClickRef.current = onBackgroundClick; }, [onBackgroundClick]);
+  useEffect(() => { selectedNodeIdsRef.current = selectedNodeIds; }, [selectedNodeIds]);
+  useEffect(() => { selectedEdgeIdRef.current = selectedEdgeId; }, [selectedEdgeId]);
 
+  // Selection highlighting: dims non-related nodes/edges when something is selected
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
+    // Clear previous classes
     cy.nodes().removeClass("multi-selected");
+    cy.edges().removeClass("selected");
+    clearHoverClasses(cy);
 
-    if (selectedNodeIds && selectedNodeIds.size > 0) {
+    if (selectedNodeIds && selectedNodeIds.size === 1) {
+      // Single node selected — highlight 1-hop neighborhood
+      const nodeId = Array.from(selectedNodeIds)[0];
+      const node = cy.getElementById(nodeId);
+      if (node.length > 0 && node.isNode()) {
+        applyNodeHoverHighlight(cy, node as NodeSingular);
+      }
+    } else if (selectedNodeIds && selectedNodeIds.size > 1) {
+      // Multi-select — mark selected nodes
       cy.nodes().forEach((node) => {
         if (selectedNodeIds.has(node.id())) {
           node.addClass("multi-selected");
         }
       });
-    }
-  }, [selectedNodeIds]);
-
-  useEffect(() => {
-    if (!cyRef.current || !initializedRef.current) return;
-    const cy = cyRef.current;
-    if (cy.destroyed()) return;
-
-    cy.edges().removeClass("selected");
-
-    if (selectedEdgeId) {
+    } else if (selectedEdgeId) {
+      // Edge selected — highlight edge + endpoints
       const edge = cy.getElementById(selectedEdgeId);
-      if (edge.length > 0) {
+      if (edge.length > 0 && edge.isEdge()) {
         edge.addClass("selected");
+        applyEdgeHoverHighlight(cy, edge as EdgeSingular);
       }
     }
-  }, [selectedEdgeId]);
+  }, [selectedNodeIds, selectedEdgeId]);
 
+  // Path highlighting
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -378,6 +532,7 @@ function ExplorerCytoscapeInner({
     }
   }, [pathHighlight]);
 
+  // Layout changes
   useEffect(() => {
     if (!cyRef.current || !initializedRef.current) return;
     const cy = cyRef.current;
@@ -389,6 +544,7 @@ function ExplorerCytoscapeInner({
     cy.layout(layoutOptions).run();
   }, [layout]);
 
+  // Element change detection
   const elementsKey = useMemo(
     () =>
       elements
@@ -418,6 +574,7 @@ function ExplorerCytoscapeInner({
     }
   }, [elementsKey, elements, layout]);
 
+  // Cytoscape init callback
   const handleCy = (cy: Core) => {
     if (initializedRef.current && cyRef.current === cy) return;
 
@@ -429,6 +586,7 @@ function ExplorerCytoscapeInner({
     const layoutOptions = getExplorerLayoutOptions(layoutRef.current);
     cy.layout(layoutOptions).run();
 
+    // ---- Node click: select ----
     cy.on("tap", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
@@ -436,6 +594,14 @@ function ExplorerCytoscapeInner({
       onNodeClickRef.current?.(dataToNode(data), originalEvent);
     });
 
+    // ---- Node double-click: placeholder for Focus mode (Phase 1.4) ----
+    cy.on("dbltap", "node", (event: EventObject) => {
+      const node = event.target as NodeSingular;
+      const data = node.data();
+      onNodeDoubleClickRef.current?.(dataToNode(data));
+    });
+
+    // ---- Edge click ----
     cy.on("tap", "edge", (event: EventObject) => {
       const edge = event.target as EdgeSingular;
       const data = edge.data();
@@ -457,17 +623,24 @@ function ExplorerCytoscapeInner({
       }
     });
 
+    // ---- Background click: clear selection (Phase 1.4) ----
     cy.on("tap", (event: EventObject) => {
       if (event.target === cy) {
         onBackgroundClickRef.current?.();
       }
     });
 
+    // ---- Node hover: highlight 1-hop neighborhood (Phase 1.2) ----
     cy.on("mouseover", "node", (event: EventObject) => {
       const node = event.target as NodeSingular;
       const data = node.data();
       const renderedPosition = node.renderedPosition();
       const container = cy.container();
+
+      // Apply visual hover highlight
+      applyNodeHoverHighlight(cy, node);
+
+      // Bubble up for external tooltip
       if (container) {
         const rect = container.getBoundingClientRect();
         onNodeHoverRef.current?.(dataToNode(data), {
@@ -478,9 +651,44 @@ function ExplorerCytoscapeInner({
     });
 
     cy.on("mouseout", "node", () => {
+      // Restore selection-based highlight instead of clearing everything
+      restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
       onNodeHoverRef.current?.(null, null);
     });
 
+    // ---- Edge hover: highlight endpoints + tooltip (Phase 1.2 + 1.3) ----
+    cy.on("mouseover", "edge", (event: EventObject) => {
+      const edge = event.target as EdgeSingular;
+      const data = edge.data();
+
+      // Apply visual hover highlight
+      applyEdgeHoverHighlight(cy, edge);
+
+      // Compute edge midpoint in screen coords for tooltip
+      const container = cy.container();
+      if (container && onEdgeHoverRef.current) {
+        const midpoint = edge.midpoint();
+        const rect = container.getBoundingClientRect();
+        const pan = cy.pan();
+        const zoom = cy.zoom();
+
+        const renderedX = midpoint.x * zoom + pan.x;
+        const renderedY = midpoint.y * zoom + pan.y;
+
+        onEdgeHoverRef.current(dataToEdge(data), {
+          x: rect.left + renderedX,
+          y: rect.top + renderedY,
+        });
+      }
+    });
+
+    cy.on("mouseout", "edge", () => {
+      // Restore selection-based highlight instead of clearing everything
+      restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
+      onEdgeHoverRef.current?.(null, null);
+    });
+
+    // ---- Cursor changes on hover ----
     cy.on("mouseover", "node, edge", () => {
       const container = cy.container();
       if (container) container.style.cursor = "pointer";
@@ -491,8 +699,15 @@ function ExplorerCytoscapeInner({
       if (container) container.style.cursor = "default";
     });
 
+    // ---- Fit graph after layout, top-aligned ----
     cy.on("layoutstop", () => {
-      cy.fit(undefined, 40);
+      cy.fit(undefined, 20);
+      // Shift graph to top of canvas instead of vertically centered
+      const bb = cy.elements().renderedBoundingBox();
+      if (bb && bb.h < cy.height()) {
+        const pan = cy.pan();
+        cy.pan({ x: pan.x, y: pan.y - (bb.y1 - 20) });
+      }
     });
   };
 

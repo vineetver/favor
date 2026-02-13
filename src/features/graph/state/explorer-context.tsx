@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type Dispatch,
 } from "react";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
+import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
 import type {
@@ -18,7 +18,6 @@ import type {
   ExplorerLayoutType,
   LensId,
 } from "../types/state";
-import type { ExpansionConfig } from "../config/expansion";
 import { explorerReducer, initialExplorerState, type ExplorerAction } from "./reducer";
 import {
   selectElements,
@@ -55,8 +54,7 @@ type ExplorerContextValue = {
     setLayout: (layout: ExplorerLayoutType) => void;
     setViewMode: (viewMode: ViewMode) => void;
     toggleLeftDrawer: () => void;
-    toggleRightPanel: () => void;
-    setRightPanel: (open: boolean) => void;
+    setInspectorMode: (mode: InspectorMode) => void;
   };
   selectors: {
     elements: () => ReturnType<typeof selectElements>;
@@ -82,7 +80,6 @@ type ExplorerProviderProps = {
 export function ExplorerProvider({ children }: ExplorerProviderProps) {
   const [state, dispatch] = useReducer(explorerReducer, initialExplorerState);
 
-  // Action creators - stable references
   const actions = useMemo(() => ({
     hydrateInitial: (graph: GraphData, lensId: LensId) => {
       dispatch({ type: "HYDRATE_INITIAL", graph, lensId });
@@ -141,15 +138,11 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
     toggleLeftDrawer: () => {
       dispatch({ type: "TOGGLE_LEFT_DRAWER" });
     },
-    toggleRightPanel: () => {
-      dispatch({ type: "TOGGLE_RIGHT_PANEL" });
-    },
-    setRightPanel: (open: boolean) => {
-      dispatch({ type: "SET_RIGHT_PANEL", open });
+    setInspectorMode: (mode: InspectorMode) => {
+      dispatch({ type: "SET_INSPECTOR_MODE", mode });
     },
   }), []);
 
-  // Selectors - derived state
   const selectors = useMemo(() => ({
     elements: () => {
       if (state.status !== "ready") return [];

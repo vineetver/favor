@@ -1,4 +1,4 @@
-import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "./node";
+import type { ExplorerNode, ExplorerEdge, ExplorerSelection, InspectorMode } from "./node";
 import type { GraphFilters } from "./filters";
 import type { NodeKey } from "./keys";
 import type { ExplorerLayoutType } from "../config/layout";
@@ -50,19 +50,10 @@ export type ExplorerState =
       viewMode: ViewMode;
       activeLens: LensId;
       leftDrawerOpen: boolean;
-      rightPanelOpen: boolean;
+      inspectorMode: InspectorMode;
       expansion: ExpansionStatus;
     };
 
 // Re-export for convenience (canonical definitions in config/)
 export type { ExplorerLayoutType } from "../config/layout";
 export type { LensId } from "../config/lenses";
-
-// =============================================================================
-// Panel State
-// =============================================================================
-
-export interface PanelState {
-  leftDrawerOpen: boolean;
-  rightPanelOpen: boolean;
-}

@@ -1,7 +1,6 @@
-import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "../types/node";
+import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
-import type { EDGE_TYPE_CONFIG } from "../types/edge";
 import { DEFAULT_SELECTION } from "../types/node";
 import { DEFAULT_FILTERS } from "../types/filters";
 import type {
@@ -10,7 +9,6 @@ import type {
   ViewMode,
   ExplorerLayoutType,
   LensId,
-  ExpansionStatus,
 } from "../types/state";
 
 // =============================================================================
@@ -37,8 +35,7 @@ export type ExplorerAction =
   | { type: "SET_LAYOUT"; layout: ExplorerLayoutType }
   | { type: "SET_VIEW_MODE"; viewMode: ViewMode }
   | { type: "TOGGLE_LEFT_DRAWER" }
-  | { type: "TOGGLE_RIGHT_PANEL" }
-  | { type: "SET_RIGHT_PANEL"; open: boolean };
+  | { type: "SET_INSPECTOR_MODE"; mode: InspectorMode };
 
 // =============================================================================
 // REDUCER
@@ -56,7 +53,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         viewMode: "graph",
         activeLens: action.lensId,
         leftDrawerOpen: true,
-        rightPanelOpen: false,
+        inspectorMode: "closed",
         expansion: { status: "idle" },
       };
     }
@@ -67,7 +64,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         ...state,
         activeLens: action.lensId,
         selection: DEFAULT_SELECTION,
-        rightPanelOpen: false,
+        inspectorMode: "closed",
         expansion: { status: "loading" },
       };
     }
@@ -103,7 +100,6 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "EXPAND_SUCCESS": {
       if (state.status !== "ready") return state;
-      // Additive merge: don't overwrite existing nodes/edges
       const mergedNodes = new Map(state.graph.nodes);
       action.nodes.forEach((node, id) => {
         if (!mergedNodes.has(id)) mergedNodes.set(id, node);
@@ -135,13 +131,11 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "REMOVE_NODE": {
       if (state.status !== "ready") return state;
-      // Seeds cannot be removed
       if (state.graph.seeds.has(action.nodeId)) return state;
 
       const newNodes = new Map(state.graph.nodes);
       newNodes.delete(action.nodeId);
 
-      // Remove all connected edges
       const newEdges = new Map(state.graph.edges);
       newEdges.forEach((edge, edgeId) => {
         if (edge.sourceId === action.nodeId || edge.targetId === action.nodeId) {
@@ -149,7 +143,6 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         }
       });
 
-      // Repair selection
       let selection = state.selection;
       if (selection.type === "node" && selection.nodeId === action.nodeId) {
         selection = DEFAULT_SELECTION;
@@ -171,7 +164,8 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         selection: { type: "node", nodeId: action.nodeId, node: action.node },
-        rightPanelOpen: true,
+        // Auto-peek when selecting if inspector is closed
+        inspectorMode: state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
       };
     }
 
@@ -180,7 +174,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         selection: { type: "edge", edgeId: action.edgeId, edge: action.edge },
-        rightPanelOpen: true,
+        inspectorMode: state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
       };
     }
 
@@ -216,7 +210,12 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "CLEAR_SELECTION": {
       if (state.status !== "ready") return state;
-      return { ...state, selection: DEFAULT_SELECTION };
+      return {
+        ...state,
+        selection: DEFAULT_SELECTION,
+        // Auto-close when in peek mode
+        inspectorMode: state.inspectorMode === "peek" ? "closed" : state.inspectorMode,
+      };
     }
 
     case "SET_FILTERS": {
@@ -260,14 +259,9 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return { ...state, leftDrawerOpen: !state.leftDrawerOpen };
     }
 
-    case "TOGGLE_RIGHT_PANEL": {
+    case "SET_INSPECTOR_MODE": {
       if (state.status !== "ready") return state;
-      return { ...state, rightPanelOpen: !state.rightPanelOpen };
-    }
-
-    case "SET_RIGHT_PANEL": {
-      if (state.status !== "ready") return state;
-      return { ...state, rightPanelOpen: action.open };
+      return { ...state, inspectorMode: action.mode };
     }
 
     default:

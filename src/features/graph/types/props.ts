@@ -46,6 +46,8 @@ export interface ExplorerCytoscapeProps {
   onNodeClick?: (node: ExplorerNode, event?: MouseEvent) => void;
   onNodeHover?: (node: ExplorerNode | null, position: { x: number; y: number } | null) => void;
   onEdgeClick?: (edge: ExplorerEdge, position: { x: number; y: number }) => void;
+  onEdgeHover?: (edge: ExplorerEdge | null, position: { x: number; y: number } | null) => void;
+  onNodeDoubleClick?: (node: ExplorerNode) => void;
   onBackgroundClick?: () => void;
   selectedNodeIds?: Set<string>;
   selectedEdgeId?: string | null;
