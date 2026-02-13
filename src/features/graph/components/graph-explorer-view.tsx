@@ -28,13 +28,14 @@ import { InspectorPanel } from "./inspector-panel";
 import { EdgeTooltip } from "./edge-tooltip";
 import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
 import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
-import { GRAPH_LENSES } from "../config/lenses";
+import { GRAPH_LENSES, getLensEdgeFields } from "../config/lenses";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
 import type { GraphExplorerViewProps } from "../types/props";
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { GeneEntity, EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
+import { getEdgeFieldsForTypes } from "../types/edge";
 import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
@@ -224,6 +225,7 @@ function GraphExplorerViewInner({
           sort: s.sort,
           filters: s.filters,
         })),
+        select: { edgeFields: getLensEdgeFields(lens) },
         limits: lens.limits,
       });
 
@@ -338,6 +340,7 @@ function GraphExplorerViewInner({
             limit: expansion.limit ?? 20,
             sort: expansion.sort,
           }],
+          select: { edgeFields: getEdgeFieldsForTypes(expansion.edgeTypes as EdgeType[]) },
           limits: { maxNodes: 200, maxEdges: 500 },
         });
 

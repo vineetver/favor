@@ -11,7 +11,7 @@ import type { EntityType } from "@features/graph/types/entity";
 import type { EdgeType } from "@features/graph/types/edge";
 import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
 import type { InitialSubgraphData } from "@features/graph/types/props";
-import { GRAPH_LENSES, DEFAULT_LENS } from "@features/graph/config/lenses";
+import { GRAPH_LENSES, DEFAULT_LENS, getLensEdgeFields } from "@features/graph/config/lenses";
 import { notFound } from "next/navigation";
 
 interface GraphExplorerPageProps {
@@ -80,6 +80,7 @@ export default async function GraphExplorerPage({
         sort: s.sort,
         filters: s.filters,
       })),
+      select: { edgeFields: getLensEdgeFields(defaultLens) },
       limits: defaultLens.limits,
     });
 
