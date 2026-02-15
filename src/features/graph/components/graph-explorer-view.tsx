@@ -28,20 +28,21 @@ import { InspectorPanel } from "./inspector-panel";
 import { EdgeTooltip } from "./edge-tooltip";
 import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
 import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
-import { GRAPH_LENSES, getLensEdgeFields } from "../config/lenses";
+import { GRAPH_LENSES, getLensEdgeFields, serializeLensSteps, isBranchStep } from "../config/lenses";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
 import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/props";
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { GeneEntity, EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
-import { getEdgeFieldsForTypes } from "../types/edge";
+import { getEdgeFieldsForTypes, batchEdgeTypesByFieldLimit } from "../types/edge";
 import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import { VARIANT_TRAIL_CONFIG } from "../config/variant-trail";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
 import { createProvenanceEvent } from "../types/provenance";
+import { useConnectionsDrilldown } from "../hooks/use-connections-drilldown";
 
 // =============================================================================
 // View Toggle Component
@@ -239,13 +240,7 @@ function GraphExplorerViewInner({
     try {
       const response = await fetchGraphQuery({
         seeds: [{ type: "Gene", id: seedGeneId }],
-        steps: lens.steps.map((s) => ({
-          edgeTypes: s.edgeTypes,
-          direction: s.direction,
-          limit: s.limit,
-          sort: s.sort,
-          filters: s.filters,
-        })),
+        steps: serializeLensSteps(lens.steps),
         select: { edgeFields: getLensEdgeFields(lens) },
         limits: lens.limits,
       });
@@ -276,7 +271,13 @@ function GraphExplorerViewInner({
 
       const lensEdgeTypes = new Set<EdgeType>();
       for (const step of lens.steps) {
-        for (const et of step.edgeTypes) lensEdgeTypes.add(et);
+        if (isBranchStep(step)) {
+          for (const sub of step.branch) {
+            for (const et of sub.edgeTypes) lensEdgeTypes.add(et);
+          }
+        } else {
+          for (const et of step.edgeTypes) lensEdgeTypes.add(et);
+        }
       }
       for (const edge of response.data.edges) {
         lensEdgeTypes.add(edge.type as EdgeType);
@@ -353,64 +354,85 @@ function GraphExplorerViewInner({
 
     try {
       if (expansion) {
-        const response = await fetchGraphQuery({
-          seeds: [{ type: node.type, id: nodeId }],
-          steps: [{
-            edgeTypes: expansion.edgeTypes,
-            direction: expansion.direction,
-            limit: expansion.limit ?? 20,
-            sort: expansion.sort,
-          }],
-          select: { edgeFields: getEdgeFieldsForTypes(expansion.edgeTypes as EdgeType[]) },
-          limits: { maxNodes: 200, maxEdges: 500 },
-        });
+        // Split edge types into batches that each fit within the backend's 20-field limit
+        const batches = batchEdgeTypesByFieldLimit(expansion.edgeTypes as EdgeType[], 20);
 
-        if (!response?.data?.edges?.length) {
+        const responses = await Promise.all(
+          batches.map((batch) =>
+            fetchGraphQuery({
+              seeds: [{ type: node.type, id: nodeId }],
+              steps: [{
+                edgeTypes: batch,
+                direction: expansion.direction,
+                limit: expansion.limit ?? 20,
+                sort: expansion.sort,
+              }],
+              select: { edgeFields: getEdgeFieldsForTypes(batch) },
+              limits: { maxNodes: 200, maxEdges: 500 },
+            }),
+          ),
+        );
+
+        // Check if ALL batches failed
+        const successResponses = responses.filter((r) => r?.data?.edges?.length);
+        if (successResponses.length === 0) {
           actions.dismissExpansionError();
-          toast.error("No relationships found for this expansion.");
+          const allNull = responses.every((r) => r === null);
+          toast.error(
+            allNull
+              ? "Expansion request failed — the server may be unavailable."
+              : "No relationships found for this expansion.",
+          );
           return;
         }
 
+        // Merge results from all batches
         const newNodes = new Map<string, ExplorerNode>();
         const newEdges = new Map<string, ExplorerEdge>();
 
-        for (const [, nodeData] of Object.entries(response.data.nodes)) {
-          const entity = nodeData.entity;
-          const nodeType = entity.type as EntityType;
-          const nodeKey = makeNodeKey(nodeType, entity.id);
-          newNodes.set(entity.id, {
-            id: entity.id,
-            key: nodeKey,
-            type: nodeType,
-            label: entity.label,
-            subtitle: entity.subtitle,
-            entity: { type: entity.type, id: entity.id, label: entity.label } as ExplorerNode["entity"],
-            isSeed: false,
-            depth: (node.depth ?? 0) + 1,
-          });
-        }
+        for (const response of successResponses) {
+          for (const [, nodeData] of Object.entries(response!.data.nodes)) {
+            const entity = nodeData.entity;
+            const nodeType = entity.type as EntityType;
+            const nodeKey = makeNodeKey(nodeType, entity.id);
+            if (!newNodes.has(entity.id)) {
+              newNodes.set(entity.id, {
+                id: entity.id,
+                key: nodeKey,
+                type: nodeType,
+                label: entity.label,
+                subtitle: entity.subtitle,
+                entity: { type: entity.type, id: entity.id, label: entity.label } as ExplorerNode["entity"],
+                isSeed: false,
+                depth: (node.depth ?? 0) + 1,
+              });
+            }
+          }
 
-        for (const apiEdge of response.data.edges) {
-          const edgeType = apiEdge.type as EdgeType;
-          const fromId = parseTypeId(apiEdge.from).id;
-          const toId = parseTypeId(apiEdge.to).id;
-          const edgeId = createEdgeId(edgeType, fromId, toId);
-          const fromType = parseTypeId(apiEdge.from).type as EntityType;
-          const toType = parseTypeId(apiEdge.to).type as EntityType;
-          const sourceKey = makeNodeKey(fromType, fromId);
-          const targetKey = makeNodeKey(toType, toId);
-          newEdges.set(edgeId, {
-            id: edgeId,
-            key: makeEdgeKey(edgeType, sourceKey, targetKey),
-            type: edgeType,
-            sourceId: fromId,
-            targetId: toId,
-            sourceKey,
-            targetKey,
-            numSources: apiEdge.fields?.num_sources as number | undefined,
-            numExperiments: apiEdge.fields?.num_experiments as number | undefined,
-            fields: apiEdge.fields,
-          });
+          for (const apiEdge of response!.data.edges) {
+            const edgeType = apiEdge.type as EdgeType;
+            const fromId = parseTypeId(apiEdge.from).id;
+            const toId = parseTypeId(apiEdge.to).id;
+            const edgeId = createEdgeId(edgeType, fromId, toId);
+            if (!newEdges.has(edgeId)) {
+              const fromType = parseTypeId(apiEdge.from).type as EntityType;
+              const toType = parseTypeId(apiEdge.to).type as EntityType;
+              const sourceKey = makeNodeKey(fromType, fromId);
+              const targetKey = makeNodeKey(toType, toId);
+              newEdges.set(edgeId, {
+                id: edgeId,
+                key: makeEdgeKey(edgeType, sourceKey, targetKey),
+                type: edgeType,
+                sourceId: fromId,
+                targetId: toId,
+                sourceKey,
+                targetKey,
+                numSources: apiEdge.fields?.num_sources as number | undefined,
+                numExperiments: apiEdge.fields?.num_experiments as number | undefined,
+                fields: apiEdge.fields,
+              });
+            }
+          }
         }
 
         actions.expandSuccess(newNodes, newEdges, expandProv);
@@ -424,7 +446,13 @@ function GraphExplorerViewInner({
           includeProps: true,
         });
 
-        if (!response?.data?.graph) {
+        if (!response) {
+          actions.dismissExpansionError();
+          toast.error("Expansion request failed — the server may be unavailable.");
+          return;
+        }
+
+        if (!response.data?.graph) {
           actions.dismissExpansionError();
           toast.error("No relationships found for this expansion.");
           return;
@@ -533,7 +561,7 @@ function GraphExplorerViewInner({
             limit: s.limit,
             sort: s.sort,
           })),
-          select: { edgeFields: getEdgeFieldsForTypes(allEdgeTypes) },
+          select: { edgeFields: getEdgeFieldsForTypes(allEdgeTypes).slice(0, 20) },
           limits: { maxNodes: config.maxNodes, maxEdges: config.maxEdges },
         });
 
@@ -635,6 +663,35 @@ function GraphExplorerViewInner({
   const getEdge = useCallback((id: string) => selectors.getEdge(id), [selectors]);
   const getProvenance = useCallback((id: string) => selectors.getProvenance(id), [selectors]);
   const getEdgesBetween = useCallback((sourceId: string, targetId: string) => selectors.getEdgesBetween(sourceId, targetId), [selectors]);
+
+  // ==========================================================================
+  // Connections Drilldown (fetch ALL relationships for selected edge pair)
+  // ==========================================================================
+
+  const edgeSelectionPair = useMemo(() => {
+    if (selection.type !== "edge") return { sourceId: null, targetId: null, sourceType: null, targetType: null };
+    const sourceNode = selectors.getNode(selection.edge.sourceId);
+    const targetNode = selectors.getNode(selection.edge.targetId);
+    return {
+      sourceId: selection.edge.sourceId,
+      targetId: selection.edge.targetId,
+      sourceType: sourceNode?.type ?? null,
+      targetType: targetNode?.type ?? null,
+    };
+  }, [selection, selectors]);
+
+  const localEdgesBetween = useMemo(() => {
+    if (selection.type !== "edge") return [];
+    return selectors.getEdgesBetween(selection.edge.sourceId, selection.edge.targetId);
+  }, [selection, selectors]);
+
+  const {
+    status: connectionsStatus,
+    data: connectionsData,
+    error: connectionsError,
+    loadMoreEdges,
+    retry: retryConnections,
+  } = useConnectionsDrilldown({ ...edgeSelectionPair, localEdges: localEdgesBetween });
 
   const handleFindPaths = useCallback((_fromId: string, _toId: string) => {
     // Path finding will be implemented in a future phase
@@ -796,6 +853,11 @@ function GraphExplorerViewInner({
                 activeTrailResult={activeTrailResult}
                 onClearTrailResult={handleClearTrailResult}
                 onSelectTrailVariant={handleSelectTrailVariant}
+                connectionsData={connectionsData}
+                connectionsStatus={connectionsStatus}
+                connectionsError={connectionsError}
+                onLoadMoreEdges={loadMoreEdges}
+                onRetryConnections={retryConnections}
               />
             </div>
           </SheetContent>

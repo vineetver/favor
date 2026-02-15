@@ -18,6 +18,7 @@ import {
   Dna,
   HeartPulse,
   Loader2,
+  Microscope,
   Network,
   Pill,
   RefreshCw,
@@ -41,6 +42,7 @@ const LENS_ICONS: Record<string, React.ReactNode> = {
   "pill": <Pill className="w-4 h-4" />,
   "network": <Network className="w-4 h-4" />,
   "activity": <Activity className="w-4 h-4" />,
+  "microscope": <Microscope className="w-4 h-4" />,
 };
 
 // =============================================================================

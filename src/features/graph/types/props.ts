@@ -6,6 +6,7 @@ import type { ProvenanceEvent } from "./provenance";
 import type { GraphFilters } from "./filters";
 import type { GraphSchema, GraphStats } from "./schema";
 import type { ExplorerLayoutType, LensId } from "./state";
+import type { ConnectionsDrilldownData, ConnectionsStatus } from "./connections";
 
 // =============================================================================
 // Serialized Data (JSON-safe, for server → client)
@@ -103,6 +104,11 @@ export interface InspectorPanelProps {
   activeTrailResult?: VariantTrailResultData | null;
   onClearTrailResult?: () => void;
   onSelectTrailVariant?: (node: ExplorerNode) => void;
+  connectionsData?: ConnectionsDrilldownData | null;
+  connectionsStatus?: ConnectionsStatus;
+  connectionsError?: string | null;
+  onLoadMoreEdges?: (edgeType: EdgeType) => void;
+  onRetryConnections?: () => void;
 }
 
 // Re-export ExpansionConfig for convenience (defined in config/expansion)

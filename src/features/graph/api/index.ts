@@ -109,11 +109,18 @@ export interface GraphQueryStep {
   limit?: number;
   sort?: string;
   filters?: Record<string, unknown>;
+  overlayOnly?: boolean;
 }
+
+export interface GraphQueryBranchStep {
+  branch: GraphQueryStep[];
+}
+
+export type GraphQueryStepOrBranch = GraphQueryStep | GraphQueryBranchStep;
 
 export interface GraphQueryOptions {
   seeds: Array<{ type: string; id: string }>;
-  steps: GraphQueryStep[];
+  steps: GraphQueryStepOrBranch[];
   select?: {
     nodeFields?: string[];
     edgeFields?: string[];
@@ -483,6 +490,103 @@ export async function searchEntities(
     return await response.json();
   } catch (error) {
     console.error("Entity search error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Connections API (client-side only, no caching)
+// =============================================================================
+
+export interface ConnectionsEdgeItem {
+  type: string;
+  from: { type: string; id: string; label: string };
+  to: { type: string; id: string; label: string };
+  fields?: Record<string, unknown>;
+}
+
+export interface ConnectionsApiResponse {
+  edgeTypes: Array<{
+    type: string;
+    count: number;
+    direction: "out" | "in";
+    edges: ConnectionsEdgeItem[];
+  }>;
+}
+
+export async function fetchConnections(options: {
+  from: { type: string; id: string };
+  to: { type: string; id: string };
+  limitPerType?: number;
+  includeReverse?: boolean;
+  signal?: AbortSignal;
+}): Promise<ConnectionsApiResponse | null> {
+  const url = `${API_BASE}/graph/connections`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: options.from,
+        to: options.to,
+        limitPerType: options.limitPerType ?? 10,
+        includeReverse: options.includeReverse ?? true,
+      }),
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      console.error(`Connections fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return null;
+    console.error("Connections fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
+// Edge Page API (cursor-based pagination, client-side only)
+// =============================================================================
+
+export interface EdgePageApiResponse {
+  edges: ConnectionsEdgeItem[];
+  nextCursor?: string;
+}
+
+export async function fetchEdgePage(options: {
+  from: string;
+  to: string;
+  edgeType: string;
+  limit?: number;
+  cursor?: string;
+  signal?: AbortSignal;
+}): Promise<EdgePageApiResponse | null> {
+  const params = new URLSearchParams();
+  params.set("from", options.from);
+  params.set("to", options.to);
+  params.set("edgeType", options.edgeType);
+  params.set("limit", String(options.limit ?? 25));
+  if (options.cursor) params.set("cursor", options.cursor);
+
+  const url = `${API_BASE}/graph/edge?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, { signal: options.signal });
+
+    if (!response.ok) {
+      console.error(`Edge page fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return null;
+    console.error("Edge page fetch error:", error);
     return null;
   }
 }

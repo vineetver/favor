@@ -26,7 +26,9 @@ import type { InspectorPanelProps } from "../types/props";
 import type { ExplorerNode, ExplorerEdge } from "../types/node";
 import type { ProvenanceEvent } from "../types/provenance";
 import type { ExpansionConfig } from "../config/expansion";
-import { EDGE_TYPE_CONFIG } from "../types/edge";
+import type { EdgeType } from "../types/edge";
+import type { ConnectionsDrilldownData, ConnectionsEdgeGroup, ConnectionsStatus } from "../types/connections";
+import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
 import { NODE_TYPE_COLORS } from "../config/styling";
 import { NODE_EXPANSION_CONFIG } from "../config/expansion";
 import { hasVariantTrail } from "../config/variant-trail";
@@ -74,7 +76,7 @@ function ProvenanceDisplay({ events }: { events: ProvenanceEvent[] }) {
 /** Fields to skip (already rendered structurally or internal) */
 const SKIP_FIELDS = new Set([
   "num_sources", "num_experiments", "src_symbol", "dst_symbol",
-  "confidence_scores", "sources", "pubmed_ids", "detection_methods",
+  "confidence_scores", "pubmed_ids", "detection_methods",
 ]);
 
 /** Fields that are PubMed IDs */
@@ -248,10 +250,13 @@ function EdgeInstance({
   edge,
   provenance,
   defaultOpen,
+  insideGroup,
 }: {
   edge: ExplorerEdge;
   provenance: ProvenanceEvent[];
   defaultOpen: boolean;
+  /** When true, renders compact header (no type label — parent group already shows it) */
+  insideGroup?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const config = EDGE_TYPE_CONFIG[edge.type];
@@ -260,18 +265,32 @@ function EdgeInstance({
   const hasContent = hasFields || hasEvidence || edge.numSources !== undefined || edge.numExperiments !== undefined;
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className={insideGroup ? "border border-border/60 rounded-md overflow-hidden" : "border border-border rounded-lg overflow-hidden"}>
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors"
         onClick={() => setOpen(!open)}
       >
-        <div
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: config?.color ?? "#94a3b8" }}
-        />
-        <span className="text-sm font-medium text-foreground flex-1 truncate">
-          {config?.label ?? edge.type}
-        </span>
+        {!insideGroup && (
+          <div
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: config?.color ?? "#94a3b8" }}
+          />
+        )}
+        {insideGroup ? (
+          <span className="text-xs text-muted-foreground flex-1 truncate">
+            {getEdgeDatabase(edge.type)}
+            {edge.numSources !== undefined ? ` \u00b7 ${edge.numSources} sources` : ""}
+          </span>
+        ) : (
+          <>
+            <span className="text-sm font-medium text-foreground flex-1 truncate">
+              {config?.label ?? edge.type}
+            </span>
+            <span className="px-1.5 py-0.5 bg-muted text-xs text-muted-foreground rounded shrink-0">
+              {getEdgeDatabase(edge.type)}
+            </span>
+          </>
+        )}
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         ) : (
@@ -373,6 +392,98 @@ function EdgeInstance({
 }
 
 // =============================================================================
+// Relationship Type Group (collapsible group within connections drilldown)
+// =============================================================================
+
+interface RelationshipTypeGroupProps {
+  group: ConnectionsEdgeGroup;
+  selectedEdgeId: string;
+  getProvenance: (id: string) => ProvenanceEvent[];
+  onLoadMore?: (edgeType: EdgeType) => void;
+}
+
+function RelationshipTypeGroup({
+  group,
+  selectedEdgeId,
+  getProvenance,
+  onLoadMore,
+}: RelationshipTypeGroupProps) {
+  const config = EDGE_TYPE_CONFIG[group.type];
+  const containsSelected = group.edges.some((e) => e.id === selectedEdgeId);
+  const [open, setOpen] = useState(containsSelected);
+  const remaining = group.totalCount - group.edges.length;
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-accent transition-colors"
+        onClick={() => setOpen(!open)}
+      >
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: config?.color ?? "#94a3b8" }}
+        />
+        <span className="text-sm font-medium text-foreground flex-1 truncate">
+          {config?.label ?? group.type}
+        </span>
+        {!group.hasLocalEdges && (
+          <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded shrink-0">
+            from database
+          </span>
+        )}
+        <span className="px-1.5 py-0.5 bg-muted text-xs text-muted-foreground rounded tabular-nums shrink-0">
+          {group.totalCount}
+        </span>
+        <span className="text-xs text-muted-foreground shrink-0">
+          {group.direction === "in" ? "\u2190" : "\u2192"}
+        </span>
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border">
+          {group.edges.map((e) => (
+            <EdgeInstance
+              key={e.id}
+              edge={e}
+              provenance={getProvenance(e.id)}
+              defaultOpen={e.id === selectedEdgeId}
+              insideGroup
+            />
+          ))}
+
+          {/* Load more button */}
+          {group.nextCursor && onLoadMore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={() => onLoadMore(group.type)}
+              disabled={group.pageStatus === "loading"}
+            >
+              {group.pageStatus === "loading" ? (
+                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+              ) : null}
+              Load more{remaining > 0 ? ` (${remaining} remaining)` : ""}
+            </Button>
+          )}
+
+          {group.pageStatus === "error" && (
+            <p className="text-xs text-amber-600 text-center">
+              Failed to load more. Try again.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // Edge Detail — RelationshipGroup (all edges between a pair)
 // =============================================================================
 
@@ -381,11 +492,33 @@ interface EdgeDetailProps {
   allEdges: ExplorerEdge[];
   getNode: (id: string) => ExplorerNode | undefined;
   getProvenance: (id: string) => ProvenanceEvent[];
+  connectionsData?: ConnectionsDrilldownData | null;
+  connectionsStatus?: ConnectionsStatus;
+  connectionsError?: string | null;
+  onLoadMoreEdges?: (edgeType: EdgeType) => void;
+  onRetryConnections?: () => void;
 }
 
-function EdgeDetail({ edge, allEdges, getNode, getProvenance }: EdgeDetailProps) {
+function EdgeDetail({
+  edge,
+  allEdges,
+  getNode,
+  getProvenance,
+  connectionsData,
+  connectionsStatus,
+  connectionsError,
+  onLoadMoreEdges,
+  onRetryConnections,
+}: EdgeDetailProps) {
   const sourceNode = getNode(edge.sourceId);
   const targetNode = getNode(edge.targetId);
+  const [errorDismissed, setErrorDismissed] = useState(false);
+
+  // Use grouped view when connections data is available
+  const useGroupedView = connectionsData && connectionsData.groups.length > 0;
+  const totalRelationships = useGroupedView
+    ? connectionsData.groups.reduce((sum, g) => sum + g.totalCount, 0)
+    : allEdges.length;
 
   return (
     <div className="space-y-4">
@@ -400,24 +533,73 @@ function EdgeDetail({ edge, allEdges, getNode, getProvenance }: EdgeDetailProps)
             {targetNode?.label ?? edge.targetId}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {allEdges.length === 1
-            ? "1 relationship"
-            : `${allEdges.length} relationships between this pair`}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">
+            {totalRelationships === 1
+              ? "1 relationship"
+              : `${totalRelationships} relationships between this pair`}
+          </p>
+          {connectionsStatus === "loading" && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Loading all relationships...</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Edge instances */}
-      <div className="space-y-2">
-        {allEdges.map((e) => (
-          <EdgeInstance
-            key={e.id}
-            edge={e}
-            provenance={getProvenance(e.id)}
-            defaultOpen={e.id === edge.id}
-          />
-        ))}
-      </div>
+      {/* Error banner */}
+      {connectionsStatus === "error" && connectionsError && !errorDismissed && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <span className="text-xs text-amber-700 flex-1">{connectionsError}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {onRetryConnections && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-amber-700 hover:text-amber-800"
+                onClick={onRetryConnections}
+              >
+                Retry
+              </Button>
+            )}
+            <button
+              className="text-amber-500 hover:text-amber-700"
+              onClick={() => setErrorDismissed(true)}
+            >
+              <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Grouped view (connections drilldown) */}
+      {useGroupedView ? (
+        <div className="space-y-2">
+          {connectionsData.groups.map((group) => (
+            <RelationshipTypeGroup
+              key={group.type}
+              group={group}
+              selectedEdgeId={edge.id}
+              getProvenance={getProvenance}
+              onLoadMore={onLoadMoreEdges}
+            />
+          ))}
+        </div>
+      ) : (
+        /* Flat view (fallback when no connections data) */
+        <div className="space-y-2">
+          {allEdges.map((e) => (
+            <EdgeInstance
+              key={e.id}
+              edge={e}
+              provenance={getProvenance(e.id)}
+              defaultOpen={e.id === edge.id}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -732,6 +914,11 @@ function InspectorPanelInner({
   activeTrailResult,
   onClearTrailResult,
   onSelectTrailVariant,
+  connectionsData,
+  connectionsStatus,
+  connectionsError,
+  onLoadMoreEdges,
+  onRetryConnections,
 }: InspectorPanelProps) {
   // Show trail results when active and matches selected node
   if (
@@ -780,6 +967,11 @@ function InspectorPanelInner({
           allEdges={getEdgesBetween(selection.edge.sourceId, selection.edge.targetId)}
           getNode={getNode}
           getProvenance={getProvenance}
+          connectionsData={connectionsData}
+          connectionsStatus={connectionsStatus}
+          connectionsError={connectionsError}
+          onLoadMoreEdges={onLoadMoreEdges}
+          onRetryConnections={onRetryConnections}
         />
       )}
 

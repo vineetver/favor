@@ -12,28 +12,24 @@ export interface TooltipField {
 /**
  * Schema-aware field picking for edge tooltips.
  * Shows the 2-3 most informative fields per edge type.
- * Derived from GRAPH_SCHEMA: sortable/filterable fields, never heavy STRUCT/arrays.
+ * Database provenance ("Source") is auto-appended by edge-tooltip.tsx — don't include here.
  */
 export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
   // Gene → Disease
   ASSOCIATED_WITH_DISEASE: [
     { key: "overall_score", label: "Score", format: "score" },
     { key: "evidence_count", label: "Evidence", format: "number" },
-    { key: "source", label: "Source" },
   ],
   CURATED_FOR: [
     { key: "classification", label: "Classification" },
     { key: "confidence_category", label: "Confidence" },
-    { key: "source", label: "Source" },
   ],
   CAUSES: [
     { key: "classification", label: "Classification" },
-    { key: "source", label: "Source" },
   ],
   INHERITED_CAUSE_OF: [
     { key: "classification", label: "Classification" },
     { key: "expert_panel", label: "Panel" },
-    { key: "source", label: "Source" },
   ],
   CIVIC_EVIDENCED_FOR: [
     { key: "evidence_level", label: "Level" },
@@ -56,7 +52,6 @@ export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
   ],
   INDICATED_FOR: [
     { key: "max_clinical_phase", label: "Phase", format: "phase" },
-    { key: "primary_source", label: "Source" },
   ],
   HAS_SIDE_EFFECT: [
     { key: "frequency_description", label: "Frequency" },
@@ -79,6 +74,59 @@ export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
   CLINVAR_ASSOCIATED: [
     { key: "clinical_significance", label: "Significance" },
     { key: "review_status", label: "Review" },
+  ],
+
+  // Variant → Drug
+  AFFECTS_RESPONSE_TO: [
+    { key: "significance", label: "Significance" },
+    { key: "direction_of_effect", label: "Effect Direction" },
+  ],
+
+  // Variant → Gene
+  CLINVAR_ANNOTATED_IN: [
+    { key: "clinical_significance", label: "Significance" },
+    { key: "review_status", label: "Review" },
+  ],
+
+  // Gene → Trait
+  SCORED_FOR_TRAIT: [
+    { key: "total_score", label: "Total Score", format: "score" },
+    { key: "ld_score", label: "LD Score", format: "score" },
+  ],
+
+  // Gene → Variant
+  HAS_GWAS_VARIANT: [
+    { key: "p_value_mlog", label: "-log10(p)", format: "score" },
+  ],
+
+  // Gene → Gene
+  REGULATES: [
+    { key: "interaction_type_name", label: "Type" },
+  ],
+
+  // Variant → Disease
+  PGX_DISEASE_ASSOCIATED: [
+    { key: "significance", label: "Significance" },
+    { key: "direction_of_effect", label: "Effect Direction" },
+    { key: "n_studies", label: "Studies", format: "number" },
+  ],
+
+  // Variant → Gene
+  PREDICTED_REGULATORY_TARGET: [
+    { key: "score", label: "Score", format: "score" },
+    { key: "confidence", label: "Confidence" },
+  ],
+  ENHANCER_LINKED_TO: [
+    { key: "feature_score", label: "Feature Score", format: "score" },
+    { key: "target_score", label: "Target Score", format: "score" },
+  ],
+  POSITIONALLY_LINKED_TO: [
+    { key: "consequence", label: "Consequence" },
+    { key: "region_type", label: "Region" },
+  ],
+  MISSENSE_PATHOGENIC_FOR: [
+    { key: "max_pathogenicity", label: "Pathogenicity", format: "score" },
+    { key: "pathogenicity_class", label: "Class" },
   ],
 
   // Gene → Gene

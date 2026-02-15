@@ -8,7 +8,7 @@ import {
   TooltipContent,
 } from "@shared/components/ui/tooltip";
 import type { HoveredEdgeInfo } from "../types/node";
-import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
 import { EDGE_TOOLTIP_FIELDS, formatTooltipValue } from "../config/edge-tooltip-fields";
 
 interface EdgeTooltipProps {
@@ -38,11 +38,10 @@ function EdgeTooltipInner({ info }: EdgeTooltipProps) {
     }
   }
 
-  // Fallback to sources/experiments
-  if (fieldEntries.length < 3 && edge.numSources !== undefined && edge.numSources > 0) {
-    if (!fieldEntries.some((f) => f.label === "Sources")) {
-      fieldEntries.push({ label: "Sources", value: String(edge.numSources) });
-    }
+  // Auto-append database provenance as the final line (beyond the 3-field limit)
+  const database = getEdgeDatabase(edge.type);
+  if (!fieldEntries.some((f) => f.label === "Source")) {
+    fieldEntries.push({ label: "Source", value: database });
   }
   if (fieldEntries.length < 3 && edge.numExperiments !== undefined && edge.numExperiments > 0) {
     if (!fieldEntries.some((f) => f.label === "Experiments")) {

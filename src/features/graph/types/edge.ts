@@ -199,6 +199,142 @@ export function getEdgeFieldsForTypes(edgeTypes: EdgeType[]): string[] {
   return Array.from(fields);
 }
 
+/**
+ * Split edge types into batches where each batch's field union ≤ maxFields.
+ * Greedy: adds edge types to the current batch until the next one would overflow.
+ */
+export function batchEdgeTypesByFieldLimit(
+  edgeTypes: EdgeType[],
+  maxFields: number = 50,
+): EdgeType[][] {
+  const batches: EdgeType[][] = [];
+  let currentBatch: EdgeType[] = [];
+  let currentFields = new Set<string>();
+
+  for (const et of edgeTypes) {
+    const typeFields = EDGE_TYPE_FIELDS[et] ?? [];
+    const merged = new Set(currentFields);
+    for (const f of typeFields) merged.add(f);
+
+    if (merged.size > maxFields && currentBatch.length > 0) {
+      batches.push(currentBatch);
+      currentBatch = [et];
+      currentFields = new Set(typeFields);
+    } else {
+      currentBatch.push(et);
+      currentFields = merged;
+    }
+  }
+
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+
+  return batches;
+}
+
+/**
+ * Static database provenance per edge type.
+ * Used as fallback when an edge row has no `source`/`sources` field.
+ */
+export const EDGE_TYPE_DATABASE: Record<EdgeType, string> = {
+  // Gene -> Disease
+  ASSOCIATED_WITH_DISEASE: "OpenTargets",
+  CURATED_FOR: "ClinGen",
+  CAUSES: "DDG2P",
+  CIVIC_EVIDENCED_FOR: "CIViC",
+  PGX_ASSOCIATED: "PharmGKB",
+  THERAPEUTIC_TARGET_IN: "TTD",
+  SCORED_FOR_DISEASE: "AbbVie",
+  BIOMARKER_FOR: "TTD",
+  INHERITED_CAUSE_OF: "Orphanet",
+  ASSERTED_FOR_DISEASE: "CIViC",
+  // Gene -> Drug
+  HAS_PGX_INTERACTION: "PharmGKB",
+  HAS_CLINICAL_DRUG_EVIDENCE: "CIViC",
+  ASSERTED_FOR_DRUG: "CIViC",
+  // Gene -> Trait/Variant
+  SCORED_FOR_TRAIT: "AbbVie",
+  HAS_GWAS_VARIANT: "GWAS Catalog",
+  // Gene -> Pathway
+  PARTICIPATES_IN: "Reactome",
+  // Gene -> Phenotype
+  MANIFESTS_AS: "HPO",
+  MOUSE_MANIFESTS_AS: "OpenTargets",
+  // Gene -> Gene
+  INTERACTS_WITH: "BioGRID",
+  INTERACTS_IN_PATHWAY: "ConsensusPathDB",
+  REGULATES: "SIGNOR",
+  FUNCTIONALLY_RELATED: "STRING",
+  // Gene -> GO/SideEffect
+  ANNOTATED_WITH: "GOA",
+  ASSOCIATED_WITH_SIDE_EFFECT: "PharmGKB",
+  // Drug -> Gene
+  TARGETS: "OpenTargets",
+  TARGETS_IN_CONTEXT: "OpenTargets",
+  // Drug -> Disease
+  INDICATED_FOR: "OpenTargets",
+  // Drug -> SideEffect
+  HAS_SIDE_EFFECT: "SIDER",
+  HAS_ADVERSE_REACTION: "OpenTargets FAERS",
+  // Variant -> Trait
+  GWAS_ASSOCIATED_WITH: "GWAS Catalog",
+  // Variant -> Drug
+  AFFECTS_RESPONSE_TO: "PharmGKB",
+  PGX_RESPONSE_FOR: "OpenTargets",
+  STUDIED_FOR_DRUG_RESPONSE: "PharmGKB",
+  FUNCTIONALLY_ASSAYED_FOR: "PharmGKB",
+  PGX_CLINICAL_RESPONSE: "PharmGKB",
+  // Variant -> Disease
+  PGX_DISEASE_ASSOCIATED: "PharmGKB",
+  CLINVAR_ASSOCIATED: "ClinVar",
+  // Variant -> Study
+  REPORTED_IN: "GWAS Catalog",
+  // Variant -> Gene
+  PREDICTED_TO_AFFECT: "OpenTargets",
+  POSITIONALLY_LINKED_TO: "GENCODE",
+  ENHANCER_LINKED_TO: "GeneHancer",
+  PREDICTED_REGULATORY_TARGET: "PGBoost",
+  MISSENSE_PATHOGENIC_FOR: "AlphaMissense",
+  SOMATICALLY_MUTATED_IN: "COSMIC",
+  CLINVAR_ANNOTATED_IN: "ClinVar",
+  // Variant -> SideEffect
+  LINKED_TO_SIDE_EFFECT: "PharmGKB",
+  // Variant -> cCRE
+  OVERLAPS: "ENCODE",
+  // Disease/Phenotype
+  PRESENTS_WITH: "MONDO",
+  MAPS_TO: "EFO",
+  TRAIT_PRESENTS_WITH: "EFO",
+  // Study/regulatory
+  INVESTIGATES: "GWAS Catalog",
+  SE_MAPS_TO: "SIDER",
+  EXPERIMENTALLY_REGULATES: "ENCODE",
+  COMPUTATIONALLY_REGULATES: "ENCODE",
+  // Metabolite
+  CONTAINS_METABOLITE: "ConsensusPathDB",
+  METABOLITE_IS_A: "ChEBI",
+  // Hierarchy
+  SUBCLASS_OF: "MONDO",
+  ANCESTOR_OF: "MONDO",
+  PHENOTYPE_SUBCLASS_OF: "HPO",
+  PHENOTYPE_ANCESTOR_OF: "HPO",
+  PART_OF: "Reactome",
+  PATHWAY_ANCESTOR_OF: "Reactome",
+  EFO_SUBCLASS_OF: "EFO",
+  EFO_ANCESTOR_OF: "EFO",
+  GO_SUBCLASS_OF: "Gene Ontology",
+  GO_ANCESTOR_OF: "Gene Ontology",
+};
+
+/**
+ * Get the primary database provenance for an edge type.
+ * Used for header chips and tooltips — the high-level "who created this edge".
+ */
+export function getEdgeDatabase(type: EdgeType): string {
+  return EDGE_TYPE_DATABASE[type];
+}
+
 export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; description: string }> = {
   // Gene -> Disease (Red/Orange family)
   ASSOCIATED_WITH_DISEASE: { label: "Associated With Disease", color: "#ef4444", description: "Gene associated with disease" },
