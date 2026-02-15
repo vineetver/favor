@@ -13,6 +13,7 @@ import {
 import { Slider } from "@shared/components/ui/slider";
 import {
   Activity,
+  BarChart3,
   ChevronDown,
   ChevronUp,
   Dna,
@@ -40,9 +41,10 @@ const LENS_ICONS: Record<string, React.ReactNode> = {
   "heart-pulse": <HeartPulse className="w-4 h-4" />,
   "dna": <Dna className="w-4 h-4" />,
   "pill": <Pill className="w-4 h-4" />,
-  "network": <Network className="w-4 h-4" />,
-  "activity": <Activity className="w-4 h-4" />,
   "microscope": <Microscope className="w-4 h-4" />,
+  "activity": <Activity className="w-4 h-4" />,
+  "bar-chart": <BarChart3 className="w-4 h-4" />,
+  "network": <Network className="w-4 h-4" />,
 };
 
 // =============================================================================
