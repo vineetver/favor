@@ -9,7 +9,8 @@ export type ProvenanceKind =
   | "typed_expand"
   | "bfs_expand"
   | "seed"
-  | "search";
+  | "search"
+  | "variant_trail";
 
 export interface ProvenanceEvent {
   kind: ProvenanceKind;

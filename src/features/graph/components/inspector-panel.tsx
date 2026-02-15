@@ -29,6 +29,8 @@ import type { ExpansionConfig } from "../config/expansion";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
 import { NODE_TYPE_COLORS } from "../config/styling";
 import { NODE_EXPANSION_CONFIG } from "../config/expansion";
+import { hasVariantTrail } from "../config/variant-trail";
+import { VariantTrailResults } from "./variant-trail-results";
 
 // =============================================================================
 // Icon Map for Expansion Configs
@@ -431,9 +433,10 @@ interface NodeDetailProps {
   onRemove: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
+  onRunVariantTrail?: (nodeId: string) => void;
 }
 
-function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding }: NodeDetailProps) {
+function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding, onRunVariantTrail }: NodeDetailProps) {
   const colors = NODE_TYPE_COLORS[node.type] ?? { background: "#e2e8f0", border: "#94a3b8", text: "#334155" };
   const expansionOptions = NODE_EXPANSION_CONFIG[node.type] ?? [];
 
@@ -532,6 +535,25 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
           )}
         </div>
       </div>
+
+      {/* Route to Variants */}
+      {hasVariantTrail(node.type) && onRunVariantTrail && (
+        <div className="pt-2 border-t border-border">
+          <button
+            className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-left hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => onRunVariantTrail(node.id)}
+            disabled={isExpanding}
+          >
+            <div className="p-1 rounded bg-primary/10 text-primary">
+              {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Microscope className="w-4 h-4" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground">Route to Variants</div>
+              <div className="text-xs text-muted-foreground">Find variant evidence from this node</div>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Context-Aware Expansion Options */}
       {expansionOptions.length > 0 && (
@@ -706,7 +728,30 @@ function InspectorPanelInner({
   onRemoveNode,
   onFindPaths,
   isExpanding,
+  onRunVariantTrail,
+  activeTrailResult,
+  onClearTrailResult,
+  onSelectTrailVariant,
 }: InspectorPanelProps) {
+  // Show trail results when active and matches selected node
+  if (
+    activeTrailResult &&
+    selection.type === "node" &&
+    activeTrailResult.seedNodeId === selection.nodeId &&
+    onClearTrailResult
+  ) {
+    return (
+      <VariantTrailResults
+        result={activeTrailResult}
+        onBack={onClearTrailResult}
+        onSelectNode={(node) => {
+          onClearTrailResult();
+          onSelectTrailVariant?.(node);
+        }}
+      />
+    );
+  }
+
   if (selection.type === "none") {
     return (
       <div className="text-sm text-muted-foreground text-center py-8">
@@ -725,6 +770,7 @@ function InspectorPanelInner({
           onRemove={onRemoveNode}
           onFindPaths={onFindPaths}
           isExpanding={isExpanding}
+          onRunVariantTrail={onRunVariantTrail}
         />
       )}
 

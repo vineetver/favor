@@ -21,7 +21,7 @@ import {
   SplitSquareVertical,
 } from "lucide-react";
 import { toast } from "sonner";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExplorerCytoscape } from "./explorer-cytoscape";
 import { ControlsDrawer } from "./controls-drawer";
 import { InspectorPanel } from "./inspector-panel";
@@ -31,13 +31,14 @@ import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
 import { GRAPH_LENSES, getLensEdgeFields } from "../config/lenses";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
-import type { GraphExplorerViewProps } from "../types/props";
+import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/props";
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { GeneEntity, EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import { getEdgeFieldsForTypes } from "../types/edge";
 import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
+import { VARIANT_TRAIL_CONFIG } from "../config/variant-trail";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
 import { createProvenanceEvent } from "../types/provenance";
@@ -134,6 +135,10 @@ function GraphExplorerViewInner({
   // Local state for edge hover tooltip
   const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeInfo | null>(null);
 
+  // Variant trail cache + active result
+  const variantTrailCache = useRef<Map<string, VariantTrailResultData>>(new Map());
+  const [activeTrailResult, setActiveTrailResult] = useState<VariantTrailResultData | null>(null);
+
   // Hydrate initial data on mount
   useEffect(() => {
     if (state.status !== "idle") return;
@@ -205,12 +210,28 @@ function GraphExplorerViewInner({
   }, [inspectorMode, actions]);
 
   // ==========================================================================
+  // Clear variant trail on selection change
+  // ==========================================================================
+
+  useEffect(() => {
+    if (selection.type !== "node") {
+      setActiveTrailResult(null);
+    } else if (activeTrailResult && activeTrailResult.seedNodeId !== selection.nodeId) {
+      setActiveTrailResult(null);
+    }
+  }, [selection, activeTrailResult]);
+
+  // ==========================================================================
   // Lens Switching (async — stays in component)
   // ==========================================================================
 
   const switchLens = useCallback(async (lensId: LensId) => {
     const lens = GRAPH_LENSES.find((l) => l.id === lensId);
     if (!lens) return;
+
+    // Clear variant trail cache and active result on lens switch
+    variantTrailCache.current.clear();
+    setActiveTrailResult(null);
 
     actions.switchLensStart(lensId);
     const prov = createProvenanceEvent("lens", `${lens.name} lens`, { lensId });
@@ -468,6 +489,144 @@ function GraphExplorerViewInner({
     }
   }, [selectors, actions, readyState]);
 
+  // ==========================================================================
+  // Variant Trail (async — multi-step route to find Variants)
+  // ==========================================================================
+
+  const runVariantTrail = useCallback(async (nodeId: string) => {
+    const node = selectors.getNode(nodeId);
+    if (!node) return;
+
+    const config = VARIANT_TRAIL_CONFIG[node.type];
+    if (!config) return;
+
+    // Check cache
+    const cacheKey = `${node.type}:${nodeId}`;
+    const cached = variantTrailCache.current.get(cacheKey);
+    if (cached) {
+      setActiveTrailResult(cached);
+      return;
+    }
+
+    actions.expandStart();
+
+    const trailProv = createProvenanceEvent("variant_trail", `Variant trail from ${node.label}`, {
+      sourceNodeId: nodeId,
+      sourceNodeLabel: node.label,
+    });
+
+    try {
+      const allNewNodes = new Map<string, ExplorerNode>();
+      const allNewEdges = new Map<string, ExplorerEdge>();
+      const variantEntries: Array<{ node: ExplorerNode; connectingEdge: ExplorerEdge; routeBadge: string }> = [];
+      const seenVariantIds = new Set<string>();
+
+      for (const route of config.routes) {
+        // Collect all edge types across all steps for edge field selection
+        const allEdgeTypes = route.steps.flatMap((s) => s.edgeTypes) as EdgeType[];
+
+        const response = await fetchGraphQuery({
+          seeds: [{ type: node.type, id: nodeId }],
+          steps: route.steps.map((s) => ({
+            edgeTypes: s.edgeTypes,
+            direction: s.direction,
+            limit: s.limit,
+            sort: s.sort,
+          })),
+          select: { edgeFields: getEdgeFieldsForTypes(allEdgeTypes) },
+          limits: { maxNodes: config.maxNodes, maxEdges: config.maxEdges },
+        });
+
+        if (!response?.data?.edges?.length) continue;
+
+        // Hydrate nodes
+        for (const [, nodeData] of Object.entries(response.data.nodes)) {
+          const entity = nodeData.entity;
+          const nodeType = entity.type as EntityType;
+          const nodeKey = makeNodeKey(nodeType, entity.id);
+          allNewNodes.set(entity.id, {
+            id: entity.id,
+            key: nodeKey,
+            type: nodeType,
+            label: entity.label,
+            subtitle: entity.subtitle,
+            entity: { type: entity.type, id: entity.id, label: entity.label } as ExplorerNode["entity"],
+            isSeed: false,
+            depth: (node.depth ?? 0) + route.steps.length,
+          });
+        }
+
+        // Hydrate edges + extract Variant nodes with connecting edges
+        for (const apiEdge of response.data.edges) {
+          const edgeType = apiEdge.type as EdgeType;
+          const fromId = parseTypeId(apiEdge.from).id;
+          const toId = parseTypeId(apiEdge.to).id;
+          const edgeId = createEdgeId(edgeType, fromId, toId);
+          const fromType = parseTypeId(apiEdge.from).type as EntityType;
+          const toType = parseTypeId(apiEdge.to).type as EntityType;
+          const sourceKey = makeNodeKey(fromType, fromId);
+          const targetKey = makeNodeKey(toType, toId);
+          const hydratedEdge: ExplorerEdge = {
+            id: edgeId,
+            key: makeEdgeKey(edgeType, sourceKey, targetKey),
+            type: edgeType,
+            sourceId: fromId,
+            targetId: toId,
+            sourceKey,
+            targetKey,
+            numSources: apiEdge.fields?.num_sources as number | undefined,
+            numExperiments: apiEdge.fields?.num_experiments as number | undefined,
+            fields: apiEdge.fields,
+          };
+          allNewEdges.set(edgeId, hydratedEdge);
+
+          // Check if either end is a Variant node (deduplicate by ID, first route wins)
+          if (fromType === "Variant" && !seenVariantIds.has(fromId)) {
+            seenVariantIds.add(fromId);
+            const variantNode = allNewNodes.get(fromId);
+            if (variantNode) {
+              variantEntries.push({ node: variantNode, connectingEdge: hydratedEdge, routeBadge: route.routeBadge });
+            }
+          }
+          if (toType === "Variant" && !seenVariantIds.has(toId)) {
+            seenVariantIds.add(toId);
+            const variantNode = allNewNodes.get(toId);
+            if (variantNode) {
+              variantEntries.push({ node: variantNode, connectingEdge: hydratedEdge, routeBadge: route.routeBadge });
+            }
+          }
+        }
+      }
+
+      // Merge into graph
+      actions.expandSuccess(allNewNodes, allNewEdges, trailProv);
+
+      // Build result
+      const result: VariantTrailResultData = {
+        seedNodeId: nodeId,
+        seedNodeType: node.type,
+        seedNodeLabel: node.label,
+        variants: variantEntries,
+        totalFound: variantEntries.length,
+        timestamp: Date.now(),
+      };
+
+      // Cache and set active
+      variantTrailCache.current.set(cacheKey, result);
+      setActiveTrailResult(result);
+
+      if (variantEntries.length === 0) {
+        toast.error("No variant evidence found via this route.");
+      }
+    } catch (error: unknown) {
+      console.error("Variant trail failed:", error);
+      actions.dismissExpansionError();
+      toast.error(
+        `Variant trail failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }, [selectors, actions]);
+
   const removeNode = useCallback((nodeId: string) => {
     actions.removeNode(nodeId);
   }, [actions]);
@@ -480,6 +639,14 @@ function GraphExplorerViewInner({
   const handleFindPaths = useCallback((_fromId: string, _toId: string) => {
     // Path finding will be implemented in a future phase
   }, []);
+
+  const handleClearTrailResult = useCallback(() => {
+    setActiveTrailResult(null);
+  }, []);
+
+  const handleSelectTrailVariant = useCallback((node: ExplorerNode) => {
+    actions.selectNode(node.id, node);
+  }, [actions]);
 
   // ==========================================================================
   // Render
@@ -625,6 +792,10 @@ function GraphExplorerViewInner({
                 onRemoveNode={removeNode}
                 onFindPaths={handleFindPaths}
                 isExpanding={isExpanding}
+                onRunVariantTrail={runVariantTrail}
+                activeTrailResult={activeTrailResult}
+                onClearTrailResult={handleClearTrailResult}
+                onSelectTrailVariant={handleSelectTrailVariant}
               />
             </div>
           </SheetContent>

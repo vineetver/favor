@@ -29,6 +29,23 @@ export interface InitialSubgraphData {
 }
 
 // =============================================================================
+// Variant Trail Result Data
+// =============================================================================
+
+export interface VariantTrailResultData {
+  seedNodeId: string;
+  seedNodeType: EntityType;
+  seedNodeLabel: string;
+  variants: Array<{
+    node: ExplorerNode;
+    connectingEdge: ExplorerEdge;
+    routeBadge: string;
+  }>;
+  totalFound: number;
+  timestamp: number;
+}
+
+// =============================================================================
 // Component Props
 // =============================================================================
 
@@ -82,6 +99,10 @@ export interface InspectorPanelProps {
   onRemoveNode: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
+  onRunVariantTrail?: (nodeId: string) => void;
+  activeTrailResult?: VariantTrailResultData | null;
+  onClearTrailResult?: () => void;
+  onSelectTrailVariant?: (node: ExplorerNode) => void;
 }
 
 // Re-export ExpansionConfig for convenience (defined in config/expansion)
