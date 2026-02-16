@@ -1,3 +1,5 @@
+"use client";
+
 // src/features/genome-browser/hooks/use-tissue-selection.ts
 // Hook for managing tissue/subtissue/assay selection state
 

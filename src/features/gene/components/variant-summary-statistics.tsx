@@ -1,25 +1,24 @@
 "use client";
 
 import type { GeneVariantStatistics } from "@features/gene/api/variant-statistics";
-import {
-  SummaryCard,
-  SummarySection,
-} from "@features/variant/components/open-targets/summary-card";
-import { BarChart, type ChartDataRow } from "@shared/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import {
-  Activity,
-  AlertTriangle,
-  Beaker,
-  Dna,
-  FlaskConical,
-  HeartPulse,
-  Layers,
-  MapPin,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import { AlertTriangle, Info } from "lucide-react";
 import { useMemo } from "react";
+import {
+  Bar,
+  CartesianGrid,
+  Legend,
+  BarChart as RechartsBarChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 // ============================================================================
 // Types
@@ -29,6 +28,20 @@ interface VariantSummaryStatisticsProps {
   stats: GeneVariantStatistics | null;
   geneSymbol?: string;
 }
+
+interface StackedBarItem {
+  name: string;
+  snv: number;
+  indel: number;
+  total: number;
+}
+
+// ============================================================================
+// Colors
+// ============================================================================
+
+const SNV_COLOR = "#8b5cf6"; // violet-500
+const INDEL_COLOR = "#06b6d4"; // cyan-500
 
 // ============================================================================
 // Utility
@@ -46,48 +59,183 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-function chartRow(
+function pct(n: number, total: number): string {
+  if (total === 0) return "0%";
+  return `${((n / total) * 100).toFixed(1)}%`;
+}
+
+function row(
   counts: Record<string, number> | undefined,
-  id: string,
-  label: string,
-): ChartDataRow {
-  return { id, label, value: c(counts, id) };
+  name: string,
+  key: string,
+): StackedBarItem {
+  const total = c(counts, key);
+  const snv = c(counts, `${key}Snv`);
+  const indel = c(counts, `${key}Indel`);
+  return { name, snv, indel, total };
 }
 
 // ============================================================================
-// Chart Section Wrapper
+// Chart Tooltip
 // ============================================================================
 
-function ChartSection({
+function StackedTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const total = payload.reduce((sum, p) => sum + (p.value ?? 0), 0);
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
+      <p className="text-sm font-medium text-foreground mb-1">{label}</p>
+      {payload.map((p) => (
+        <div key={p.name} className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: p.color }}
+          />
+          <span>{p.name}: {fmt(p.value)}</span>
+        </div>
+      ))}
+      <div className="border-t border-border mt-1 pt-1 text-xs font-medium text-foreground">
+        Total: {fmt(total)}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Stat Metric — clean number with label, optional hint
+// ============================================================================
+
+function StatMetric({
+  label,
+  value,
+  sub,
+  hint,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  hint?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <span className="text-2xl font-semibold tabular-nums text-foreground tracking-tight">
+        {value}
+      </span>
+      {sub && (
+        <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Stacked Horizontal Bar Chart
+// ============================================================================
+
+function StackedBarChart({
   title,
-  icon,
+  description,
   data,
 }: {
   title: string;
-  icon: React.ReactNode;
-  data: ChartDataRow[];
+  description?: string;
+  data: StackedBarItem[];
 }) {
-  const filteredData = data.filter((d) => d.value !== null && d.value > 0);
+  const filteredData = data.filter((d) => d.total > 0);
 
   if (filteredData.length === 0) {
     return null;
   }
 
+  const chartHeight = Math.max(180, filteredData.length * 40);
+
   return (
     <Card className="border border-border">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
-          {icon}
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-foreground">
           {title}
         </CardTitle>
+        {description && (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        )}
       </CardHeader>
-      <CardContent>
-        <BarChart
-          data={filteredData}
-          layout="horizontal"
-          showLegend={false}
-          valueFormatter={(v) => fmt(v)}
-        />
+      <CardContent className="pt-0">
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <RechartsBarChart
+            data={filteredData}
+            layout="vertical"
+            margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
+            barCategoryGap="24%"
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={false}
+              vertical={true}
+              stroke="var(--border)"
+            />
+            <XAxis
+              type="number"
+              domain={[0, "auto"]}
+              tickFormatter={(v) => fmt(v)}
+              tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={160}
+              tick={{ fontSize: 11, fill: "var(--foreground)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <RechartsTooltip content={<StackedTooltip />} />
+            <Legend
+              iconType="circle"
+              iconSize={7}
+              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+            />
+            <Bar
+              dataKey="snv"
+              name="SNV"
+              stackId="a"
+              fill={SNV_COLOR}
+              radius={[0, 0, 0, 0]}
+              barSize={18}
+            />
+            <Bar
+              dataKey="indel"
+              name="Indel"
+              stackId="a"
+              fill={INDEL_COLOR}
+              radius={[0, 3, 3, 0]}
+              barSize={18}
+            />
+          </RechartsBarChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
@@ -108,205 +256,219 @@ export function VariantSummaryStatistics({
   const snvCount = c(counts, "varSnv");
   const indelCount = c(counts, "varIndel");
   const actionable = c(counts, "scoreActionable");
+  const clinicalInterest = c(counts, "scoreClinicalInterest");
 
   // ---- Frequency Distribution ----
-  const frequencyData = useMemo<ChartDataRow[]>(
+  const frequencyData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "freqCommon", "Common"),
-      chartRow(counts, "freqLow", "Low Frequency"),
-      chartRow(counts, "freqRare", "Rare"),
-      chartRow(counts, "freqSingleton", "Singleton"),
-      chartRow(counts, "freqDoubleton", "Doubleton"),
-      chartRow(counts, "freqUltraRare", "Ultra-Rare"),
+      row(counts, "Common", "freqCommon"),
+      row(counts, "Low Frequency", "freqLow"),
+      row(counts, "Rare", "freqRare"),
+      row(counts, "Singleton", "freqSingleton"),
+      row(counts, "Doubleton", "freqDoubleton"),
+      row(counts, "Ultra-Rare", "freqUltraRare"),
     ],
     [counts],
   );
 
   // ---- Genomic Location ----
-  const locationData = useMemo<ChartDataRow[]>(
+  const locationData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "locExonic", "Exonic"),
-      chartRow(counts, "locIntronic", "Intronic"),
-      chartRow(counts, "locUtr", "UTR"),
-      chartRow(counts, "locSplicing", "Splicing"),
-      chartRow(counts, "locUpstream", "Upstream"),
-      chartRow(counts, "locDownstream", "Downstream"),
-      chartRow(counts, "locIntergenic", "Intergenic"),
-      chartRow(counts, "locNcrna", "ncRNA"),
+      row(counts, "Exonic", "locExonic"),
+      row(counts, "Intronic", "locIntronic"),
+      row(counts, "UTR", "locUtr"),
+      row(counts, "Splicing", "locSplicing"),
+      row(counts, "Upstream", "locUpstream"),
+      row(counts, "Downstream", "locDownstream"),
+      row(counts, "Intergenic", "locIntergenic"),
+      row(counts, "ncRNA", "locNcrna"),
     ],
     [counts],
   );
 
   // ---- Functional Consequence ----
-  const consequenceData = useMemo<ChartDataRow[]>(
+  const consequenceData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "funcMissense", "Missense"),
-      chartRow(counts, "funcSynonymous", "Synonymous"),
-      chartRow(counts, "funcNonsense", "Nonsense"),
-      chartRow(counts, "funcFrameshift", "Frameshift"),
-      chartRow(counts, "funcInframe", "Inframe"),
-      chartRow(counts, "funcLof", "Loss of Function"),
+      row(counts, "Missense", "funcMissense"),
+      row(counts, "Synonymous", "funcSynonymous"),
+      row(counts, "Nonsense", "funcNonsense"),
+      row(counts, "Frameshift", "funcFrameshift"),
+      row(counts, "Inframe", "funcInframe"),
+      row(counts, "Loss of Function", "funcLof"),
     ],
     [counts],
   );
 
   // ---- Clinical Significance ----
-  const clinicalData = useMemo<ChartDataRow[]>(
+  const clinicalData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "clinPathogenic", "Pathogenic"),
-      chartRow(counts, "clinLikelyPathogenic", "Likely Pathogenic"),
-      chartRow(counts, "clinUncertain", "Uncertain"),
-      chartRow(counts, "clinLikelyBenign", "Likely Benign"),
-      chartRow(counts, "clinBenign", "Benign"),
-      chartRow(counts, "clinConflicting", "Conflicting"),
-      chartRow(counts, "clinDrugResponse", "Drug Response"),
+      row(counts, "Pathogenic", "clinPathogenic"),
+      row(counts, "Likely Pathogenic", "clinLikelyPathogenic"),
+      row(counts, "Uncertain", "clinUncertain"),
+      row(counts, "Likely Benign", "clinLikelyBenign"),
+      row(counts, "Benign", "clinBenign"),
+      row(counts, "Conflicting", "clinConflicting"),
+      row(counts, "Drug Response", "clinDrugResponse"),
     ],
     [counts],
   );
 
   // ---- Computational Predictions ----
-  const predictionData = useMemo<ChartDataRow[]>(
+  const predictionData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "predSiftDeleterious", "SIFT Deleterious"),
-      chartRow(counts, "predPolyphenDamaging", "PolyPhen Damaging"),
-      chartRow(counts, "predCaddPhred20", "CADD Phred > 20"),
-      chartRow(counts, "predRevelPathogenic", "REVEL Pathogenic"),
-      chartRow(counts, "predAlphamissensePathogenic", "AlphaMissense Pathogenic"),
-      chartRow(counts, "predAlphamissenseAmbiguous", "AlphaMissense Ambiguous"),
-      chartRow(counts, "predAlphamissenseBenign", "AlphaMissense Benign"),
-      chartRow(counts, "predSpliceaiAffecting", "SpliceAI Affecting"),
-      chartRow(counts, "predMetasvmDamaging", "MetaSVM Damaging"),
+      row(counts, "SIFT Deleterious", "predSiftDeleterious"),
+      row(counts, "PolyPhen Damaging", "predPolyphenDamaging"),
+      row(counts, "CADD Phred > 20", "predCaddPhred20"),
+      row(counts, "REVEL Pathogenic", "predRevelPathogenic"),
+      row(counts, "AlphaMissense Pathogenic", "predAlphamissensePathogenic"),
+      row(counts, "AlphaMissense Ambiguous", "predAlphamissenseAmbiguous"),
+      row(counts, "AlphaMissense Benign", "predAlphamissenseBenign"),
+      row(counts, "SpliceAI Affecting", "predSpliceaiAffecting"),
+      row(counts, "MetaSVM Damaging", "predMetasvmDamaging"),
     ],
     [counts],
   );
 
   // ---- Regulatory ----
-  const regulatoryData = useMemo<ChartDataRow[]>(
+  const regulatoryData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "regEnhancer", "Enhancer"),
-      chartRow(counts, "regPromoter", "Promoter"),
+      row(counts, "Enhancer", "regEnhancer"),
+      row(counts, "Promoter", "regPromoter"),
     ],
     [counts],
   );
 
   // ---- aPC Composite Scores ----
-  const apcData = useMemo<ChartDataRow[]>(
+  const apcData = useMemo<StackedBarItem[]>(
     () => [
-      chartRow(counts, "apcProteinFunction", "aPC Protein Function"),
-      chartRow(counts, "apcConservation", "aPC Conservation"),
-      chartRow(counts, "apcEpigeneticsActive", "aPC Epigenetics Active"),
-      chartRow(counts, "apcEpigeneticsRepressed", "aPC Epigenetics Repressed"),
-      chartRow(counts, "apcEpigeneticsTranscription", "aPC Epigenetics Transcription"),
-      chartRow(counts, "apcNucleotideDiversity", "aPC Nucleotide Diversity"),
-      chartRow(counts, "apcMutationDensity", "aPC Mutation Density"),
-      chartRow(counts, "apcTranscriptionFactor", "aPC Transcription Factor"),
-      chartRow(counts, "apcMappability", "aPC Mappability"),
+      row(counts, "aPC Protein Function", "apcProteinFunction"),
+      row(counts, "aPC Conservation", "apcConservation"),
+      row(counts, "aPC Epigenetics Active", "apcEpigeneticsActive"),
+      row(counts, "aPC Epigenetics Repressed", "apcEpigeneticsRepressed"),
+      row(counts, "aPC Epigenetics Transcription", "apcEpigeneticsTranscription"),
+      row(counts, "aPC Nucleotide Diversity", "apcNucleotideDiversity"),
+      row(counts, "aPC Mutation Density", "apcMutationDensity"),
+      row(counts, "aPC Transcription Factor", "apcTranscriptionFactor"),
+      row(counts, "aPC Mappability", "apcMappability"),
     ],
     [counts],
   );
 
   if (!stats) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <AlertTriangle className="h-12 w-12 text-muted-foreground/40 mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle className="h-10 w-10 text-muted-foreground/30 mb-4" />
+        <h3 className="text-base font-medium text-foreground mb-1">
           No Statistics Available
         </h3>
-        <p className="text-sm text-muted-foreground max-w-md">
+        <p className="text-sm text-muted-foreground max-w-sm">
           Variant statistics are not available for{" "}
           {geneSymbol ? (
-            <span className="font-medium">{geneSymbol}</span>
+            <span className="font-medium text-foreground">{geneSymbol}</span>
           ) : (
             "this gene"
           )}
-          . This may be because the gene has not been processed yet.
+          .
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Overview Cards */}
-      <SummarySection
-        title="Variant Overview"
-        description={`Pre-aggregated variant counts for ${geneSymbol || stats.geneSymbol || stats.gene_symbol} on chromosome ${stats.chromosome}`}
-      >
-        <SummaryCard
-          icon={<Dna className="h-4 w-4" />}
-          title="Total Variants"
+    <div className="space-y-6">
+      {/* ── Key Numbers ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatMetric
+          label="Total Variants"
           value={fmt(totalVariants)}
-          color="purple"
-        />
-        <SummaryCard
-          icon={<Sparkles className="h-4 w-4" />}
-          title="SNVs"
-          value={fmt(snvCount)}
-          description={
-            totalVariants > 0
-              ? `${((snvCount / totalVariants) * 100).toFixed(1)}% of total`
-              : undefined
-          }
-        />
-        <SummaryCard
-          icon={<Activity className="h-4 w-4" />}
-          title="Indels"
-          value={fmt(indelCount)}
-          description={
-            totalVariants > 0
-              ? `${((indelCount / totalVariants) * 100).toFixed(1)}% of total`
-              : undefined
-          }
-        />
-        <SummaryCard
-          icon={<ShieldCheck className="h-4 w-4" />}
-          title="Clinically Actionable"
-          value={fmt(actionable)}
-          color="emerald"
-        />
-      </SummarySection>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartSection
-          title="Allele Frequency Distribution"
-          icon={<Activity className="h-4 w-4 text-muted-foreground" />}
+        />
+        <StatMetric
+          label="SNVs"
+          value={fmt(snvCount)}
+          sub={pct(snvCount, totalVariants)}
+
+        />
+        <StatMetric
+          label="Indels"
+          value={fmt(indelCount)}
+          sub={pct(indelCount, totalVariants)}
+
+        />
+        <StatMetric
+          label="Clinical Interest"
+          value={fmt(clinicalInterest)}
+
+          hint={
+            <div className="space-y-1.5">
+              <p className="font-medium text-white">Variants meeting any of:</p>
+              <ul>
+                <li>ClinVar pathogenic or likely pathogenic</li>
+                <li>COSMIC Tier 1 somatic mutation</li>
+                <li>Computationally damaging (SIFT/PolyPhen) AND rare (AF &lt; 0.1%)</li>
+              </ul>
+            </div>
+          }
+        />
+        <StatMetric
+          label="Actionable"
+          value={fmt(actionable)}
+
+          hint={
+            <div className="space-y-1.5">
+              <p className="font-medium text-white">Clinically actionable variants:</p>
+              <ul>
+                <li>ClinVar pathogenic or likely pathogenic</li>
+                <li>Rare allele frequency (AF &lt; 0.1%)</li>
+                <li>Located in exonic (coding) regions</li>
+              </ul>
+              <p className="text-slate-400 text-xs pt-1">All three criteria must be met.</p>
+            </div>
+          }
+        />
+      </div>
+
+      {/* ── Distribution Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <StackedBarChart
+          title="Allele Frequency"
+          description="Distribution by population frequency bin"
           data={frequencyData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="Genomic Location"
-          icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+          description="Where variants fall relative to gene structure"
           data={locationData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="Functional Consequence"
-          icon={<Dna className="h-4 w-4 text-muted-foreground" />}
+          description="Predicted effect on protein coding"
           data={consequenceData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="ClinVar Significance"
-          icon={<HeartPulse className="h-4 w-4 text-muted-foreground" />}
+          description="Clinical interpretation from ClinVar submissions"
           data={clinicalData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="Computational Predictions"
-          icon={<FlaskConical className="h-4 w-4 text-muted-foreground" />}
+          description="In silico pathogenicity and splice predictors"
           data={predictionData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="Regulatory Elements"
-          icon={<Beaker className="h-4 w-4 text-muted-foreground" />}
+          description="Overlap with CAGE-identified promoters and enhancers"
           data={regulatoryData}
         />
 
-        <ChartSection
+        <StackedBarChart
           title="aPC Composite Scores"
-          icon={<Layers className="h-4 w-4 text-muted-foreground" />}
+          description="Aggregate percentile contribution scores across domains"
           data={apcData}
         />
       </div>
