@@ -289,7 +289,7 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
   if (Array.isArray(source)) {
     const direct = source.filter(
       (edge) =>
-        edge?.type === "IMPLICATED_IN" || edge?.edge_type === "IMPLICATED_IN",
+        edge?.type === "ASSOCIATED_WITH_DISEASE" || edge?.edge_type === "ASSOCIATED_WITH_DISEASE",
     );
     if (direct.length > 0 && (direct[0]?.neighbor || direct[0]?.score)) {
       list = direct;
@@ -301,9 +301,9 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
   } else if (typeof source === "object") {
     const record = source as Record<string, unknown>;
     const byType =
-      record.IMPLICATED_IN ||
-      record.implicated_in ||
-      record.Implicated_in;
+      record.ASSOCIATED_WITH_DISEASE ||
+      record.associated_with_disease ||
+      record.Associated_with_disease;
     if (byType && typeof byType === "object") {
       const byTypeRecord = byType as Record<string, unknown>;
       if (Array.isArray(byTypeRecord.rows)) {
@@ -348,16 +348,24 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         edge?.label ||
         "Unknown disease";
       const score =
+        linkProps?.overall_score ??
         linkProps?.score ??
+        link?.overall_score ??
         link?.score ??
+        edge?.overall_score ??
         edge?.score ??
+        edge?.properties?.overall_score ??
         edge?.properties?.score ??
+        edge?.attributes?.overall_score ??
         edge?.attributes?.score ??
         edge?.meta?.score ??
         null;
       const evidenceCount =
+        linkProps?.evidence_count ??
         linkProps?.evidenceCount ??
+        link?.evidence_count ??
         link?.evidenceCount ??
+        edge?.evidence_count ??
         edge?.evidenceCount ??
         null;
       const evidenceBreakdownRaw = toBreakdownList(

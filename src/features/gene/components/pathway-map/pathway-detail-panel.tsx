@@ -79,7 +79,7 @@ function PathwayDetailPanelInner({
               href={pathway.url}
               className="text-sm text-primary hover:underline"
             >
-              View on {pathway.source === "reactome" ? "Reactome" : "WikiPathways"} →
+              View on {pathway.source} →
             </ExternalLink>
           </div>
         </SheetHeader>

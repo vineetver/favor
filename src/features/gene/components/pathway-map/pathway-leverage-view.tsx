@@ -126,6 +126,7 @@ function PathwayLeverageViewInner({
   // Filter state - showHierarchy derived from expansion level
   const [filterState, setFilterState] = useState<CategoryFilterState>({
     selectedCategories: new Set(),
+    hiddenPathwayIds: new Set(),
     showHierarchy: expansionConfig.showHierarchy,
   });
 

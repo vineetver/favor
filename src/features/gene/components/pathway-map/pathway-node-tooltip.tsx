@@ -19,7 +19,7 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
   return (
     <div
       className={cn(
-        "fixed z-50 bg-white rounded-lg border border-slate-200 shadow-lg p-3 pointer-events-none",
+        "fixed z-50 bg-card rounded-lg border border-border shadow-lg p-3 pointer-events-none",
         "max-w-xs",
       )}
       style={{
@@ -28,10 +28,10 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
         transform: "translateY(-100%)",
       }}
     >
-      <div className="font-medium text-sm text-slate-900 mb-1">
+      <div className="font-medium text-sm text-foreground mb-1">
         {node.name}
       </div>
-      <div className="text-xs font-mono text-slate-500 mb-2">{node.id}</div>
+      <div className="text-xs font-mono text-muted-foreground mb-2">{node.id}</div>
 
       {/* Evidence badges */}
       {hasEvidence && (
@@ -56,10 +56,7 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
           className="text-xs px-2 py-0.5 rounded-full"
           style={{ backgroundColor: colors.bg, color: colors.text }}
         >
-          {node.category}
-        </span>
-        <span className="text-xs text-slate-500">
-          {node.source === "reactome" ? "Reactome" : "WikiPathways"}
+          {node.source}
         </span>
       </div>
     </div>

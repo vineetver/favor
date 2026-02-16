@@ -1,20 +1,23 @@
 import type { Gene } from "@features/gene/types";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   cell,
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { HomologuesTable } from "@features/gene/components/homologues-table";
+import { MousePhenotypeList } from "@features/gene/components/mouse-phenotype-list";
 
 const col = createColumns<Gene>();
 
 export const geneAnimalPhenotypeColumns = [
-  // OpenTargets homologues data (prioritized)
+  // Homologues — compact table
   col.accessor("ot_homologues", {
     accessor: (row) => row.opentargets?.homologues,
-    header: "Model Organism Homologues (OT)",
+    header: "Model Organism Homologues",
     description: tooltip({
       title: "Model Organism Homologues",
-      description: "Homologous genes in model organisms from OpenTargets with sequence identity and confidence scores.",
+      description: "Orthologous genes in model organisms from Ensembl Compara via OpenTargets.",
     }),
     cell: cell.custom<Gene, any>((homologues: Array<{
       speciesId: string;
@@ -26,52 +29,16 @@ export const geneAnimalPhenotypeColumns = [
       queryPercentageIdentity: number;
       targetPercentageIdentity: number;
       priority: number;
-    }>) => {
-      if (!homologues || homologues.length === 0) return null;
-
-      // Group by species
-      const grouped = homologues.reduce((acc, homologue) => {
-        const species = homologue.speciesName || "Unknown";
-        if (!acc[species]) acc[species] = [];
-        acc[species].push(homologue);
-        return acc;
-      }, {} as Record<string, typeof homologues>);
-
-      return (
-        <div>
-          {Object.entries(grouped).map(([species, homologueList]) => (
-            <div key={species}>
-              <div>{species}</div>
-              <ul>
-                {homologueList.map((homologue, index) => (
-                  <li key={index}>
-                    <div>
-                      {homologue.targetGeneSymbol}
-                      {homologue.isHighConfidence === "1" && " (High Confidence)"}
-                    </div>
-                    <div>{homologue.targetGeneId}</div>
-                    <div>Type: {homologue.homologyType.replace(/_/g, " ")}</div>
-                    <div>
-                      Query Identity: {homologue.queryPercentageIdentity?.toFixed(1)}% |
-                      Target Identity: {homologue.targetPercentageIdentity?.toFixed(1)}%
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      );
-    }),
+    }>) => <HomologuesTable homologues={homologues} />),
   }),
 
-  // Original model organism fields (kept for completeness)
+  // Mouse gene + phenotypes
   col.accessor("mgi_mouse_gene", {
     accessor: (row) => row.model_organisms?.mouse?.gene,
     header: "MGI Mouse Gene",
     description: tooltip({
       title: "MGI Mouse Gene",
-      description: "Homolog mouse gene name from MGI",
+      description: "Homolog mouse gene name from the Mouse Genome Informatics database.",
     }),
     cell: cell.text(),
   }),
@@ -81,66 +48,43 @@ export const geneAnimalPhenotypeColumns = [
     header: "MGI ID",
     description: tooltip({
       title: "MGI ID",
-      description: "MGD (Mouse Genome Database) ID",
+      description: "Mouse Genome Database identifier.",
     }),
     cell: cell.link((val) => `https://www.informatics.jax.org/marker/${val}`),
   }),
 
   col.accessor("mgi_mouse_phenotype", {
     accessor: (row) => row.model_organisms?.mouse?.phenotype,
-    header: "MGI Mouse Phenotype",
+    header: "Mouse Phenotypes",
     description: tooltip({
-      title: "MGI Mouse Phenotype",
-      description: "Phenotype description for the homolog mouse gene from MGI",
+      title: "Mouse Phenotypes",
+      description: "Phenotypes observed in mouse models with mutations in the orthologous gene (from MGI).",
     }),
-    cell: cell.custom<Gene, any>((str: any) => {
-      if (!str || typeof str !== "string") return null;
-      const uniqueItems = Array.from(new Set(str.split(";"))).filter(
-        (item) => item !== "" && item.includes("("),
-      );
-
-      return (
-        <ul className="flex flex-col gap-1">
-          {uniqueItems.map((item, index) => (
-            <li className="capitalize" key={index}>
-              {item}
-            </li>
-          ))}
-        </ul>
-      );
-    }),
+    cell: cell.custom<Gene, any>((str: string) => (
+      <MousePhenotypeList phenotypeString={str} />
+    )),
   }),
 
+  // Rat
   col.accessor("rgd_id", {
     accessor: (row) => row.rgd_id,
     header: "RGD ID",
     description: tooltip({
       title: "RGD ID",
-      description: "RGD (Rat Genome Database) ID",
+      description: "Rat Genome Database identifier.",
     }),
     cell: cell.link((val) => `https://rgd.mcw.edu/rgdweb/report/gene/main.html?id=${val}`),
   }),
 
+  // Zebrafish
   col.accessor("zfin_zebrafish_gene", {
     accessor: (row) => row.model_organisms?.zebrafish?.gene,
     header: "ZFIN Zebrafish Gene",
     description: tooltip({
       title: "ZFIN Zebrafish Gene",
-      description: "Homolog zebrafish gene name from ZFIN",
+      description: "Homolog zebrafish gene from the Zebrafish Information Network.",
     }),
-    cell: cell.custom<Gene, any>((value: any) => {
-      if (!value) return null;
-      return (
-        <a
-          href={`https://zfin.org/search?q=${value}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          <span className="capitalize">{value}</span>
-        </a>
-      );
-    }),
+    cell: cell.link((val) => `https://zfin.org/search?q=${val}`),
   }),
 
   col.accessor("zfin_zebrafish_structure", {
@@ -148,35 +92,29 @@ export const geneAnimalPhenotypeColumns = [
     header: "ZFIN Zebrafish Structure",
     description: tooltip({
       title: "ZFIN Zebrafish Structure",
-      description: "Affected structure of the homolog zebrafish gene from ZFIN",
+      description: "Affected anatomical structure in the zebrafish model.",
     }),
-    cell: cell.custom<Gene, any>((str: any) => (
-      <span className="capitalize">{str}</span>
-    )),
+    cell: cell.text(),
   }),
 
   col.accessor("zfin_zebrafish_phenotype_quality", {
     accessor: (row) => row.model_organisms?.zebrafish?.phenotype_quality,
-    header: "ZFIN Zebrafish Phenotype Quality",
+    header: "ZFIN Phenotype Quality",
     description: tooltip({
       title: "ZFIN Zebrafish Phenotype Quality",
-      description: "Phenotype description for the homolog zebrafish gene from ZFIN",
+      description: "Phenotype quality annotation from ZFIN.",
     }),
-    cell: cell.custom<Gene, any>((str: any) => (
-      <span className="capitalize">{str}</span>
-    )),
+    cell: cell.text(),
   }),
 
   col.accessor("zfin_zebrafish_phenotype_tag", {
     accessor: (row) => row.model_organisms?.zebrafish?.phenotype_tag,
-    header: "ZFIN Zebrafish Phenotype Tag",
+    header: "ZFIN Phenotype Tag",
     description: tooltip({
       title: "ZFIN Zebrafish Phenotype Tag",
-      description: "Phenotype tag for the homolog zebrafish gene from ZFIN",
+      description: "Phenotype tag classification from ZFIN.",
     }),
-    cell: cell.custom<Gene, any>((str: any) => (
-      <span className="capitalize">{str}</span>
-    )),
+    cell: cell.text(),
   }),
 ];
 

@@ -138,30 +138,39 @@ export interface PathwayEnrichmentResponse {
   childPathways: Array<{ id: string; name: string }>;
 }
 
+interface PathwayRelationRows {
+  PART_OF?: {
+    rows: Array<{
+      neighbor: { id: string; name?: string; label?: string; type: string };
+    }>;
+  };
+  PARTICIPATES_IN?: {
+    rows: Array<{
+      neighbor: {
+        id: string;
+        name?: string;
+        label?: string;
+        symbol?: string;
+        type: string;
+      };
+    }>;
+  };
+}
+
 interface PathwayRelationsResponse {
   data: {
     pathway_id: string;
     pathway_name: string;
   };
+  relations?: PathwayRelationRows;
   included?: {
-    relations?: {
-      PART_OF?: {
-        rows: Array<{
-          neighbor: { id: string; name: string; type: string };
-        }>;
-      };
-      PARTICIPATES_IN?: {
-        rows: Array<{
-          neighbor: {
-            id: string;
-            name?: string;
-            symbol?: string;
-            type: string;
-          };
-        }>;
-      };
-    };
+    relations?: PathwayRelationRows;
   };
+}
+
+/** Extract relations from response (API returns at top-level or inside included) */
+function getRelations(response: PathwayRelationsResponse | null): PathwayRelationRows | undefined {
+  return response?.relations ?? response?.included?.relations;
 }
 
 export async function fetchPathwayEnrichment(
@@ -171,11 +180,11 @@ export async function fetchPathwayEnrichment(
   try {
     const [parentResponse, childrenResponse, genesResponse] = await Promise.all([
       fetch(
-        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=5`,
+        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=5`,
         { next: { revalidate: 300 } },
       ),
       fetch(
-        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=20`,
+        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=20`,
         { next: { revalidate: 300 } },
       ),
       fetch(
@@ -194,45 +203,45 @@ export async function fetchPathwayEnrichment(
       ? await genesResponse.json()
       : null;
 
-    if (parentResponse.ok && !parentData?.included?.relations) {
-      console.warn(`fetchPathwayEnrichment: parent response missing relations for ${pathwayId}`);
-    }
-    if (childrenResponse.ok && !childrenData?.included?.relations) {
-      console.warn(`fetchPathwayEnrichment: children response missing relations for ${pathwayId}`);
-    }
-    if (genesResponse.ok && !genesData?.included?.relations) {
-      console.warn(`fetchPathwayEnrichment: genes response missing relations for ${pathwayId}`);
-    }
+    const parentRelations = getRelations(parentData);
+    const childRelations = getRelations(childrenData);
+    const geneRelations = getRelations(genesData);
 
-    const parentRows = parentData?.included?.relations?.PART_OF?.rows ?? [];
-    const parentPathway =
-      parentRows.length > 0 && parentRows[0]?.neighbor?.id && parentRows[0]?.neighbor?.name
-        ? { id: parentRows[0].neighbor.id, name: parentRows[0].neighbor.name }
-        : null;
+    // Extract parent: PART_OF direction=out means this pathway is the child (source),
+    // neighbors are the parents. Filter out self-references.
+    const parentRows = (parentRelations?.PART_OF?.rows ?? []).filter(
+      (row) => row?.neighbor?.id && row.neighbor.id !== pathwayId,
+    );
+    const firstParent = parentRows[0]?.neighbor;
+    const parentPathway = firstParent
+      ? { id: firstParent.id, name: firstParent.name ?? firstParent.label ?? firstParent.id }
+      : null;
 
-    const childRows = childrenData?.included?.relations?.PART_OF?.rows ?? [];
-    const childPathways = childRows
-      .filter((row) => row?.neighbor?.id && row?.neighbor?.name)
-      .map((row) => ({
-        id: row.neighbor.id,
-        name: row.neighbor.name,
-      }));
+    // Extract children: PART_OF direction=in means this pathway is the parent (target),
+    // neighbors are the children. Filter out self-references.
+    const childRows = (childRelations?.PART_OF?.rows ?? []).filter(
+      (row) => row?.neighbor?.id && row.neighbor.id !== pathwayId,
+    );
+    const childPathways = childRows.map((row) => ({
+      id: row.neighbor.id,
+      name: row.neighbor.name ?? row.neighbor.label ?? row.neighbor.id,
+    }));
 
-    const geneRows = genesData?.included?.relations?.PARTICIPATES_IN?.rows ?? [];
+    const geneRows = geneRelations?.PARTICIPATES_IN?.rows ?? [];
     const genes = geneRows.filter(
-      (row: { neighbor: { type: string } }) => row?.neighbor?.type === "Gene",
+      (row) => row?.neighbor?.type === "Gene",
     );
     const geneCount = genes.length;
 
     const sharedGenes = genes
       .filter(
-        (g: { neighbor: { id: string } }) => g.neighbor.id !== seedGeneId,
+        (g) => g.neighbor.id !== seedGeneId,
       )
       .slice(0, 10)
       .map(
-        (g: { neighbor: { id: string; symbol?: string; name?: string } }) => ({
+        (g) => ({
           id: g.neighbor.id,
-          symbol: g.neighbor.symbol ?? g.neighbor.name ?? g.neighbor.id,
+          symbol: g.neighbor.symbol ?? g.neighbor.name ?? g.neighbor.label ?? g.neighbor.id,
         }),
       );
 
@@ -289,7 +298,7 @@ export async function fetchPathwayDiseaseEnrichment(
     const subgraphResponse = await fetchSubgraph({
       seeds: [{ type: "Pathway", id: pathwayId }],
       maxDepth: 2,
-      edgeTypes: ["PARTICIPATES_IN", "IMPLICATED_IN"],
+      edgeTypes: ["PARTICIPATES_IN", "ASSOCIATED_WITH_DISEASE"],
       nodeLimit: 500,
       edgeLimit: 1000,
       includeProps: false,
@@ -341,7 +350,7 @@ export async function fetchPathwayDiseaseEnrichment(
     let implicatedInMatchCount = 0;
 
     for (const edge of edges) {
-      if (edge.type === "IMPLICATED_IN") {
+      if (edge.type === "ASSOCIATED_WITH_DISEASE") {
         implicatedInCount++;
         const geneId = edge.from.id;
         const diseaseNode = edge.to;
@@ -362,7 +371,7 @@ export async function fetchPathwayDiseaseEnrichment(
 
     if (implicatedInCount > 0 && implicatedInMatchCount === 0 && pathwayGenes.size > 0) {
       console.warn(
-        `fetchPathwayDiseaseEnrichment: Found ${implicatedInCount} IMPLICATED_IN edges ` +
+        `fetchPathwayDiseaseEnrichment: Found ${implicatedInCount} ASSOCIATED_WITH_DISEASE edges ` +
         `but none matched pathway genes. Check if API returns edges in reverse direction.`
       );
     }

@@ -82,8 +82,8 @@ export function CategoryDetailViewClient({
               <div
                 key={cell.id}
                 className={
-                  "group relative px-6 py-3.5 transition-all duration-150 ease-out hover:bg-primary/3 " +
-                  (isEven ? "bg-transparent" : "bg-slate-50/40")
+                  "group relative px-6 py-3.5 transition-all duration-150 ease-out hover:bg-accent/50 " +
+                  (isEven ? "bg-transparent" : "bg-muted/40")
                 }
               >
                 {/* Subtle left accent on hover */}
@@ -92,18 +92,18 @@ export function CategoryDetailViewClient({
                 <div className="grid grid-cols-1 sm:grid-cols-[minmax(200px,280px)_1fr] gap-3 sm:gap-8 items-baseline">
                   {/* Label Column */}
                   <dt className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-600 leading-tight">
+                    <span className="text-sm font-medium text-muted-foreground leading-tight">
                       {header}
                     </span>
                     {meta?.description && (
                       <TooltipProvider>
                         <Tooltip delayDuration={200}>
                           <TooltipTrigger asChild>
-                            <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-slate-300 hover:text-slate-500 transition-colors" />
+                            <Info className="h-3.5 w-3.5 cursor-help shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
                           </TooltipTrigger>
                           <TooltipContent
                             side="right"
-                            className="max-w-xs text-sm bg-slate-900 text-slate-100 border-slate-800"
+                            className="max-w-xs text-sm"
                           >
                             <div>{meta.description}</div>
                           </TooltipContent>
@@ -113,7 +113,7 @@ export function CategoryDetailViewClient({
                   </dt>
 
                   {/* Value Column */}
-                  <dd className="text-sm font-mono text-slate-900 tabular-nums tracking-tight min-w-0 wrap-break-words">
+                  <dd className="text-sm font-mono text-foreground tabular-nums tracking-tight min-w-0 wrap-break-words">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>

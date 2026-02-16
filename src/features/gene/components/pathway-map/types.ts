@@ -4,7 +4,7 @@ import type { ElementDefinition, LayoutOptions } from "cytoscape";
 // Core Domain Types
 // =============================================================================
 
-export type PathwaySource = "reactome" | "wikipathways";
+export type PathwaySource = string;
 
 /**
  * A pathway node derived from graph
@@ -202,93 +202,85 @@ export function getPathwayLayoutOptions(
 // Category Colors
 // =============================================================================
 
-const CATEGORY_COLORS: Record<
-  string,
-  { bg: string; border: string; text: string }
-> = {
-  Autophagy: { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" },
-  "Cell Cycle": { bg: "#fce7f3", border: "#ec4899", text: "#9d174d" },
-  "Cell-Cell communication": {
-    bg: "#d1fae5",
-    border: "#10b981",
-    text: "#065f46",
-  },
-  "Cellular responses to stimuli": {
-    bg: "#fef3c7",
-    border: "#f59e0b",
-    text: "#92400e",
-  },
-  "Chromatin organization": {
-    bg: "#e0e7ff",
-    border: "#6366f1",
-    text: "#3730a3",
-  },
-  "Circadian Clock": { bg: "#f3e8ff", border: "#a855f7", text: "#6b21a8" },
-  "DNA Repair": { bg: "#fecaca", border: "#ef4444", text: "#991b1b" },
-  "DNA Replication": { bg: "#fed7aa", border: "#f97316", text: "#9a3412" },
-  "Developmental Biology": {
-    bg: "#ccfbf1",
-    border: "#14b8a6",
-    text: "#115e59",
-  },
-  "Digestion and absorption": {
-    bg: "#fde68a",
-    border: "#eab308",
-    text: "#713f12",
-  },
-  Disease: { bg: "#fee2e2", border: "#dc2626", text: "#7f1d1d" },
-  "Drug ADME": { bg: "#c7d2fe", border: "#818cf8", text: "#4338ca" },
-  "Extracellular matrix organization": {
-    bg: "#bae6fd",
-    border: "#0ea5e9",
-    text: "#075985",
-  },
-  "Gene expression (Transcription)": {
-    bg: "#d9f99d",
-    border: "#84cc16",
-    text: "#3f6212",
-  },
-  Hemostasis: { bg: "#fecdd3", border: "#f43f5e", text: "#9f1239" },
-  "Immune System": { bg: "#a7f3d0", border: "#34d399", text: "#047857" },
-  Metabolism: { bg: "#fef08a", border: "#facc15", text: "#854d0e" },
-  "Metabolism of proteins": {
-    bg: "#fdba74",
-    border: "#fb923c",
-    text: "#9a3412",
-  },
-  "Metabolism of RNA": { bg: "#f9a8d4", border: "#f472b6", text: "#9d174d" },
-  "Muscle contraction": { bg: "#c4b5fd", border: "#8b5cf6", text: "#5b21b6" },
-  "Neuronal System": { bg: "#99f6e4", border: "#2dd4bf", text: "#0f766e" },
-  "Organelle biogenesis and maintenance": {
-    bg: "#a5b4fc",
-    border: "#6366f1",
-    text: "#4338ca",
-  },
-  "Programmed Cell Death": {
-    bg: "#fda4af",
-    border: "#fb7185",
-    text: "#be123c",
-  },
-  "Protein localization": { bg: "#93c5fd", border: "#3b82f6", text: "#1e40af" },
-  Reproduction: { bg: "#f0abfc", border: "#d946ef", text: "#86198f" },
-  "Sensory Perception": { bg: "#86efac", border: "#22c55e", text: "#166534" },
-  "Signal Transduction": { bg: "#67e8f9", border: "#06b6d4", text: "#0e7490" },
-  "Transport of small molecules": {
-    bg: "#fcd34d",
-    border: "#f59e0b",
-    text: "#92400e",
-  },
-  "Vesicle-mediated transport": {
-    bg: "#a5f3fc",
-    border: "#22d3ee",
-    text: "#0891b2",
-  },
-};
+type CategoryColor = { bg: string; border: string; text: string };
 
-const DEFAULT_COLOR = { bg: "#f1f5f9", border: "#94a3b8", text: "#475569" };
+/**
+ * Semantic color overrides — common pathway categories get meaningful colors.
+ * Key matching is case-insensitive and prefix-matched.
+ */
+const SEMANTIC_COLORS: Array<{ match: string; color: CategoryColor }> = [
+  { match: "disease", color: { bg: "#fee2e2", border: "#dc2626", text: "#7f1d1d" } },           // red
+  { match: "immune", color: { bg: "#d1fae5", border: "#10b981", text: "#065f46" } },             // emerald
+  { match: "signal transduction", color: { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" } }, // blue
+  { match: "cell cycle", color: { bg: "#fce7f3", border: "#ec4899", text: "#9d174d" } },          // pink
+  { match: "dna repair", color: { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" } },          // amber
+  { match: "dna replication", color: { bg: "#fed7aa", border: "#f97316", text: "#9a3412" } },     // orange
+  { match: "metabolism", color: { bg: "#fef08a", border: "#facc15", text: "#854d0e" } },           // yellow
+  { match: "gene expression", color: { bg: "#d9f99d", border: "#84cc16", text: "#3f6212" } },     // lime
+  { match: "developmental", color: { bg: "#ccfbf1", border: "#14b8a6", text: "#115e59" } },       // teal
+  { match: "hemostasis", color: { bg: "#fda4af", border: "#fb7185", text: "#be123c" } },           // rose
+  { match: "neuronal", color: { bg: "#f3e8ff", border: "#a855f7", text: "#6b21a8" } },            // purple
+  { match: "chromatin", color: { bg: "#e0e7ff", border: "#6366f1", text: "#3730a3" } },           // indigo
+  { match: "transport", color: { bg: "#bae6fd", border: "#0ea5e9", text: "#075985" } },           // sky
+  { match: "autophagy", color: { bg: "#67e8f9", border: "#06b6d4", text: "#0e7490" } },           // cyan
+  { match: "muscle", color: { bg: "#c4b5fd", border: "#8b5cf6", text: "#5b21b6" } },              // violet
+  { match: "protein", color: { bg: "#fdba74", border: "#fb923c", text: "#9a3412" } },             // tangerine
+  { match: "reproduction", color: { bg: "#f0abfc", border: "#d946ef", text: "#86198f" } },        // fuchsia
+  { match: "sensory", color: { bg: "#86efac", border: "#22c55e", text: "#166534" } },              // green
+  { match: "extracellular", color: { bg: "#a5f3fc", border: "#22d3ee", text: "#0891b2" } },       // aqua
+  { match: "circadian", color: { bg: "#c7d2fe", border: "#818cf8", text: "#4338ca" } },           // periwinkle
+];
 
-export function getCategoryColor(category: string) {
-  return CATEGORY_COLORS[category] ?? DEFAULT_COLOR;
+const OTHER_COLOR: CategoryColor = { bg: "#f1f5f9", border: "#94a3b8", text: "#475569" };
+
+/** Fallback palette for categories that don't match any semantic rule */
+const FALLBACK_PALETTE: CategoryColor[] = [
+  { bg: "#e0e7ff", border: "#6366f1", text: "#3730a3" },
+  { bg: "#ccfbf1", border: "#14b8a6", text: "#115e59" },
+  { bg: "#f3e8ff", border: "#a855f7", text: "#6b21a8" },
+  { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" },
+  { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" },
+  { bg: "#fce7f3", border: "#ec4899", text: "#9d174d" },
+  { bg: "#d9f99d", border: "#84cc16", text: "#3f6212" },
+  { bg: "#fed7aa", border: "#f97316", text: "#9a3412" },
+  { bg: "#bae6fd", border: "#0ea5e9", text: "#075985" },
+  { bg: "#c4b5fd", border: "#8b5cf6", text: "#5b21b6" },
+];
+
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+const colorCache = new Map<string, CategoryColor>();
+
+export function getCategoryColor(category: string): CategoryColor {
+  const cached = colorCache.get(category);
+  if (cached) return cached;
+
+  // "Other" / "Uncategorized" always get neutral
+  const lower = category.toLowerCase();
+  if (lower === "other" || lower === "uncategorized") {
+    colorCache.set(category, OTHER_COLOR);
+    return OTHER_COLOR;
+  }
+
+  // Try semantic prefix match
+  for (const { match, color } of SEMANTIC_COLORS) {
+    if (lower.startsWith(match) || lower.includes(match)) {
+      colorCache.set(category, color);
+      return color;
+    }
+  }
+
+  // Deterministic fallback via hash
+  const color =
+    FALLBACK_PALETTE[hashString(category) % FALLBACK_PALETTE.length];
+  colorCache.set(category, color);
+  return color;
 }
 
 // =============================================================================
@@ -323,7 +315,8 @@ export type EnrichmentState =
  * Category filter state for sidebar
  */
 export interface CategoryFilterState {
-  selectedCategories: Set<string>; // empty = all selected
+  selectedCategories: Set<string>; // categories in this set are HIDDEN; empty = all visible
+  hiddenPathwayIds: Set<string>; // individual pathways in this set are HIDDEN
   showHierarchy: boolean;
 }
 
@@ -390,18 +383,31 @@ export interface PathwayCytoscapeGraphProps {
 // Parsing Functions
 // =============================================================================
 
-function parsePathwaySource(pathwayId: string): PathwaySource {
-  return pathwayId.startsWith("R-HSA-") || pathwayId.startsWith("R-")
-    ? "reactome"
-    : "wikipathways";
+function inferPathwaySource(pathwayId: string): PathwaySource {
+  if (pathwayId.startsWith("R-HSA-") || pathwayId.startsWith("R-"))
+    return "Reactome";
+  if (pathwayId.startsWith("WP")) return "WikiPathways";
+  if (pathwayId.startsWith("hsa") || pathwayId.startsWith("map"))
+    return "KEGG";
+  if (pathwayId.startsWith("SMP")) return "SMPDB";
+  return "ConsensusPathDB";
 }
 
 function getPathwayUrl(pathwayId: string, source: PathwaySource): string {
-  if (source === "reactome") {
-    return `https://reactome.org/content/detail/${pathwayId}`;
+  switch (source.toLowerCase()) {
+    case "reactome":
+      return `https://reactome.org/content/detail/${pathwayId}`;
+    case "wikipathways": {
+      const wpId = pathwayId.replace("WP:", "");
+      return `https://www.wikipathways.org/pathways/${wpId}`;
+    }
+    case "kegg":
+      return `https://www.genome.jp/pathway/${pathwayId}`;
+    case "smpdb":
+      return `https://smpdb.ca/view/${pathwayId}`;
+    default:
+      return "";
   }
-  const wpId = pathwayId.replace("WP:", "");
-  return `https://www.wikipathways.org/pathways/${wpId}`;
 }
 
 /**
@@ -415,7 +421,7 @@ export interface PathwayEdgeProps {
 
 /**
  * Parse pathway from graph node.
- * Note: subtitle may contain a URL instead of category - detect and handle.
+ * Accepts optional API-provided fields for category and source.
  */
 export function parsePathwayFromNode(
   node: {
@@ -424,14 +430,11 @@ export function parsePathwayFromNode(
     subtitle?: string;
   },
   edgeProps?: PathwayEdgeProps,
+  apiFields?: { category?: string; source?: string },
 ): PathwayNode {
-  const source = parsePathwaySource(node.id);
-
-  // Detect if subtitle is a URL (not a real category)
-  let category = "Uncategorized";
-  if (node.subtitle && !node.subtitle.startsWith("http")) {
-    category = node.subtitle;
-  }
+  const source =
+    apiFields?.source || node.subtitle || inferPathwaySource(node.id);
+  const category = apiFields?.category || source;
 
   // Calculate confidence score from array if available
   const confidenceScore = edgeProps?.confidenceScores?.length

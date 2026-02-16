@@ -6,11 +6,13 @@ import {
   tooltip,
 } from "@infra/table/column-builder";
 import { FunctionDetailView } from "@features/gene/components/function-detail-view";
+import { GoTermsView } from "@features/gene/components/go-terms-view";
+import { SubcellularLocationsView } from "@features/gene/components/subcellular-locations-view";
 
 const col = createColumns<Gene>();
 
 export const geneFunctionColumns = [
-  // OpenTargets data (prioritized)
+  // Function descriptions with citations
   col.accessor("ot_function_descriptions", {
     accessor: (row) => row.opentargets?.function_descriptions,
     header: "Function Descriptions",
@@ -20,112 +22,17 @@ export const geneFunctionColumns = [
     }),
     cell: cell.custom<Gene, any>((descriptions: string[], row: Gene) => {
       if (!descriptions || descriptions.length === 0) return null;
-      const locations = row.opentargets?.subcellular_locations;
-      const goTerms = row.opentargets?.go;
-      return (
-        <FunctionDetailView
-          descriptions={descriptions}
-          sources={locations}
-          goTerms={goTerms}
-        />
-      );
+      return <FunctionDetailView descriptions={descriptions} />;
     }),
   }),
 
-  col.accessor("pathway_uniprot", {
-    accessor: (row) => row.pathways?.uniprot,
-    header: "Pathway Uniprot",
-    description: tooltip({
-      title: "Pathway Uniprot",
-      description: "Pathway description from Uniprot.",
-    }),
-    cell: cell.text(),
-  }),
-
-  col.accessor("pathway_bio_carta_full", {
-    accessor: (row) => row.pathways?.biocarta_full,
-    header: "BioCarta",
-    description: tooltip({
-      title: "BioCarta",
-      description: "Full name(s) of the Pathway(s) the gene belongs to (from BioCarta).",
-    }),
-    cell: cell.text(),
-  }),
-
-  col.accessor("pathway_kegg_id", {
-    accessor: (row) => row.pathways?.kegg_id,
-    header: "Pathway KEGG ID",
-    description: tooltip({
-      title: "Pathway KEGG ID",
-      description: "ID(s) of the Pathway(s) the gene belongs to (from KEGG).",
-    }),
-    cell: cell.custom<Gene, any>((val: string) => (
-      <div className="flex flex-col gap-1">
-        {val
-          .split(";")
-          .filter(Boolean)
-          .map((item, index) => (
-            <ExternalLink
-              key={index}
-              href={`https://www.genome.jp/pathway/${item.trim()}`}
-              className="text-sm text-primary hover:underline"
-              iconSize="sm"
-            >
-              {item.trim()}
-            </ExternalLink>
-          ))}
-      </div>
-    )),
-  }),
-
-  col.accessor("pathway_kegg_full", {
-    accessor: (row) => row.pathways?.kegg_full,
-    header: "Pathway KEGG Full",
-    description: tooltip({
-      title: "Pathway KEGG Full",
-      description: "Full name(s) of the Pathway(s) the gene belongs to (from KEGG).",
-    }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <div className="flex flex-col gap-1">
-        {str
-          .split(";")
-          .filter(Boolean)
-          .map((item, index) => (
-            <span key={index} className="text-sm text-slate-700 capitalize">
-              {item.trim()}
-            </span>
-          ))}
-      </div>
-    )),
-  }),
-
-  col.accessor("pathway_consensus_path_db", {
-    accessor: (row) => row.pathways?.consensus_path_db,
-    header: "ConsensusPathDB",
-    description: tooltip({
-      title: "ConsensusPathDB",
-      description: "Pathway(s) the gene belongs to (from ConsensusPathDB).",
-    }),
-    cell: cell.custom<Gene, any>((str: string) => (
-      <div className="flex flex-col gap-1">
-        {str
-          .split(";")
-          .filter(Boolean)
-          .map((item, index) => (
-            <span key={index} className="text-sm text-slate-700 capitalize">
-              {item.trim()}
-            </span>
-          ))}
-      </div>
-    )),
-  }),
-
+  // Protein class
   col.accessor("protein_class", {
     accessor: (row) => row.protein_class,
     header: "Protein Class",
     description: tooltip({
       title: "Protein Class",
-      description: "Protein Class.",
+      description: "Protein classification from the Human Protein Atlas.",
     }),
     cell: cell.custom<Gene, any>((str: string) => (
       <div className="flex flex-col gap-1">
@@ -133,7 +40,7 @@ export const geneFunctionColumns = [
           .split(",")
           .filter(Boolean)
           .map((item, index) => (
-            <span key={index} className="text-sm text-slate-700 capitalize">
+            <span key={index} className="text-sm text-foreground capitalize">
               {item.trim()}
             </span>
           ))}
@@ -141,16 +48,42 @@ export const geneFunctionColumns = [
     )),
   }),
 
+  // HPA evidence
   col.accessor("hpa_evidence", {
     accessor: (row) => row.hpa_evidence,
     header: "HPA Evidence",
     description: tooltip({
-      title: "HPA Evidence",
-      description: "HPA evidence",
+      title: "Human Protein Atlas Evidence",
+      description: "Evidence level for protein expression from the Human Protein Atlas.",
     }),
     cell: cell.text(),
   }),
 
+  // Subcellular locations — promoted to top level
+  col.accessor("ot_subcellular_locations", {
+    accessor: (row) => row.opentargets?.subcellular_locations,
+    header: "Subcellular Locations",
+    description: tooltip({
+      title: "Subcellular Locations",
+      description: "Cellular compartments where the protein is found (from UniProt via OpenTargets).",
+    }),
+    cell: cell.custom<Gene, any>((locations: Array<Record<string, string>>) => (
+      <SubcellularLocationsView locations={locations} />
+    )),
+  }),
+
+  // GO terms — promoted to top level with grouped collapsible view
+  col.accessor("go_terms", {
+    accessor: (row) => row.go,
+    header: "Gene Ontology (GO)",
+    description: tooltip({
+      title: "Gene Ontology Annotations",
+      description: "GO term annotations grouped by Biological Process, Molecular Function, and Cellular Component.",
+    }),
+    cell: cell.custom<Gene, any>((go: { biological_process?: string; molecular_function?: string; cellular_component?: string }, row: Gene) => (
+      <GoTermsView go={go} goDetailed={row.opentargets?.go} />
+    )),
+  }),
 ];
 
 export const geneFunctionGroup = col.group("function", "Function", geneFunctionColumns);

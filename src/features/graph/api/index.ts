@@ -100,6 +100,51 @@ export async function fetchSubgraph(
 }
 
 // =============================================================================
+// Entities Preview API
+// =============================================================================
+
+export interface PreviewItem {
+  entity: EntityRef;
+  fields?: Record<string, unknown>;
+}
+
+export interface PreviewApiResponse {
+  data: {
+    items: PreviewItem[];
+    counts: { requested: number; found: number };
+  };
+}
+
+export async function fetchPreview(
+  ids: Array<{ type: string; id: string }>,
+  fields?: string[],
+): Promise<PreviewApiResponse | null> {
+  const url = `${API_BASE}/entities/preview`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ids,
+        fields: fields?.slice(0, 20),
+      }),
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) {
+      console.error(`Preview fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Preview fetch error:", error);
+    return null;
+  }
+}
+
+// =============================================================================
 // Graph Query API
 // =============================================================================
 

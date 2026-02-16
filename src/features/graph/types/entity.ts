@@ -27,7 +27,7 @@ export interface DrugEntity extends BaseEntity {
 
 export interface PathwayEntity extends BaseEntity {
   type: "Pathway";
-  source?: "reactome" | "wikipathways" | "kegg";
+  source?: string;
   category?: string;
 }
 

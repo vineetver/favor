@@ -1,3 +1,4 @@
+import type React from "react";
 import type { Gene } from "@features/gene/types";
 import {
   cell,
@@ -7,6 +8,25 @@ import {
 
 const col = createColumns<Gene>();
 
+/** Extract unique labels from synonym array (API returns key as `label` or label) */
+function formatSynonyms(items: Array<Record<string, string>>): React.ReactNode {
+  if (!items || items.length === 0) return null;
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const item of items) {
+    const label = item.label || item["`label`"] || "";
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    labels.push(label);
+  }
+  if (labels.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      {labels.map((l, i) => <span key={i}>{l}</span>)}
+    </div>
+  );
+}
+
 export const geneInfoAndIdsColumns = [
   col.accessor("ot_name_synonyms", {
     accessor: (row) => row.opentargets?.name_synonyms,
@@ -15,18 +35,9 @@ export const geneInfoAndIdsColumns = [
       title: "Name Synonyms",
       description: "Alternative gene names from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
-      if (!synonyms || synonyms.length === 0) return null;
-      return (
-        <ul>
-          {synonyms.map((syn, index) => (
-            <li key={index}>
-              {syn.label} ({syn.source})
-            </li>
-          ))}
-        </ul>
-      );
-    }),
+    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+      formatSynonyms(synonyms)
+    ),
   }),
 
   col.accessor("ot_synonyms", {
@@ -36,18 +47,9 @@ export const geneInfoAndIdsColumns = [
       title: "Gene Synonyms",
       description: "Alternative gene names and symbols from multiple sources (OpenTargets).",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
-      if (!synonyms || synonyms.length === 0) return null;
-      return (
-        <ul>
-          {synonyms.map((syn, index) => (
-            <li key={index}>
-              {syn.label} ({syn.source})
-            </li>
-          ))}
-        </ul>
-      );
-    }),
+    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+      formatSynonyms(synonyms)
+    ),
   }),
 
   col.accessor("ot_symbol_synonyms", {
@@ -57,18 +59,9 @@ export const geneInfoAndIdsColumns = [
       title: "Symbol Synonyms",
       description: "Alternative gene symbols from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<{ label: string; source: string }>) => {
-      if (!synonyms || synonyms.length === 0) return null;
-      return (
-        <ul>
-          {synonyms.map((syn, index) => (
-            <li key={index}>
-              {syn.label} ({syn.source})
-            </li>
-          ))}
-        </ul>
-      );
-    }),
+    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+      formatSynonyms(synonyms)
+    ),
   }),
 
   col.accessor("ot_obsolete_symbols", {
@@ -78,63 +71,10 @@ export const geneInfoAndIdsColumns = [
       title: "Obsolete Symbols",
       description: "Previously used gene symbols that are now obsolete.",
     }),
-    cell: cell.custom<Gene, any>((obsolete: Array<{ label: string; source: string }>) => {
-      if (!obsolete || obsolete.length === 0) return null;
-      return (
-        <ul>
-          {obsolete.map((obs, index) => (
-            <li key={index}>
-              {obs.label} ({obs.source})
-            </li>
-          ))}
-        </ul>
-      );
-    }),
+    cell: cell.custom<Gene, any>((obsolete: Array<Record<string, string>>) =>
+      formatSynonyms(obsolete)
+    ),
   }),
-
-  // col.accessor("ot_protein_ids", {
-  //   accessor: (row) => row.opentargets?.protein_ids,
-  //   header: "Protein IDs (OT)",
-  //   description: tooltip({
-  //     title: "Protein IDs",
-  //     description: "Protein identifiers from multiple databases (OpenTargets).",
-  //   }),
-  //   cell: cell.custom<Gene, any>((proteinIds: Array<{ id: string; source: string }>) => {
-  //     if (!proteinIds || proteinIds.length === 0) return null;
-  //     return (
-  //       <ul className="flex flex-col gap-1">
-  //         {proteinIds.map((protein, index) => (
-  //           <li key={index} className="text-sm">
-  //             <span className="font-mono text-xs">{protein.id}</span>
-  //             <span className="text-xs text-gray-500 ml-2">({protein.source})</span>
-  //           </li>
-  //         ))}
-  //       </ul>
-  //     );
-  //   }),
-  // }),
-
-  // col.accessor("ot_db_xrefs", {
-  //   accessor: (row) => row.opentargets?.db_xrefs,
-  //   header: "Database Cross-References (OT)",
-  //   description: tooltip({
-  //     title: "Database Cross-References",
-  //     description: "External database identifiers from OpenTargets.",
-  //   }),
-  //   cell: cell.custom<Gene, any>((xrefs: Array<{ id: string; source: string }>) => {
-  //     if (!xrefs || xrefs.length === 0) return null;
-  //     return (
-  //       <ul className="flex flex-col gap-1">
-  //         {xrefs.map((xref, index) => (
-  //           <li key={index} className="text-sm">
-  //             <span className="font-mono text-xs">{xref.id}</span>
-  //             <span className="text-xs text-gray-500 ml-2">({xref.source})</span>
-  //           </li>
-  //         ))}
-  //       </ul>
-  //     );
-  //   }),
-  // }),
 
   col.accessor("ot_canonical_transcript", {
     accessor: (row) => row.opentargets?.canonical_transcript,
@@ -143,14 +83,16 @@ export const geneInfoAndIdsColumns = [
       title: "Canonical Transcript",
       description: "The canonical transcript for this gene from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((transcript: { id: string; chromosome: string; start: number; end: number; strand: string }) => {
+    cell: cell.custom<Gene, any>((transcript: Record<string, any>) => {
       if (!transcript) return null;
+      const start = transcript.start ?? transcript["`start`"];
+      const end = transcript.end ?? transcript["`end`"];
       return (
-        <div>
-          <div>{transcript.id}</div>
-          <div>
-            {transcript.chromosome}:{transcript.start}-{transcript.end} ({transcript.strand})
-          </div>
+        <div className="space-y-0.5">
+          <span className="font-medium text-foreground">{transcript.id}</span>
+          <p className="text-xs text-muted-foreground">
+            {transcript.chromosome}:{start?.toLocaleString()}-{end?.toLocaleString()} ({transcript.strand})
+          </p>
         </div>
       );
     }),

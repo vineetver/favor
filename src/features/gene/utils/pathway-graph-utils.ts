@@ -99,21 +99,26 @@ export function buildCytoscapeElements(
 }
 
 /**
- * Filter pathways by category based on filter state.
- * If selectedCategories is empty, all pathways are included.
+ * Filter pathways by category and individual pathway visibility.
  */
 export function filterPathwaysByCategory(
   pathways: PathwayNode[],
   filterState?: CategoryFilterState,
 ): PathwayNode[] {
-  if (!filterState || filterState.selectedCategories.size === 0) {
-    return pathways;
-  }
+  if (!filterState) return pathways;
 
-  // When categories are in selectedCategories, they are filtered OUT
-  return pathways.filter(
-    (p) => !filterState.selectedCategories.has(p.category),
-  );
+  const hasCategoryFilter = filterState.selectedCategories.size > 0;
+  const hasPathwayFilter = filterState.hiddenPathwayIds.size > 0;
+
+  if (!hasCategoryFilter && !hasPathwayFilter) return pathways;
+
+  return pathways.filter((p) => {
+    if (hasCategoryFilter && filterState.selectedCategories.has(p.category))
+      return false;
+    if (hasPathwayFilter && filterState.hiddenPathwayIds.has(p.id))
+      return false;
+    return true;
+  });
 }
 
 /**
