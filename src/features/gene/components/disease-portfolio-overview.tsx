@@ -12,8 +12,31 @@ import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import { Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import { Loader2, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+/** Maps graph edge types to their data source and a brief explanation */
+const EVIDENCE_SOURCE_INFO: Record<string, { label: string; tip: string }> = {
+  ASSOCIATED_WITH_DISEASE: { label: "OpenTargets", tip: "Integrated association score from the Open Targets Platform combining genetic, somatic, drug, and literature evidence" },
+  CURATED_FOR: { label: "ClinGen", tip: "Expert-curated gene–disease validity classification from ClinGen" },
+  CAUSES: { label: "DDG2P", tip: "Developmental disorder gene-to-phenotype mapping from DECIPHER" },
+  CIVIC_EVIDENCED_FOR: { label: "CIViC", tip: "Clinical interpretation of variants relevant to this disease from CIViC" },
+  PGX_ASSOCIATED: { label: "PharmGKB", tip: "Pharmacogenomic gene–disease relationship from PharmGKB" },
+  THERAPEUTIC_TARGET_IN: { label: "TTD", tip: "Therapeutic target information from the Therapeutic Target Database" },
+  SCORED_FOR_DISEASE: { label: "AbbVie", tip: "Genetic evidence score for this gene–disease pair from AbbVie" },
+  BIOMARKER_FOR: { label: "TTD Biomarker", tip: "Gene product is a biomarker for this disease (Therapeutic Target Database)" },
+  INHERITED_CAUSE_OF: { label: "Orphanet", tip: "Inherited gene–disease relationship from the Orphanet rare-disease database" },
+  ASSERTED_FOR_DISEASE: { label: "CIViC Assertion", tip: "Clinically reviewed assertion about this gene–disease link from CIViC" },
+};
 
 interface DiseasePortfolioOverviewProps {
   relations?: unknown;
@@ -80,7 +103,7 @@ function ScoreBar({ value }: { value: number | null }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-body-sm font-medium text-heading w-8">{formatScore(value)}</span>
+      <span className="text-xs font-medium text-foreground w-8">{formatScore(value)}</span>
       <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
         <div
           className="h-full bg-primary/60"
@@ -105,7 +128,7 @@ function EvidenceBars({
         const percent = Math.round((item.count / max) * 100);
         return (
           <div key={item.label} className="flex items-center gap-3">
-            <div className="w-28 text-body-sm text-subtle">{item.label}</div>
+            <div className="w-28 text-xs text-muted-foreground">{item.label}</div>
             <div className="flex-1">
               <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
@@ -114,7 +137,7 @@ function EvidenceBars({
                 />
               </div>
             </div>
-            <div className="w-20 text-right text-body-sm text-body">
+            <div className="w-20 text-right text-xs text-muted-foreground tabular-nums">
               {item.count.toLocaleString()}
             </div>
           </div>
@@ -193,9 +216,14 @@ function toBreakdownList(value: unknown): Array<{ label: string; count: number }
   return [];
 }
 
-function toAreaLabel(areaId: string | undefined) {
+function toAreaLabel(areaId: string | undefined, labelMap: Record<string, string>) {
   if (!areaId) return "Uncategorized";
-  return THERAPEUTIC_AREA_LABELS[areaId] ?? areaId;
+  return labelMap[areaId] ?? areaId;
+}
+
+function pickAreaId(therapeuticAreas: string[] | undefined, labelMap: Record<string, string>): string | undefined {
+  if (!therapeuticAreas?.length) return undefined;
+  return therapeuticAreas.find((id) => labelMap[id]) ?? therapeuticAreas[0];
 }
 
 function normalizeLabel(value: string) {
@@ -247,7 +275,7 @@ type DiseaseCluster = {
   area: string;
 };
 
-function clusterDiseases(diseases: DiseaseEdge[]): DiseaseCluster[] {
+function clusterDiseases(diseases: DiseaseEdge[], labelMap: Record<string, string>): DiseaseCluster[] {
   const clusters: DiseaseCluster[] = [];
 
   diseases.forEach((disease) => {
@@ -264,9 +292,8 @@ function clusterDiseases(diseases: DiseaseEdge[]): DiseaseCluster[] {
       return;
     }
 
-    const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
-      disease.therapeuticAreas?.[0];
-    const area = toAreaLabel(areaId);
+    const areaId = pickAreaId(disease.therapeuticAreas, labelMap);
+    const area = toAreaLabel(areaId, labelMap);
 
     clusters.push({
       id: disease.id,
@@ -443,26 +470,111 @@ export function DiseasePortfolioOverview({
   const [sortMode, setSortMode] = useState("score-desc");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [resolvedAreaLabels, setResolvedAreaLabels] = useState<Record<string, string>>({});
+  const [connections, setConnections] = useState<Array<{
+    edgeType: string;
+    label: string;
+    count: number;
+    edges: Array<{ fields?: Record<string, unknown> }>;
+  }> | null>(null);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const connectionsAbort = useRef<AbortController | null>(null);
 
   const diseases = useMemo(
     () => extractDiseaseEdges(relations, edges),
     [relations, edges],
   );
 
+  // Merge static + dynamically resolved therapeutic area labels
+  const areaLabelMap = useMemo(() => ({
+    ...THERAPEUTIC_AREA_LABELS,
+    ...resolvedAreaLabels,
+  }), [resolvedAreaLabels]);
+
+  // Resolve unknown therapeutic area IDs to human-readable names
+  useEffect(() => {
+    const unknownIds = new Set<string>();
+    diseases.forEach((d) => {
+      d.therapeuticAreas?.forEach((id) => {
+        if (id && !THERAPEUTIC_AREA_LABELS[id]) unknownIds.add(id);
+      });
+    });
+    if (unknownIds.size === 0) return;
+
+    const ids = Array.from(unknownIds).slice(0, 100).map((id) => ({ type: "Disease", id }));
+    fetch(`${API_BASE}/entities/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const map: Record<string, string> = {};
+        for (const item of data?.data?.items ?? []) {
+          if (item.entity?.id && item.entity?.label) {
+            map[item.entity.id] = item.entity.label;
+          }
+        }
+        if (Object.keys(map).length > 0) {
+          setResolvedAreaLabels((prev) => ({ ...prev, ...map }));
+        }
+      })
+      .catch(() => {});
+  }, [diseases]);
+
+  // Fetch connections between gene and selected disease
+  useEffect(() => {
+    if (!selectedId || !geneId) {
+      setConnections(null);
+      return;
+    }
+
+    connectionsAbort.current?.abort();
+    const controller = new AbortController();
+    connectionsAbort.current = controller;
+    setConnectionsLoading(true);
+
+    fetch(`${API_BASE}/graph/connections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: { type: "Gene", id: geneId },
+        to: { type: "Disease", id: selectedId },
+        limitPerType: 5,
+        includeReverse: false,
+      }),
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setConnections(data?.data?.connections ?? null);
+          setConnectionsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setConnections(null);
+          setConnectionsLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [selectedId, geneId]);
+
   const areaOptions = useMemo(() => {
     const areas = Array.from(
       new Set(
         diseases.map((disease) => {
-          const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
-            disease.therapeuticAreas?.[0];
-          return toAreaLabel(areaId);
+          const areaId = pickAreaId(disease.therapeuticAreas, areaLabelMap);
+          return toAreaLabel(areaId, areaLabelMap);
         }),
       ),
     ).filter(Boolean);
     return [{ value: "all", label: "All" }].concat(
       areas.map((area) => ({ value: area, label: area })),
     );
-  }, [diseases]);
+  }, [diseases, areaLabelMap]);
 
   const dimensions = useMemo<DimensionConfig[]>(
     () => [
@@ -504,9 +616,8 @@ export function DiseasePortfolioOverview({
     return diseases.filter((disease) => {
       const min = SCORE_THRESHOLDS.find((opt) => opt.value === scoreFilter)?.min ?? null;
       const matchesScore = min === null || (disease.score ?? -1) >= min;
-      const areaId = disease.therapeuticAreas?.find((id) => id.startsWith("OTAR_")) ??
-        disease.therapeuticAreas?.[0];
-      const areaLabel = toAreaLabel(areaId);
+      const areaId = pickAreaId(disease.therapeuticAreas, areaLabelMap);
+      const areaLabel = toAreaLabel(areaId, areaLabelMap);
       const matchesArea = areaFilter === "all" || areaLabel === areaFilter;
       const matchesSearch =
         query.length === 0 ||
@@ -516,9 +627,9 @@ export function DiseasePortfolioOverview({
 
       return matchesScore && matchesArea && matchesSearch;
     });
-  }, [areaFilter, diseases, scoreFilter, search]);
+  }, [areaFilter, areaLabelMap, diseases, scoreFilter, search]);
 
-  const clusters = useMemo(() => clusterDiseases(filtered), [filtered]);
+  const clusters = useMemo(() => clusterDiseases(filtered, areaLabelMap), [filtered, areaLabelMap]);
 
   const sortedClusters = useMemo(() => {
     const items = [...clusters];
@@ -614,7 +725,7 @@ export function DiseasePortfolioOverview({
             </div>
           </div>
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle z-10" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
             <Input
               type="text"
               placeholder="Search diseases..."
@@ -638,14 +749,14 @@ export function DiseasePortfolioOverview({
           <div className="border-b border-border lg:border-b-0 lg:border-r">
             <div className="max-h-[520px] overflow-y-auto">
               {rankedGroups.length === 0 && (
-                <div className="px-6 py-8 text-body-sm text-subtle">
+                <div className="px-6 py-8 text-xs text-muted-foreground">
                   No diseases match your filters.
                 </div>
               )}
               {rankedGroups.map((group) => (
                 <div key={group.area}>
                   <div className="px-6 py-2.5 border-b border-border bg-muted sticky top-0 z-10">
-                    <div className="text-body-sm font-medium text-subtle">
+                    <div className="text-xs font-medium text-muted-foreground">
                       {group.area} ({group.clusters.length})
                     </div>
                   </div>
@@ -669,10 +780,10 @@ export function DiseasePortfolioOverview({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-heading truncate">
+                            <div className="text-sm font-medium text-foreground truncate">
                               {cluster.label}
                               {relatedCount > 0 && (
-                                <span className="ml-1 text-subtle font-normal">+{relatedCount}</span>
+                                <span className="ml-1 text-muted-foreground font-normal">+{relatedCount}</span>
                               )}
                             </div>
                           </div>
@@ -689,11 +800,11 @@ export function DiseasePortfolioOverview({
           {/* Inspector Panel */}
           <div>
             <div className="px-6 py-2.5 border-b border-border bg-muted">
-              <div className="text-body-sm font-medium text-subtle">Details</div>
+              <div className="text-xs font-medium text-muted-foreground">Details</div>
             </div>
             <div className="px-6 py-6 space-y-6">
               {!selected && (
-                <div className="text-body-sm text-subtle">
+                <div className="text-xs text-muted-foreground">
                   Select a disease to view details.
                 </div>
               )}
@@ -702,22 +813,22 @@ export function DiseasePortfolioOverview({
                 <>
                   {/* Disease Header */}
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-heading">
+                    <h3 className="text-base font-semibold text-foreground">
                       {selected.label}
                     </h3>
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-body-sm text-subtle">Score</span>
-                        <span className="text-sm font-semibold text-heading">{formatScore(selected.score)}</span>
+                        <span className="text-xs text-muted-foreground">Score</span>
+                        <span className="text-sm font-semibold text-foreground">{formatScore(selected.score)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-body-sm text-subtle">Evidence</span>
-                        <span className="text-sm font-semibold text-heading">
+                        <span className="text-xs text-muted-foreground">Evidence</span>
+                        <span className="text-sm font-semibold text-foreground">
                           {selected.evidenceCount?.toLocaleString() ?? "N/A"}
                         </span>
                       </div>
                       {inspectorTag && (
-                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-body-sm text-subtle">
+                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                           {inspectorTag}
                         </span>
                       )}
@@ -727,17 +838,53 @@ export function DiseasePortfolioOverview({
                   {/* Summary */}
                   {selected.description && (
                     <div className="space-y-2">
-                      <div className="text-body-sm font-medium text-subtle">Summary</div>
-                      <div className="text-sm text-body leading-relaxed">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Summary</div>
+                      <div className="text-sm text-muted-foreground leading-relaxed">
                         {selected.description}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Evidence Sources (from connections query) */}
+                  {connectionsLoading && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    </div>
+                  )}
+                  {!connectionsLoading && connections && connections.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Evidence Sources
+                      </div>
+                      <TooltipProvider delayDuration={200}>
+                        <div className="flex flex-wrap gap-1.5">
+                          {connections.map((conn) => {
+                            const info = EVIDENCE_SOURCE_INFO[conn.edgeType];
+                            const label = info?.label ?? conn.edgeType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+                            return (
+                              <Tooltip key={conn.edgeType}>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground cursor-default">
+                                    {label}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-64">
+                                  <p className="text-xs">{info?.tip ?? conn.label}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
                     </div>
                   )}
 
                   {/* Evidence Breakdown */}
                   {selected.evidenceBreakdown && selected.evidenceBreakdown.length > 0 && (
                     <div className="space-y-3">
-                      <div className="text-body-sm font-medium text-subtle">Evidence by Type</div>
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Evidence by Type
+                      </div>
                       <EvidenceBars breakdown={selected.evidenceBreakdown} />
                     </div>
                   )}
@@ -745,8 +892,10 @@ export function DiseasePortfolioOverview({
                   {/* Synonyms */}
                   {selected.synonyms && selected.synonyms.length > 0 && (
                     <div className="space-y-2">
-                      <div className="text-body-sm font-medium text-subtle">Also known as</div>
-                      <div className="text-sm text-body">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Also known as
+                      </div>
+                      <div className="text-sm text-muted-foreground">
                         {selected.synonyms.slice(0, 5).join(", ")}
                       </div>
                     </div>

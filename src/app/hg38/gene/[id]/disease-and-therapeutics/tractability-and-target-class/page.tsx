@@ -156,7 +156,7 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
         {/* Tractability Matrix */}
         {tractability.length > 0 && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
               {MODALITIES.map((modality) => (
                 <ModalityColumn
                   key={modality}
@@ -175,7 +175,7 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
             <div className="px-6 py-3 border-t border-border bg-muted/30">
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-success" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span>Supported</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -222,7 +222,7 @@ function CriteriaRow({ label, value }: { label: string; value: boolean }) {
   return (
     <div className={cn("flex items-center gap-2.5", !value && "opacity-40")}>
       {value ? (
-        <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
       ) : (
         <span className="w-2 h-2 rounded-full border-[1.5px] border-border shrink-0" />
       )}
@@ -253,7 +253,7 @@ function ModalityColumn({
   const isActive = counts.supported > 0;
 
   return (
-    <div className={cn("flex flex-col", isActive && "bg-success/10")}>
+    <div className="flex flex-col">
       {/* Column Header */}
       <div className="px-6 py-3.5 bg-muted/50 border-b border-border">
         <div className="space-y-0.5">
@@ -262,7 +262,7 @@ function ModalityColumn({
               {modalityLabel}
             </span>
             {isActive && (
-              <span className="w-2 h-2 rounded-full bg-success" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
             )}
           </div>
           <div className="text-sm text-muted-foreground">
