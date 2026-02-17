@@ -285,31 +285,32 @@ export const GRAPH_LENSES: GraphLens[] = [
   },
 
   // =========================================================================
-  // 6) Complex Genetics — "GWAS discovery mode"
+  // 6) Complex Genetics — "Combined trait-first + GWAS variant discovery"
   //
   //   Seed: Gene
-  //   Step 1 (from Gene, direction "out"):
-  //     Gene→Variant HAS_GWAS_VARIANT. Brings in Variants.
-  //     Frontier → Variant.
-  //   Step 2 branch (from Variant, direction "out"):
-  //     Variant→Trait GWAS_ASSOCIATED_WITH + Variant→Study REPORTED_IN.
-  //     Frontier → Trait + Study.
-  //   Step 3 overlayOnly (from Trait+Study frontier, direction "out"):
-  //     Study→Trait INVESTIGATES. Study IS in frontier/source → "out" works.
-  //     Trait in result set. ✓
+  //   Step 1 branch (from Gene, direction "out"):
+  //     Gene→Trait  SCORED_FOR_TRAIT (AbbVie scored traits).
+  //     Gene→Variant HAS_GWAS_VARIANT (GWAS Catalog variants).
+  //     Frontier → Trait + Variant.
+  //   Step 2 branch (from Trait+Variant frontier, direction "out"):
+  //     Variant→Trait GWAS_ASSOCIATED_WITH — links variants to their traits.
+  //     Variant→Study REPORTED_IN — links variants to their publications.
+  //     Frontier → Trait + Variant + Study.
+  //   Step 3 overlayOnly (from full frontier, direction "out"):
+  //     Study→Trait INVESTIGATES — connects studies to traits already in set. ✓
   // =========================================================================
   {
     id: "gwas",
     name: "Complex Genetics",
-    description: "GWAS variants, trait associations, and study evidence",
+    description: "Trait associations, GWAS variants, and study evidence",
     icon: "bar-chart",
     color: "#3b82f6",
     steps: [
       {
-        edgeTypes: ["HAS_GWAS_VARIANT"],
-        direction: "out",
-        limit: 15,
-        sort: "-p_value_mlog",
+        branch: [
+          { edgeTypes: ["SCORED_FOR_TRAIT"], direction: "out", limit: 15 },
+          { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 12, sort: "-p_value_mlog" },
+        ],
       },
       {
         branch: [
