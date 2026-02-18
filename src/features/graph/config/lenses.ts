@@ -289,14 +289,18 @@ export const GRAPH_LENSES: GraphLens[] = [
   //
   //   Seed: Gene
   //   Step 1 branch (from Gene, direction "out"):
-  //     Gene→Trait  SCORED_FOR_TRAIT (AbbVie scored traits).
-  //     Gene→Variant HAS_GWAS_VARIANT (GWAS Catalog variants).
+  //     Gene→Trait  SCORED_FOR_TRAIT (AbbVie scored traits). Discovers Traits.
+  //     Gene→Variant HAS_GWAS_VARIANT (GWAS Catalog variants). Discovers Variants.
   //     Frontier → Trait + Variant.
-  //   Step 2 branch (from Trait+Variant frontier, direction "out"):
+  //   Step 2 overlayOnly (from Trait+Variant frontier, direction "in"):
+  //     ASSOCIATED_WITH_TRAIT: Gene→Trait. Trait is in frontier, Gene is seed (in result set).
+  //     Adds GWAS Catalog trait edges onto traits already found by AbbVie scoring.
+  //     No new nodes. Frontier unchanged → Trait + Variant.
+  //   Step 3 branch (from Trait+Variant frontier, direction "out"):
   //     Variant→Trait GWAS_ASSOCIATED_WITH — links variants to their traits.
   //     Variant→Study REPORTED_IN — links variants to their publications.
   //     Frontier → Trait + Variant + Study.
-  //   Step 3 overlayOnly (from full frontier, direction "out"):
+  //   Step 4 overlayOnly (from full frontier, direction "out"):
   //     Study→Trait INVESTIGATES — connects studies to traits already in set. ✓
   // =========================================================================
   {
@@ -308,9 +312,17 @@ export const GRAPH_LENSES: GraphLens[] = [
     steps: [
       {
         branch: [
-          { edgeTypes: ["SCORED_FOR_TRAIT"], direction: "out", limit: 15 },
+          { edgeTypes: ["SCORED_FOR_TRAIT"], direction: "out", limit: 7 },
           { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 12, sort: "-p_value_mlog" },
         ],
+      },
+      {
+        // Frontier: Trait + Variant. ASSOCIATED_WITH_TRAIT: Gene→Trait.
+        // direction "in" on Trait finds Gene→Trait edges. Gene is seed → in result set. ✓
+        edgeTypes: ["ASSOCIATED_WITH_TRAIT"],
+        direction: "in",
+        limit: 50,
+        overlayOnly: true,
       },
       {
         branch: [

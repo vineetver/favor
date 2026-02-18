@@ -29,6 +29,7 @@ export interface SubgraphEdge {
     num_experiments?: number;
     confidence_scores?: number[];
     pubmed_ids?: string[];
+    pmids?: string[];
     detection_methods?: string[];
     interaction_type?: string;
     [key: string]: unknown;

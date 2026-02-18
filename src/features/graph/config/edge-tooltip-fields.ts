@@ -89,6 +89,11 @@ export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
   ],
 
   // Gene → Trait
+  ASSOCIATED_WITH_TRAIT: [
+    { key: "best_p_value_mlog", label: "-log10(p)", format: "score" },
+    { key: "n_studies", label: "Studies", format: "number" },
+    { key: "n_variants", label: "Variants", format: "number" },
+  ],
   SCORED_FOR_TRAIT: [
     { key: "total_score", label: "Total Score", format: "score" },
     { key: "ld_score", label: "LD Score", format: "score" },

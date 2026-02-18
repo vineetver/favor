@@ -20,6 +20,7 @@ export type EdgeType =
   | "ASSERTED_FOR_DRUG"
   // Gene -> Trait/Variant edges
   | "SCORED_FOR_TRAIT"
+  | "ASSOCIATED_WITH_TRAIT"
   | "HAS_GWAS_VARIANT"
   // Gene -> Pathway/GO edges
   | "PARTICIPATES_IN"
@@ -107,9 +108,10 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   ASSERTED_FOR_DRUG: ["assertion_type", "assertion_direction", "significance", "amp_category", "assertion_id", "last_review_date", "source"],
   // Gene -> Trait
   SCORED_FOR_TRAIT: ["ld_score", "reg_score", "nassoc_score", "source_score", "total_score", "source"],
+  ASSOCIATED_WITH_TRAIT: ["trait_name", "n_variants", "n_studies", "best_p_value_mlog", "best_or_beta", "source"],
   // Drug -> Gene
   TARGETS: ["action_type", "mechanism_of_action", "num_sources", "sources", "max_clinical_phase"],
-  TARGETS_IN_CONTEXT: ["disease_id", "disease_label", "mechanism_of_action", "max_phase", "num_trials", "trial_statuses", "trials"],
+  TARGETS_IN_CONTEXT: ["disease_id", "disease_name", "mechanism_of_action", "max_phase", "num_trials", "trial_statuses", "trials"],
   // Drug -> Disease
   INDICATED_FOR: ["sources", "num_sources", "max_clinical_phase", "primary_source"],
   // Drug -> SideEffect
@@ -125,7 +127,7 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   PGX_CLINICAL_RESPONSE: ["evidence_level", "score", "phenotype_category", "phenotype", "pmid_count", "evidence_count", "max_evidence_score", "source"],
   // Variant -> Disease
   PGX_DISEASE_ASSOCIATED: ["significance", "direction_of_effect", "phenotype_category", "best_p_value", "best_ratio_stat", "max_study_cases", "max_study_controls", "n_studies", "source"],
-  CLINVAR_ASSOCIATED: ["clinical_significance", "review_status", "condition_name", "origin", "source"],
+  CLINVAR_ASSOCIATED: ["clinical_significance", "review_status", "disease_name", "origin", "source"],
   // Variant -> Study
   REPORTED_IN: ["p_value_mlog", "or_beta", "risk_allele_freq", "ci_95", "risk_allele", "initial_sample_size", "replication_sample_size", "source"],
   // Variant -> Gene
@@ -135,7 +137,7 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   PREDICTED_REGULATORY_TARGET: ["score", "percentile", "confidence", "source"],
   MISSENSE_PATHOGENIC_FOR: ["protein_variant", "pathogenicity", "pathogenicity_class", "max_pathogenicity", "transcript_id", "confidence", "source"],
   SOMATICALLY_MUTATED_IN: ["sample_count", "tier", "so_term", "transcript", "aa_change", "hgvsc", "hgvsp", "domain_id", "domain_name", "confidence", "source"],
-  CLINVAR_ANNOTATED_IN: ["clinical_significance", "review_status", "condition_name", "origin", "source"],
+  CLINVAR_ANNOTATED_IN: ["clinical_significance", "review_status", "disease_name", "origin", "source"],
   // Variant -> SideEffect
   LINKED_TO_SIDE_EFFECT: ["gene_symbol", "drug_name", "significance", "direction", "phenotype_category", "pmid", "source"],
   // Gene -> Variant
@@ -148,16 +150,16 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   MANIFESTS_AS: ["evidence_code", "frequency", "disease_ids", "source"],
   MOUSE_MANIFESTS_AS: ["mouse_gene_symbol", "mouse_gene_id", "n_models", "phenotype_class_labels", "source"],
   // Disease -> Phenotype
-  PRESENTS_WITH: ["match_types", "match_count"],
+  PRESENTS_WITH: ["match_types", "match_count", "source"],
   // Trait -> Disease
-  MAPS_TO: ["match_types", "match_count"],
+  MAPS_TO: ["match_types", "match_count", "source"],
   // Trait -> Phenotype
-  TRAIT_PRESENTS_WITH: ["match_types", "match_count"],
+  TRAIT_PRESENTS_WITH: ["match_types", "match_count", "source"],
   // Gene -> Gene
-  INTERACTS_WITH: ["sources", "num_sources", "detection_methods", "pubmed_ids", "confidence_scores", "num_experiments", "ot_mi_score", "ot_evidence_count"],
+  INTERACTS_WITH: ["sources", "num_sources", "detection_methods", "pmids", "confidence_scores", "num_experiments", "ot_mi_score", "ot_evidence_count"],
   INTERACTS_IN_PATHWAY: ["pathway_name", "pathway_sources", "interaction_method"],
   REGULATES: ["interaction_type", "interaction_type_mi", "interaction_type_name", "pmid", "source"],
-  FUNCTIONALLY_RELATED: ["combined_score", "confidence", "experiments", "database", "textmining", "coexpression", "neighborhood", "homology"],
+  FUNCTIONALLY_RELATED: ["combined_score", "confidence", "experiments", "database", "textmining", "coexpression", "neighborhood", "homology", "source"],
   // Gene -> GOTerm
   ANNOTATED_WITH: ["go_namespace", "qualifier", "evidence_code", "aspect", "go_ref", "assigned_by", "annotation_date", "source"],
   // Gene -> SideEffect
@@ -174,17 +176,17 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   // Metabolite -> Metabolite
   METABOLITE_IS_A: ["src_name", "dst_name", "source"],
   // Hierarchy
-  SUBCLASS_OF: ["src_name", "dst_name", "distance", "edge_type"],
-  PHENOTYPE_SUBCLASS_OF: ["src_name", "dst_name", "distance"],
-  PART_OF: ["src_name", "dst_name", "distance"],
-  EFO_SUBCLASS_OF: ["src_name", "dst_name", "distance"],
-  GO_SUBCLASS_OF: ["src_name", "dst_name", "distance"],
+  SUBCLASS_OF: ["src_name", "dst_name", "distance", "relationship_type", "source"],
+  PHENOTYPE_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
+  PART_OF: ["src_name", "dst_name", "distance", "source"],
+  EFO_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
+  GO_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
   // Closure
-  ANCESTOR_OF: ["distance", "ancestor_name", "descendant_name"],
+  ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
   PHENOTYPE_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
   PATHWAY_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
   EFO_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  GO_ANCESTOR_OF: ["distance", "ancestor_name", "descendant_name"],
+  GO_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
 };
 
 /**
@@ -255,6 +257,7 @@ export const EDGE_TYPE_DATABASE: Record<EdgeType, string> = {
   ASSERTED_FOR_DRUG: "CIViC",
   // Gene -> Trait/Variant
   SCORED_FOR_TRAIT: "AbbVie",
+  ASSOCIATED_WITH_TRAIT: "GWAS Catalog",
   HAS_GWAS_VARIANT: "GWAS Catalog",
   // Gene -> Pathway
   PARTICIPATES_IN: "Reactome",
@@ -355,6 +358,7 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
 
   // Gene -> Trait/Variant (Amber family)
   SCORED_FOR_TRAIT: { label: "Scored For Trait", color: "#f59e0b", description: "Gene scored for trait" },
+  ASSOCIATED_WITH_TRAIT: { label: "Associated With Trait", color: "#b45309", description: "Gene associated with trait via GWAS" },
   HAS_GWAS_VARIANT: { label: "Has GWAS Variant", color: "#d97706", description: "Gene has GWAS variant" },
 
   // Gene -> Pathway/GO (Purple family)

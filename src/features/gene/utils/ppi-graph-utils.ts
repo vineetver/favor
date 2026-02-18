@@ -70,7 +70,7 @@ function extractDetectionMethodsFromProps(props: Record<string, unknown>): strin
  * Extract PubMed IDs from props object
  */
 function extractPubmedIdsFromProps(props: Record<string, unknown>): string[] {
-  const pubmedRaw = props.pubmed_ids ?? props.pmids ?? props.publications ?? [];
+  const pubmedRaw = props.pmids ?? props.pubmed_ids ?? props.publications ?? [];
 
   if (Array.isArray(pubmedRaw)) {
     return pubmedRaw.map((p) => String(p)).filter((p) => /^\d+$/.test(p));
@@ -89,7 +89,7 @@ function mergePropsFromLegacy(
   return {
     sources: linkProps?.sources ?? linkProps?.evidence_sources ?? edgeRecord?.sources ?? edgeRecord?.evidence_sources ?? properties?.sources,
     detection_methods: linkProps?.detection_methods ?? linkProps?.methods ?? edgeRecord?.detection_methods ?? edgeRecord?.methods,
-    pubmed_ids: linkProps?.pubmed_ids ?? linkProps?.pmids ?? linkProps?.publications ?? edgeRecord?.pubmed_ids ?? edgeRecord?.pmids,
+    pubmed_ids: linkProps?.pmids ?? linkProps?.pubmed_ids ?? linkProps?.publications ?? edgeRecord?.pmids ?? edgeRecord?.pubmed_ids,
     num_sources: linkProps?.num_sources ?? edgeRecord?.num_sources,
   };
 }

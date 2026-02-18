@@ -76,7 +76,7 @@ function ProvenanceDisplay({ events }: { events: ProvenanceEvent[] }) {
 /** Fields to skip (already rendered structurally or internal) */
 const SKIP_FIELDS = new Set([
   "num_sources", "num_experiments", "src_symbol", "dst_symbol",
-  "confidence_scores", "pubmed_ids", "detection_methods",
+  "confidence_scores", "pubmed_ids", "pmids", "detection_methods",
 ]);
 
 /** Fields that are PubMed IDs */
@@ -95,6 +95,7 @@ const SCORE_FIELDS = new Set([
   "pathogenicity", "llr", "frequency",
   "p_value_mlog", "best_p_value", "min_p_value", "p_value",
   "or_beta", "risk_allele_freq",
+  "best_p_value_mlog", "best_or_beta",
 ]);
 
 /** Snake_case to readable label */

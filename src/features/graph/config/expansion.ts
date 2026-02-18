@@ -65,8 +65,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
     },
     {
       label: "Find Traits",
-      description: "GWAS traits this gene is scored for",
-      edgeTypes: ["SCORED_FOR_TRAIT"],
+      description: "GWAS traits this gene is scored or associated with",
+      edgeTypes: ["SCORED_FOR_TRAIT", "ASSOCIATED_WITH_TRAIT"],
       direction: "out", targetType: "Trait", icon: "bar-chart", color: "#f59e0b",
       limit: 20,
     },
@@ -299,8 +299,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
   Trait: [
     {
       label: "Find Genes",
-      description: "Genes scored for this trait",
-      edgeTypes: ["SCORED_FOR_TRAIT"],
+      description: "Genes scored for or associated with this trait",
+      edgeTypes: ["SCORED_FOR_TRAIT", "ASSOCIATED_WITH_TRAIT"],
       direction: "in", targetType: "Gene", icon: "dna", color: "#3b82f6",
       limit: 20,
     },

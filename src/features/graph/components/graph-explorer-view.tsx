@@ -494,7 +494,7 @@ function GraphExplorerViewInner({
             confidenceScores: apiEdge.props?.confidence_scores as number[] | undefined,
             evidence: {
               sources: apiEdge.props?.sources as string[] | undefined,
-              pubmedIds: apiEdge.props?.pubmed_ids as string[] | undefined,
+              pubmedIds: (apiEdge.props?.pmids ?? apiEdge.props?.pubmed_ids) as string[] | undefined,
               detectionMethods: apiEdge.props?.detection_methods as string[] | undefined,
             },
             fields: apiEdge.props as Record<string, unknown> | undefined,
