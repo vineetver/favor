@@ -1,0 +1,42 @@
+import {
+  ToolLoopAgent,
+  type InferAgentUIMessage,
+  stepCountIs,
+  wrapLanguageModel,
+} from "ai";
+import { openai } from "@ai-sdk/openai";
+import { devToolsMiddleware } from "@ai-sdk/devtools";
+import { buildSystemPrompt } from "./lib/system-prompt";
+import * as tools from "./tools";
+
+const baseModel = openai("gpt-4o-mini");
+
+const model =
+  process.env.NODE_ENV === "development"
+    ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
+    : baseModel;
+
+export const favorAgent = new ToolLoopAgent({
+  model,
+  instructions: buildSystemPrompt(),
+  maxOutputTokens: 4000,
+  stopWhen: stepCountIs(12),
+  tools: {
+    searchEntities: tools.searchEntities,
+    getEntityContext: tools.getEntityContext,
+    compareEntities: tools.compareEntities,
+    getRankedNeighbors: tools.getRankedNeighbors,
+    runEnrichment: tools.runEnrichment,
+    findPaths: tools.findPaths,
+    getSharedNeighbors: tools.getSharedNeighbors,
+    lookupVariant: tools.lookupVariant,
+    getGeneVariantStats: tools.getGeneVariantStats,
+    getGwasAssociations: tools.getGwasAssociations,
+    createCohort: tools.createCohort,
+    analyzeCohort: tools.analyzeCohort,
+    graphTraverse: tools.graphTraverse,
+    variantBatchSummary: tools.variantBatchSummary,
+  },
+});
+
+export type AgentUIMessage = InferAgentUIMessage<typeof favorAgent>;
