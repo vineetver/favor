@@ -47,7 +47,7 @@ export function Navbar() {
           "fixed w-full z-50 top-0",
           "transition-all duration-500 ease-in-out",
           scrolled
-            ? "bg-white/85 backdrop-blur-2xl border-b border-border/60 py-4 shadow-sm"
+            ? "bg-background/85 backdrop-blur-2xl border-b border-border/60 py-4 shadow-sm"
             : "bg-transparent border-b border-transparent py-6",
         )}
       >
@@ -130,7 +130,7 @@ export function Navbar() {
                 className={cn(
                   "hidden md:flex items-center gap-2",
                   "px-4 py-2 rounded-full",
-                  "bg-white border border-border",
+                  "bg-background border border-border",
                   "shadow-sm hover:shadow transition-all",
                   "group",
                 )}

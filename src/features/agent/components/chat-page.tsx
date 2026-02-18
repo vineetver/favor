@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  DefaultChatTransport,
-  isToolUIPart,
-  getToolName,
-  type UIMessage,
-} from "ai";
-import { useChat } from "@ai-sdk/react";
+import { isToolUIPart, getToolName, type UIMessage } from "ai";
 import { useCallback, useState } from "react";
-import type { AgentUIMessage } from "../agent";
 
 import {
   Conversation,
@@ -41,7 +34,6 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
-  type PromptInputMessage,
 } from "@shared/components/ai-elements/prompt-input";
 import { Shimmer } from "@shared/components/ai-elements/shimmer";
 import { Spinner } from "@shared/components/ui/spinner";
@@ -59,15 +51,16 @@ import {
   FlaskConicalIcon,
   RouteIcon,
   CrosshairIcon,
-  MenuIcon,
+  PanelLeftIcon,
+  XIcon,
 } from "lucide-react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
+import { AgentErrorBoundary } from "./error-boundary";
+import { useAgentChat } from "../hooks/use-agent-chat";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const transport = new DefaultChatTransport({ api: "/api/chat" });
 
 const TOOL_TITLES: Record<string, string> = {
   searchEntities: "Search Entities",
@@ -136,7 +129,6 @@ function ChatMessageRenderer({
   const reasoningText = reasoningParts.map((p) => p.text).join("\n\n");
   const hasReasoning = reasoningParts.length > 0;
 
-  // Check if reasoning is currently streaming
   const lastPart = message.parts.at(-1);
   const isReasoningStreaming =
     isLastMessage && isStreaming && lastPart?.type === "reasoning";
@@ -150,13 +142,12 @@ function ChatMessageRenderer({
   }, [message.parts]);
 
   const hasText = message.parts.some(
-    (p) => p.type === "text" && p.text.trim()
+    (p) => p.type === "text" && p.text.trim(),
   );
 
   return (
     <Message from={message.role}>
       <MessageContent>
-        {/* Reasoning block (consolidated from all reasoning parts) */}
         {hasReasoning && (
           <Reasoning className="w-full" isStreaming={isReasoningStreaming}>
             <ReasoningTrigger />
@@ -164,9 +155,7 @@ function ChatMessageRenderer({
           </Reasoning>
         )}
 
-        {/* Message parts */}
         {message.parts.map((part, i) => {
-          // Text parts → rendered as markdown
           if (part.type === "text") {
             if (!part.text.trim()) return null;
             return (
@@ -176,7 +165,6 @@ function ChatMessageRenderer({
             );
           }
 
-          // Skip reasoning — already rendered above
           if (part.type === "reasoning") return null;
 
           // Tool parts → collapsible tool card
@@ -221,7 +209,6 @@ function ChatMessageRenderer({
         })}
       </MessageContent>
 
-      {/* Actions toolbar for assistant messages with text content */}
       {message.role === "assistant" && hasText && !isStreaming && (
         <MessageActions>
           <MessageAction
@@ -244,32 +231,40 @@ function ChatMessageRenderer({
 function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
   return (
     <ConversationEmptyState>
-      <div className="flex flex-col items-center gap-8 max-w-xl">
-        <div className="flex flex-col items-center gap-3">
-          <div className="rounded-2xl bg-primary/10 p-4">
-            <DnaIcon className="size-8 text-primary" />
+      <div className="flex flex-col items-center gap-10 max-w-2xl w-full px-4">
+        {/* Branding */}
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative">
+            <div className="absolute -inset-10 rounded-full bg-primary/[0.03]" />
+            <div className="absolute -inset-5 rounded-full bg-primary/[0.06]" />
+            <div className="relative rounded-2xl bg-primary/10 p-4 shadow-sm shadow-primary/5">
+              <DnaIcon className="size-7 text-primary" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            FAVOR-GPT
-          </h1>
-          <p className="text-muted-foreground text-sm text-center leading-relaxed max-w-md">
-            AI-powered genomic knowledge graph exploration. Ask about genes,
-            variants, diseases, drugs, pathways, and their relationships.
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-[22px] font-semibold text-foreground tracking-tight">
+              FAVOR-GPT
+            </h1>
+            <p className="text-muted-foreground text-[13px] text-center leading-relaxed max-w-sm">
+              Explore genes, variants, diseases, drugs, and pathways through an
+              AI-powered genomic knowledge graph.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+        {/* Suggested prompts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
           {SUGGESTED_PROMPTS.map((prompt) => (
             <button
               key={prompt.text}
               type="button"
               onClick={() => onSelect(prompt.text)}
-              className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left text-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground hover:border-border/80 hover:shadow-sm"
+              className="group/card flex items-center gap-3 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left text-[13px] text-muted-foreground transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground hover:shadow-sm"
             >
-              <span className="mt-0.5 shrink-0 text-muted-foreground/60">
+              <span className="shrink-0 rounded-lg bg-muted p-1.5 text-muted-foreground/60 transition-colors group-hover/card:bg-primary/10 group-hover/card:text-primary">
                 {prompt.icon}
               </span>
-              <span className="leading-relaxed">{prompt.text}</span>
+              <span className="leading-snug">{prompt.text}</span>
             </button>
           ))}
         </div>
@@ -283,35 +278,27 @@ function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
 // ---------------------------------------------------------------------------
 
 export function ChatPage() {
-  const { messages, sendMessage, status } = useChat<AgentUIMessage>({
-    transport,
-  });
+  const {
+    messages,
+    status,
+    isStreaming,
+    isSubmitted,
+    pastedVariantCount,
+    submit,
+    send,
+    onPaste,
+    createCohortFromPaste,
+    dismissPaste,
+  } = useAgentChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isStreaming = status === "streaming";
-  const isSubmitted = status === "submitted";
-
-  const handleSubmit = useCallback(
-    (message: PromptInputMessage) => {
-      if (!message.text?.trim()) return;
-      sendMessage({ text: message.text });
-    },
-    [sendMessage],
-  );
-
-  const handlePromptSelect = useCallback(
-    (text: string) => {
-      sendMessage({ text });
-    },
-    [sendMessage],
-  );
 
   const handleSidebarMessage = useCallback(
     (text: string) => {
-      sendMessage({ text });
+      send(text);
       setSidebarOpen(false);
     },
-    [sendMessage],
+    [send],
   );
 
   return (
@@ -320,25 +307,30 @@ export function ChatPage() {
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-80 p-0">
           <SheetTitle className="sr-only">Workspace</SheetTitle>
-          <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+          <AgentErrorBoundary fallbackLabel="Sidebar error">
+            <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+          </AgentErrorBoundary>
         </SheetContent>
       </Sheet>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col border-r border-border bg-card">
-        <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+      <aside className="hidden lg:flex w-[280px] shrink-0 flex-col overflow-hidden bg-muted/50 border-r border-border">
+        <AgentErrorBoundary fallbackLabel="Sidebar error">
+          <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+        </AgentErrorBoundary>
       </aside>
 
       {/* Main chat area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile header with menu toggle */}
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2 lg:hidden">
+      <div className="relative flex flex-1 flex-col min-w-0 bg-background">
+        {/* Mobile header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border lg:hidden">
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => setSidebarOpen(true)}
+            className="text-muted-foreground"
           >
-            <MenuIcon className="size-4" />
+            <PanelLeftIcon className="size-4" />
           </Button>
           <div className="flex items-center gap-2">
             <DnaIcon className="size-4 text-primary" />
@@ -348,50 +340,87 @@ export function ChatPage() {
           </div>
         </div>
 
-        <Conversation className="flex-1">
-          <ConversationContent className="mx-auto w-full max-w-3xl px-4">
-            {messages.length === 0 ? (
-              <EmptyState onSelect={handlePromptSelect} />
-            ) : (
-              <>
-                {messages.map((message, index) => (
-                  <ChatMessageRenderer
-                    key={message.id}
-                    message={message}
-                    isLastMessage={index === messages.length - 1}
-                    isStreaming={isStreaming}
-                  />
-                ))}
+        <AgentErrorBoundary fallbackLabel="Chat error">
+          <Conversation className="flex-1">
+            <ConversationContent className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+              {messages.length === 0 ? (
+                <EmptyState onSelect={send} />
+              ) : (
+                <>
+                  {messages.map((message, index) => (
+                    <ChatMessageRenderer
+                      key={message.id}
+                      message={message}
+                      isLastMessage={index === messages.length - 1}
+                      isStreaming={isStreaming}
+                    />
+                  ))}
 
-                {/* Thinking indicator while waiting for first token */}
-                {isSubmitted && (
-                  <Message from="assistant">
-                    <MessageContent>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Spinner className="size-4 text-muted-foreground" />
-                        <Shimmer duration={2}>Thinking...</Shimmer>
-                      </div>
-                    </MessageContent>
-                  </Message>
-                )}
-              </>
-            )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
+                  {/* Thinking indicator */}
+                  {isSubmitted && (
+                    <Message from="assistant">
+                      <MessageContent>
+                        <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                          <Spinner className="size-4" />
+                          <Shimmer duration={2}>Thinking...</Shimmer>
+                        </div>
+                      </MessageContent>
+                    </Message>
+                  )}
+                </>
+              )}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        </AgentErrorBoundary>
+
+        {/* Fade gradient above input */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background from-25% via-background/70 via-55% to-transparent" />
 
         {/* Input area */}
-        <div className="border-t border-border bg-background px-4 py-3">
+        <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-5 pt-1">
           <div className="mx-auto max-w-3xl">
-            <PromptInput onSubmit={handleSubmit}>
+            {/* Paste detection chip */}
+            {pastedVariantCount > 0 && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-xs text-foreground animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <DnaIcon className="size-3.5 shrink-0 text-primary" />
+                <span className="flex-1">
+                  Variant list detected ({pastedVariantCount.toLocaleString()}{" "}
+                  variants).
+                </span>
+                <button
+                  type="button"
+                  onClick={createCohortFromPaste}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Create cohort
+                </button>
+                <button
+                  type="button"
+                  onClick={dismissPaste}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              </div>
+            )}
+
+            <PromptInput
+              onSubmit={submit}
+              className="[&_[data-slot=input-group]]:rounded-2xl [&_[data-slot=input-group]]:shadow-[0_2px_12px_rgba(0,0,0,0.08)] [&_[data-slot=input-group]]:border-border [&_[data-slot=input-group]]:bg-card"
+            >
               <PromptInputBody>
                 <PromptInputTextarea
                   placeholder="Ask about genes, variants, diseases, drugs..."
                   disabled={isSubmitted}
+                  onPaste={onPaste}
+                  className="min-h-12"
                 />
               </PromptInputBody>
               <PromptInputFooter>
-                <div />
+                <span className="text-[11px] text-muted-foreground/50 select-none">
+                  Press Enter to send
+                </span>
                 <PromptInputSubmit status={status} />
               </PromptInputFooter>
             </PromptInput>

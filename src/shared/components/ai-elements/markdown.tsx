@@ -41,7 +41,7 @@ const components: Partial<Components> = {
     </p>
   ),
   strong: ({ node, children, ...props }) => (
-    <strong className="font-semibold text-slate-900" {...props}>
+    <strong className="font-semibold text-foreground" {...props}>
       {children}
     </strong>
   ),

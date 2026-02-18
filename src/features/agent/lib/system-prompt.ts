@@ -1,6 +1,6 @@
 /**
  * System prompt for the FAVOR agent.
- * Composable sections — keep total under ~2500 tokens.
+ * Composable sections with comprehensive edge catalog from GRAPH_SCHEMA.
  */
 
 const IDENTITY = `You are a biomedical research assistant with access to the FAVOR knowledge platform.
@@ -10,9 +10,9 @@ Be precise, cite data, and stay within your tool budget.`;
 const DATA_SOURCES = `## Your Data Sources
 
 ### 1. Knowledge Graph (Kuzu)
-- 13 entity types: Gene, Disease, Drug, Variant, Trait, Pathway, Phenotype, Study, SideEffect, GOTerm, OntologyTerm, Protein, RnaExpression
-- 66 relationship types connecting them
-- ~20M variants with curated biological connections
+- 13 entity types: Gene, Disease, Drug, Variant, Trait, Pathway, Phenotype, Study, SideEffect, GOTerm, OntologyTerm, cCRE, Metabolite
+- 67 relationship types connecting them
+- ~14.8M nodes, ~191M edges
 - Use for: "what connects to what?", enrichment, comparison, paths, ontology
 
 ### 2. Variant Annotation Database (ClickHouse + RocksDB)
@@ -21,22 +21,105 @@ const DATA_SOURCES = `## Your Data Sources
 - Pre-aggregated statistics available per gene
 - Use for: variant lookup, gene stats, cohort analysis, batch summary`;
 
-const KEY_RELATIONSHIPS = `## Key Relationships
+const EDGE_CATALOG = `## Edge Catalog
 
-Gene → Disease:     ASSOCIATED_WITH_DISEASE, IMPLICATED_IN, CURATED_FOR, CAUSES
-Drug → Gene:        TARGETS, TARGETS_IN_CONTEXT, HAS_PGX_INTERACTION
-Drug → Disease:     INDICATED_FOR
-Gene → Pathway:     PARTICIPATES_IN
-Variant → Gene:     PREDICTED_TO_AFFECT, POSITIONALLY_LINKED_TO, MISSENSE_PATHOGENIC_FOR
-Variant → Trait:    GWAS_ASSOCIATED_WITH
-Variant → Disease:  CLINVAR_ASSOCIATED
-Variant → Study:    STUDIED_IN
-Gene → Phenotype:   MANIFESTS_AS, MOUSE_MANIFESTS_AS
-Gene → Gene:        INTERACTS_WITH (PPI), FUNCTIONALLY_RELATED, REGULATES
-Gene → GOTerm:      ANNOTATED_WITH
-Drug → SideEffect:  HAS_SIDE_EFFECT, HAS_ADVERSE_REACTION
-Disease → Phenotype: PRESENTS_WITH
-Disease/Trait/Phenotype: SUBCLASS_OF, ANCESTOR_OF (ontology)`;
+> CRITICAL: When using \`getRankedNeighbors(scoreField=...)\` or \`graphTraverse(sort="-field", filters={...})\`, ONLY use columns listed after "rank:" or "filter:" for that edge type. Using non-existent fields will cause errors.
+
+Format: \`EDGE: From→To | rank: sort_fields | filter: filterable_fields\`
+
+### Gene ↔ Disease
+- ASSOCIATED_WITH_DISEASE: Gene→Disease | rank: overall_score, evidence_count, genetic_association_score
+- CURATED_FOR: Gene→Disease | rank: evidence_count | filter: classification, mode_of_inheritance
+- CAUSES: Gene→Disease | rank: confidence_category | filter: allelic_requirement, mutation_consequence
+- CIVIC_EVIDENCED_FOR: Gene→Disease | rank: profile_evidence_score, rating | filter: evidence_level, evidence_type
+- INHERITED_CAUSE_OF: Gene→Disease | rank: evidence_count | filter: mechanism
+- THERAPEUTIC_TARGET_IN: Gene→Disease | rank: evidence_count | filter: best_clinical_status
+- SCORED_FOR_DISEASE: Gene→Disease | rank: evidence_count | filter: clinical_phase, is_approved
+- BIOMARKER_FOR: Gene→Disease | rank: -
+- PGX_ASSOCIATED: Gene→Disease | rank: n_evidence
+- ASSERTED_FOR_DISEASE: Gene→Disease | rank: - | filter: significance, amp_category
+
+### Drug ↔ Gene
+- TARGETS: Drug→Gene | rank: num_sources, max_clinical_phase | filter: action_type, mechanism_of_action
+- TARGETS_IN_CONTEXT: Drug→Gene | rank: max_phase, num_trials | filter: disease_id, disease_name
+- HAS_PGX_INTERACTION: Gene→Drug | rank: n_evidence | filter: is_pd
+- HAS_CLINICAL_DRUG_EVIDENCE: Gene→Drug | rank: rating | filter: evidence_level, clinical_significance
+- ASSERTED_FOR_DRUG: Gene→Drug | rank: - | filter: significance
+
+### Drug → Disease / SideEffect
+- INDICATED_FOR: Drug→Disease | rank: max_clinical_phase, num_sources
+- HAS_SIDE_EFFECT: Drug→SideEffect | rank: frequency | filter: frequency_category
+- HAS_ADVERSE_REACTION: Drug→SideEffect | rank: llr, report_count
+
+### Variant → Gene (7 types, use precedence: PREDICTED_TO_AFFECT > regulatory > positional)
+- PREDICTED_TO_AFFECT: Variant→Gene | rank: max_l2g_score, confidence
+- POSITIONALLY_LINKED_TO: Variant→Gene | filter: consequence, region_type
+- ENHANCER_LINKED_TO: Variant→Gene | rank: feature_score, target_score, confidence
+- PREDICTED_REGULATORY_TARGET: Variant→Gene | rank: score, percentile
+- MISSENSE_PATHOGENIC_FOR: Variant→Gene | rank: pathogenicity, max_pathogenicity
+- CLINVAR_ANNOTATED_IN: Variant→Gene | filter: clinical_significance, review_status
+- SOMATICALLY_MUTATED_IN: Variant→Gene | rank: sample_count | filter: tier
+
+### Variant → Trait / Disease / Study / Drug / SideEffect
+- GWAS_ASSOCIATED_WITH: Variant→Trait | rank: p_value_mlog, or_beta
+- CLINVAR_ASSOCIATED: Variant→Disease | filter: clinical_significance, review_status
+- PGX_DISEASE_ASSOCIATED: Variant→Disease | rank: best_p_value, n_studies
+- REPORTED_IN: Variant→Study | rank: p_value_mlog
+- PGX_RESPONSE_FOR: Variant→Drug | rank: evidence_level
+- PGX_CLINICAL_RESPONSE: Variant→Drug | rank: score, evidence_level, max_evidence_score
+- AFFECTS_RESPONSE_TO: Variant→Drug | filter: significance, phenotype_category
+- STUDIED_FOR_DRUG_RESPONSE: Variant→Drug | rank: p_value
+- FUNCTIONALLY_ASSAYED_FOR: Variant→Drug | filter: assay_type
+- LINKED_TO_SIDE_EFFECT: Variant→SideEffect | filter: significance
+
+### Gene → Gene (PPI / functional)
+- INTERACTS_WITH: Gene→Gene | rank: num_sources, ot_mi_score, num_experiments
+- FUNCTIONALLY_RELATED: Gene→Gene | rank: combined_score, experiments, coexpression
+- REGULATES: Gene→Gene | filter: interaction_type
+- INTERACTS_IN_PATHWAY: Gene→Gene | filter: pathway_name
+
+### Gene → Trait / Pathway / Phenotype / GOTerm / SideEffect / Variant
+- SCORED_FOR_TRAIT: Gene→Trait | rank: total_score
+- ASSOCIATED_WITH_TRAIT: Gene→Trait | rank: best_p_value_mlog, n_studies
+- PARTICIPATES_IN: Gene→Pathway | filter: pathway_source, pathway_category
+- MANIFESTS_AS: Gene→Phenotype | filter: evidence_code, frequency
+- MOUSE_MANIFESTS_AS: Gene→Phenotype | rank: n_models
+- ANNOTATED_WITH: Gene→GOTerm | filter: go_namespace, evidence_code, qualifier
+- ASSOCIATED_WITH_SIDE_EFFECT: Gene→SideEffect | rank: n_evidence
+- HAS_GWAS_VARIANT: Gene→Variant | rank: p_value_mlog
+
+### Cross-ontology bridges
+- MAPS_TO: Trait→Disease | rank: match_count
+- TRAIT_PRESENTS_WITH: Trait→Phenotype | rank: match_count
+- PRESENTS_WITH: Disease→Phenotype | rank: match_count
+- SE_MAPS_TO: SideEffect→OntologyTerm | filter: dst_type
+
+### Regulatory (cCRE)
+- OVERLAPS: Variant→cCRE | filter: annotation
+- EXPERIMENTALLY_REGULATES: cCRE→Gene | rank: max_score
+- COMPUTATIONALLY_REGULATES: cCRE→Gene | rank: max_score
+
+### Metabolic
+- CONTAINS_METABOLITE: Pathway→Metabolite
+- METABOLITE_IS_A: Metabolite→Metabolite
+
+### Study
+- INVESTIGATES: Study→Trait
+
+### Ontology hierarchies (direct parent: *_SUBCLASS_OF, PART_OF | transitive: *_ANCESTOR_OF)
+- SUBCLASS_OF / ANCESTOR_OF: Disease→Disease
+- PHENOTYPE_SUBCLASS_OF / PHENOTYPE_ANCESTOR_OF: Phenotype→Phenotype
+- EFO_SUBCLASS_OF / EFO_ANCESTOR_OF: Trait→Trait
+- GO_SUBCLASS_OF / GO_ANCESTOR_OF: GOTerm→GOTerm
+- PART_OF / PATHWAY_ANCESTOR_OF: Pathway→Pathway
+All closure edges (ANCESTOR_OF) support filter: distance
+
+### Ranking defaults
+- Prefer \`*_score\` columns descending when available
+- Use \`evidence_count\` / \`num_sources\` as confidence tiebreaker
+- For GWAS: higher \`p_value_mlog\` = stronger significance
+- For drugs: rank by \`max_clinical_phase\` or \`is_approved\`
+- Gene-Disease ranking: ASSOCIATED_WITH_DISEASE.overall_score is the best aggregate`;
 
 const ENTITY_IDS = `## Entity ID Formats
 
@@ -139,7 +222,7 @@ export function buildSystemPrompt(): string {
   return [
     IDENTITY,
     DATA_SOURCES,
-    KEY_RELATIONSHIPS,
+    EDGE_CATALOG,
     ENTITY_IDS,
     RULES,
     WORKFLOWS,

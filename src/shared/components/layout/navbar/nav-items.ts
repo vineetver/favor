@@ -13,14 +13,10 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const RESOURCES: NavItem[] = [
+  { label: "FAVOR-GPT", href: "/agent" },
   {
     label: "Annotation Description",
     href: "https://docs.genohub.org/data",
-    external: true,
-  },
-  {
-    label: "FAVOR GPT",
-    href: "https://docs.genohub.org/favor-gpt",
     external: true,
   },
   { label: "Newsletter", href: "/newsletter" },

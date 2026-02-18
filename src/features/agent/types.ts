@@ -12,29 +12,6 @@ export interface CompressedSearchResult {
   matchTier?: string;
 }
 
-export interface CompressedEntityContext {
-  type: string;
-  id: string;
-  label: string;
-  summary: string;
-  topRelations: Array<{
-    edgeType: string;
-    count: number;
-    examples: string[];
-  }>;
-}
-
-export interface CompressedVariant {
-  identifier: string;
-  vcf: string;
-  gene?: string;
-  consequence?: string;
-  clinicalSignificance?: string;
-  populationFrequency?: number;
-  caddPhred?: number;
-  summary: string;
-}
-
 export interface CompressedGeneStats {
   gene: string;
   totalVariants: number;
@@ -79,13 +56,6 @@ export interface CompressedNeighbor {
   rank: number;
   score?: number;
   explanation?: string;
-}
-
-export interface CompressedComparison {
-  entities: Array<{ type: string; id: string; label: string }>;
-  sharedByEdgeType: Record<string, string[]>;
-  uniqueByEntity: Record<string, Record<string, string[]>>;
-  jaccardScores: Record<string, number>;
 }
 
 export interface CompressedEnrichment {

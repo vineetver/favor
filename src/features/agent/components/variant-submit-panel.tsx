@@ -98,7 +98,7 @@ async function createCohortAPI(
 
 interface VariantSubmitPanelProps {
   onCohortCreated: (cohort: AgentCohort) => void;
-  onAnalyzeCohort: (cohortId: string, label: string) => void;
+  onAnalyzeCohort: (cohortId: string) => void;
 }
 
 export function VariantSubmitPanel({
@@ -132,7 +132,7 @@ export function VariantSubmitPanel({
         createdAt: new Date().toISOString(),
       };
       onCohortCreated(cohort);
-      onAnalyzeCohort(result.cohort_id, label);
+      onAnalyzeCohort(result.cohort_id);
       setPasteText("");
     } catch (err) {
       setPasteError(
@@ -196,7 +196,7 @@ export function VariantSubmitPanel({
         createdAt: new Date().toISOString(),
       };
       onCohortCreated(cohort);
-      onAnalyzeCohort(result.cohort_id, label);
+      onAnalyzeCohort(result.cohort_id);
       setFile(null);
       setFileVariants([]);
       if (fileInputRef.current) fileInputRef.current.value = "";

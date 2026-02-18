@@ -11,6 +11,8 @@ export default function AgentLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="mt-16 flex h-[calc(100vh-4rem)]">{children}</main>
+    <div className="fixed inset-x-0 top-16 bottom-0 z-30 overflow-hidden border-t border-border/60 bg-background">
+      {children}
+    </div>
   );
 }
