@@ -10,7 +10,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
@@ -114,7 +113,7 @@ export function TissueExpressionChart({
 }: TissueExpressionChartProps) {
   const [groupMode, setGroupMode] = useState<GroupMode>("system");
   const [limit, setLimit] = useState<LimitOption>("25");
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("log");
+  const [scaleMode, setScaleMode] = useState<ScaleMode>("linear");
 
   const tissueRows = useMemo(() => adaptGtexToTissueArray(gtex), [gtex]);
 
@@ -176,40 +175,35 @@ export function TissueExpressionChart({
   );
 
   return (
-    <Card className={cn("border border-border", className)}>
-      <CardHeader className="border-b border-border pb-5">
+    <Card className={cn("border border-border py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border px-6 py-5">
         <CardTitle className="text-sm font-semibold text-foreground">
           GTEx Tissue Expression
         </CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Expression values across GTEx tissues (sorted by abundance)
-        </CardDescription>
+        </p>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3 flex-1 min-w-[220px]">
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <SegmentedControl
-              label="Group"
-              value={groupMode}
-              options={GROUP_OPTIONS}
-              onChange={setGroupMode}
-            />
-            <SegmentedControl
-              label="Top"
-              value={limit}
-              options={LIMIT_OPTIONS}
-              onChange={setLimit}
-            />
-            <SegmentedControl
-              label="Scale"
-              value={scaleMode}
-              options={SCALE_OPTIONS}
-              onChange={setScaleMode}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-4 px-6 py-3 border-b border-border bg-muted/50">
+          <SegmentedControl
+            label="Group"
+            value={groupMode}
+            options={GROUP_OPTIONS}
+            onChange={setGroupMode}
+          />
+          <SegmentedControl
+            label="Top"
+            value={limit}
+            options={LIMIT_OPTIONS}
+            onChange={setLimit}
+          />
+          <SegmentedControl
+            label="Scale"
+            value={scaleMode}
+            options={SCALE_OPTIONS}
+            onChange={setScaleMode}
+          />
         </div>
 
         <div className="px-6 py-6">
