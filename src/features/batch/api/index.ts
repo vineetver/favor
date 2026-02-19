@@ -484,10 +484,12 @@ export async function createCohort(
  */
 export async function listCohorts(
   tenantId: string,
-  opts?: { status?: CohortStatus; limit?: number; cursor?: string },
+  opts?: { status?: CohortStatus; source?: string; parent_id?: string; limit?: number; cursor?: string },
 ): Promise<CohortListResponse> {
   const params = new URLSearchParams({ tenant_id: tenantId });
   if (opts?.status) params.set("status", opts.status);
+  if (opts?.source) params.set("source", opts.source);
+  if (opts?.parent_id) params.set("parent_id", opts.parent_id);
   if (opts?.limit) params.set("limit", String(opts.limit));
   if (opts?.cursor) params.set("cursor", opts.cursor);
 

@@ -6,13 +6,19 @@ import {
   BatchApiError,
   cancelJob,
   DEFAULT_TENANT_ID,
+  getCohort,
+  listCohorts,
   JobDetailView,
   useJobPolling,
 } from "@features/batch";
-import type { Job } from "@features/batch";
+import type { CohortDetail, CohortListItem, Job } from "@features/batch";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
+  Copy,
+  GitBranch,
   Loader2,
   Pause,
   Play,
@@ -111,6 +117,27 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     tenantId: DEFAULT_TENANT_ID,
     enabled: !isPaused,
   });
+
+  // Fetch cohort detail for the label (the jobId in the URL is actually the cohort ID)
+  const { data: cohort } = useQuery({
+    queryKey: ["cohort-detail", jobId],
+    queryFn: () => getCohort(jobId, DEFAULT_TENANT_ID),
+    enabled: !!jobId,
+    staleTime: 60_000,
+  });
+
+  // Fetch derived sub-cohorts of this parent
+  const { data: derivedData } = useQuery({
+    queryKey: ["derived-cohorts", jobId],
+    queryFn: () => listCohorts(DEFAULT_TENANT_ID, { parent_id: jobId, limit: 50 }),
+    enabled: !!jobId && !!job?.is_terminal,
+    staleTime: 30_000,
+  });
+
+  // Filter client-side: only show cohorts that are actually derived from this parent
+  const derivedCohorts = (derivedData?.cohorts ?? []).filter(
+    (c) => c.source === "derived" && c.parent_id === jobId,
+  );
 
   // Track last update time
   useEffect(() => {
@@ -256,7 +283,8 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   }
 
   const isTerminal = job.is_terminal;
-  const filename = job.input?.filename;
+  // Prefer cohort label over raw storage filename (which can be a UUID)
+  const filename = cohort?.label || job.input?.filename;
 
   return (
     <div className="min-h-screen relative overflow-hidden text-foreground">
@@ -296,6 +324,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
         {job && (
           <JobDetailView
             job={job}
+            cohortId={jobId}
             filename={filename}
             onCancel={job.can_cancel ? handleCancel : undefined}
             onDownload={job.state === "COMPLETED" ? handleDownload : undefined}
@@ -311,6 +340,50 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
             onNewJob={handleNewJob}
             isCancelling={isCancelling}
           />
+        )}
+
+        {/* Derived Sub-cohorts */}
+        {derivedCohorts.length > 0 && (
+          <Card className="mt-6 border border-border py-0 gap-0">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <GitBranch className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  Derived Cohorts
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  ({derivedCohorts.length})
+                </span>
+              </div>
+              <div className="space-y-2">
+                {derivedCohorts.map((dc) => (
+                  <div
+                    key={dc.id}
+                    className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {dc.label || `Cohort ${dc.id.slice(0, 8)}`}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        {dc.variant_count != null && (
+                          <span>{dc.variant_count} variants</span>
+                        )}
+                        <span className="text-border">&middot;</span>
+                        <span>{dc.status}</span>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/batch-annotation/jobs/${dc.id}/analytics`}>
+                        Open Analytics
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Cancel Error */}

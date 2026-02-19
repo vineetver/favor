@@ -41,14 +41,14 @@ import { StatCard } from "./stat-card";
 // Shared Components
 // ============================================================================
 
-function JobIdCopyButton({ jobId }: { jobId: string }) {
+function IdCopyButton({ id, label }: { id: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(jobId);
+    navigator.clipboard.writeText(id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [jobId]);
+  }, [id]);
 
   return (
     <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ function JobIdCopyButton({ jobId }: { jobId: string }) {
         onClick={handleCopy}
         className="h-auto px-2 py-0.5 text-xs font-mono bg-muted hover:bg-muted"
       >
-        {jobId.slice(0, 8)}...
+        {label || `${id.slice(0, 8)}...`}
         <Copy className="w-3 h-3" />
       </Button>
       {copied && <span className="text-xs text-emerald-600">Copied!</span>}
@@ -99,6 +99,7 @@ function LiveDuration({
 
 interface PendingJobCardProps {
   job: JobPending;
+  displayId: string;
   filename?: string;
   onCancel?: () => void;
   isCancelling?: boolean;
@@ -107,6 +108,7 @@ interface PendingJobCardProps {
 
 export function PendingJobCard({
   job,
+  displayId,
   filename,
   onCancel,
   isCancelling,
@@ -122,7 +124,7 @@ export function PendingJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="neutral">
             <Clock className="w-3.5 h-3.5 mr-1" />
@@ -177,6 +179,7 @@ export function PendingJobCard({
 
 interface RunningJobCardProps {
   job: JobRunning;
+  displayId: string;
   filename?: string;
   onCancel?: () => void;
   isCancelling?: boolean;
@@ -185,6 +188,7 @@ interface RunningJobCardProps {
 
 export function RunningJobCard({
   job,
+  displayId,
   filename,
   onCancel,
   isCancelling,
@@ -220,7 +224,7 @@ export function RunningJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="primary">
             <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
@@ -316,12 +320,14 @@ export function RunningJobCard({
 
 interface CancelRequestedJobCardProps {
   job: JobCancelRequested;
+  displayId: string;
   filename?: string;
   className?: string;
 }
 
 export function CancelRequestedJobCard({
   job,
+  displayId,
   filename,
   className,
 }: CancelRequestedJobCardProps) {
@@ -335,7 +341,7 @@ export function CancelRequestedJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="warning">
             <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
@@ -365,6 +371,7 @@ export function CancelRequestedJobCard({
 
 interface CompletedJobCardProps {
   job: JobCompleted;
+  displayId: string;
   filename?: string;
   onDownload?: () => void;
   onDownloadManifest?: () => void;
@@ -375,6 +382,7 @@ interface CompletedJobCardProps {
 
 export function CompletedJobCard({
   job,
+  displayId,
   filename,
   onDownload,
   onDownloadManifest,
@@ -400,7 +408,7 @@ export function CompletedJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="positive">
             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -507,6 +515,7 @@ export function CompletedJobCard({
 
 interface FailedJobCardProps {
   job: JobFailed;
+  displayId: string;
   filename?: string;
   onRetry?: () => void;
   onNewJob?: () => void;
@@ -516,6 +525,7 @@ interface FailedJobCardProps {
 
 export function FailedJobCard({
   job,
+  displayId,
   filename,
   onRetry,
   onNewJob,
@@ -539,7 +549,7 @@ export function FailedJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="negative">
             <XCircle className="w-3.5 h-3.5 mr-1" />
@@ -613,6 +623,7 @@ export function FailedJobCard({
 
 interface CancelledJobCardProps {
   job: JobCancelled;
+  displayId: string;
   filename?: string;
   onNewJob?: () => void;
   className?: string;
@@ -620,6 +631,7 @@ interface CancelledJobCardProps {
 
 export function CancelledJobCard({
   job,
+  displayId,
   filename,
   onNewJob,
   className,
@@ -634,7 +646,7 @@ export function CancelledJobCard({
                 {filename}
               </h2>
             )}
-            <JobIdCopyButton jobId={job.job_id} />
+            <IdCopyButton id={displayId} />
           </div>
           <StatusBadge variant="neutral">
             <StopCircle className="w-3.5 h-3.5 mr-1" />
@@ -680,6 +692,7 @@ interface JobDetailViewProps {
     | JobCompleted
     | JobFailed
     | JobCancelled;
+  cohortId?: string;
   filename?: string;
   onCancel?: () => void;
   onDownload?: () => void;
@@ -695,6 +708,7 @@ interface JobDetailViewProps {
 
 export function JobDetailView({
   job,
+  cohortId,
   filename,
   onCancel,
   onDownload,
@@ -707,11 +721,15 @@ export function JobDetailView({
   isRetrying,
   className,
 }: JobDetailViewProps) {
+  // Use cohort ID for display when available; fall back to job_id
+  const displayId = cohortId || job.job_id;
+
   switch (job.state) {
     case "PENDING":
       return (
         <PendingJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           onCancel={onCancel}
           isCancelling={isCancelling}
@@ -723,6 +741,7 @@ export function JobDetailView({
       return (
         <RunningJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           onCancel={onCancel}
           isCancelling={isCancelling}
@@ -734,6 +753,7 @@ export function JobDetailView({
       return (
         <CancelRequestedJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           className={className}
         />
@@ -743,6 +763,7 @@ export function JobDetailView({
       return (
         <CompletedJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           onDownload={onDownload}
           onDownloadManifest={onDownloadManifest}
@@ -756,6 +777,7 @@ export function JobDetailView({
       return (
         <FailedJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           onRetry={onRetry}
           onNewJob={onNewJob}
@@ -768,6 +790,7 @@ export function JobDetailView({
       return (
         <CancelledJobCard
           job={job}
+          displayId={displayId}
           filename={filename}
           onNewJob={onNewJob}
           className={className}

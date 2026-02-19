@@ -237,6 +237,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
           include_not_found: config.includeNotFound,
           email: config.email || null,
           org_name: config.orgName || null,
+          metadata: { cohort_label: file.name },
         });
 
         router.push(`/batch-annotation/jobs/${job_id}`);

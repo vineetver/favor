@@ -164,6 +164,7 @@ export interface CreateJobRequest {
   result_ttl_hours?: number;
   email?: string | null;
   org_name?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CreateJobResponse {
@@ -364,6 +365,7 @@ export interface CohortListItem {
   status: CohortStatus;
   source: "inline" | "upload" | "derived";
   label: string | null;
+  parent_id: string | null;
   variant_count: number | null;
   created_at: string;
   updated_at: string;

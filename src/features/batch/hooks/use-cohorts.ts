@@ -49,8 +49,14 @@ export function useCohorts({
     staleTime: 0,
   });
 
+  // Exclude derived cohorts — they have no job data and can't be viewed directly.
+  // Derived cohorts are accessed via their parent cohort instead.
+  const cohorts = (query.data?.cohorts ?? []).filter(
+    (c) => c.source !== "derived",
+  );
+
   return {
-    cohorts: query.data?.cohorts ?? [],
+    cohorts,
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error : null,
     refetch: () => query.refetch(),
