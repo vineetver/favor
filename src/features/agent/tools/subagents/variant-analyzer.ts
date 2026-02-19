@@ -1,6 +1,6 @@
 import { tool, generateText, stepCountIs } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { nanoModel } from "../../lib/models";
 import type { SubagentOutput } from "../../types";
 import { searchEntities } from "../search-entities";
 import { lookupVariant } from "../lookup-variant";
@@ -78,7 +78,7 @@ export const variantAnalyzer = tool({
     try {
       const result = await Promise.race([
         generateText({
-          model: openai("gpt-4o"),
+          model: nanoModel,
           system: VARIANT_ANALYZER_PROMPT,
           prompt: contextParts.join("\n"),
           tools: VARIANT_TOOLS,

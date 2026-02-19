@@ -1,6 +1,6 @@
 import { tool, generateText, stepCountIs } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { nanoModel } from "../../lib/models";
 import type { SubagentOutput } from "../../types";
 import { searchEntities } from "../search-entities";
 import { getEntityContext } from "../entity-context";
@@ -76,7 +76,7 @@ export const graphExplorer = tool({
     try {
       const result = await Promise.race([
         generateText({
-          model: openai("gpt-4o"),
+          model: nanoModel,
           system: GRAPH_EXPLORER_PROMPT,
           prompt: `Task: ${task}\nSeed entities: ${JSON.stringify(seedEntities)}\nMax exploration depth: ${maxHops}`,
           tools: GRAPH_TOOLS,

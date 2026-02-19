@@ -129,7 +129,7 @@ All score columns available for \`analyzeCohort\` topk and derive operations:
 For frequency fields (gnomad_af, gnomad_exome_af, bravo_af, tg_all), missing values are INCLUDED when using score_below (unknown ≠ common). For all other fields, missing values are EXCLUDED.`;
 
 const RESPONSE_FORMAT = `## Response & Limitations
-**Format**: Markdown with headers, bold, and structured lists. Cite data sources. Explain scores in biological/clinical context. Give thorough, informative answers that fully address the user's question — include relevant details, comparisons, and clinical implications where applicable.
+**Format**: Write in flowing prose paragraphs. Use headers to organize sections. Use **bold** for key terms and gene/variant names. AVOID bullet-point lists — prefer sentences and short paragraphs. Only use a list when presenting a ranked top-N (e.g., top 5 variants) or a short comparison table. Never nest bullets. Cite data sources inline. Explain scores in biological/clinical context. Give thorough, informative answers — include relevant details, comparisons, and clinical implications where applicable.
 **No external APIs**: Cannot access PubMed, NCBI, UniProt, etc. Suggest the user check those directly.
 **No file processing**: Direct users to the Upload panel for file-based workflows.
 **KG = curated databases** (Open Targets, ClinGen, GWAS Catalog, ClinVar, DrugBank, Reactome), not raw literature.

@@ -1,5 +1,10 @@
 import type { PrepareStepFunction } from "ai";
+
+// Matches SharedV3ProviderOptions from ai SDK
+type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue | undefined };
+type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 import type { QueryType, ReportPlanOutput } from "../types";
+import type { nanoModel } from "./models";
 
 // ---------------------------------------------------------------------------
 // Tool names (must match keys in agent.ts)
@@ -158,50 +163,128 @@ function detectPhase(stepCount: number, hasToolCallInLastStep: boolean): Phase {
 }
 
 // ---------------------------------------------------------------------------
-// prepareStep implementation
+// Infrastructure: budget governor, stuck detector, circuit breaker
 // ---------------------------------------------------------------------------
+
+const TOOL_CALL_BUDGET = 30;
+
+function countToolCalls(steps: StepData[]): number {
+  return steps.reduce((sum, s) => sum + (s.toolCalls?.length ?? 0), 0);
+}
+
+function isStuck(steps: StepData[]): boolean {
+  if (steps.length < 4) return false;
+  const last2 = steps.slice(-2);
+  return last2.every((s) => {
+    if (!s.toolResults?.length) return true;
+    return s.toolResults.every((r) => {
+      const out = r.output as Record<string, unknown>;
+      return out?.error === true;
+    });
+  });
+}
+
+function getTrippedTools(steps: StepData[]): Set<string> {
+  const consecutive = new Map<string, number>();
+  for (const step of steps) {
+    for (const r of step.toolResults ?? []) {
+      const out = r.output as Record<string, unknown>;
+      if (out?.error) {
+        consecutive.set(r.toolName, (consecutive.get(r.toolName) ?? 0) + 1);
+      } else {
+        consecutive.set(r.toolName, 0);
+      }
+    }
+  }
+  return new Set(
+    [...consecutive].filter(([, c]) => c >= 3).map(([n]) => n),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// prepareStep factory
+// ---------------------------------------------------------------------------
+
+const NO_TEXT_INSTRUCTION =
+  "\n\n[SYSTEM] Do NOT output any explanatory text, plans, or commentary. ONLY call tools. All planning must go through the reportPlan tool, not as text output.";
 
 const SYNTHESIS_INSTRUCTION =
   "\n\n[SYSTEM] You have gathered enough data. Now write a thorough, well-structured response that fully answers the user's question. Include all relevant findings from your tool calls — gene associations, variant details, scores, clinical significance, and biological context. Use markdown headers, tables where appropriate, and explain what the data means. Do NOT call any more tools.";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const favorPrepareStep: PrepareStepFunction<any> = ({
-  stepNumber,
-  steps,
-}) => {
-  // Check if the last step had any tool calls
-  const lastStep = steps.at(-1);
-  const hasToolCallInLastStep =
-    lastStep?.toolCalls != null && lastStep.toolCalls.length > 0;
+export function createPrepareStep(
+  nano: typeof nanoModel,
+  nanoProviderOptions: ProviderOptions,
+  synthesisProviderOptions?: ProviderOptions,
+): PrepareStepFunction<any> {
+  return ({ stepNumber, steps }) => {
+    const stepsData = steps as StepData[];
 
-  const phase = detectPhase(stepNumber, hasToolCallInLastStep);
-
-  switch (phase) {
-    case "resolve":
-      return { activeTools: [...RESOLVE_TOOLS] };
-
-    case "explore": {
-      // Try to read the plan from earlier steps
-      const plan = extractPlan(steps as StepData[]);
-
-      if (plan) {
-        const queryType = plan.queryType;
-        const tools = TOOL_SETS[queryType] ?? [...ALL_TOOLS];
-        const guidance = QUERY_GUIDANCE[queryType];
-        return {
-          activeTools: [...tools],
-          ...(guidance ? { system: guidance } : {}),
-        };
-      }
-
-      // Fallback: no plan found, use all tools
-      return { activeTools: [...ALL_TOOLS] };
-    }
-
-    case "synthesize":
+    // --- Infrastructure checks ---
+    if (countToolCalls(stepsData) >= TOOL_CALL_BUDGET || isStuck(stepsData)) {
       return {
         activeTools: [],
         system: SYNTHESIS_INSTRUCTION,
+        ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
       };
-  }
-};
+    }
+
+    const tripped = getTrippedTools(stepsData);
+
+    // --- Phase detection ---
+    const lastStep = stepsData.at(-1);
+    const hasToolCallInLastStep =
+      lastStep?.toolCalls != null && lastStep.toolCalls.length > 0;
+
+    const phase = detectPhase(stepNumber, hasToolCallInLastStep);
+
+    switch (phase) {
+      case "resolve":
+        return {
+          model: nano,
+          providerOptions: nanoProviderOptions,
+          toolChoice: "required" as const,
+          activeTools: [...RESOLVE_TOOLS].filter((t) => !tripped.has(t)),
+          system: NO_TEXT_INSTRUCTION,
+        };
+
+      case "explore": {
+        const plan = extractPlan(stepsData);
+
+        if (plan) {
+          const queryType = plan.queryType;
+          const tools = TOOL_SETS[queryType] ?? [...ALL_TOOLS];
+          const guidance = QUERY_GUIDANCE[queryType];
+          return {
+            model: nano,
+            providerOptions: nanoProviderOptions,
+            toolChoice: "required" as const,
+            activeTools: [...tools].filter((t) => !tripped.has(t)),
+            system: NO_TEXT_INSTRUCTION + (guidance ?? ""),
+          };
+        }
+
+        // No plan yet — keep reportPlan available alongside all tools.
+        // gpt-5-nano calls ~1 tool per step, so the resolve phase (2 steps)
+        // often isn't enough for it to emit both searchEntities and reportPlan.
+        const allPlusReport = new Set([...ALL_TOOLS, "reportPlan"]);
+        return {
+          model: nano,
+          providerOptions: nanoProviderOptions,
+          toolChoice: "required" as const,
+          activeTools: [...allPlusReport].filter((t) => !tripped.has(t)),
+          system: NO_TEXT_INSTRUCTION + "\n\n[SYSTEM] You have NOT emitted a reportPlan yet. You MUST call reportPlan before continuing with exploration tools. Call it now.",
+        };
+      }
+
+      case "synthesize":
+        // No model override — uses agent default (flagship synthesis model)
+        return {
+          activeTools: [],
+          system: SYNTHESIS_INSTRUCTION,
+          ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
+        };
+    }
+  };
+}
+

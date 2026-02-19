@@ -9,7 +9,7 @@ import {
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
 import { cn } from "@infra/utils";
-import { BrainIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronRightIcon } from "lucide-react";
 import {
   createContext,
   memo,
@@ -156,9 +156,9 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
     return <Shimmer duration={1}>Thinking...</Shimmer>;
   }
   if (duration === undefined) {
-    return <p>Thought for a few seconds</p>;
+    return <span>Reasoned for a few seconds</span>;
   }
-  return <p>Thought for {duration} seconds</p>;
+  return <span>Reasoned for {duration}s</span>;
 };
 
 export const ReasoningTrigger = memo(
@@ -168,26 +168,28 @@ export const ReasoningTrigger = memo(
     getThinkingMessage = defaultGetThinkingMessage,
     ...props
   }: ReasoningTriggerProps) => {
-    const { isStreaming, isOpen, duration } = useReasoning();
+    const { isStreaming, duration } = useReasoning();
 
     return (
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
+          "group flex w-full items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground",
           className
         )}
         {...props}
       >
         {children ?? (
           <>
-            <BrainIcon className="size-4" />
-            {getThinkingMessage(isStreaming, duration)}
-            <ChevronDownIcon
+            <span
               className={cn(
-                "size-4 transition-transform",
-                isOpen ? "rotate-180" : "rotate-0"
+                "size-[5px] shrink-0 rounded-full",
+                isStreaming
+                  ? "bg-primary animate-pulse"
+                  : "bg-muted-foreground/30"
               )}
             />
+            {getThinkingMessage(isStreaming, duration)}
+            <ChevronRightIcon className="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           </>
         )}
       </CollapsibleTrigger>
@@ -205,13 +207,16 @@ export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => (
     <CollapsibleContent
       className={cn(
-        "mt-4 text-sm",
-        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-muted-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+        "mt-2 ml-[3px] border-l-2 border-border pl-3",
+        "text-xs text-muted-foreground",
+        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
         className
       )}
       {...props}
     >
-      <Streamdown className="ai-summary-content">{children}</Streamdown>
+      <div className="reasoning-content">
+        <Streamdown className="ai-summary-content">{children}</Streamdown>
+      </div>
     </CollapsibleContent>
   )
 );

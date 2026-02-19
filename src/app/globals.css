@@ -411,4 +411,9 @@
   .ai-summary-content td {
     @apply py-2 border-b border-border;
   }
+
+  /* Reasoning content — smaller text inside collapsed reasoning blocks */
+  .reasoning-content .ai-summary-content {
+    @apply text-[12px] leading-[1.6];
+  }
 }

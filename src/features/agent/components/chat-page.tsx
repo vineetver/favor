@@ -17,9 +17,6 @@ import {
   MessageResponse,
 } from "@shared/components/ai-elements/message";
 import {
-  Tool,
-  ToolContent,
-  ToolHeader,
   ToolInput,
   ToolOutput,
 } from "@shared/components/ai-elements/tool";
@@ -64,6 +61,16 @@ import {
   ThumbsDownIcon,
   XIcon,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@shared/components/ui/select";
+import {
+  AVAILABLE_SYNTHESIS_MODELS,
+  type SynthesisModelId,
+} from "../lib/models";
 import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
@@ -306,19 +313,21 @@ function ChatMessageRenderer({
   message,
   isLastMessage,
   isStreaming,
+  showReasoning,
 }: {
   message: UIMessage;
   isLastMessage: boolean;
   isStreaming: boolean;
+  showReasoning: boolean;
 }) {
   // Consolidate reasoning parts into a single block
   const reasoningParts = message.parts.filter((p) => p.type === "reasoning");
   const reasoningText = reasoningParts.map((p) => p.text).join("\n\n");
-  const hasReasoning = reasoningParts.length > 0;
+  const hasReasoning = showReasoning && reasoningParts.length > 0;
 
   const lastPart = message.parts.at(-1);
   const isReasoningStreaming =
-    isLastMessage && isStreaming && lastPart?.type === "reasoning";
+    showReasoning && isLastMessage && isStreaming && lastPart?.type === "reasoning";
 
   const handleCopy = useCallback(() => {
     const textContent = message.parts
@@ -332,10 +341,19 @@ function ChatMessageRenderer({
     (p) => p.type === "text" && p.text.trim(),
   );
 
-  // Pre-compute sibling tool parts once (for PlanRenderer)
+  // Pre-compute sibling tool parts for PlanRenderer.
+  // Only include tools AFTER the reportPlan part — resolve-phase tools
+  // (searchEntities, recallMemories) that run in parallel with the plan
+  // shouldn't affect plan step status.
+  const reportPlanIndex = message.parts.findIndex(
+    (p) =>
+      isToolUIPart(p) &&
+      getToolName(p).replace(/^tool-/, "") === "reportPlan",
+  );
   const siblingToolParts = message.parts
     .filter(
-      (p) =>
+      (p, i) =>
+        (reportPlanIndex === -1 || i > reportPlanIndex) &&
         isToolUIPart(p) &&
         getToolName(p).replace(/^tool-/, "") !== "reportPlan",
     )
@@ -372,6 +390,14 @@ function ChatMessageRenderer({
           </Reasoning>
         )}
 
+        {/* Show activity indicator when streaming but no visible content yet */}
+        {isLastMessage && isStreaming && segments.length === 0 && !hasReasoning && (
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Spinner className="size-4" />
+            <Shimmer duration={2}>Analyzing query...</Shimmer>
+          </div>
+        )}
+
         {segments.map((seg) => {
           if (seg.kind === "text") {
             return (
@@ -390,47 +416,6 @@ function ChatMessageRenderer({
           }
 
           if (seg.kind === "tools") {
-            // Single tool → full card, multiple tools → compact grouped list
-            if (seg.parts.length === 1) {
-              const { part } = seg.parts[0];
-              const toolName = getToolName(part);
-              const title = getToolTitle(part.type);
-              const inputSummary = getToolInputSummary(toolName, part.input);
-
-              return (
-                <Tool
-                  key={seg.key}
-                  defaultOpen={part.state === "output-error"}
-                >
-                  {part.type === "dynamic-tool" ? (
-                    <ToolHeader
-                      type="dynamic-tool"
-                      state={part.state}
-                      toolName={toolName}
-                      title={inputSummary ?? title}
-                    />
-                  ) : (
-                    <ToolHeader
-                      type={part.type}
-                      state={part.state}
-                      title={inputSummary ?? title}
-                    />
-                  )}
-                  <ToolContent>
-                    <ToolInput input={part.input} />
-                    {(part.state === "output-available" ||
-                      part.state === "output-error") && (
-                      <ToolOutput
-                        output={part.output}
-                        errorText={part.errorText}
-                        renderOutput={(out) => renderToolOutput(toolName, out)}
-                      />
-                    )}
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
             return (
               <ToolActivityGroup key={seg.key} tools={seg.parts} />
             );
@@ -505,6 +490,8 @@ export function ChatPage() {
     isStreaming,
     isSubmitted,
     sessionId,
+    synthesisModel,
+    setSynthesisModel,
     pastedVariantCount,
     submit,
     send,
@@ -516,6 +503,10 @@ export function ChatPage() {
   } = useAgentChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Defer Radix Select rendering to avoid hydration mismatch (server/client ID divergence)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Track which cohort IDs we've already persisted to sidebar
   const persistedCohortIds = useRef(new Set<string>());
@@ -629,15 +620,47 @@ export function ChatPage() {
               FAVOR-GPT
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={newChat}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <PlusIcon className="size-4" />
-            New Chat
-          </Button>
+          <div className="flex items-center gap-2">
+            {mounted ? (
+              <Select
+                value={synthesisModel}
+                onValueChange={(v) => setSynthesisModel(v as SynthesisModelId)}
+              >
+                <SelectTrigger className="h-7 w-auto gap-1.5 border-none bg-transparent px-2 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground focus:ring-0">
+                  <span>
+                    {AVAILABLE_SYNTHESIS_MODELS.find(
+                      (m) => m.id === synthesisModel,
+                    )?.label ?? "Fast"}
+                  </span>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" sideOffset={4}>
+                  {AVAILABLE_SYNTHESIS_MODELS.map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="text-xs">
+                      {m.label}
+                      <span className="ml-1.5 text-muted-foreground">
+                        {m.description}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="h-7 px-2 text-[11px] font-medium text-muted-foreground inline-flex items-center">
+                {AVAILABLE_SYNTHESIS_MODELS.find(
+                  (m) => m.id === synthesisModel,
+                )?.label ?? "Fast"}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={newChat}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+            >
+              <PlusIcon className="size-4" />
+              New Chat
+            </Button>
+          </div>
         </div>
 
         <AgentErrorBoundary fallbackLabel="Chat error">
@@ -658,6 +681,7 @@ export function ChatPage() {
                         message={message}
                         isLastMessage={index === messages.length - 1}
                         isStreaming={isStreaming}
+                        showReasoning={synthesisModel === "thinking"}
                       />
                     </motion.div>
                   ))}

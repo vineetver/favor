@@ -6,6 +6,23 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const DEFAULT_TIMEOUT = 30_000; // 30s per tool call
 
+// ---------------------------------------------------------------------------
+// FNV-1a hash for deterministic idempotency keys
+// ---------------------------------------------------------------------------
+
+function fnv1a(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+function idempotencyKey(path: string, body: unknown): string {
+  return fnv1a(path + (body ? JSON.stringify(body) : ""));
+}
+
 /**
  * Agent-facing error that returns structured messages the LLM can reason about.
  */
@@ -58,7 +75,10 @@ export async function agentFetch<T>(
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       method: options?.method ?? "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": idempotencyKey(path, options?.body),
+      },
       body: options?.body ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
       cache: "no-store",

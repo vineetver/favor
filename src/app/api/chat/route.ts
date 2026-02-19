@@ -1,11 +1,11 @@
 import { createAgentUIStreamResponse } from "ai";
-import { favorAgent } from "@features/agent/agent";
+import { createFavorAgent } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
 
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
-  const { messages, sessionId } = await req.json();
+  const { messages, sessionId, synthesisModel } = await req.json();
 
   // Persist user message (write-ahead) — fire-and-forget, don't block streaming
   if (sessionId) {
@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     }
   }
 
+  const agent = createFavorAgent(synthesisModel);
+
   return createAgentUIStreamResponse({
-    agent: favorAgent,
+    agent,
     uiMessages: messages,
     onFinish: sessionId
       ? ({ responseMessage }) => {

@@ -4,6 +4,7 @@ import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { AgentUIMessage } from "../agent";
+import { DEFAULT_SYNTHESIS_MODEL, type SynthesisModelId } from "../lib/models";
 import type { PromptInputMessage } from "@shared/components/ai-elements/prompt-input";
 import {
   createSessionClient,
@@ -33,6 +34,8 @@ function countVariantLines(text: string): number {
 export function useAgentChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const [synthesisModel, setSynthesisModel] = useState<SynthesisModelId>(DEFAULT_SYNTHESIS_MODEL);
+  const synthesisModelRef = useRef<SynthesisModelId>(DEFAULT_SYNTHESIS_MODEL);
 
   // Promise lock to prevent double-creation of sessions
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
@@ -44,6 +47,7 @@ export function useAgentChat() {
         api: "/api/chat",
         body: () => ({
           ...(sessionIdRef.current ? { sessionId: sessionIdRef.current } : {}),
+          synthesisModel: synthesisModelRef.current,
         }),
       }),
     [],
@@ -53,6 +57,11 @@ export function useAgentChat() {
     useChat<AgentUIMessage>({
       transport,
     });
+
+  const updateSynthesisModel = useCallback((id: SynthesisModelId) => {
+    synthesisModelRef.current = id;
+    setSynthesisModel(id);
+  }, []);
 
   const [pastedVariantCount, setPastedVariantCount] = useState(0);
   const pastedTextRef = useRef("");
@@ -173,6 +182,8 @@ export function useAgentChat() {
     isStreaming,
     isSubmitted,
     sessionId,
+    synthesisModel,
+    setSynthesisModel: updateSynthesisModel,
     pastedVariantCount,
     submit,
     send,
