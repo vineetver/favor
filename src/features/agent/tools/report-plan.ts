@@ -10,7 +10,7 @@ import type { QueryType, PlanItem, ReportPlanOutput } from "../types";
  */
 export const reportPlan = tool({
   description:
-    "REQUIRED at step 0-1. Report your analysis plan and classify the query type. Call this in parallel with searchEntities + recallMemories. The plan becomes a visible task checklist in the UI and controls which tools are available in later steps.",
+    "REQUIRED at step 0-1. Report your analysis plan and classify the query type. Call this in parallel with searchEntities + recallMemories. The plan becomes a visible task checklist in the UI and controls which tools are available. IMPORTANT: Always produce 2-4 plan steps (e.g., 1. Resolve entities, 2. Collect data, 3. Synthesize results). Single-step plans are not useful.",
   inputSchema: z.object({
     queryType: z.enum([
       "entity_lookup",
@@ -25,18 +25,18 @@ export const reportPlan = tool({
     plan: z
       .array(
         z.object({
-          id: z.string().describe("Short step ID (e.g. 'resolve', 'get_stats')"),
+          id: z.string().describe("Short step ID (e.g. 'resolve', 'collect', 'synthesize')"),
           label: z.string().describe("Human-readable step label (e.g. 'Look up variant details')"),
           tools: z
             .array(z.string())
             .describe(
-              "Exact camelCase tool function names for this step, e.g. ['searchEntities', 'getGeneVariantStats']. Must match registered tool names.",
+              "Exact camelCase tool function names for this step, e.g. ['searchEntities', 'getGeneVariantStats']. Must match registered tool names. Use [] for the final synthesis step.",
             ),
         }),
       )
-      .min(1)
+      .min(2)
       .max(8)
-      .describe("Ordered list of plan steps"),
+      .describe("Ordered list of 2-4 plan steps. Always include a final synthesis step with tools: []."),
   }),
   execute: async (input): Promise<ReportPlanOutput> => input,
 });

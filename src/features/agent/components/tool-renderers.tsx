@@ -391,54 +391,106 @@ function toolNameMatches(planTool: string, actualTool: string): boolean {
 const DONE_STATES = new Set(["output-available", "output-error"]);
 const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
 
-function getPlanItemStatus(
+function getPlanItemStatusByName(
   item: { tools: string[] },
   siblingToolParts: ToolUIPart[],
-): PlanItemStatus {
-  if (item.tools.length > 0) {
-    const matchingParts = siblingToolParts.filter((p) => {
-      const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
-      return item.tools.some((t) => toolNameMatches(t, name));
-    });
+): PlanItemStatus | null {
+  if (item.tools.length === 0) return null;
 
-    if (matchingParts.length === 0) return "pending";
+  const matchingParts = siblingToolParts.filter((p) => {
+    const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
+    return item.tools.some((t) => toolNameMatches(t, name));
+  });
 
-    // A successful completion always means done
-    const hasSuccess = matchingParts.some(
-      (p) => p.state === "output-available",
-    );
-    if (hasSuccess) return "completed";
+  if (matchingParts.length === 0) return null; // no match — caller uses fallback
 
-    // If some errored but others are still running → retrying (in-progress)
-    const hasError = matchingParts.some((p) => p.state === "output-error");
-    const hasRunning = matchingParts.some((p) =>
-      RUNNING_STATES.has(p.state ?? ""),
-    );
-    if (hasError && hasRunning) return "in-progress";
-
-    // All errored, nothing still running → treat as done (gave up)
-    if (hasError) return "completed";
-
-    if (hasRunning) return "in-progress";
-
-    return "pending";
-  }
-
-  // Synthesis / analysis step (no specific tools declared).
-  // Infer status from whether all sibling tool calls have finished.
-  if (siblingToolParts.length === 0) return "pending";
-
-  const allDone = siblingToolParts.every((p) =>
-    DONE_STATES.has(p.state ?? ""),
+  const hasSuccess = matchingParts.some(
+    (p) => p.state === "output-available",
   );
-  if (allDone) return "completed";
+  if (hasSuccess) return "completed";
 
-  const anyRunning = siblingToolParts.some((p) =>
+  const hasError = matchingParts.some((p) => p.state === "output-error");
+  const hasRunning = matchingParts.some((p) =>
     RUNNING_STATES.has(p.state ?? ""),
   );
-  if (anyRunning) return "in-progress";
+  if (hasError && hasRunning) return "in-progress";
+  if (hasError) return "completed";
+  if (hasRunning) return "in-progress";
 
   return "pending";
+}
+
+/**
+ * Compute plan item statuses.
+ *
+ * Tool items: primary strategy is tool-name matching against sibling tool
+ * parts.  Fallback: positional progress when names don't match.
+ *
+ * Synthesis item (tools: []): derives its status from the *other* plan
+ * items rather than raw tool-part counts.  This avoids false "completed"
+ * between tool batches (brief windows where all *issued* tool parts are
+ * done but the agent is about to issue more).
+ *
+ * @param isStreaming - whether the assistant message is still streaming
+ */
+function computePlanStatuses(
+  items: Array<{ tools: string[] }>,
+  siblingToolParts: ToolUIPart[],
+  isStreaming: boolean,
+): PlanItemStatus[] {
+  const completedCount = siblingToolParts.filter((p) =>
+    DONE_STATES.has(p.state ?? ""),
+  ).length;
+  const activeCount = siblingToolParts.filter((p) =>
+    RUNNING_STATES.has(p.state ?? ""),
+  ).length;
+
+  // Try tool-name matching first
+  const nameStatuses = items.map((item) =>
+    getPlanItemStatusByName(item, siblingToolParts),
+  );
+
+  // Check if name matching produced any non-null results for tool items
+  const toolItems = items.filter((item) => item.tools.length > 0);
+  const hasAnyNameMatch = nameStatuses.some(
+    (s, i) => items[i].tools.length > 0 && s !== null,
+  );
+
+  // --- Compute tool-item statuses first (needed for synthesis) -----------
+  const toolItemStatuses: PlanItemStatus[] = items.map((item, i) => {
+    if (item.tools.length === 0) return "pending"; // placeholder, overridden below
+
+    if (nameStatuses[i] !== null) return nameStatuses[i]!;
+    if (hasAnyNameMatch) return "pending";
+
+    // Fallback: positional progress — no name matches at all
+    const toolIndex = toolItems.indexOf(item);
+    const threshold = (toolIndex + 1) / toolItems.length;
+    const totalCount = siblingToolParts.length;
+    const ratio = completedCount / Math.max(totalCount, 1);
+
+    if (ratio >= threshold) return "completed";
+    if (activeCount > 0 && ratio >= toolIndex / toolItems.length)
+      return "in-progress";
+    if (completedCount > 0 && toolIndex === 0) return "in-progress";
+    return "pending";
+  });
+
+  // --- Synthesis items derive status from sibling plan items -------------
+  const allToolItemsComplete = items.every(
+    (item, i) => item.tools.length === 0 || toolItemStatuses[i] === "completed",
+  );
+
+  return items.map((item, i) => {
+    if (item.tools.length === 0) {
+      // Synthesis: only progresses once ALL tool-bearing plan items finish.
+      // "completed" only when streaming is done (the full response ended).
+      if (allToolItemsComplete && !isStreaming) return "completed";
+      if (allToolItemsComplete && isStreaming) return "in-progress";
+      return "pending";
+    }
+    return toolItemStatuses[i];
+  });
 }
 
 const QUERY_TYPE_LABELS: Record<string, string> = {
@@ -455,9 +507,14 @@ const QUERY_TYPE_LABELS: Record<string, string> = {
 export function PlanRenderer({
   plan,
   siblingToolParts,
+  isStreaming = true,
 }: {
   plan: ReportPlanOutput;
   siblingToolParts: ToolUIPart[];
+  /** Whether the assistant message is still streaming. Defaults to true (safe
+   *  fallback: synthesis won't be marked "completed" until explicitly told the
+   *  stream has ended). */
+  isStreaming?: boolean;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
@@ -485,8 +542,10 @@ export function PlanRenderer({
         </Badge>
       </div>
       <div className="space-y-1">
-        {plan.plan.map((item) => {
-          const status = getPlanItemStatus(item, siblingToolParts);
+        {(() => {
+          const statuses = computePlanStatuses(plan.plan, siblingToolParts, isStreaming);
+          return plan.plan.map((item, idx) => {
+          const status = statuses[idx];
           return (
             <div key={item.id} className="flex items-center gap-2 text-sm">
               {status === "completed" && (
@@ -545,7 +604,8 @@ export function PlanRenderer({
               </span>
             </div>
           );
-        })}
+        });
+        })()}
       </div>
     </div>
   );

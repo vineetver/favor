@@ -83,7 +83,6 @@ import type { ReportPlanOutput } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
 import { addStoredCohort } from "../lib/cohort-store";
 import { OrchestrationHeader } from "./orchestration-header";
-import { getToolPhaseLabel } from "../lib/infer-orchestration";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -171,52 +170,37 @@ function StatusDot({ state }: { state: string }) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number }> }) {
-  let lastPhaseLabel = "";
-
   return (
     <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden min-w-0">
       {tools.map(({ part }) => {
         const toolName = getToolName(part);
-        const cleanName = toolName.replace(/^tool-/, "");
         const inputSummary = getToolInputSummary(toolName, part.input);
         const title = getToolTitle(part.type);
         const isError = part.state === "output-error";
 
-        // Phase divider
-        const phaseLabel = getToolPhaseLabel(cleanName);
-        const showDivider = phaseLabel !== lastPhaseLabel;
-        lastPhaseLabel = phaseLabel;
-
         return (
-          <div key={part.toolCallId}>
-            {showDivider && (
-              <div className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 bg-muted/30 border-b border-border/40">
-                {phaseLabel}
+          <Collapsible key={part.toolCallId} defaultOpen={isError}>
+            <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
+              <StatusDot state={part.state} />
+              <span className="flex-1 text-left truncate font-medium text-muted-foreground">
+                {inputSummary ?? title}
+              </span>
+              <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="border-b border-border/40 last:border-b-0">
+              <div className="space-y-3 bg-muted/20 p-3">
+                <ToolInput input={part.input} />
+                {(part.state === "output-available" ||
+                  part.state === "output-error") && (
+                  <ToolOutput
+                    output={part.output}
+                    errorText={part.errorText}
+                    renderOutput={(out) => renderToolOutput(toolName, out)}
+                  />
+                )}
               </div>
-            )}
-            <Collapsible defaultOpen={isError}>
-              <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
-                <StatusDot state={part.state} />
-                <span className="flex-1 text-left truncate font-medium text-muted-foreground">
-                  {inputSummary ?? title}
-                </span>
-                <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-b border-border/40 last:border-b-0">
-                <div className="space-y-3 bg-muted/20 p-3">
-                  <ToolInput input={part.input} />
-                  {(part.state === "output-available" ||
-                    part.state === "output-error") && (
-                    <ToolOutput
-                      output={part.output}
-                      errorText={part.errorText}
-                      renderOutput={(out) => renderToolOutput(toolName, out)}
-                    />
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         );
       })}
     </div>
@@ -399,19 +383,12 @@ function ChatMessageRenderer({
     });
   const hasToolParts = allToolParts.length > 0;
 
-  // Pre-compute sibling tool parts for PlanRenderer.
-  // Only include tools AFTER the reportPlan part — resolve-phase tools
-  // (searchEntities, recallMemories) that run in parallel with the plan
-  // shouldn't affect plan step status.
-  const reportPlanIndex = message.parts.findIndex(
-    (p) =>
-      isToolUIPart(p) &&
-      getToolName(p).replace(/^tool-/, "") === "reportPlan",
-  );
+  // All non-reportPlan tool parts for PlanRenderer status tracking.
+  // Include ALL tools (including resolve-phase) so the plan can match
+  // tools like searchEntities that run before reportPlan.
   const siblingToolParts = message.parts
     .filter(
-      (p, i) =>
-        (reportPlanIndex === -1 || i > reportPlanIndex) &&
+      (p) =>
         isToolUIPart(p) &&
         getToolName(p).replace(/^tool-/, "") !== "reportPlan",
     )
@@ -478,6 +455,7 @@ function ChatMessageRenderer({
                 key={seg.key}
                 plan={seg.part.output as ReportPlanOutput}
                 siblingToolParts={siblingToolParts}
+                isStreaming={isLastMessage && isStreaming}
               />
             );
           }

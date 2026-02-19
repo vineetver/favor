@@ -4,10 +4,6 @@ import { useMemo } from "react";
 import { cn } from "@infra/utils";
 import { inferOrchestration, type OrchestrationPhase } from "../lib/infer-orchestration";
 
-// ---------------------------------------------------------------------------
-// Phase stepper — lightweight inline dots
-// ---------------------------------------------------------------------------
-
 const PHASES: { key: OrchestrationPhase; label: string }[] = [
   { key: "resolve", label: "Resolve" },
   { key: "explore", label: "Explore" },
@@ -17,10 +13,6 @@ const PHASES: { key: OrchestrationPhase; label: string }[] = [
 function phaseIndex(phase: OrchestrationPhase): number {
   return PHASES.findIndex((p) => p.key === phase);
 }
-
-// ---------------------------------------------------------------------------
-// OrchestrationHeader — slim inline indicator, no card
-// ---------------------------------------------------------------------------
 
 interface ToolUIPart {
   type: string;
@@ -76,18 +68,10 @@ export function OrchestrationHeader({
         })}
       </div>
 
-      {/* Phase label */}
+      {/* Phase label only */}
       <span className="font-medium text-muted-foreground">
         {orch.phaseLabel}
       </span>
-
-      {/* Live status */}
-      {orch.activeStatusText && isStreaming && (
-        <>
-          <span className="text-muted-foreground/30">&middot;</span>
-          <span className="text-muted-foreground/70">{orch.activeStatusText}</span>
-        </>
-      )}
     </div>
   );
 }

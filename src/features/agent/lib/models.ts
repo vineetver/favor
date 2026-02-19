@@ -7,9 +7,9 @@ type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 // Tool-calling model (routing, planning, tool selection)
 export const nanoModel = openai("gpt-5-nano");
 
-// Provider options to suppress reasoning on the nano model (used in prepareStep)
+// Provider options for the nano model (used in prepareStep)
 export const NANO_PROVIDER_OPTIONS: ProviderOptions = {
-  openai: { reasoningEffort: "minimal" } satisfies OpenAILanguageModelResponsesOptions,
+  openai: { reasoningEffort: "low" } satisfies OpenAILanguageModelResponsesOptions,
 };
 
 // Synthesis models (user-selectable)
