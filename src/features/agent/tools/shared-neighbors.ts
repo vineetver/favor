@@ -1,10 +1,10 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { agentFetch } from "../lib/api-client";
+import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const getSharedNeighbors = tool({
   description:
-    "Find entities that are shared neighbors of multiple input entities via a specific edge type. For example: find diseases shared between two genes, or pathways shared by a gene set.",
+    "Find entities that are shared neighbors of multiple input entities via a specific edge type. For example: diseases shared between two genes, or pathways shared by a gene set.",
   inputSchema: z.object({
     entities: z
       .array(
@@ -26,34 +26,39 @@ export const getSharedNeighbors = tool({
     limit: z.number().optional().default(20).describe("Max shared neighbors"),
   }),
   execute: async ({ entities, edgeType, direction, limit }) => {
-    const data = await agentFetch<{
-      data: {
-        sharedNeighbors: Array<{
-          neighbor: { type: string; id: string; label: string };
-          support: Array<{
-            from: { type: string; id: string; label: string };
-            edge: { type: string };
+    try {
+      const data = await agentFetch<{
+        data: {
+          sharedNeighbors: Array<{
+            neighbor: { type: string; id: string; label: string };
+            support: Array<{
+              from: { type: string; id: string; label: string };
+              edge: { type: string };
+            }>;
           }>;
-        }>;
-        counts: { shared: number };
-      };
-    }>("/graph/intersect", {
-      method: "POST",
-      body: {
-        entities,
-        edgeType,
-        direction: direction ?? "out",
-        limit: Math.min(limit ?? 20, 50),
-      },
-    });
+          counts: { shared: number };
+        };
+      }>("/graph/intersect", {
+        method: "POST",
+        body: {
+          entities,
+          edgeType,
+          direction: direction ?? "out",
+          limit: Math.min(limit ?? 20, 50),
+        },
+      });
 
-    const shared = data.data.sharedNeighbors ?? [];
-    return {
-      totalShared: data.data.counts.shared,
-      neighbors: shared.slice(0, 20).map((s) => ({
-        neighbor: s.neighbor,
-        supportCount: s.support.length,
-      })),
-    };
+      const shared = data.data.sharedNeighbors ?? [];
+      return {
+        totalShared: data.data.counts.shared,
+        neighbors: shared.slice(0, 20).map((s) => ({
+          neighbor: s.neighbor,
+          supportCount: s.support.length,
+        })),
+      };
+    } catch (err) {
+      if (err instanceof AgentToolError) return err.toToolResult();
+      throw err;
+    }
   },
 });

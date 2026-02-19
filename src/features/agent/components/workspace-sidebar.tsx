@@ -2,15 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/button";
-import { ScrollArea } from "@shared/components/ui/scroll-area";
 import { cn } from "@infra/utils";
-import {
-  ChevronRightIcon,
-  DnaIcon,
-  PlusIcon,
-  BriefcaseIcon,
-  DatabaseIcon,
-} from "lucide-react";
+import { ChevronRightIcon, PlusIcon } from "lucide-react";
 
 import { VariantSubmitPanel } from "./variant-submit-panel";
 import { JobListItem } from "./job-list-item";
@@ -25,18 +18,16 @@ import { getStoredJobs } from "@features/batch/lib/job-storage";
 import type { StoredJob } from "@features/batch/types";
 
 // ---------------------------------------------------------------------------
-// Collapsible section
+// Collapsible section — text only, no icons
 // ---------------------------------------------------------------------------
 
 function SidebarSection({
   title,
-  icon,
   count,
   defaultOpen = false,
   children,
 }: {
   title: string;
-  icon: React.ReactNode;
   count?: number;
   defaultOpen?: boolean;
   children: React.ReactNode;
@@ -44,11 +35,11 @@ function SidebarSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="py-1">
+    <div>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+        className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronRightIcon
           className={cn(
@@ -56,19 +47,14 @@ function SidebarSection({
             isOpen && "rotate-90",
           )}
         />
-        {icon}
         <span className="flex-1 text-left">{title}</span>
         {count != null && count > 0 && (
-          <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+          <span className="text-[10px] font-medium tabular-nums">
             {count}
           </span>
         )}
       </button>
-      {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-150">
-          {children}
-        </div>
-      )}
+      {isOpen && <div>{children}</div>}
     </div>
   );
 }
@@ -143,19 +129,9 @@ export function WorkspaceSidebar({
     <div className={cn("flex h-full flex-col", className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="rounded-lg bg-primary/10 p-1.5">
-            <DnaIcon className="size-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-[13px] font-semibold text-foreground leading-none tracking-tight">
-              Workspace
-            </h2>
-            <p className="mt-1 text-[10px] text-muted-foreground leading-none">
-              Cohorts &amp; jobs
-            </p>
-          </div>
-        </div>
+        <h2 className="text-[13px] font-semibold text-foreground tracking-tight">
+          Workspace
+        </h2>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -167,11 +143,10 @@ export function WorkspaceSidebar({
         </Button>
       </div>
 
-      {/* Divider */}
       <div className="mx-4 h-px bg-border" />
 
       {/* Scrollable content */}
-      <ScrollArea className="flex-1 min-w-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="py-2">
           {/* Submit Panel */}
           {showSubmit && (
@@ -186,8 +161,7 @@ export function WorkspaceSidebar({
           {/* Active Jobs */}
           {activeJobs.length > 0 && (
             <SidebarSection
-              title="Active Jobs"
-              icon={<BriefcaseIcon className="size-3.5" />}
+              title="Active"
               count={activeJobs.length}
               defaultOpen
             >
@@ -202,8 +176,7 @@ export function WorkspaceSidebar({
           {/* Completed Jobs */}
           {completedJobs.length > 0 && (
             <SidebarSection
-              title="Completed Jobs"
-              icon={<BriefcaseIcon className="size-3.5" />}
+              title="Completed"
               count={completedJobs.length}
             >
               <div className="space-y-0.5 px-2 pb-1">
@@ -227,7 +200,6 @@ export function WorkspaceSidebar({
           {cohorts.length > 0 && (
             <SidebarSection
               title="Cohorts"
-              icon={<DatabaseIcon className="size-3.5" />}
               count={cohorts.length}
               defaultOpen
             >
@@ -246,31 +218,25 @@ export function WorkspaceSidebar({
 
           {/* Empty state */}
           {isEmpty && (
-            <div className="flex flex-col items-center gap-4 px-6 py-12 text-center">
-              <div className="rounded-xl bg-accent/50 p-3">
-                <DatabaseIcon className="size-5 text-muted-foreground/40" />
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[13px] font-medium text-foreground">
-                  No cohorts yet
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[200px]">
-                  Submit variant IDs to create a cohort for analysis
-                </p>
-              </div>
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <p className="text-[13px] font-medium text-foreground">
+                No cohorts yet
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Submit variants to create a cohort
+              </p>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-lg"
+                className="mt-1 rounded-lg"
                 onClick={() => setShowSubmit(true)}
               >
-                <PlusIcon className="size-3.5" />
                 Submit Variants
               </Button>
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

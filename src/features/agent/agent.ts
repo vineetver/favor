@@ -9,7 +9,7 @@ import { devToolsMiddleware } from "@ai-sdk/devtools";
 import { buildSystemPrompt } from "./lib/system-prompt";
 import * as tools from "./tools";
 
-const baseModel = openai("gpt-4o-mini");
+const baseModel = openai("gpt-4o");
 
 const model =
   process.env.NODE_ENV === "development"
@@ -19,8 +19,8 @@ const model =
 export const favorAgent = new ToolLoopAgent({
   model,
   instructions: buildSystemPrompt(),
-  maxOutputTokens: 4000,
-  stopWhen: stepCountIs(12),
+  maxOutputTokens: 8000,
+  stopWhen: stepCountIs(15),
   tools: {
     searchEntities: tools.searchEntities,
     getEntityContext: tools.getEntityContext,

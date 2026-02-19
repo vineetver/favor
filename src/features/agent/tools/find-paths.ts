@@ -1,11 +1,11 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { agentFetch } from "../lib/api-client";
+import { agentFetch, AgentToolError } from "../lib/api-client";
 import type { CompressedPath } from "../types";
 
 export const findPaths = tool({
   description:
-    "Find shortest paths between two entities in the knowledge graph. Shows how entities are connected through intermediate nodes. Format: 'Type:ID' (e.g., 'Gene:ENSG00000012048').",
+    "Find shortest paths between two entities in the knowledge graph. Shows how entities are connected through intermediate nodes. Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048').",
   inputSchema: z.object({
     from: z
       .string()
@@ -24,29 +24,44 @@ export const findPaths = tool({
       .default(3)
       .describe("Max number of paths to return"),
   }),
-  execute: async ({ from, to, maxHops, limit }): Promise<CompressedPath[]> => {
-    const params = new URLSearchParams();
-    params.set("from", from);
-    params.set("to", to);
-    params.set("maxHops", String(Math.min(maxHops ?? 3, 5)));
-    params.set("limit", String(Math.min(limit ?? 3, 5)));
+  execute: async ({ from, to, maxHops, limit }): Promise<CompressedPath[] | { error: boolean; message: string; hint?: string }> => {
+    try {
+      const params = new URLSearchParams();
+      params.set("from", from);
+      params.set("to", to);
+      params.set("maxHops", String(Math.min(maxHops ?? 3, 5)));
+      params.set("limit", String(Math.min(limit ?? 3, 5)));
 
-    const data = await agentFetch<{
-      data: {
-        paths: Array<{
-          rank: number;
-          length: number;
-          pathText: string;
-          nodes: Array<{ type: string; id: string; label: string }>;
-        }>;
-      };
-    }>(`/graph/paths?${params.toString()}`);
+      const data = await agentFetch<{
+        data: {
+          paths: Array<{
+            rank: number;
+            length: number;
+            pathText: string;
+            nodes: Array<{ type: string; id: string; label: string }>;
+          }>;
+        };
+      }>(`/graph/paths?${params.toString()}`);
 
-    return (data.data.paths ?? []).slice(0, 3).map((p) => ({
-      rank: p.rank,
-      length: p.length,
-      pathText: p.pathText,
-      nodes: p.nodes,
-    }));
+      const paths = (data.data.paths ?? []).slice(0, 3).map((p) => ({
+        rank: p.rank,
+        length: p.length,
+        pathText: p.pathText,
+        nodes: p.nodes,
+      }));
+
+      if (paths.length === 0) {
+        return {
+          error: true,
+          message: `No paths found between ${from} and ${to} within ${maxHops ?? 3} hops`,
+          hint: "Try increasing maxHops or verify entity IDs with searchEntities.",
+        };
+      }
+
+      return paths;
+    } catch (err) {
+      if (err instanceof AgentToolError) return err.toToolResult();
+      throw err;
+    }
   },
 });

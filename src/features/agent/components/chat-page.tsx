@@ -314,7 +314,7 @@ export function ChatPage() {
       </Sheet>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[280px] shrink-0 flex-col overflow-hidden bg-muted/50 border-r border-border">
+      <aside className="hidden lg:flex w-[300px] shrink-0 flex-col bg-muted/50 border-r border-border">
         <AgentErrorBoundary fallbackLabel="Sidebar error">
           <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
         </AgentErrorBoundary>
