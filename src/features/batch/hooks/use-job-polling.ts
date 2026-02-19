@@ -3,8 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { getJobStatus } from "../api";
-import { updateJobStatus } from "../lib/job-storage";
-import type { Job, JobProgress } from "../types";
+import type { Job } from "../types";
 
 interface UseJobPollingOptions {
   jobId: string | null;
@@ -22,24 +21,7 @@ interface UseJobPollingResult {
 }
 
 /**
- * Helper to extract progress from any job state that has it
- */
-function getJobProgress(job: Job): JobProgress | undefined {
-  switch (job.state) {
-    case "RUNNING":
-    case "CANCEL_REQUESTED":
-    case "COMPLETED":
-      return job.progress;
-    case "FAILED":
-    case "CANCELLED":
-      return job.progress;
-    case "PENDING":
-      return undefined;
-  }
-}
-
-/**
- * Hook for polling job status with automatic updates to localStorage
+ * Hook for polling job status.
  *
  * Uses server-suggested poll intervals when available (poll.after_ms)
  */
@@ -59,9 +41,6 @@ export function useJobPolling({
 
       // Always request with URLs - backend will include them when job is complete
       const job = await getJobStatus(jobId, tenantId, true);
-
-      // Update localStorage with latest state
-      updateJobStatus(jobId, job.state, getJobProgress(job));
 
       return job;
     },

@@ -347,18 +347,131 @@ export interface OutputRow {
 }
 
 // ============================================================================
-// Local Storage Types
+// Cohort Types
 // ============================================================================
 
-export interface StoredJob {
-  job_id: string;
-  tenant_id: string;
-  filename: string;
+export type CohortStatus =
+  | "validating"
+  | "queued"
+  | "running"
+  | "materializing"
+  | "ready"
+  | "failed"
+  | "cancelled";
+
+export interface CohortListItem {
+  id: string;
+  status: CohortStatus;
+  source: "inline" | "upload" | "derived";
+  label: string | null;
+  variant_count: number | null;
   created_at: string;
-  state: JobState;
-  progress?: JobProgress;
-  estimated_rows?: number;
-  source?: "batch" | "cohort";
+  updated_at: string;
+  completed_at: string | null;
+}
+
+export interface CohortDetail {
+  id: string;
+  status: CohortStatus;
+  source: "inline" | "upload" | "derived";
+  label: string | null;
+  variant_count: number | null;
+  progress: CohortProgress | null;
+  error_code: string | null;
+  error_message: string | null;
+  parent_id: string | null;
+  is_terminal: boolean;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface CohortProgress {
+  stage?: string;
+  percent: number;
+  rows_resolved: number;
+  fetched: number;
+  found: number;
+  not_found: number;
+  errors: number;
+  total_rows?: number;
+  unique_vids?: number;
+  duplicates?: number;
+}
+
+export interface CohortStatusResponse {
+  id: string;
+  status: CohortStatus;
+  progress: CohortProgress | null;
+  is_terminal: boolean;
+  poll_hint_ms: number | null;
+}
+
+export interface CohortSummary {
+  text_summary: string;
+  cohort_id: string;
+  vid_count: number;
+  source?: { type: string; ref_count?: number; job_id?: string; parent_id?: string };
+  by_gene?: Array<{ gene_symbol: string; count: number; pathogenic: number; functional_impact: number }>;
+  by_consequence?: Array<{ category: string; count: number }>;
+  by_clinical_significance?: Array<{ category: string; count: number }>;
+  by_frequency?: Array<{ category: string; count: number }>;
+  highlights?: Array<{
+    vcf: string;
+    rsid?: string;
+    gene?: string;
+    consequence?: string;
+    clinical_significance?: string;
+    cadd_phred?: number;
+    gnomad_af?: number;
+  }>;
+}
+
+export interface CohortListResponse {
+  cohorts: CohortListItem[];
+  count: number;
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export interface CreateCohortRequest {
+  references: string[];
+  label?: string;
+  idempotency_key?: string;
+}
+
+export interface CreateCohortResponse {
+  id: string;
+  status: CohortStatus;
+  created_at: string;
+}
+
+export interface CohortTopKRequest {
+  score: string;
+  k?: number;
+}
+
+export interface CohortAggregateRequest {
+  field: "gene" | "consequence" | "clinical_significance" | "frequency" | "chromosome";
+  limit?: number;
+}
+
+export interface CohortDeriveRequest {
+  filters: Array<Record<string, unknown>>;
+  label?: string;
+}
+
+export interface CohortExportResponse {
+  text_summary: string;
+  url: string;
+  expires_in_seconds: number;
+  variant_count: number;
+}
+
+export interface DeleteCohortResponse {
+  id: string;
+  action: "cancelled" | "deleted";
 }
 
 // ============================================================================
@@ -379,6 +492,5 @@ export interface BatchWorkflowState {
   uploadProgress: number;
   inputUri: string | null;
   validation: ValidateResponse | null;
-  jobId: string | null;
   error: string | null;
 }

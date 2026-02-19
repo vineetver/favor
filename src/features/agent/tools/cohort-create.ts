@@ -3,8 +3,8 @@ import { z } from "zod";
 import {
   cohortFetch,
   AgentToolError,
-  pollJobUntilDone,
-  cohortFromJob,
+  pollCohortUntilReady,
+  getCohortSummaryAgent,
 } from "../lib/api-client";
 import type { CompressedCohort } from "../types";
 
@@ -27,10 +27,10 @@ export const createCohort = tool({
       const idempotencyKey = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const cohortLabel = label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`;
 
-      // Step 1: POST /cohorts → { job_id, state, created_at }
+      // Step 1: POST /cohorts → { id, status, created_at }
       const submitResult = await cohortFetch<{
-        job_id: string;
-        state: string;
+        id: string;
+        status: string;
         created_at: string;
       }>("/cohorts", {
         method: "POST",
@@ -42,60 +42,60 @@ export const createCohort = tool({
         timeout: 60_000,
       });
 
-      const jobId = submitResult.job_id;
-      if (!jobId) {
+      const cohortId = submitResult.id;
+      if (!cohortId) {
         throw new AgentToolError(
           500,
-          `POST /cohorts response missing job_id: ${JSON.stringify(submitResult).slice(0, 200)}`,
+          `POST /cohorts response missing id: ${JSON.stringify(submitResult).slice(0, 200)}`,
           "Unexpected response format from cohort creation endpoint.",
         );
       }
 
-      // Step 2: Poll until terminal
-      const job = await pollJobUntilDone(jobId, "default-tenant");
+      // Step 2: Poll cohort status until terminal
+      const statusResult = await pollCohortUntilReady(cohortId, "default-tenant");
 
-      if (job.state === "FAILED") {
+      if (statusResult.status === "failed") {
         return {
           error: true,
-          message: job.error_message,
-          hint: `Error code: ${job.error_code}. ${job.retryable ? "This error is retryable." : "This error is not retryable."}`,
+          message: `Cohort processing failed (status: ${statusResult.status})`,
+          hint: "The cohort failed during processing. Try again or check the variants.",
         };
       }
 
-      if (job.state !== "COMPLETED") {
+      if (statusResult.status !== "ready") {
         return {
           error: true,
-          message: `Job ended in unexpected state: ${job.state}`,
+          message: `Cohort ended in unexpected status: ${statusResult.status}`,
         };
       }
 
-      // Step 3: Materialize cohort from completed job
-      const result = await cohortFromJob(jobId, "default-tenant");
+      // Step 3: Get cohort summary
+      const summary = await getCohortSummaryAgent(cohortId, "default-tenant");
 
       const summaryParts: string[] = [];
 
-      if (result.summary?.text_summary) {
-        summaryParts.push(result.summary.text_summary);
+      if (summary.text_summary) {
+        summaryParts.push(summary.text_summary);
       }
 
-      if (result.summary?.by_gene?.length) {
+      if (summary.by_gene?.length) {
         summaryParts.push(
-          `Top genes: ${result.summary.by_gene
+          `Top genes: ${summary.by_gene
             .slice(0, 5)
-            .map((g) => `${g.geneSymbol} (${g.count} variants${g.pathogenic ? `, ${g.pathogenic} pathogenic` : ""})`)
+            .map((g) => `${g.gene_symbol} (${g.count} variants${g.pathogenic ? `, ${g.pathogenic} pathogenic` : ""})`)
             .join(", ")}`,
         );
       }
 
-      if (result.summary?.highlights?.length) {
+      if (summary.highlights?.length) {
         summaryParts.push(
-          `Notable variants: ${result.summary.highlights
+          `Notable variants: ${summary.highlights
             .slice(0, 5)
             .map((h) => {
               const parts = [h.rsid ?? h.vcf];
               if (h.gene) parts.push(h.gene);
-              if (h.clinicalSignificance) parts.push(h.clinicalSignificance);
-              if (h.caddPhred != null) parts.push(`CADD=${h.caddPhred}`);
+              if (h.clinical_significance) parts.push(h.clinical_significance);
+              if (h.cadd_phred != null) parts.push(`CADD=${h.cadd_phred}`);
               return parts.join(" ");
             })
             .join("; ")}`,
@@ -103,14 +103,14 @@ export const createCohort = tool({
       }
 
       return {
-        cohortId: result.cohort_id,
-        variantCount: result.vid_count,
+        cohortId,
+        variantCount: summary.vid_count,
         resolution: {
-          total: result.resolution.total,
-          resolved: result.resolution.resolved,
-          notFound: result.resolution.not_found,
+          total: statusResult.progress?.rows_resolved ?? variants.length,
+          resolved: statusResult.progress?.found ?? summary.vid_count,
+          notFound: statusResult.progress?.not_found ?? 0,
         },
-        summary: summaryParts.join("\n") || `Cohort created with ${result.vid_count} variants.`,
+        summary: summaryParts.join("\n") || `Cohort created with ${summary.vid_count} variants.`,
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

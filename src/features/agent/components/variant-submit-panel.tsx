@@ -19,9 +19,6 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import type { AgentCohort } from "../lib/cohort-store";
-import { saveJob, updateJobStatus } from "@features/batch/lib/job-storage";
-import { getJobStatus } from "@features/batch/api";
-import type { JobState } from "@features/batch/types";
 
 // ---------------------------------------------------------------------------
 // Variant parser
@@ -81,7 +78,7 @@ async function createCohortAsync(
   variants: string[],
   label: string,
 ): Promise<{ cohort_id: string; vid_count: number }> {
-  // Step 1: POST /cohorts → { job_id, state, created_at }
+  // Step 1: POST /cohorts → { id, status, created_at }
   const submitRes = await fetch(`${API_BASE}/cohorts?tenant_id=${TENANT_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -98,62 +95,57 @@ async function createCohortAsync(
   }
 
   const submitData = (await submitRes.json()) as {
-    job_id: string;
-    state: JobState;
+    id: string;
+    status: string;
     created_at: string;
   };
 
-  const job_id = submitData.job_id;
-  if (!job_id) {
+  const cohortId = submitData.id;
+  if (!cohortId) {
     throw new Error(
-      `POST /cohorts response missing job_id: ${JSON.stringify(submitData).slice(0, 200)}`,
+      `POST /cohorts response missing id: ${JSON.stringify(submitData).slice(0, 200)}`,
     );
   }
-  const { state, created_at } = submitData;
 
-  // Step 2: Save to batch job storage so it appears in batch annotation page
-  saveJob({
-    job_id,
-    tenant_id: TENANT_ID,
-    filename: label,
-    created_at,
-    state,
-    source: "cohort",
-  });
-
-  // Step 3: Poll until terminal
+  // Step 2: Poll cohort status until terminal
   const deadline = Date.now() + POLL_TIMEOUT_MS;
-  let terminalState: JobState = state;
+  let terminalStatus = submitData.status;
+  let foundCount = 0;
 
   while (Date.now() < deadline) {
-    const job = await getJobStatus(job_id, TENANT_ID);
-    if (job.is_terminal) {
-      terminalState = job.state;
-      updateJobStatus(job_id, job.state, "progress" in job ? job.progress : undefined);
+    const statusRes = await fetch(
+      `${API_BASE}/cohorts/${cohortId}/status?tenant_id=${TENANT_ID}`,
+    );
+    if (!statusRes.ok) {
+      throw new Error(`Cohort status check failed (${statusRes.status})`);
+    }
+
+    const statusData = (await statusRes.json()) as {
+      id: string;
+      status: string;
+      progress: { found?: number } | null;
+      is_terminal: boolean;
+      poll_hint_ms: number | null;
+    };
+
+    if (statusData.is_terminal) {
+      terminalStatus = statusData.status;
+      foundCount = statusData.progress?.found ?? 0;
       break;
     }
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    await new Promise((r) =>
+      setTimeout(r, statusData.poll_hint_ms ?? POLL_INTERVAL_MS),
+    );
   }
 
-  if (terminalState === "FAILED") {
-    throw new Error("Cohort job failed. Check the batch annotation page for details.");
+  if (terminalStatus === "failed") {
+    throw new Error("Cohort processing failed. Check the batch annotation page for details.");
   }
-  if (terminalState !== "COMPLETED") {
-    throw new Error(`Cohort job did not complete in time (state: ${terminalState}).`);
-  }
-
-  // Step 4: Materialize cohort from completed job
-  const materializeRes = await fetch(
-    `${API_BASE}/cohorts/from-job/${job_id}?tenant_id=${TENANT_ID}`,
-    { method: "POST", headers: { "Content-Type": "application/json" } },
-  );
-
-  if (!materializeRes.ok) {
-    const text = await materializeRes.text().catch(() => "Unknown error");
-    throw new Error(`Cohort materialization failed (${materializeRes.status}): ${text}`);
+  if (terminalStatus !== "ready") {
+    throw new Error(`Cohort did not complete in time (status: ${terminalStatus}).`);
   }
 
-  return materializeRes.json();
+  return { cohort_id: cohortId, vid_count: foundCount };
 }
 
 // ---------------------------------------------------------------------------

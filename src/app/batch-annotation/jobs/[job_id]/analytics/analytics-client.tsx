@@ -4,7 +4,6 @@ import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
 import {
   DEFAULT_TENANT_ID,
-  getStoredJob,
   JobAnalytics,
   useJobPolling,
 } from "@features/batch";
@@ -20,7 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /**
  * Helper to get output from completed jobs
@@ -36,25 +35,16 @@ interface AnalyticsClientProps {
 type ViewMode = "report" | "query";
 
 export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
-  const [storedJob, setStoredJob] = useState<ReturnType<typeof getStoredJob>>(null);
-  const [hasMounted, setHasMounted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("report");
-
-  // Load from localStorage after mount
-  useEffect(() => {
-    setStoredJob(getStoredJob(jobId));
-    setHasMounted(true);
-  }, [jobId]);
 
   // Poll for job status to get output URL
   const { job, isLoading, error } = useJobPolling({
     jobId,
     tenantId: DEFAULT_TENANT_ID,
-    enabled: hasMounted,
   });
 
   // Loading state
-  if (!hasMounted || (isLoading && !job)) {
+  if (isLoading && !job) {
     return (
       <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
@@ -192,7 +182,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
                   Cohort Analytics
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {storedJob?.filename || `Job ${jobId.slice(0, 8)}`}
+                  {job?.input?.filename || `Job ${jobId.slice(0, 8)}`}
                   {output?.bytes_human && (
                     <span className="ml-2 text-muted-foreground">
                       ({output.bytes_human})
@@ -237,13 +227,13 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
           <JobAnalyticsReport
             dataUrl={output.url}
             jobId={jobId}
-            filename={storedJob?.filename}
+            filename={job?.input?.filename}
           />
         ) : (
           <JobAnalytics
             dataUrl={output.url}
             jobId={jobId}
-            filename={storedJob?.filename}
+            filename={job?.input?.filename}
           />
         )}
       </main>

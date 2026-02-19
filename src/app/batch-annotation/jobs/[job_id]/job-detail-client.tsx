@@ -6,7 +6,6 @@ import {
   BatchApiError,
   cancelJob,
   DEFAULT_TENANT_ID,
-  getStoredJob,
   JobDetailView,
   useJobPolling,
 } from "@features/batch";
@@ -102,50 +101,21 @@ function RefreshIndicator({
 
 export function JobDetailClient({ jobId }: JobDetailClientProps) {
   const router = useRouter();
-  const [storedJob, setStoredJob] = useState<ReturnType<typeof getStoredJob>>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const [hasMounted, setHasMounted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setStoredJob(getStoredJob(jobId));
-    setHasMounted(true);
-  }, [jobId]);
 
   const { job, isLoading, error, refetch } = useJobPolling({
     jobId,
     tenantId: DEFAULT_TENANT_ID,
-    enabled: hasMounted && !isPaused,
+    enabled: !isPaused,
   });
 
   // Track last update time
   useEffect(() => {
     if (job) {
       setLastUpdated(new Date());
-    }
-  }, [job]);
-
-  // Sync stored job with latest (only when job changes)
-  useEffect(() => {
-    if (job) {
-      setStoredJob((prev) =>
-        prev
-          ? {
-              ...prev,
-              state: job.state,
-              progress:
-                job.state === "RUNNING" ||
-                job.state === "CANCEL_REQUESTED" ||
-                job.state === "COMPLETED"
-                  ? job.progress
-                  : job.state === "FAILED" || job.state === "CANCELLED"
-                    ? job.progress
-                    : undefined,
-            }
-          : null
-      );
     }
   }, [job]);
 
@@ -204,7 +174,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   }, [router]);
 
   // Loading state
-  if (!hasMounted || (isLoading && !job && !storedJob)) {
+  if (isLoading && !job) {
     return (
       <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
@@ -227,7 +197,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   }
 
   // Error state
-  if (error && !job && !storedJob) {
+  if (error && !job) {
     return (
       <div className="min-h-screen relative overflow-hidden text-foreground">
         <div className="fixed inset-0 -z-10 pointer-events-none">
@@ -280,18 +250,13 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     );
   }
 
-  // Use job from API if available, otherwise construct from stored job
-  if (!job && !storedJob) {
+  // No data available
+  if (!job) {
     return null;
   }
 
-  const isTerminal =
-    job?.is_terminal ??
-    (storedJob?.state === "COMPLETED" ||
-      storedJob?.state === "FAILED" ||
-      storedJob?.state === "CANCELLED");
-
-  const filename = storedJob?.filename ?? job?.input?.filename;
+  const isTerminal = job.is_terminal;
+  const filename = job.input?.filename;
 
   return (
     <div className="min-h-screen relative overflow-hidden text-foreground">

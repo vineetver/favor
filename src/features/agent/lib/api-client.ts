@@ -1,5 +1,6 @@
 import { getJobStatus } from "@features/batch/api";
 import type { Job } from "@features/batch/types";
+import type { CohortStatusResponse, CohortSummary } from "@features/batch/types";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -121,46 +122,42 @@ export async function pollJobUntilDone(
   );
 }
 
-export interface CohortFromJobResponse {
-  cohort_id: string;
-  vid_count: number;
-  resolution: {
-    total: number;
-    resolved: number;
-    not_found: number;
-    ambiguous: number;
-    errors: number;
-  };
-  summary?: {
-    text_summary: string;
-    cohort_id: string;
-    vid_count: number;
-    by_gene?: Array<{ geneSymbol: string; count: number; pathogenic: number; functionalImpact: number }>;
-    by_consequence?: Array<{ category: string; count: number }>;
-    by_clinical_significance?: Array<{ category: string; count: number }>;
-    by_frequency?: Array<{ category: string; count: number }>;
-    highlights?: Array<{
-      rsid?: string;
-      vcf: string;
-      gene?: string;
-      consequence?: string;
-      clinicalSignificance?: string;
-      caddPhred?: number;
-      gnomadAf?: number;
-    }>;
-  };
+/**
+ * Poll a cohort until it reaches a terminal state.
+ * Uses GET /cohorts/{id}/status (lightweight).
+ */
+export async function pollCohortUntilReady(
+  cohortId: string,
+  tenantId: string,
+): Promise<CohortStatusResponse> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const status = await agentFetch<CohortStatusResponse>(
+      `/cohorts/${cohortId}/status?tenant_id=${tenantId}`,
+    );
+    if (status.is_terminal) return status;
+    await new Promise((r) =>
+      setTimeout(r, status.poll_hint_ms ?? POLL_INTERVAL_MS),
+    );
+  }
+
+  throw new AgentToolError(
+    408,
+    `Cohort ${cohortId} did not complete within ${POLL_TIMEOUT_MS / 1000}s`,
+    "The cohort is still processing. Try again later.",
+  );
 }
 
 /**
- * Materialize a cohort from a completed batch job.
+ * Get cohort summary (gene/consequence/clinical breakdowns + highlights).
  */
-export async function cohortFromJob(
-  jobId: string,
+export async function getCohortSummaryAgent(
+  cohortId: string,
   tenantId: string,
-): Promise<CohortFromJobResponse> {
-  return agentFetch<CohortFromJobResponse>(
-    `/cohorts/from-job/${jobId}?tenant_id=${tenantId}`,
-    { method: "POST", timeout: 30_000 },
+): Promise<CohortSummary> {
+  return agentFetch<CohortSummary>(
+    `/cohorts/${cohortId}/summary?tenant_id=${tenantId}`,
   );
 }
 

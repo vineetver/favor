@@ -29,7 +29,9 @@ export const reportPlan = tool({
           label: z.string().describe("Human-readable step label (e.g. 'Look up variant details')"),
           tools: z
             .array(z.string())
-            .describe("Expected tool names for this step"),
+            .describe(
+              "Exact camelCase tool function names for this step, e.g. ['searchEntities', 'getGeneVariantStats']. Must match registered tool names.",
+            ),
         }),
       )
       .min(1)

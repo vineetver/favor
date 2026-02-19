@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 import { VariantSubmitPanel } from "./variant-submit-panel";
-import { JobListItem } from "./job-list-item";
 import { CohortListItem } from "./cohort-list-item";
 import { CohortPromptPicker } from "./cohort-prompt-picker";
 import {
@@ -21,8 +20,8 @@ import {
   getStoredCohorts,
   removeStoredCohort,
 } from "../lib/cohort-store";
-import { getStoredJobs } from "@features/batch/lib/job-storage";
-import type { StoredJob } from "@features/batch/types";
+import { deleteCohort } from "@features/batch/api";
+import { DEFAULT_TENANT_ID } from "@features/batch/config";
 import { useSessions } from "../hooks/use-sessions";
 
 // ---------------------------------------------------------------------------
@@ -126,6 +125,8 @@ export function WorkspaceSidebar({
 
   const handleCohortRemoved = useCallback((cohortId: string) => {
     setCohorts(removeStoredCohort(cohortId));
+    // Also delete on the server (fire-and-forget)
+    deleteCohort(cohortId, DEFAULT_TENANT_ID).catch(() => {});
   }, []);
 
   // ---- Derived: split sessions into "free" vs cohort-linked ----
@@ -201,30 +202,8 @@ export function WorkspaceSidebar({
     [deleteSession, sessionId, onNewChat],
   );
 
-  // ---- Jobs (shared localStorage from batch feature) ----
-  const [jobs, setJobs] = useState<StoredJob[]>([]);
-
-  useEffect(() => {
-    const refresh = () => setJobs(getStoredJobs());
-    refresh();
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const activeJobs = jobs.filter(
-    (j) =>
-      j.state === "PENDING" ||
-      j.state === "RUNNING" ||
-      j.state === "CANCEL_REQUESTED",
-  );
-  const completedJobs = jobs
-    .filter((j) => j.state === "COMPLETED" && j.source !== "cohort")
-    .slice(0, 10);
-
   const isEmpty =
     freeSessions.length === 0 &&
-    activeJobs.length === 0 &&
-    completedJobs.length === 0 &&
     cohorts.length === 0 &&
     !showSubmit;
 
@@ -344,44 +323,6 @@ export function WorkspaceSidebar({
                 onAnalyzeCohort={handleAnalyzeCohort}
               />
             </div>
-          )}
-
-          {/* Active Jobs */}
-          {activeJobs.length > 0 && (
-            <SidebarSection
-              title="Active"
-              count={activeJobs.length}
-              defaultOpen
-            >
-              <div className="space-y-0.5 px-2 pb-1">
-                {activeJobs.map((job) => (
-                  <JobListItem key={job.job_id} job={job} />
-                ))}
-              </div>
-            </SidebarSection>
-          )}
-
-          {/* Completed Jobs */}
-          {completedJobs.length > 0 && (
-            <SidebarSection
-              title="Completed"
-              count={completedJobs.length}
-            >
-              <div className="space-y-0.5 px-2 pb-1">
-                {completedJobs.map((job) => (
-                  <JobListItem
-                    key={job.job_id}
-                    job={job}
-                    onClick={() =>
-                      window.open(
-                        `/batch-annotation/jobs/${job.job_id}`,
-                        "_blank",
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            </SidebarSection>
           )}
 
           {/* Empty state */}

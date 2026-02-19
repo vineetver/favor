@@ -22,7 +22,6 @@ import {
   validateFile,
 } from "../api";
 import { DEFAULT_TENANT_ID } from "../config";
-import { saveJob } from "../lib/job-storage";
 import type { UploadStep, ValidateResponse } from "../types";
 import { UploadDropzone } from "./upload-dropzone";
 import { ValidationSummary } from "./validation-summary";
@@ -228,7 +227,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
       setError(null);
 
       try {
-        const { job_id, state, created_at } = await createJob({
+        const { job_id } = await createJob({
           tenant_id: DEFAULT_TENANT_ID,
           input_uri: inputUri,
           format: validation.suggested_patch.format,
@@ -238,15 +237,6 @@ export function BatchWizard({ className }: BatchWizardProps) {
           include_not_found: config.includeNotFound,
           email: config.email || null,
           org_name: config.orgName || null,
-        });
-
-        saveJob({
-          job_id,
-          tenant_id: DEFAULT_TENANT_ID,
-          filename: file.name,
-          created_at,
-          state,
-          estimated_rows: validation.estimated_rows,
         });
 
         router.push(`/batch-annotation/jobs/${job_id}`);

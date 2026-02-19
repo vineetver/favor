@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export function JobsListClient() {
   return (
-    <div className="min-h-screen relative overflow-hidden text-slate-900">
+    <div className="min-h-screen relative overflow-hidden text-foreground">
       {/* Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60" />
@@ -18,7 +18,7 @@ export function JobsListClient() {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home

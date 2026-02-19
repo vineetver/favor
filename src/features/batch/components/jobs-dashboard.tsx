@@ -8,38 +8,83 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Input } from "@shared/components/ui/input";
-import { StatusBadge } from "@shared/components/ui/status-badge";
 import {
-  ArrowDown,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@shared/components/ui/dropdown-menu";
+import { Input } from "@shared/components/ui/input";
+import {
   ArrowRight,
-  ArrowUp,
   ArrowUpDown,
-  Cloud,
   Copy,
-  Download,
   ExternalLink,
   FileSpreadsheet,
-  HardDrive,
-  Info,
+  Loader2,
   MoreHorizontal,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { JOB_STATE_CONFIG } from "../constants";
-import { formatDate, formatNumber, formatBytes } from "../lib/format";
-import { getStoredJobs, removeJob } from "../lib/job-storage";
-import type { StoredJob, JobState } from "../types";
+import { useCallback, useMemo, useState } from "react";
+import { formatDate, formatNumber } from "../lib/format";
+import { DEFAULT_TENANT_ID } from "../config";
+import { deleteCohort } from "../api";
+import { useCohorts } from "../hooks/use-cohorts";
+import type { CohortListItem, CohortStatus } from "../types";
 
 interface JobsDashboardProps {
   className?: string;
 }
 
 type StatusFilter = "all" | "active" | "completed" | "failed";
-type SortOption = "newest" | "oldest" | "largest" | "name";
+type SortOption = "newest" | "oldest" | "name";
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function isActiveStatus(status: CohortStatus): boolean {
+  return (
+    status === "queued" ||
+    status === "running" ||
+    status === "materializing" ||
+    status === "validating"
+  );
+}
+
+function isCompletedStatus(status: CohortStatus): boolean {
+  return status === "ready";
+}
+
+function isFailedStatus(status: CohortStatus): boolean {
+  return status === "failed" || status === "cancelled";
+}
+
+function cohortStatusLabel(status: CohortStatus): string {
+  const labels: Record<CohortStatus, string> = {
+    validating: "Validating",
+    queued: "Queued",
+    running: "Running",
+    materializing: "Materializing",
+    ready: "Ready",
+    failed: "Failed",
+    cancelled: "Cancelled",
+  };
+  return labels[status];
+}
+
+function cohortStatusVariant(
+  status: CohortStatus,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (isActiveStatus(status)) return "default";
+  if (isCompletedStatus(status)) return "secondary";
+  if (isFailedStatus(status)) return "destructive";
+  return "outline";
+}
 
 // ============================================================================
 // Status Filter Tabs
@@ -75,12 +120,7 @@ function StatusTabs({
         >
           {tab.label}
           {counts[tab.id] > 0 && (
-            <span
-              className={cn(
-                "ml-1.5 text-xs",
-                active === tab.id ? "text-muted-foreground" : "text-muted-foreground",
-              )}
-            >
+            <span className="ml-1.5 text-xs text-muted-foreground">
               {counts[tab.id]}
             </span>
           )}
@@ -106,7 +146,6 @@ function SortDropdown({
   const options: { id: SortOption; label: string }[] = [
     { id: "newest", label: "Newest first" },
     { id: "oldest", label: "Oldest first" },
-    { id: "largest", label: "Largest first" },
     { id: "name", label: "Name A-Z" },
   ];
 
@@ -155,44 +194,19 @@ function SortDropdown({
 }
 
 // ============================================================================
-// Job Card with Kebab Menu
+// Cohort Card
 // ============================================================================
 
-function JobCard({
-  job,
+function CohortCard({
+  cohort,
   onRemove,
 }: {
-  job: StoredJob;
-  onRemove: (jobId: string) => void;
+  cohort: CohortListItem;
+  onRemove: (id: string) => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const stateConfig = JOB_STATE_CONFIG[job.state];
-  const StateIcon = stateConfig.icon;
-  const isActive =
-    job.state === "PENDING" ||
-    job.state === "RUNNING" ||
-    job.state === "CANCEL_REQUESTED";
-  const isComplete = job.state === "COMPLETED";
-  const isFailed = job.state === "FAILED";
-
-  const handleDelete = () => {
-    if (confirmDelete) {
-      onRemove(job.job_id);
-      setConfirmDelete(false);
-      setMenuOpen(false);
-    } else {
-      setConfirmDelete(true);
-    }
-  };
-
-  // Reset confirm state when menu closes
-  useEffect(() => {
-    if (!menuOpen) {
-      setConfirmDelete(false);
-    }
-  }, [menuOpen]);
+  const isActive = isActiveStatus(cohort.status);
+  const isComplete = isCompletedStatus(cohort.status);
+  const isFailed = isFailedStatus(cohort.status);
 
   return (
     <div
@@ -209,56 +223,61 @@ function JobCard({
             isActive
               ? "bg-primary/10"
               : isComplete
-                ? "bg-success/10"
+                ? "bg-emerald-500/10"
                 : isFailed
                   ? "bg-destructive/10"
                   : "bg-muted",
           )}
         >
-          <FileSpreadsheet
-            className={cn(
-              "w-4 h-4",
-              isActive
-                ? "text-primary"
-                : isComplete
-                  ? "text-success"
+          {isActive ? (
+            <Loader2
+              className="w-4 h-4 text-primary animate-spin"
+            />
+          ) : (
+            <FileSpreadsheet
+              className={cn(
+                "w-4 h-4",
+                isComplete
+                  ? "text-emerald-600"
                   : isFailed
                     ? "text-destructive"
                     : "text-muted-foreground",
-            )}
-          />
+              )}
+            />
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-sm font-medium text-foreground truncate">
-              {job.filename}
+              {cohort.label || `Cohort ${cohort.id.slice(0, 8)}`}
             </span>
-            <StatusBadge variant={stateConfig.variant} className="shrink-0">
-              <StateIcon
-                className={cn("w-3 h-3 mr-1", stateConfig.animate && "animate-spin")}
-              />
-              {stateConfig.label}
-              {job.state === "RUNNING" && job.progress?.percent != null && (
-                <span className="ml-1 tabular-nums">{Math.round(job.progress.percent)}%</span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0",
+                isActive && "bg-primary/10 text-primary",
+                isComplete && "bg-emerald-500/10 text-emerald-700",
+                isFailed && "bg-destructive/10 text-destructive",
               )}
-            </StatusBadge>
+            >
+              {cohortStatusLabel(cohort.status)}
+            </span>
           </div>
 
           {/* Metadata line */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{formatDate(job.created_at)}</span>
-            {job.estimated_rows && (
+            <span>{formatDate(cohort.created_at)}</span>
+            {cohort.variant_count != null && (
               <>
-                <span className="text-border">·</span>
-                <span>{formatNumber(job.estimated_rows)} rows</span>
+                <span className="text-border">&middot;</span>
+                <span>{formatNumber(cohort.variant_count)} variants</span>
               </>
             )}
-            {job.progress && (
+            {cohort.source && (
               <>
-                <span className="text-border">·</span>
-                <span>{formatNumber(job.progress.found)} found</span>
+                <span className="text-border">&middot;</span>
+                <span>{cohort.source}</span>
               </>
             )}
           </div>
@@ -267,72 +286,46 @@ function JobCard({
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/batch-annotation/jobs/${job.job_id}`}>
+            <Link href={`/batch-annotation/jobs/${cohort.id}`}>
               View
               <ArrowRight className="w-3 h-3" />
             </Link>
           </Button>
 
-          {/* Kebab Menu */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="text-muted-foreground hover:text-slate-600"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 z-20 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[160px]">
-                  <Link
-                    href={`/batch-annotation/jobs/${job.job_id}`}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View details
-                  </Link>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(job.job_id);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full justify-start"
-                  >
-                    <Copy className="w-4 h-4" />
-                    Copy job ID
-                  </Button>
-
-                  {!isActive && (
-                    <>
-                      <div className="my-1 border-t border-border" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDelete}
-                        className={cn(
-                          "w-full justify-start",
-                          confirmDelete && "text-destructive",
-                        )}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {confirmDelete ? "Confirm delete?" : "Remove from list"}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          {/* Kebab Menu — portaled via Radix so it escapes overflow:hidden */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuItem asChild>
+                <Link href={`/batch-annotation/jobs/${cohort.id}`}>
+                  <ExternalLink className="w-4 h-4" />
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(cohort.id)}
+              >
+                <Copy className="w-4 h-4" />
+                Copy ID
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => onRemove(cohort.id)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
@@ -346,20 +339,20 @@ function JobCard({
 function EmptyState({ filter }: { filter: StatusFilter }) {
   const messages: Record<StatusFilter, { title: string; desc: string }> = {
     all: {
-      title: "No batch jobs yet",
+      title: "No cohorts yet",
       desc: "Upload a VCF or CSV file to start annotating your variants.",
     },
     active: {
-      title: "No active jobs",
-      desc: "Jobs that are running or pending will appear here.",
+      title: "No active cohorts",
+      desc: "Cohorts that are processing will appear here.",
     },
     completed: {
-      title: "No completed jobs",
-      desc: "Successfully finished jobs will appear here.",
+      title: "No completed cohorts",
+      desc: "Successfully finished cohorts will appear here.",
     },
     failed: {
-      title: "No failed jobs",
-      desc: "Jobs that encountered errors will appear here.",
+      title: "No failed cohorts",
+      desc: "Cohorts that encountered errors will appear here.",
     },
   };
 
@@ -385,116 +378,82 @@ function EmptyState({ filter }: { filter: StatusFilter }) {
 }
 
 // ============================================================================
-// Info Banner
-// ============================================================================
-
-function StorageBanner() {
-  return (
-    <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
-      <HardDrive className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground">
-          <span className="font-medium">Jobs stored locally.</span>{" "}
-          <span className="text-muted-foreground">
-            Job history is saved in your browser. Clearing browser data will remove this list,
-            but your results remain available via direct links.
-          </span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Main Component
 // ============================================================================
 
 export function JobsDashboard({ className }: JobsDashboardProps) {
-  const [jobs, setJobs] = useState<StoredJob[]>([]);
-  const [hasMounted, setHasMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
 
-  // Load jobs from localStorage after mount
-  useEffect(() => {
-    setJobs(getStoredJobs());
-    setHasMounted(true);
-  }, []);
+  const { cohorts, isLoading, refetch } = useCohorts({
+    tenantId: DEFAULT_TENANT_ID,
+  });
 
-  // Refresh periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setJobs(getStoredJobs());
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleRemove = useCallback((jobId: string) => {
-    removeJob(jobId);
-    setJobs(getStoredJobs());
-  }, []);
+  const handleRemove = useCallback(
+    async (id: string) => {
+      await deleteCohort(id, DEFAULT_TENANT_ID);
+      refetch();
+    },
+    [refetch],
+  );
 
   // Status counts
   const counts = useMemo(() => {
-    const active = jobs.filter(
-      (j) => j.state === "PENDING" || j.state === "RUNNING" || j.state === "CANCEL_REQUESTED",
-    ).length;
-    const completed = jobs.filter((j) => j.state === "COMPLETED").length;
-    const failed = jobs.filter((j) => j.state === "FAILED" || j.state === "CANCELLED").length;
+    const active = cohorts.filter((c) => isActiveStatus(c.status)).length;
+    const completed = cohorts.filter((c) => isCompletedStatus(c.status)).length;
+    const failed = cohorts.filter((c) => isFailedStatus(c.status)).length;
     return {
-      all: jobs.length,
+      all: cohorts.length,
       active,
       completed,
       failed,
     };
-  }, [jobs]);
+  }, [cohorts]);
 
   // Filter by status
-  const statusFilteredJobs = useMemo(() => {
+  const statusFilteredCohorts = useMemo(() => {
     switch (statusFilter) {
       case "active":
-        return jobs.filter(
-          (j) => j.state === "PENDING" || j.state === "RUNNING" || j.state === "CANCEL_REQUESTED",
-        );
+        return cohorts.filter((c) => isActiveStatus(c.status));
       case "completed":
-        return jobs.filter((j) => j.state === "COMPLETED");
+        return cohorts.filter((c) => isCompletedStatus(c.status));
       case "failed":
-        return jobs.filter((j) => j.state === "FAILED" || j.state === "CANCELLED");
+        return cohorts.filter((c) => isFailedStatus(c.status));
       default:
-        return jobs;
+        return cohorts;
     }
-  }, [jobs, statusFilter]);
+  }, [cohorts, statusFilter]);
 
   // Filter by search
-  const searchFilteredJobs = useMemo(() => {
-    if (!searchQuery.trim()) return statusFilteredJobs;
+  const searchFilteredCohorts = useMemo(() => {
+    if (!searchQuery.trim()) return statusFilteredCohorts;
     const query = searchQuery.toLowerCase();
-    return statusFilteredJobs.filter(
-      (job) =>
-        job.filename.toLowerCase().includes(query) ||
-        job.job_id.toLowerCase().includes(query),
+    return statusFilteredCohorts.filter(
+      (c) =>
+        (c.label?.toLowerCase().includes(query)) ||
+        c.id.toLowerCase().includes(query),
     );
-  }, [statusFilteredJobs, searchQuery]);
+  }, [statusFilteredCohorts, searchQuery]);
 
   // Sort
-  const sortedJobs = useMemo(() => {
-    const sorted = [...searchFilteredJobs];
+  const sortedCohorts = useMemo(() => {
+    const sorted = [...searchFilteredCohorts];
     switch (sortOption) {
       case "oldest":
         return sorted.sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
         );
-      case "largest":
-        return sorted.sort((a, b) => (b.estimated_rows || 0) - (a.estimated_rows || 0));
       case "name":
-        return sorted.sort((a, b) => a.filename.localeCompare(b.filename));
+        return sorted.sort((a, b) =>
+          (a.label ?? "").localeCompare(b.label ?? ""),
+        );
       default: // newest
         return sorted.sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
     }
-  }, [searchFilteredJobs, sortOption]);
+  }, [searchFilteredCohorts, sortOption]);
 
   return (
     <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
@@ -503,9 +462,9 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
         <div className="flex items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-semibold text-foreground">Batch Jobs</CardTitle>
-            {hasMounted && jobs.length > 0 && (
+            {cohorts.length > 0 && (
               <p className="text-sm text-muted-foreground mt-0.5">
-                {counts.active} active · {counts.completed} completed
+                {counts.active} active &middot; {counts.completed} completed
               </p>
             )}
           </div>
@@ -519,7 +478,7 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
       </CardHeader>
 
       {/* Filters Bar */}
-      {hasMounted && jobs.length > 0 && (
+      {cohorts.length > 0 && (
         <div className="px-6 py-3 border-b border-border bg-muted/50">
           <div className="flex items-center justify-between gap-4">
             <StatusTabs active={statusFilter} onChange={setStatusFilter} counts={counts} />
@@ -546,33 +505,26 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
 
       <CardContent className="p-6">
         {/* Loading State */}
-        {!hasMounted && (
+        {isLoading && cohorts.length === 0 && (
           <div className="flex items-center justify-center py-12">
             <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
           </div>
         )}
 
         {/* Empty State */}
-        {hasMounted && sortedJobs.length === 0 && (
+        {!isLoading && sortedCohorts.length === 0 && (
           <EmptyState filter={searchQuery ? "all" : statusFilter} />
         )}
 
-        {/* Job List */}
-        {hasMounted && sortedJobs.length > 0 && (
+        {/* Cohort List */}
+        {sortedCohorts.length > 0 && (
           <div className="space-y-2">
-            {sortedJobs.map((job) => (
-              <JobCard key={job.job_id} job={job} onRemove={handleRemove} />
+            {sortedCohorts.map((cohort) => (
+              <CohortCard key={cohort.id} cohort={cohort} onRemove={handleRemove} />
             ))}
           </div>
         )}
       </CardContent>
-
-      {/* Storage Info Banner */}
-      {hasMounted && jobs.length > 0 && (
-        <div className="px-6 pb-6">
-          <StorageBanner />
-        </div>
-      )}
     </Card>
   );
 }

@@ -8,8 +8,20 @@
 
 import type {
   CancelResponse,
+  CohortAggregateRequest,
+  CohortDeriveRequest,
+  CohortDetail,
+  CohortExportResponse,
+  CohortListResponse,
+  CohortStatus,
+  CohortStatusResponse,
+  CohortSummary,
+  CohortTopKRequest,
+  CreateCohortRequest,
+  CreateCohortResponse,
   CreateJobRequest,
   CreateJobResponse,
+  DeleteCohortResponse,
   ErrorCode,
   Job,
   JobCancelled,
@@ -444,4 +456,173 @@ export function getStateDescription(state: JobState): string {
     CANCELLED: "Cancelled by user",
   };
   return descriptions[state];
+}
+
+// ============================================================================
+// Cohort API Functions
+// ============================================================================
+
+/**
+ * Create a cohort from inline variant references.
+ */
+export async function createCohort(
+  tenantId: string,
+  request: CreateCohortRequest,
+): Promise<CreateCohortResponse> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts?${params}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((res) => handleResponse<CreateCohortResponse>(res, "/cohorts")),
+  );
+}
+
+/**
+ * List cohorts for a tenant with optional status filter and cursor pagination.
+ */
+export async function listCohorts(
+  tenantId: string,
+  opts?: { status?: CohortStatus; limit?: number; cursor?: string },
+): Promise<CohortListResponse> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  if (opts?.status) params.set("status", opts.status);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  if (opts?.cursor) params.set("cursor", opts.cursor);
+
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts?${params}`).then((res) =>
+      handleResponse<CohortListResponse>(res, "/cohorts"),
+    ),
+  );
+}
+
+/**
+ * Get full cohort metadata.
+ */
+export async function getCohort(
+  id: string,
+  tenantId: string,
+): Promise<CohortDetail> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}?${params}`).then((res) =>
+      handleResponse<CohortDetail>(res, `/cohorts/${id}`),
+    ),
+  );
+}
+
+/**
+ * Lightweight cohort status polling endpoint.
+ */
+export async function getCohortStatus(
+  id: string,
+  tenantId: string,
+): Promise<CohortStatusResponse> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/status?${params}`).then((res) =>
+      handleResponse<CohortStatusResponse>(res, `/cohorts/${id}/status`),
+    ),
+  );
+}
+
+/**
+ * Delete (or cancel) a cohort.
+ */
+export async function deleteCohort(
+  id: string,
+  tenantId: string,
+): Promise<DeleteCohortResponse> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return fetch(`${API_BASE}/cohorts/${id}?${params}`, {
+    method: "DELETE",
+  }).then((res) => handleResponse<DeleteCohortResponse>(res, `/cohorts/${id}`));
+}
+
+/**
+ * Get cohort summary (gene/consequence/clinical breakdowns + highlights).
+ */
+export async function getCohortSummary(
+  id: string,
+  tenantId: string,
+): Promise<CohortSummary> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/summary?${params}`).then((res) =>
+      handleResponse<CohortSummary>(res, `/cohorts/${id}/summary`),
+    ),
+  );
+}
+
+/**
+ * Top-K variants by a numeric score column.
+ */
+export async function cohortTopK(
+  id: string,
+  tenantId: string,
+  request: CohortTopKRequest,
+): Promise<unknown> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/topk?${params}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((res) => handleResponse(res, `/cohorts/${id}/topk`)),
+  );
+}
+
+/**
+ * Aggregate cohort variants by a field.
+ */
+export async function cohortAggregate(
+  id: string,
+  tenantId: string,
+  request: CohortAggregateRequest,
+): Promise<unknown> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/aggregate?${params}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((res) => handleResponse(res, `/cohorts/${id}/aggregate`)),
+  );
+}
+
+/**
+ * Derive a sub-cohort by filtering the parent.
+ */
+export async function cohortDerive(
+  id: string,
+  tenantId: string,
+  request: CohortDeriveRequest,
+): Promise<unknown> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/derive?${params}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((res) => handleResponse(res, `/cohorts/${id}/derive`)),
+  );
+}
+
+/**
+ * Export cohort as Arrow IPC.
+ */
+export async function cohortExport(
+  id: string,
+  tenantId: string,
+): Promise<CohortExportResponse> {
+  const params = new URLSearchParams({ tenant_id: tenantId });
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${id}/export?${params}`, {
+      method: "POST",
+    }).then((res) =>
+      handleResponse<CohortExportResponse>(res, `/cohorts/${id}/export`),
+    ),
+  );
 }

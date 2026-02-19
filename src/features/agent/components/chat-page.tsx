@@ -345,7 +345,7 @@ function ChatMessageRenderer({
       return {
         type: tp.type as string,
         toolCallId: tp.toolCallId as string | undefined,
-        toolName: (tp.type as string).replace(/^tool-/, ""),
+        toolName: getToolName(tp),
         state: tp.state as string | undefined,
       };
     });

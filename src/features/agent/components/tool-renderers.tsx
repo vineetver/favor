@@ -373,6 +373,24 @@ interface ToolUIPart {
 
 type PlanItemStatus = "completed" | "in-progress" | "pending";
 
+/** Normalize tool names so LLM-generated names match actual part names.
+ *  "find_paths" / "findPaths" / "Find Paths" all → "findpaths" */
+function normToolName(name: string): string {
+  return name.toLowerCase().replace(/[_\-\s]/g, "");
+}
+
+/** Check if a normalized plan tool name matches a normalized actual tool name.
+ *  First tries exact match, then substring containment as fallback
+ *  (handles LLM writing "shared_neighbors" for "getSharedNeighbors"). */
+function toolNameMatches(planTool: string, actualTool: string): boolean {
+  const a = normToolName(planTool);
+  const b = normToolName(actualTool);
+  return a === b || b.includes(a) || a.includes(b);
+}
+
+const DONE_STATES = new Set(["output-available", "output-error"]);
+const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
+
 function getPlanItemStatus(
   item: { tools: string[] },
   siblingToolParts: ToolUIPart[],
@@ -380,20 +398,28 @@ function getPlanItemStatus(
   if (item.tools.length > 0) {
     const matchingParts = siblingToolParts.filter((p) => {
       const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
-      return item.tools.includes(name);
+      return item.tools.some((t) => toolNameMatches(t, name));
     });
 
     if (matchingParts.length === 0) return "pending";
 
-    const hasCompleted = matchingParts.some(
-      (p) => p.state === "output-available" || p.state === "output-error",
+    // A successful completion always means done
+    const hasSuccess = matchingParts.some(
+      (p) => p.state === "output-available",
     );
-    if (hasCompleted) return "completed";
+    if (hasSuccess) return "completed";
 
-    const hasInProgress = matchingParts.some(
-      (p) => p.state === "input-available" || p.state === "streaming",
+    // If some errored but others are still running → retrying (in-progress)
+    const hasError = matchingParts.some((p) => p.state === "output-error");
+    const hasRunning = matchingParts.some((p) =>
+      RUNNING_STATES.has(p.state ?? ""),
     );
-    if (hasInProgress) return "in-progress";
+    if (hasError && hasRunning) return "in-progress";
+
+    // All errored, nothing still running → treat as done (gave up)
+    if (hasError) return "completed";
+
+    if (hasRunning) return "in-progress";
 
     return "pending";
   }
@@ -402,13 +428,13 @@ function getPlanItemStatus(
   // Infer status from whether all sibling tool calls have finished.
   if (siblingToolParts.length === 0) return "pending";
 
-  const allDone = siblingToolParts.every(
-    (p) => p.state === "output-available" || p.state === "output-error",
+  const allDone = siblingToolParts.every((p) =>
+    DONE_STATES.has(p.state ?? ""),
   );
   if (allDone) return "completed";
 
-  const anyRunning = siblingToolParts.some(
-    (p) => p.state === "input-available" || p.state === "streaming",
+  const anyRunning = siblingToolParts.some((p) =>
+    RUNNING_STATES.has(p.state ?? ""),
   );
   if (anyRunning) return "in-progress";
 
