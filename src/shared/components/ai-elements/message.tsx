@@ -25,7 +25,27 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import { Streamdown, type StreamdownProps } from "streamdown";
+
+type Components = StreamdownProps["components"];
+
+const markdownComponents: Partial<Components> = {
+  a: ({ node, children, ...props }) => (
+    <a
+      className="text-primary underline underline-offset-2 decoration-primary/30 hover:decoration-primary/60 transition-colors"
+      target="_blank"
+      rel="noreferrer"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  strong: ({ node, children, ...props }) => (
+    <strong className="font-semibold text-foreground" {...props}>
+      {children}
+    </strong>
+  ),
+};
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -69,7 +89,7 @@ export const MessageActions = ({
   children,
   ...props
 }: MessageActionsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props}>
+  <div className={cn("flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100", className)} {...props}>
     {children}
   </div>
 );
@@ -322,9 +342,10 @@ export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "ai-summary-content size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&]:text-foreground",
         className
       )}
+      components={markdownComponents}
       {...props}
     />
   ),

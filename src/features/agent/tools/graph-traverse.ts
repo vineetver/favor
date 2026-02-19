@@ -25,8 +25,7 @@ export const graphTraverse = tool({
           direction: z
             .enum(["in", "out"])
             .optional()
-            .default("out")
-            .describe("Edge direction (default 'out')"),
+            .describe("Edge direction. Auto-inferred from schema when omitted."),
           limit: z
             .number()
             .optional()

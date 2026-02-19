@@ -16,7 +16,10 @@ export function getStoredJobs(): StoredJob[] {
 
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const parsed: StoredJob[] = JSON.parse(data);
+    // Filter out corrupted entries (e.g. missing job_id from failed API responses)
+    return parsed.filter((j) => j.job_id);
   } catch {
     return [];
   }

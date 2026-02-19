@@ -19,6 +19,9 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import type { AgentCohort } from "../lib/cohort-store";
+import { saveJob, updateJobStatus } from "@features/batch/lib/job-storage";
+import { getJobStatus } from "@features/batch/api";
+import type { JobState } from "@features/batch/types";
 
 // ---------------------------------------------------------------------------
 // Variant parser
@@ -66,16 +69,20 @@ function parseVariantLines(text: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Client-side cohort creation
+// Async cohort creation (POST → poll → materialize)
 // ---------------------------------------------------------------------------
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+const TENANT_ID = "default-tenant";
+const POLL_INTERVAL_MS = 1_500;
+const POLL_TIMEOUT_MS = 120_000;
 
-async function createCohortAPI(
+async function createCohortAsync(
   variants: string[],
   label: string,
 ): Promise<{ cohort_id: string; vid_count: number }> {
-  const res = await fetch(`${API_BASE}/cohorts?tenant_id=default-tenant`, {
+  // Step 1: POST /cohorts → { job_id, state, created_at }
+  const submitRes = await fetch(`${API_BASE}/cohorts?tenant_id=${TENANT_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -85,11 +92,68 @@ async function createCohortAPI(
     }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    throw new Error(`Cohort creation failed (${res.status}): ${text}`);
+  if (!submitRes.ok) {
+    const text = await submitRes.text().catch(() => "Unknown error");
+    throw new Error(`Cohort creation failed (${submitRes.status}): ${text}`);
   }
-  return res.json();
+
+  const submitData = (await submitRes.json()) as {
+    job_id: string;
+    state: JobState;
+    created_at: string;
+  };
+
+  const job_id = submitData.job_id;
+  if (!job_id) {
+    throw new Error(
+      `POST /cohorts response missing job_id: ${JSON.stringify(submitData).slice(0, 200)}`,
+    );
+  }
+  const { state, created_at } = submitData;
+
+  // Step 2: Save to batch job storage so it appears in batch annotation page
+  saveJob({
+    job_id,
+    tenant_id: TENANT_ID,
+    filename: label,
+    created_at,
+    state,
+    source: "cohort",
+  });
+
+  // Step 3: Poll until terminal
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+  let terminalState: JobState = state;
+
+  while (Date.now() < deadline) {
+    const job = await getJobStatus(job_id, TENANT_ID);
+    if (job.is_terminal) {
+      terminalState = job.state;
+      updateJobStatus(job_id, job.state, "progress" in job ? job.progress : undefined);
+      break;
+    }
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+
+  if (terminalState === "FAILED") {
+    throw new Error("Cohort job failed. Check the batch annotation page for details.");
+  }
+  if (terminalState !== "COMPLETED") {
+    throw new Error(`Cohort job did not complete in time (state: ${terminalState}).`);
+  }
+
+  // Step 4: Materialize cohort from completed job
+  const materializeRes = await fetch(
+    `${API_BASE}/cohorts/from-job/${job_id}?tenant_id=${TENANT_ID}`,
+    { method: "POST", headers: { "Content-Type": "application/json" } },
+  );
+
+  if (!materializeRes.ok) {
+    const text = await materializeRes.text().catch(() => "Unknown error");
+    throw new Error(`Cohort materialization failed (${materializeRes.status}): ${text}`);
+  }
+
+  return materializeRes.json();
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +187,7 @@ export function VariantSubmitPanel({
     try {
       const label = `Pasted cohort (${pasteVariants.length} variants)`;
       const capped = pasteVariants.slice(0, MAX_VARIANTS);
-      const result = await createCohortAPI(capped, label);
+      const result = await createCohortAsync(capped, label);
       const cohort: AgentCohort = {
         cohortId: result.cohort_id,
         label,
@@ -187,7 +251,7 @@ export function VariantSubmitPanel({
         ? `${file.name} (${fileVariants.length} variants)`
         : `Upload (${fileVariants.length} variants)`;
       const capped = fileVariants.slice(0, MAX_VARIANTS);
-      const result = await createCohortAPI(capped, label);
+      const result = await createCohortAsync(capped, label);
       const cohort: AgentCohort = {
         cohortId: result.cohort_id,
         label,

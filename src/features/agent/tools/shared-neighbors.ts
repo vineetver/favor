@@ -21,8 +21,7 @@ export const getSharedNeighbors = tool({
     direction: z
       .enum(["in", "out"])
       .optional()
-      .default("out")
-      .describe("Edge direction"),
+      .describe("Edge direction. Auto-inferred from schema when omitted."),
     limit: z.number().optional().default(20).describe("Max shared neighbors"),
   }),
   execute: async ({ entities, edgeType, direction, limit }) => {
@@ -43,7 +42,7 @@ export const getSharedNeighbors = tool({
         body: {
           entities,
           edgeType,
-          direction: direction ?? "out",
+          ...(direction ? { direction } : {}),
           limit: Math.min(limit ?? 20, 50),
         },
       });

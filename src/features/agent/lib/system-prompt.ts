@@ -28,103 +28,141 @@ const DATA_SOURCES = `## Data Sources
 
 const EDGE_CATALOG = `## Edge Catalog
 
-> When using \`getRankedNeighbors(scoreField=...)\` or \`graphTraverse(sort="-field", filters={...})\`, ONLY use columns listed after "rank:" or "filter:" for that edge type.
+Two field types per edge:
+- **score** (numeric) → use for \`getRankedNeighbors(scoreField=...)\` and \`graphTraverse(sort="-field")\`. These are NUMERIC columns that can be summed/ranked.
+- **filter** (categorical/string) → use for \`graphTraverse(filters={field__eq: value})\` ONLY. These are STRING/ENUM fields. NEVER pass a filter field as \`scoreField\` — it will cause a type error.
+- **"—"** or omitted score = no numeric ranking available. Omit \`scoreField\` entirely; the server auto-defaults to the edge type's best score field when available.
+- **Direction is auto-inferred**: The server resolves direction from the schema. You can usually **omit direction entirely**. Override only for self-edges (e.g., INTERACTS_WITH Gene→Gene). The arrow notation below shows the stored direction for reference.
 
-Format: \`EDGE: From→To | rank: sort_fields | filter: filterable_fields\`
+Format: \`EDGE: From→To | score: numeric_fields | filter: categorical_fields\`
 
 ### Gene ↔ Disease
-- ASSOCIATED_WITH_DISEASE: Gene→Disease | rank: overall_score, evidence_count, genetic_association_score
-- CURATED_FOR: Gene→Disease | rank: evidence_count | filter: classification, mode_of_inheritance
-- CAUSES: Gene→Disease | rank: confidence_category | filter: allelic_requirement, mutation_consequence
-- CIVIC_EVIDENCED_FOR: Gene→Disease | rank: profile_evidence_score, rating | filter: evidence_level, evidence_type
-- INHERITED_CAUSE_OF: Gene→Disease | rank: evidence_count | filter: mechanism
-- THERAPEUTIC_TARGET_IN: Gene→Disease | rank: evidence_count | filter: best_clinical_status
-- SCORED_FOR_DISEASE: Gene→Disease | rank: evidence_count | filter: clinical_phase, is_approved
-- BIOMARKER_FOR: Gene→Disease | rank: -
-- PGX_ASSOCIATED: Gene→Disease | rank: n_evidence
-- ASSERTED_FOR_DISEASE: Gene→Disease | rank: - | filter: significance, amp_category
+- ASSOCIATED_WITH_DISEASE: Gene→Disease | score: overall_score, evidence_count, genetic_association_score
+- CURATED_FOR: Gene→Disease | score: evidence_count | filter: classification, mode_of_inheritance
+- CAUSES: Gene→Disease | score: confidence_category | filter: allelic_requirement, mutation_consequence
+- CIVIC_EVIDENCED_FOR: Gene→Disease | score: profile_evidence_score, rating | filter: evidence_level, evidence_type
+- INHERITED_CAUSE_OF: Gene→Disease | score: evidence_count | filter: mechanism
+- THERAPEUTIC_TARGET_IN: Gene→Disease | score: evidence_count | filter: best_clinical_status
+- SCORED_FOR_DISEASE: Gene→Disease | score: evidence_count | filter: clinical_phase, is_approved
+- BIOMARKER_FOR: Gene→Disease | score: — (no ranking)
+- PGX_ASSOCIATED: Gene→Disease | score: n_evidence
+- ASSERTED_FOR_DISEASE: Gene→Disease | score: — | filter: significance, amp_category
 
 ### Drug ↔ Gene
-- TARGETS: Drug→Gene | rank: num_sources, max_clinical_phase | filter: action_type, mechanism_of_action
-- TARGETS_IN_CONTEXT: Drug→Gene | rank: max_phase, num_trials | filter: disease_id, disease_name
-- HAS_PGX_INTERACTION: Gene→Drug | rank: n_evidence | filter: is_pd
-- HAS_CLINICAL_DRUG_EVIDENCE: Gene→Drug | rank: rating | filter: evidence_level, clinical_significance
-- ASSERTED_FOR_DRUG: Gene→Drug | rank: - | filter: significance
+- TARGETS: Drug→Gene | score: num_sources, max_clinical_phase | filter: action_type, mechanism_of_action
+- TARGETS_IN_CONTEXT: Drug→Gene | score: max_phase, num_trials | filter: disease_id, disease_name
+- HAS_PGX_INTERACTION: Gene→Drug | score: n_evidence | filter: is_pd
+- HAS_CLINICAL_DRUG_EVIDENCE: Gene→Drug | score: rating | filter: evidence_level, clinical_significance
+- ASSERTED_FOR_DRUG: Gene→Drug | score: — | filter: significance
 
 ### Drug → Disease / SideEffect
-- INDICATED_FOR: Drug→Disease | rank: max_clinical_phase, num_sources
-- HAS_SIDE_EFFECT: Drug→SideEffect | rank: frequency | filter: frequency_category
-- HAS_ADVERSE_REACTION: Drug→SideEffect | rank: llr, report_count
+- INDICATED_FOR: Drug→Disease | score: max_clinical_phase, num_sources
+- HAS_SIDE_EFFECT: Drug→SideEffect | score: frequency | filter: frequency_category
+- HAS_ADVERSE_REACTION: Drug→SideEffect | score: llr, report_count
 
 ### Variant → Gene (precedence: PREDICTED_TO_AFFECT > regulatory > positional)
-- PREDICTED_TO_AFFECT: Variant→Gene | rank: max_l2g_score, confidence
-- POSITIONALLY_LINKED_TO: Variant→Gene | filter: consequence, region_type
-- ENHANCER_LINKED_TO: Variant→Gene | rank: feature_score, target_score, confidence
-- PREDICTED_REGULATORY_TARGET: Variant→Gene | rank: score, percentile
-- MISSENSE_PATHOGENIC_FOR: Variant→Gene | rank: pathogenicity, max_pathogenicity
-- CLINVAR_ANNOTATED_IN: Variant→Gene | filter: clinical_significance, review_status
-- SOMATICALLY_MUTATED_IN: Variant→Gene | rank: sample_count | filter: tier
+- PREDICTED_TO_AFFECT: Variant→Gene | score: max_l2g_score, confidence
+- POSITIONALLY_LINKED_TO: Variant→Gene | score: — | filter: consequence, region_type
+- ENHANCER_LINKED_TO: Variant→Gene | score: feature_score, target_score, confidence
+- PREDICTED_REGULATORY_TARGET: Variant→Gene | score: score, percentile
+- MISSENSE_PATHOGENIC_FOR: Variant→Gene | score: pathogenicity, max_pathogenicity
+- CLINVAR_ANNOTATED_IN: Variant→Gene | score: — | filter: clinical_significance, review_status
+- SOMATICALLY_MUTATED_IN: Variant→Gene | score: sample_count | filter: tier
 
 ### Variant → Trait / Disease / Study / Drug / SideEffect
-- GWAS_ASSOCIATED_WITH: Variant→Trait | rank: p_value_mlog, or_beta
-- CLINVAR_ASSOCIATED: Variant→Disease | filter: clinical_significance, review_status
-- PGX_DISEASE_ASSOCIATED: Variant→Disease | rank: best_p_value, n_studies
-- REPORTED_IN: Variant→Study | rank: p_value_mlog
-- PGX_RESPONSE_FOR: Variant→Drug | rank: evidence_level
-- PGX_CLINICAL_RESPONSE: Variant→Drug | rank: score, evidence_level, max_evidence_score
-- AFFECTS_RESPONSE_TO: Variant→Drug | filter: significance, phenotype_category
-- STUDIED_FOR_DRUG_RESPONSE: Variant→Drug | rank: p_value
-- FUNCTIONALLY_ASSAYED_FOR: Variant→Drug | filter: assay_type
-- LINKED_TO_SIDE_EFFECT: Variant→SideEffect | filter: significance
+- GWAS_ASSOCIATED_WITH: Variant→Trait | score: p_value_mlog, or_beta
+- CLINVAR_ASSOCIATED: Variant→Disease | score: — | filter: clinical_significance, review_status
+- PGX_DISEASE_ASSOCIATED: Variant→Disease | score: best_p_value, n_studies
+- REPORTED_IN: Variant→Study | score: p_value_mlog
+- PGX_RESPONSE_FOR: Variant→Drug | score: evidence_level
+- PGX_CLINICAL_RESPONSE: Variant→Drug | score: score, evidence_level, max_evidence_score
+- AFFECTS_RESPONSE_TO: Variant→Drug | score: — | filter: significance, phenotype_category
+- STUDIED_FOR_DRUG_RESPONSE: Variant→Drug | score: p_value
+- FUNCTIONALLY_ASSAYED_FOR: Variant→Drug | score: — | filter: assay_type
+- LINKED_TO_SIDE_EFFECT: Variant→SideEffect | score: — | filter: significance
 
 ### Gene → Gene
-- INTERACTS_WITH: Gene→Gene | rank: num_sources, ot_mi_score, num_experiments
-- FUNCTIONALLY_RELATED: Gene→Gene | rank: combined_score, experiments, coexpression
-- REGULATES: Gene→Gene | filter: interaction_type
-- INTERACTS_IN_PATHWAY: Gene→Gene | filter: pathway_name
+- INTERACTS_WITH: Gene→Gene | score: num_sources, ot_mi_score, num_experiments
+- FUNCTIONALLY_RELATED: Gene→Gene | score: combined_score, experiments, coexpression
+- REGULATES: Gene→Gene | score: — | filter: interaction_type
+- INTERACTS_IN_PATHWAY: Gene→Gene | score: — | filter: pathway_name
 
 ### Gene → Trait / Pathway / Phenotype / GOTerm / SideEffect / Variant
-- SCORED_FOR_TRAIT: Gene→Trait | rank: total_score
-- ASSOCIATED_WITH_TRAIT: Gene→Trait | rank: best_p_value_mlog, n_studies
-- PARTICIPATES_IN: Gene→Pathway | filter: pathway_source, pathway_category
-- MANIFESTS_AS: Gene→Phenotype | filter: evidence_code, frequency
-- MOUSE_MANIFESTS_AS: Gene→Phenotype | rank: n_models
-- ANNOTATED_WITH: Gene→GOTerm | filter: go_namespace, evidence_code, qualifier
-- ASSOCIATED_WITH_SIDE_EFFECT: Gene→SideEffect | rank: n_evidence
-- HAS_GWAS_VARIANT: Gene→Variant | rank: p_value_mlog
+- SCORED_FOR_TRAIT: Gene→Trait | score: total_score
+- ASSOCIATED_WITH_TRAIT: Gene→Trait | score: best_p_value_mlog, n_studies
+- PARTICIPATES_IN: Gene→Pathway | score: — | filter: pathway_source, pathway_category
+- MANIFESTS_AS: Gene→Phenotype | score: — | filter: evidence_code, frequency
+- MOUSE_MANIFESTS_AS: Gene→Phenotype | score: n_models
+- ANNOTATED_WITH: Gene→GOTerm | score: — | filter: go_namespace, evidence_code, qualifier
+- ASSOCIATED_WITH_SIDE_EFFECT: Gene→SideEffect | score: n_evidence
+- HAS_GWAS_VARIANT: Gene→Variant | score: p_value_mlog
 
 ### Cross-ontology bridges
-- MAPS_TO: Trait→Disease | rank: match_count
-- TRAIT_PRESENTS_WITH: Trait→Phenotype | rank: match_count
-- PRESENTS_WITH: Disease→Phenotype | rank: match_count
-- SE_MAPS_TO: SideEffect→OntologyTerm | filter: dst_type
+- MAPS_TO: Trait→Disease | score: match_count
+- TRAIT_PRESENTS_WITH: Trait→Phenotype | score: match_count
+- PRESENTS_WITH: Disease→Phenotype | score: match_count
+- SE_MAPS_TO: SideEffect→OntologyTerm | score: — | filter: dst_type
 
 ### Regulatory (cCRE)
-- OVERLAPS: Variant→cCRE | filter: annotation
-- EXPERIMENTALLY_REGULATES: cCRE→Gene | rank: max_score
-- COMPUTATIONALLY_REGULATES: cCRE→Gene | rank: max_score
+- OVERLAPS: Variant→cCRE | score: — | filter: annotation (STRING — cannot rank by this)
+- EXPERIMENTALLY_REGULATES: cCRE→Gene | score: max_score
+- COMPUTATIONALLY_REGULATES: cCRE→Gene | score: max_score
 
 ### Metabolic
-- CONTAINS_METABOLITE: Pathway→Metabolite
-- METABOLITE_IS_A: Metabolite→Metabolite
+- CONTAINS_METABOLITE: Pathway→Metabolite | score: —
+- METABOLITE_IS_A: Metabolite→Metabolite | score: —
 
 ### Study
-- INVESTIGATES: Study→Trait
+- INVESTIGATES: Study→Trait | score: —
 
 ### Ontology hierarchies (direct: *_SUBCLASS_OF, PART_OF | transitive: *_ANCESTOR_OF)
-- SUBCLASS_OF / ANCESTOR_OF: Disease→Disease
-- PHENOTYPE_SUBCLASS_OF / PHENOTYPE_ANCESTOR_OF: Phenotype→Phenotype
-- EFO_SUBCLASS_OF / EFO_ANCESTOR_OF: Trait→Trait
-- GO_SUBCLASS_OF / GO_ANCESTOR_OF: GOTerm→GOTerm
-- PART_OF / PATHWAY_ANCESTOR_OF: Pathway→Pathway
-All closure edges (ANCESTOR_OF) support filter: distance
+- SUBCLASS_OF / ANCESTOR_OF: Disease→Disease | filter: distance
+- PHENOTYPE_SUBCLASS_OF / PHENOTYPE_ANCESTOR_OF: Phenotype→Phenotype | filter: distance
+- EFO_SUBCLASS_OF / EFO_ANCESTOR_OF: Trait→Trait | filter: distance
+- GO_SUBCLASS_OF / GO_ANCESTOR_OF: GOTerm→GOTerm | filter: distance
+- PART_OF / PATHWAY_ANCESTOR_OF: Pathway→Pathway | filter: distance
+
+### Direction Quick Reference
+
+Direction is **auto-inferred** by the server for non-self-edges. You can omit \`direction\` in most cases. The server resolves it from the edge schema and returns the result in \`meta.resolved\`.
+
+**When to override**: Only for self-edges (e.g., INTERACTS_WITH Gene→Gene) where the server defaults to "out". If you need "in", specify it explicitly.
+
+The arrow below shows the stored direction for reference:
+
+| Edge | Source→Target | Auto-inferred for Gene seed | Auto-inferred for Disease seed |
+|------|---------------|----------------------------|-------------------------------|
+| ASSOCIATED_WITH_DISEASE | Gene→Disease | out | in |
+| TARGETS | Drug→Gene | in | N/A |
+| PREDICTED_TO_AFFECT | Variant→Gene | in (from Gene) | N/A |
+
+### Fallback Edge Groups
+
+When one edge type returns no results, try the other edges in the same group before giving up. Direction and scoreField are auto-inferred — omit them unless overriding.
+
+**Gene ↔ Drug (find drugs for a gene):**
+1. TARGETS — largest dataset, 125K edges
+2. HAS_PGX_INTERACTION — pharmacogenomic
+3. HAS_CLINICAL_DRUG_EVIDENCE — clinical evidence
+4. ASSERTED_FOR_DRUG — curated assertions
+
+**Gene ↔ Disease (find diseases for a gene):**
+1. ASSOCIATED_WITH_DISEASE — best aggregate
+2. CURATED_FOR — expert curated
+3. THERAPEUTIC_TARGET_IN — therapeutic relevance
+4. CAUSES — causal relationships
+
+**Variant ↔ Gene (find gene for a variant):**
+1. PREDICTED_TO_AFFECT — highest confidence
+2. CLINVAR_ANNOTATED_IN — clinical annotations
+3. POSITIONALLY_LINKED_TO — positional
 
 ### Ranking defaults
-- Prefer \`*_score\` columns descending when available
-- Use \`evidence_count\` / \`num_sources\` as confidence tiebreaker
+- \`scoreField\` is auto-resolved by the server to the edge type's best default. You can usually omit it.
+- Override with a specific field when you need a different ranking (e.g., \`evidence_count\` instead of \`overall_score\`).
 - For GWAS: higher \`p_value_mlog\` = stronger significance
 - For drugs: rank by \`max_clinical_phase\` or \`is_approved\`
-- Gene-Disease ranking: ASSOCIATED_WITH_DISEASE.overall_score is the best aggregate`;
+- For \`graphTraverse\`: use \`sort="-field"\` for descending sort on a step.`;
 
 const ENTITY_IDS = `## Entity ID Formats
 
@@ -178,7 +216,10 @@ const AGENT_RULES = `## Agent Rules
 - **Chain intelligently.** Each tool result informs the next call. Read the \`textSummary\`/\`summary\` field first — it's compressed and informative.
 - **Know when to stop.** If the summary answers the question, synthesize immediately. Don't fetch more data for completeness.
 - **Budget: <10 tool calls per question.** Most questions need 2-4 calls. If you're at 6+, you're probably over-fetching.
-- **Recover from errors.** If a tool returns an error, try an alternative approach. Wrong entity ID? Re-search. No results? Broaden the query. Don't repeat the same failed call.
+- **NEVER give up after one failed edge.** If \`getRankedNeighbors\` returns no results:
+  1. Direction is auto-inferred, so it's likely correct. Try the next edge in the Fallback Edge Group.
+  2. Only after exhausting all relevant edges should you report "no results found".
+- **Recover from all errors.** Wrong entity ID? Re-search. No results? Try alternative edges or broaden the query. Timeout? Reduce the limit. NEVER repeat the exact same failed call.
 
 ### Response
 - Use Markdown with headers, bold, and compact lists (no blank lines between items)
@@ -210,7 +251,7 @@ const DECISION_TREES = `## Decision Trees
 → Synthesize from the derived cohort's summary — never loop lookupVariant
 
 ### "What genes are associated with [disease]?"
-→ searchEntities → getRankedNeighbors(direction="in", edgeType="ASSOCIATED_WITH_DISEASE")
+→ searchEntities → getRankedNeighbors(edgeType="ASSOCIATED_WITH_DISEASE")
 → Synthesize top genes with scores
 
 ### "Compare [A] and [B]"
@@ -223,10 +264,31 @@ const DECISION_TREES = `## Decision Trees
 → findPaths(from, to)
 → Synthesize: connection paths with intermediaries
 
+### "What drugs target [gene]?" or "Find drugs for [gene]"
+→ searchEntities(gene) → get Gene ID
+→ getRankedNeighbors(Gene, TARGETS) — direction and scoreField auto-inferred
+→ If no results: try HAS_PGX_INTERACTION, then HAS_CLINICAL_DRUG_EVIDENCE
+→ Synthesize: drug list with mechanism of action and clinical phase
+
 ### "What pathways/diseases/GO terms are enriched in [gene list]?"
 → Resolve gene IDs (searchEntities for each, parallel)
 → runEnrichment(genes, targetType, edgeType)
-→ Synthesize: top enriched terms with p-values and biological context`;
+→ Synthesize: top enriched terms with p-values and biological context
+
+### "Assess [variant] — what gene and drugs?"
+→ lookupVariant → extract gene from annotation
+→ searchEntities(gene name) → get Gene ID
+→ getGwasAssociations(variant) — in parallel with the gene lookups
+→ getRankedNeighbors(Gene, TARGETS) — find drugs targeting this gene
+→ If no drug results: try HAS_PGX_INTERACTION
+→ Synthesize: variant impact + gene role + therapeutic options
+
+### "Find shared [X] between [disease A] and [disease B]"
+→ searchEntities("A"), searchEntities("B") (parallel)
+→ getRankedNeighbors(A, edge) + getRankedNeighbors(B, edge) (parallel)
+→ getSharedNeighbors([A, B], edge) or compare gene lists manually
+→ For druggability: take shared genes → getRankedNeighbors(Gene, TARGETS)
+→ Synthesize: shared biology + therapeutic opportunities`;
 
 export function buildSystemPrompt(): string {
   return [

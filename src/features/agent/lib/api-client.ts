@@ -1,3 +1,6 @@
+import { getJobStatus } from "@features/batch/api";
+import type { Job } from "@features/batch/types";
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const DEFAULT_TIMEOUT = 30_000; // 30s per tool call
@@ -85,6 +88,79 @@ export function cohortFetch<T>(
   return agentFetch<T>(
     `${path}${separator}tenant_id=default-tenant`,
     options,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Async cohort helpers
+// ---------------------------------------------------------------------------
+
+const POLL_INTERVAL_MS = 2_000;
+const POLL_TIMEOUT_MS = 120_000;
+
+/**
+ * Poll a batch job until it reaches a terminal state.
+ * Returns the terminal Job object or throws on timeout.
+ */
+export async function pollJobUntilDone(
+  jobId: string,
+  tenantId: string,
+): Promise<Job> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const job = await getJobStatus(jobId, tenantId);
+    if (job.is_terminal) return job;
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+
+  throw new AgentToolError(
+    408,
+    `Job ${jobId} did not complete within ${POLL_TIMEOUT_MS / 1000}s`,
+    "The job is still running. Try again later or check the batch annotation page.",
+  );
+}
+
+export interface CohortFromJobResponse {
+  cohort_id: string;
+  vid_count: number;
+  resolution: {
+    total: number;
+    resolved: number;
+    not_found: number;
+    ambiguous: number;
+    errors: number;
+  };
+  summary?: {
+    text_summary: string;
+    cohort_id: string;
+    vid_count: number;
+    by_gene?: Array<{ geneSymbol: string; count: number; pathogenic: number; functionalImpact: number }>;
+    by_consequence?: Array<{ category: string; count: number }>;
+    by_clinical_significance?: Array<{ category: string; count: number }>;
+    by_frequency?: Array<{ category: string; count: number }>;
+    highlights?: Array<{
+      rsid?: string;
+      vcf: string;
+      gene?: string;
+      consequence?: string;
+      clinicalSignificance?: string;
+      caddPhred?: number;
+      gnomadAf?: number;
+    }>;
+  };
+}
+
+/**
+ * Materialize a cohort from a completed batch job.
+ */
+export async function cohortFromJob(
+  jobId: string,
+  tenantId: string,
+): Promise<CohortFromJobResponse> {
+  return agentFetch<CohortFromJobResponse>(
+    `/cohorts/from-job/${jobId}?tenant_id=${tenantId}`,
+    { method: "POST", timeout: 30_000 },
   );
 }
 

@@ -134,26 +134,37 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolPart["output"];
   errorText: ToolPart["errorText"];
+  renderOutput?: (output: unknown) => ReactNode;
 };
 
 export const ToolOutput = ({
   className,
   output,
   errorText,
+  renderOutput,
   ...props
 }: ToolOutputProps) => {
   if (!(output || errorText)) {
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  // Try custom renderer first
+  const customOutput =
+    renderOutput && typeof output === "object" && !isValidElement(output) && !errorText
+      ? renderOutput(output)
+      : null;
 
-  if (typeof output === "object" && !isValidElement(output)) {
+  let Output: ReactNode;
+  if (customOutput) {
+    Output = customOutput;
+  } else if (typeof output === "object" && !isValidElement(output)) {
     Output = (
       <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
     );
   } else if (typeof output === "string") {
     Output = <CodeBlock code={output} language="json" />;
+  } else {
+    Output = <div>{output as ReactNode}</div>;
   }
 
   return (
@@ -166,7 +177,9 @@ export const ToolOutput = ({
           "overflow-x-auto rounded-md text-xs [&_table]:w-full",
           errorText
             ? "bg-destructive/10 text-destructive"
-            : "bg-muted/50 text-foreground"
+            : customOutput
+              ? "text-foreground"
+              : "bg-muted/50 text-foreground"
         )}
       >
         {errorText && <div>{errorText}</div>}

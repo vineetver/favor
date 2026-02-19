@@ -49,7 +49,7 @@ function SidebarSection({
         />
         <span className="flex-1 text-left">{title}</span>
         {count != null && count > 0 && (
-          <span className="text-[10px] font-medium tabular-nums">
+          <span className="size-7 flex items-center justify-center text-[10px] font-medium tabular-nums">
             {count}
           </span>
         )}
@@ -116,7 +116,7 @@ export function WorkspaceSidebar({
       j.state === "CANCEL_REQUESTED",
   );
   const completedJobs = jobs
-    .filter((j) => j.state === "COMPLETED")
+    .filter((j) => j.state === "COMPLETED" && j.source !== "cohort")
     .slice(0, 10);
 
   const isEmpty =

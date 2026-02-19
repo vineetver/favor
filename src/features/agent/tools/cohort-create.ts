@@ -1,6 +1,11 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { cohortFetch, AgentToolError } from "../lib/api-client";
+import {
+  cohortFetch,
+  AgentToolError,
+  pollJobUntilDone,
+  cohortFromJob,
+} from "../lib/api-client";
 import type { CompressedCohort } from "../types";
 
 export const createCohort = tool({
@@ -20,48 +25,60 @@ export const createCohort = tool({
   execute: async ({ variants, label }): Promise<CompressedCohort | { error: boolean; message: string; hint?: string }> => {
     try {
       const idempotencyKey = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const cohortLabel = label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`;
 
-      const result = await cohortFetch<{
-        cohort_id: string;
-        vid_count: number;
-        resolution: {
-          total: number;
-          resolved: number;
-          not_found: number;
-          ambiguous: number;
-          errors: number;
-        };
-        summary: {
-          text_summary: string;
-          cohort_id: string;
-          vid_count: number;
-          by_gene?: Array<{ geneSymbol: string; count: number; pathogenic: number; functionalImpact: number }>;
-          by_consequence?: Array<{ category: string; count: number }>;
-          by_clinical_significance?: Array<{ category: string; count: number }>;
-          by_frequency?: Array<{ category: string; count: number }>;
-          highlights?: Array<{
-            rsid?: string;
-            vcf: string;
-            gene?: string;
-            consequence?: string;
-            clinicalSignificance?: string;
-            caddPhred?: number;
-            gnomadAf?: number;
-          }>;
-        };
+      // Step 1: POST /cohorts → { job_id, state, created_at }
+      const submitResult = await cohortFetch<{
+        job_id: string;
+        state: string;
+        created_at: string;
       }>("/cohorts", {
         method: "POST",
         body: {
           references: variants,
-          label: label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`,
+          label: cohortLabel,
           idempotency_key: idempotencyKey,
         },
         timeout: 60_000,
       });
 
-      const summaryParts = [result.summary.text_summary];
+      const jobId = submitResult.job_id;
+      if (!jobId) {
+        throw new AgentToolError(
+          500,
+          `POST /cohorts response missing job_id: ${JSON.stringify(submitResult).slice(0, 200)}`,
+          "Unexpected response format from cohort creation endpoint.",
+        );
+      }
 
-      if (result.summary.by_gene?.length) {
+      // Step 2: Poll until terminal
+      const job = await pollJobUntilDone(jobId, "default-tenant");
+
+      if (job.state === "FAILED") {
+        return {
+          error: true,
+          message: job.error_message,
+          hint: `Error code: ${job.error_code}. ${job.retryable ? "This error is retryable." : "This error is not retryable."}`,
+        };
+      }
+
+      if (job.state !== "COMPLETED") {
+        return {
+          error: true,
+          message: `Job ended in unexpected state: ${job.state}`,
+        };
+      }
+
+      // Step 3: Materialize cohort from completed job
+      const result = await cohortFromJob(jobId, "default-tenant");
+
+      const summaryParts: string[] = [];
+
+      if (result.summary?.text_summary) {
+        summaryParts.push(result.summary.text_summary);
+      }
+
+      if (result.summary?.by_gene?.length) {
         summaryParts.push(
           `Top genes: ${result.summary.by_gene
             .slice(0, 5)
@@ -70,7 +87,7 @@ export const createCohort = tool({
         );
       }
 
-      if (result.summary.highlights?.length) {
+      if (result.summary?.highlights?.length) {
         summaryParts.push(
           `Notable variants: ${result.summary.highlights
             .slice(0, 5)
@@ -93,7 +110,7 @@ export const createCohort = tool({
           resolved: result.resolution.resolved,
           notFound: result.resolution.not_found,
         },
-        summary: summaryParts.join("\n"),
+        summary: summaryParts.join("\n") || `Cohort created with ${result.vid_count} variants.`,
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

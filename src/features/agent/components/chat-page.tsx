@@ -46,16 +46,22 @@ import {
 import {
   CopyIcon,
   DnaIcon,
-  SearchIcon,
   GitCompareArrowsIcon,
   FlaskConicalIcon,
   RouteIcon,
   CrosshairIcon,
   PanelLeftIcon,
+  PillIcon,
+  PlusIcon,
+  Share2Icon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
   XIcon,
 } from "lucide-react";
+import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
+import { renderToolOutput, getToolInputSummary } from "./tool-renderers";
 import { useAgentChat } from "../hooks/use-agent-chat";
 
 // ---------------------------------------------------------------------------
@@ -86,30 +92,69 @@ function getToolTitle(type: string): string {
 
 const SUGGESTED_PROMPTS = [
   {
-    text: "Tell me about the BRCA1 gene",
-    icon: <DnaIcon className="size-4" />,
+    text: "What pathways are enriched among the top genes linked to Alzheimer's disease?",
+    icon: <Share2Icon className="size-4" />,
   },
   {
-    text: "What genes are associated with Type 2 Diabetes?",
-    icon: <SearchIcon className="size-4" />,
+    text: "Find shared gene targets between rheumatoid arthritis and lupus — are any druggable?",
+    icon: <PillIcon className="size-4" />,
   },
   {
-    text: "Look up variant rs7412",
+    text: "Assess variant rs121913529 — what gene does it affect and what drugs target it?",
     icon: <CrosshairIcon className="size-4" />,
   },
   {
-    text: "Compare BRCA1 and TP53",
-    icon: <GitCompareArrowsIcon className="size-4" />,
-  },
-  {
-    text: "What pathways is EGFR involved in?",
+    text: "How are BRCA1 and PARP1 connected, and what diseases do they share?",
     icon: <RouteIcon className="size-4" />,
   },
   {
-    text: "Find drugs that target ALK",
-    icon: <FlaskConicalIcon className="size-4" />,
+    text: "Compare TP53, EGFR, and KRAS — shared pathways, unique disease profiles, and variant burden",
+    icon: <GitCompareArrowsIcon className="size-4" />,
+  },
+  {
+    text: "Evaluate rs7412 and rs429358 together — how do their genes connect to lipid disorders?",
+    icon: <DnaIcon className="size-4" />,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Follow-up suggestions
+// ---------------------------------------------------------------------------
+
+function getFollowUpSuggestions(messages: UIMessage[]): string[] {
+  const last = messages.at(-1);
+  if (!last || last.role !== "assistant") return [];
+
+  // Find the last tool used
+  const toolParts = last.parts.filter((p) => isToolUIPart(p));
+  const lastTool = toolParts.at(-1);
+
+  if (lastTool) {
+    const name = getToolName(lastTool).replace(/^tool-/, "");
+    switch (name) {
+      case "searchEntities":
+        return ["Tell me more about the top result", "Compare the top results"];
+      case "lookupVariant":
+        return ["What GWAS associations does it have?", "What gene is this variant in?"];
+      case "getEntityContext":
+        return ["Find related pathways", "Show disease associations"];
+      case "runEnrichment":
+        return ["Explain the top enriched term", "What genes overlap?"];
+      case "getGeneVariantStats":
+        return ["Show pathogenic variants", "What are the GWAS associations?"];
+      case "getRankedNeighbors":
+        return ["Tell me about the top neighbor", "Find shared neighbors"];
+      case "findPaths":
+        return ["Explain the shortest path", "Are there alternative connections?"];
+      case "getGwasAssociations":
+        return ["Which trait has the strongest signal?", "Tell me about the top study"];
+      case "compareEntities":
+        return ["What do they have in common?", "Show unique connections for each"];
+    }
+  }
+
+  return ["Tell me more", "What else can you tell me?"];
+}
 
 // ---------------------------------------------------------------------------
 // Message Renderer
@@ -147,6 +192,16 @@ function ChatMessageRenderer({
 
   return (
     <Message from={message.role}>
+      {message.role === "assistant" && (
+        <div className="flex items-center gap-2 mb-1">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <DnaIcon className="size-3.5 text-primary" />
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">
+            FAVOR-GPT
+          </span>
+        </div>
+      )}
       <MessageContent>
         {hasReasoning && (
           <Reasoning className="w-full" isStreaming={isReasoningStreaming}>
@@ -171,6 +226,7 @@ function ChatMessageRenderer({
           if (isToolUIPart(part)) {
             const toolName = getToolName(part);
             const title = getToolTitle(part.type);
+            const inputSummary = getToolInputSummary(toolName, part.input);
 
             return (
               <Tool
@@ -182,13 +238,13 @@ function ChatMessageRenderer({
                     type="dynamic-tool"
                     state={part.state}
                     toolName={toolName}
-                    title={title}
+                    title={inputSummary ?? title}
                   />
                 ) : (
                   <ToolHeader
                     type={part.type}
                     state={part.state}
-                    title={title}
+                    title={inputSummary ?? title}
                   />
                 )}
                 <ToolContent>
@@ -198,6 +254,7 @@ function ChatMessageRenderer({
                     <ToolOutput
                       output={part.output}
                       errorText={part.errorText}
+                      renderOutput={(out) => renderToolOutput(toolName, out)}
                     />
                   )}
                 </ToolContent>
@@ -218,6 +275,12 @@ function ChatMessageRenderer({
           >
             <CopyIcon className="size-3.5" />
           </MessageAction>
+          <MessageAction label="Good response" tooltip="Good response">
+            <ThumbsUpIcon className="size-3.5" />
+          </MessageAction>
+          <MessageAction label="Bad response" tooltip="Bad response">
+            <ThumbsDownIcon className="size-3.5" />
+          </MessageAction>
         </MessageActions>
       )}
     </Message>
@@ -231,26 +294,10 @@ function ChatMessageRenderer({
 function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
   return (
     <ConversationEmptyState>
-      <div className="flex flex-col items-center gap-10 max-w-2xl w-full px-4">
-        {/* Branding */}
-        <div className="flex flex-col items-center gap-5">
-          <div className="relative">
-            <div className="absolute -inset-10 rounded-full bg-primary/[0.03]" />
-            <div className="absolute -inset-5 rounded-full bg-primary/[0.06]" />
-            <div className="relative rounded-2xl bg-primary/10 p-4 shadow-sm shadow-primary/5">
-              <DnaIcon className="size-7 text-primary" />
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="text-[22px] font-semibold text-foreground tracking-tight">
-              FAVOR-GPT
-            </h1>
-            <p className="text-muted-foreground text-[13px] text-center leading-relaxed max-w-sm">
-              Explore genes, variants, diseases, drugs, and pathways through an
-              AI-powered genomic knowledge graph.
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-col items-center gap-8 max-w-2xl w-full px-4">
+        <h2 className="text-foreground text-lg font-semibold text-center leading-snug tracking-tight max-w-md">
+          Navigate the entire genomic landscape — from variant to phenotype — in seconds.
+        </h2>
 
         {/* Suggested prompts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
@@ -289,6 +336,7 @@ export function ChatPage() {
     onPaste,
     createCohortFromPaste,
     dismissPaste,
+    newChat,
   } = useAgentChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -332,12 +380,41 @@ export function ChatPage() {
           >
             <PanelLeftIcon className="size-4" />
           </Button>
+          <div className="flex flex-1 items-center gap-2">
+            <DnaIcon className="size-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              FAVOR-GPT
+            </span>
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={newChat}
+              className="text-muted-foreground"
+            >
+              <PlusIcon className="size-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Desktop header */}
+        <div className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <DnaIcon className="size-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">
               FAVOR-GPT
             </span>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={newChat}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <PlusIcon className="size-4" />
+            New Chat
+          </Button>
         </div>
 
         <AgentErrorBoundary fallbackLabel="Chat error">
@@ -348,25 +425,56 @@ export function ChatPage() {
               ) : (
                 <>
                   {messages.map((message, index) => (
-                    <ChatMessageRenderer
+                    <motion.div
                       key={message.id}
-                      message={message}
-                      isLastMessage={index === messages.length - 1}
-                      isStreaming={isStreaming}
-                    />
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChatMessageRenderer
+                        message={message}
+                        isLastMessage={index === messages.length - 1}
+                        isStreaming={isStreaming}
+                      />
+                    </motion.div>
                   ))}
 
                   {/* Thinking indicator */}
                   {isSubmitted && (
-                    <Message from="assistant">
-                      <MessageContent>
-                        <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                          <Spinner className="size-4" />
-                          <Shimmer duration={2}>Thinking...</Shimmer>
-                        </div>
-                      </MessageContent>
-                    </Message>
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Message from="assistant">
+                        <MessageContent>
+                          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                            <Spinner className="size-4" />
+                            <Shimmer duration={2}>Thinking...</Shimmer>
+                          </div>
+                        </MessageContent>
+                      </Message>
+                    </motion.div>
                   )}
+
+                  {/* Follow-up suggestions */}
+                  {!isStreaming &&
+                    !isSubmitted &&
+                    messages.length > 0 &&
+                    messages.at(-1)?.role === "assistant" && (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {getFollowUpSuggestions(messages).map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => send(s)}
+                            className="rounded-xl border border-border/80 bg-card px-3 py-1.5 text-xs text-muted-foreground transition-all hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                 </>
               )}
             </ConversationContent>

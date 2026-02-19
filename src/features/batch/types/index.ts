@@ -358,6 +358,7 @@ export interface StoredJob {
   state: JobState;
   progress?: JobProgress;
   estimated_rows?: number;
+  source?: "batch" | "cohort";
 }
 
 // ============================================================================

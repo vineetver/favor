@@ -33,9 +33,10 @@ function countVariantLines(text: string): number {
 // ---------------------------------------------------------------------------
 
 export function useAgentChat() {
-  const { messages, sendMessage, status } = useChat<AgentUIMessage>({
-    transport,
-  });
+  const { messages, setMessages, sendMessage, status } =
+    useChat<AgentUIMessage>({
+      transport,
+    });
 
   const [pastedVariantCount, setPastedVariantCount] = useState(0);
   const pastedTextRef = useRef("");
@@ -94,6 +95,13 @@ export function useAgentChat() {
     pastedTextRef.current = "";
   }, []);
 
+  /** Reset conversation to empty state. */
+  const newChat = useCallback(() => {
+    setMessages([]);
+    setPastedVariantCount(0);
+    pastedTextRef.current = "";
+  }, [setMessages]);
+
   return {
     messages,
     status,
@@ -105,5 +113,6 @@ export function useAgentChat() {
     onPaste,
     createCohortFromPaste,
     dismissPaste,
+    newChat,
   } as const;
 }

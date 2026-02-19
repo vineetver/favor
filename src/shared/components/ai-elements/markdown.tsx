@@ -11,7 +11,7 @@ const components: Partial<Components> = {
     return (
       // @ts-expect-error
       <Link
-        className="text-blue-500 hover:underline"
+        className="text-primary underline underline-offset-2 decoration-primary/30 hover:decoration-primary/60 transition-colors"
         target="_blank"
         rel="noreferrer"
         {...props}
@@ -82,7 +82,7 @@ const NonMemoizedMarkdown = ({ children, showCopy = true }: MarkdownProps) => {
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </Button>
       )}
-      <Streamdown components={components}>{children}</Streamdown>
+      <Streamdown className="ai-summary-content" components={components}>{children}</Streamdown>
     </div>
   );
 };
