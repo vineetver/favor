@@ -195,6 +195,10 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     router.push(`/batch-annotation/jobs/${jobId}/analytics`);
   }, [router, jobId]);
 
+  const handleOpenAgent = useCallback(() => {
+    router.push("/agent");
+  }, [router]);
+
   const handleNewJob = useCallback(() => {
     router.push("/batch-annotation");
   }, [router]);
@@ -335,6 +339,9 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
             }
             onOpenAnalytics={
               job.state === "COMPLETED" ? handleOpenAnalytics : undefined
+            }
+            onOpenAgent={
+              job.state === "COMPLETED" ? handleOpenAgent : undefined
             }
             onNewJob={handleNewJob}
             isCancelling={isCancelling}

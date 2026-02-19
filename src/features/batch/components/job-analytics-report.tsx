@@ -1825,8 +1825,6 @@ export function JobAnalyticsReport({
           />
         </div>
 
-        {/* Prioritized Variants Table */}
-        <PrioritizedVariantsTable variants={reportData.prioritizedVariants} />
       </section>
 
       {/* Functional Class Section */}
@@ -1840,6 +1838,9 @@ export function JobAnalyticsReport({
 
       {/* Protein Function Section */}
       <ProteinFunctionSection data={reportData.proteinFunction} />
+
+      {/* Prioritized Variants Table — last content section */}
+      <PrioritizedVariantsTable variants={reportData.prioritizedVariants} />
 
       {/* Footer */}
       <footer className="pt-6 border-t border-border text-xs text-muted-foreground print:mt-8">

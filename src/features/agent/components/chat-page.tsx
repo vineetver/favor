@@ -96,23 +96,23 @@ const SUGGESTED_PROMPTS = [
     icon: <Share2Icon className="size-4" />,
   },
   {
-    text: "Find shared gene targets between rheumatoid arthritis and lupus — are any druggable?",
-    icon: <PillIcon className="size-4" />,
-  },
-  {
-    text: "Assess variant rs121913529 — what gene does it affect and what drugs target it?",
+    text: "Look up variant rs429358 — pathogenicity scores, population frequencies, and GWAS trait associations",
     icon: <CrosshairIcon className="size-4" />,
   },
   {
-    text: "How are BRCA1 and PARP1 connected, and what diseases do they share?",
+    text: "What genes does metformin target, and do any overlap with type 2 diabetes risk genes?",
+    icon: <PillIcon className="size-4" />,
+  },
+  {
+    text: "How are BRCA1 and PARP1 connected? Trace the shortest paths and shared disease associations.",
     icon: <RouteIcon className="size-4" />,
   },
   {
-    text: "Compare TP53, EGFR, and KRAS — shared pathways, unique disease profiles, and variant burden",
+    text: "Compare TP53, BRCA2, and ATM — shared pathways, disease overlap, and variant burden",
     icon: <GitCompareArrowsIcon className="size-4" />,
   },
   {
-    text: "Evaluate rs7412 and rs429358 together — how do their genes connect to lipid disorders?",
+    text: "Create a cohort from rs429358, rs7412, rs75932628, rs63750847, rs143332484 — rank by CADD score and summarize by consequence type",
     icon: <DnaIcon className="size-4" />,
   },
 ];
@@ -133,23 +133,27 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
     const name = getToolName(lastTool).replace(/^tool-/, "");
     switch (name) {
       case "searchEntities":
-        return ["Tell me more about the top result", "Compare the top results"];
+        return ["Get detailed context on the top result", "Compare the top results"];
       case "lookupVariant":
-        return ["What GWAS associations does it have?", "What gene is this variant in?"];
+        return ["Show GWAS trait associations for this variant", "What pathogenicity scores does it have?"];
       case "getEntityContext":
-        return ["Find related pathways", "Show disease associations"];
+        return ["What pathways is this gene in?", "Find ranked disease associations"];
       case "runEnrichment":
-        return ["Explain the top enriched term", "What genes overlap?"];
+        return ["Explain the top enriched term", "Which genes drive the enrichment?"];
       case "getGeneVariantStats":
-        return ["Show pathogenic variants", "What are the GWAS associations?"];
+        return ["Show the most pathogenic variants by CADD", "Create a cohort from these variants"];
       case "getRankedNeighbors":
-        return ["Tell me about the top neighbor", "Find shared neighbors"];
+        return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
       case "findPaths":
-        return ["Explain the shortest path", "Are there alternative connections?"];
+        return ["What diseases do they share?", "Are there alternative connections?"];
       case "getGwasAssociations":
-        return ["Which trait has the strongest signal?", "Tell me about the top study"];
+        return ["Which trait has the strongest signal?", "Look up the gene this variant affects"];
       case "compareEntities":
-        return ["What do they have in common?", "Show unique connections for each"];
+        return ["Run pathway enrichment on the shared genes", "Show variant burden for each"];
+      case "createCohort":
+        return ["Rank variants by CADD score", "Summarize by clinical significance"];
+      case "analyzeCohort":
+        return ["Filter to pathogenic variants only", "Which genes carry the most variants?"];
     }
   }
 
@@ -294,24 +298,24 @@ function ChatMessageRenderer({
 function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
   return (
     <ConversationEmptyState>
-      <div className="flex flex-col items-center gap-8 max-w-2xl w-full px-4">
+      <div className="flex flex-col items-center gap-10 w-full max-w-4xl px-4">
         <h2 className="text-foreground text-lg font-semibold text-center leading-snug tracking-tight max-w-md">
           Navigate the entire genomic landscape — from variant to phenotype — in seconds.
         </h2>
 
         {/* Suggested prompts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
           {SUGGESTED_PROMPTS.map((prompt) => (
             <button
               key={prompt.text}
               type="button"
               onClick={() => onSelect(prompt.text)}
-              className="group/card flex items-center gap-3 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left text-[13px] text-muted-foreground transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground hover:shadow-sm"
+              className="group/card flex items-start gap-3.5 rounded-2xl border border-border/60 bg-card px-4 py-4 text-left text-[13px] leading-relaxed text-muted-foreground transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground hover:shadow-sm"
             >
-              <span className="shrink-0 rounded-lg bg-muted p-1.5 text-muted-foreground/60 transition-colors group-hover/card:bg-primary/10 group-hover/card:text-primary">
+              <span className="mt-0.5 shrink-0 rounded-xl bg-muted p-2 text-muted-foreground/60 transition-colors group-hover/card:bg-primary/10 group-hover/card:text-primary">
                 {prompt.icon}
               </span>
-              <span className="leading-snug">{prompt.text}</span>
+              <span>{prompt.text}</span>
             </button>
           ))}
         </div>
@@ -419,12 +423,12 @@ export function ChatPage() {
 
         <AgentErrorBoundary fallbackLabel="Chat error">
           <Conversation className="flex-1">
-            <ConversationContent className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+            <ConversationContent className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pt-6 pb-4">
               {messages.length === 0 ? (
                 <EmptyState onSelect={send} />
               ) : (
-                <>
-                  {messages.map((message, index) => (
+                <div className="mx-auto max-w-3xl">
+                {messages.map((message, index) => (
                     <motion.div
                       key={message.id}
                       initial={{ opacity: 0, y: 8 }}
@@ -475,7 +479,7 @@ export function ChatPage() {
                         ))}
                       </div>
                     )}
-                </>
+                </div>
               )}
             </ConversationContent>
             <ConversationScrollButton />

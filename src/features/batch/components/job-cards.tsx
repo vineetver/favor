@@ -15,6 +15,7 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  MessageSquareText,
   RefreshCw,
   StopCircle,
   XCircle,
@@ -368,6 +369,7 @@ interface CompletedJobCardProps {
   onDownload?: () => void;
   onDownloadManifest?: () => void;
   onOpenAnalytics?: () => void;
+  onOpenAgent?: () => void;
   className?: string;
 }
 
@@ -377,6 +379,7 @@ export function CompletedJobCard({
   onDownload,
   onDownloadManifest,
   onOpenAnalytics,
+  onOpenAgent,
   className,
 }: CompletedJobCardProps) {
   const { progress, output } = job;
@@ -479,6 +482,12 @@ export function CompletedJobCard({
             </Button>
           )}
           <div className="flex items-center gap-2 ml-auto">
+            {onOpenAgent && (
+              <Button type="button" variant="outline" size="sm" onClick={onOpenAgent}>
+                <MessageSquareText className="w-4 h-4" />
+                Open in AI Agent
+              </Button>
+            )}
             {onOpenAnalytics && (
               <Button type="button" variant="outline" size="sm" onClick={onOpenAnalytics}>
                 <ArrowUpRight className="w-4 h-4" />
@@ -676,6 +685,7 @@ interface JobDetailViewProps {
   onDownload?: () => void;
   onDownloadManifest?: () => void;
   onOpenAnalytics?: () => void;
+  onOpenAgent?: () => void;
   onRetry?: () => void;
   onNewJob?: () => void;
   isCancelling?: boolean;
@@ -690,6 +700,7 @@ export function JobDetailView({
   onDownload,
   onDownloadManifest,
   onOpenAnalytics,
+  onOpenAgent,
   onRetry,
   onNewJob,
   isCancelling,
@@ -736,6 +747,7 @@ export function JobDetailView({
           onDownload={onDownload}
           onDownloadManifest={onDownloadManifest}
           onOpenAnalytics={onOpenAnalytics}
+          onOpenAgent={onOpenAgent}
           className={className}
         />
       );
