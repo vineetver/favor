@@ -5,7 +5,7 @@ import { AgentToolError } from "../lib/api-client";
 
 export const saveMemory = tool({
   description:
-    "Save a fact, user preference, cohort reference, or workflow pattern for recall in future sessions. Use a memory_key for things that should be updated (upserted) rather than duplicated. Examples: 'user prefers GRCh38', 'cohort coh_abc contains 150 BRCA1 variants', 'user is interested in Alzheimer's drug targets'.",
+    "Save a fact, user preference, cohort reference, or workflow pattern for recall in future sessions. Use a memory_key for things that should be updated (upserted) rather than duplicated. Examples: 'cohort coh_abc contains 150 BRCA1 variants with 15 Pathogenic (ClinVar)', 'user is interested in Alzheimer's drug targets'.",
   inputSchema: z.object({
     memory_type: z
       .enum(["preference", "fact", "cohort", "workflow"])

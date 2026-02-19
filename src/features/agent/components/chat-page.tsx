@@ -389,7 +389,7 @@ export function ChatPage() {
       {/* Main chat area */}
       <div className="relative flex flex-1 flex-col min-w-0 bg-background">
         {/* Mobile header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border lg:hidden">
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/30 lg:hidden">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -417,7 +417,7 @@ export function ChatPage() {
         </div>
 
         {/* Desktop header */}
-        <div className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-border">
+        <div className="hidden lg:flex items-center justify-between px-6 py-2.5 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
             <DnaIcon className="size-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">
@@ -441,7 +441,7 @@ export function ChatPage() {
               {messages.length === 0 ? (
                 <EmptyState onSelect={send} />
               ) : (
-                <div className="mx-auto max-w-3xl">
+                <div className="mx-auto max-w-3xl space-y-6">
                 {messages.map((message, index) => (
                     <motion.div
                       key={message.id || `msg-${index}`}

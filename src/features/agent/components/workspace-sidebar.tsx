@@ -13,6 +13,7 @@ import {
 import { VariantSubmitPanel } from "./variant-submit-panel";
 import { JobListItem } from "./job-list-item";
 import { CohortListItem } from "./cohort-list-item";
+import { CohortPromptPicker } from "./cohort-prompt-picker";
 import {
   type AgentCohort,
   addStoredCohort,
@@ -126,14 +127,33 @@ export function WorkspaceSidebar({
     setCohorts(removeStoredCohort(cohortId));
   }, []);
 
-  const handleAnalyzeCohort = useCallback(
-    (cohortId: string) => {
-      onSendMessage(
-        `Analyze cohort ${cohortId}. Tell me about the variant composition, gene distribution, clinical significance, and any notable findings.`,
-      );
+  // ---- Cohort prompt picker ----
+  const [selectedCohort, setSelectedCohort] = useState<AgentCohort | null>(
+    null,
+  );
+
+  const handleCohortClick = useCallback((cohort: AgentCohort) => {
+    setSelectedCohort(cohort);
+  }, []);
+
+  const handleCohortPromptSend = useCallback(
+    (message: string) => {
+      onSendMessage(message);
+      setSelectedCohort(null);
       setShowSubmit(false);
     },
     [onSendMessage],
+  );
+
+  const handleAnalyzeCohort = useCallback(
+    (cohortId: string) => {
+      // Find the cohort by ID and open the prompt picker
+      const cohort = cohorts.find((c) => c.cohortId === cohortId);
+      if (cohort) {
+        setSelectedCohort(cohort);
+      }
+    },
+    [cohorts],
   );
 
   // ---- Jobs (shared localStorage from batch feature) ----
@@ -298,12 +318,12 @@ export function WorkspaceSidebar({
               count={cohorts.length}
               defaultOpen
             >
-              <div className="space-y-0.5 px-2 pb-1">
+              <div className="space-y-1.5 px-2 pb-1">
                 {cohorts.map((cohort) => (
                   <CohortListItem
                     key={cohort.cohortId}
                     cohort={cohort}
-                    onAnalyze={(c) => handleAnalyzeCohort(c.cohortId)}
+                    onClick={handleCohortClick}
                     onRemove={handleCohortRemoved}
                   />
                 ))}
@@ -324,6 +344,16 @@ export function WorkspaceSidebar({
           )}
         </div>
       </div>
+
+      {/* Cohort prompt picker dialog */}
+      <CohortPromptPicker
+        cohort={selectedCohort}
+        open={selectedCohort !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedCohort(null);
+        }}
+        onSend={handleCohortPromptSend}
+      />
     </div>
   );
 }
