@@ -62,42 +62,78 @@ function parseErrorHint(status: number, body: string): string | undefined {
   return undefined;
 }
 
+const MAX_RETRIES = 2;
+const BACKOFF_MS = [500, 1000];
+
+function isRetryable(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
 export async function agentFetch<T>(
   path: string,
   options?: { method?: string; body?: unknown; timeout?: number },
 ): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(),
-    options?.timeout ?? DEFAULT_TIMEOUT,
-  );
+  const idemKey = idempotencyKey(path, options?.body);
+  let lastError: unknown;
 
-  try {
-    const res = await fetch(`${API_BASE}${path}`, {
-      method: options?.method ?? "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Idempotency-Key": idempotencyKey(path, options?.body),
-      },
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      const hint = parseErrorHint(res.status, body);
-      throw new AgentToolError(res.status, body.slice(0, 500), hint);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(),
+      options?.timeout ?? DEFAULT_TIMEOUT,
+    );
+
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: options?.method ?? "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": idemKey,
+        },
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal,
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        const hint = parseErrorHint(res.status, body);
+        const err = new AgentToolError(res.status, body.slice(0, 500), hint);
+
+        // Retry on 429 / 5xx, throw immediately on 4xx client errors
+        if (isRetryable(res.status) && attempt < MAX_RETRIES) {
+          lastError = err;
+          clearTimeout(timer);
+          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
+          continue;
+        }
+        throw err;
+      }
+
+      return res.json();
+    } catch (err) {
+      if (err instanceof AgentToolError) throw err;
+
+      // Retry on timeouts
+      if (err instanceof DOMException && err.name === "AbortError") {
+        if (attempt < MAX_RETRIES) {
+          lastError = err;
+          clearTimeout(timer);
+          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
+          continue;
+        }
+        throw new AgentToolError(408, "Request timed out", "Try a simpler query or reduce the limit.");
+      }
+
+      throw err;
+    } finally {
+      clearTimeout(timer);
     }
-    return res.json();
-  } catch (err) {
-    if (err instanceof AgentToolError) throw err;
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new AgentToolError(408, "Request timed out", "Try a simpler query or reduce the limit.");
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
   }
+
+  // Should not reach here, but satisfy TS
+  if (lastError instanceof AgentToolError) throw lastError;
+  throw lastError;
 }
 
 /** Cohort calls need tenant_id */

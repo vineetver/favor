@@ -47,7 +47,7 @@ export function createFavorAgent(synthesisModelId?: string) {
     model,
     instructions: buildSystemPrompt(),
     maxOutputTokens: 8000,
-    stopWhen: stepCountIs(15),
+    stopWhen: stepCountIs(16),
     prepareStep: createPrepareStep(
       nanoModel,
       NANO_PROVIDER_OPTIONS,

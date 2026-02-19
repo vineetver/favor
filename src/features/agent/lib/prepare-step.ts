@@ -5,6 +5,7 @@ type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string
 type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 import type { QueryType, ReportPlanOutput } from "../types";
 import type { nanoModel } from "./models";
+import { isContextHeavy, isContextCritical } from "./context-budget";
 
 // ---------------------------------------------------------------------------
 // Tool names (must match keys in agent.ts)
@@ -123,47 +124,53 @@ const QUERY_GUIDANCE: Partial<Record<QueryType, string>> = {
 };
 
 // ---------------------------------------------------------------------------
-// Extract plan from completed steps
+// Extract plan from completed steps (returns LAST plan found for re-planning)
 // ---------------------------------------------------------------------------
 
 interface StepData {
-  toolCalls?: Array<{ toolName: string }>;
+  toolCalls?: Array<{ toolName: string; args?: Record<string, unknown> }>;
   toolResults?: Array<{ toolName: string; output: unknown }>;
 }
 
 function extractPlan(steps: StepData[]): ReportPlanOutput | null {
+  let lastPlan: ReportPlanOutput | null = null;
   for (const step of steps) {
     if (!step.toolResults) continue;
     for (const result of step.toolResults) {
       if (result.toolName === "reportPlan" && result.output) {
         const r = result.output as Record<string, unknown>;
         if (r.queryType && Array.isArray(r.plan)) {
-          return r as unknown as ReportPlanOutput;
+          lastPlan = r as unknown as ReportPlanOutput;
         }
       }
     }
   }
-  return null;
+  return lastPlan;
+}
+
+function hasPlanBeenEmitted(steps: StepData[]): boolean {
+  return extractPlan(steps) !== null;
 }
 
 // ---------------------------------------------------------------------------
-// Phase detection
+// Phase detection (3 resolve steps: 0, 1, 2)
 // ---------------------------------------------------------------------------
 
 type Phase = "resolve" | "explore" | "synthesize";
 
 function detectPhase(stepCount: number, hasToolCallInLastStep: boolean): Phase {
-  if (stepCount <= 1) return "resolve";
-  if (stepCount >= 13) return "synthesize";
+  // Steps 0–2: resolve phase (extended from 2 to 3 steps)
+  if (stepCount <= 2) return "resolve";
+  if (stepCount >= 14) return "synthesize";
 
   // If model naturally stopped calling tools mid-exploration, let it synthesize
-  if (stepCount >= 3 && !hasToolCallInLastStep) return "synthesize";
+  if (stepCount >= 4 && !hasToolCallInLastStep) return "synthesize";
 
   return "explore";
 }
 
 // ---------------------------------------------------------------------------
-// Infrastructure: budget governor, stuck detector, circuit breaker
+// Infrastructure: budget governor, stuck detectors, circuit breaker
 // ---------------------------------------------------------------------------
 
 const TOOL_CALL_BUDGET = 30;
@@ -172,7 +179,8 @@ function countToolCalls(steps: StepData[]): number {
   return steps.reduce((sum, s) => sum + (s.toolCalls?.length ?? 0), 0);
 }
 
-function isStuck(steps: StepData[]): boolean {
+/** Original: last 2 steps all errors */
+function isAllErrors(steps: StepData[]): boolean {
   if (steps.length < 4) return false;
   const last2 = steps.slice(-2);
   return last2.every((s) => {
@@ -182,6 +190,60 @@ function isStuck(steps: StepData[]): boolean {
       return out?.error === true;
     });
   });
+}
+
+/** Loop detection: last 3 steps have identical tool call signatures */
+function detectLoop(steps: StepData[]): boolean {
+  if (steps.length < 3) return false;
+  const last3 = steps.slice(-3);
+
+  // Build signature for each step: sorted toolName+JSON(args)
+  const signatures = last3.map((s) => {
+    if (!s.toolCalls?.length) return "";
+    return s.toolCalls
+      .map((tc) => `${tc.toolName}:${JSON.stringify(tc.args ?? {})}`)
+      .sort()
+      .join("|");
+  });
+
+  // All 3 must be non-empty and identical
+  return signatures[0] !== "" && signatures[0] === signatures[1] && signatures[1] === signatures[2];
+}
+
+/** Diminishing returns: last 3 steps all return empty/error results */
+function isDiminishingReturns(steps: StepData[]): boolean {
+  if (steps.length < 3) return false;
+  const last3 = steps.slice(-3);
+
+  return last3.every((s) => {
+    if (!s.toolResults?.length) return true;
+    return s.toolResults.every((r) => {
+      const out = r.output;
+      if (out == null) return true;
+      if (typeof out === "object") {
+        const obj = out as Record<string, unknown>;
+        if (obj.error === true) return true;
+        // Check for empty arrays/objects
+        if (Array.isArray(out)) return out.length === 0;
+        const vals = Object.values(obj);
+        if (vals.length === 0) return true;
+        // Check if all array values in the object are empty
+        return vals.every(
+          (v) => v == null || (Array.isArray(v) && v.length === 0),
+        );
+      }
+      return false;
+    });
+  });
+}
+
+type StuckReason = "all-errors" | "loop" | "diminishing-returns" | null;
+
+function detectStuck(steps: StepData[]): StuckReason {
+  if (isAllErrors(steps)) return "all-errors";
+  if (detectLoop(steps)) return "loop";
+  if (isDiminishingReturns(steps)) return "diminishing-returns";
+  return null;
 }
 
 function getTrippedTools(steps: StepData[]): Set<string> {
@@ -211,22 +273,70 @@ const NO_TEXT_INSTRUCTION =
 const SYNTHESIS_INSTRUCTION =
   "\n\n[SYSTEM] You have gathered enough data. Now write a thorough, well-structured response that fully answers the user's question. Include all relevant findings from your tool calls — gene associations, variant details, scores, clinical significance, and biological context. Use markdown headers, tables where appropriate, and explain what the data means. Do NOT call any more tools.";
 
+const RECOVERY_INSTRUCTION =
+  "\n\n[SYSTEM] Your recent tool calls are not producing useful results — you may be repeating the same calls or getting empty data. CHANGE YOUR APPROACH: try different tools, different entity types, different edge types, or different parameters. Do NOT repeat what you just tried.";
+
+const CONTEXT_HEAVY_INSTRUCTION =
+  "\n\n[SYSTEM] Context is getting large. Be efficient — only make essential tool calls. Prefer summarizing what you have over gathering more data. If you have enough to answer, stop calling tools.";
+
+const REPLAN_INSTRUCTION =
+  "\n\n[SYSTEM] Your current exploration approach is not yielding results. Reassess the query and emit a NEW reportPlan with a different queryType and strategy. Then continue with the new plan.";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createPrepareStep(
   nano: typeof nanoModel,
   nanoProviderOptions: ProviderOptions,
   synthesisProviderOptions?: ProviderOptions,
 ): PrepareStepFunction<any> {
+  // Closure state for recovery and re-planning (reset per agent run)
+  let recoveryAttempted = false;
+  let replanAttempted = false;
+
   return ({ stepNumber, steps }) => {
     const stepsData = steps as StepData[];
 
-    // --- Infrastructure checks ---
-    if (countToolCalls(stepsData) >= TOOL_CALL_BUDGET || isStuck(stepsData)) {
-      return {
-        activeTools: [],
-        system: SYNTHESIS_INSTRUCTION,
-        ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
-      };
+    // Helper to build synthesis return
+    const synthesize = (extraSystem?: string) => ({
+      activeTools: [] as string[],
+      system: SYNTHESIS_INSTRUCTION + (extraSystem ?? ""),
+      ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
+    });
+
+    // --- Context budget: critical → force synthesis ---
+    if (isContextCritical(stepsData)) {
+      return synthesize("\n\n[SYSTEM] Context budget exceeded — synthesize now with available data.");
+    }
+
+    // --- Tool call budget ---
+    if (countToolCalls(stepsData) >= TOOL_CALL_BUDGET) {
+      return synthesize();
+    }
+
+    // --- Stuck detection with recovery ---
+    const stuckReason = detectStuck(stepsData);
+    if (stuckReason) {
+      // All-errors: always force synthesis (no recovery possible)
+      if (stuckReason === "all-errors") {
+        return synthesize();
+      }
+
+      // Loop or diminishing returns: try recovery once, then synthesize
+      if (!recoveryAttempted) {
+        recoveryAttempted = true;
+        // Allow one recovery step with guidance to change approach
+        const plan = extractPlan(stepsData);
+        const tools = plan
+          ? (TOOL_SETS[plan.queryType] ?? [...ALL_TOOLS])
+          : [...ALL_TOOLS];
+        return {
+          model: nano,
+          providerOptions: nanoProviderOptions,
+          toolChoice: "required" as const,
+          activeTools: [...tools].filter((t) => !getTrippedTools(stepsData).has(t)),
+          system: NO_TEXT_INSTRUCTION + RECOVERY_INSTRUCTION,
+        };
+      }
+      return synthesize();
     }
 
     const tripped = getTrippedTools(stepsData);
@@ -239,7 +349,35 @@ export function createPrepareStep(
     const phase = detectPhase(stepNumber, hasToolCallInLastStep);
 
     switch (phase) {
-      case "resolve":
+      case "resolve": {
+        const planExists = hasPlanBeenEmitted(stepsData);
+
+        // Step 2 (third resolve step): force reportPlan if not yet emitted
+        if (stepNumber === 2 && !planExists) {
+          return {
+            model: nano,
+            providerOptions: nanoProviderOptions,
+            toolChoice: { type: "tool", toolName: "reportPlan" } as const,
+            activeTools: ["reportPlan"],
+            system: NO_TEXT_INSTRUCTION,
+          };
+        }
+
+        // Plan already emitted in step 0 or 1 — skip remaining resolve, go to explore
+        if (planExists && stepNumber >= 1) {
+          const plan = extractPlan(stepsData)!;
+          const tools = TOOL_SETS[plan.queryType] ?? [...ALL_TOOLS];
+          const guidance = QUERY_GUIDANCE[plan.queryType];
+          return {
+            model: nano,
+            providerOptions: nanoProviderOptions,
+            toolChoice: "required" as const,
+            activeTools: [...tools].filter((t) => !tripped.has(t)),
+            system: NO_TEXT_INSTRUCTION + (guidance ?? ""),
+          };
+        }
+
+        // Steps 0–1: normal resolve with all resolve tools
         return {
           model: nano,
           providerOptions: nanoProviderOptions,
@@ -247,9 +385,30 @@ export function createPrepareStep(
           activeTools: [...RESOLVE_TOOLS].filter((t) => !tripped.has(t)),
           system: NO_TEXT_INSTRUCTION,
         };
+      }
 
       case "explore": {
         const plan = extractPlan(stepsData);
+
+        // --- Re-planning: after 3+ explore steps with diminishing returns ---
+        const exploreStepCount = stepNumber - 3; // steps after resolve
+        if (
+          exploreStepCount >= 3 &&
+          !replanAttempted &&
+          isDiminishingReturns(stepsData)
+        ) {
+          replanAttempted = true;
+          return {
+            model: nano,
+            providerOptions: nanoProviderOptions,
+            toolChoice: { type: "tool", toolName: "reportPlan" } as const,
+            activeTools: ["reportPlan"],
+            system: NO_TEXT_INSTRUCTION + REPLAN_INSTRUCTION,
+          };
+        }
+
+        // Context heavy: inject efficiency guidance
+        const contextWarning = isContextHeavy(stepsData) ? CONTEXT_HEAVY_INSTRUCTION : "";
 
         if (plan) {
           const queryType = plan.queryType;
@@ -260,31 +419,24 @@ export function createPrepareStep(
             providerOptions: nanoProviderOptions,
             toolChoice: "required" as const,
             activeTools: [...tools].filter((t) => !tripped.has(t)),
-            system: NO_TEXT_INSTRUCTION + (guidance ?? ""),
+            system: NO_TEXT_INSTRUCTION + (guidance ?? "") + contextWarning,
           };
         }
 
-        // No plan yet — keep reportPlan available alongside all tools.
-        // gpt-5-nano calls ~1 tool per step, so the resolve phase (2 steps)
-        // often isn't enough for it to emit both searchEntities and reportPlan.
+        // No plan yet (shouldn't happen with forced step 2, but defensive)
         const allPlusReport = new Set([...ALL_TOOLS, "reportPlan"]);
         return {
           model: nano,
           providerOptions: nanoProviderOptions,
           toolChoice: "required" as const,
           activeTools: [...allPlusReport].filter((t) => !tripped.has(t)),
-          system: NO_TEXT_INSTRUCTION + "\n\n[SYSTEM] You have NOT emitted a reportPlan yet. You MUST call reportPlan before continuing with exploration tools. Call it now.",
+          system: NO_TEXT_INSTRUCTION + "\n\n[SYSTEM] You have NOT emitted a reportPlan yet. You MUST call reportPlan before continuing with exploration tools. Call it now." + contextWarning,
         };
       }
 
       case "synthesize":
         // No model override — uses agent default (flagship synthesis model)
-        return {
-          activeTools: [],
-          system: SYNTHESIS_INSTRUCTION,
-          ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
-        };
+        return synthesize();
     }
   };
 }
-

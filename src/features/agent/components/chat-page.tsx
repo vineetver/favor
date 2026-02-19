@@ -82,6 +82,8 @@ import {
 import type { ReportPlanOutput } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
 import { addStoredCohort } from "../lib/cohort-store";
+import { OrchestrationHeader } from "./orchestration-header";
+import { getToolPhaseLabel } from "../lib/infer-orchestration";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -169,38 +171,52 @@ function StatusDot({ state }: { state: string }) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number }> }) {
+  let lastPhaseLabel = "";
+
   return (
-    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden">
-      {tools.map(({ part }, ti) => {
+    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden min-w-0">
+      {tools.map(({ part }) => {
         const toolName = getToolName(part);
         const cleanName = toolName.replace(/^tool-/, "");
         const inputSummary = getToolInputSummary(toolName, part.input);
         const title = getToolTitle(part.type);
         const isError = part.state === "output-error";
 
+        // Phase divider
+        const phaseLabel = getToolPhaseLabel(cleanName);
+        const showDivider = phaseLabel !== lastPhaseLabel;
+        lastPhaseLabel = phaseLabel;
+
         return (
-          <Collapsible key={part.toolCallId} defaultOpen={isError}>
-            <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
-              <StatusDot state={part.state} />
-              <span className="flex-1 text-left truncate font-medium text-muted-foreground">
-                {inputSummary ?? title}
-              </span>
-              <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="border-b border-border/40 last:border-b-0">
-              <div className="space-y-3 bg-muted/20 p-3">
-                <ToolInput input={part.input} />
-                {(part.state === "output-available" ||
-                  part.state === "output-error") && (
-                  <ToolOutput
-                    output={part.output}
-                    errorText={part.errorText}
-                    renderOutput={(out) => renderToolOutput(toolName, out)}
-                  />
-                )}
+          <div key={part.toolCallId}>
+            {showDivider && (
+              <div className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 bg-muted/30 border-b border-border/40">
+                {phaseLabel}
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+            )}
+            <Collapsible defaultOpen={isError}>
+              <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
+                <StatusDot state={part.state} />
+                <span className="flex-1 text-left truncate font-medium text-muted-foreground">
+                  {inputSummary ?? title}
+                </span>
+                <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="border-b border-border/40 last:border-b-0">
+                <div className="space-y-3 bg-muted/20 p-3">
+                  <ToolInput input={part.input} />
+                  {(part.state === "output-available" ||
+                    part.state === "output-error") && (
+                    <ToolOutput
+                      output={part.output}
+                      errorText={part.errorText}
+                      renderOutput={(out) => renderToolOutput(toolName, out)}
+                    />
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         );
       })}
     </div>
@@ -306,16 +322,43 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// Contextual streaming status
+// ---------------------------------------------------------------------------
+
+const RS_PATTERN = /rs\d+/i;
+
+function getContextualStatus(messages: UIMessage[]): string {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUser) return "Searching knowledge graph...";
+
+  const text = lastUser.parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join(" ")
+    .toLowerCase();
+
+  if (RS_PATTERN.test(text)) return "Looking up variant data...";
+  if (text.includes("compare")) return "Setting up comparison...";
+  if (text.includes("cohort")) return "Preparing cohort analysis...";
+  if (text.includes("path") || text.includes("connect")) return "Tracing connections...";
+  if (text.includes("enrich")) return "Running enrichment analysis...";
+  if (text.includes("drug") || text.includes("target")) return "Exploring drug landscape...";
+  return "Searching knowledge graph...";
+}
+
+// ---------------------------------------------------------------------------
 // Message Renderer
 // ---------------------------------------------------------------------------
 
 function ChatMessageRenderer({
   message,
+  messages,
   isLastMessage,
   isStreaming,
   showReasoning,
 }: {
   message: UIMessage;
+  messages: UIMessage[];
   isLastMessage: boolean;
   isStreaming: boolean;
   showReasoning: boolean;
@@ -340,6 +383,21 @@ function ChatMessageRenderer({
   const hasText = message.parts.some(
     (p) => p.type === "text" && p.text.trim(),
   );
+
+  // All tool parts for OrchestrationHeader
+  const allToolParts = message.parts
+    .filter((p) => isToolUIPart(p))
+    .map((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tp = p as any;
+      return {
+        type: tp.type as string,
+        toolName: getToolName(tp),
+        state: tp.state as string | undefined,
+        input: tp.input,
+      };
+    });
+  const hasToolParts = allToolParts.length > 0;
 
   // Pre-compute sibling tool parts for PlanRenderer.
   // Only include tools AFTER the reportPlan part — resolve-phase tools
@@ -382,7 +440,7 @@ function ChatMessageRenderer({
           </span>
         </div>
       )}
-      <MessageContent>
+      <MessageContent className={message.role === "assistant" ? "w-full" : undefined}>
         {hasReasoning && (
           <Reasoning className="w-full" isStreaming={isReasoningStreaming}>
             <ReasoningTrigger />
@@ -394,8 +452,17 @@ function ChatMessageRenderer({
         {isLastMessage && isStreaming && segments.length === 0 && !hasReasoning && (
           <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
             <Spinner className="size-4" />
-            <Shimmer duration={2}>Analyzing query...</Shimmer>
+            <Shimmer duration={2}>{getContextualStatus(messages)}</Shimmer>
           </div>
+        )}
+
+        {/* Orchestration header — shown for assistant messages with tool calls */}
+        {message.role === "assistant" && hasToolParts && isLastMessage && isStreaming && (
+          <OrchestrationHeader
+            toolParts={allToolParts}
+            isStreaming={isStreaming}
+            hasTextContent={hasText}
+          />
         )}
 
         {segments.map((seg) => {
@@ -679,6 +746,7 @@ export function ChatPage() {
                     >
                       <ChatMessageRenderer
                         message={message}
+                        messages={messages}
                         isLastMessage={index === messages.length - 1}
                         isStreaming={isStreaming}
                         showReasoning={synthesisModel === "thinking"}
