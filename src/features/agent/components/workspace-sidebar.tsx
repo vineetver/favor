@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/button";
 import { cn } from "@infra/utils";
-import { ChevronRightIcon, PlusIcon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  MessageSquareIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { VariantSubmitPanel } from "./variant-submit-panel";
 import { JobListItem } from "./job-list-item";
@@ -16,6 +21,23 @@ import {
 } from "../lib/cohort-store";
 import { getStoredJobs } from "@features/batch/lib/job-storage";
 import type { StoredJob } from "@features/batch/types";
+import { useSessions } from "../hooks/use-sessions";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 // ---------------------------------------------------------------------------
 // Collapsible section — text only, no icons
@@ -65,14 +87,29 @@ function SidebarSection({
 
 interface WorkspaceSidebarProps {
   onSendMessage: (text: string) => void;
+  sessionId: string | null;
+  onLoadSession: (id: string) => void;
+  onNewChat: () => void;
   className?: string;
 }
 
 export function WorkspaceSidebar({
   onSendMessage,
+  sessionId,
+  onLoadSession,
+  onNewChat,
   className,
 }: WorkspaceSidebarProps) {
   const [showSubmit, setShowSubmit] = useState(false);
+
+  // ---- Sessions ----
+  const { sessions, isLoading: sessionsLoading, deleteSession, refetch } =
+    useSessions();
+
+  // Refetch sessions when sessionId changes (new session created)
+  useEffect(() => {
+    if (sessionId) refetch();
+  }, [sessionId, refetch]);
 
   // ---- Cohorts (localStorage-backed) ----
   const [cohorts, setCohorts] = useState<AgentCohort[]>([]);
@@ -120,6 +157,7 @@ export function WorkspaceSidebar({
     .slice(0, 10);
 
   const isEmpty =
+    sessions.length === 0 &&
     activeJobs.length === 0 &&
     completedJobs.length === 0 &&
     cohorts.length === 0 &&
@@ -132,15 +170,17 @@ export function WorkspaceSidebar({
         <h2 className="text-[13px] font-semibold text-foreground tracking-tight">
           Workspace
         </h2>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
-          onClick={() => setShowSubmit(!showSubmit)}
-          title="Submit variants"
-        >
-          <PlusIcon className="size-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
+            onClick={onNewChat}
+            title="New chat"
+          >
+            <PlusIcon className="size-3.5" />
+          </Button>
+        </div>
       </div>
 
       <div className="mx-4 h-px bg-border" />
@@ -148,6 +188,61 @@ export function WorkspaceSidebar({
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="py-2">
+          {/* Conversations */}
+          {sessions.length > 0 && (
+            <SidebarSection
+              title="Conversations"
+              count={sessions.length}
+              defaultOpen
+            >
+              <div className="space-y-0.5 px-2 pb-1">
+                {sessions.map((s) => {
+                  const isActive = s.session_id === sessionId;
+                  return (
+                    <div
+                      key={s.session_id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onLoadSession(s.session_id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onLoadSession(s.session_id);
+                        }
+                      }}
+                      className={cn(
+                        "group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer",
+                        isActive
+                          ? "bg-primary/10 text-foreground font-medium"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                      )}
+                    >
+                      <MessageSquareIcon className="size-3.5 shrink-0" />
+                      <span className="flex-1 truncate text-[13px]">
+                        {s.title || "Untitled"}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground/60 tabular-nums">
+                        {formatRelativeTime(s.last_activity_at)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSession(s.session_id);
+                          if (isActive) onNewChat();
+                        }}
+                        className="shrink-0 rounded-md p-0.5 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-accent"
+                        title="Delete conversation"
+                      >
+                        <Trash2Icon className="size-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </SidebarSection>
+          )}
+
           {/* Submit Panel */}
           {showSubmit && (
             <div className="px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -220,19 +315,11 @@ export function WorkspaceSidebar({
           {isEmpty && (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <p className="text-[13px] font-medium text-foreground">
-                No cohorts yet
+                No conversations yet
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Submit variants to create a cohort
+                Start a chat to begin exploring
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-1 rounded-lg"
-                onClick={() => setShowSubmit(true)}
-              >
-                Submit Variants
-              </Button>
             </div>
           )}
         </div>

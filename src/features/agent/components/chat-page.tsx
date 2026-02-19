@@ -83,6 +83,8 @@ const TOOL_TITLES: Record<string, string> = {
   analyzeCohort: "Analyze Cohort",
   graphTraverse: "Graph Traverse",
   variantBatchSummary: "Batch Summary",
+  recallMemories: "Recall Memories",
+  saveMemory: "Save Memory",
 };
 
 function getToolTitle(type: string): string {
@@ -334,6 +336,7 @@ export function ChatPage() {
     status,
     isStreaming,
     isSubmitted,
+    sessionId,
     pastedVariantCount,
     submit,
     send,
@@ -341,6 +344,7 @@ export function ChatPage() {
     createCohortFromPaste,
     dismissPaste,
     newChat,
+    loadSession,
   } = useAgentChat();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -360,7 +364,12 @@ export function ChatPage() {
         <SheetContent side="left" className="w-80 p-0">
           <SheetTitle className="sr-only">Workspace</SheetTitle>
           <AgentErrorBoundary fallbackLabel="Sidebar error">
-            <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+            <WorkspaceSidebar
+              onSendMessage={handleSidebarMessage}
+              sessionId={sessionId}
+              onLoadSession={loadSession}
+              onNewChat={newChat}
+            />
           </AgentErrorBoundary>
         </SheetContent>
       </Sheet>
@@ -368,7 +377,12 @@ export function ChatPage() {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-[300px] shrink-0 flex-col bg-muted/50 border-r border-border">
         <AgentErrorBoundary fallbackLabel="Sidebar error">
-          <WorkspaceSidebar onSendMessage={handleSidebarMessage} />
+          <WorkspaceSidebar
+              onSendMessage={handleSidebarMessage}
+              sessionId={sessionId}
+              onLoadSession={loadSession}
+              onNewChat={newChat}
+            />
         </AgentErrorBoundary>
       </aside>
 
@@ -430,7 +444,7 @@ export function ChatPage() {
                 <div className="mx-auto max-w-3xl">
                 {messages.map((message, index) => (
                     <motion.div
-                      key={message.id}
+                      key={message.id || `msg-${index}`}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}

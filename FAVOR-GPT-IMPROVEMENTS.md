@@ -237,11 +237,11 @@
   ┌──────────┬──────────────────────────────────────────────────────┬──────────┬──────────────────────────────────┐
   │ Priority │                        Change                        │  Effort  │              Impact              │
   ├──────────┼──────────────────────────────────────────────────────┼──────────┼──────────────────────────────────┤
-  │ 1        │ Session persistence (wire up sessions/messages APIs) │ 2-3 days │ Conversations survive refresh    │
+  │ 1        │ Session persistence (wire up sessions/messages APIs) │ DONE     │ ✅ COMPLETED                     │
   ├──────────┼──────────────────────────────────────────────────────┼──────────┼──────────────────────────────────┤
-  │ 2        │ prepareStep phase control                            │ 0.5 day  │ Fewer wasted tool calls          │
+  │ 2        │ prepareStep phase control                            │ DONE     │ ✅ COMPLETED                     │
   ├──────────┼──────────────────────────────────────────────────────┼──────────┼──────────────────────────────────┤
-  │ 3        │ Memory tools (recallMemories + saveMemory)           │ 1-2 days │ Cross-session intelligence       │
+  │ 3        │ Memory tools (recallMemories + saveMemory)           │ DONE     │ ✅ COMPLETED                     │
   ├──────────┼──────────────────────────────────────────────────────┼──────────┼──────────────────────────────────┤
   │ 4        │ Tool call + evidence logging (onStepFinish)          │ 0.5 day  │ Audit trail, feedback works      │
   ├──────────┼──────────────────────────────────────────────────────┼──────────┼──────────────────────────────────┤

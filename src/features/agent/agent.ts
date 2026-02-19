@@ -7,6 +7,7 @@ import {
 import { openai } from "@ai-sdk/openai";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
 import { buildSystemPrompt } from "./lib/system-prompt";
+import { favorPrepareStep } from "./lib/prepare-step";
 import * as tools from "./tools";
 
 const baseModel = openai("gpt-4o");
@@ -21,6 +22,7 @@ export const favorAgent = new ToolLoopAgent({
   instructions: buildSystemPrompt(),
   maxOutputTokens: 8000,
   stopWhen: stepCountIs(15),
+  prepareStep: favorPrepareStep,
   tools: {
     searchEntities: tools.searchEntities,
     getEntityContext: tools.getEntityContext,
@@ -36,6 +38,8 @@ export const favorAgent = new ToolLoopAgent({
     analyzeCohort: tools.analyzeCohort,
     graphTraverse: tools.graphTraverse,
     variantBatchSummary: tools.variantBatchSummary,
+    recallMemories: tools.recallMemories,
+    saveMemory: tools.saveMemory,
   },
 });
 

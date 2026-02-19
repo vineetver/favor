@@ -334,6 +334,10 @@
     @apply pl-0;
   }
 
+  .ai-summary-content ol > li > p:first-child {
+    @apply inline;
+  }
+
   .ai-summary-content ol > li::marker {
     @apply font-medium text-muted-foreground;
   }

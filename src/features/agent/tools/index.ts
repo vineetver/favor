@@ -12,3 +12,5 @@ export { createCohort } from "./cohort-create";
 export { analyzeCohort } from "./cohort-analyze";
 export { variantBatchSummary } from "./variant-batch-summary";
 export { graphTraverse } from "./graph-traverse";
+export { recallMemories } from "./recall-memories";
+export { saveMemory } from "./save-memory";
