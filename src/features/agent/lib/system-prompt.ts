@@ -70,6 +70,11 @@ const DATA_SOURCES = `
 ### 2) Variant Annotation Database
 - Billions of variants with consequence, clinical significance, frequencies (gnomAD), prediction scores (CADD/REVEL/AlphaMissense/SpliceAI), etc.
 - Supports: single variant lookup, GWAS associations, pre-aggregated gene stats, cohort analysis, batch summaries.
+
+### 3) Graph Schema Discovery
+- Use \`getGraphSchema()\` for on-demand edge catalog lookup. Returns all node types and edge types with their score fields.
+- Use \`getGraphSchema(nodeType="Disease")\` to see only edges connecting to/from Disease.
+- Lightweight and cached — use freely when unsure about valid edge types.
 `.trim();
 
 const EDGE_CATALOG = `## Edge Catalog
@@ -283,7 +288,9 @@ GENERAL RULES
    - Always use searchEntities to turn names into typed IDs before graph work.
    - For multi-entity prompts, resolve all entities in parallel.
 
-2) Prefer “few calls with high signal”:
+1b) When unsure about edge types for a node type, call \`getGraphSchema(nodeType)\` to discover valid edges. This is lightweight and cached.
+
+2) Prefer "few calls with high signal":
    - Use getEntityContext(depth="minimal") early; upgrade to standard/detailed only if needed.
    - Prefer getRankedNeighbors for “top X” questions over graphTraverse.
    - Use findPaths for “how connected?” not graphTraverse.
@@ -325,7 +332,8 @@ Trigger this whenever:
 
 Step 1 — Read meta + error carefully
 - If meta.warnings exists, follow it.
-- If the error is validation-style (unknown edgeType / invalid field), fix the input using the error’s valid options.
+- If the error mentions an unknown edgeType or invalid connection, call \`getGraphSchema(nodeType)\` to discover valid edges for that entity type before retrying.
+- If the error is validation-style (unknown edgeType / invalid field), fix the input using the error's valid options.
 
 Step 2 — Retry once with a minimal call (must change something)
 - Remove optional knobs first:
@@ -336,6 +344,7 @@ Step 2 — Retry once with a minimal call (must change something)
 - Never repeat the exact same failed call.
 
 Step 3 — Use a fallback edge/tool (try 1–3 alternatives)
+If you don't know the fallback group for your entity type, use \`getGraphSchema(nodeType)\` to discover all valid edges.
 Fallback groups (common):
 - Gene ↔ Drug: TARGETS → HAS_PGX_INTERACTION → HAS_CLINICAL_DRUG_EVIDENCE → ASSERTED_FOR_DRUG
 - Gene ↔ Disease: ASSOCIATED_WITH_DISEASE → CURATED_FOR → THERAPEUTIC_TARGET_IN → CAUSES

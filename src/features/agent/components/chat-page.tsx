@@ -88,6 +88,7 @@ const TOOL_TITLES: Record<string, string> = {
   createCohort: "Create Cohort",
   analyzeCohort: "Analyze Cohort",
   graphTraverse: "Graph Traverse",
+  getGraphSchema: "Graph Schema",
   variantBatchSummary: "Batch Summary",
   recallMemories: "Recall Memories",
   saveMemory: "Save Memory",
@@ -95,6 +96,19 @@ const TOOL_TITLES: Record<string, string> = {
   graphExplorer: "Graph Explorer",
   variantAnalyzer: "Variant Analyzer",
 };
+
+/** Tools that have custom visual output renderers (tables, cards, etc.) */
+const TOOLS_WITH_RENDERERS = new Set([
+  "searchEntities",
+  "getRankedNeighbors",
+  "runEnrichment",
+  "getGwasAssociations",
+  "getGeneVariantStats",
+  "findPaths",
+  "createCohort",
+  "graphExplorer",
+  "variantAnalyzer",
+]);
 
 function getToolTitle(type: string): string {
   const name = type.replace(/^tool-/, "");
@@ -229,90 +243,108 @@ function ChatMessageRenderer({
           </Reasoning>
         )}
 
-        {message.parts.map((part, i) => {
-          if (part.type === "text") {
-            if (!part.text.trim()) return null;
-            return (
-              <MessageResponse key={`text-${message.id}-${i}`}>
-                {part.text}
-              </MessageResponse>
-            );
-          }
+        {(() => {
+          // Check if message has an analysis plan — if so, hide non-visual tool cards
+          const hasPlan = message.parts.some(
+            (p) =>
+              "output" in p &&
+              p.type.replace(/^tool-/, "") === "reportPlan",
+          );
 
-          if (part.type === "reasoning") return null;
-
-          // Tool parts → collapsible tool card
-          if (isToolUIPart(part)) {
-            const toolName = getToolName(part);
-
-            // Special rendering for reportPlan — standalone checklist card
-            if (
-              toolName.replace(/^tool-/, "") === "reportPlan" &&
-              part.output
-            ) {
-              const siblingParts = message.parts
-                .filter(
-                  (p) =>
-                    isToolUIPart(p) &&
-                    getToolName(p).replace(/^tool-/, "") !== "reportPlan",
-                )
-                .map((p) => {
-                  const tp = p as { type: string; toolCallId?: string; state?: string };
-                  return {
-                    type: tp.type,
-                    toolCallId: tp.toolCallId,
-                    toolName: getToolName(p).replace(/^tool-/, ""),
-                    state: tp.state,
-                  };
-                });
+          return message.parts.map((part, i) => {
+            if (part.type === "text") {
+              if (!part.text.trim()) return null;
               return (
-                <PlanRenderer
-                  key={part.toolCallId}
-                  plan={part.output as ReportPlanOutput}
-                  siblingToolParts={siblingParts}
-                />
+                <MessageResponse key={`text-${message.id}-${i}`}>
+                  {part.text}
+                </MessageResponse>
               );
             }
 
-            const title = getToolTitle(part.type);
-            const inputSummary = getToolInputSummary(toolName, part.input);
+            if (part.type === "reasoning") return null;
 
-            return (
-              <Tool
-                key={part.toolCallId}
-                defaultOpen={part.state === "output-error"}
-              >
-                {part.type === "dynamic-tool" ? (
-                  <ToolHeader
-                    type="dynamic-tool"
-                    state={part.state}
-                    toolName={toolName}
-                    title={inputSummary ?? title}
+            // Tool parts → collapsible tool card
+            if (isToolUIPart(part)) {
+              const toolName = getToolName(part);
+              const cleanName = toolName.replace(/^tool-/, "");
+
+              // Special rendering for reportPlan — standalone checklist card
+              if (cleanName === "reportPlan" && part.output) {
+                const siblingParts = message.parts
+                  .filter(
+                    (p) =>
+                      isToolUIPart(p) &&
+                      getToolName(p).replace(/^tool-/, "") !== "reportPlan",
+                  )
+                  .map((p) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const tp = p as any;
+                    return {
+                      type: tp.type as string,
+                      toolCallId: tp.toolCallId as string | undefined,
+                      toolName: (tp.type as string).replace(/^tool-/, ""),
+                      state: tp.state as string | undefined,
+                    };
+                  });
+                return (
+                  <PlanRenderer
+                    key={part.toolCallId}
+                    plan={part.output as ReportPlanOutput}
+                    siblingToolParts={siblingParts}
                   />
-                ) : (
-                  <ToolHeader
-                    type={part.type}
-                    state={part.state}
-                    title={inputSummary ?? title}
-                  />
-                )}
-                <ToolContent>
-                  <ToolInput input={part.input} />
-                  {(part.state === "output-available" ||
-                    part.state === "output-error") && (
-                    <ToolOutput
-                      output={part.output}
-                      errorText={part.errorText}
-                      renderOutput={(out) => renderToolOutput(toolName, out)}
+                );
+              }
+
+              // When a plan exists, only show tool cards with visual renderers or errors.
+              // The plan checklist already tracks progress for all tools.
+              if (
+                hasPlan &&
+                part.state !== "output-error" &&
+                !TOOLS_WITH_RENDERERS.has(cleanName)
+              ) {
+                return null;
+              }
+
+              const title = getToolTitle(part.type);
+              const inputSummary = getToolInputSummary(toolName, part.input);
+
+              return (
+                <Tool
+                  key={part.toolCallId}
+                  defaultOpen={part.state === "output-error"}
+                >
+                  {part.type === "dynamic-tool" ? (
+                    <ToolHeader
+                      type="dynamic-tool"
+                      state={part.state}
+                      toolName={toolName}
+                      title={inputSummary ?? title}
+                    />
+                  ) : (
+                    <ToolHeader
+                      type={part.type}
+                      state={part.state}
+                      title={inputSummary ?? title}
                     />
                   )}
-                </ToolContent>
-              </Tool>
-            );
-          }
+                  <ToolContent>
+                    <ToolInput input={part.input} />
+                    {(part.state === "output-available" ||
+                      part.state === "output-error") && (
+                      <ToolOutput
+                        output={part.output}
+                        errorText={part.errorText}
+                        renderOutput={(out) => renderToolOutput(toolName, out)}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
 
-          return null;
-        })}
+            return null;
+          });
+        })()}
       </MessageContent>
 
       {message.role === "assistant" && hasText && !isStreaming && (

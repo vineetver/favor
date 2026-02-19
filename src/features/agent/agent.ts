@@ -37,6 +37,7 @@ export const favorAgent = new ToolLoopAgent({
     createCohort: tools.createCohort,
     analyzeCohort: tools.analyzeCohort,
     graphTraverse: tools.graphTraverse,
+    getGraphSchema: tools.getGraphSchema,
     variantBatchSummary: tools.variantBatchSummary,
     recallMemories: tools.recallMemories,
     saveMemory: tools.saveMemory,

@@ -360,24 +360,40 @@ function getPlanItemStatus(
   item: { tools: string[] },
   siblingToolParts: ToolUIPart[],
 ): PlanItemStatus {
-  if (!item.tools.length) return "pending";
+  if (item.tools.length > 0) {
+    const matchingParts = siblingToolParts.filter((p) => {
+      const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
+      return item.tools.includes(name);
+    });
 
-  const matchingParts = siblingToolParts.filter((p) => {
-    const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
-    return item.tools.includes(name);
-  });
+    if (matchingParts.length === 0) return "pending";
 
-  if (matchingParts.length === 0) return "pending";
+    const hasCompleted = matchingParts.some(
+      (p) => p.state === "output-available" || p.state === "output-error",
+    );
+    if (hasCompleted) return "completed";
 
-  const hasCompleted = matchingParts.some(
+    const hasInProgress = matchingParts.some(
+      (p) => p.state === "input-available" || p.state === "streaming",
+    );
+    if (hasInProgress) return "in-progress";
+
+    return "pending";
+  }
+
+  // Synthesis / analysis step (no specific tools declared).
+  // Infer status from whether all sibling tool calls have finished.
+  if (siblingToolParts.length === 0) return "pending";
+
+  const allDone = siblingToolParts.every(
     (p) => p.state === "output-available" || p.state === "output-error",
   );
-  if (hasCompleted) return "completed";
+  if (allDone) return "completed";
 
-  const hasInProgress = matchingParts.some(
+  const anyRunning = siblingToolParts.some(
     (p) => p.state === "input-available" || p.state === "streaming",
   );
-  if (hasInProgress) return "in-progress";
+  if (anyRunning) return "in-progress";
 
   return "pending";
 }
@@ -688,6 +704,10 @@ export function getToolInputSummary(
       const qt = inp.queryType as string | undefined;
       const label = qt ? QUERY_TYPE_LABELS[qt] ?? qt : "query";
       return `Planning: ${label}`;
+    }
+    case "getGraphSchema": {
+      const nt = inp.nodeType as string | undefined;
+      return nt ? `Looking up schema for ${nt}` : "Looking up graph schema";
     }
     case "graphExplorer": {
       const task = inp.task as string | undefined;

@@ -9,6 +9,7 @@ import { findPaths } from "../find-paths";
 import { getSharedNeighbors } from "../shared-neighbors";
 import { graphTraverse } from "../graph-traverse";
 import { compareEntities } from "../compare-entities";
+import { getGraphSchema } from "../graph-schema";
 
 const GRAPH_EXPLORER_PROMPT = `You are a focused graph exploration sub-agent for the FAVOR biomedical knowledge graph.
 
@@ -22,6 +23,7 @@ RULES:
 - Use compareEntities for side-by-side comparison of two entities.
 - Use getEntityContext for detailed information about a single entity.
 - Use searchEntities to resolve entity names you discover during exploration.
+- If you get an edge type error, call getGraphSchema(nodeType) to discover valid edges before retrying.
 - Chain tools intelligently: each result informs the next call.
 - When done, write a clear summary of what you found.
 
@@ -38,6 +40,7 @@ const GRAPH_TOOLS = {
   getSharedNeighbors,
   graphTraverse,
   compareEntities,
+  getGraphSchema,
 };
 
 const SUBAGENT_TIMEOUT = 90_000; // 90s

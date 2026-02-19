@@ -9,6 +9,7 @@ import { getGwasAssociations } from "../gwas-lookup";
 import { createCohort } from "../cohort-create";
 import { analyzeCohort } from "../cohort-analyze";
 import { variantBatchSummary } from "../variant-batch-summary";
+import { getGraphSchema } from "../graph-schema";
 
 const VARIANT_ANALYZER_PROMPT = `You are a focused variant/cohort analysis sub-agent for the FAVOR platform.
 
@@ -21,6 +22,7 @@ RULES:
 - Use getGeneVariantStats for pre-aggregated gene-level variant statistics.
 - Use getGwasAssociations for GWAS trait associations.
 - Use searchEntities to resolve entity names discovered during analysis.
+- If unsure which edge type connects two entity types, call getGraphSchema(nodeType) first.
 - Chain tools: create cohort → analyze → summarize findings.
 - When done, write a clear summary with key findings.
 
@@ -36,6 +38,7 @@ const VARIANT_TOOLS = {
   createCohort,
   analyzeCohort,
   variantBatchSummary,
+  getGraphSchema,
 };
 
 const SUBAGENT_TIMEOUT = 90_000; // 90s

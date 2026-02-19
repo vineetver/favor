@@ -351,8 +351,17 @@
     @apply relative pl-0.5;
   }
 
+  .ai-summary-content ul > li > p:first-child {
+    @apply inline;
+  }
+
   .ai-summary-content ul > li::marker {
     @apply text-muted-foreground;
+  }
+
+  /* Remove bottom margin from last paragraph in list items */
+  .ai-summary-content li > p:last-child {
+    @apply mb-0;
   }
 
   /* Nested lists */

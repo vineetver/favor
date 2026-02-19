@@ -36,7 +36,7 @@ const components: Partial<Components> = {
     </li>
   ),
   p: ({ node, children, ...props }) => (
-    <p className="my-2 leading-relaxed" {...props}>
+    <p className="leading-relaxed" {...props}>
       {children}
     </p>
   ),

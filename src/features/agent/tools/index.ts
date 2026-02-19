@@ -12,6 +12,7 @@ export { createCohort } from "./cohort-create";
 export { analyzeCohort } from "./cohort-analyze";
 export { variantBatchSummary } from "./variant-batch-summary";
 export { graphTraverse } from "./graph-traverse";
+export { getGraphSchema } from "./graph-schema";
 export { recallMemories } from "./recall-memories";
 export { saveMemory } from "./save-memory";
 export { reportPlan } from "./report-plan";
