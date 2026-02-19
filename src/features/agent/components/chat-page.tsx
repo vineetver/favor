@@ -24,6 +24,11 @@ import {
   ToolOutput,
 } from "@shared/components/ai-elements/tool";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
+import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
@@ -44,6 +49,7 @@ import {
   SheetTitle,
 } from "@shared/components/ui/sheet";
 import {
+  ChevronDownIcon,
   CopyIcon,
   DnaIcon,
   GitCompareArrowsIcon,
@@ -87,6 +93,8 @@ const TOOL_TITLES: Record<string, string> = {
   getGwasAssociations: "GWAS Associations",
   createCohort: "Create Cohort",
   analyzeCohort: "Analyze Cohort",
+  getConnections: "Direct Connections",
+  getEdgeDetail: "Edge Detail",
   graphTraverse: "Graph Traverse",
   getGraphSchema: "Graph Schema",
   variantBatchSummary: "Batch Summary",
@@ -96,19 +104,6 @@ const TOOL_TITLES: Record<string, string> = {
   graphExplorer: "Graph Explorer",
   variantAnalyzer: "Variant Analyzer",
 };
-
-/** Tools that have custom visual output renderers (tables, cards, etc.) */
-const TOOLS_WITH_RENDERERS = new Set([
-  "searchEntities",
-  "getRankedNeighbors",
-  "runEnrichment",
-  "getGwasAssociations",
-  "getGeneVariantStats",
-  "findPaths",
-  "createCohort",
-  "graphExplorer",
-  "variantAnalyzer",
-]);
 
 function getToolTitle(type: string): string {
   const name = type.replace(/^tool-/, "");
@@ -141,6 +136,120 @@ const SUGGESTED_PROMPTS = [
     icon: <DnaIcon className="size-4" />,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Compact status dot for grouped tool rows
+// ---------------------------------------------------------------------------
+
+function StatusDot({ state }: { state: string }) {
+  if (state === "output-available") {
+    return <span className="size-2 rounded-full bg-emerald-500 shrink-0" />;
+  }
+  if (state === "output-error") {
+    return <span className="size-2 rounded-full bg-destructive shrink-0" />;
+  }
+  if (state === "input-available" || state === "input-streaming") {
+    return (
+      <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
+    );
+  }
+  return <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />;
+}
+
+// ---------------------------------------------------------------------------
+// Compact tool activity group — renders N tool calls in one container
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number }> }) {
+  return (
+    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden">
+      {tools.map(({ part }, ti) => {
+        const toolName = getToolName(part);
+        const cleanName = toolName.replace(/^tool-/, "");
+        const inputSummary = getToolInputSummary(toolName, part.input);
+        const title = getToolTitle(part.type);
+        const isError = part.state === "output-error";
+
+        return (
+          <Collapsible key={part.toolCallId} defaultOpen={isError}>
+            <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
+              <StatusDot state={part.state} />
+              <span className="flex-1 text-left truncate font-medium text-muted-foreground">
+                {inputSummary ?? title}
+              </span>
+              <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="border-b border-border/40 last:border-b-0">
+              <div className="space-y-3 bg-muted/20 p-3">
+                <ToolInput input={part.input} />
+                {(part.state === "output-available" ||
+                  part.state === "output-error") && (
+                  <ToolOutput
+                    output={part.output}
+                    errorText={part.errorText}
+                    renderOutput={(out) => renderToolOutput(toolName, out)}
+                  />
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Part grouping — clusters consecutive tool parts together
+// ---------------------------------------------------------------------------
+
+type MessageSegment =
+  | { kind: "text"; text: string; key: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | { kind: "plan"; part: any; key: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | { kind: "tools"; parts: Array<{ part: any; index: number }>; key: string };
+
+function segmentMessageParts(message: UIMessage): MessageSegment[] {
+  const segments: MessageSegment[] = [];
+
+  for (let i = 0; i < message.parts.length; i++) {
+    const part = message.parts[i];
+
+    if (part.type === "text") {
+      if (part.text.trim()) {
+        segments.push({ kind: "text", text: part.text, key: `text-${message.id}-${i}` });
+      }
+      continue;
+    }
+
+    if (part.type === "reasoning") continue;
+
+    if (isToolUIPart(part)) {
+      const name = getToolName(part).replace(/^tool-/, "");
+
+      if (name === "reportPlan" && (part as { output?: unknown }).output) {
+        segments.push({ kind: "plan", part, key: `plan-${(part as { toolCallId?: string }).toolCallId}` });
+        continue;
+      }
+
+      // Append to existing tool group or start a new one
+      const last = segments.at(-1);
+      if (last?.kind === "tools") {
+        last.parts.push({ part, index: i });
+      } else {
+        segments.push({
+          kind: "tools",
+          parts: [{ part, index: i }],
+          key: `tg-${(part as { toolCallId?: string }).toolCallId}`,
+        });
+      }
+    }
+  }
+
+  return segments;
+}
 
 // ---------------------------------------------------------------------------
 // Follow-up suggestions
@@ -223,6 +332,26 @@ function ChatMessageRenderer({
     (p) => p.type === "text" && p.text.trim(),
   );
 
+  // Pre-compute sibling tool parts once (for PlanRenderer)
+  const siblingToolParts = message.parts
+    .filter(
+      (p) =>
+        isToolUIPart(p) &&
+        getToolName(p).replace(/^tool-/, "") !== "reportPlan",
+    )
+    .map((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tp = p as any;
+      return {
+        type: tp.type as string,
+        toolCallId: tp.toolCallId as string | undefined,
+        toolName: (tp.type as string).replace(/^tool-/, ""),
+        state: tp.state as string | undefined,
+      };
+    });
+
+  const segments = segmentMessageParts(message);
+
   return (
     <Message from={message.role}>
       {message.role === "assistant" && (
@@ -243,74 +372,34 @@ function ChatMessageRenderer({
           </Reasoning>
         )}
 
-        {(() => {
-          // Check if message has an analysis plan — if so, hide non-visual tool cards
-          const hasPlan = message.parts.some(
-            (p) =>
-              "output" in p &&
-              p.type.replace(/^tool-/, "") === "reportPlan",
-          );
+        {segments.map((seg) => {
+          if (seg.kind === "text") {
+            return (
+              <MessageResponse key={seg.key}>{seg.text}</MessageResponse>
+            );
+          }
 
-          return message.parts.map((part, i) => {
-            if (part.type === "text") {
-              if (!part.text.trim()) return null;
-              return (
-                <MessageResponse key={`text-${message.id}-${i}`}>
-                  {part.text}
-                </MessageResponse>
-              );
-            }
+          if (seg.kind === "plan") {
+            return (
+              <PlanRenderer
+                key={seg.key}
+                plan={seg.part.output as ReportPlanOutput}
+                siblingToolParts={siblingToolParts}
+              />
+            );
+          }
 
-            if (part.type === "reasoning") return null;
-
-            // Tool parts → collapsible tool card
-            if (isToolUIPart(part)) {
+          if (seg.kind === "tools") {
+            // Single tool → full card, multiple tools → compact grouped list
+            if (seg.parts.length === 1) {
+              const { part } = seg.parts[0];
               const toolName = getToolName(part);
-              const cleanName = toolName.replace(/^tool-/, "");
-
-              // Special rendering for reportPlan — standalone checklist card
-              if (cleanName === "reportPlan" && part.output) {
-                const siblingParts = message.parts
-                  .filter(
-                    (p) =>
-                      isToolUIPart(p) &&
-                      getToolName(p).replace(/^tool-/, "") !== "reportPlan",
-                  )
-                  .map((p) => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const tp = p as any;
-                    return {
-                      type: tp.type as string,
-                      toolCallId: tp.toolCallId as string | undefined,
-                      toolName: (tp.type as string).replace(/^tool-/, ""),
-                      state: tp.state as string | undefined,
-                    };
-                  });
-                return (
-                  <PlanRenderer
-                    key={part.toolCallId}
-                    plan={part.output as ReportPlanOutput}
-                    siblingToolParts={siblingParts}
-                  />
-                );
-              }
-
-              // When a plan exists, only show tool cards with visual renderers or errors.
-              // The plan checklist already tracks progress for all tools.
-              if (
-                hasPlan &&
-                part.state !== "output-error" &&
-                !TOOLS_WITH_RENDERERS.has(cleanName)
-              ) {
-                return null;
-              }
-
               const title = getToolTitle(part.type);
               const inputSummary = getToolInputSummary(toolName, part.input);
 
               return (
                 <Tool
-                  key={part.toolCallId}
+                  key={seg.key}
                   defaultOpen={part.state === "output-error"}
                 >
                   {part.type === "dynamic-tool" ? (
@@ -342,9 +431,13 @@ function ChatMessageRenderer({
               );
             }
 
-            return null;
-          });
-        })()}
+            return (
+              <ToolActivityGroup key={seg.key} tools={seg.parts} />
+            );
+          }
+
+          return null;
+        })}
       </MessageContent>
 
       {message.role === "assistant" && hasText && !isStreaming && (

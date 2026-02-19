@@ -9,10 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { siteConfig } from "@/config/site";
 import { MobileDrawer } from "./mobile-drawer";
 import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
 import { useScrolled } from "./use-navbar";
@@ -126,18 +125,20 @@ export function Navbar() {
               <div className="hidden md:flex h-5 w-px bg-border" />
 
               <Link
-                href="/whats-new"
+                href="/agent"
                 className={cn(
                   "hidden md:flex items-center gap-2",
-                  "px-4 py-2 rounded-full",
-                  "bg-background border border-border",
-                  "shadow-sm hover:shadow transition-all",
+                  "px-5 py-2 rounded-full",
+                  "bg-primary text-primary-foreground",
+                  "shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30",
+                  "hover:brightness-110 active:scale-[0.97]",
+                  "transition-all duration-300",
                   "group",
                 )}
               >
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground tracking-wide uppercase">
-                  {siteConfig.version}
+                <Sparkles className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+                <span className="text-sm font-semibold tracking-wide">
+                  AI Agent
                 </span>
               </Link>
 

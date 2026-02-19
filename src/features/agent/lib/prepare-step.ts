@@ -17,6 +17,8 @@ const ALL_TOOLS = [
   "runEnrichment",
   "findPaths",
   "getSharedNeighbors",
+  "getConnections",
+  "getEdgeDetail",
   "lookupVariant",
   "getGeneVariantStats",
   "getGwasAssociations",
@@ -39,6 +41,7 @@ const ALL_TOOLS = [
 const TOOL_SETS: Record<QueryType, readonly string[]> = {
   entity_lookup: [
     "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "getConnections", "getEdgeDetail",
     "getGeneVariantStats", "getGwasAssociations", "runEnrichment",
     "getGraphSchema",
     ...MEMORY_TOOLS,
@@ -52,6 +55,7 @@ const TOOL_SETS: Record<QueryType, readonly string[]> = {
   ],
   graph_exploration: [
     "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "getConnections", "getEdgeDetail",
     "findPaths", "getSharedNeighbors", "graphTraverse",
     "compareEntities", "runEnrichment", "graphExplorer",
     "getGraphSchema",
@@ -60,19 +64,22 @@ const TOOL_SETS: Record<QueryType, readonly string[]> = {
   cohort_analysis: [
     "searchEntities", "createCohort", "analyzeCohort",
     "variantBatchSummary", "getGeneVariantStats", "runEnrichment",
-    "getEntityContext", "getRankedNeighbors", "variantAnalyzer",
+    "getEntityContext", "getRankedNeighbors", "getConnections",
+    "getEdgeDetail", "variantAnalyzer",
     "getGraphSchema",
     ...MEMORY_TOOLS,
   ],
   comparison: [
     "searchEntities", "compareEntities", "getEntityContext",
+    "getConnections", "getEdgeDetail",
     "getRankedNeighbors", "getSharedNeighbors", "findPaths",
-    "runEnrichment",
+    "runEnrichment", "getGeneVariantStats", "getGwasAssociations",
     "getGraphSchema",
     ...MEMORY_TOOLS,
   ],
   connection: [
-    "searchEntities", "findPaths", "getSharedNeighbors",
+    "searchEntities", "getConnections", "getEdgeDetail",
+    "findPaths", "getSharedNeighbors",
     "getEntityContext", "getRankedNeighbors", "graphTraverse",
     "graphExplorer",
     "getGraphSchema",
@@ -80,6 +87,7 @@ const TOOL_SETS: Record<QueryType, readonly string[]> = {
   ],
   drug_discovery: [
     "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "getConnections", "getEdgeDetail",
     "findPaths", "getSharedNeighbors", "runEnrichment",
     "graphTraverse", "getGwasAssociations",
     "getGraphSchema",
@@ -93,14 +101,20 @@ const TOOL_SETS: Record<QueryType, readonly string[]> = {
 // ---------------------------------------------------------------------------
 
 const QUERY_GUIDANCE: Partial<Record<QueryType, string>> = {
+  entity_lookup:
+    "\n\n[SYSTEM] Entity lookup mode. For gene entities, ALWAYS call getGeneVariantStats in parallel with getEntityContext — variant burden data is expected. For multiple genes, call getGeneVariantStats in parallel for each. Pick edge types carefully: use ASSOCIATED_WITH_DISEASE for disease associations, TARGETS for drug targets, PARTICIPATES_IN for pathways.",
   graph_exploration:
-    "\n\n[SYSTEM] Graph exploration mode. Focus on network traversal — use graphExplorer for complex multi-hop queries (3+ hops). Prefer findPaths and getSharedNeighbors for direct connectivity questions.",
+    "\n\n[SYSTEM] Graph exploration mode. EDGE-AWARE ROUTING: Before each call, identify the source→target entity types and pick the specific edge type that matches the user's intent. Use graphTraverse for multi-hop chains (Gene→Disease→Phenotype). Use graphExplorer for complex 3+ hop exploration. Use findPaths for indirect paths between two entities. Use getSharedNeighbors for overlap questions. NEVER use getRankedNeighbors for pairwise questions.",
   variant_analysis:
-    "\n\n[SYSTEM] Variant analysis mode. Use lookupVariant for single variants, createCohort + analyzeCohort for batches. Use variantAnalyzer for complex multi-step variant/cohort workflows.",
+    "\n\n[SYSTEM] Variant analysis mode. lookupVariant for single variant only — NEVER loop. createCohort + analyzeCohort for 2+ variants. Use variantAnalyzer for complex multi-step variant/cohort workflows. After identifying a gene, bridge to the KG with getGeneVariantStats and getRankedNeighbors(TARGETS) for drug landscape.",
   cohort_analysis:
-    "\n\n[SYSTEM] Cohort analysis mode. Create the cohort first, then use analyzeCohort for aggregation/ranking/filtering. Bridge to the knowledge graph via top genes from byGene. Use variantAnalyzer for complex multi-step workflows.",
+    "\n\n[SYSTEM] Cohort analysis mode. Create the cohort first, then analyzeCohort for aggregation/ranking/filtering. Bridge to the knowledge graph via top genes from byGene → runEnrichment(PARTICIPATES_IN, Pathway) or getEntityContext. Use variantAnalyzer for complex multi-step workflows.",
   connection:
-    "\n\n[SYSTEM] Connection analysis mode. Use findPaths for direct shortest-path queries. Use graphExplorer for complex multi-hop exploration (3+ intermediaries).",
+    "\n\n[SYSTEM] Connection analysis mode. MANDATORY ROUTING: Use getConnections for ALL direct edges between two entities. Use findPaths for indirect paths through intermediaries. Run both in parallel for comprehensive results. Use getEdgeDetail to drill into specific edge evidence. Use graphExplorer for complex multi-hop exploration (3+ intermediaries). NEVER use getRankedNeighbors for pairwise connection queries — it ranks ALL neighbors of one seed, not the relationship between two specific entities.",
+  drug_discovery:
+    "\n\n[SYSTEM] Drug discovery mode. EDGE-AWARE: Gene→Drug edges: TARGETS (Drug→Gene, largest — server auto-corrects direction), HAS_PGX_INTERACTION (Gene→Drug), HAS_CLINICAL_DRUG_EVIDENCE. Drug→Disease: INDICATED_FOR. Use getRankedNeighbors for 'top drugs for gene X'. Use getConnections when asking about a specific gene–drug pair. Use findPaths for indirect drug–disease connections.",
+  comparison:
+    "\n\n[SYSTEM] Comparison mode. Use compareEntities for side-by-side analysis of 2-5 same-type entities — returns shared/unique neighbors and Jaccard similarity in ONE call. NEVER call getRankedNeighbors twice to compare entities manually. Use getSharedNeighbors for specific edge-type overlap (e.g., shared pathways via PARTICIPATES_IN).",
 };
 
 // ---------------------------------------------------------------------------

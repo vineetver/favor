@@ -31,6 +31,8 @@ export const favorAgent = new ToolLoopAgent({
     runEnrichment: tools.runEnrichment,
     findPaths: tools.findPaths,
     getSharedNeighbors: tools.getSharedNeighbors,
+    getConnections: tools.getConnections,
+    getEdgeDetail: tools.getEdgeDetail,
     lookupVariant: tools.lookupVariant,
     getGeneVariantStats: tools.getGeneVariantStats,
     getGwasAssociations: tools.getGwasAssociations,

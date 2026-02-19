@@ -3,10 +3,14 @@ import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const getRankedNeighbors = tool({
-  description: `Get ranked neighbors of an entity by edge type. Returns neighbors sorted by a numeric edge score.
-- The returned 'score' is the aggregated value of the scoreField across all edges between the seed and that neighbor (default aggregation: sum). When expandOntology=true, scores are aggregated across all descendant seeds.
-- Direction and scoreField are auto-inferred by the server. Omit them unless you need to override (e.g., for self-edges like INTERACTS_WITH).
-- Prefer this over graphTraverse for simple ranked lookups.`,
+  description: `Rank ALL neighbors of a SINGLE entity by a numeric edge score. Returns a scored list for one-to-many exploration.
+WHEN TO USE: "Top genes for disease X", "Highest-scoring drug targets of gene Y", "Best pathways for gene Z" — any question asking for a ranked list from ONE seed entity.
+WHEN NOT TO USE:
+- Two specific entities ("how is A related to B?") → use getConnections instead.
+- Path between entities ("how are A and B connected?") → use findPaths instead.
+- Shared neighbors of multiple entities → use getSharedNeighbors instead.
+- Side-by-side comparison → use compareEntities instead.
+Direction and scoreField are auto-inferred by the server. Omit them unless overriding for self-edges.`,
   inputSchema: z.object({
     type: z.string().describe("Source entity type (e.g., 'Disease')"),
     id: z.string().describe("Source entity ID (e.g., 'MONDO_0007254')"),

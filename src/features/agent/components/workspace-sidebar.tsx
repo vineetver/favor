@@ -240,8 +240,8 @@ export function WorkspaceSidebar({
             variant="ghost"
             size="icon-sm"
             className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
-            onClick={onNewChat}
-            title="New chat"
+            onClick={() => setShowSubmit((v) => !v)}
+            title="Upload cohort"
           >
             <PlusIcon className="size-3.5" />
           </Button>

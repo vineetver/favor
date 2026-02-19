@@ -8,6 +8,8 @@ export { compareEntities } from "./compare-entities";
 export { runEnrichment } from "./enrichment";
 export { findPaths } from "./find-paths";
 export { getSharedNeighbors } from "./shared-neighbors";
+export { getConnections } from "./get-connections";
+export { getEdgeDetail } from "./get-edge-detail";
 export { createCohort } from "./cohort-create";
 export { analyzeCohort } from "./cohort-analyze";
 export { variantBatchSummary } from "./variant-batch-summary";

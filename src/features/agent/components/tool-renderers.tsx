@@ -254,37 +254,54 @@ function GwasRenderer({
 function GeneStatsRenderer({ data }: { data: CompressedGeneStats }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="font-semibold text-sm text-foreground">{data.gene}</span>
         <Badge variant="secondary" className="text-[10px]">{data.totalVariants.toLocaleString()} variants</Badge>
         <span className="text-xs text-muted-foreground">
           {data.snvCount.toLocaleString()} SNV &middot; {data.indelCount.toLocaleString()} InDel
         </span>
+        {data.actionable > 0 && (
+          <Badge className="text-[10px] bg-primary/10 text-primary border-0">{data.actionable} actionable</Badge>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-2">
         <StatCard label="ClinVar">
           <StatRow label="Pathogenic" value={data.clinvar.pathogenic} />
           <StatRow label="Likely pathogenic" value={data.clinvar.likelyPathogenic} />
-          <StatRow label="Benign" value={data.clinvar.benign} />
           <StatRow label="VUS" value={data.clinvar.vus} />
+          <StatRow label="Likely benign" value={data.clinvar.likelyBenign} />
+          <StatRow label="Benign" value={data.clinvar.benign} />
+          {data.clinvar.conflicting > 0 && <StatRow label="Conflicting" value={data.clinvar.conflicting} />}
         </StatCard>
         <StatCard label="Consequence">
+          <StatRow label="LoF (total)" value={data.consequence.lof} />
           <StatRow label="Missense" value={data.consequence.missense} />
           <StatRow label="Nonsense" value={data.consequence.nonsense} />
           <StatRow label="Frameshift" value={data.consequence.frameshift} />
           <StatRow label="Splice" value={data.consequence.splice} />
           <StatRow label="Synonymous" value={data.consequence.synonymous} />
         </StatCard>
+        <StatCard label="Location">
+          <StatRow label="Exonic" value={data.location.exonic} />
+          <StatRow label="Intronic" value={data.location.intronic} />
+          <StatRow label="UTR" value={data.location.utr} />
+          <StatRow label="Splicing" value={data.location.splicing} />
+          <StatRow label="Regulatory" value={data.location.regulatory} />
+        </StatCard>
         <StatCard label="Frequency">
           <StatRow label="Common" value={data.frequency.common} />
           <StatRow label="Low freq" value={data.frequency.lowFreq} />
           <StatRow label="Rare" value={data.frequency.rare} />
           <StatRow label="Ultra-rare" value={data.frequency.ultraRare} />
+          <StatRow label="Singleton" value={data.frequency.singleton} />
         </StatCard>
-        <StatCard label="Pathogenicity Scores">
-          <StatRow label="High CADD" value={data.scores.highCadd} />
-          <StatRow label="High REVEL" value={data.scores.highRevel} />
-          <StatRow label="High AlphaMissense" value={data.scores.highAlphaMissense} />
+        <StatCard label="Pathogenicity Predictions">
+          <StatRow label="High CADD (≥20)" value={data.scores.highCadd} />
+          <StatRow label="REVEL pathogenic" value={data.scores.highRevel} />
+          <StatRow label="AlphaMissense path." value={data.scores.highAlphaMissense} />
+          <StatRow label="SpliceAI affecting" value={data.scores.splicingAffecting} />
+          <StatRow label="SIFT deleterious" value={data.scores.siftDeleterious} />
+          <StatRow label="PolyPhen damaging" value={data.scores.polyphenDamaging} />
         </StatCard>
       </div>
     </div>
@@ -690,6 +707,21 @@ export function getToolInputSummary(
       return op && cohortId
         ? `Running ${op} on cohort ${cohortId}`
         : "Analyzing cohort";
+    }
+    case "getConnections": {
+      const from = inp.from as { type?: string; id?: string } | undefined;
+      const to = inp.to as { type?: string; id?: string } | undefined;
+      if (!from?.id || !to?.id) return null;
+      return `Finding connections between ${from.type ?? ""}:${from.id} and ${to.type ?? ""}:${to.id}`;
+    }
+    case "getEdgeDetail": {
+      const f = inp.from as string | undefined;
+      const t = inp.to as string | undefined;
+      const et = inp.edgeType as string | undefined;
+      if (!f || !t) return null;
+      return et
+        ? `Getting ${et} edge detail: ${f} → ${t}`
+        : `Getting edge detail: ${f} → ${t}`;
     }
     case "graphTraverse": {
       return "Traversing knowledge graph";

@@ -169,6 +169,11 @@
   }
 }
 
+/* Prevent layout shift when scrollbar appears in chat */
+[role="log"] > * {
+  scrollbar-gutter: stable;
+}
+
 /* ============================================================================
    Typography Component Classes
 

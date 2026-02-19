@@ -21,27 +21,42 @@ export interface CompressedGeneStats {
     pathogenic: number;
     likelyPathogenic: number;
     benign: number;
+    likelyBenign: number;
     vus: number;
+    conflicting: number;
   };
   consequence: {
+    lof: number;
     missense: number;
     nonsense: number;
     frameshift: number;
+    inframe: number;
     splice: number;
     synonymous: number;
+  };
+  location: {
+    exonic: number;
+    intronic: number;
+    utr: number;
+    splicing: number;
+    regulatory: number;
   };
   frequency: {
     common: number;
     lowFreq: number;
     rare: number;
     ultraRare: number;
-    unknown: number;
+    singleton: number;
   };
   scores: {
     highCadd: number;
     highRevel: number;
     highAlphaMissense: number;
+    splicingAffecting: number;
+    siftDeleterious: number;
+    polyphenDamaging: number;
   };
+  actionable: number;
 }
 
 export interface CompressedGwasAssociation {

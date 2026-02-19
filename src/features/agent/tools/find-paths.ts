@@ -4,8 +4,10 @@ import { agentFetch, AgentToolError } from "../lib/api-client";
 import type { CompressedPath } from "../types";
 
 export const findPaths = tool({
-  description:
-    "Find shortest paths between two entities in the knowledge graph. Shows how entities are connected through intermediate nodes. Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048').",
+  description: `Find shortest INDIRECT paths between two entities through intermediate nodes. Shows the chain of connections (A → X → Y → B).
+WHEN TO USE: "How is A connected to B?" when they may not share a direct edge, or when you want to discover intermediary nodes.
+WHEN NOT TO USE: If you want DIRECT edges between two entities → use getConnections instead. findPaths finds multi-hop routes; getConnections finds direct edges.
+Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048').`,
   inputSchema: z.object({
     from: z
       .string()
