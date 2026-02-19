@@ -1,10 +1,13 @@
 import type { PrepareStepFunction } from "ai";
+import type { QueryType, ReportPlanOutput } from "../types";
 
 // ---------------------------------------------------------------------------
 // Tool names (must match keys in agent.ts)
 // ---------------------------------------------------------------------------
 
-const RESOLVE_TOOLS = ["searchEntities", "recallMemories"] as const;
+const RESOLVE_TOOLS = ["searchEntities", "recallMemories", "reportPlan"] as const;
+
+const MEMORY_TOOLS = ["recallMemories", "saveMemory"] as const;
 
 const ALL_TOOLS = [
   "searchEntities",
@@ -23,7 +26,98 @@ const ALL_TOOLS = [
   "variantBatchSummary",
   "recallMemories",
   "saveMemory",
+  "reportPlan",
+  "graphExplorer",
+  "variantAnalyzer",
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Query-type → focused tool sets
+// ---------------------------------------------------------------------------
+
+const TOOL_SETS: Record<QueryType, readonly string[]> = {
+  entity_lookup: [
+    "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "getGeneVariantStats", "getGwasAssociations", "runEnrichment",
+    ...MEMORY_TOOLS,
+  ],
+  variant_analysis: [
+    "searchEntities", "lookupVariant", "getGeneVariantStats",
+    "getGwasAssociations", "createCohort", "analyzeCohort",
+    "variantBatchSummary", "variantAnalyzer",
+    ...MEMORY_TOOLS,
+  ],
+  graph_exploration: [
+    "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "findPaths", "getSharedNeighbors", "graphTraverse",
+    "compareEntities", "runEnrichment", "graphExplorer",
+    ...MEMORY_TOOLS,
+  ],
+  cohort_analysis: [
+    "searchEntities", "createCohort", "analyzeCohort",
+    "variantBatchSummary", "getGeneVariantStats", "runEnrichment",
+    "getEntityContext", "getRankedNeighbors", "variantAnalyzer",
+    ...MEMORY_TOOLS,
+  ],
+  comparison: [
+    "searchEntities", "compareEntities", "getEntityContext",
+    "getRankedNeighbors", "getSharedNeighbors", "findPaths",
+    "runEnrichment",
+    ...MEMORY_TOOLS,
+  ],
+  connection: [
+    "searchEntities", "findPaths", "getSharedNeighbors",
+    "getEntityContext", "getRankedNeighbors", "graphTraverse",
+    "graphExplorer",
+    ...MEMORY_TOOLS,
+  ],
+  drug_discovery: [
+    "searchEntities", "getEntityContext", "getRankedNeighbors",
+    "findPaths", "getSharedNeighbors", "runEnrichment",
+    "graphTraverse", "getGwasAssociations",
+    ...MEMORY_TOOLS,
+  ],
+  general: [...ALL_TOOLS],
+};
+
+// ---------------------------------------------------------------------------
+// Optional per-query-type system guidance
+// ---------------------------------------------------------------------------
+
+const QUERY_GUIDANCE: Partial<Record<QueryType, string>> = {
+  graph_exploration:
+    "\n\n[SYSTEM] Graph exploration mode. Focus on network traversal — use graphExplorer for complex multi-hop queries (3+ hops). Prefer findPaths and getSharedNeighbors for direct connectivity questions.",
+  variant_analysis:
+    "\n\n[SYSTEM] Variant analysis mode. Use lookupVariant for single variants, createCohort + analyzeCohort for batches. Use variantAnalyzer for complex multi-step variant/cohort workflows.",
+  cohort_analysis:
+    "\n\n[SYSTEM] Cohort analysis mode. Create the cohort first, then use analyzeCohort for aggregation/ranking/filtering. Bridge to the knowledge graph via top genes from byGene. Use variantAnalyzer for complex multi-step workflows.",
+  connection:
+    "\n\n[SYSTEM] Connection analysis mode. Use findPaths for direct shortest-path queries. Use graphExplorer for complex multi-hop exploration (3+ intermediaries).",
+};
+
+// ---------------------------------------------------------------------------
+// Extract plan from completed steps
+// ---------------------------------------------------------------------------
+
+interface StepData {
+  toolCalls?: Array<{ toolName: string }>;
+  toolResults?: Array<{ toolName: string; output: unknown }>;
+}
+
+function extractPlan(steps: StepData[]): ReportPlanOutput | null {
+  for (const step of steps) {
+    if (!step.toolResults) continue;
+    for (const result of step.toolResults) {
+      if (result.toolName === "reportPlan" && result.output) {
+        const r = result.output as Record<string, unknown>;
+        if (r.queryType && Array.isArray(r.plan)) {
+          return r as unknown as ReportPlanOutput;
+        }
+      }
+    }
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Phase detection
@@ -64,8 +158,23 @@ export const favorPrepareStep: PrepareStepFunction<any> = ({
     case "resolve":
       return { activeTools: [...RESOLVE_TOOLS] };
 
-    case "explore":
+    case "explore": {
+      // Try to read the plan from earlier steps
+      const plan = extractPlan(steps as StepData[]);
+
+      if (plan) {
+        const queryType = plan.queryType;
+        const tools = TOOL_SETS[queryType] ?? [...ALL_TOOLS];
+        const guidance = QUERY_GUIDANCE[queryType];
+        return {
+          activeTools: [...tools],
+          ...(guidance ? { system: guidance } : {}),
+        };
+      }
+
+      // Fallback: no plan found, use all tools
       return { activeTools: [...ALL_TOOLS] };
+    }
 
     case "synthesize":
       return {

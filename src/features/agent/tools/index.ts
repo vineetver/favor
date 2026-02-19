@@ -14,3 +14,5 @@ export { variantBatchSummary } from "./variant-batch-summary";
 export { graphTraverse } from "./graph-traverse";
 export { recallMemories } from "./recall-memories";
 export { saveMemory } from "./save-memory";
+export { reportPlan } from "./report-plan";
+export { graphExplorer, variantAnalyzer } from "./subagents";

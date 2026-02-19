@@ -1,7 +1,7 @@
 "use client";
 
 import { isToolUIPart, getToolName, type UIMessage } from "ai";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Conversation,
@@ -61,8 +61,14 @@ import {
 import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
-import { renderToolOutput, getToolInputSummary } from "./tool-renderers";
+import {
+  renderToolOutput,
+  getToolInputSummary,
+  PlanRenderer,
+} from "./tool-renderers";
+import type { ReportPlanOutput } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
+import { addStoredCohort } from "../lib/cohort-store";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -85,6 +91,9 @@ const TOOL_TITLES: Record<string, string> = {
   variantBatchSummary: "Batch Summary",
   recallMemories: "Recall Memories",
   saveMemory: "Save Memory",
+  reportPlan: "Analysis Plan",
+  graphExplorer: "Graph Explorer",
+  variantAnalyzer: "Variant Analyzer",
 };
 
 function getToolTitle(type: string): string {
@@ -156,6 +165,10 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
         return ["Rank variants by CADD score", "Summarize by clinical significance"];
       case "analyzeCohort":
         return ["Filter to pathogenic variants only", "Which genes carry the most variants?"];
+      case "graphExplorer":
+        return ["What are the key intermediates?", "Explore a different path"];
+      case "variantAnalyzer":
+        return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
     }
   }
 
@@ -231,6 +244,36 @@ function ChatMessageRenderer({
           // Tool parts → collapsible tool card
           if (isToolUIPart(part)) {
             const toolName = getToolName(part);
+
+            // Special rendering for reportPlan — standalone checklist card
+            if (
+              toolName.replace(/^tool-/, "") === "reportPlan" &&
+              part.output
+            ) {
+              const siblingParts = message.parts
+                .filter(
+                  (p) =>
+                    isToolUIPart(p) &&
+                    getToolName(p).replace(/^tool-/, "") !== "reportPlan",
+                )
+                .map((p) => {
+                  const tp = p as { type: string; toolCallId?: string; state?: string };
+                  return {
+                    type: tp.type,
+                    toolCallId: tp.toolCallId,
+                    toolName: getToolName(p).replace(/^tool-/, ""),
+                    state: tp.state,
+                  };
+                });
+              return (
+                <PlanRenderer
+                  key={part.toolCallId}
+                  plan={part.output as ReportPlanOutput}
+                  siblingToolParts={siblingParts}
+                />
+              );
+            }
+
             const title = getToolTitle(part.type);
             const inputSummary = getToolInputSummary(toolName, part.input);
 
@@ -349,6 +392,43 @@ export function ChatPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Track which cohort IDs we've already persisted to sidebar
+  const persistedCohortIds = useRef(new Set<string>());
+
+  // Auto-persist agent-created cohorts to the sidebar
+  useEffect(() => {
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      for (const part of msg.parts) {
+        if (
+          isToolUIPart(part) &&
+          getToolName(part).replace(/^tool-/, "") === "createCohort" &&
+          part.state === "output-available" &&
+          part.output &&
+          typeof part.output === "object" &&
+          "cohortId" in (part.output as Record<string, unknown>)
+        ) {
+          const out = part.output as {
+            cohortId: string;
+            variantCount: number;
+            summary?: string;
+          };
+          if (!persistedCohortIds.current.has(out.cohortId)) {
+            persistedCohortIds.current.add(out.cohortId);
+            addStoredCohort({
+              cohortId: out.cohortId,
+              label: `Cohort (${out.variantCount.toLocaleString()} variants)`,
+              variantCount: out.variantCount,
+              source: "agent",
+              createdAt: new Date().toISOString(),
+              sessionIds: sessionId ? [sessionId] : [],
+            });
+          }
+        }
+      }
+    }
+  }, [messages, sessionId]);
+
   const handleSidebarMessage = useCallback(
     (text: string) => {
       send(text);
@@ -375,7 +455,7 @@ export function ChatPage() {
       </Sheet>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[300px] shrink-0 flex-col bg-muted/50 border-r border-border">
+      <aside className="hidden lg:flex w-[300px] shrink-0 flex-col bg-muted/40 border-r border-border">
         <AgentErrorBoundary fallbackLabel="Sidebar error">
           <WorkspaceSidebar
               onSendMessage={handleSidebarMessage}
@@ -389,7 +469,7 @@ export function ChatPage() {
       {/* Main chat area */}
       <div className="relative flex flex-1 flex-col min-w-0 bg-background">
         {/* Mobile header */}
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/30 lg:hidden">
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border lg:hidden">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -417,7 +497,7 @@ export function ChatPage() {
         </div>
 
         {/* Desktop header */}
-        <div className="hidden lg:flex items-center justify-between px-6 py-2.5 border-b border-border bg-muted/30">
+        <div className="hidden lg:flex items-center justify-between px-6 py-2.5 border-b border-border">
           <div className="flex items-center gap-2">
             <DnaIcon className="size-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">

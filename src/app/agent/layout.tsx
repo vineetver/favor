@@ -11,8 +11,10 @@ export default function AgentLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-x-0 top-16 bottom-0 z-30 overflow-hidden bg-background shadow-[inset_0_1px_0_0_rgba(0,0,0,0.06),inset_0_4px_12px_-4px_rgba(0,0,0,0.05)]">
-      {children}
+    <div className="fixed inset-x-0 top-0 bottom-0 z-30 overflow-hidden bg-background px-4 pb-4 pt-[5.75rem]">
+      <div className="h-full overflow-hidden rounded-2xl border border-border/60 bg-background shadow-[0_1px_3px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)]">
+        {children}
+      </div>
     </div>
   );
 }

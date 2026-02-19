@@ -194,6 +194,7 @@ export function VariantSubmitPanel({
         variantCount: result.vid_count,
         source: "paste",
         createdAt: new Date().toISOString(),
+        sessionIds: [],
       };
       onCohortCreated(cohort);
       onAnalyzeCohort(result.cohort_id);
@@ -258,6 +259,7 @@ export function VariantSubmitPanel({
         variantCount: result.vid_count,
         source: "upload",
         createdAt: new Date().toISOString(),
+        sessionIds: [],
       };
       onCohortCreated(cohort);
       onAnalyzeCohort(result.cohort_id);

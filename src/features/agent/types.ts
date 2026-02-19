@@ -79,3 +79,35 @@ export interface CompressedCohort {
   resolution: { total: number; resolved: number; notFound: number };
   summary: string;
 }
+
+// ---------------------------------------------------------------------------
+// Query routing + planning types
+// ---------------------------------------------------------------------------
+
+export type QueryType =
+  | "entity_lookup"
+  | "variant_analysis"
+  | "graph_exploration"
+  | "cohort_analysis"
+  | "comparison"
+  | "connection"
+  | "drug_discovery"
+  | "general";
+
+export interface PlanItem {
+  id: string;
+  label: string;
+  tools: string[];
+}
+
+export interface ReportPlanOutput {
+  queryType: QueryType;
+  plan: PlanItem[];
+}
+
+export interface SubagentOutput {
+  summary: string;
+  stepsUsed: number;
+  toolCallsMade: number;
+  toolsUsed: string[];
+}

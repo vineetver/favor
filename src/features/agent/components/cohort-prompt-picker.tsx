@@ -106,7 +106,7 @@ export function CohortPromptPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg gap-0 p-0 overflow-hidden">
+      <DialogContent className="gap-0 p-0 overflow-hidden">
         {/* Header */}
         <DialogHeader className="px-5 pt-5 pb-4">
           <div className="flex items-center gap-2.5">

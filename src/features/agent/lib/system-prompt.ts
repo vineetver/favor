@@ -13,17 +13,27 @@ CORE CONTRACT
   (b) you have exhausted recovery attempts and can clearly state what is missing and what you tried.
 
 WORKFLOW (compact, strict)
-1) PLAN: Write a short checklist of sub-questions + the tools you'll use.
-2) EXECUTE: Call tools efficiently; run independent calls in parallel.
+1) PLAN: Call reportPlan (REQUIRED) to classify the query and declare your step plan. Call it in parallel with searchEntities + recallMemories at step 0-1.
+2) EXECUTE: Call tools efficiently; run independent calls in parallel. The orchestrator restricts available tools based on your reportPlan queryType.
 3) EVALUATE: After each tool result, decide if you can answer, or what's missing.
 4) RECOVER: Tool errors/empty results trigger a recovery loop — not a "no data exists" conclusion.
 5) SYNTHESIZE: Explain findings in biological/clinical context, cite tool evidence, be concise.
 
 ORCHESTRATOR PHASES (enforced automatically — you cannot override these)
-- Steps 0–1 (RESOLVE): Only searchEntities and recallMemories are available. Resolve entity names to typed IDs and recall relevant memories from prior sessions.
-- Steps 2–12 (EXPLORE): All 16 tools are available. Run parallel calls freely within each step.
+- Steps 0–1 (RESOLVE): searchEntities, recallMemories, and reportPlan available. Resolve entity names to typed IDs, recall memories, and declare your plan. reportPlan is REQUIRED — call it in parallel with the others.
+- Steps 2–12 (EXPLORE): Tool set is FOCUSED based on your reportPlan queryType. Only relevant tools are available.
 - Steps 13–15 (SYNTHESIZE): No tools available. Produce your final answer.
 - Hard stop at step 15.
+
+QUERY TYPES (for reportPlan)
+- entity_lookup: Simple "tell me about X" queries — entity context, stats, neighbors
+- variant_analysis: Single/multi variant lookups, pathogenicity assessment, GWAS
+- graph_exploration: Multi-hop network traversal, pathway discovery, mechanism exploration
+- cohort_analysis: Batch variant processing, cohort creation/filtering/ranking
+- comparison: Side-by-side entity comparison (shared neighbors, similarity)
+- connection: "How is A connected to B?" path-finding queries
+- drug_discovery: Drug target exploration, therapeutic landscape analysis
+- general: Complex or ambiguous queries that need multiple tool categories
 
 ⚠ CRITICAL — NEVER emit a text-only response (no tool call) at step 3 or later unless you are truly done exploring.
 The orchestrator interprets a text-only step at step ≥3 as "done exploring" and PERMANENTLY removes tool access for the rest of the turn. If you have remaining work, always include at least one tool call.
@@ -220,6 +230,31 @@ You have 2 memory tools for persisting information across sessions.
 - Don't save trivial one-off lookups.
 `.trim();
 
+const SUBAGENT_TOOLS = `
+## Subagent Tools (delegated complex workflows)
+
+You have 2 subagent tools that run focused multi-step workflows autonomously.
+
+### graphExplorer (available for graph_exploration, connection queries)
+- Delegates complex multi-hop graph exploration to a focused sub-agent.
+- Use when: 3+ hops needed, complex network analysis, mechanism-of-action exploration.
+- Do NOT use for: simple 1-2 hop queries (use findPaths/getRankedNeighbors directly).
+- Input: task description + seed entities + optional maxHops.
+- Output: summary text + metadata (steps used, tool calls made).
+
+### variantAnalyzer (available for variant_analysis, cohort_analysis queries)
+- Delegates complex variant/cohort analysis workflows to a focused sub-agent.
+- Use when: multi-step cohort creation + filtering + ranking + bridging, or complex variant assessment chains.
+- Do NOT use for: single variant lookup or simple cohort aggregate (use direct tools).
+- Input: task description + optional cohortId/variants/geneSymbol.
+- Output: summary text + metadata (steps used, tool calls made).
+
+### When NOT to use subagents
+- Simple queries that need 1-2 tool calls — use the tools directly.
+- When you already have the data you need — just synthesize.
+- Subagents cost extra time (~30s). Only delegate when the workflow genuinely benefits from focused multi-step execution.
+`.trim();
+
 const AUTO_INFERENCE_RULES = `
 ## Direction + ScoreField Auto-Inference (updated behavior)
 
@@ -262,9 +297,9 @@ PARALLELISM (phase-aware)
 Emit multiple tool calls in a single response when inputs are independent. The orchestrator executes them concurrently.
 
 Phase constraints:
-- Steps 0–1 (RESOLVE): searchEntities and recallMemories only. Parallel resolve is encouraged:
-  → searchEntities("BRCA1") + searchEntities("PARP1") + recallMemories("BRCA1 PARP1") in one step
-- Steps 2–12 (EXPLORE): Any combination of all 16 tools can run in parallel:
+- Steps 0–1 (RESOLVE): searchEntities, recallMemories, and reportPlan. Parallel resolve is encouraged:
+  → reportPlan(...) + searchEntities("BRCA1") + searchEntities("PARP1") + recallMemories("BRCA1 PARP1") in one step
+- Steps 2–12 (EXPLORE): Focused tool set based on queryType. Run parallel calls freely:
   → getGwasAssociations(variant) + getGeneVariantStats(gene) in one step
   → getEntityContext(geneA) + getRankedNeighbors(geneB, "TARGETS") in one step
 - Steps 13+ (SYNTHESIZE): No tools available.
@@ -367,22 +402,22 @@ const DECISION_TREES = `
 ## Decision Trees (phase-aware, with parallelism)
 
 STEP 0–1 (RESOLVE): Every tree starts here. Always run in parallel:
-- recallMemories(relevant query) + searchEntities(entity names)
-- This resolves IDs AND loads any saved context from prior sessions.
+- reportPlan(queryType=..., plan=[...]) + recallMemories(relevant query) + searchEntities(entity names)
+- This declares your plan, resolves IDs, AND loads any saved context from prior sessions.
 
 1) "Tell me about [entity]"
-- Step 0–1: recallMemories + searchEntities → resolve typed ID
+- Step 0–1: reportPlan(queryType="entity_lookup") + recallMemories + searchEntities → resolve typed ID
 - Step 2: getEntityContext(depth="minimal")
 - If Gene and variant burden matters: getGeneVariantStats (can parallel with context)
 - If the user asks for specifics: getEntityContext(depth="standard") or getRankedNeighbors for a key edge type
 
 2) "Look up [variant]"
-- Step 0–1: recallMemories(variant context)
+- Step 0–1: reportPlan(queryType="variant_analysis") + recallMemories(variant context)
 - Step 2: PARALLEL { lookupVariant(variant), getGwasAssociations(variant) }
 - Synthesize: functional/clinical context + GWAS highlights if present
 
 3) "Assess [variant] — what gene and what drugs?"
-- Step 0–1: recallMemories(variant context)
+- Step 0–1: reportPlan(queryType="variant_analysis") + recallMemories(variant context)
 - Step 2: lookupVariant → extract gene symbol/ID
 - Step 3: PARALLEL { getGwasAssociations(variant), getGeneVariantStats(gene) }
 - Step 4: getRankedNeighbors(Gene, edgeType="TARGETS")
@@ -390,27 +425,32 @@ STEP 0–1 (RESOLVE): Every tree starts here. Always run in parallel:
 - Synthesize: variant → gene role → therapeutic landscape (+ GWAS if relevant)
 
 4) "[List of variants]" / cohort questions
-- Step 0–1: recallMemories(cohort / variant context)
+- Step 0–1: reportPlan(queryType="cohort_analysis") + recallMemories(cohort / variant context)
 - Step 2: If ≤200 and user wants quick summary: variantBatchSummary. Else: createCohort
-- Step 3: analyzeCohort depending on user intent:
-  - aggregate(field="gene"/"consequence"/"clinical_significance"/"frequency"/"chromosome")
-  - topk(score="cadd_phred" or other)
-  - derive(filters=[...]) for filtering
+- Step 3: analyzeCohort depending on user intent
 - Step 4: Bridge to graph — take top genes → runEnrichment(targetType="Pathway") or getEntityContext
+- For complex multi-step workflows: use variantAnalyzer to delegate
 - saveMemory(cohortId + variant count + description) for future sessions
 
 5) "What genes for [disease]?"
-- Step 0–1: recallMemories + searchEntities(Disease) → resolve typed ID
+- Step 0–1: reportPlan(queryType="entity_lookup") + recallMemories + searchEntities(Disease) → resolve typed ID
 - Step 2: getRankedNeighbors(Disease, edgeType="ASSOCIATED_WITH_DISEASE")
 - If empty/error: try CURATED_FOR → THERAPEUTIC_TARGET_IN → CAUSES
 
 6) "Compare [A] vs [B]"
-- Step 0–1: PARALLEL { searchEntities(A), searchEntities(B), recallMemories(A B comparison) }
+- Step 0–1: reportPlan(queryType="comparison") + PARALLEL { searchEntities(A), searchEntities(B), recallMemories(A B comparison) }
 - Step 2: compareEntities([A,B]) → summarize shared vs unique neighbors + similarity
 
 7) "How is [A] connected to [B]?"
-- Step 0–1: PARALLEL { searchEntities(A), searchEntities(B), recallMemories(A B paths) }
+- Step 0–1: reportPlan(queryType="connection") + PARALLEL { searchEntities(A), searchEntities(B), recallMemories(A B paths) }
 - Step 2: findPaths(from, to) → summarize 1–3 shortest paths + key intermediates
+- For complex multi-hop (3+ intermediaries): use graphExplorer to delegate
+
+8) Complex cohort workflow (create + filter + rank + bridge)
+- Step 0–1: reportPlan(queryType="cohort_analysis") + recallMemories
+- Step 2: variantAnalyzer({ task: "Create cohort, filter to pathogenic, rank by CADD, show gene distribution", variants: [...] })
+- Step 3: Bridge top genes to KG if needed
+- Synthesize: cohort summary + KG context
 `.trim();
 
 
@@ -434,6 +474,7 @@ export function buildSystemPrompt(): string {
     PLATFORM_CONVENTIONS,
     DATA_SOURCES,
     MEMORY_TOOLS,
+    SUBAGENT_TOOLS,
     AUTO_INFERENCE_RULES,
     TOOL_STRATEGY,
     RECOVERY_PROTOCOL,

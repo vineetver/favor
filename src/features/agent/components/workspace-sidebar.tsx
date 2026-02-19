@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/button";
 import { cn } from "@infra/utils";
 import {
@@ -17,6 +17,7 @@ import { CohortPromptPicker } from "./cohort-prompt-picker";
 import {
   type AgentCohort,
   addStoredCohort,
+  addSessionToCohort,
   getStoredCohorts,
   removeStoredCohort,
 } from "../lib/cohort-store";
@@ -41,7 +42,7 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Collapsible section — text only, no icons
+// Collapsible section
 // ---------------------------------------------------------------------------
 
 function SidebarSection({
@@ -127,33 +128,77 @@ export function WorkspaceSidebar({
     setCohorts(removeStoredCohort(cohortId));
   }, []);
 
+  // ---- Derived: split sessions into "free" vs cohort-linked ----
+  const cohortSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of cohorts) {
+      for (const sid of c.sessionIds) {
+        ids.add(sid);
+      }
+    }
+    return ids;
+  }, [cohorts]);
+
+  const freeSessions = useMemo(
+    () => sessions.filter((s) => !cohortSessionIds.has(s.session_id)),
+    [sessions, cohortSessionIds],
+  );
+
   // ---- Cohort prompt picker ----
   const [selectedCohort, setSelectedCohort] = useState<AgentCohort | null>(
     null,
   );
+  // Track which cohort we just sent a message for, so we can link the session
+  const pendingCohortRef = useRef<string | null>(null);
 
-  const handleCohortClick = useCallback((cohort: AgentCohort) => {
+  /** Open the prompt picker to start a NEW conversation for a cohort. */
+  const handleNewCohortConversation = useCallback((cohort: AgentCohort) => {
     setSelectedCohort(cohort);
   }, []);
 
   const handleCohortPromptSend = useCallback(
     (message: string) => {
+      if (selectedCohort) {
+        pendingCohortRef.current = selectedCohort.cohortId;
+      }
+      // Force a new session by clearing current state first
+      onNewChat();
+      // Then send — ensureSession in the chat hook will create a fresh session
       onSendMessage(message);
       setSelectedCohort(null);
       setShowSubmit(false);
     },
-    [onSendMessage],
+    [onSendMessage, onNewChat, selectedCohort],
   );
+
+  // Link sessionId to the cohort once it's created
+  useEffect(() => {
+    if (sessionId && pendingCohortRef.current) {
+      const cohortId = pendingCohortRef.current;
+      pendingCohortRef.current = null;
+      setCohorts(addSessionToCohort(cohortId, sessionId));
+    }
+  }, [sessionId]);
 
   const handleAnalyzeCohort = useCallback(
     (cohortId: string) => {
-      // Find the cohort by ID and open the prompt picker
       const cohort = cohorts.find((c) => c.cohortId === cohortId);
       if (cohort) {
-        setSelectedCohort(cohort);
+        handleNewCohortConversation(cohort);
       }
     },
-    [cohorts],
+    [cohorts, handleNewCohortConversation],
+  );
+
+  /** Delete a session (works for both free and cohort-linked sessions). */
+  const handleDeleteSession = useCallback(
+    (deletedSessionId: string) => {
+      deleteSession(deletedSessionId);
+      if (deletedSessionId === sessionId) {
+        onNewChat();
+      }
+    },
+    [deleteSession, sessionId, onNewChat],
   );
 
   // ---- Jobs (shared localStorage from batch feature) ----
@@ -177,7 +222,7 @@ export function WorkspaceSidebar({
     .slice(0, 10);
 
   const isEmpty =
-    sessions.length === 0 &&
+    freeSessions.length === 0 &&
     activeJobs.length === 0 &&
     completedJobs.length === 0 &&
     cohorts.length === 0 &&
@@ -208,15 +253,44 @@ export function WorkspaceSidebar({
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="py-2">
-          {/* Conversations */}
-          {sessions.length > 0 && (
+          {/* Cohorts — shown first since they group conversations */}
+          {cohorts.length > 0 && (
+            <SidebarSection
+              title="Cohorts"
+              count={cohorts.length}
+              defaultOpen
+            >
+              <div className="space-y-1.5 px-2 pb-1">
+                {cohorts.map((cohort) => {
+                  const linkedSessions = sessions.filter((s) =>
+                    cohort.sessionIds.includes(s.session_id),
+                  );
+                  return (
+                    <CohortListItem
+                      key={cohort.cohortId}
+                      cohort={cohort}
+                      linkedSessions={linkedSessions}
+                      activeSessionId={sessionId}
+                      onNewConversation={handleNewCohortConversation}
+                      onLoadSession={onLoadSession}
+                      onDeleteSession={handleDeleteSession}
+                      onRemove={handleCohortRemoved}
+                    />
+                  );
+                })}
+              </div>
+            </SidebarSection>
+          )}
+
+          {/* Free conversations (not linked to any cohort) */}
+          {freeSessions.length > 0 && (
             <SidebarSection
               title="Conversations"
-              count={sessions.length}
+              count={freeSessions.length}
               defaultOpen
             >
               <div className="space-y-0.5 px-2 pb-1">
-                {sessions.map((s) => {
+                {freeSessions.map((s) => {
                   const isActive = s.session_id === sessionId;
                   return (
                     <div
@@ -248,8 +322,7 @@ export function WorkspaceSidebar({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteSession(s.session_id);
-                          if (isActive) onNewChat();
+                          handleDeleteSession(s.session_id);
                         }}
                         className="shrink-0 rounded-md p-0.5 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-accent"
                         title="Delete conversation"
@@ -305,26 +378,6 @@ export function WorkspaceSidebar({
                         "_blank",
                       )
                     }
-                  />
-                ))}
-              </div>
-            </SidebarSection>
-          )}
-
-          {/* Cohorts */}
-          {cohorts.length > 0 && (
-            <SidebarSection
-              title="Cohorts"
-              count={cohorts.length}
-              defaultOpen
-            >
-              <div className="space-y-1.5 px-2 pb-1">
-                {cohorts.map((cohort) => (
-                  <CohortListItem
-                    key={cohort.cohortId}
-                    cohort={cohort}
-                    onClick={handleCohortClick}
-                    onRemove={handleCohortRemoved}
                   />
                 ))}
               </div>

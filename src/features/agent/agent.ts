@@ -40,6 +40,9 @@ export const favorAgent = new ToolLoopAgent({
     variantBatchSummary: tools.variantBatchSummary,
     recallMemories: tools.recallMemories,
     saveMemory: tools.saveMemory,
+    reportPlan: tools.reportPlan,
+    graphExplorer: tools.graphExplorer,
+    variantAnalyzer: tools.variantAnalyzer,
   },
 });
 
