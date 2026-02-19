@@ -34,9 +34,8 @@ CORE CONTRACT
   (b) you have exhausted recovery attempts and can clearly state what is missing and what you tried.
 
 WORKFLOW
-1) PLAN (step 0–1): Call reportPlan (REQUIRED) in parallel with searchEntities + recallMemories. Your plan MUST have 2-4 steps — always include resolve, collect, and synthesize. Example:
-   [{"id":"resolve","label":"Resolve variant to gene","tools":["searchEntities","lookupVariant"]},{"id":"collect","label":"Collect gene and disease data","tools":["getEntityContext","getGeneVariantStats","getGwasAssociations"]},{"id":"synthesize","label":"Synthesize findings","tools":[]}]
-2) EXECUTE: Call tools efficiently. Run independent calls in parallel.
+1) PLAN (step 0–1): Call reportPlan (REQUIRED) + recallMemories. For entity/gene/disease queries, also call searchEntities to resolve names to IDs. For cohort queries with an existing cohort ID, do NOT call searchEntities — cohorts are NOT graph entities; go straight to analyzeCohort after plan.
+2) EXECUTE: Call tools efficiently. Run independent calls in parallel. For cohort_analysis, call analyzeCohort IMMEDIATELY — do not waste steps on entity resolution.
 3) EVALUATE: After each result, decide if you can answer or what's missing.
 4) RECOVER: Errors/empty results trigger the Recovery Protocol — never conclude "no data" without trying fallbacks.
 5) SYNTHESIZE: Explain findings in biological/clinical context, cite tool evidence, be thorough.
@@ -102,10 +101,46 @@ NEVER use getRankedNeighbors when you have TWO specific entities — use getConn
 2. **Gene queries**: ALWAYS call getGeneVariantStats for variant burden data. For multiple genes, call in parallel.
 3. **Start minimal**: getEntityContext(depth="minimal"). Upgrade only if insufficient.
 4. **Variant workflows**: lookupVariant for 1 variant only (NEVER loop). 2+ variants → createCohort or variantBatchSummary.
-5. **Cohort bridge**: After cohort creation, take top genes from byGene → runEnrichment or getEntityContext.
-6. **Parallel calls**: When inputs are independent, call multiple tools in one step.
-7. **Subagents**: graphExplorer for 3+ hop graph exploration. variantAnalyzer for complex cohort workflows. Both cost ~30s — only use when genuinely multi-step.
-8. **Budget**: ~10 tool calls soft ceiling, 15-step hard limit. Never stop early to "be efficient" if sub-questions remain unanswered.`;
+5. **Cohort-first (CRITICAL)**: When a cohort ID is provided or active, use cohort tools DIRECTLY — call analyzeCohort(topk/aggregate/derive) on the cohort. Cohorts can have 5,000+ variants; cohort tools are optimized for this scale. Do NOT loop through individual variants, do NOT call lookupVariant, searchEntities, or getEntityContext per-variant. The only entity searches needed are for knowledge-graph bridging AFTER cohort analysis (e.g., top genes from aggregate → getEntityContext).
+6. **Cohort bridge**: After cohort analysis, take top genes from aggregate(byGene) → runEnrichment or getEntityContext.
+7. **Parallel calls**: When inputs are independent, call multiple tools in one step.
+8. **Subagents**: graphExplorer for 3+ hop graph exploration. variantAnalyzer for complex cohort workflows. Both cost ~30s — only use when genuinely multi-step.
+9. **Budget**: ~10 tool calls soft ceiling, 15-step hard limit. Never stop early to "be efficient" if sub-questions remain unanswered.`;
+
+const COHORT_WORKFLOWS = `## Cohort Workflows (CRITICAL — read before any cohort operation)
+
+⚠ A COHORT IS NOT A GRAPH ENTITY. Cohorts are managed by the cohort API (createCohort, analyzeCohort), NOT the knowledge graph. The graph entity types are: Gene, Disease, Drug, Variant, Trait, Pathway, Phenotype, Study, GOTerm, cCRE, SideEffect, Metabolite, OntologyTerm. "Cohort" is NOT one of them.
+
+NEVER:
+- Call searchEntities with a cohort ID — it will fail, cohorts are not in the graph
+- Call getEntityContext on a cohort ID — cohorts are not entities
+- Call getGraphSchema("Cohort") — Cohort is not a node type
+- Extract gene names from score column names (e.g., "APC" from "apc_protein_function") — see Score Columns section
+
+### When the user provides a cohort ID (UUID like "80045374-6925-...")
+1) reportPlan with queryType="cohort_analysis" + recallMemories (step 0)
+2) Call analyzeCohort DIRECTLY with the cohort ID — topk for ranking, aggregate for grouping, derive for filtering
+3) AFTER cohort results, optionally bridge to the knowledge graph: top genes from aggregate(byGene) → getGeneVariantStats, runEnrichment, or getEntityContext on those GENE IDs
+4) Synthesize
+
+### Example: "Rank variants in cohort X by apc_protein_function"
+- reportPlan(queryType="cohort_analysis", plan=[{id:"rank",label:"Rank by APC protein function",tools:["analyzeCohort"]},{id:"synthesize",label:"Synthesize ranked results",tools:[]}])
+- analyzeCohort(cohortId="X", operation="topk", score="apc_protein_function", k=20)
+- Synthesize the results. Done. No entity searches needed.
+
+### Example: "Overview of cohort X — genes, consequences, ClinVar"
+- reportPlan(queryType="cohort_analysis")
+- analyzeCohort(cohortId="X", operation="aggregate", field="gene") + analyzeCohort(cohortId="X", operation="aggregate", field="consequence") + analyzeCohort(cohortId="X", operation="aggregate", field="clinical_significance") — all in parallel
+- Optionally: getGeneVariantStats on top genes from the gene aggregate
+- Synthesize
+
+### Cohort tools summary
+- **analyzeCohort(topk)**: Rank variants by any of 36 score columns. Cohorts can have 5,000+ variants — this is optimized for scale.
+- **analyzeCohort(aggregate)**: Group by gene, consequence, clinical_significance, frequency, or chromosome.
+- **analyzeCohort(derive)**: Filter with AND logic (categorical + numeric) to create sub-cohorts. Derived cohorts support all operations.
+- **createCohort**: Create a new cohort from variant identifiers (up to 5,000).
+- **variantBatchSummary**: Quick LLM-optimized summary for 1-200 variants without persistent storage.
+- **variantAnalyzer**: Subagent for genuinely complex multi-step cohort workflows (costs ~30s — only use when needed).`;
 
 const RECOVERY = `## Recovery Protocol
 On error or surprising empty results:
@@ -126,6 +161,8 @@ All score columns available for \`analyzeCohort\` topk and derive operations:
 **Population frequency**: gnomad_af, gnomad_exome_af, bravo_af, tg_all
 **APC Composite**: apc_conservation, apc_epigenetics, apc_protein_function, apc_proximity_to_coding, apc_local_nucleotide_diversity, apc_mutation_density, apc_transcription_factor, apc_mappability, apc_micro_rna
 **Other**: recombination_rate, nucdiv
+
+⚠ CRITICAL — "APC" in score column names (apc_protein_function, apc_conservation, etc.) stands for **Annotation Principal Component** — a FAVOR-specific composite annotation score. It is NOT the APC gene. NEVER search for "APC" as a gene when the user mentions an apc_* score column. These are score columns you pass to analyzeCohort(topk, score="apc_protein_function").
 
 For frequency fields (gnomad_af, gnomad_exome_af, bravo_af, tg_all), missing values are INCLUDED when using score_below (unknown ≠ common). For all other fields, missing values are EXCLUDED.`;
 
@@ -287,6 +324,7 @@ export function buildSystemPrompt(): string {
     CONVENTIONS,
     EDGE_AWARE_PLANNING,
     TOOL_SELECTION,
+    COHORT_WORKFLOWS,
     RECOVERY,
     SCORE_COLUMNS,
     RESPONSE_FORMAT,

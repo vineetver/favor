@@ -62,7 +62,11 @@ DO NOT use findPaths here — that finds multi-hop paths through intermediaries.
 
       if (connections.length === 0) {
         return {
-          error: true,
+          from: data.data.from,
+          to: data.data.to,
+          totalEdgeTypes: 0,
+          totalEdges: 0,
+          connections: [],
           message: `No direct edges found between ${from.type}:${from.id} and ${to.type}:${to.id}`,
           hint: "Try findPaths to check for indirect connections through intermediary nodes.",
         };

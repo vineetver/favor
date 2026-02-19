@@ -383,6 +383,19 @@ function ChatMessageRenderer({
     });
   const hasToolParts = allToolParts.length > 0;
 
+  // Extract plan output (last completed reportPlan) for OrchestrationHeader
+  const planOutput = message.parts
+    .filter(
+      (p) =>
+        isToolUIPart(p) &&
+        getToolName(p).replace(/^tool-/, "") === "reportPlan" &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (p as any).state === "output-available",
+    )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((p) => (p as any).output as ReportPlanOutput)
+    .at(-1) ?? null;
+
   // All non-reportPlan tool parts for PlanRenderer status tracking.
   // Include ALL tools (including resolve-phase) so the plan can match
   // tools like searchEntities that run before reportPlan.
@@ -439,6 +452,7 @@ function ChatMessageRenderer({
             toolParts={allToolParts}
             isStreaming={isStreaming}
             hasTextContent={hasText}
+            planOutput={planOutput}
           />
         )}
 

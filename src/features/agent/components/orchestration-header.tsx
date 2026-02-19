@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { cn } from "@infra/utils";
 import { inferOrchestration, type OrchestrationPhase } from "../lib/infer-orchestration";
+import type { ReportPlanOutput } from "../types";
 
 const PHASES: { key: OrchestrationPhase; label: string }[] = [
   { key: "resolve", label: "Resolve" },
@@ -25,17 +26,26 @@ export function OrchestrationHeader({
   toolParts,
   isStreaming,
   hasTextContent,
+  planOutput,
 }: {
   toolParts: ToolUIPart[];
   isStreaming: boolean;
   hasTextContent: boolean;
+  planOutput?: ReportPlanOutput | null;
 }) {
   const orch = useMemo(
-    () => inferOrchestration(toolParts, isStreaming, hasTextContent),
-    [toolParts, isStreaming, hasTextContent],
+    () => inferOrchestration(toolParts, isStreaming, hasTextContent, planOutput),
+    [toolParts, isStreaming, hasTextContent, planOutput],
   );
 
-  const activeIdx = phaseIndex(orch.phase);
+  // Phase can only advance (resolve → explore → synthesize), never regress.
+  // Prevents flickering caused by transient tool-part states during streaming.
+  const highWaterRef = useRef(0);
+  const currentIdx = phaseIndex(orch.phase);
+  if (currentIdx > highWaterRef.current) {
+    highWaterRef.current = currentIdx;
+  }
+  const activeIdx = highWaterRef.current;
 
   return (
     <div className="flex items-center gap-2.5 text-[11px]">
@@ -68,9 +78,13 @@ export function OrchestrationHeader({
         })}
       </div>
 
-      {/* Phase label only */}
+      {/* Phase label — uses high-water phase to prevent regression */}
       <span className="font-medium text-muted-foreground">
-        {orch.phaseLabel}
+        {PHASES[activeIdx].label === "Resolve"
+          ? "Resolving"
+          : PHASES[activeIdx].label === "Explore"
+            ? "Exploring"
+            : "Synthesizing"}
       </span>
     </div>
   );

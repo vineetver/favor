@@ -68,12 +68,11 @@ const TOOL_SETS: Record<QueryType, readonly string[]> = {
     ...MEMORY_TOOLS,
   ],
   cohort_analysis: [
-    "searchEntities", "createCohort", "analyzeCohort",
-    "variantBatchSummary", "getGeneVariantStats", "runEnrichment",
-    "getEntityContext", "getRankedNeighbors", "getConnections",
-    "getEdgeDetail", "variantAnalyzer",
+    // Primary cohort tools — the agent MUST use these first
+    "analyzeCohort", "createCohort", "variantAnalyzer",
+    // KG bridging — only AFTER cohort analysis, for top genes discovered
+    "runEnrichment",
     "getGraphSchema",
-    ...MEMORY_TOOLS,
   ],
   comparison: [
     "searchEntities", "compareEntities", "getEntityContext",
@@ -112,15 +111,15 @@ const QUERY_GUIDANCE: Partial<Record<QueryType, string>> = {
   graph_exploration:
     "\n\n[SYSTEM] Graph exploration mode. EDGE-AWARE ROUTING: Before each call, identify the source→target entity types and pick the specific edge type that matches the user's intent. Use graphTraverse for multi-hop chains (Gene→Disease→Phenotype). Use graphExplorer for complex 3+ hop exploration. Use findPaths for indirect paths between two entities. Use getSharedNeighbors for overlap questions. NEVER use getRankedNeighbors for pairwise questions.",
   variant_analysis:
-    "\n\n[SYSTEM] Variant analysis mode. lookupVariant for single variant only — NEVER loop. createCohort + analyzeCohort for 2+ variants. Use variantAnalyzer for complex multi-step variant/cohort workflows. After identifying a gene, bridge to the KG with getGeneVariantStats and getRankedNeighbors(TARGETS) for drug landscape.",
+    "\n\n[SYSTEM] Variant analysis mode. lookupVariant for single variant only — NEVER loop. For 2+ variants or when a cohortId is provided, use createCohort + analyzeCohort (topk/aggregate/derive). Cohorts can have 5,000+ variants — cohort tools are optimized for this scale. IMPORTANT: 'apc_*' score columns (apc_protein_function, apc_conservation, etc.) are Annotation Principal Component scores — NOT the APC gene. Use variantAnalyzer for complex multi-step variant/cohort workflows. After identifying a gene, bridge to the KG with getGeneVariantStats and getRankedNeighbors(TARGETS) for drug landscape.",
   cohort_analysis:
-    "\n\n[SYSTEM] Cohort analysis mode. Create the cohort first, then analyzeCohort for aggregation/ranking/filtering. Bridge to the knowledge graph via top genes from byGene → runEnrichment(PARTICIPATES_IN, Pathway) or getEntityContext. Use variantAnalyzer for complex multi-step workflows.",
+    "\n\n[SYSTEM] Cohort analysis mode — call analyzeCohort NOW with the cohort ID from the user message. Do NOT call searchEntities, recallMemories, getEntityContext, or getGraphSchema — cohorts are NOT graph entities. For ranking: analyzeCohort(operation='topk', score='<column>'). For grouping: analyzeCohort(operation='aggregate', field='gene'|'consequence'|etc). For filtering: analyzeCohort(operation='derive', filters=[...]). 'apc_*' scores (apc_protein_function etc.) = Annotation Principal Component, NOT the APC gene. KG bridging (searchEntities, getGeneVariantStats, runEnrichment) is ONLY for AFTER you get cohort results and want to look up top genes.",
   connection:
     "\n\n[SYSTEM] Connection analysis mode. MANDATORY ROUTING: Use getConnections for ALL direct edges between two entities. Use findPaths for indirect paths through intermediaries. Run both in parallel for comprehensive results. Use getEdgeDetail to drill into specific edge evidence. Use graphExplorer for complex multi-hop exploration (3+ intermediaries). NEVER use getRankedNeighbors for pairwise connection queries — it ranks ALL neighbors of one seed, not the relationship between two specific entities.",
   drug_discovery:
     "\n\n[SYSTEM] Drug discovery mode. EDGE-AWARE: Gene→Drug edges: TARGETS (Drug→Gene, largest — server auto-corrects direction), HAS_PGX_INTERACTION (Gene→Drug), HAS_CLINICAL_DRUG_EVIDENCE. Drug→Disease: INDICATED_FOR. Use getRankedNeighbors for 'top drugs for gene X'. Use getConnections when asking about a specific gene–drug pair. Use findPaths for indirect drug–disease connections.",
   comparison:
-    "\n\n[SYSTEM] Comparison mode. Use compareEntities for side-by-side analysis of 2-5 same-type entities — returns shared/unique neighbors and Jaccard similarity in ONE call. NEVER call getRankedNeighbors twice to compare entities manually. Use getSharedNeighbors for specific edge-type overlap (e.g., shared pathways via PARTICIPATES_IN).",
+    "\n\n[SYSTEM] Comparison mode. Use compareEntities for side-by-side analysis of 2-5 same-type entities — returns shared/unique neighbors and Jaccard similarity in ONE call. NEVER call getRankedNeighbors twice to compare entities manually. Use getSharedNeighbors for specific edge-type overlap (e.g., shared pathways via PARTICIPATES_IN). IMPORTANT: When comparing GENE entities, ALWAYS call getGeneVariantStats in parallel for EACH gene — variant burden data (ClinVar, consequence, frequency, pathogenicity scores) is expected for gene comparisons. Call all getGeneVariantStats in a single parallel batch.",
 };
 
 // ---------------------------------------------------------------------------
@@ -163,8 +162,9 @@ function detectPhase(stepCount: number, hasToolCallInLastStep: boolean): Phase {
   if (stepCount <= 2) return "resolve";
   if (stepCount >= 14) return "synthesize";
 
-  // If model naturally stopped calling tools mid-exploration, let it synthesize
-  if (stepCount >= 4 && !hasToolCallInLastStep) return "synthesize";
+  // If model naturally stopped calling tools mid-exploration, let it synthesize.
+  // Use step >= 6 to avoid cutting off agents that pause briefly between batches.
+  if (stepCount >= 6 && !hasToolCallInLastStep) return "synthesize";
 
   return "explore";
 }
@@ -261,6 +261,44 @@ function getTrippedTools(steps: StepData[]): Set<string> {
   return new Set(
     [...consecutive].filter(([, c]) => c >= 3).map(([n]) => n),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Plan-step awareness: inject focused hints based on plan progress
+// ---------------------------------------------------------------------------
+
+function normToolName(name: string): string {
+  return name.toLowerCase().replace(/[_\-\s]/g, "");
+}
+
+/**
+ * Analyse which plan steps have been satisfied by tool calls so far and
+ * return a system hint pointing the model at the next focus area.
+ */
+function getPlanStepHint(plan: ReportPlanOutput, steps: StepData[]): string {
+  // Collect all tool names that have produced results
+  const calledTools = new Set<string>();
+  for (const step of steps) {
+    for (const tc of step.toolCalls ?? []) {
+      calledTools.add(normToolName(tc.toolName));
+    }
+  }
+
+  const toolItems = plan.plan.filter((item) => item.tools.length > 0);
+
+  // Find the first plan step where not all tools have been called
+  for (let i = 0; i < toolItems.length; i++) {
+    const item = toolItems[i];
+    const remaining = item.tools.filter(
+      (t) => !calledTools.has(normToolName(t)),
+    );
+    if (remaining.length > 0) {
+      return `\n\n[SYSTEM] Plan progress: ${i}/${toolItems.length} steps done. Current focus: "${item.label}". Prioritize: ${remaining.join(", ")}.`;
+    }
+  }
+
+  // All plan steps satisfied — no extra hint needed (synthesis will be triggered)
+  return "";
 }
 
 // ---------------------------------------------------------------------------
@@ -414,12 +452,13 @@ export function createPrepareStep(
           const queryType = plan.queryType;
           const tools = TOOL_SETS[queryType] ?? [...ALL_TOOLS];
           const guidance = QUERY_GUIDANCE[queryType];
+          const planHint = getPlanStepHint(plan, stepsData);
           return {
             model: nano,
             providerOptions: nanoProviderOptions,
             toolChoice: "required" as const,
             activeTools: [...tools].filter((t) => !tripped.has(t)),
-            system: NO_TEXT_INSTRUCTION + (guidance ?? "") + contextWarning,
+            system: NO_TEXT_INSTRUCTION + (guidance ?? "") + planHint + contextWarning,
           };
         }
 

@@ -371,7 +371,7 @@ interface ToolUIPart {
   state?: string;
 }
 
-type PlanItemStatus = "completed" | "in-progress" | "pending";
+type PlanItemStatus = "completed" | "in-progress" | "pending" | "errored";
 
 /** Normalize tool names so LLM-generated names match actual part names.
  *  "find_paths" / "findPaths" / "Find Paths" all → "findpaths" */
@@ -407,15 +407,19 @@ function getPlanItemStatusByName(
   const hasSuccess = matchingParts.some(
     (p) => p.state === "output-available",
   );
-  if (hasSuccess) return "completed";
-
   const hasError = matchingParts.some((p) => p.state === "output-error");
   const hasRunning = matchingParts.some((p) =>
     RUNNING_STATES.has(p.state ?? ""),
   );
-  if (hasError && hasRunning) return "in-progress";
-  if (hasError) return "completed";
+
+  // Any successful result means the step is progressing/done
+  if (hasSuccess) return "completed";
+
+  // Still running — regardless of partial errors
   if (hasRunning) return "in-progress";
+
+  // ALL finished, but ONLY errors (no successes) → errored
+  if (hasError && !hasSuccess) return "errored";
 
   return "pending";
 }
@@ -477,16 +481,19 @@ function computePlanStatuses(
   });
 
   // --- Synthesis items derive status from sibling plan items -------------
-  const allToolItemsComplete = items.every(
-    (item, i) => item.tools.length === 0 || toolItemStatuses[i] === "completed",
+  const allToolItemsDone = items.every(
+    (item, i) =>
+      item.tools.length === 0 ||
+      toolItemStatuses[i] === "completed" ||
+      toolItemStatuses[i] === "errored",
   );
 
   return items.map((item, i) => {
     if (item.tools.length === 0) {
       // Synthesis: only progresses once ALL tool-bearing plan items finish.
       // "completed" only when streaming is done (the full response ended).
-      if (allToolItemsComplete && !isStreaming) return "completed";
-      if (allToolItemsComplete && isStreaming) return "in-progress";
+      if (allToolItemsDone && !isStreaming) return "completed";
+      if (allToolItemsDone && isStreaming) return "in-progress";
       return "pending";
     }
     return toolItemStatuses[i];
@@ -577,6 +584,22 @@ export function PlanRenderer({
                   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 </svg>
               )}
+              {status === "errored" && (
+                <svg
+                  className="size-4 shrink-0 text-amber-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              )}
               {status === "pending" && (
                 <svg
                   className="size-4 shrink-0 text-muted-foreground/40"
@@ -595,9 +618,11 @@ export function PlanRenderer({
                 className={
                   status === "completed"
                     ? "text-muted-foreground line-through"
-                    : status === "in-progress"
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground"
+                    : status === "errored"
+                      ? "text-amber-600"
+                      : status === "in-progress"
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
                 }
               >
                 {item.label}

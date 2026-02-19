@@ -90,11 +90,11 @@ const cohortFilterSchema = z.discriminatedUnion("type", [
 ]);
 
 export const analyzeCohort = tool({
-  description: `Analyze an existing cohort with three operations:
-- **topk**: Top K variants by any score (36 columns: cadd_phred, revel, alpha_missense, spliceai_ds_max, gnomad_af, etc.)
+  description: `Analyze an existing cohort with three operations. Cohorts can have 5,000+ variants — this tool is optimized for large-scale analysis. ALWAYS use this instead of looping lookupVariant or per-variant entity searches.
+- **topk**: Top K variants by any of 36 score columns (cadd_phred, revel, alpha_missense, spliceai_ds_max, gnomad_af, apc_protein_function, apc_conservation, etc.). Note: "apc_*" scores = Annotation Principal Component, NOT the APC gene.
 - **aggregate**: Group by field (gene, consequence, clinical_significance, frequency, chromosome)
 - **derive**: Filter variants with AND logic to create a sub-cohort. Categorical filters: chromosome, gene, consequence, clinical_significance. Numeric filters: score_above/score_below with any score column (e.g., { type: "score_above", field: "cadd_phred", threshold: 20 }).
-ALWAYS use derive instead of looping lookupVariant. The derived cohort supports all operations.`,
+The derived cohort supports all operations (topk, aggregate, derive).`,
   inputSchema: z.object({
     cohortId: z.string().describe("Cohort ID from createCohort or a previous derive"),
     operation: z
@@ -152,10 +152,20 @@ ALWAYS use derive instead of looping lookupVariant. The derived cohort supports 
 
       if (operation === "topk") {
         output.score = result.score;
-        output.variants = result.variants;
+        // Cap variants to requested k (max 50) to limit context
+        const maxK = Math.min(k ?? 20, 50);
+        const variants = Array.isArray(result.variants)
+          ? (result.variants as unknown[]).slice(0, maxK)
+          : result.variants;
+        output.variants = variants;
       } else if (operation === "aggregate") {
         output.field = result.field;
-        output.buckets = result.buckets;
+        // Cap buckets to requested limit (max 100) to limit context
+        const maxBuckets = Math.min(limit ?? 50, 100);
+        const buckets = Array.isArray(result.buckets)
+          ? (result.buckets as unknown[]).slice(0, maxBuckets)
+          : result.buckets;
+        output.buckets = buckets;
         output.totalVariants = result.total_variants;
       } else if (operation === "derive") {
         output.derivedCohortId = result.cohort_id;

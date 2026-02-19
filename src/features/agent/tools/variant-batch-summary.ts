@@ -50,7 +50,31 @@ export const variantBatchSummary = tool({
         timeout: 45_000,
       });
 
-      return result;
+      // Compress: cap aggregation arrays and highlights to limit context usage
+      const MAX_AGG = 15;
+      const maxHighlights = Math.min(highlightLimit ?? 10, 30);
+
+      return {
+        textSummary: result.textSummary,
+        resolution: result.resolution,
+        ...(result.byGene ? { byGene: result.byGene.slice(0, MAX_AGG) } : {}),
+        ...(result.byConsequence ? { byConsequence: result.byConsequence.slice(0, MAX_AGG) } : {}),
+        ...(result.byClinicalSignificance ? { byClinicalSignificance: result.byClinicalSignificance.slice(0, MAX_AGG) } : {}),
+        ...(result.byFrequency ? { byFrequency: result.byFrequency.slice(0, MAX_AGG) } : {}),
+        ...(result.highlights
+          ? {
+              highlights: result.highlights.slice(0, maxHighlights).map((h) => ({
+                ...(h.rsid ? { rsid: h.rsid } : {}),
+                vcf: h.vcf,
+                ...(h.gene ? { gene: h.gene } : {}),
+                ...(h.consequence ? { csq: h.consequence } : {}),
+                ...(h.clinicalSignificance ? { clin: h.clinicalSignificance } : {}),
+                ...(h.caddPhred != null ? { cadd: h.caddPhred } : {}),
+                ...(h.gnomadAf != null ? { af: h.gnomadAf } : {}),
+              })),
+            }
+          : {}),
+      };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();
       throw err;

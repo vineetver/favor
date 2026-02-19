@@ -4,6 +4,8 @@
 // Pure utility — takes tool UI parts and derives phase, progress, status text.
 // Used by OrchestrationHeader to show live agent progress.
 
+import type { ReportPlanOutput } from "../types";
+
 export type OrchestrationPhase = "resolve" | "explore" | "synthesize";
 
 export interface OrchestrationState {
@@ -25,7 +27,6 @@ interface ToolUIPart {
 
 // Tool name → phase mapping
 const RESOLVE_TOOL_NAMES = new Set(["searchEntities", "recallMemories", "reportPlan"]);
-const SYNTHESIS_INDICATOR = new Set<string>(); // synthesis = no tools
 
 const TOOL_PHASE_LABELS: Record<string, string> = {
   searchEntities: "Resolving",
@@ -92,11 +93,73 @@ const PHASE_LABELS: Record<OrchestrationPhase, string> = {
   synthesize: "Synthesizing",
 };
 
+// ---------------------------------------------------------------------------
+// Tool-name matching (mirrors tool-renderers.tsx logic)
+// ---------------------------------------------------------------------------
+
+function normToolName(name: string): string {
+  return name.toLowerCase().replace(/[_\-\s]/g, "");
+}
+
+function toolNameMatches(planTool: string, actualTool: string): boolean {
+  const a = normToolName(planTool);
+  const b = normToolName(actualTool);
+  return a === b || b.includes(a) || a.includes(b);
+}
+
+const DONE_STATES = new Set(["output-available", "output-error"]);
+const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
+
+// ---------------------------------------------------------------------------
+// Plan-aware phase detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive the orchestration phase from the plan's tool assignments
+ * and the actual tool part states. This replaces the heuristic-based
+ * phase detection when a plan is available, keeping server-side
+ * prepareStep and client-side UI in sync.
+ */
+function inferPhaseFromPlan(
+  plan: ReportPlanOutput["plan"],
+  toolParts: ToolUIPart[],
+): OrchestrationPhase {
+  const toolItems = plan.filter((item) => item.tools.length > 0);
+  if (toolItems.length === 0) return "synthesize";
+
+  const itemDone = toolItems.map((item) => {
+    const matching = toolParts.filter((p) => {
+      const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
+      return item.tools.some((t) => toolNameMatches(t, name));
+    });
+    if (matching.length === 0) return false;
+    return matching.every((p) => DONE_STATES.has(p.state ?? ""));
+  });
+
+  if (itemDone.every(Boolean)) return "synthesize";
+
+  // Check if we're still in resolve (first plan step not started or only resolve tools running)
+  const firstIncomplete = itemDone.indexOf(false);
+  if (firstIncomplete === 0) {
+    // First step isn't done — check if it's a resolve-only step
+    const firstTools = toolItems[0].tools;
+    const isResolveStep = firstTools.every((t) => RESOLVE_TOOL_NAMES.has(t));
+    if (isResolveStep) return "resolve";
+  }
+
+  return "explore";
+}
+
+// ---------------------------------------------------------------------------
+// Main inference function
+// ---------------------------------------------------------------------------
+
 /** Derive orchestration state from an array of tool UI parts */
 export function inferOrchestration(
   toolParts: ToolUIPart[],
   isStreaming: boolean,
   hasTextContent: boolean,
+  planOutput?: ReportPlanOutput | null,
 ): OrchestrationState {
   const toolNames = toolParts.map(
     (p) => (p.toolName ?? p.type ?? "").replace(/^tool-/, ""),
@@ -113,18 +176,37 @@ export function inferOrchestration(
         p.state === "output-available",
     );
 
-  // Detect synthesis: has text content and no active/pending tools
-  const hasActiveTools = toolParts.some(
-    (p) => p.state === "input-available" || p.state === "input-streaming",
-  );
+  const hasActiveTools = toolParts.some((p) => RUNNING_STATES.has(p.state ?? ""));
 
   let phase: OrchestrationPhase;
-  if (hasTextContent && !hasActiveTools && !isStreaming) {
-    phase = "synthesize";
-  } else if (hasTextContent && isStreaming && !hasActiveTools) {
-    phase = "synthesize";
+
+  if (planOutput?.plan) {
+    // Plan-aware: derive phase from plan completion status
+    const planPhase = inferPhaseFromPlan(planOutput.plan, toolParts);
+    // Only upgrade to synthesize once text is actually being produced
+    if (planPhase === "synthesize" && hasTextContent && !hasActiveTools) {
+      phase = "synthesize";
+    } else if (planPhase === "synthesize" && !hasActiveTools && !isStreaming) {
+      phase = "synthesize";
+    } else if (planPhase === "synthesize") {
+      // All tool steps done but still streaming tools — show explore until text arrives
+      phase = hasActiveTools ? "explore" : "synthesize";
+    } else {
+      phase = planPhase;
+    }
   } else {
-    phase = inferPhase(toolNames);
+    // No plan: heuristic with guard against premature synthesis.
+    // Require at least one non-resolve completed tool before text can trigger synthesis.
+    const nonResolveCompleted = toolParts.filter((p) => {
+      const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
+      return !RESOLVE_TOOL_NAMES.has(name) && DONE_STATES.has(p.state ?? "");
+    });
+
+    if (hasTextContent && !hasActiveTools && nonResolveCompleted.length > 0) {
+      phase = "synthesize";
+    } else {
+      phase = inferPhase(toolNames);
+    }
   }
 
   // Find last active tool for status text

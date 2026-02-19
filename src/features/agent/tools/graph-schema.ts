@@ -35,12 +35,12 @@ interface CompactEdge {
 }
 
 // ---------------------------------------------------------------------------
-// 5-minute in-memory cache (schema is static)
+// Long-lived in-memory cache (schema is effectively static per session)
 // ---------------------------------------------------------------------------
 
 let cachedData: RawSchemaResponse["data"] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour — schema doesn't change
 
 async function fetchSchema(): Promise<RawSchemaResponse["data"]> {
   const now = Date.now();
@@ -95,7 +95,8 @@ export const getGraphSchema = tool({
 
       if (nodeType && compactEdges.length === 0) {
         return {
-          error: true,
+          nodeTypes: nodeTypeNames,
+          edges: [],
           message: `No edges found for node type "${nodeType}".`,
           hint: `Valid node types: ${nodeTypeNames.join(", ")}`,
         };

@@ -26,7 +26,7 @@ Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048').`,
       .default(3)
       .describe("Max number of paths to return"),
   }),
-  execute: async ({ from, to, maxHops, limit }): Promise<CompressedPath[] | { error: boolean; message: string; hint?: string }> => {
+  execute: async ({ from, to, maxHops, limit }): Promise<CompressedPath[] | { error: boolean; message: string }> => {
     try {
       const params = new URLSearchParams();
       params.set("from", from);
@@ -53,11 +53,7 @@ Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048').`,
       }));
 
       if (paths.length === 0) {
-        return {
-          error: true,
-          message: `No paths found between ${from} and ${to} within ${maxHops ?? 3} hops`,
-          hint: "Try increasing maxHops or verify entity IDs with searchEntities.",
-        };
+        return [];
       }
 
       return paths;

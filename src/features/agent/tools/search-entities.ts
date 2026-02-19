@@ -5,7 +5,7 @@ import type { CompressedSearchResult } from "../types";
 
 export const searchEntities = tool({
   description:
-    "Search the FAVOR knowledge graph for entities by name or keyword. Returns matching genes, diseases, drugs, variants, pathways, traits, phenotypes, and more. ALWAYS use this first to resolve entity names to IDs before calling other tools.",
+    "Search the FAVOR knowledge graph for entities by name or keyword. Returns matching genes, diseases, drugs, variants, pathways, traits, phenotypes, and more. Use this to resolve entity names to typed IDs before calling graph tools. IMPORTANT: Cohorts are NOT graph entities — never search for cohort IDs here. For cohort operations, use analyzeCohort directly with the cohort ID.",
   inputSchema: z.object({
     query: z.string().describe("Search term (e.g., 'BRCA1', 'breast cancer', 'aspirin')"),
     types: z
