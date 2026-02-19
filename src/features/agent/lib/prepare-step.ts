@@ -162,7 +162,7 @@ function detectPhase(stepCount: number, hasToolCallInLastStep: boolean): Phase {
 // ---------------------------------------------------------------------------
 
 const SYNTHESIS_INSTRUCTION =
-  "\n\n[SYSTEM] You have gathered enough data. Synthesize your findings into a clear, comprehensive answer. Do NOT call any more tools.";
+  "\n\n[SYSTEM] You have gathered enough data. Now write a thorough, well-structured response that fully answers the user's question. Include all relevant findings from your tool calls — gene associations, variant details, scores, clinical significance, and biological context. Use markdown headers, tables where appropriate, and explain what the data means. Do NOT call any more tools.";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const favorPrepareStep: PrepareStepFunction<any> = ({
