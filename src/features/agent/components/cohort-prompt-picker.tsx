@@ -17,7 +17,7 @@ import {
   SendIcon,
   FlaskConicalIcon,
 } from "lucide-react";
-import type { AgentCohort } from "../lib/cohort-store";
+import type { CohortListItem } from "@features/batch/types";
 
 // ---------------------------------------------------------------------------
 // Curated cohort prompts
@@ -63,7 +63,7 @@ const COHORT_PROMPTS = [
 // ---------------------------------------------------------------------------
 
 interface CohortPromptPickerProps {
-  cohort: AgentCohort | null;
+  cohort: CohortListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSend: (message: string) => void;
@@ -80,7 +80,7 @@ export function CohortPromptPicker({
   const buildMessage = useCallback(
     (prompt: string) => {
       if (!cohort) return prompt;
-      return `Analyze cohort ${cohort.cohortId}. ${prompt}`;
+      return `Analyze cohort ${cohort.id}. ${prompt}`;
     },
     [cohort],
   );
@@ -115,10 +115,10 @@ export function CohortPromptPicker({
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-[15px] font-semibold text-foreground truncate">
-                {cohort.label}
+                {cohort.label ?? "Untitled cohort"}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {cohort.variantCount.toLocaleString()} variants &middot; Choose
+                {(cohort.variant_count ?? 0).toLocaleString()} variants &middot; Choose
                 a question or write your own
               </p>
             </div>

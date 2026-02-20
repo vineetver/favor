@@ -18,8 +18,6 @@ import {
   AlertCircleIcon,
   Loader2Icon,
 } from "lucide-react";
-import type { AgentCohort } from "../lib/cohort-store";
-
 // ---------------------------------------------------------------------------
 // Variant parser
 // ---------------------------------------------------------------------------
@@ -153,7 +151,7 @@ async function createCohortAsync(
 // ---------------------------------------------------------------------------
 
 interface VariantSubmitPanelProps {
-  onCohortCreated: (cohort: AgentCohort) => void;
+  onCohortCreated: () => void;
   onAnalyzeCohort: (cohortId: string) => void;
 }
 
@@ -180,15 +178,7 @@ export function VariantSubmitPanel({
       const label = `Pasted cohort (${pasteVariants.length} variants)`;
       const capped = pasteVariants.slice(0, MAX_VARIANTS);
       const result = await createCohortAsync(capped, label);
-      const cohort: AgentCohort = {
-        cohortId: result.cohort_id,
-        label,
-        variantCount: result.vid_count,
-        source: "paste",
-        createdAt: new Date().toISOString(),
-        sessionIds: [],
-      };
-      onCohortCreated(cohort);
+      onCohortCreated();
       onAnalyzeCohort(result.cohort_id);
       setPasteText("");
     } catch (err) {
@@ -245,15 +235,7 @@ export function VariantSubmitPanel({
         : `Upload (${fileVariants.length} variants)`;
       const capped = fileVariants.slice(0, MAX_VARIANTS);
       const result = await createCohortAsync(capped, label);
-      const cohort: AgentCohort = {
-        cohortId: result.cohort_id,
-        label,
-        variantCount: result.vid_count,
-        source: "upload",
-        createdAt: new Date().toISOString(),
-        sessionIds: [],
-      };
-      onCohortCreated(cohort);
+      onCohortCreated();
       onAnalyzeCohort(result.cohort_id);
       setFile(null);
       setFileVariants([]);

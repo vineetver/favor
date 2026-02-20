@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@shared/components/ui/button";
 import { cn } from "@infra/utils";
 import {
@@ -11,17 +11,12 @@ import {
 } from "lucide-react";
 
 import { VariantSubmitPanel } from "./variant-submit-panel";
-import { CohortListItem } from "./cohort-list-item";
+import { CohortListItem as CohortCard } from "./cohort-list-item";
 import { CohortPromptPicker } from "./cohort-prompt-picker";
-import {
-  type AgentCohort,
-  addStoredCohort,
-  addSessionToCohort,
-  getStoredCohorts,
-  removeStoredCohort,
-} from "../lib/cohort-store";
+import type { CohortListItem } from "@features/batch/types";
 import { deleteCohort } from "@features/batch/api";
 import { DEFAULT_TENANT_ID } from "@features/batch/config";
+import { useCohorts } from "@features/batch/hooks/use-cohorts";
 import { useSessions } from "../hooks/use-sessions";
 
 // ---------------------------------------------------------------------------
@@ -104,86 +99,57 @@ export function WorkspaceSidebar({
   const [showSubmit, setShowSubmit] = useState(false);
 
   // ---- Sessions ----
-  const { sessions, isLoading: sessionsLoading, deleteSession, refetch } =
+  const { sessions, isLoading: sessionsLoading, deleteSession, refetch: refetchSessions } =
     useSessions();
 
-  // Refetch sessions when sessionId changes (new session created)
-  useEffect(() => {
-    if (sessionId) refetch();
-  }, [sessionId, refetch]);
+  // ---- Cohorts (backend-backed via useCohorts) ----
+  const {
+    cohorts,
+    isLoading: cohortsLoading,
+    refetch: refetchCohorts,
+  } = useCohorts({ tenantId: DEFAULT_TENANT_ID });
 
-  // ---- Cohorts (localStorage-backed) ----
-  const [cohorts, setCohorts] = useState<AgentCohort[]>([]);
+  // Refetch both when sessionId changes (new session created)
+  const refetchAll = useCallback(() => {
+    refetchSessions();
+    refetchCohorts();
+  }, [refetchSessions, refetchCohorts]);
 
-  useEffect(() => {
-    setCohorts(getStoredCohorts());
-  }, []);
+  const handleCohortCreated = useCallback(() => {
+    refetchCohorts();
+  }, [refetchCohorts]);
 
-  const handleCohortCreated = useCallback((cohort: AgentCohort) => {
-    setCohorts(addStoredCohort(cohort));
-  }, []);
-
-  const handleCohortRemoved = useCallback((cohortId: string) => {
-    setCohorts(removeStoredCohort(cohortId));
-    // Also delete on the server (fire-and-forget)
-    deleteCohort(cohortId, DEFAULT_TENANT_ID).catch(() => {});
-  }, []);
-
-  // ---- Derived: split sessions into "free" vs cohort-linked ----
-  const cohortSessionIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const c of cohorts) {
-      for (const sid of c.sessionIds) {
-        ids.add(sid);
-      }
-    }
-    return ids;
-  }, [cohorts]);
-
-  const freeSessions = useMemo(
-    () => sessions.filter((s) => !cohortSessionIds.has(s.session_id)),
-    [sessions, cohortSessionIds],
+  const handleCohortRemoved = useCallback(
+    (cohortId: string) => {
+      deleteCohort(cohortId, DEFAULT_TENANT_ID)
+        .then(() => refetchCohorts())
+        .catch(() => {});
+    },
+    [refetchCohorts],
   );
 
   // ---- Cohort prompt picker ----
-  const [selectedCohort, setSelectedCohort] = useState<AgentCohort | null>(
+  const [selectedCohort, setSelectedCohort] = useState<CohortListItem | null>(
     null,
   );
-  // Track which cohort we just sent a message for, so we can link the session
-  const pendingCohortRef = useRef<string | null>(null);
 
-  /** Open the prompt picker to start a NEW conversation for a cohort. */
-  const handleNewCohortConversation = useCallback((cohort: AgentCohort) => {
+  const handleNewCohortConversation = useCallback((cohort: CohortListItem) => {
     setSelectedCohort(cohort);
   }, []);
 
   const handleCohortPromptSend = useCallback(
     (message: string) => {
-      if (selectedCohort) {
-        pendingCohortRef.current = selectedCohort.cohortId;
-      }
-      // Force a new session by clearing current state first
       onNewChat();
-      // Then send — ensureSession in the chat hook will create a fresh session
       onSendMessage(message);
       setSelectedCohort(null);
       setShowSubmit(false);
     },
-    [onSendMessage, onNewChat, selectedCohort],
+    [onSendMessage, onNewChat],
   );
-
-  // Link sessionId to the cohort once it's created
-  useEffect(() => {
-    if (sessionId && pendingCohortRef.current) {
-      const cohortId = pendingCohortRef.current;
-      pendingCohortRef.current = null;
-      setCohorts(addSessionToCohort(cohortId, sessionId));
-    }
-  }, [sessionId]);
 
   const handleAnalyzeCohort = useCallback(
     (cohortId: string) => {
-      const cohort = cohorts.find((c) => c.cohortId === cohortId);
+      const cohort = cohorts.find((c) => c.id === cohortId);
       if (cohort) {
         handleNewCohortConversation(cohort);
       }
@@ -191,7 +157,6 @@ export function WorkspaceSidebar({
     [cohorts, handleNewCohortConversation],
   );
 
-  /** Delete a session (works for both free and cohort-linked sessions). */
   const handleDeleteSession = useCallback(
     (deletedSessionId: string) => {
       deleteSession(deletedSessionId);
@@ -203,7 +168,7 @@ export function WorkspaceSidebar({
   );
 
   const isEmpty =
-    freeSessions.length === 0 &&
+    sessions.length === 0 &&
     cohorts.length === 0 &&
     !showSubmit;
 
@@ -232,7 +197,7 @@ export function WorkspaceSidebar({
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="py-2">
-          {/* Cohorts — shown first since they group conversations */}
+          {/* Cohorts */}
           {cohorts.length > 0 && (
             <SidebarSection
               title="Cohorts"
@@ -240,36 +205,27 @@ export function WorkspaceSidebar({
               defaultOpen
             >
               <div className="space-y-1.5 px-2 pb-1">
-                {cohorts.map((cohort) => {
-                  const linkedSessions = sessions.filter((s) =>
-                    cohort.sessionIds.includes(s.session_id),
-                  );
-                  return (
-                    <CohortListItem
-                      key={cohort.cohortId}
-                      cohort={cohort}
-                      linkedSessions={linkedSessions}
-                      activeSessionId={sessionId}
-                      onNewConversation={handleNewCohortConversation}
-                      onLoadSession={onLoadSession}
-                      onDeleteSession={handleDeleteSession}
-                      onRemove={handleCohortRemoved}
-                    />
-                  );
-                })}
+                {cohorts.map((cohort) => (
+                  <CohortCard
+                    key={cohort.id}
+                    cohort={cohort}
+                    onNewConversation={handleNewCohortConversation}
+                    onRemove={handleCohortRemoved}
+                  />
+                ))}
               </div>
             </SidebarSection>
           )}
 
-          {/* Free conversations (not linked to any cohort) */}
-          {freeSessions.length > 0 && (
+          {/* Conversations */}
+          {sessions.length > 0 && (
             <SidebarSection
               title="Conversations"
-              count={freeSessions.length}
+              count={sessions.length}
               defaultOpen
             >
               <div className="space-y-0.5 px-2 pb-1">
-                {freeSessions.map((s) => {
+                {sessions.map((s) => {
                   const isActive = s.session_id === sessionId;
                   return (
                     <div

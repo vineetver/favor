@@ -1,7 +1,7 @@
 "use client";
 
 import { isToolUIPart, getToolName, type UIMessage } from "ai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   Conversation,
@@ -81,7 +81,6 @@ import {
 } from "./tool-renderers";
 import type { ReportPlanOutput } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
-import { addStoredCohort } from "../lib/cohort-store";
 import { OrchestrationHeader } from "./orchestration-header";
 
 // ---------------------------------------------------------------------------
@@ -566,43 +565,6 @@ export function ChatPage() {
   // Defer Radix Select rendering to avoid hydration mismatch (server/client ID divergence)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  // Track which cohort IDs we've already persisted to sidebar
-  const persistedCohortIds = useRef(new Set<string>());
-
-  // Auto-persist agent-created cohorts to the sidebar
-  useEffect(() => {
-    for (const msg of messages) {
-      if (msg.role !== "assistant") continue;
-      for (const part of msg.parts) {
-        if (
-          isToolUIPart(part) &&
-          getToolName(part).replace(/^tool-/, "") === "createCohort" &&
-          part.state === "output-available" &&
-          part.output &&
-          typeof part.output === "object" &&
-          "cohortId" in (part.output as Record<string, unknown>)
-        ) {
-          const out = part.output as {
-            cohortId: string;
-            variantCount: number;
-            summary?: string;
-          };
-          if (!persistedCohortIds.current.has(out.cohortId)) {
-            persistedCohortIds.current.add(out.cohortId);
-            addStoredCohort({
-              cohortId: out.cohortId,
-              label: `Cohort (${out.variantCount.toLocaleString()} variants)`,
-              variantCount: out.variantCount,
-              source: "agent",
-              createdAt: new Date().toISOString(),
-              sessionIds: sessionId ? [sessionId] : [],
-            });
-          }
-        }
-      }
-    }
-  }, [messages, sessionId]);
 
   const handleSidebarMessage = useCallback(
     (text: string) => {
