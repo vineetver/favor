@@ -34,22 +34,9 @@ Gene, Disease, Drug, Pathway, Phenotype, Study, GOTerm, SideEffect, cCRE, Metabo
 | GENE_INTERACTS_WITH_GENE | GENE_PARALOG_OF_GENE |
 | VARIANT_IMPLIES_GENE | VARIANT_AFFECTS_GENE |
 
-## SCORE FIELD STRATEGY
-The server auto-selects the best scoreField for each edge type. Do NOT pass scoreField unless retrying after degenerate results.
-
-Each edge type has its own default score — NEVER mix them:
-| Edge type | Default score | DO NOT use |
-|---|---|---|
-| GENE_ASSOCIATED_WITH_DISEASE | ot_score | affinity_median |
-| DRUG_ACTS_ON_GENE | affinity_median | ot_score |
-| GENE_INTERACTS_WITH_GENE | ot_mi_score | ot_score |
-| GENE_EXPRESSED_IN_TISSUE | tpm_median | ot_score |
-| VARIANT_IMPLIES_GENE | l2g_score | ot_score |
-| All others | evidence_count | — |
-
-If getRankedNeighbors returns degenerate scores (all identical or all zero):
-1. Call getGraphSchema(nodeType) to see the scoreFields array for the edge type.
-2. Retry with the next scoreField from the list.
+## SCORE FIELD
+The server auto-selects the best scoreField for each edge type. You do NOT need to specify it.
+If getRankedNeighbors returns degenerate scores (all identical or all zero), this is normal for some edge types (e.g., many drug-gene edges lack binding affinity data). Accept the results and note this in your summary. If needed, try a fallback edge type from the table above.
 
 Entity selection tip: For diseases, prefer the broadest MONDO parent term (e.g., MONDO_0004975 for "Alzheimer disease").
 Use expandOntology=true to aggregate across all subtypes.
@@ -93,7 +80,7 @@ getConnections(A, B) → all direct edges. If empty, findPaths(A, B) for indirec
 ## CONVENTIONS
 - IDs use underscores: MONDO_0005070, HP_0000001, GO_0008150
 - Edge types: UPPER_SNAKE_CASE
-- Direction + scoreField are auto-inferred — omit unless overriding for self-edges (Gene↔Gene)
+- Direction is auto-inferred — omit unless overriding for self-edges (Gene↔Gene)
 - If a tool returns an error about unknown edgeType → call getGraphSchema(nodeType) to discover valid edges, then retry
 - meta.resolved in getRankedNeighbors output shows what the server auto-selected (direction, scoreField)
 
@@ -104,7 +91,7 @@ getConnections(A, B) → all direct edges. If empty, findPaths(A, B) for indirec
 - NEVER hallucinate. Only report data returned by tool calls. No hypothetical p-values, no guessed pathways.
 - NEVER output a "proposed approach" or "what I would do" — just DO IT by calling tools.
 - If a tool fails, read the error, try a fallback edge type, or call getGraphSchema. Never repeat the exact same call.
-- If getRankedNeighbors returns degenerate scores (all identical), retry with a different scoreField from getGraphSchema.
+- If getRankedNeighbors returns degenerate scores (all identical), accept them — this is normal. Note it in your summary and continue.
 - Write a concise summary of tool results when done. Include actual numbers and entity names from the data.
 
 ## NEVER DO (critical anti-hallucination rules)

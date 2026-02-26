@@ -10,7 +10,7 @@ WHEN NOT TO USE:
 - Path between entities ("how are A and B connected?") → use findPaths instead.
 - Shared neighbors of multiple entities → use getSharedNeighbors instead.
 - Side-by-side comparison → use compareEntities instead.
-Direction and scoreField are auto-inferred by the server. Omit them unless overriding for self-edges.`,
+Direction and scoreField are auto-inferred by the server. Do not pass scoreField — the server always selects the correct default.`,
   inputSchema: z.object({
     type: z.string().describe("Source entity type (e.g., 'Disease')"),
     id: z.string().describe("Source entity ID (e.g., 'MONDO_0007254')"),
@@ -22,10 +22,6 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
       .optional()
       .describe("Edge direction. Auto-inferred from schema when omitted. Override only for self-edges (e.g., GENE_INTERACTS_WITH_GENE)."),
     limit: z.number().optional().default(20).describe("Max neighbors to return"),
-    scoreField: z
-      .string()
-      .optional()
-      .describe("NUMERIC field to rank by (e.g., 'ot_score'). Auto-defaults to the edge type's default score field when omitted. NEVER use a 'filter:' field here."),
     expandOntology: z
       .boolean()
       .optional()
@@ -37,7 +33,6 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
     edgeType,
     direction,
     limit,
-    scoreField,
     expandOntology,
   }) => {
     try {
@@ -65,7 +60,6 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
           edgeType,
           ...(direction ? { direction } : {}),
           limit: Math.min(limit ?? 20, 100),
-          ...(scoreField ? { scoreField } : {}),
           expandDescendants: expandOntology,
         },
       });
@@ -94,7 +88,7 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
       return {
         textSummary: data.data.textSummary,
         resolved: data.meta?.resolved ?? {},
-        scoreField: data.meta?.resolved?.scoreField ?? scoreField ?? "(unknown)",
+        scoreField: data.meta?.resolved?.scoreField ?? "(auto)",
         totalReturned: neighbors.length,
         neighbors,
       };

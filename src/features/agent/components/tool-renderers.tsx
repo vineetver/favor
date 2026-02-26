@@ -1051,8 +1051,14 @@ export function renderToolOutput(
       return null;
     }
     case "runEnrichment": {
+      // Legacy array format
       if (Array.isArray(output)) {
         return <EnrichmentRenderer results={output as CompressedEnrichment[]} />;
+      }
+      // New object format: { textSummary, enriched: [...] }
+      const enrichObj = output as Record<string, unknown>;
+      if (enrichObj.enriched && Array.isArray(enrichObj.enriched)) {
+        return <EnrichmentRenderer results={enrichObj.enriched as CompressedEnrichment[]} />;
       }
       return null;
     }

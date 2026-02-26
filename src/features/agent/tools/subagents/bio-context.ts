@@ -282,6 +282,25 @@ function extractStructuredOutput(
 // Specialist tool (exposed to supervisor)
 // ---------------------------------------------------------------------------
 
+// Types valid as graph exploration seeds. Excludes Study, Signal, Entity which
+// are rarely useful and cause the sub-agent to make nonsensical tool calls.
+const VALID_SEED_TYPES = new Set([
+  "Gene", "Disease", "Drug", "Variant", "Pathway",
+  "Phenotype", "GOTerm", "Tissue", "Metabolite",
+  "ProteinDomain", "CellType", "SideEffect", "cCRE",
+]);
+
+/** Filter resolvedEntityIds to only valid seed types in Type:ID format. */
+function filterResolvedIds(ids: string[] | undefined): string[] {
+  if (!ids?.length) return [];
+  return ids.filter((id) => {
+    const colonIdx = id.indexOf(":");
+    if (colonIdx < 0) return false;
+    const type = id.slice(0, colonIdx);
+    return VALID_SEED_TYPES.has(type);
+  });
+}
+
 const bioContextInputSchema = z.object({
   task: z
     .string()
@@ -303,9 +322,12 @@ export const bioContext = tool<BioContextInput, BioContextReturn>({
     task,
     resolvedEntityIds,
   }): Promise<BioContextReturn> => {
+    // Filter out non-seed types (Study, Signal, Entity) that cause bad tool calls
+    const filteredIds = filterResolvedIds(resolvedEntityIds);
+
     const contextParts = [`Task: ${task}`];
-    if (resolvedEntityIds?.length) {
-      contextParts.push(`Pre-resolved entity IDs (use these directly in tool calls, do NOT re-search): ${resolvedEntityIds.join(", ")}`);
+    if (filteredIds.length) {
+      contextParts.push(`Pre-resolved entity IDs (use these directly in tool calls, do NOT re-search): ${filteredIds.join(", ")}`);
     }
 
     const controller = new AbortController();

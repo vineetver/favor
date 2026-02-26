@@ -28,15 +28,19 @@ const NO_TEXT_INSTRUCTION =
   "\n\n[SYSTEM] Do NOT output explanatory text. ONLY call tools. When all exploration is done, write a summary of your findings.";
 
 const SYNTHESIS_INSTRUCTION =
-  "\n\n[SYSTEM] Write a summary of your exploration findings. Include key entities, relationships, and pathways discovered.";
+  "\n\n[SYSTEM] Write a concise summary of your exploration findings. Include key entities, relationships, and pathways discovered. " +
+  "CRITICAL: ONLY summarize data returned by tool calls above. Do NOT generate JSON, data structures, or fabricated entities. " +
+  "Do NOT invent gene names, pathway names, p-values, HGNC IDs, or any data not present in the tool outputs. " +
+  "Every fact in your summary must trace back to a specific tool result.";
 
 const RECOVERY_INSTRUCTION =
   "\n\n[SYSTEM] Your recent tool calls are not producing useful results. CHANGE YOUR APPROACH: try different tools, different entity types, different edge types. If you got an edge type error, call getGraphSchema(nodeType) to discover valid edges.";
 
 const SCORE_RETRY_INSTRUCTION =
   "\n\n[SYSTEM] The getRankedNeighbors results have degenerate scores (all identical or all zero). " +
-  "Call getGraphSchema to see the scoreFields array for this edge type, " +
-  "then retry getRankedNeighbors with the next scoreField that has good coverage.";
+  "This is normal for some edge types (e.g., many drug-gene edges lack binding affinity data). " +
+  "Accept these results and continue with the next step of your exploration. " +
+  "If the results are unhelpful, try a FALLBACK edge type from the schema instead.";
 
 const SEARCH_ABUSE_INSTRUCTION =
   "\n\n[SYSTEM] STOP calling searchEntities repeatedly for individual gene/protein names. " +
