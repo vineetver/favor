@@ -4,19 +4,18 @@ import {
   cohortFetch,
   AgentToolError,
   pollCohortUntilReady,
-  getCohortSummaryAgent,
 } from "../lib/api-client";
 import type { CompressedCohort } from "../types";
 
 export const createCohort = tool({
   description:
-    "Create a cohort from a list of variant identifiers (rsIDs or VCF notation). Server resolves, annotates, and returns a summary with gene breakdown and highlights. Use this when a user provides 2+ variants. Returns cohortId for subsequent analyzeCohort calls.",
+    "Create a cohort from a list of variant identifiers (vid:123, rsIDs, or VCF notation). Server resolves, annotates, and returns a summary. Use this when a user provides 2+ variants. Returns cohortId for subsequent analyzeCohort calls.",
   inputSchema: z.object({
     variants: z
       .array(z.string())
       .min(1)
-      .max(5000)
-      .describe("List of variant identifiers (rsIDs like rs7412 or VCF like 19-44908684-T-C)"),
+      .max(50000)
+      .describe("List of variant identifiers (vid:123, rsIDs like rs7412, or VCF like 19-44908684-T-C)"),
     label: z
       .string()
       .optional()
@@ -69,48 +68,23 @@ export const createCohort = tool({
         };
       }
 
-      // Step 3: Get cohort summary
-      const summary = await getCohortSummaryAgent(cohortId, "default-tenant");
+      // Step 3: Get schema for row_count
+      const schema = await cohortFetch<{
+        text_summary?: string;
+        row_count?: number;
+      }>(`/cohorts/${encodeURIComponent(cohortId)}/schema`, { timeout: 30_000 });
 
-      const summaryParts: string[] = [];
-
-      if (summary.text_summary) {
-        summaryParts.push(summary.text_summary);
-      }
-
-      if (summary.by_gene?.length) {
-        summaryParts.push(
-          `Top genes: ${summary.by_gene
-            .slice(0, 5)
-            .map((g) => `${g.gene_symbol} (${g.count} variants${g.pathogenic ? `, ${g.pathogenic} pathogenic` : ""})`)
-            .join(", ")}`,
-        );
-      }
-
-      if (summary.highlights?.length) {
-        summaryParts.push(
-          `Notable variants: ${summary.highlights
-            .slice(0, 5)
-            .map((h) => {
-              const parts = [h.rsid ?? h.vcf];
-              if (h.gene) parts.push(h.gene);
-              if (h.clinical_significance) parts.push(h.clinical_significance);
-              if (h.cadd_phred != null) parts.push(`CADD=${h.cadd_phred}`);
-              return parts.join(" ");
-            })
-            .join("; ")}`,
-        );
-      }
+      const variantCount = schema.row_count ?? statusResult.progress?.found ?? 0;
 
       return {
         cohortId,
-        variantCount: summary.vid_count,
+        variantCount,
         resolution: {
           total: statusResult.progress?.rows_resolved ?? variants.length,
-          resolved: statusResult.progress?.found ?? summary.vid_count,
+          resolved: statusResult.progress?.found ?? variantCount,
           notFound: statusResult.progress?.not_found ?? 0,
         },
-        summary: summaryParts.join("\n") || `Cohort created with ${summary.vid_count} variants.`,
+        summary: schema.text_summary ?? `Cohort created with ${variantCount} variants.`,
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

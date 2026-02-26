@@ -5,34 +5,22 @@ import {
   wrapLanguageModel,
 } from "ai";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-import { buildSystemPrompt } from "./lib/system-prompt";
-import { createPrepareStep } from "./lib/prepare-step";
+import { buildSupervisorPrompt } from "./lib/prompts/supervisor-prompt";
+import { createSupervisorPrepareStep } from "./lib/prepare-step-supervisor";
 import { nanoModel, NANO_PROVIDER_OPTIONS, getSynthesisModel, getSynthesisProviderOptions } from "./lib/models";
 import * as tools from "./tools";
 
-const agentTools = {
+// ---------------------------------------------------------------------------
+// Supervisor tools — 6 tools only
+// ---------------------------------------------------------------------------
+
+const supervisorTools = {
+  planQuery: tools.planQuery,
   searchEntities: tools.searchEntities,
-  getEntityContext: tools.getEntityContext,
-  compareEntities: tools.compareEntities,
-  getRankedNeighbors: tools.getRankedNeighbors,
-  runEnrichment: tools.runEnrichment,
-  findPaths: tools.findPaths,
-  getSharedNeighbors: tools.getSharedNeighbors,
-  getConnections: tools.getConnections,
-  getEdgeDetail: tools.getEdgeDetail,
-  lookupVariant: tools.lookupVariant,
-  getGeneVariantStats: tools.getGeneVariantStats,
-  getGwasAssociations: tools.getGwasAssociations,
-  createCohort: tools.createCohort,
-  analyzeCohort: tools.analyzeCohort,
-  graphTraverse: tools.graphTraverse,
-  getGraphSchema: tools.getGraphSchema,
-  variantBatchSummary: tools.variantBatchSummary,
   recallMemories: tools.recallMemories,
   saveMemory: tools.saveMemory,
-  reportPlan: tools.reportPlan,
-  graphExplorer: tools.graphExplorer,
-  variantAnalyzer: tools.variantAnalyzer,
+  variantTriage: tools.variantTriage,
+  bioContext: tools.bioContext,
 };
 
 export function createFavorAgent(synthesisModelId?: string) {
@@ -45,15 +33,15 @@ export function createFavorAgent(synthesisModelId?: string) {
 
   return new ToolLoopAgent({
     model,
-    instructions: buildSystemPrompt(),
+    instructions: buildSupervisorPrompt(),
     maxOutputTokens: 8000,
-    stopWhen: stepCountIs(16),
-    prepareStep: createPrepareStep(
+    stopWhen: stepCountIs(12),
+    prepareStep: createSupervisorPrepareStep(
       nanoModel,
       NANO_PROVIDER_OPTIONS,
       getSynthesisProviderOptions(synthesisModelId),
     ),
-    tools: agentTools,
+    tools: supervisorTools,
     onStepFinish({ toolCalls, toolResults, usage, finishReason }) {
       console.log(
         JSON.stringify({

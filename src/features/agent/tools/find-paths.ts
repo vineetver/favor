@@ -18,21 +18,26 @@ Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048'). Optionally filter by edge t
     maxHops: z
       .number()
       .optional()
-      .default(3)
-      .describe("Maximum path length (default 3, max 5)"),
+      .default(4)
+      .describe("Maximum path length (default 4, max 10)"),
     limit: z
       .number()
       .optional()
-      .default(3)
-      .describe("Max number of paths to return"),
+      .default(5)
+      .describe("Max number of paths to return (default 5, max 50)"),
+    edgeTypes: z
+      .string()
+      .optional()
+      .describe("Comma-separated edge types to filter (e.g., 'ASSOCIATED_WITH_DISEASE,TARGETS')"),
   }),
-  execute: async ({ from, to, maxHops, limit }): Promise<CompressedPath[] | { error: boolean; message: string }> => {
+  execute: async ({ from, to, maxHops, limit, edgeTypes }): Promise<CompressedPath[] | { error: boolean; message: string }> => {
     try {
       const params = new URLSearchParams();
       params.set("from", from);
       params.set("to", to);
-      params.set("maxHops", String(Math.min(maxHops ?? 3, 5)));
-      params.set("limit", String(Math.min(limit ?? 3, 5)));
+      params.set("maxHops", String(Math.min(maxHops ?? 4, 10)));
+      params.set("limit", String(Math.min(limit ?? 5, 50)));
+      if (edgeTypes) params.set("edgeTypes", edgeTypes);
 
       const data = await agentFetch<{
         data: {
@@ -45,7 +50,8 @@ Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048'). Optionally filter by edge t
         };
       }>(`/graph/paths?${params.toString()}`);
 
-      const paths = (data.data.paths ?? []).slice(0, 3).map((p) => ({
+      const maxPaths = Math.min(limit ?? 5, 50);
+      const paths = (data.data.paths ?? []).slice(0, maxPaths).map((p) => ({
         rank: p.rank,
         length: p.length,
         pathText: p.pathText,

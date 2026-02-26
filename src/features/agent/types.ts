@@ -126,3 +126,64 @@ export interface SubagentOutput {
   toolCallsMade: number;
   toolsUsed: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Specialist structured outputs
+// ---------------------------------------------------------------------------
+
+export interface EvidenceRef {
+  source: string;         // e.g., "cohort_rows", "getRankedNeighbors", "getConnections"
+  endpoint: string;       // API path called
+  query: Record<string, unknown>;  // params used
+}
+
+export interface VariantTriageOutput {
+  summary: string;
+  topGenes?: Array<{ symbol: string; ensemblId?: string; variantCount?: number }>;
+  topVariants?: Array<{ id: string; gene?: string; consequence?: string; significance?: string }>;
+  cohortId?: string;
+  derivedCohortId?: string;
+  evidenceRefs: EvidenceRef[];
+  stepsUsed: number;
+  toolCallsMade: number;
+  toolsUsed: string[];
+}
+
+export interface BioContextOutput {
+  summary: string;
+  entities?: Array<{ type: string; id: string; label: string }>;
+  relationships?: Array<{ from: string; to: string; edgeType: string; score?: number }>;
+  pathways?: Array<{ id: string; label: string; pValue?: number }>;
+  evidenceRefs: EvidenceRef[];
+  stepsUsed: number;
+  toolCallsMade: number;
+  toolsUsed: string[];
+}
+
+// ---------------------------------------------------------------------------
+// PlanAgent types
+// ---------------------------------------------------------------------------
+
+export interface PlanStepResolve {
+  do: "resolve";
+  entities: string[];
+}
+
+export interface PlanStepDelegate {
+  do: "delegate";
+  agent: "variantTriage" | "bioContext";
+  task: string;
+  cohortId?: string;
+  geneSymbol?: string;
+}
+
+export interface PlanStepSynthesize {
+  do: "synthesize";
+}
+
+export type PlanStep = PlanStepResolve | PlanStepDelegate | PlanStepSynthesize;
+
+export interface AgentPlan {
+  queryType: QueryType;
+  steps: PlanStep[];
+}

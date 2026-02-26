@@ -79,7 +79,7 @@ import {
   getToolInputSummary,
   PlanRenderer,
 } from "./tool-renderers";
-import type { ReportPlanOutput } from "../types";
+import type { ReportPlanOutput, AgentPlan } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
 import { OrchestrationHeader } from "./orchestration-header";
 
@@ -88,7 +88,14 @@ import { OrchestrationHeader } from "./orchestration-header";
 // ---------------------------------------------------------------------------
 
 const TOOL_TITLES: Record<string, string> = {
+  // Supervisor-level tools
   searchEntities: "Search Entities",
+  recallMemories: "Recall Memories",
+  saveMemory: "Save Memory",
+  planQuery: "Analysis Plan",
+  variantTriage: "Variant Triage",
+  bioContext: "Knowledge Graph",
+  // Legacy / specialist tools (for old sessions + subagent internals)
   getEntityContext: "Entity Context",
   compareEntities: "Compare Entities",
   getRankedNeighbors: "Ranked Neighbors",
@@ -104,9 +111,8 @@ const TOOL_TITLES: Record<string, string> = {
   getEdgeDetail: "Edge Detail",
   graphTraverse: "Graph Traverse",
   getGraphSchema: "Graph Schema",
+  getCohortSchema: "Cohort Schema",
   variantBatchSummary: "Batch Summary",
-  recallMemories: "Recall Memories",
-  saveMemory: "Save Memory",
   reportPlan: "Analysis Plan",
   graphExplorer: "Graph Explorer",
   variantAnalyzer: "Variant Analyzer",
@@ -235,7 +241,7 @@ function segmentMessageParts(message: UIMessage): MessageSegment[] {
     if (isToolUIPart(part)) {
       const name = getToolName(part).replace(/^tool-/, "");
 
-      if (name === "reportPlan" && (part as { output?: unknown }).output) {
+      if ((name === "reportPlan" || name === "planQuery") && (part as { output?: unknown }).output) {
         segments.push({ kind: "plan", part, key: `plan-${(part as { toolCallId?: string }).toolCallId}` });
         continue;
       }
@@ -294,10 +300,12 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
         return ["Rank variants by CADD score", "Summarize by clinical significance"];
       case "analyzeCohort":
         return ["Filter to pathogenic variants only", "Which genes carry the most variants?"];
-      case "graphExplorer":
-        return ["What are the key intermediates?", "Explore a different path"];
+      case "variantTriage":
       case "variantAnalyzer":
         return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
+      case "bioContext":
+      case "graphExplorer":
+        return ["What are the key intermediates?", "Explore a different path"];
     }
   }
 
@@ -382,27 +390,31 @@ function ChatMessageRenderer({
     });
   const hasToolParts = allToolParts.length > 0;
 
-  // Extract plan output (last completed reportPlan) for OrchestrationHeader
+  // Extract plan output (last completed reportPlan or planQuery) for OrchestrationHeader
   const planOutput = message.parts
     .filter(
-      (p) =>
-        isToolUIPart(p) &&
-        getToolName(p).replace(/^tool-/, "") === "reportPlan" &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (p as any).state === "output-available",
+      (p) => {
+        if (!isToolUIPart(p)) return false;
+        const name = getToolName(p).replace(/^tool-/, "");
+        return (name === "reportPlan" || name === "planQuery") &&
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (p as any).state === "output-available";
+      },
     )
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((p) => (p as any).output as ReportPlanOutput)
+    .map((p) => (p as any).output as ReportPlanOutput | AgentPlan)
     .at(-1) ?? null;
 
-  // All non-reportPlan tool parts for PlanRenderer status tracking.
+  // All non-plan tool parts for PlanRenderer status tracking.
   // Include ALL tools (including resolve-phase) so the plan can match
-  // tools like searchEntities that run before reportPlan.
+  // tools like searchEntities that run before the plan tool.
   const siblingToolParts = message.parts
     .filter(
-      (p) =>
-        isToolUIPart(p) &&
-        getToolName(p).replace(/^tool-/, "") !== "reportPlan",
+      (p) => {
+        if (!isToolUIPart(p)) return false;
+        const name = getToolName(p).replace(/^tool-/, "");
+        return name !== "reportPlan" && name !== "planQuery";
+      },
     )
     .map((p) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -466,7 +478,7 @@ function ChatMessageRenderer({
             return (
               <PlanRenderer
                 key={seg.key}
-                plan={seg.part.output as ReportPlanOutput}
+                plan={seg.part.output as ReportPlanOutput | AgentPlan}
                 siblingToolParts={siblingToolParts}
                 isStreaming={isLastMessage && isStreaming}
               />

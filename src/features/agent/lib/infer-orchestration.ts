@@ -4,7 +4,7 @@
 // Pure utility — takes tool UI parts and derives phase, progress, status text.
 // Used by OrchestrationHeader to show live agent progress.
 
-import type { ReportPlanOutput } from "../types";
+import type { ReportPlanOutput, AgentPlan, PlanStep } from "../types";
 
 export type OrchestrationPhase = "resolve" | "explore" | "synthesize";
 
@@ -25,13 +25,18 @@ interface ToolUIPart {
   input?: unknown;
 }
 
-// Tool name → phase mapping
-const RESOLVE_TOOL_NAMES = new Set(["searchEntities", "recallMemories", "reportPlan"]);
+// Tool name → phase mapping (supervisor-level)
+const RESOLVE_TOOL_NAMES = new Set(["searchEntities", "recallMemories", "reportPlan", "planQuery"]);
 
 const TOOL_PHASE_LABELS: Record<string, string> = {
   searchEntities: "Resolving",
   recallMemories: "Resolving",
   reportPlan: "Planning",
+  planQuery: "Planning",
+  variantTriage: "Cohort Analysis",
+  bioContext: "Knowledge Graph",
+  saveMemory: "Resolving",
+  // Legacy tool labels for backward compat with old sessions
   getEntityContext: "Data Collection",
   getRankedNeighbors: "Data Collection",
   getGeneVariantStats: "Data Collection",
@@ -44,13 +49,12 @@ const TOOL_PHASE_LABELS: Record<string, string> = {
   getConnections: "Exploration",
   getEdgeDetail: "Exploration",
   graphTraverse: "Exploration",
-  graphExplorer: "Exploration",
+  graphExplorer: "Knowledge Graph",
   createCohort: "Cohort Analysis",
   analyzeCohort: "Cohort Analysis",
   variantBatchSummary: "Cohort Analysis",
-  variantAnalyzer: "Variant Analysis",
+  variantAnalyzer: "Cohort Analysis",
   getGraphSchema: "Data Collection",
-  saveMemory: "Resolving",
 };
 
 /** Get the phase label for a tool name (used for dividers) */
@@ -61,11 +65,11 @@ export function getToolPhaseLabel(toolName: string): string {
 
 // Query type inference from tool mix
 const QUERY_TYPE_SIGNALS: Record<string, string[]> = {
-  variant_analysis: ["lookupVariant", "variantAnalyzer", "variantBatchSummary"],
-  cohort_analysis: ["createCohort", "analyzeCohort"],
-  graph_exploration: ["graphTraverse", "graphExplorer", "findPaths", "getSharedNeighbors"],
-  comparison: ["compareEntities"],
-  connection: ["getConnections", "findPaths"],
+  variant_analysis: ["variantTriage", "lookupVariant", "variantAnalyzer", "variantBatchSummary"],
+  cohort_analysis: ["variantTriage", "createCohort", "analyzeCohort"],
+  graph_exploration: ["bioContext", "graphTraverse", "graphExplorer", "findPaths", "getSharedNeighbors"],
+  comparison: ["bioContext", "compareEntities"],
+  connection: ["bioContext", "getConnections", "findPaths"],
   drug_discovery: [], // hard to infer without plan
 };
 
@@ -111,16 +115,63 @@ const DONE_STATES = new Set(["output-available", "output-error"]);
 const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
 
 // ---------------------------------------------------------------------------
-// Plan-aware phase detection
+// Plan-aware phase detection (supports both old and new plan formats)
 // ---------------------------------------------------------------------------
 
-/**
- * Derive the orchestration phase from the plan's tool assignments
- * and the actual tool part states. This replaces the heuristic-based
- * phase detection when a plan is available, keeping server-side
- * prepareStep and client-side UI in sync.
- */
-function inferPhaseFromPlan(
+/** Map new AgentPlan step to the tool(s) it corresponds to */
+function planStepToTools(step: PlanStep): string[] {
+  if (step.do === "resolve") return ["searchEntities"];
+  if (step.do === "delegate") return [step.agent];
+  if (step.do === "synthesize") return [];
+  return [];
+}
+
+/** Check if we have a new-format plan (AgentPlan with steps[].do) */
+function isNewPlanFormat(plan: unknown): plan is AgentPlan {
+  if (!plan || typeof plan !== "object") return false;
+  const p = plan as Record<string, unknown>;
+  return Array.isArray(p.steps) && p.steps.length > 0 &&
+    typeof (p.steps as Array<Record<string, unknown>>)[0]?.do === "string";
+}
+
+/** Check if we have an old-format plan (ReportPlanOutput with plan[].tools) */
+function isOldPlanFormat(plan: unknown): plan is ReportPlanOutput {
+  if (!plan || typeof plan !== "object") return false;
+  const p = plan as Record<string, unknown>;
+  return Array.isArray(p.plan) && p.plan.length > 0 &&
+    Array.isArray((p.plan as Array<Record<string, unknown>>)[0]?.tools);
+}
+
+function inferPhaseFromNewPlan(
+  steps: PlanStep[],
+  toolParts: ToolUIPart[],
+): OrchestrationPhase {
+  const toolSteps = steps.filter((s) => s.do !== "synthesize");
+  if (toolSteps.length === 0) return "synthesize";
+
+  const stepDone = toolSteps.map((step) => {
+    const tools = planStepToTools(step);
+    if (tools.length === 0) return true;
+    const matching = toolParts.filter((p) => {
+      const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
+      return tools.some((t) => toolNameMatches(t, name));
+    });
+    if (matching.length === 0) return false;
+    return matching.every((p) => DONE_STATES.has(p.state ?? ""));
+  });
+
+  if (stepDone.every(Boolean)) return "synthesize";
+
+  const firstIncomplete = stepDone.indexOf(false);
+  if (firstIncomplete === 0) {
+    const firstStep = toolSteps[0];
+    if (firstStep.do === "resolve") return "resolve";
+  }
+
+  return "explore";
+}
+
+function inferPhaseFromOldPlan(
   plan: ReportPlanOutput["plan"],
   toolParts: ToolUIPart[],
 ): OrchestrationPhase {
@@ -138,10 +189,8 @@ function inferPhaseFromPlan(
 
   if (itemDone.every(Boolean)) return "synthesize";
 
-  // Check if we're still in resolve (first plan step not started or only resolve tools running)
   const firstIncomplete = itemDone.indexOf(false);
   if (firstIncomplete === 0) {
-    // First step isn't done — check if it's a resolve-only step
     const firstTools = toolItems[0].tools;
     const isResolveStep = firstTools.every((t) => RESOLVE_TOOL_NAMES.has(t));
     if (isResolveStep) return "resolve";
@@ -159,7 +208,7 @@ export function inferOrchestration(
   toolParts: ToolUIPart[],
   isStreaming: boolean,
   hasTextContent: boolean,
-  planOutput?: ReportPlanOutput | null,
+  planOutput?: ReportPlanOutput | AgentPlan | null,
 ): OrchestrationState {
   const toolNames = toolParts.map(
     (p) => (p.toolName ?? p.type ?? "").replace(/^tool-/, ""),
@@ -169,34 +218,43 @@ export function inferOrchestration(
     (p) => p.state === "output-available" || p.state === "output-error",
   ).length;
 
-  const hasExplicitPlan = toolNames.includes("reportPlan") &&
-    toolParts.some(
-      (p) =>
-        (p.toolName ?? p.type ?? "").replace(/^tool-/, "") === "reportPlan" &&
-        p.state === "output-available",
-    );
+  const hasExplicitPlan = (
+    toolNames.includes("reportPlan") || toolNames.includes("planQuery")
+  ) && toolParts.some(
+    (p) => {
+      const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
+      return (name === "reportPlan" || name === "planQuery") &&
+        p.state === "output-available";
+    },
+  );
 
   const hasActiveTools = toolParts.some((p) => RUNNING_STATES.has(p.state ?? ""));
 
   let phase: OrchestrationPhase;
 
-  if (planOutput?.plan) {
-    // Plan-aware: derive phase from plan completion status
-    const planPhase = inferPhaseFromPlan(planOutput.plan, toolParts);
+  if (planOutput) {
+    let planPhase: OrchestrationPhase;
+
+    if (isNewPlanFormat(planOutput)) {
+      planPhase = inferPhaseFromNewPlan(planOutput.steps, toolParts);
+    } else if (isOldPlanFormat(planOutput)) {
+      planPhase = inferPhaseFromOldPlan(planOutput.plan, toolParts);
+    } else {
+      planPhase = inferPhase(toolNames);
+    }
+
     // Only upgrade to synthesize once text is actually being produced
     if (planPhase === "synthesize" && hasTextContent && !hasActiveTools) {
       phase = "synthesize";
     } else if (planPhase === "synthesize" && !hasActiveTools && !isStreaming) {
       phase = "synthesize";
     } else if (planPhase === "synthesize") {
-      // All tool steps done but still streaming tools — show explore until text arrives
       phase = hasActiveTools ? "explore" : "synthesize";
     } else {
       phase = planPhase;
     }
   } else {
-    // No plan: heuristic with guard against premature synthesis.
-    // Require at least one non-resolve completed tool before text can trigger synthesis.
+    // No plan: heuristic
     const nonResolveCompleted = toolParts.filter((p) => {
       const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
       return !RESOLVE_TOOL_NAMES.has(name) && DONE_STATES.has(p.state ?? "");
@@ -219,7 +277,7 @@ export function inferOrchestration(
     activeStatusText = TOOL_PHASE_LABELS[name] ?? name;
   }
 
-  // Estimate total tools — resolve(~2) + explore(plan steps * ~2 calls each) + buffer
+  // Estimate total tools
   const estimatedTotal = Math.max(toolNames.length + 2, 6);
 
   return {

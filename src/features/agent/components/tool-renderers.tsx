@@ -19,6 +19,10 @@ import type {
   CompressedCohort,
   ReportPlanOutput,
   SubagentOutput,
+  AgentPlan,
+  PlanStep,
+  VariantTriageOutput,
+  BioContextOutput,
 } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -511,126 +515,195 @@ const QUERY_TYPE_LABELS: Record<string, string> = {
   general: "General",
 };
 
+// ---------------------------------------------------------------------------
+// New plan format helpers
+// ---------------------------------------------------------------------------
+
+/** Map new PlanStep to the tool name it corresponds to */
+function planStepToToolName(step: PlanStep): string | null {
+  if (step.do === "resolve") return "searchEntities";
+  if (step.do === "delegate") return step.agent;
+  return null;
+}
+
+/** Get display label for a new-format plan step */
+function getPlanStepLabel(step: PlanStep): string {
+  if (step.do === "resolve") {
+    return `Resolve entities: ${step.entities.join(", ")}`;
+  }
+  if (step.do === "delegate") {
+    const agentLabel = step.agent === "variantTriage" ? "Cohort Analysis" : "Knowledge Graph";
+    const taskPreview = step.task.length > 50 ? step.task.slice(0, 47) + "..." : step.task;
+    return `${agentLabel}: ${taskPreview}`;
+  }
+  if (step.do === "synthesize") return "Synthesize findings";
+  return "Processing";
+}
+
+const AGENT_BADGES: Record<string, string> = {
+  variantTriage: "Variant",
+  bioContext: "Graph",
+};
+
+/** Check if a plan output is the new AgentPlan format */
+function isNewPlanFormat(plan: unknown): plan is AgentPlan {
+  if (!plan || typeof plan !== "object") return false;
+  const p = plan as Record<string, unknown>;
+  return Array.isArray(p.steps) && p.steps.length > 0 &&
+    typeof (p.steps as Array<Record<string, unknown>>)[0]?.do === "string";
+}
+
+/** Compute statuses for new-format plan steps */
+function computeNewPlanStatuses(
+  steps: PlanStep[],
+  siblingToolParts: ToolUIPart[],
+  isStreaming: boolean,
+): PlanItemStatus[] {
+  const getToolPartStatus = (toolName: string): PlanItemStatus => {
+    const matching = siblingToolParts.filter((p) => {
+      const name = (p.toolName ?? (p.type ?? "").replace(/^tool-/, ""));
+      return toolNameMatches(toolName, name);
+    });
+    if (matching.length === 0) return "pending";
+    const hasSuccess = matching.some((p) => p.state === "output-available");
+    const hasError = matching.some((p) => p.state === "output-error");
+    const hasRunning = matching.some((p) => RUNNING_STATES.has(p.state ?? ""));
+    if (hasSuccess) return "completed";
+    if (hasRunning) return "in-progress";
+    if (hasError && !hasSuccess) return "errored";
+    return "pending";
+  };
+
+  const toolStepStatuses = steps.map((step) => {
+    const toolName = planStepToToolName(step);
+    if (!toolName) return "pending" as PlanItemStatus; // synthesize step
+    return getToolPartStatus(toolName);
+  });
+
+  // Synthesize step: completed when all others are done and streaming ended
+  return steps.map((step, i) => {
+    if (step.do === "synthesize") {
+      const allOthersDone = steps.every((s, j) => {
+        if (s.do === "synthesize") return true;
+        return toolStepStatuses[j] === "completed" || toolStepStatuses[j] === "errored";
+      });
+      if (allOthersDone && !isStreaming) return "completed";
+      if (allOthersDone && isStreaming) return "in-progress";
+      return "pending";
+    }
+    return toolStepStatuses[i];
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Status icon component
+// ---------------------------------------------------------------------------
+
+function StatusIcon({ status }: { status: PlanItemStatus }) {
+  if (status === "completed") {
+    return (
+      <svg className="size-4 shrink-0 text-emerald-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" />
+      </svg>
+    );
+  }
+  if (status === "in-progress") {
+    return (
+      <svg className="size-4 shrink-0 text-primary animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+    );
+  }
+  if (status === "errored") {
+    return (
+      <svg className="size-4 shrink-0 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="size-4 shrink-0 text-muted-foreground/40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
+function statusTextClass(status: PlanItemStatus): string {
+  if (status === "completed") return "text-muted-foreground line-through";
+  if (status === "errored") return "text-amber-600";
+  if (status === "in-progress") return "text-foreground font-medium";
+  return "text-muted-foreground";
+}
+
 export function PlanRenderer({
   plan,
   siblingToolParts,
   isStreaming = true,
 }: {
-  plan: ReportPlanOutput;
+  plan: ReportPlanOutput | AgentPlan;
   siblingToolParts: ToolUIPart[];
-  /** Whether the assistant message is still streaming. Defaults to true (safe
-   *  fallback: synthesis won't be marked "completed" until explicitly told the
-   *  stream has ended). */
   isStreaming?: boolean;
 }) {
+  const queryType = plan.queryType;
+
+  // Detect plan format and render accordingly
+  if (isNewPlanFormat(plan)) {
+    const statuses = computeNewPlanStatuses(plan.steps, siblingToolParts, isStreaming);
+    return (
+      <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <svg className="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" />
+          </svg>
+          <span className="text-sm font-medium text-foreground">Analysis Plan</span>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {QUERY_TYPE_LABELS[queryType] ?? queryType}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          {plan.steps.map((step, idx) => {
+            const status = statuses[idx];
+            const label = getPlanStepLabel(step);
+            const agentBadge = step.do === "delegate" ? AGENT_BADGES[step.agent] : null;
+            return (
+              <div key={`${step.do}-${idx}`} className="flex items-center gap-2 text-sm">
+                <StatusIcon status={status} />
+                {agentBadge && (
+                  <Badge variant="secondary" className="text-[9px] px-1 py-0">{agentBadge}</Badge>
+                )}
+                <span className={statusTextClass(status)}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Old format (ReportPlanOutput with plan[].tools)
+  const oldPlan = plan as ReportPlanOutput;
+  const statuses = computePlanStatuses(oldPlan.plan, siblingToolParts, isStreaming);
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
       <div className="flex items-center gap-2">
-        <svg
-          className="size-4 text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 3h5v5" />
-          <path d="M8 3H3v5" />
-          <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
-          <path d="m15 9 6-6" />
+        <svg className="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" />
         </svg>
-        <span className="text-sm font-medium text-foreground">
-          Analysis Plan
-        </span>
+        <span className="text-sm font-medium text-foreground">Analysis Plan</span>
         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-          {QUERY_TYPE_LABELS[plan.queryType] ?? plan.queryType}
+          {QUERY_TYPE_LABELS[queryType] ?? queryType}
         </Badge>
       </div>
       <div className="space-y-1">
-        {(() => {
-          const statuses = computePlanStatuses(plan.plan, siblingToolParts, isStreaming);
-          return plan.plan.map((item, idx) => {
+        {oldPlan.plan.map((item, idx) => {
           const status = statuses[idx];
           return (
             <div key={item.id} className="flex items-center gap-2 text-sm">
-              {status === "completed" && (
-                <svg
-                  className="size-4 shrink-0 text-emerald-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <path d="m9 11 3 3L22 4" />
-                </svg>
-              )}
-              {status === "in-progress" && (
-                <svg
-                  className="size-4 shrink-0 text-primary animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-              )}
-              {status === "errored" && (
-                <svg
-                  className="size-4 shrink-0 text-amber-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              )}
-              {status === "pending" && (
-                <svg
-                  className="size-4 shrink-0 text-muted-foreground/40"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-              )}
-              <span
-                className={
-                  status === "completed"
-                    ? "text-muted-foreground line-through"
-                    : status === "errored"
-                      ? "text-amber-600"
-                      : status === "in-progress"
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground"
-                }
-              >
-                {item.label}
-              </span>
+              <StatusIcon status={status} />
+              <span className={statusTextClass(status)}>{item.label}</span>
             </div>
           );
-        });
-        })()}
+        })}
       </div>
     </div>
   );
@@ -640,7 +713,7 @@ export function PlanRenderer({
 // Subagent Renderer
 // ---------------------------------------------------------------------------
 
-export function SubagentRenderer({ data }: { data: SubagentOutput }) {
+export function SubagentRenderer({ data }: { data: SubagentOutput | VariantTriageOutput | BioContextOutput }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -650,6 +723,27 @@ export function SubagentRenderer({ data }: { data: SubagentOutput }) {
           <span>Tools: {data.toolsUsed.join(", ")}</span>
         )}
       </div>
+      {/* Show structured data from specialists */}
+      {"topGenes" in data && data.topGenes && data.topGenes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Top genes:</span>
+          {data.topGenes.slice(0, 5).map((g) => (
+            <Badge key={g.symbol} variant="secondary" className="text-[10px] px-1.5 py-0">
+              {g.symbol}{g.variantCount != null && ` (${g.variantCount})`}
+            </Badge>
+          ))}
+        </div>
+      )}
+      {"entities" in data && data.entities && data.entities.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Entities:</span>
+          {data.entities.slice(0, 5).map((e) => (
+            <Badge key={e.id} variant="secondary" className="text-[10px] px-1.5 py-0">
+              {e.label}
+            </Badge>
+          ))}
+        </div>
+      )}
       {data.summary && (
         <p className="text-sm text-foreground whitespace-pre-wrap">
           {data.summary}
@@ -722,11 +816,18 @@ export function renderToolOutput(
       return null;
     }
     case "reportPlan":
+    case "planQuery":
       // Handled specially in chat-page.tsx as a standalone PlanRenderer
       return null;
-    case "graphExplorer":
+    case "variantTriage":
     case "variantAnalyzer": {
-      const d = output as SubagentOutput;
+      const d = output as VariantTriageOutput | SubagentOutput;
+      if (d.summary) return <SubagentRenderer data={d} />;
+      return null;
+    }
+    case "bioContext":
+    case "graphExplorer": {
+      const d = output as BioContextOutput | SubagentOutput;
       if (d.summary) return <SubagentRenderer data={d} />;
       return null;
     }
@@ -848,21 +949,33 @@ export function getToolInputSummary(
       const label = qt ? QUERY_TYPE_LABELS[qt] ?? qt : "query";
       return `Planning: ${label}`;
     }
+    case "planQuery": {
+      const uq = inp.userQuery as string | undefined;
+      return uq
+        ? `Planning: ${uq.length > 50 ? uq.slice(0, 47) + "..." : uq}`
+        : "Planning query";
+    }
     case "getGraphSchema": {
       const nt = inp.nodeType as string | undefined;
       return nt ? `Looking up schema for ${nt}` : "Looking up graph schema";
     }
-    case "graphExplorer": {
-      const task = inp.task as string | undefined;
-      return task
-        ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
-        : "Exploring graph";
+    case "getCohortSchema": {
+      const cid = inp.cohortId as string | undefined;
+      return cid ? `Getting schema for cohort ${cid}` : "Getting cohort schema";
     }
+    case "variantTriage":
     case "variantAnalyzer": {
       const task = inp.task as string | undefined;
       return task
         ? `Analyzing: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
         : "Analyzing variants";
+    }
+    case "bioContext":
+    case "graphExplorer": {
+      const task = inp.task as string | undefined;
+      return task
+        ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
+        : "Exploring graph";
     }
     default:
       return null;

@@ -1,4 +1,4 @@
-import type { CohortStatusResponse, CohortSummary } from "@features/batch/types";
+import type { CohortStatusResponse } from "@features/batch/types";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -177,18 +177,6 @@ export async function pollCohortUntilReady(
     408,
     `Cohort ${cohortId} did not complete within ${POLL_TIMEOUT_MS / 1000}s`,
     "The cohort is still processing. Try again later.",
-  );
-}
-
-/**
- * Get cohort summary (gene/consequence/clinical breakdowns + highlights).
- */
-export async function getCohortSummaryAgent(
-  cohortId: string,
-  tenantId: string,
-): Promise<CohortSummary> {
-  return agentFetch<CohortSummary>(
-    `/cohorts/${cohortId}/summary?tenant_id=${tenantId}`,
   );
 }
 

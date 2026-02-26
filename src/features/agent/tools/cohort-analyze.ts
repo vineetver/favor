@@ -6,7 +6,7 @@ import { cohortFetch, AgentToolError } from "../lib/api-client";
  * All 36 score columns available for sorting, filtering, groupby, compute, prioritize.
  * Matches the backend Score Columns table exactly.
  */
-const SCORE_COLUMNS = [
+export const SCORE_COLUMNS = [
   "cadd_phred",
   "cadd_raw",
   "revel",
