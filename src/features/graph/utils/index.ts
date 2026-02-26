@@ -2,3 +2,4 @@
 export * from "./keys";
 export * from "./elements";
 export * from "./hydration";
+export * from "./schema-fields";

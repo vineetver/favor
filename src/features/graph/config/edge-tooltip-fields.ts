@@ -1,4 +1,5 @@
 import type { EdgeType } from "../types/edge";
+import type { EdgeTypeStatsMap } from "../utils/schema-fields";
 
 /**
  * A field to display in the edge tooltip.
@@ -144,6 +145,35 @@ export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
     { key: "l2g_score", label: "L2G Score", format: "score" },
   ],
 };
+
+/**
+ * Get tooltip fields for an edge type with schema fallback.
+ * Uses hardcoded fields if available, otherwise falls back to schema scoreFields[0..2].
+ */
+export function getTooltipFields(
+  edgeType: EdgeType,
+  schemaMap?: EdgeTypeStatsMap,
+): TooltipField[] {
+  // Prefer hardcoded tooltip fields (curated with labels and formats)
+  const hardcoded = EDGE_TOOLTIP_FIELDS[edgeType];
+  if (hardcoded && hardcoded.length > 0) return hardcoded;
+
+  // Fall back to schema scoreFields (first 2-3 fields)
+  if (schemaMap) {
+    const stats = schemaMap.get(edgeType);
+    if (stats?.scoreFields && stats.scoreFields.length > 0) {
+      return stats.scoreFields.slice(0, 3).map((field) => ({
+        key: field,
+        label: field
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+        format: "score" as const,
+      }));
+    }
+  }
+
+  return [];
+}
 
 /**
  * Format a field value for tooltip display.

@@ -11,6 +11,7 @@ import type {
   ViewMode,
   ExplorerLayoutType,
   TemplateId,
+  AsyncOperation,
 } from "../types/state";
 
 // =============================================================================
@@ -23,10 +24,14 @@ export type ExplorerAction =
   | { type: "SWITCH_TEMPLATE_SUCCESS"; graph: GraphData; templateEdgeTypes: Set<EdgeType>; provenance: ProvenanceEvent }
   | { type: "SWITCH_TEMPLATE_ERROR"; error: string }
   | { type: "SET_TEMPLATE_RESULTS"; results: TemplateResultData | null }
-  | { type: "EXPAND_START" }
+  | { type: "EXPAND_START"; nodeId: string; label: string }
   | { type: "EXPAND_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
   | { type: "EXPAND_ERROR"; error: string }
   | { type: "DISMISS_EXPANSION_ERROR" }
+  | { type: "VARIANT_TRAIL_START"; nodeId: string }
+  | { type: "VARIANT_TRAIL_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
+  | { type: "VARIANT_TRAIL_ERROR"; error: string }
+  | { type: "DISMISS_ERROR" }
   | { type: "REMOVE_NODE"; nodeId: string }
   | { type: "SELECT_NODE"; nodeId: string; node: ExplorerNode }
   | { type: "SELECT_EDGE"; edgeId: string; edge: ExplorerEdge }
@@ -58,6 +63,18 @@ function stampProvenance(
   return result;
 }
 
+/** Convert AsyncOperation to legacy ExpansionStatus for backward compatibility */
+function asyncToExpansion(op: AsyncOperation): { status: "idle" } | { status: "loading" } | { status: "error"; message: string } {
+  switch (op.type) {
+    case "idle":
+      return { status: "idle" };
+    case "error":
+      return { status: "error", message: op.message };
+    default:
+      return { status: "loading" };
+  }
+}
+
 // =============================================================================
 // REDUCER
 // =============================================================================
@@ -71,6 +88,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         [...action.graph.nodes.keys(), ...action.graph.edges.keys()],
         action.provenance,
       );
+      const asyncOp: AsyncOperation = { type: "idle" };
       return {
         status: "ready",
         graph: { ...action.graph, provenance },
@@ -82,19 +100,22 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         templateResults: null,
         leftDrawerOpen: true,
         inspectorMode: "closed",
-        expansion: { status: "idle" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
     case "SWITCH_TEMPLATE_START": {
       if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "switching_template", targetTemplateId: action.templateId };
       return {
         ...state,
         activeTemplate: action.templateId,
         templateResults: null,
         selection: DEFAULT_SELECTION,
         inspectorMode: "closed",
-        expansion: { status: "loading" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
@@ -105,6 +126,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         [...action.graph.nodes.keys(), ...action.graph.edges.keys()],
         action.provenance,
       );
+      const asyncOp: AsyncOperation = { type: "idle" };
       return {
         ...state,
         graph: { ...action.graph, provenance },
@@ -112,15 +134,18 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           ...state.filters,
           edgeTypes: new Set([...state.filters.edgeTypes, ...action.templateEdgeTypes]),
         },
-        expansion: { status: "idle" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
     case "SWITCH_TEMPLATE_ERROR": {
       if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "error", operation: "switching_template", message: action.error };
       return {
         ...state,
-        expansion: { status: "idle" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
@@ -134,9 +159,11 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "EXPAND_START": {
       if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "expanding", nodeId: action.nodeId, label: action.label };
       return {
         ...state,
-        expansion: { status: "loading" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
@@ -167,6 +194,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         action.provenance,
       );
 
+      const asyncOp: AsyncOperation = { type: "idle" };
       return {
         ...state,
         graph: {
@@ -175,23 +203,98 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           edges: mergedEdges,
           provenance,
         },
-        expansion: { status: "idle" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
     case "EXPAND_ERROR": {
       if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "error", operation: "expanding", message: action.error };
       return {
         ...state,
-        expansion: { status: "error", message: action.error },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 
     case "DISMISS_EXPANSION_ERROR": {
       if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "idle" };
       return {
         ...state,
-        expansion: { status: "idle" },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
+      };
+    }
+
+    case "VARIANT_TRAIL_START": {
+      if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "running_variant_trail", nodeId: action.nodeId };
+      return {
+        ...state,
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
+      };
+    }
+
+    case "VARIANT_TRAIL_SUCCESS": {
+      if (state.status !== "ready") return state;
+      const mergedNodes = new Map(state.graph.nodes);
+      const newNodeIds: string[] = [];
+      action.nodes.forEach((node, id) => {
+        if (!mergedNodes.has(id)) {
+          mergedNodes.set(id, node);
+          newNodeIds.push(id);
+        }
+      });
+
+      const mergedEdges = new Map(state.graph.edges);
+      const newEdgeIds: string[] = [];
+      action.edges.forEach((edge, id) => {
+        if (!mergedEdges.has(id)) {
+          mergedEdges.set(id, edge);
+          newEdgeIds.push(id);
+        }
+      });
+
+      const provenance = stampProvenance(
+        state.graph.provenance,
+        [...newNodeIds, ...newEdgeIds],
+        action.provenance,
+      );
+
+      const asyncOp: AsyncOperation = { type: "idle" };
+      return {
+        ...state,
+        graph: {
+          ...state.graph,
+          nodes: mergedNodes,
+          edges: mergedEdges,
+          provenance,
+        },
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
+      };
+    }
+
+    case "VARIANT_TRAIL_ERROR": {
+      if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "error", operation: "running_variant_trail", message: action.error };
+      return {
+        ...state,
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
+      };
+    }
+
+    case "DISMISS_ERROR": {
+      if (state.status !== "ready") return state;
+      const asyncOp: AsyncOperation = { type: "idle" };
+      return {
+        ...state,
+        async: asyncOp,
+        expansion: asyncToExpansion(asyncOp),
       };
     }
 

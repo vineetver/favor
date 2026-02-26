@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = "favor-data-cache";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "data-files";
 
 // Cache entry expires after 24 hours

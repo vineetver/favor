@@ -3,11 +3,10 @@ import type { EntityType } from "./entity";
 import type { EdgeType } from "./edge";
 import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "./node";
 import type { ProvenanceEvent } from "./provenance";
-import type { GraphFilters } from "./filters";
 import type { GraphSchema, GraphStats } from "./schema";
 import type { ExplorerLayoutType, TemplateId } from "./state";
 import type { ConnectionsDrilldownData, ConnectionsStatus } from "./connections";
-import type { SeedEntity, ExplorerConfig, ExplorerTemplate, EdgeTypeGroup, ExternalLinkConfig } from "../config/explorer-config";
+import type { SeedEntity, ExplorerConfig, ExplorerTemplate, ExternalLinkConfig } from "../config/explorer-config";
 import type { TemplateResultData } from "./template-results";
 
 // =============================================================================
@@ -89,18 +88,14 @@ export interface ExplorerCytoscapeProps {
 export interface ControlsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filters: GraphFilters;
-  onFiltersChange: (filters: GraphFilters) => void;
-  layout: ExplorerLayoutType;
-  onLayoutChange: (layout: ExplorerLayoutType) => void;
   templates: ExplorerTemplate[];
   activeTemplate: TemplateId;
   onTemplateChange: (templateId: TemplateId) => void;
-  edgeTypeGroups: EdgeTypeGroup[];
   onReset: () => void;
   edgeTypeCounts?: Record<EdgeType, number>;
   nodeTypeCounts?: Record<EntityType, number>;
   isExpanding: boolean;
+  schema?: GraphSchema | null;
 }
 
 export interface InspectorPanelProps {
@@ -124,6 +119,7 @@ export interface InspectorPanelProps {
   connectionsError?: string | null;
   onLoadMoreEdges?: (edgeType: EdgeType) => void;
   onRetryConnections?: () => void;
+  schema?: GraphSchema | null;
 }
 
 // Re-export ExpansionConfig for convenience (defined in config/expansion)

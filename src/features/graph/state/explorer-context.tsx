@@ -19,6 +19,7 @@ import type {
   ViewMode,
   ExplorerLayoutType,
   TemplateId,
+  AsyncOperation,
 } from "../types/state";
 import { explorerReducer, initialExplorerState, type ExplorerAction } from "./reducer";
 import {
@@ -26,7 +27,8 @@ import {
   selectGraphSummary,
   selectHighlightedNodeIds,
   selectHighlightedEdgeId,
-  selectIsExpanding,
+  selectIsLoading,
+  selectAsyncOperation,
 } from "./selectors";
 
 // =============================================================================
@@ -42,10 +44,14 @@ type ExplorerContextValue = {
     switchTemplateSuccess: (graph: GraphData, templateEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => void;
     switchTemplateError: (error: string) => void;
     setTemplateResults: (results: TemplateResultData | null) => void;
-    expandStart: () => void;
+    expandStart: (nodeId: string, label: string) => void;
     expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => void;
     expandError: (error: string) => void;
     dismissExpansionError: () => void;
+    variantTrailStart: (nodeId: string) => void;
+    variantTrailSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => void;
+    variantTrailError: (error: string) => void;
+    dismissError: () => void;
     removeNode: (nodeId: string) => void;
     selectNode: (nodeId: string, node: ExplorerNode) => void;
     selectEdge: (edgeId: string, edge: ExplorerEdge) => void;
@@ -65,7 +71,10 @@ type ExplorerContextValue = {
     graphSummary: () => ReturnType<typeof selectGraphSummary>;
     highlightedNodeIds: () => Set<string> | undefined;
     highlightedEdgeId: () => string | undefined;
+    /** @deprecated Use isLoading() instead */
     isExpanding: () => boolean;
+    isLoading: () => boolean;
+    asyncOperation: () => AsyncOperation;
     getNode: (id: string) => ExplorerNode | undefined;
     getEdge: (id: string) => ExplorerEdge | undefined;
     getProvenance: (id: string) => ProvenanceEvent[];
@@ -102,8 +111,8 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
     setTemplateResults: (results: TemplateResultData | null) => {
       dispatch({ type: "SET_TEMPLATE_RESULTS", results });
     },
-    expandStart: () => {
-      dispatch({ type: "EXPAND_START" });
+    expandStart: (nodeId: string, label: string) => {
+      dispatch({ type: "EXPAND_START", nodeId, label });
     },
     expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => {
       dispatch({ type: "EXPAND_SUCCESS", nodes, edges, provenance });
@@ -113,6 +122,18 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
     },
     dismissExpansionError: () => {
       dispatch({ type: "DISMISS_EXPANSION_ERROR" });
+    },
+    variantTrailStart: (nodeId: string) => {
+      dispatch({ type: "VARIANT_TRAIL_START", nodeId });
+    },
+    variantTrailSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => {
+      dispatch({ type: "VARIANT_TRAIL_SUCCESS", nodes, edges, provenance });
+    },
+    variantTrailError: (error: string) => {
+      dispatch({ type: "VARIANT_TRAIL_ERROR", error });
+    },
+    dismissError: () => {
+      dispatch({ type: "DISMISS_ERROR" });
     },
     removeNode: (nodeId: string) => {
       dispatch({ type: "REMOVE_NODE", nodeId });
@@ -172,7 +193,9 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
       if (state.status !== "ready") return undefined;
       return selectHighlightedEdgeId(state.selection);
     },
-    isExpanding: () => selectIsExpanding(state),
+    isExpanding: () => selectIsLoading(state),
+    isLoading: () => selectIsLoading(state),
+    asyncOperation: () => selectAsyncOperation(state),
     getNode: (id: string) => {
       if (state.status !== "ready") return undefined;
       return state.graph.nodes.get(id);

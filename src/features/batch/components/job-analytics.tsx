@@ -29,7 +29,7 @@ import { useDuckDB, type QueryResult, type LoadDataResult } from "../hooks/use-d
 // ============================================================================
 
 interface JobAnalyticsProps {
-  /** URL to the Arrow IPC file (or parquet for backwards compatibility) */
+  /** URL to the Parquet file */
   dataUrl: string;
   jobId: string;
   filename?: string;
@@ -54,7 +54,7 @@ const PRESET_QUERIES: PresetQuery[] = [
     id: "total-variants",
     name: "Total Variants",
     description: "Count of all variants in the dataset",
-    sql: "SELECT COUNT(*) as total_variants FROM variants WHERE lower(status) = 'found'",
+    sql: "SELECT COUNT(*) as total_variants FROM variants WHERE status = 'FOUND'",
     category: "overview",
   },
   {
@@ -67,7 +67,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         COUNT(*) as variant_count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
       GROUP BY variant.chromosome
       ORDER BY
         CASE
@@ -89,7 +89,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
       GROUP BY consequence
       ORDER BY count DESC
       LIMIT 20
@@ -106,7 +106,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         COALESCE(variant.clinvar.clnsig[1], 'Not in ClinVar') as significance,
         COUNT(*) as count
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
       GROUP BY significance
       ORDER BY count DESC
     `,
@@ -124,7 +124,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         variant.clinvar.clnsig[1] as clnsig,
         variant.clinvar.clndn[1] as clndn
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.clinvar.clnsig IS NOT NULL
         AND len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND (
           lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%'
@@ -152,7 +152,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
       GROUP BY frequency_bin
       ORDER BY
         CASE frequency_bin
@@ -174,9 +174,9 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         COUNT(*) as rare_variants,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
+        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.gnomad_genome.af IS NOT NULL
         AND variant.gnomad_genome.af < 0.01
     `,
@@ -197,7 +197,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         variant.main.protein_predictions.polyphen_cat,
         variant.alphamissense.max_pathogenicity as am_score
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND (
           variant.main.protein_predictions.sift_cat = 'D'
           OR variant.main.protein_predictions.polyphen_cat = 'D'
@@ -223,7 +223,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         COUNT(*) as count,
         ROUND(AVG(variant.main.cadd.phred), 2) as avg_score
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
       GROUP BY cadd_bin
       ORDER BY avg_score DESC NULLS LAST
     `,
@@ -239,7 +239,7 @@ const PRESET_QUERIES: PresetQuery[] = [
         unnest(variant.genecode.genes) as gene,
         COUNT(*) as variant_count
       FROM variants
-      WHERE lower(status) = 'found' AND variant.genecode.genes IS NOT NULL
+      WHERE status = 'FOUND' AND variant.genecode.genes IS NOT NULL
       GROUP BY gene
       ORDER BY variant_count DESC
       LIMIT 50
@@ -497,7 +497,7 @@ export function JobAnalytics({
   filename,
   className,
 }: JobAnalyticsProps) {
-  const { isLoading: isInitializing, isReady, error: initError, loadArrow, query, clearCache } = useDuckDB();
+  const { isLoading: isInitializing, isReady, error: initError, loadParquet, query, clearCache } = useDuckDB();
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -513,11 +513,11 @@ export function JobAnalytics({
   const [customError, setCustomError] = useState<string | null>(null);
   const [isCustomLoading, setIsCustomLoading] = useState(false);
 
-  // Load Arrow IPC file when DuckDB is ready
+  // Load Parquet file when DuckDB is ready
   useEffect(() => {
     if (isReady && !dataLoaded && !isLoadingData) {
       setIsLoadingData(true);
-      loadArrow(dataUrl)
+      loadParquet(dataUrl)
         .then((result) => {
           setCacheInfo(result);
           setDataLoaded(true);
@@ -528,7 +528,7 @@ export function JobAnalytics({
           setIsLoadingData(false);
         });
     }
-  }, [isReady, dataLoaded, isLoadingData, loadArrow, dataUrl]);
+  }, [isReady, dataLoaded, isLoadingData, loadParquet, dataUrl]);
 
   // Handle cache clear and reload
   const handleClearCache = useCallback(async () => {

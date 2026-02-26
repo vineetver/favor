@@ -428,7 +428,7 @@ export function CompletedJobCard({
               <div>
                 <p className="text-sm font-semibold text-emerald-900">Results Ready</p>
                 <p className="text-xs text-emerald-600 mt-0.5">
-                  {output.bytes_human || formatBytes(output.bytes)} Arrow IPC format
+                  {output.bytes_human || formatBytes(output.bytes)} Parquet format
                 </p>
               </div>
             </div>

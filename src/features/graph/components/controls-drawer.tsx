@@ -1,15 +1,6 @@
 "use client";
 
 import { Button } from "@shared/components/ui/button";
-import { Checkbox } from "@shared/components/ui/checkbox";
-import { Label } from "@shared/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shared/components/ui/select";
 import { Slider } from "@shared/components/ui/slider";
 import {
   Activity,
@@ -23,14 +14,16 @@ import {
   Network,
   Pill,
   RefreshCw,
-  Settings,
+  SlidersHorizontal,
 } from "lucide-react";
-import { memo, useState, useCallback } from "react";
+import { memo, useMemo, useState } from "react";
 import type { ControlsDrawerProps } from "../types/props";
-import type { EdgeType, EntityType } from "../types";
-import { EDGE_TYPE_CONFIG } from "../types/edge";
+import type { EntityType } from "../types";
 import { ENTITY_TYPES } from "../types/entity";
 import { NODE_TYPE_COLORS } from "../config/styling";
+import { buildEdgeTypeStatsMap, resolveFilterFields } from "../utils/schema-fields";
+import type { EdgeType } from "../types/edge";
+import { EDGE_TYPE_CONFIG } from "../types/edge";
 
 // =============================================================================
 // Template Icon Map
@@ -123,77 +116,56 @@ function NodeTypeLegend({ counts }: NodeTypeLegendProps) {
 }
 
 // =============================================================================
-// Edge Type Toggle Component
+// Per-Edge-Type Filter Controls
 // =============================================================================
 
-interface EdgeTypeToggleProps {
+function fieldLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bId\b/g, "ID");
+}
+
+interface EdgeTypeFilterSectionProps {
   edgeType: EdgeType;
-  enabled: boolean;
-  count?: number;
-  onChange: (enabled: boolean) => void;
+  filterFields: string[];
+  edgeTypeCounts?: Record<EdgeType, number>;
 }
 
-function EdgeTypeToggle({ edgeType, enabled, count, onChange }: EdgeTypeToggleProps) {
+function EdgeTypeFilterSection({ edgeType, filterFields, edgeTypeCounts }: EdgeTypeFilterSectionProps) {
   const config = EDGE_TYPE_CONFIG[edgeType];
-  if (!config) return null;
+  const count = edgeTypeCounts?.[edgeType] ?? 0;
 
-  return (
-    <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-      <Checkbox
-        checked={enabled}
-        onCheckedChange={(checked) => onChange(checked === true)}
-      />
-      <div
-        className="w-2.5 h-2.5 rounded-full"
-        style={{ backgroundColor: config.color }}
-      />
-      <span className="flex-1 text-sm text-foreground group-hover:text-foreground">
-        {config.label}
-      </span>
-      {count !== undefined && count > 0 && (
-        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-          {count}
-        </span>
-      )}
-    </label>
-  );
-}
-
-// =============================================================================
-// Slider Control Component
-// =============================================================================
-
-interface SliderControlProps {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (value: number) => void;
-}
-
-function SliderControl({ label, value, min, max, step = 1, onChange }: SliderControlProps) {
-  const handleChange = useCallback(
-    (values: number[]) => onChange(values[0]),
-    [onChange]
-  );
+  if (count === 0) return null;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm text-muted-foreground">{label}</Label>
-        <span className="text-sm font-medium text-foreground bg-muted px-2 py-0.5 rounded">
-          {value}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: config?.color ?? "#94a3b8" }}
+        />
+        <span className="text-xs font-medium text-foreground truncate flex-1">
+          {config?.label ?? edgeType}
+        </span>
+        <span className="text-[10px] text-muted-foreground bg-muted px-1 py-0.5 rounded">
+          {count}
         </span>
       </div>
-      <Slider
-        value={[value]}
-        onValueChange={handleChange}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full"
-      />
+      <div className="pl-4 space-y-2">
+        {filterFields.map((field) => (
+          <div key={field} className="space-y-1">
+            <div className="text-[11px] text-muted-foreground">{fieldLabel(field)}</div>
+            <Slider
+              defaultValue={[0]}
+              min={0}
+              max={1}
+              step={0.01}
+              className="w-full"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -205,58 +177,42 @@ function SliderControl({ label, value, min, max, step = 1, onChange }: SliderCon
 function ControlsDrawerInner({
   open,
   onOpenChange,
-  filters,
-  onFiltersChange,
-  layout,
-  onLayoutChange,
   templates,
   activeTemplate,
   onTemplateChange,
-  edgeTypeGroups,
   onReset,
   edgeTypeCounts,
   nodeTypeCounts,
   isExpanding,
+  schema,
 }: ControlsDrawerProps) {
   if (!open) {
     return null;
   }
 
-  const handleEdgeTypeToggle = (edgeType: EdgeType, enabled: boolean) => {
-    const newEdgeTypes = new Set(filters.edgeTypes);
-    if (enabled) {
-      newEdgeTypes.add(edgeType);
-    } else {
-      newEdgeTypes.delete(edgeType);
-    }
-    onFiltersChange({ ...filters, edgeTypes: newEdgeTypes });
-  };
-
-  const handleSelectAllEdgeTypes = () => {
-    onFiltersChange({
-      ...filters,
-      edgeTypes: new Set(Object.keys(EDGE_TYPE_CONFIG) as EdgeType[]),
-    });
-  };
-
-  const handleClearEdgeTypes = () => {
-    onFiltersChange({
-      ...filters,
-      edgeTypes: new Set<EdgeType>(),
-    });
-  };
-
   const totalEdges = Object.values(edgeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
   const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
+
+  // Build schema map for filter field lookup
+  const schemaMap = useMemo(() => buildEdgeTypeStatsMap(schema), [schema]);
+
+  // Compute which edge types have filter fields
+  const edgeTypesWithFilters = useMemo(() => {
+    if (schemaMap.size === 0) return [];
+    const activeEdgeTypes = Object.keys(edgeTypeCounts ?? {}) as EdgeType[];
+    return activeEdgeTypes
+      .map((et) => ({
+        edgeType: et,
+        filterFields: resolveFilterFields(et, schemaMap),
+      }))
+      .filter((item) => item.filterFields.length > 0);
+  }, [schemaMap, edgeTypeCounts]);
 
   return (
     <div className="w-72 border-r border-border bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
-        <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Controls</span>
-        </div>
+        <span className="text-sm font-semibold text-foreground">Explorer</span>
         <div className="flex items-center gap-2">
           {isExpanding && (
             <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -333,6 +289,28 @@ function ControlsDrawerInner({
           </div>
         </CollapsibleSection>
 
+        {/* Per-Edge-Type Filters */}
+        {edgeTypesWithFilters.length > 0 && (
+          <CollapsibleSection
+            title="Edge Filters"
+            defaultOpen={false}
+            badge={
+              <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+            }
+          >
+            <div className="space-y-4">
+              {edgeTypesWithFilters.map(({ edgeType, filterFields }) => (
+                <EdgeTypeFilterSection
+                  key={edgeType}
+                  edgeType={edgeType}
+                  filterFields={filterFields}
+                  edgeTypeCounts={edgeTypeCounts}
+                />
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
         {/* Node Legend */}
         <CollapsibleSection
           title="Node Types"
@@ -345,92 +323,6 @@ function ControlsDrawerInner({
           }
         >
           <NodeTypeLegend counts={nodeTypeCounts} />
-        </CollapsibleSection>
-
-        {/* Edge Type Groups */}
-        {edgeTypeGroups.map((group) => (
-          <CollapsibleSection key={group.label} title={group.label} defaultOpen={false}>
-            <div className="space-y-0.5">
-              {group.types
-                .filter((et) => EDGE_TYPE_CONFIG[et])
-                .map((edgeType) => (
-                  <EdgeTypeToggle
-                    key={edgeType}
-                    edgeType={edgeType}
-                    enabled={filters.edgeTypes.has(edgeType)}
-                    count={edgeTypeCounts?.[edgeType]}
-                    onChange={(enabled) => handleEdgeTypeToggle(edgeType, enabled)}
-                  />
-                ))}
-            </div>
-          </CollapsibleSection>
-        ))}
-
-        {/* Select All / Clear All */}
-        <div className="px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs flex-1"
-              onClick={handleSelectAllEdgeTypes}
-            >
-              Select All
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs flex-1"
-              onClick={handleClearEdgeTypes}
-            >
-              Clear All
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <CollapsibleSection title="Filters" defaultOpen={false}>
-          <div className="space-y-4">
-            <SliderControl
-              label="Max Depth"
-              value={filters.maxDepth}
-              min={1}
-              max={5}
-              onChange={(value) => onFiltersChange({ ...filters, maxDepth: value })}
-            />
-            <SliderControl
-              label="Min Evidence Sources"
-              value={filters.minSources}
-              min={0}
-              max={5}
-              onChange={(value) => onFiltersChange({ ...filters, minSources: value })}
-            />
-            <label className="flex items-center gap-2 cursor-pointer pt-2">
-              <Checkbox
-                checked={filters.showOrphans}
-                onCheckedChange={(checked) => onFiltersChange({ ...filters, showOrphans: checked === true })}
-              />
-              <span className="text-sm text-muted-foreground">Show disconnected nodes</span>
-            </label>
-          </div>
-        </CollapsibleSection>
-
-        {/* Layout Settings */}
-        <CollapsibleSection title="Layout" defaultOpen={false}>
-          <div className="space-y-2">
-            <Select value={layout} onValueChange={onLayoutChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cose-bilkent">Force-Directed</SelectItem>
-                <SelectItem value="dagre">Hierarchical (Top-Down)</SelectItem>
-                <SelectItem value="concentric">Concentric</SelectItem>
-                <SelectItem value="circle">Circle</SelectItem>
-                <SelectItem value="grid">Grid</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </CollapsibleSection>
       </div>
     </div>

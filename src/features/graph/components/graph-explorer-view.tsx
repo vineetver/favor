@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@shared/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -13,107 +12,43 @@ import {
 } from "@shared/components/ui/tooltip";
 import { cn } from "@infra/utils";
 import {
-  ChevronRight,
-  List,
-  Loader2,
   Network,
-  PanelLeft,
-  SplitSquareVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExplorerCytoscape } from "./explorer-cytoscape";
+import { ExplorerToolbar } from "./explorer-toolbar";
 import { ControlsDrawer } from "./controls-drawer";
 import { InspectorPanel } from "./inspector-panel";
 import { EdgeTooltip } from "./edge-tooltip";
 import { RankedResultsList } from "./ranked-results-list";
 import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
 import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
-import { getLensEdgeFields, serializeLensSteps, isBranchStep } from "../config/lenses";
-import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
+import { serializeLensSteps, isBranchStep } from "../config/lenses";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
+import type { GraphQueryStepOrBranch } from "../api";
+import {
+  buildEdgeTypeStatsMap,
+  resolveSortField,
+  resolveEdgeSelectFields,
+  collectEdgeTypesFromSteps,
+  injectSortFields,
+} from "../utils/schema-fields";
 import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/props";
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import { getEdgeFieldsForTypes, batchEdgeTypesByFieldLimit } from "../types/edge";
-import type { ExplorerLayoutType, ViewMode, TemplateId } from "../types/state";
+import type { TemplateId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import type { ExplorerTemplate } from "../config/explorer-config";
+import type { QueryStep } from "../config/lenses";
 import type { TemplateResultData, TemplateResultEntry } from "../types/template-results";
 import { VARIANT_TRAIL_CONFIG } from "../config/variant-trail";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
 import { createProvenanceEvent } from "../types/provenance";
 import { useConnectionsDrilldown } from "../hooks/use-connections-drilldown";
-
-// =============================================================================
-// View Toggle Component
-// =============================================================================
-
-interface ViewToggleProps {
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-}
-
-function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
-  return (
-    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-      <Button
-        variant={viewMode === "graph" ? "secondary" : "ghost"}
-        size="sm"
-        className="h-7 px-2"
-        onClick={() => onViewModeChange("graph")}
-        title="Graph View"
-      >
-        <Network className="w-4 h-4" />
-      </Button>
-      <Button
-        variant={viewMode === "list" ? "secondary" : "ghost"}
-        size="sm"
-        className="h-7 px-2"
-        onClick={() => onViewModeChange("list")}
-        title="List View"
-      >
-        <List className="w-4 h-4" />
-      </Button>
-      <Button
-        variant={viewMode === "split" ? "secondary" : "ghost"}
-        size="sm"
-        className="h-7 px-2"
-        onClick={() => onViewModeChange("split")}
-        title="Split View"
-      >
-        <SplitSquareVertical className="w-4 h-4" />
-      </Button>
-    </div>
-  );
-}
-
-// =============================================================================
-// Layout Selector Component
-// =============================================================================
-
-interface LayoutSelectorProps {
-  layout: ExplorerLayoutType;
-  onLayoutChange: (layout: ExplorerLayoutType) => void;
-}
-
-function LayoutSelector({ layout, onLayoutChange }: LayoutSelectorProps) {
-  return (
-    <select
-      value={layout}
-      onChange={(e) => onLayoutChange(e.target.value as ExplorerLayoutType)}
-      className="h-8 px-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-    >
-      {EXPLORER_LAYOUT_OPTIONS.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
-}
 
 // =============================================================================
 // Extract Ranked Results from query response
@@ -221,6 +156,9 @@ function GraphExplorerViewInner({
   const variantTrailCache = useRef<Map<string, VariantTrailResultData>>(new Map());
   const [activeTrailResult, setActiveTrailResult] = useState<VariantTrailResultData | null>(null);
 
+  // Build schema map once (memoized)
+  const schemaMap = useMemo(() => buildEdgeTypeStatsMap(schema), [schema]);
+
   // Hydrate initial data on mount
   useEffect(() => {
     if (state.status !== "idle") return;
@@ -268,12 +206,12 @@ function GraphExplorerViewInner({
   const { nodeTypeCounts, edgeTypeCounts } = useMemo(() => selectors.graphSummary(), [selectors]);
   const selectedNodeIds = useMemo(() => selectors.highlightedNodeIds(), [selectors]);
   const selectedEdgeId = useMemo(() => selectors.highlightedEdgeId(), [selectors]);
-  const isExpanding = selectors.isExpanding();
+  const isLoading = selectors.isLoading();
 
   // Ready-state shortcuts
   const readyState = state.status === "ready" ? state : null;
   const selection = readyState?.selection ?? { type: "none" as const };
-  const filters = readyState?.filters ?? { edgeTypes: new Set<EdgeType>(), minSources: 0, minExperiments: 0, maxDepth: 4, showOrphans: true };
+  const filters = readyState?.filters ?? { edgeTypes: new Set<EdgeType>(), minSources: 0, minExperiments: 0, maxDepth: 4, showOrphans: true, edgeTypeFilters: {}, scoreThreshold: null, scoreField: null };
   const layout = readyState?.layout ?? "cose-bilkent";
   const viewMode = readyState?.viewMode ?? "graph";
   const activeTemplate = readyState?.activeTemplate ?? config.defaultTemplateId;
@@ -313,7 +251,10 @@ function GraphExplorerViewInner({
   // Template Switching (async — stays in component)
   // ==========================================================================
 
-  const switchTemplate = useCallback(async (templateId: TemplateId) => {
+  const switchTemplate = useCallback(async (
+    templateId: TemplateId,
+    opts?: { extraSteps?: QueryStep[]; stepLimit?: number },
+  ) => {
     const template = config.templates.find((t) => t.id === templateId);
     if (!template) return;
 
@@ -325,10 +266,31 @@ function GraphExplorerViewInner({
     const prov = createProvenanceEvent("lens", `${template.name} template`, { templateId });
 
     try {
+      // Cap total steps at 5 (API limit)
+      const allSteps = [...template.steps, ...(opts?.extraSteps ?? [])].slice(0, 5);
+
+      // Apply step limit override: clamp each non-branch step's limit
+      const stepLimit = opts?.stepLimit;
+      const stepsWithLimit = stepLimit
+        ? allSteps.map((step) => {
+            if (isBranchStep(step)) {
+              return { branch: step.branch.map((s) => ({ ...s, limit: Math.min(s.limit ?? 1000, stepLimit) })) };
+            }
+            return { ...step, limit: Math.min(step.limit ?? 1000, stepLimit) };
+          })
+        : allSteps;
+
+      // Inject schema-driven sorts into steps that don't have hardcoded sorts
+      const stepsWithSorts = injectSortFields(stepsWithLimit, schemaMap);
+
+      // Compute edge fields from schema (or fallback to hardcoded catalog)
+      const allEdgeTypes = collectEdgeTypesFromSteps(allSteps);
+      const edgeFields = resolveEdgeSelectFields(allEdgeTypes, schemaMap);
+
       const response = await fetchGraphQuery({
         seeds: [{ type: seed.type, id: seed.id }],
-        steps: serializeLensSteps(template.steps),
-        select: { edgeFields: getLensEdgeFields(template as Parameters<typeof getLensEdgeFields>[0]) },
+        steps: serializeLensSteps(stepsWithSorts),
+        select: { edgeFields },
         limits: template.limits,
       });
 
@@ -357,8 +319,9 @@ function GraphExplorerViewInner({
       const seedSet = new Set([seed.id]);
       const { nodes: newNodes, edges: newEdges } = hydrateQueryResponse(response, seed, seedSet);
 
+      // Collect edge types from ALL steps (template + extra hops)
       const templateEdgeTypes = new Set<EdgeType>();
-      for (const step of template.steps) {
+      for (const step of allSteps) {
         if (isBranchStep(step)) {
           for (const sub of step.branch) {
             for (const et of sub.edgeTypes) templateEdgeTypes.add(et);
@@ -380,7 +343,7 @@ function GraphExplorerViewInner({
       console.error("Failed to switch template:", error);
       actions.switchTemplateError(String(error));
     }
-  }, [seed, config.templates, actions]);
+  }, [seed, config.templates, actions, schemaMap]);
 
   const handleReset = useCallback(() => {
     switchTemplate(activeTemplate);
@@ -438,7 +401,7 @@ function GraphExplorerViewInner({
     const node = selectors.getNode(nodeId);
     if (!node) return;
 
-    actions.expandStart();
+    actions.expandStart(nodeId, node.label);
 
     const expandProv = expansion
       ? createProvenanceEvent("typed_expand", `${expansion.label} from ${node.label}`, { sourceNodeId: nodeId, sourceNodeLabel: node.label })
@@ -450,19 +413,22 @@ function GraphExplorerViewInner({
         const batches = batchEdgeTypesByFieldLimit(expansion.edgeTypes as EdgeType[], 20);
 
         const responses = await Promise.all(
-          batches.map((batch) =>
-            fetchGraphQuery({
+          batches.map((batch) => {
+            // Resolve sort from schema for the primary edge type in this expansion
+            const sort = resolveSortField(batch[0], schemaMap, expansion.sort);
+            const step: GraphQueryStepOrBranch = {
+              edgeTypes: batch as string[],
+              direction: expansion.direction,
+              limit: expansion.limit ?? 20,
+              ...(sort ? { sort } : {}),
+            };
+            return fetchGraphQuery({
               seeds: [{ type: node.type, id: nodeId }],
-              steps: [{
-                edgeTypes: batch,
-                direction: expansion.direction,
-                limit: expansion.limit ?? 20,
-                sort: expansion.sort,
-              }],
-              select: { edgeFields: getEdgeFieldsForTypes(batch) },
+              steps: [step],
+              select: { edgeFields: resolveEdgeSelectFields(batch, schemaMap) },
               limits: { maxNodes: 200, maxEdges: 500 },
-            }),
-          ),
+            });
+          }),
         );
 
         // Check if ALL batches failed
@@ -607,7 +573,7 @@ function GraphExplorerViewInner({
           : `Expansion failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }, [selectors, actions, readyState]);
+  }, [selectors, actions, readyState, schemaMap]);
 
   // ==========================================================================
   // Variant Trail (async — multi-step route to find Variants)
@@ -628,7 +594,7 @@ function GraphExplorerViewInner({
       return;
     }
 
-    actions.expandStart();
+    actions.variantTrailStart(nodeId);
 
     const trailProv = createProvenanceEvent("variant_trail", `Variant trail from ${node.label}`, {
       sourceNodeId: nodeId,
@@ -645,15 +611,21 @@ function GraphExplorerViewInner({
         // Collect all edge types across all steps for edge field selection
         const allEdgeTypes = route.steps.flatMap((s) => s.edgeTypes) as EdgeType[];
 
-        const response = await fetchGraphQuery({
-          seeds: [{ type: node.type, id: nodeId }],
-          steps: route.steps.map((s) => ({
-            edgeTypes: s.edgeTypes,
+        // Build steps with schema-driven sorts, stripping undefined fields
+        const serializedSteps: GraphQueryStepOrBranch[] = route.steps.map((s) => {
+          const sort = s.sort ?? resolveSortField(s.edgeTypes[0] as EdgeType, schemaMap);
+          return {
+            edgeTypes: s.edgeTypes as string[],
             direction: s.direction,
             limit: s.limit,
-            sort: s.sort,
-          })),
-          select: { edgeFields: getEdgeFieldsForTypes(allEdgeTypes).slice(0, 20) },
+            ...(sort ? { sort } : {}),
+          };
+        });
+
+        const response = await fetchGraphQuery({
+          seeds: [{ type: node.type, id: nodeId }],
+          steps: serializedSteps,
+          select: { edgeFields: resolveEdgeSelectFields(allEdgeTypes, schemaMap) },
           limits: { maxNodes: trailConfig.maxNodes, maxEdges: trailConfig.maxEdges },
         });
 
@@ -719,7 +691,7 @@ function GraphExplorerViewInner({
       }
 
       // Merge into graph
-      actions.expandSuccess(allNewNodes, allNewEdges, trailProv);
+      actions.variantTrailSuccess(allNewNodes, allNewEdges, trailProv);
 
       // Build result
       const result: VariantTrailResultData = {
@@ -740,12 +712,12 @@ function GraphExplorerViewInner({
       }
     } catch (error: unknown) {
       console.error("Variant trail failed:", error);
-      actions.dismissExpansionError();
+      actions.dismissError();
       toast.error(
         `Variant trail failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }, [selectors, actions]);
+  }, [selectors, actions, schemaMap]);
 
   const removeNode = useCallback((nodeId: string) => {
     actions.removeNode(nodeId);
@@ -814,38 +786,26 @@ function GraphExplorerViewInner({
   return (
     <TooltipProvider delayDuration={0}>
       <div className={cn("flex flex-col h-full bg-background", className)}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={actions.toggleLeftDrawer}
-            >
-              {leftDrawerOpen ? <PanelLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </Button>
-
-            <div className="flex items-center gap-2">
-              <Network className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-semibold text-foreground">Graph Explorer</h1>
-              <span className="text-sm text-muted-foreground">|</span>
-              <span className="text-sm font-medium text-primary">{seed.label}</span>
-            </div>
-
-            {isExpanding && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <LayoutSelector layout={layout} onLayoutChange={actions.setLayout} />
-            <ViewToggle viewMode={viewMode} onViewModeChange={actions.setViewMode} />
-          </div>
-        </div>
+        {/* Toolbar */}
+        <ExplorerToolbar
+          seed={seed}
+          config={config}
+          schema={schema}
+          activeTemplate={activeTemplate}
+          onTemplateChange={switchTemplate}
+          viewMode={viewMode}
+          onViewModeChange={actions.setViewMode}
+          layout={layout}
+          onLayoutChange={actions.setLayout}
+          isExpanding={isLoading}
+          leftDrawerOpen={leftDrawerOpen}
+          onToggleLeftDrawer={actions.toggleLeftDrawer}
+          filters={filters}
+          onFiltersChange={actions.setFilters}
+          nodes={readyState?.graph.nodes}
+          edges={readyState?.graph.edges}
+          onReset={handleReset}
+        />
 
         {/* Main Content */}
         <div className="flex flex-1 min-h-0">
@@ -853,18 +813,14 @@ function GraphExplorerViewInner({
           <ControlsDrawer
             open={leftDrawerOpen}
             onOpenChange={(open) => open !== leftDrawerOpen && actions.toggleLeftDrawer()}
-            filters={filters}
-            onFiltersChange={actions.setFilters}
-            layout={layout}
-            onLayoutChange={actions.setLayout}
             templates={config.templates}
             activeTemplate={activeTemplate}
             onTemplateChange={switchTemplate}
-            edgeTypeGroups={config.edgeTypeGroups}
             onReset={handleReset}
             edgeTypeCounts={edgeTypeCounts}
             nodeTypeCounts={nodeTypeCounts}
-            isExpanding={isExpanding}
+            isExpanding={isLoading}
+            schema={schema}
           />
 
           {/* Graph Canvas / List / Split */}
@@ -937,7 +893,7 @@ function GraphExplorerViewInner({
             )}
 
             {/* No results for this template */}
-            {viewMode !== "list" && graphEdgesSize === 0 && !isExpanding && (
+            {viewMode !== "list" && graphEdgesSize === 0 && !isLoading && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
                   <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
@@ -987,7 +943,7 @@ function GraphExplorerViewInner({
                 onExpandNode={expandNode}
                 onRemoveNode={removeNode}
                 onFindPaths={handleFindPaths}
-                isExpanding={isExpanding}
+                isExpanding={isLoading}
                 externalLinks={config.externalLinks}
                 enableVariantTrail={config.enableVariantTrail}
                 onRunVariantTrail={runVariantTrail}
@@ -999,6 +955,7 @@ function GraphExplorerViewInner({
                 connectionsError={connectionsError}
                 onLoadMoreEdges={loadMoreEdges}
                 onRetryConnections={retryConnections}
+                schema={schema}
               />
             </div>
           </SheetContent>

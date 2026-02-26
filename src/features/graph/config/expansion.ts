@@ -24,7 +24,7 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       description: "All disease associations (scored, curated, causal, somatic)",
       edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE", "GENE_ALTERED_IN_DISEASE"],
       direction: "out", targetType: "Disease", icon: "heart-pulse", color: "#ef4444",
-      sort: "-overall_score", limit: 20,
+      limit: 20,
     },
     {
       label: "Find Targeting Drugs",
@@ -117,7 +117,7 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       description: "Genes associated with this disease",
       edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE", "GENE_ALTERED_IN_DISEASE"],
       direction: "in", targetType: "Gene", icon: "dna", color: "#3b82f6",
-      sort: "-overall_score", limit: 20,
+      limit: 20,
     },
     {
       label: "Find Treatments",
@@ -279,7 +279,7 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       description: "GWAS-associated entities",
       edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
       direction: "out", targetType: "Entity", icon: "activity", color: "#eab308",
-      sort: "-p_value_mlog", limit: 20,
+      limit: 20,
     },
     {
       label: "Find Diseases",
@@ -330,7 +330,7 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       description: "GWAS-associated variants",
       edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
       direction: "in", targetType: "Variant", icon: "microscope", color: "#f59e0b",
-      sort: "-p_value_mlog", limit: 20,
+      limit: 20,
     },
     {
       label: "Find Studies",

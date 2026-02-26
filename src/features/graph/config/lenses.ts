@@ -1,6 +1,6 @@
 import type { EdgeType } from "../types/edge";
 import { getEdgeFieldsForTypes } from "../types/edge";
-import type { GraphQueryStepOrBranch } from "../api";
+import type { GraphQueryStep, GraphQueryStepOrBranch } from "../api";
 
 // =============================================================================
 // Lens System - Curated Views via /graph/query
@@ -64,32 +64,39 @@ export function getLensEdgeFields(lens: GraphLens): string[] {
 }
 
 /**
+ * Serialize a single QueryStep, stripping any undefined fields
+ * to prevent serialization issues with the backend's untagged enum.
+ */
+function serializeQueryStep(s: QueryStep): GraphQueryStep {
+  // Build the step object field-by-field, only including defined values.
+  // The backend uses a serde untagged enum — unknown fields cause 422.
+  const out: Record<string, unknown> = {
+    edgeTypes: s.edgeTypes as string[],
+    direction: s.direction,
+  };
+  if (s.limit !== undefined) out.limit = s.limit;
+  if (s.sort !== undefined) out.sort = s.sort;
+  if (s.filters !== undefined) out.filters = s.filters;
+  if (s.overlayOnly !== undefined) out.overlayOnly = s.overlayOnly;
+  return out as unknown as GraphQueryStep;
+}
+
+/**
  * Serialize lens steps to the API's step format.
  * Regular steps → { edgeTypes, direction, limit, sort, filters }
  * Branch steps  → { branch: [{ edgeTypes, direction, ... }, ...] }
+ *
+ * Strips undefined fields to ensure clean JSON for the backend's
+ * StepOrBranch untagged enum deserializer.
  */
 export function serializeLensSteps(steps: LensStep[]): GraphQueryStepOrBranch[] {
   return steps.map((step): GraphQueryStepOrBranch => {
     if (isBranchStep(step)) {
       return {
-        branch: step.branch.map((s) => ({
-          edgeTypes: s.edgeTypes as string[],
-          direction: s.direction,
-          limit: s.limit,
-          sort: s.sort,
-          filters: s.filters,
-          overlayOnly: s.overlayOnly,
-        })),
-      };
+        branch: step.branch.map(serializeQueryStep),
+      } as GraphQueryStepOrBranch;
     }
-    return {
-      edgeTypes: step.edgeTypes as string[],
-      direction: step.direction,
-      limit: step.limit,
-      sort: step.sort,
-      filters: step.filters,
-      overlayOnly: step.overlayOnly,
-    };
+    return serializeQueryStep(step) as GraphQueryStepOrBranch;
   });
 }
 
@@ -116,7 +123,7 @@ export const GRAPH_LENSES: GraphLens[] = [
     steps: [
       {
         branch: [
-          { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30, sort: "-overall_score" },
+          { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30 },
           { edgeTypes: ["GENE_ALTERED_IN_DISEASE"], direction: "out", limit: 20 },
         ],
       },
@@ -142,7 +149,7 @@ export const GRAPH_LENSES: GraphLens[] = [
       {
         branch: [
           { edgeTypes: ["VARIANT_AFFECTS_GENE"], direction: "in", limit: 20 },
-          { edgeTypes: ["VARIANT_IMPLIES_GENE"], direction: "in", limit: 20, sort: "-max_l2g_score" },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE"], direction: "in", limit: 20 },
         ],
       },
     ],
@@ -174,7 +181,6 @@ export const GRAPH_LENSES: GraphLens[] = [
         edgeTypes: ["CCRE_REGULATES_GENE"],
         direction: "in",
         limit: 20,
-        sort: "-max_score",
       },
       {
         edgeTypes: ["VARIANT_OVERLAPS_CCRE"],
@@ -296,8 +302,8 @@ export const GRAPH_LENSES: GraphLens[] = [
       },
       {
         branch: [
-          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12, sort: "-p_value_mlog" },
-          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10, sort: "-p_value_mlog" },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12 },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10 },
         ],
       },
       {

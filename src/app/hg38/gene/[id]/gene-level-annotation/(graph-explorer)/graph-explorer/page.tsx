@@ -10,8 +10,14 @@ import type { EntityType } from "@features/graph/types/entity";
 import type { EdgeType } from "@features/graph/types/edge";
 import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
 import type { InitialSubgraphData } from "@features/graph/types/props";
-import { getLensEdgeFields, serializeLensSteps } from "@features/graph/config/lenses";
+import { serializeLensSteps, isBranchStep } from "@features/graph/config/lenses";
 import { GENE_EXPLORER_CONFIG } from "@features/graph/config/entities/gene";
+import {
+  buildEdgeTypeStatsMap,
+  resolveEdgeSelectFields,
+  collectEdgeTypesFromSteps,
+  injectSortFields,
+} from "@features/graph/utils/schema-fields";
 import { notFound } from "next/navigation";
 
 interface GraphExplorerPageProps {
@@ -51,6 +57,10 @@ export default async function GraphExplorerPage({
           count: et.count,
           sourceTypes: et.sourceTypes as EntityType[],
           targetTypes: et.targetTypes as EntityType[],
+          label: et.label,
+          defaultScoreField: et.defaultScoreField,
+          scoreFields: et.scoreFields,
+          filterFields: et.filterFields,
         })),
         lastUpdated: schemaResponse.data.lastUpdated,
       }
@@ -66,6 +76,9 @@ export default async function GraphExplorerPage({
       }
     : null;
 
+  // Build schema map for sort/field resolution
+  const schemaMap = buildEdgeTypeStatsMap(schema);
+
   // Fetch initial subgraph for default template via /graph/query
   const defaultTemplate = GENE_EXPLORER_CONFIG.templates.find(
     (t) => t.id === GENE_EXPLORER_CONFIG.defaultTemplateId
@@ -73,10 +86,25 @@ export default async function GraphExplorerPage({
   let initialSubgraph: InitialSubgraphData | null = null;
 
   try {
+    // Cap per-step limits to 10 for fast initial load
+    const cappedSteps = defaultTemplate.steps.map((step) => {
+      if (isBranchStep(step)) {
+        return { branch: step.branch.map((s) => ({ ...s, limit: Math.min(s.limit ?? 1000, 10) })) };
+      }
+      return { ...step, limit: Math.min(step.limit ?? 1000, 10) };
+    });
+
+    // Inject schema-driven sorts into steps
+    const stepsWithSorts = injectSortFields(cappedSteps, schemaMap);
+
+    // Compute edge fields from schema (or fallback to hardcoded catalog)
+    const allEdgeTypes = collectEdgeTypesFromSteps(defaultTemplate.steps);
+    const edgeFields = resolveEdgeSelectFields(allEdgeTypes, schemaMap);
+
     const queryResponse = await fetchGraphQuery({
       seeds: [{ type: "Gene", id: geneId }],
-      steps: serializeLensSteps(defaultTemplate.steps),
-      select: { edgeFields: getLensEdgeFields(defaultTemplate as Parameters<typeof getLensEdgeFields>[0]) },
+      steps: serializeLensSteps(stepsWithSorts),
+      select: { edgeFields },
       limits: defaultTemplate.limits,
     });
 

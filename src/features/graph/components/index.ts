@@ -8,6 +8,7 @@ export { GraphExplorerView } from "./graph-explorer-view";
 
 // Sub-components
 export { ExplorerCytoscape } from "./explorer-cytoscape";
+export { ExplorerToolbar } from "./explorer-toolbar";
 export { ControlsDrawer } from "./controls-drawer";
 export { InspectorPanel } from "./inspector-panel";
 export { RankedResultsList } from "./ranked-results-list";

@@ -90,6 +90,8 @@ export type EdgeType =
 /**
  * Schema-driven field catalog per edge type.
  * Source of truth: docs/GRAPH_SCHEMA section 4.
+ * @deprecated Use `resolveEdgeSelectFields` from `utils/schema-fields.ts` for primary code paths.
+ * Kept as offline/SSR fallback when schema is null.
  */
 export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
   // Gene → Disease
@@ -179,6 +181,8 @@ export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
 
 /**
  * Compute the union of all schema fields for a set of edge types.
+ * @deprecated Use `resolveEdgeSelectFields` from `utils/schema-fields.ts` for primary code paths.
+ * Kept as offline/SSR fallback when schema is null.
  */
 export function getEdgeFieldsForTypes(edgeTypes: EdgeType[]): string[] {
   const fields = new Set<string>();

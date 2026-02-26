@@ -35,6 +35,8 @@ import { NODE_TYPE_COLORS } from "../config/styling";
 import { NODE_EXPANSION_CONFIG } from "../config/expansion";
 import { hasVariantTrail } from "../config/variant-trail";
 import { VariantTrailResults } from "./variant-trail-results";
+import { buildEdgeTypeStatsMap, resolveScoreFields } from "../utils/schema-fields";
+import type { GraphSchema } from "../types/schema";
 
 // =============================================================================
 // Icon Map for Expansion Configs
@@ -213,8 +215,8 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   return <span className="text-sm text-foreground break-words">{String(value)}</span>;
 }
 
-/** Render all fields from an edge's `fields` dict */
-function EdgeFields({ fields }: { fields: Record<string, unknown> }) {
+/** Render all fields from an edge's `fields` dict, ordered by schema scoreFields */
+function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unknown>; edgeType?: EdgeType; schema?: GraphSchema | null }) {
   const entries = Object.entries(fields).filter(
     ([key, value]) =>
       !SKIP_FIELDS.has(key) &&
@@ -226,18 +228,38 @@ function EdgeFields({ fields }: { fields: Record<string, unknown> }) {
 
   if (entries.length === 0) return null;
 
-  // Sort: scores first, then pubmed, then rest
+  // Use schema scoreFields for priority ordering when available
+  const schemaMap = buildEdgeTypeStatsMap(schema);
+  const schemaScoreFields = edgeType ? resolveScoreFields(edgeType, schemaMap) : [];
+  const schemaScoreSet = new Set(schemaScoreFields);
+
   entries.sort(([a], [b]) => {
+    const aSchemaIdx = schemaScoreFields.indexOf(a);
+    const bSchemaIdx = schemaScoreFields.indexOf(b);
+
+    // Both in schema scoreFields → sort by schema order
+    if (aSchemaIdx >= 0 && bSchemaIdx >= 0) return aSchemaIdx - bSchemaIdx;
+    // Only one in schema scoreFields → it comes first
+    if (aSchemaIdx >= 0) return -1;
+    if (bSchemaIdx >= 0) return 1;
+
+    // Fallback: hardcoded scores first, then pubmed, then alphabetical
     const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
     const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
-    return aScore - bScore;
+    if (aScore !== bScore) return aScore - bScore;
+    return a.localeCompare(b);
   });
 
   return (
     <div className="space-y-2.5">
       {entries.map(([key, value]) => (
         <div key={key} className="space-y-0.5">
-          <div className="text-xs font-medium text-muted-foreground">{fieldLabel(key)}</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            {fieldLabel(key)}
+            {schemaScoreSet.has(key) && (
+              <span className="ml-1 text-[10px] text-primary/70">(score)</span>
+            )}
+          </div>
           <FieldValue fieldKey={key} value={value} />
         </div>
       ))}
@@ -254,12 +276,14 @@ function EdgeInstance({
   provenance,
   defaultOpen,
   insideGroup,
+  schema,
 }: {
   edge: ExplorerEdge;
   provenance: ProvenanceEvent[];
   defaultOpen: boolean;
   /** When true, renders compact header (no type label — parent group already shows it) */
   insideGroup?: boolean;
+  schema?: GraphSchema | null;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const config = EDGE_TYPE_CONFIG[edge.type];
@@ -329,7 +353,7 @@ function EdgeInstance({
 
           {/* Schema-driven fields */}
           {edge.fields && Object.keys(edge.fields).length > 0 && (
-            <EdgeFields fields={edge.fields} />
+            <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} />
           )}
 
           {/* Legacy evidence (from subgraph API with includeProps) */}
@@ -403,6 +427,7 @@ interface RelationshipTypeGroupProps {
   selectedEdgeId: string;
   getProvenance: (id: string) => ProvenanceEvent[];
   onLoadMore?: (edgeType: EdgeType) => void;
+  schema?: GraphSchema | null;
 }
 
 function RelationshipTypeGroup({
@@ -410,6 +435,7 @@ function RelationshipTypeGroup({
   selectedEdgeId,
   getProvenance,
   onLoadMore,
+  schema,
 }: RelationshipTypeGroupProps) {
   const config = EDGE_TYPE_CONFIG[group.type];
   const containsSelected = group.edges.some((e) => e.id === selectedEdgeId);
@@ -456,6 +482,7 @@ function RelationshipTypeGroup({
               provenance={getProvenance(e.id)}
               defaultOpen={e.id === selectedEdgeId}
               insideGroup
+              schema={schema}
             />
           ))}
 
@@ -500,6 +527,7 @@ interface EdgeDetailProps {
   connectionsError?: string | null;
   onLoadMoreEdges?: (edgeType: EdgeType) => void;
   onRetryConnections?: () => void;
+  schema?: GraphSchema | null;
 }
 
 function EdgeDetail({
@@ -512,6 +540,7 @@ function EdgeDetail({
   connectionsError,
   onLoadMoreEdges,
   onRetryConnections,
+  schema,
 }: EdgeDetailProps) {
   const sourceNode = getNode(edge.sourceId);
   const targetNode = getNode(edge.targetId);
@@ -587,6 +616,7 @@ function EdgeDetail({
               selectedEdgeId={edge.id}
               getProvenance={getProvenance}
               onLoadMore={onLoadMoreEdges}
+              schema={schema}
             />
           ))}
         </div>
@@ -599,6 +629,7 @@ function EdgeDetail({
               edge={e}
               provenance={getProvenance(e.id)}
               defaultOpen={e.id === edge.id}
+              schema={schema}
             />
           ))}
         </div>
@@ -901,6 +932,7 @@ function InspectorPanelInner({
   connectionsError,
   onLoadMoreEdges,
   onRetryConnections,
+  schema,
 }: InspectorPanelProps) {
   // Show trail results when active and matches selected node
   if (
@@ -956,6 +988,7 @@ function InspectorPanelInner({
           connectionsError={connectionsError}
           onLoadMoreEdges={onLoadMoreEdges}
           onRetryConnections={onRetryConnections}
+          schema={schema}
         />
       )}
 

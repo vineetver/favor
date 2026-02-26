@@ -36,6 +36,10 @@ export interface EdgeTypeStats {
   count: number;
   sourceTypes: EntityType[];
   targetTypes: EntityType[];
+  label?: string;
+  defaultScoreField?: string;
+  scoreFields?: string[];
+  filterFields?: string[];
 }
 
 export interface GraphSchema {

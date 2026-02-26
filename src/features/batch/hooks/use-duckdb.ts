@@ -32,9 +32,7 @@ export interface UseDuckDBResult {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
-  /** @deprecated Use loadArrow instead - backend now outputs Arrow IPC format */
   loadParquet: (url: string, tableName?: string) => Promise<LoadDataResult>;
-  loadArrow: (url: string, tableName?: string) => Promise<LoadDataResult>;
   query: (sql: string) => Promise<QueryResult>;
   getTableSchema: (tableName: string) => Promise<QueryResult>;
   getTables: () => Promise<string[]>;
@@ -96,11 +94,6 @@ export function useDuckDB(): UseDuckDBResult {
         await conn.query(`INSTALL httpfs`);
         await conn.query(`LOAD httpfs`);
 
-        // Install and load nanoarrow extension for Arrow IPC files (from community)
-        // nanoarrow replaces the deprecated Arrow core extension
-        await conn.query(`INSTALL nanoarrow FROM community`);
-        await conn.query(`LOAD nanoarrow`);
-
         const instance = { db, conn };
         instanceRef.current = instance;
 
@@ -138,8 +131,8 @@ export function useDuckDB(): UseDuckDBResult {
     };
   }, [initDuckDB]);
 
-  // Load Arrow IPC file from URL (with IndexedDB caching)
-  const loadArrow = useCallback(async (url: string, tableName = "variants"): Promise<LoadDataResult> => {
+  // Load Parquet file from URL (with IndexedDB caching)
+  const loadParquet = useCallback(async (url: string, tableName = "variants"): Promise<LoadDataResult> => {
     const instance = await initDuckDB();
 
     try {
@@ -150,37 +143,31 @@ export function useDuckDB(): UseDuckDBResult {
       const cached = await getCachedData(url);
 
       if (cached) {
-        // Use cached data
         arrayBuffer = cached;
         fromCache = true;
-        console.log(`[DuckDB] Loaded Arrow IPC from cache (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`[DuckDB] Loaded Parquet from cache (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
       } else {
-        // Fetch the Arrow IPC file via browser fetch
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`Failed to fetch Arrow file: ${response.status} ${response.statusText}`);
+          throw new Error(`Failed to fetch Parquet file: ${response.status} ${response.statusText}`);
         }
 
-        // Get the file as ArrayBuffer
         arrayBuffer = await response.arrayBuffer();
-        console.log(`[DuckDB] Fetched Arrow IPC from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`[DuckDB] Fetched Parquet from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
 
         // Store in cache for next time (don't await - do it in background)
         setCachedData(url, arrayBuffer).catch((err) => {
-          console.warn("[DuckDB] Failed to cache Arrow data:", err);
+          console.warn("[DuckDB] Failed to cache Parquet data:", err);
         });
       }
 
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Register the file with DuckDB as Arrow IPC
-      await instance.db.registerFileBuffer("data.arrow", uint8Array);
+      await instance.db.registerFileBuffer("data.parquet", uint8Array);
 
-      // Create table from the registered Arrow IPC file
-      // DuckDB can read Arrow IPC files directly with the arrow extension
       await instance.conn.query(`
         CREATE OR REPLACE TABLE ${tableName} AS
-        SELECT * FROM 'data.arrow'
+        SELECT * FROM read_parquet('data.parquet')
       `);
 
       return {
@@ -188,13 +175,10 @@ export function useDuckDB(): UseDuckDBResult {
         size: arrayBuffer.byteLength,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load Arrow file";
+      const message = err instanceof Error ? err.message : "Failed to load Parquet file";
       throw new Error(message);
     }
   }, [initDuckDB]);
-
-  // Backwards compatibility - loadParquet now loads Arrow IPC
-  const loadParquet = loadArrow;
 
   // Clear the data cache
   const clearCache = useCallback(async () => {
@@ -277,7 +261,6 @@ export function useDuckDB(): UseDuckDBResult {
     isReady,
     error,
     loadParquet,
-    loadArrow,
     query,
     getTableSchema,
     getTables,

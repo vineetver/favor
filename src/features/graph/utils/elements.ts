@@ -67,17 +67,26 @@ export function transformToElements(
   const visibleNodeIds = new Set<string>();
 
   // First pass: identify visible edges and their connected nodes
+  const hasActiveEdgeFilters = filters.minSources > 0 || filters.minExperiments > 0 || (filters.scoreThreshold != null && filters.scoreThreshold > 0);
   edges.forEach((edge) => {
     if (!filters.edgeTypes.has(edge.type)) return;
     if ((edge.numSources ?? 0) < filters.minSources) return;
     if ((edge.numExperiments ?? 0) < filters.minExperiments) return;
+    // Apply score threshold filter
+    if (filters.scoreThreshold != null && filters.scoreField) {
+      const val = edge.fields?.[filters.scoreField];
+      if (typeof val === "number" && val < filters.scoreThreshold) return;
+    }
     visibleNodeIds.add(edge.sourceId);
     visibleNodeIds.add(edge.targetId);
   });
 
   // Add nodes
+  // When edge filters are active (minSources/minExperiments/scoreThreshold > 0),
+  // hide non-seed orphaned nodes even if showOrphans is true
   nodes.forEach((node) => {
     if (node.depth > filters.maxDepth) return;
+    if (hasActiveEdgeFilters && !visibleNodeIds.has(node.id) && !node.isSeed) return;
     if (!filters.showOrphans && !visibleNodeIds.has(node.id) && !node.isSeed) return;
 
     elements.push({
@@ -91,6 +100,10 @@ export function transformToElements(
     if (!filters.edgeTypes.has(edge.type)) return;
     if ((edge.numSources ?? 0) < filters.minSources) return;
     if ((edge.numExperiments ?? 0) < filters.minExperiments) return;
+    if (filters.scoreThreshold != null && filters.scoreField) {
+      const val = edge.fields?.[filters.scoreField];
+      if (typeof val === "number" && val < filters.scoreThreshold) return;
+    }
 
     const sourceNode = nodes.get(edge.sourceId);
     const targetNode = nodes.get(edge.targetId);

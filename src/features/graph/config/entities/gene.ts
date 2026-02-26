@@ -20,7 +20,7 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
       steps: [
         {
           branch: [
-            { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30, sort: "-overall_score" },
+            { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30 },
             { edgeTypes: ["GENE_ALTERED_IN_DISEASE"], direction: "out", limit: 20 },
           ],
         },
@@ -41,7 +41,7 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
         {
           branch: [
             { edgeTypes: ["VARIANT_AFFECTS_GENE"], direction: "in", limit: 20 },
-            { edgeTypes: ["VARIANT_IMPLIES_GENE"], direction: "in", limit: 20, sort: "-max_l2g_score" },
+            { edgeTypes: ["VARIANT_IMPLIES_GENE"], direction: "in", limit: 20 },
           ],
         },
       ],
@@ -61,7 +61,6 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
           edgeTypes: ["CCRE_REGULATES_GENE"],
           direction: "in",
           limit: 20,
-          sort: "-max_score",
         },
         {
           edgeTypes: ["VARIANT_OVERLAPS_CCRE"],
@@ -150,8 +149,8 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
         },
         {
           branch: [
-            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12, sort: "-p_value_mlog" },
-            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10, sort: "-p_value_mlog" },
+            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12 },
+            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10 },
           ],
         },
         {

@@ -3,7 +3,7 @@ import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "../types/nod
 import type { GraphFilters } from "../types/filters";
 import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
-import type { GraphData, ExplorerState } from "../types/state";
+import type { GraphData, ExplorerState, AsyncOperation } from "../types/state";
 import { transformToElements, getGraphSummary } from "../utils/elements";
 
 /**
@@ -41,9 +41,23 @@ export function selectHighlightedEdgeId(selection: ExplorerSelection): string | 
 }
 
 /**
- * Check if expansion is loading
+ * Check if any async operation is in progress (template switching, expanding, variant trail).
+ * Replaces the old `selectIsExpanding`.
  */
-export function selectIsExpanding(state: ExplorerState): boolean {
+export function selectIsLoading(state: ExplorerState): boolean {
   if (state.status !== "ready") return false;
-  return state.expansion.status === "loading";
+  return state.async.type !== "idle" && state.async.type !== "error";
+}
+
+/**
+ * Get the current async operation for components needing specific loading context.
+ */
+export function selectAsyncOperation(state: ExplorerState): AsyncOperation {
+  if (state.status !== "ready") return { type: "idle" };
+  return state.async;
+}
+
+/** @deprecated Use selectIsLoading instead */
+export function selectIsExpanding(state: ExplorerState): boolean {
+  return selectIsLoading(state);
 }

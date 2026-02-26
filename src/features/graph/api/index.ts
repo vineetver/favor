@@ -227,20 +227,25 @@ export async function fetchGraphQuery(
   const url = `${API_BASE}/graph/query`;
 
   try {
+    const body = {
+      seeds: options.seeds,
+      steps: options.steps,
+      select: options.select,
+      limits: options.limits ?? { maxNodes: 200, maxEdges: 500 },
+    };
+
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        seeds: options.seeds,
-        steps: options.steps,
-        select: options.select,
-        limits: options.limits ?? { maxNodes: 200, maxEdges: 500 },
-      }),
+      body: JSON.stringify(body),
       next: { revalidate: 300 },
     });
 
     if (!response.ok) {
-      console.error(`Graph query failed: ${response.status}`);
+      let detail = "";
+      try { detail = await response.text(); } catch { /* ignore */ }
+      console.error(`Graph query failed: ${response.status}`, detail);
+      console.error("Request body:", JSON.stringify(body, null, 2));
       return null;
     }
 
@@ -431,6 +436,10 @@ export interface GraphSchemaResponse {
       count: number;
       sourceTypes: string[];
       targetTypes: string[];
+      label?: string;
+      defaultScoreField?: string;
+      scoreFields?: string[];
+      filterFields?: string[];
     }>;
     lastUpdated?: string;
   };

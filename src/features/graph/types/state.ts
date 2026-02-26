@@ -32,9 +32,17 @@ export interface GraphData {
 }
 
 // =============================================================================
-// Expansion State
+// Async Operation (replaces ExpansionStatus)
 // =============================================================================
 
+export type AsyncOperation =
+  | { type: "idle" }
+  | { type: "switching_template"; targetTemplateId: TemplateId }
+  | { type: "expanding"; nodeId: string; label: string }
+  | { type: "running_variant_trail"; nodeId: string }
+  | { type: "error"; operation: string; message: string };
+
+/** @deprecated Use AsyncOperation instead */
 export type ExpansionStatus =
   | { status: "idle" }
   | { status: "loading" }
@@ -57,6 +65,8 @@ export type ExplorerState =
       templateResults: TemplateResultData | null;
       leftDrawerOpen: boolean;
       inspectorMode: InspectorMode;
+      async: AsyncOperation;
+      /** @deprecated Use `async` instead. Kept for backward compatibility during migration. */
       expansion: ExpansionStatus;
     };
 

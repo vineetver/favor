@@ -37,7 +37,7 @@ import { StatCard, type StatCardVariant } from "./stat-card";
 // ============================================================================
 
 interface JobAnalyticsReportProps {
-  /** URL to the Arrow IPC file (or parquet for backwards compatibility) */
+  /** URL to the Parquet file */
   dataUrl: string;
   jobId: string;
   filename?: string;
@@ -177,14 +177,14 @@ interface ReportData {
 // ============================================================================
 
 const SQL_QUERIES = {
-  totalVariants: `SELECT COUNT(*) as count FROM variants WHERE lower(status) = 'found'`,
+  totalVariants: `SELECT COUNT(*) as count FROM variants WHERE status = 'FOUND'`,
 
   clinvarPLP: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND') as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND len(list_filter(
         variant.clinvar.clnsig,
         x -> x IS NOT NULL
@@ -196,9 +196,9 @@ const SQL_QUERIES = {
   ultraRare: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND') as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND GREATEST(
         COALESCE(variant.gnomad_exome.af, 0),
         COALESCE(variant.gnomad_genome.af, 0),
@@ -214,7 +214,7 @@ const SQL_QUERIES = {
         COALESCE(variant.main.cadd.phred, 0) / 2
       ) as integrative_max
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
     ),
     threshold AS (
       SELECT PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY integrative_max) as p99
@@ -222,7 +222,7 @@ const SQL_QUERIES = {
     )
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND') as percentage
     FROM scored, threshold
     WHERE integrative_max >= threshold.p99
   `,
@@ -230,7 +230,7 @@ const SQL_QUERIES = {
   cosmicHits: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.cosmic.sample_count IS NOT NULL
       AND variant.cosmic.sample_count > 0
   `,
@@ -238,7 +238,7 @@ const SQL_QUERIES = {
   spliceHigh: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND GREATEST(
         COALESCE(variant.gnomad_exome.functional.spliceai_ds_max, 0),
         COALESCE(variant.gnomad_genome.functional.spliceai_ds_max, 0),
@@ -249,9 +249,9 @@ const SQL_QUERIES = {
   regulatoryActive: `
     SELECT
       COUNT(*) as count,
-      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found') as percentage
+      COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND') as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND (
         COALESCE(variant.apc.epigenetics_active, 0) >= 10
         OR COALESCE(variant.main.encode.dnase.phred, 0) >= 10
@@ -267,12 +267,21 @@ const SQL_QUERIES = {
       COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL AND contains(CAST(variant.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) * 100.0 /
         NULLIF(COUNT(CASE WHEN variant.bravo.filter_status IS NOT NULL THEN 1 END), 0) as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
   `,
 
   prioritizedVariants: `
     SELECT
-      variant.*,
+      variant.chromosome,
+      variant.position,
+      variant.variant_vcf,
+      variant.genecode.consequence,
+      variant.clinvar.clnsig[1] as clnsig,
+      variant.clinvar.clndn[1] as clndn,
+      variant.cosmic.gene as cosmic_gene,
+      variant.cosmic.sample_count as cosmic_count,
+      variant.alphamissense.max_pathogenicity as am_score,
+      variant.main.cadd.phred as cadd,
       (
         CASE WHEN len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0 THEN 1000 ELSE 0 END +
         CASE WHEN variant.cosmic.sample_count > 0 THEN 200 ELSE 0 END +
@@ -281,7 +290,7 @@ const SQL_QUERIES = {
         COALESCE(variant.alphamissense.max_pathogenicity, 0) * 100
       ) as priority_score
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
     ORDER BY priority_score DESC
     LIMIT 20
   `,
@@ -289,14 +298,14 @@ const SQL_QUERIES = {
   clinvarTotal: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND len(list_filter(variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
   `,
 
   cosmicMedian: `
     SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variant.cosmic.sample_count) as median
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.cosmic.sample_count IS NOT NULL
       AND variant.cosmic.sample_count > 0
   `,
@@ -304,7 +313,7 @@ const SQL_QUERIES = {
   topCosmicGene: `
     SELECT CAST(variant.cosmic.gene AS VARCHAR) as gene, COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found' AND variant.cosmic.gene IS NOT NULL
+    WHERE status = 'FOUND' AND variant.cosmic.gene IS NOT NULL
     GROUP BY variant.cosmic.gene
     ORDER BY count DESC
     LIMIT 1
@@ -315,9 +324,9 @@ const SQL_QUERIES = {
     SELECT
       COALESCE(variant.genecode.region_type, 'Unknown') as region_type,
       COUNT(*) as count,
-      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
+      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
     GROUP BY region_type
     ORDER BY count DESC
   `,
@@ -326,9 +335,9 @@ const SQL_QUERIES = {
     SELECT
       COALESCE(variant.genecode.consequence, 'Unknown') as consequence,
       COUNT(*) as count,
-      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE lower(status) = 'found'), 2) as percentage
+      ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.genecode.consequence IS NOT NULL
       AND variant.genecode.consequence != ''
     GROUP BY consequence
@@ -340,7 +349,7 @@ const SQL_QUERIES = {
     WITH gene_list AS (
       SELECT variant.genecode.genes as genes
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.genecode.genes IS NOT NULL
         AND len(variant.genecode.genes) > 0
     ),
@@ -359,7 +368,7 @@ const SQL_QUERIES = {
     WITH targets_list AS (
       SELECT variant.genehancer.targets as targets
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.genehancer IS NOT NULL
         AND variant.genehancer.targets IS NOT NULL
         AND len(variant.genehancer.targets) > 0
@@ -381,7 +390,7 @@ const SQL_QUERIES = {
   // Integrative Score queries
   integrativeScoreStats: `
     WITH total AS (
-      SELECT COUNT(*) as n FROM variants WHERE lower(status) = 'found'
+      SELECT COUNT(*) as n FROM variants WHERE status = 'FOUND'
     ),
     stats AS (
       SELECT
@@ -416,7 +425,7 @@ const SQL_QUERIES = {
         PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variant.apc.epigenetics_active) as apc_epi_p90,
         COUNT(CASE WHEN variant.apc.epigenetics_active >= 10 THEN 1 END) as apc_epi_top_decile
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
     )
     SELECT stats.*, total.n as total_variants FROM stats, total
   `,
@@ -426,7 +435,7 @@ const SQL_QUERIES = {
       variant.main.cadd.phred as cadd,
       variant.apc.protein_function_v3 as apc
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.main.cadd.phred IS NOT NULL
       AND variant.apc.protein_function_v3 IS NOT NULL
     ORDER BY RANDOM()
@@ -438,7 +447,7 @@ const SQL_QUERIES = {
     WITH clinvar_variants AS (
       SELECT variant.clinvar.clnsig[1] as clnsig
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.clinvar.clnsig IS NOT NULL
         AND len(variant.clinvar.clnsig) > 0
         AND variant.clinvar.clnsig[1] IS NOT NULL
@@ -460,7 +469,7 @@ const SQL_QUERIES = {
     WITH clinvar_variants AS (
       SELECT variant.clinvar.clnrevstat as review_status
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.clinvar.clnrevstat IS NOT NULL
         AND variant.clinvar.clnrevstat != ''
     ),
@@ -481,7 +490,7 @@ const SQL_QUERIES = {
     WITH disease_list AS (
       SELECT variant.clinvar.clndn as diseases
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.clinvar.clndn IS NOT NULL
         AND len(variant.clinvar.clndn) > 0
     ),
@@ -504,7 +513,7 @@ const SQL_QUERIES = {
   totalWithClinvar: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.clinvar.clnsig IS NOT NULL
       AND len(variant.clinvar.clnsig) > 0
   `,
@@ -520,7 +529,7 @@ const SQL_QUERIES = {
           ELSE NULL
         END as am_class
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.alphamissense.max_pathogenicity IS NOT NULL
     ),
     total AS (
@@ -545,7 +554,7 @@ const SQL_QUERIES = {
     WITH missense_variants AS (
       SELECT variant.genecode.genes as genes
       FROM variants
-      WHERE lower(status) = 'found'
+      WHERE status = 'FOUND'
         AND variant.genecode.consequence IS NOT NULL
         AND lower(variant.genecode.consequence) LIKE '%nonsynonymous%'
         AND variant.genecode.genes IS NOT NULL
@@ -567,7 +576,7 @@ const SQL_QUERIES = {
   totalMissense: `
     SELECT COUNT(*) as count
     FROM variants
-    WHERE lower(status) = 'found'
+    WHERE status = 'FOUND'
       AND variant.genecode.consequence IS NOT NULL
       AND lower(variant.genecode.consequence) LIKE '%nonsynonymous%'
   `,
@@ -1456,25 +1465,25 @@ export function JobAnalyticsReport({
   filename: _filename,
   className,
 }: JobAnalyticsReportProps) {
-  const { query, loadArrow, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
+  const { query, loadParquet, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load Arrow IPC file when DuckDB is ready
+  // Load Parquet file when DuckDB is ready
   useEffect(() => {
     if (!isReady || dataLoaded) return;
 
-    loadArrow(dataUrl, "variants")
+    loadParquet(dataUrl, "variants")
       .then(() => {
         setDataLoaded(true);
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load Arrow file");
+        setError(err instanceof Error ? err.message : "Failed to load Parquet file");
         setIsLoading(false);
       });
-  }, [isReady, dataUrl, loadArrow, dataLoaded]);
+  }, [isReady, dataUrl, loadParquet, dataLoaded]);
 
   // Generate report data
   const generateReport = useCallback(async () => {
