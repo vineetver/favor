@@ -10,7 +10,7 @@ import type { QueryType, PlanItem, ReportPlanOutput } from "../types";
  */
 export const reportPlan = tool({
   description:
-    "REQUIRED at step 0-1. Report your analysis plan and classify the query type. Call this in parallel with searchEntities + recallMemories. The plan becomes a visible task checklist in the UI and controls which tools are available. IMPORTANT: Always produce 2-4 plan steps (e.g., 1. Resolve entities, 2. Collect data, 3. Synthesize results). Single-step plans are not useful.",
+    "REQUIRED at step 0-1. Report your analysis plan and classify the query type. Call this in parallel with searchEntities when entity resolution is needed. The plan becomes a visible task checklist in the UI and controls which tools are available. IMPORTANT: Always produce 2-4 plan steps (e.g., 1. Resolve entities, 2. Collect data, 3. Synthesize results). Single-step plans are not useful.",
   inputSchema: z.object({
     queryType: z.enum([
       "entity_lookup",

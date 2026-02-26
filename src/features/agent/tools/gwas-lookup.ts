@@ -21,9 +21,9 @@ interface GwasAssociation {
 
 export const getGwasAssociations = tool({
   description:
-    "Look up GWAS Catalog associations for a variant. Returns traits, p-values, effect sizes, and study accessions. Use rsID (rs7412) or VCF notation.",
+    "Look up GWAS Catalog associations for a variant, gene, or genomic region. Returns traits, p-values, effect sizes, and study accessions. Supported reference formats: vid:123, rsID (rs7412), VCF (19-44908822-C-T), gene:BRCA2, or region:chr1:1000-2000.",
   inputSchema: z.object({
-    variant: z.string().describe("Variant identifier (rsID or VCF notation)"),
+    variant: z.string().describe("Reference — vid:123, rsID (rs7412), VCF (19-44908822-C-T), gene:BRCA2, or region:chr1:1000-2000"),
     pvalueMlogMin: z
       .number()
       .optional()

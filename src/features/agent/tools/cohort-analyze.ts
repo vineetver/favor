@@ -3,7 +3,7 @@ import { z } from "zod";
 import { cohortFetch, AgentToolError } from "../lib/api-client";
 
 /**
- * All 36 score columns available for topk and derive filters.
+ * All 36 score columns available for sorting, filtering, groupby, compute, prioritize.
  * Matches the backend Score Columns table exactly.
  */
 const SCORE_COLUMNS = [
@@ -90,54 +90,117 @@ const cohortFilterSchema = z.discriminatedUnion("type", [
 ]);
 
 export const analyzeCohort = tool({
-  description: `Analyze an existing cohort with three operations. Cohorts can have 5,000+ variants — this tool is optimized for large-scale analysis. ALWAYS use this instead of looping lookupVariant or per-variant entity searches.
-- **topk**: Top K variants by any of 36 score columns (cadd_phred, revel, alpha_missense, spliceai_ds_max, gnomad_af, apc_protein_function, apc_conservation, etc.). Note: "apc_*" scores = Annotation Principal Component, NOT the APC gene.
-- **aggregate**: Group by field (gene, consequence, clinical_significance, frequency, chromosome)
-- **derive**: Filter variants with AND logic to create a sub-cohort. Categorical filters: chromosome, gene, consequence, clinical_significance. Numeric filters: score_above/score_below with any score column (e.g., { type: "score_above", field: "cadd_phred", threshold: 20 }).
-The derived cohort supports all operations (topk, aggregate, derive).`,
+  description: `Analyze an existing cohort with six operations. Cohorts can have 5,000+ variants — this tool is optimized for large-scale analysis. ALWAYS use this instead of looping lookupVariant or per-variant entity searches.
+- **rows**: Query/sort/filter rows. Use sort + desc + limit for "top K" queries (e.g., sort="cadd_phred", desc=true, limit=20). select controls which columns are returned.
+- **groupby**: Group-by with aggregate metrics. Use group_by (any column name) + optional metrics[] for per-group stats (min/max/mean/median).
+- **derive**: Filter variants with AND logic to create a sub-cohort. The derived cohort supports all operations.
+- **prioritize**: Multi-criteria ranking via weighted rank product. Provide criteria: [{ column, desc?, weight? }]. Lower rank_score = better.
+- **compute**: Weighted composite score from multiple numeric columns. Provide weights: [{ column, weight }], normalize?: boolean.
+- **correlation**: Pearson correlation between two numeric columns. Provide x and y column names.
+Note: "apc_*" scores = Annotation Principal Component, NOT the APC gene.`,
   inputSchema: z.object({
     cohortId: z.string().describe("Cohort ID from createCohort or a previous derive"),
     operation: z
-      .enum(["topk", "aggregate", "derive"])
-      .describe("topk = top variants by score, aggregate = group-by counts, derive = filter to sub-cohort"),
-    // topk params
-    score: scoreColumnEnum
-      .optional()
-      .describe("Score column for topk (e.g., 'cadd_phred', 'revel', 'spliceai_ds_max')"),
-    k: z
-      .number()
-      .optional()
-      .describe("Number of top variants for topk (default 20, max 100)"),
-    // aggregate params
-    field: z
-      .enum(["gene", "consequence", "clinical_significance", "frequency", "chromosome"])
-      .optional()
-      .describe("Field to aggregate on"),
-    limit: z.number().optional().describe("Limit for aggregate results (default 50, max 200)"),
-    // derive params
+      .enum(["rows", "groupby", "derive", "prioritize", "compute", "correlation"])
+      .describe("rows = query/sort/filter, groupby = group-by counts+metrics, derive = filter to sub-cohort, prioritize = multi-criteria rank, compute = weighted composite, correlation = Pearson r"),
+    // rows params
+    sort: z.string().optional().describe("Column to sort by (for rows operation, e.g. 'cadd_phred')"),
+    desc: z.boolean().optional().describe("Sort descending (default true for rows)"),
+    select: z.array(z.string()).optional().describe("Columns to return (for rows). Default: variant_vcf, rsid, chromosome, gene, consequence, cadd_phred, gnomad_af"),
+    // groupby params
+    group_by: z.string().optional().describe("Column to group by (for groupby, e.g. 'gene', 'consequence', 'chromosome' — any column)"),
+    metrics: z.array(z.string()).optional().describe("Numeric columns for per-group stats (for groupby, e.g. ['cadd_phred', 'revel'])"),
+    // shared
+    limit: z.number().optional().describe("Max rows/groups to return (rows default 50 max 500, groupby default 100 max 1000, prioritize/compute default 50 max 500)"),
     filters: z
       .array(cohortFilterSchema)
       .optional()
-      .describe("Filters for derive (AND logic). Use score_above/score_below for numeric filtering."),
-    label: z
-      .string()
+      .describe("Filters (AND logic). Used by rows, groupby, derive, prioritize, compute, correlation."),
+    // derive params
+    label: z.string().optional().describe("Label for derived sub-cohort (derive only)"),
+    // prioritize params
+    criteria: z
+      .array(z.object({
+        column: z.string().describe("Score column name"),
+        desc: z.boolean().optional().describe("Higher values rank first (default true)"),
+        weight: z.number().optional().describe("Relative weight (default 1.0)"),
+      }))
       .optional()
-      .describe("Label for derived sub-cohort"),
+      .describe("Ranking criteria for prioritize (1-20 entries)"),
+    // compute params
+    weights: z
+      .array(z.object({
+        column: z.string().describe("Score column name"),
+        weight: z.number().describe("Weight for this column"),
+      }))
+      .optional()
+      .describe("Column weights for compute (1-20 entries)"),
+    normalize: z.boolean().optional().describe("Min-max normalize before weighting (for compute, default false)"),
+    // correlation params
+    x: z.string().optional().describe("First numeric column (for correlation)"),
+    y: z.string().optional().describe("Second numeric column (for correlation)"),
   }),
-  execute: async ({ cohortId, operation, score, k, field, limit, filters, label }) => {
+  execute: async ({ cohortId, operation, sort, desc, select, group_by, metrics, limit, filters, label, criteria, weights, normalize, x, y }) => {
     try {
-      const endpoint = `/cohorts/${encodeURIComponent(cohortId)}/${operation}`;
+      // Map operation to correct API endpoint
+      const endpointOp = operation === "rows" ? "rows"
+        : operation === "groupby" ? "groupby"
+        : operation === "derive" ? "derive"
+        : operation === "prioritize" ? "prioritize"
+        : operation === "compute" ? "compute"
+        : "correlation";
+      const endpoint = `/cohorts/${encodeURIComponent(cohortId)}/${endpointOp}`;
 
       let body: Record<string, unknown> = {};
-      if (operation === "topk") {
-        body = { score: score ?? "cadd_phred", k: k ?? 20 };
-      } else if (operation === "aggregate") {
-        body = { field: field ?? "gene", limit: limit ?? 50 };
+
+      if (operation === "rows") {
+        body = {
+          ...(sort && { sort }),
+          ...(sort && { desc: desc ?? true }),
+          ...(limit && { limit }),
+          ...(select && { select }),
+          ...(filters?.length && { filters }),
+        };
+      } else if (operation === "groupby") {
+        body = {
+          group_by: group_by ?? "gene",
+          ...(metrics?.length && { metrics }),
+          ...(limit && { limit }),
+          ...(filters?.length && { filters }),
+        };
       } else if (operation === "derive") {
         if (!filters?.length) {
           return { error: true, message: "derive requires at least one filter.", hint: "Use score_above, score_below, or categorical filters (gene, consequence, clinical_significance, chromosome)." };
         }
-        body = { filters, label };
+        body = { filters, ...(label && { label }) };
+      } else if (operation === "prioritize") {
+        if (!criteria?.length) {
+          return { error: true, message: "prioritize requires at least one criterion.", hint: "Provide criteria: [{ column: 'cadd_phred', desc: true, weight: 1.0 }]" };
+        }
+        body = {
+          criteria,
+          ...(limit && { limit }),
+          ...(filters?.length && { filters }),
+        };
+      } else if (operation === "compute") {
+        if (!weights?.length) {
+          return { error: true, message: "compute requires at least one weight.", hint: "Provide weights: [{ column: 'cadd_phred', weight: 0.5 }]" };
+        }
+        body = {
+          weights,
+          ...(normalize != null && { normalize }),
+          ...(limit && { limit }),
+          ...(filters?.length && { filters }),
+        };
+      } else if (operation === "correlation") {
+        if (!x || !y) {
+          return { error: true, message: "correlation requires x and y column names.", hint: "Provide x and y (e.g., x='cadd_phred', y='revel')" };
+        }
+        body = {
+          x,
+          y,
+          ...(filters?.length && { filters }),
+        };
       }
 
       const result = await cohortFetch<Record<string, unknown>>(endpoint, {
@@ -150,29 +213,49 @@ The derived cohort supports all operations (topk, aggregate, derive).`,
 
       if (result.text_summary) output.summary = result.text_summary;
 
-      if (operation === "topk") {
-        output.score = result.score;
-        // Cap variants to requested k (max 50) to limit context
-        const maxK = Math.min(k ?? 20, 50);
-        const variants = Array.isArray(result.variants)
-          ? (result.variants as unknown[]).slice(0, maxK)
-          : result.variants;
-        output.variants = variants;
-      } else if (operation === "aggregate") {
-        output.field = result.field;
-        // Cap buckets to requested limit (max 100) to limit context
-        const maxBuckets = Math.min(limit ?? 50, 100);
+      if (operation === "rows") {
+        const maxRows = Math.min(limit ?? 50, 100);
+        const rows = Array.isArray(result.rows)
+          ? (result.rows as unknown[]).slice(0, maxRows)
+          : result.rows;
+        output.rows = rows;
+        output.total = result.total;
+      } else if (operation === "groupby") {
+        output.group_by = result.group_by;
+        const maxBuckets = Math.min(limit ?? 100, 200);
         const buckets = Array.isArray(result.buckets)
           ? (result.buckets as unknown[]).slice(0, maxBuckets)
           : result.buckets;
         output.buckets = buckets;
-        output.totalVariants = result.total_variants;
+        output.total_groups = result.total_groups;
       } else if (operation === "derive") {
         output.derivedCohortId = result.cohort_id;
         output.parentId = result.parent_id;
         output.filtersApplied = result.filters_applied;
         output.variantCount = result.vid_count;
         if (result.summary) output.childSummary = result.summary;
+      } else if (operation === "prioritize") {
+        output.criteria = result.criteria;
+        const rows = Array.isArray(result.rows)
+          ? (result.rows as unknown[]).slice(0, Math.min(limit ?? 50, 100))
+          : result.rows;
+        output.rows = rows;
+        output.total_ranked = result.total_ranked;
+      } else if (operation === "compute") {
+        const rows = Array.isArray(result.rows)
+          ? (result.rows as unknown[]).slice(0, Math.min(limit ?? 50, 100))
+          : result.rows;
+        output.rows = rows;
+        output.total_scored = result.total_scored;
+      } else if (operation === "correlation") {
+        output.x = result.x;
+        output.y = result.y;
+        output.r = result.r;
+        output.n = result.n;
+        output.x_mean = result.x_mean;
+        output.y_mean = result.y_mean;
+        output.x_stddev = result.x_stddev;
+        output.y_stddev = result.y_stddev;
       }
 
       return output;

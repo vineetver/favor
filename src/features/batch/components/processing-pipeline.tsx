@@ -81,11 +81,13 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
       </div>
 
       {/* Current stage description */}
-      <div className="mt-4 text-center">
-        <p className="text-sm text-slate-600">
-          {STAGE_CONFIG[currentStage].description}
-        </p>
-      </div>
+      {STAGE_CONFIG[currentStage] && (
+        <div className="mt-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            {STAGE_CONFIG[currentStage].description}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

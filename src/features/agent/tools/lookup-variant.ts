@@ -6,11 +6,11 @@ import { buildVariantPrompt } from "@features/variant/utils/build-variant-prompt
 
 export const lookupVariant = tool({
   description:
-    "Look up annotation for a SINGLE variant by rsID (e.g., rs7412) or VCF notation (e.g., 19-44908684-T-C). Returns clinical significance, pathogenicity scores, population frequencies, and functional predictions. Use depth=standard (default) for most queries; depth=detailed only when the user explicitly needs full raw annotations. For multiple variants, use createCohort or variantBatchSummary instead.",
+    "Look up annotation for a SINGLE variant by vid (vid:123), rsID (rs7412), or VCF notation (19-44908684-T-C). Returns clinical significance, pathogenicity scores, population frequencies, and functional predictions. Use depth=standard (default) for most queries; depth=detailed only when the user explicitly needs full raw annotations. For multiple variants, use createCohort or variantBatchSummary instead.",
   inputSchema: z.object({
     identifier: z
       .string()
-      .describe("Variant identifier — rsID (rs7412) or VCF (19-44908684-T-C)"),
+      .describe("Variant identifier — vid (vid:123), rsID (rs7412), or VCF (19-44908684-T-C)"),
     depth: z
       .enum(["minimal", "standard", "detailed"])
       .optional()
