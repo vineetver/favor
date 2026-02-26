@@ -5,8 +5,10 @@ import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "./node";
 import type { ProvenanceEvent } from "./provenance";
 import type { GraphFilters } from "./filters";
 import type { GraphSchema, GraphStats } from "./schema";
-import type { ExplorerLayoutType, LensId } from "./state";
+import type { ExplorerLayoutType, TemplateId } from "./state";
 import type { ConnectionsDrilldownData, ConnectionsStatus } from "./connections";
+import type { SeedEntity, ExplorerConfig, ExplorerTemplate, EdgeTypeGroup, ExternalLinkConfig } from "../config/explorer-config";
+import type { TemplateResultData } from "./template-results";
 
 // =============================================================================
 // Serialized Data (JSON-safe, for server → client)
@@ -50,13 +52,22 @@ export interface VariantTrailResultData {
 // Component Props
 // =============================================================================
 
-export interface GraphExplorerViewProps {
-  seedGeneId: string;
-  seedGeneSymbol: string;
+export interface GraphExplorerProps {
+  seed: SeedEntity;
+  config: ExplorerConfig;
   schema?: GraphSchema | null;
   stats?: GraphStats | null;
   initialSubgraph?: InitialSubgraphData | null;
-  initialLensId?: LensId;
+  className?: string;
+}
+
+export interface GraphExplorerViewProps {
+  seed: SeedEntity;
+  config: ExplorerConfig;
+  schema?: GraphSchema | null;
+  stats?: GraphStats | null;
+  initialSubgraph?: InitialSubgraphData | null;
+  initialTemplateId?: TemplateId;
   className?: string;
 }
 
@@ -82,8 +93,10 @@ export interface ControlsDrawerProps {
   onFiltersChange: (filters: GraphFilters) => void;
   layout: ExplorerLayoutType;
   onLayoutChange: (layout: ExplorerLayoutType) => void;
-  activeLens: LensId;
-  onLensChange: (lensId: LensId) => void;
+  templates: ExplorerTemplate[];
+  activeTemplate: TemplateId;
+  onTemplateChange: (templateId: TemplateId) => void;
+  edgeTypeGroups: EdgeTypeGroup[];
   onReset: () => void;
   edgeTypeCounts?: Record<EdgeType, number>;
   nodeTypeCounts?: Record<EntityType, number>;
@@ -100,6 +113,8 @@ export interface InspectorPanelProps {
   onRemoveNode: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
+  externalLinks: Partial<Record<EntityType, ExternalLinkConfig[]>>;
+  enableVariantTrail: boolean;
   onRunVariantTrail?: (nodeId: string) => void;
   activeTrailResult?: VariantTrailResultData | null;
   onClearTrailResult?: () => void;

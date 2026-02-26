@@ -3,7 +3,8 @@ import type { GraphFilters } from "./filters";
 import type { NodeKey } from "./keys";
 import type { ProvenanceEvent } from "./provenance";
 import type { ExplorerLayoutType } from "../config/layout";
-import type { LensId } from "../config/lenses";
+import type { TemplateId } from "../config/explorer-config";
+import type { TemplateResultData } from "./template-results";
 
 // =============================================================================
 // View & Panel State
@@ -52,7 +53,8 @@ export type ExplorerState =
       filters: GraphFilters;
       layout: ExplorerLayoutType;
       viewMode: ViewMode;
-      activeLens: LensId;
+      activeTemplate: TemplateId;
+      templateResults: TemplateResultData | null;
       leftDrawerOpen: boolean;
       inspectorMode: InspectorMode;
       expansion: ExpansionStatus;
@@ -60,4 +62,6 @@ export type ExplorerState =
 
 // Re-export for convenience (canonical definitions in config/)
 export type { ExplorerLayoutType } from "../config/layout";
-export type { LensId } from "../config/lenses";
+export type { TemplateId } from "../config/explorer-config";
+/** @deprecated Use TemplateId instead */
+export type LensId = TemplateId;

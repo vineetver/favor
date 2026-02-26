@@ -94,13 +94,117 @@ const ENTITY_CONFIG: Record<
     bgColor: "bg-cyan-600",
     borderColor: "border-cyan-200",
   },
-  traits: {
-    label: "TRAITS",
+  entities: {
+    label: "ENTITIES",
     textColor: "text-amber-700",
     bgColor: "bg-amber-600",
     borderColor: "border-amber-200",
   },
+  go_terms: {
+    label: "GO TERMS",
+    textColor: "text-emerald-700",
+    bgColor: "bg-emerald-600",
+    borderColor: "border-emerald-200",
+  },
+  side_effects: {
+    label: "SIDE EFFECTS",
+    textColor: "text-yellow-700",
+    bgColor: "bg-yellow-600",
+    borderColor: "border-yellow-200",
+  },
+  ccres: {
+    label: "cCREs",
+    textColor: "text-teal-700",
+    bgColor: "bg-teal-600",
+    borderColor: "border-teal-200",
+  },
+  metabolites: {
+    label: "METABOLITES",
+    textColor: "text-rose-700",
+    bgColor: "bg-rose-600",
+    borderColor: "border-rose-200",
+  },
+  signals: {
+    label: "SIGNALS",
+    textColor: "text-indigo-700",
+    bgColor: "bg-indigo-600",
+    borderColor: "border-indigo-200",
+  },
+  protein_domains: {
+    label: "DOMAINS",
+    textColor: "text-violet-700",
+    bgColor: "bg-violet-600",
+    borderColor: "border-violet-200",
+  },
+  tissues: {
+    label: "TISSUES",
+    textColor: "text-lime-700",
+    bgColor: "bg-lime-600",
+    borderColor: "border-lime-200",
+  },
+  cell_types: {
+    label: "CELL TYPES",
+    textColor: "text-sky-700",
+    bgColor: "bg-sky-600",
+    borderColor: "border-sky-200",
+  },
 };
+
+const FALLBACK_ENTITY_CONFIG = {
+  label: "OTHER",
+  textColor: "text-gray-700",
+  bgColor: "bg-gray-600",
+  borderColor: "border-gray-200",
+};
+
+function getEntityConfig(type: EntityType) {
+  return ENTITY_CONFIG[type] ?? FALLBACK_ENTITY_CONFIG;
+}
+
+/** Readable labels for link keys returned by the API */
+const LINK_LABELS: Record<string, string> = {
+  genes: "genes",
+  variants: "variants",
+  diseases: "diseases",
+  drugs: "drugs",
+  pathways: "pathways",
+  phenotypes: "phenotypes",
+  studies: "studies",
+  entities: "entities",
+  go_terms: "GO terms",
+  side_effects: "side effects",
+  ccres: "cCREs",
+  metabolites: "metabolites",
+  signals: "signals",
+  protein_domains: "domains",
+  tissues: "tissues",
+  cell_types: "cell types",
+  domains: "domains",
+  l2g_variants: "L2G variants",
+  disposition_drugs: "disp. drugs",
+  disposition_genes: "disp. genes",
+  paralogs: "paralogs",
+  drug_pairs: "drug pairs",
+  pgx_variants: "PGx variants",
+  pgx_genes: "PGx genes",
+  pair_side_effects: "pair side effects",
+  traits: "traits",
+};
+
+/** Build sorted link counts from dynamic links object, excluding the entity's own type */
+function buildLinkCounts(
+  links: Record<string, number> | undefined,
+  excludeType?: string,
+): Array<{ label: string; count: number }> {
+  if (!links) return [];
+  return Object.entries(links)
+    .filter(([key, count]) => key !== excludeType && count > 0)
+    .map(([key, count]) => ({
+      label: LINK_LABELS[key] ?? key.replace(/_/g, " "),
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
 
 // AnchorChip Component - displays selected anchor as a chip inside the input
 // Styled to match HG38/HG19 toggle height and aesthetic
@@ -158,7 +262,6 @@ export function UniversalSearch() {
     debounce: 300,
     limit: 5, // Request 5 so after best match deduplication, we still show 4
     includeLinks: true,
-    includeLinked: true,
   });
 
   // Pivot expansion hook - only active in selected mode
@@ -642,15 +745,6 @@ export function UniversalSearch() {
                       {/* Pivot Anchor Info Card */}
                       <PivotAnchorCard
                         anchor={searchState.anchors[searchState.anchors.length - 1]}
-                        onLinkedClick={(name) => {
-                          // Search for the clicked linked entity
-                          setSearchState(prev => ({
-                            ...prev,
-                            mode: "typing",
-                            query: name,
-                          }));
-                          setTypeaheadQuery(name);
-                        }}
                       />
 
                       {/* Pivot Results Section */}
@@ -680,7 +774,7 @@ export function UniversalSearch() {
                           <div className="px-5 py-3 bg-muted/80 border-b border-border">
                             <span className="text-sm text-muted-foreground">
                               Related to{" "}
-                              <span className={cn("font-semibold", ENTITY_CONFIG[searchState.anchors[searchState.anchors.length - 1].entity_type].textColor)}>
+                              <span className={cn("font-semibold", getEntityConfig(searchState.anchors[searchState.anchors.length - 1].entity_type).textColor)}>
                                 {searchState.anchors[searchState.anchors.length - 1].display_name}
                               </span>
                             </span>
@@ -743,12 +837,10 @@ export function UniversalSearch() {
 // Pivot Anchor Card - shows info about the current pivot anchor at the top of dropdown
 function PivotAnchorCard({
   anchor,
-  onLinkedClick,
 }: {
   anchor: TypeaheadSuggestion;
-  onLinkedClick?: (name: string, type: EntityType) => void;
 }) {
-  const config = ENTITY_CONFIG[anchor.entity_type];
+  const config = getEntityConfig(anchor.entity_type);
 
   // Truncate description
   const truncatedDescription = anchor.description
@@ -757,35 +849,7 @@ function PivotAnchorCard({
       : anchor.description
     : null;
 
-  // Build linked entity groups with their entity types
-  const linkedGroups: Array<{ type: EntityType; names: string[]; config: typeof config }> = [];
-
-  if (anchor.linked?.genes && anchor.linked.genes.length > 0) {
-    linkedGroups.push({ type: "genes", names: anchor.linked.genes.slice(0, 4), config: ENTITY_CONFIG.genes });
-  }
-  if (anchor.linked?.diseases && anchor.linked.diseases.length > 0) {
-    linkedGroups.push({ type: "diseases", names: anchor.linked.diseases.slice(0, 4), config: ENTITY_CONFIG.diseases });
-  }
-  if (anchor.linked?.drugs && anchor.linked.drugs.length > 0) {
-    linkedGroups.push({ type: "drugs", names: anchor.linked.drugs.slice(0, 3), config: ENTITY_CONFIG.drugs });
-  }
-  if (anchor.linked?.pathways && anchor.linked.pathways.length > 0) {
-    linkedGroups.push({ type: "pathways", names: anchor.linked.pathways.slice(0, 3), config: ENTITY_CONFIG.pathways });
-  }
-
-  // Show all link counts
-  const linkCounts = [
-    { label: "genes", count: anchor.links?.genes },
-    { label: "variants", count: anchor.links?.variants },
-    { label: "diseases", count: anchor.links?.diseases },
-    { label: "drugs", count: anchor.links?.drugs },
-    { label: "pathways", count: anchor.links?.pathways },
-    { label: "phenotypes", count: anchor.links?.phenotypes },
-    { label: "studies", count: anchor.links?.studies },
-    { label: "traits", count: anchor.links?.traits },
-  ]
-    .filter((link) => link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0));
+  const linkCounts = buildLinkCounts(anchor.links);
 
   return (
     <div className="px-5 py-5 border-b border-border bg-gradient-to-br from-slate-50/80 to-white">
@@ -820,32 +884,11 @@ function PivotAnchorCard({
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-lg text-xs"
             >
               <span className="font-semibold text-foreground">
-                {link.count?.toLocaleString()}
+                {link.count.toLocaleString()}
               </span>
               <span className="text-muted-foreground">{link.label}</span>
             </span>
           ))}
-        </div>
-      )}
-
-      {/* Linked entity chips - clickable previews */}
-      {linkedGroups.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border space-y-2.5">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick links</span>
-          <div className="flex flex-wrap gap-1.5">
-            {linkedGroups.flatMap((group) =>
-              group.names.map((name) => (
-                <button
-                  key={`${group.type}-${name}`}
-                  type="button"
-                  onClick={() => onLinkedClick?.(name, group.type)}
-                  className="px-2.5 py-1 bg-white border border-border rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:border-border transition-colors"
-                >
-                  {name}
-                </button>
-              ))
-            )}
-          </div>
         </div>
       )}
     </div>
@@ -860,30 +903,8 @@ function BestMatchCard({
   item: TypeaheadSuggestion;
   onSelect: (item: TypeaheadSuggestion) => void;
 }) {
-  const config = ENTITY_CONFIG[item.entity_type];
-
-  // Build linked entity previews from item.linked
-  const linkedPreviews: string[] = [];
-  if (item.linked) {
-    if (item.linked.genes) linkedPreviews.push(...item.linked.genes);
-    if (item.linked.diseases) linkedPreviews.push(...item.linked.diseases);
-    if (item.linked.drugs) linkedPreviews.push(...item.linked.drugs);
-    if (item.linked.pathways) linkedPreviews.push(...item.linked.pathways);
-  }
-
-  // All link counts except own entity type
-  const linkCounts = [
-    { label: "genes", count: item.links?.genes },
-    { label: "variants", count: item.links?.variants },
-    { label: "diseases", count: item.links?.diseases },
-    { label: "drugs", count: item.links?.drugs },
-    { label: "pathways", count: item.links?.pathways },
-    { label: "phenotypes", count: item.links?.phenotypes },
-    { label: "studies", count: item.links?.studies },
-    { label: "traits", count: item.links?.traits },
-  ]
-    .filter((link) => link.label !== item.entity_type && link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0));
+  const config = getEntityConfig(item.entity_type);
+  const linkCounts = buildLinkCounts(item.links, item.entity_type);
 
   // Truncate description
   const truncatedDescription = item.description
@@ -930,20 +951,11 @@ function BestMatchCard({
                 {linkCounts.map((link) => (
                   <span key={link.label} className="inline-flex items-center gap-1">
                     <span className="font-semibold text-muted-foreground">
-                      {link.count?.toLocaleString()}
+                      {link.count.toLocaleString()}
                     </span>
                     <span className="text-muted-foreground">{link.label}</span>
                   </span>
                 ))}
-              </div>
-            )}
-
-            {/* Linked entity previews */}
-            {linkedPreviews.length > 0 && (
-              <div className="text-xs text-muted-foreground mt-2">
-                <span className="font-medium">Linked:</span>{" "}
-                {linkedPreviews.slice(0, 3).join(", ")}
-                {linkedPreviews.length > 3 && ` +${linkedPreviews.length - 3} more`}
               </div>
             )}
           </div>
@@ -968,7 +980,7 @@ function TypeaheadGroupSection({
   group: { type: EntityType; items: TypeaheadSuggestion[] };
   onSelect: (item: TypeaheadSuggestion) => void;
 }) {
-  const config = ENTITY_CONFIG[group.type];
+  const config = getEntityConfig(group.type);
 
   return (
     <div className="border-b border-border last:border-0">
@@ -1018,7 +1030,7 @@ function PivotGroupSection({
   isExpanding: boolean;
   onShowMore: () => void;
 }) {
-  const config = ENTITY_CONFIG[group.type];
+  const config = getEntityConfig(group.type);
   const hasMore = !isExpanded && totalAvailable > group.items.length;
   const remainingCount = totalAvailable - group.items.length;
 
@@ -1085,19 +1097,7 @@ function SuggestionCard({
   config: (typeof ENTITY_CONFIG)[EntityType];
   onClick: () => void;
 }) {
-  // All link counts except own entity type
-  const linkCounts = [
-    { label: "genes", count: item.links?.genes },
-    { label: "variants", count: item.links?.variants },
-    { label: "diseases", count: item.links?.diseases },
-    { label: "drugs", count: item.links?.drugs },
-    { label: "pathways", count: item.links?.pathways },
-    { label: "phenotypes", count: item.links?.phenotypes },
-    { label: "studies", count: item.links?.studies },
-    { label: "traits", count: item.links?.traits },
-  ]
-    .filter((link) => link.label !== item.entity_type && link.count && link.count > 0)
-    .sort((a, b) => (b.count || 0) - (a.count || 0));
+  const linkCounts = buildLinkCounts(item.links, item.entity_type);
 
   // For studies: show ID, then display_name as "description"
   const isStudy = item.entity_type === "studies";
@@ -1146,7 +1146,7 @@ function SuggestionCard({
             {linkCounts.map((link) => (
               <span key={link.label} className="inline-flex items-center gap-1">
                 <span className="font-medium text-muted-foreground">
-                  {link.count?.toLocaleString()}
+                  {link.count.toLocaleString()}
                 </span>
                 <span className="text-muted-foreground">{link.label}</span>
               </span>

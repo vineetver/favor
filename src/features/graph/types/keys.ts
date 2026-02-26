@@ -13,7 +13,7 @@ export type NodeKey = string & { readonly __brand: "NodeKey" };
 
 /**
  * Canonical edge key: "EdgeType:fromKey->toKey"
- * e.g. "ASSOCIATED_WITH_DISEASE:Gene:ENSG00000130203->Disease:MONDO_0005070"
+ * e.g. "GENE_ASSOCIATED_WITH_DISEASE:Gene:ENSG00000130203->Disease:MONDO_0005070"
  */
 export type EdgeKey = string & { readonly __brand: "EdgeKey" };
 

@@ -16,141 +16,132 @@ export interface TooltipField {
  */
 export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
   // Gene → Disease
-  ASSOCIATED_WITH_DISEASE: [
+  GENE_ASSOCIATED_WITH_DISEASE: [
     { key: "overall_score", label: "Score", format: "score" },
     { key: "evidence_count", label: "Evidence", format: "number" },
   ],
-  CURATED_FOR: [
-    { key: "classification", label: "Classification" },
-    { key: "confidence_category", label: "Confidence" },
-  ],
-  CAUSES: [
-    { key: "classification", label: "Classification" },
-  ],
-  INHERITED_CAUSE_OF: [
-    { key: "classification", label: "Classification" },
-    { key: "expert_panel", label: "Panel" },
-  ],
-  CIVIC_EVIDENCED_FOR: [
-    { key: "evidence_level", label: "Level" },
-    { key: "significance", label: "Significance" },
-  ],
-  SCORED_FOR_DISEASE: [
-    { key: "overall_score", label: "Score", format: "score" },
-    { key: "num_datatypes", label: "Datatypes", format: "number" },
+  GENE_ALTERED_IN_DISEASE: [
+    { key: "alteration_type", label: "Alteration" },
+    { key: "frequency", label: "Frequency", format: "score" },
   ],
 
-  // Drug edges
-  TARGETS: [
+  // Gene → Drug
+  GENE_AFFECTS_DRUG_RESPONSE: [
+    { key: "clinical_significance", label: "Significance" },
+    { key: "evidence_level", label: "Evidence Level" },
+  ],
+
+  // Gene → Entity
+  GENE_ASSOCIATED_WITH_ENTITY: [
+    { key: "best_p_value_mlog", label: "-log10(p)", format: "score" },
+    { key: "n_studies", label: "Studies", format: "number" },
+    { key: "n_variants", label: "Variants", format: "number" },
+  ],
+
+  // Gene → Gene
+  GENE_INTERACTS_WITH_GENE: [
+    { key: "combined_score", label: "Score", format: "score" },
+    { key: "num_sources", label: "Sources", format: "number" },
+  ],
+
+  // Gene → Phenotype
+  GENE_ASSOCIATED_WITH_PHENOTYPE: [
+    { key: "evidence_code", label: "Evidence" },
+  ],
+
+  // Gene → GOTerm
+  GENE_ANNOTATED_WITH_GO_TERM: [
+    { key: "evidence_code", label: "Evidence" },
+  ],
+
+  // Drug → Gene
+  DRUG_ACTS_ON_GENE: [
     { key: "action_type", label: "Action" },
     { key: "mechanism_of_action", label: "Mechanism" },
     { key: "max_clinical_phase", label: "Phase", format: "phase" },
   ],
-  TARGETS_IN_CONTEXT: [
-    { key: "action_type", label: "Action" },
+
+  // Drug → Disease
+  DRUG_INDICATED_FOR_DISEASE: [
     { key: "max_clinical_phase", label: "Phase", format: "phase" },
   ],
-  INDICATED_FOR: [
-    { key: "max_clinical_phase", label: "Phase", format: "phase" },
-  ],
-  HAS_SIDE_EFFECT: [
+
+  // Drug → SideEffect
+  DRUG_HAS_ADVERSE_EFFECT: [
     { key: "frequency_description", label: "Frequency" },
     { key: "report_count", label: "Reports", format: "number" },
   ],
-  HAS_ADVERSE_REACTION: [
-    { key: "llr", label: "LLR", format: "score" },
-    { key: "report_count", label: "Reports", format: "number" },
-  ],
 
-  // Variant edges
-  PREDICTED_TO_AFFECT: [
+  // Variant → Gene
+  VARIANT_IMPLIES_GENE: [
     { key: "max_l2g_score", label: "L2G Score", format: "score" },
     { key: "n_loci", label: "Loci", format: "number" },
   ],
-  GWAS_ASSOCIATED_WITH: [
-    { key: "p_value_mlog", label: "-log10(p)", format: "score" },
-    { key: "beta", label: "Beta", format: "score" },
+  VARIANT_AFFECTS_GENE: [
+    { key: "clinical_significance", label: "Significance" },
+    { key: "max_pathogenicity", label: "Pathogenicity", format: "score" },
   ],
-  CLINVAR_ASSOCIATED: [
+
+  // Variant → Entity/Disease/Phenotype
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: [
+    { key: "p_value_mlog", label: "-log10(p)", format: "score" },
+    { key: "or_beta", label: "Beta", format: "score" },
+  ],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: [
+    { key: "p_value_mlog", label: "-log10(p)", format: "score" },
+    { key: "or_beta", label: "Beta", format: "score" },
+  ],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: [
     { key: "clinical_significance", label: "Significance" },
     { key: "review_status", label: "Review" },
   ],
 
   // Variant → Drug
-  AFFECTS_RESPONSE_TO: [
+  VARIANT_ASSOCIATED_WITH_DRUG: [
     { key: "significance", label: "Significance" },
     { key: "direction_of_effect", label: "Effect Direction" },
   ],
 
-  // Variant → Gene
-  CLINVAR_ANNOTATED_IN: [
-    { key: "clinical_significance", label: "Significance" },
-    { key: "review_status", label: "Review" },
+  // Variant → Study
+  VARIANT_ASSOCIATED_WITH_STUDY: [
+    { key: "p_value_mlog", label: "-log10(p)", format: "score" },
+    { key: "or_beta", label: "Beta", format: "score" },
   ],
 
-  // Gene → Trait
-  ASSOCIATED_WITH_TRAIT: [
-    { key: "best_p_value_mlog", label: "-log10(p)", format: "score" },
-    { key: "n_studies", label: "Studies", format: "number" },
-    { key: "n_variants", label: "Variants", format: "number" },
-  ],
-  SCORED_FOR_TRAIT: [
-    { key: "total_score", label: "Total Score", format: "score" },
-    { key: "ld_score", label: "LD Score", format: "score" },
+  // Variant → cCRE
+  VARIANT_OVERLAPS_CCRE: [
+    { key: "annotation_label", label: "Annotation" },
+    { key: "distance_to_center", label: "Distance", format: "number" },
   ],
 
-  // Gene → Variant
-  HAS_GWAS_VARIANT: [
+  // cCRE → Gene
+  CCRE_REGULATES_GENE: [
+    { key: "max_score", label: "Score", format: "score" },
+    { key: "n_tissues", label: "Tissues", format: "number" },
+  ],
+
+  // Disease hierarchy
+  DISEASE_SUBCLASS_OF_DISEASE: [
+    { key: "distance", label: "Distance", format: "number" },
+  ],
+  DISEASE_ANCESTOR_OF_DISEASE: [
+    { key: "distance", label: "Distance", format: "number" },
+  ],
+
+  // Phenotype hierarchy
+  PHENOTYPE_HIERARCHY: [
+    { key: "distance", label: "Distance", format: "number" },
+  ],
+
+  // Signal
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: [
     { key: "p_value_mlog", label: "-log10(p)", format: "score" },
   ],
-
-  // Gene → Gene
-  REGULATES: [
-    { key: "interaction_type_name", label: "Type" },
+  SIGNAL_HAS_VARIANT: [
+    { key: "posterior_probability", label: "PIP", format: "score" },
   ],
-
-  // Variant → Disease
-  PGX_DISEASE_ASSOCIATED: [
-    { key: "significance", label: "Significance" },
-    { key: "direction_of_effect", label: "Effect Direction" },
-    { key: "n_studies", label: "Studies", format: "number" },
-  ],
-
-  // Variant → Gene
-  PREDICTED_REGULATORY_TARGET: [
-    { key: "score", label: "Score", format: "score" },
-    { key: "confidence", label: "Confidence" },
-  ],
-  ENHANCER_LINKED_TO: [
-    { key: "feature_score", label: "Feature Score", format: "score" },
-    { key: "target_score", label: "Target Score", format: "score" },
-  ],
-  POSITIONALLY_LINKED_TO: [
-    { key: "consequence", label: "Consequence" },
-    { key: "region_type", label: "Region" },
-  ],
-  MISSENSE_PATHOGENIC_FOR: [
-    { key: "max_pathogenicity", label: "Pathogenicity", format: "score" },
-    { key: "pathogenicity_class", label: "Class" },
-  ],
-
-  // Gene → Gene
-  INTERACTS_WITH: [
-    { key: "combined_score", label: "Score", format: "score" },
-  ],
-  INTERACTS_IN_PATHWAY: [
-    { key: "combined_score", label: "Score", format: "score" },
-  ],
-
-  // GO/Ontology
-  ANNOTATED_WITH: [
-    { key: "evidence_code", label: "Evidence" },
-  ],
-  SUBCLASS_OF: [
-    { key: "distance", label: "Distance", format: "number" },
-  ],
-  ANCESTOR_OF: [
-    { key: "distance", label: "Distance", format: "number" },
+  SIGNAL_IMPLIES_GENE: [
+    { key: "l2g_score", label: "L2G Score", format: "score" },
   ],
 };
 
@@ -158,7 +149,7 @@ export const EDGE_TOOLTIP_FIELDS: Partial<Record<EdgeType, TooltipField[]>> = {
  * Format a field value for tooltip display.
  */
 export function formatTooltipValue(value: unknown, format?: TooltipField["format"]): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "\u2014";
 
   switch (format) {
     case "score":

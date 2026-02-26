@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { cancelJob, createJob, getJobStatus, isTerminalState } from "../api";
+import { createCohort, deleteCohort, getCohort } from "../api";
 import { DEFAULT_TENANT_ID, JOB_POLL_INTERVAL_MS } from "../config";
-import type { CreateJobRequest, InputFormat, Job, KeyType } from "../types";
+import type { InputFormat, Job, KeyType } from "../types";
+import { cohortDetailToJob } from "../types";
 
 interface UseBatchJobOptions {
   tenantId?: string;
@@ -37,7 +38,8 @@ interface UseBatchJobResult {
 }
 
 /**
- * Hook for managing batch job lifecycle: creation, polling, and cancellation
+ * Hook for managing batch job lifecycle: creation, polling, and cancellation.
+ * Uses cohort API under the hood, maps to Job type for backward compat.
  */
 export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult {
   const {
@@ -52,12 +54,13 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  // Create job mutation
+  // Create cohort mutation (replaces createJob)
   const createMutation = useMutation({
-    mutationFn: createJob,
+    mutationFn: (request: Parameters<typeof createCohort>[1]) =>
+      createCohort(tenantId, request),
     onSuccess: (data) => {
-      setJobId(data.job_id);
-      onJobCreated?.(data.job_id);
+      setJobId(data.id);
+      onJobCreated?.(data.id);
     },
     onError: (err) => {
       const jobError = err instanceof Error ? err : new Error("Failed to create job");
@@ -66,12 +69,11 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
     },
   });
 
-  // Cancel job mutation
+  // Delete/cancel cohort mutation (replaces cancelJob)
   const cancelMutation = useMutation({
-    mutationFn: ({ jobId, reason }: { jobId: string; reason?: string }) =>
-      cancelJob(jobId, tenantId, reason),
+    mutationFn: ({ cohortId }: { cohortId: string }) =>
+      deleteCohort(cohortId, tenantId),
     onSuccess: () => {
-      // Invalidate the job status query to trigger a refresh
       if (jobId) {
         queryClient.invalidateQueries({ queryKey: ["batch-job", jobId] });
       }
@@ -83,21 +85,18 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
     },
   });
 
-  // Poll job status
+  // Poll cohort status, map to Job
   const jobStatusQuery = useQuery({
     queryKey: ["batch-job", jobId, tenantId],
     queryFn: async () => {
       if (!jobId) throw new Error("No job ID");
-      const job = await getJobStatus(
-        jobId,
-        tenantId,
-        // Include URLs only when job is completed
-        false,
-      );
+      const detail = await getCohort(jobId, tenantId, false);
+      const job = cohortDetailToJob(detail);
 
-      // Check for terminal states and fetch with URLs if completed
+      // If completed, re-fetch with URLs
       if (job.state === "COMPLETED") {
-        const completeJob = await getJobStatus(jobId, tenantId, true);
+        const completeDetail = await getCohort(jobId, tenantId, true);
+        const completeJob = cohortDetailToJob(completeDetail);
         onJobCompleted?.(completeJob);
         return completeJob;
       }
@@ -111,25 +110,21 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
     enabled: !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Stop polling when job reaches terminal state
-      if (data?.is_terminal) {
-        return false;
-      }
-      // Use server-suggested poll interval if available
+      if (data?.is_terminal) return false;
       if (data && "poll" in data && data.poll) {
         return data.poll.after_ms;
       }
       return JOB_POLL_INTERVAL_MS;
     },
     refetchOnWindowFocus: false,
-    staleTime: 0, // Always refetch for polling
+    staleTime: 0,
   });
 
-  // Create job function
+  // Create job function (calls createCohort with source: "upload")
   const createJobFn = useCallback(
     async (opts: CreateJobOptions): Promise<string> => {
-      const request: CreateJobRequest = {
-        tenant_id: tenantId,
+      const response = await createMutation.mutateAsync({
+        source: "upload",
         input_uri: opts.inputUri,
         format: opts.format,
         key_type: opts.keyType,
@@ -137,21 +132,19 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
         delimiter: opts.delimiter,
         include_not_found: opts.includeNotFound,
         idempotency_key: opts.idempotencyKey,
-      };
-
-      const response = await createMutation.mutateAsync(request);
-      return response.job_id;
+      });
+      return response.id;
     },
-    [tenantId, createMutation],
+    [createMutation],
   );
 
-  // Cancel job function
+  // Cancel job function (calls deleteCohort)
   const cancelJobFn = useCallback(
-    async (reason?: string): Promise<void> => {
+    async (_reason?: string): Promise<void> => {
       if (!jobId) {
         throw new Error("No job to cancel");
       }
-      await cancelMutation.mutateAsync({ jobId, reason });
+      await cancelMutation.mutateAsync({ cohortId: jobId });
     },
     [jobId, cancelMutation],
   );

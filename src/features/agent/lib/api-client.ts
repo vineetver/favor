@@ -1,5 +1,3 @@
-import { getJobStatus } from "@features/batch/api";
-import type { Job } from "@features/batch/types";
 import type { CohortStatusResponse, CohortSummary } from "@features/batch/types";
 
 const API_BASE =
@@ -154,29 +152,6 @@ export function cohortFetch<T>(
 
 const POLL_INTERVAL_MS = 2_000;
 const POLL_TIMEOUT_MS = 120_000;
-
-/**
- * Poll a batch job until it reaches a terminal state.
- * Returns the terminal Job object or throws on timeout.
- */
-export async function pollJobUntilDone(
-  jobId: string,
-  tenantId: string,
-): Promise<Job> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-
-  while (Date.now() < deadline) {
-    const job = await getJobStatus(jobId, tenantId);
-    if (job.is_terminal) return job;
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-  }
-
-  throw new AgentToolError(
-    408,
-    `Job ${jobId} did not complete within ${POLL_TIMEOUT_MS / 1000}s`,
-    "The job is still running. Try again later or check the batch annotation page.",
-  );
-}
 
 /**
  * Poll a cohort until it reaches a terminal state.

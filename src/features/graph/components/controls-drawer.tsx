@@ -30,14 +30,13 @@ import type { ControlsDrawerProps } from "../types/props";
 import type { EdgeType, EntityType } from "../types";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
 import { ENTITY_TYPES } from "../types/entity";
-import { GRAPH_LENSES } from "../config/lenses";
 import { NODE_TYPE_COLORS } from "../config/styling";
 
 // =============================================================================
-// Lens Icon Map
+// Template Icon Map
 // =============================================================================
 
-const LENS_ICONS: Record<string, React.ReactNode> = {
+const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
   "heart-pulse": <HeartPulse className="w-4 h-4" />,
   "dna": <Dna className="w-4 h-4" />,
   "pill": <Pill className="w-4 h-4" />,
@@ -46,65 +45,6 @@ const LENS_ICONS: Record<string, React.ReactNode> = {
   "bar-chart": <BarChart3 className="w-4 h-4" />,
   "network": <Network className="w-4 h-4" />,
 };
-
-// =============================================================================
-// Edge Type Groups
-// =============================================================================
-
-const EDGE_TYPE_GROUPS: Array<{ label: string; types: EdgeType[] }> = [
-  {
-    label: "Gene \u2192 Disease",
-    types: [
-      "ASSOCIATED_WITH_DISEASE", "CURATED_FOR", "CAUSES", "CIVIC_EVIDENCED_FOR",
-      "PGX_ASSOCIATED", "THERAPEUTIC_TARGET_IN", "SCORED_FOR_DISEASE",
-      "BIOMARKER_FOR", "INHERITED_CAUSE_OF", "ASSERTED_FOR_DISEASE",
-    ],
-  },
-  {
-    label: "Gene \u2192 Drug",
-    types: ["HAS_PGX_INTERACTION", "HAS_CLINICAL_DRUG_EVIDENCE", "ASSERTED_FOR_DRUG"],
-  },
-  {
-    label: "Gene \u2192 Gene",
-    types: ["INTERACTS_WITH", "INTERACTS_IN_PATHWAY", "REGULATES", "FUNCTIONALLY_RELATED"],
-  },
-  {
-    label: "Gene \u2192 Other",
-    types: [
-      "PARTICIPATES_IN", "MANIFESTS_AS", "MOUSE_MANIFESTS_AS",
-      "SCORED_FOR_TRAIT", "HAS_GWAS_VARIANT", "ANNOTATED_WITH",
-      "ASSOCIATED_WITH_SIDE_EFFECT",
-    ],
-  },
-  {
-    label: "Drug",
-    types: ["TARGETS", "TARGETS_IN_CONTEXT", "INDICATED_FOR", "HAS_SIDE_EFFECT", "HAS_ADVERSE_REACTION"],
-  },
-  {
-    label: "Variant",
-    types: [
-      "GWAS_ASSOCIATED_WITH", "AFFECTS_RESPONSE_TO", "PGX_RESPONSE_FOR",
-      "STUDIED_FOR_DRUG_RESPONSE", "FUNCTIONALLY_ASSAYED_FOR",
-      "PGX_CLINICAL_RESPONSE", "PGX_DISEASE_ASSOCIATED", "CLINVAR_ASSOCIATED",
-      "REPORTED_IN", "PREDICTED_TO_AFFECT", "POSITIONALLY_LINKED_TO",
-      "ENHANCER_LINKED_TO", "PREDICTED_REGULATORY_TARGET",
-      "MISSENSE_PATHOGENIC_FOR", "SOMATICALLY_MUTATED_IN",
-      "CLINVAR_ANNOTATED_IN", "LINKED_TO_SIDE_EFFECT", "OVERLAPS",
-    ],
-  },
-  {
-    label: "Other",
-    types: [
-      "PRESENTS_WITH", "MAPS_TO", "TRAIT_PRESENTS_WITH",
-      "INVESTIGATES", "SE_MAPS_TO",
-      "EXPERIMENTALLY_REGULATES", "COMPUTATIONALLY_REGULATES",
-      "CONTAINS_METABOLITE", "METABOLITE_IS_A",
-      "SUBCLASS_OF", "ANCESTOR_OF", "PHENOTYPE_SUBCLASS_OF",
-      "PHENOTYPE_ANCESTOR_OF", "PART_OF", "PATHWAY_ANCESTOR_OF",
-      "EFO_SUBCLASS_OF", "EFO_ANCESTOR_OF", "GO_SUBCLASS_OF", "GO_ANCESTOR_OF",
-    ],
-  },
-];
 
 // =============================================================================
 // Collapsible Section Component
@@ -269,8 +209,10 @@ function ControlsDrawerInner({
   onFiltersChange,
   layout,
   onLayoutChange,
-  activeLens,
-  onLensChange,
+  templates,
+  activeTemplate,
+  onTemplateChange,
+  edgeTypeGroups,
   onReset,
   edgeTypeCounts,
   nodeTypeCounts,
@@ -350,31 +292,31 @@ function ControlsDrawerInner({
           </div>
         )}
 
-        {/* Our Lenses */}
-        <CollapsibleSection title="Our Lenses">
+        {/* Templates */}
+        <CollapsibleSection title="Templates">
           <div className="space-y-2">
-            {GRAPH_LENSES.map((lens) => {
-              const isActive = activeLens === lens.id;
+            {templates.map((template) => {
+              const isActive = activeTemplate === template.id;
               return (
                 <button
-                  key={lens.id}
+                  key={template.id}
                   className={
                     isActive
                       ? "w-full flex items-start gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-left"
                       : "w-full flex items-start gap-3 p-3 rounded-lg border border-border bg-background text-left hover:border-primary/20 hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   }
-                  onClick={() => onLensChange(lens.id)}
+                  onClick={() => onTemplateChange(template.id)}
                   disabled={isExpanding || isActive}
                 >
                   <div
                     className="mt-0.5 p-1.5 rounded-md"
-                    style={{ backgroundColor: `${lens.color}15`, color: lens.color }}
+                    style={{ backgroundColor: `${template.color}15`, color: template.color }}
                   >
-                    {LENS_ICONS[lens.icon] ?? <Network className="w-4 h-4" />}
+                    {TEMPLATE_ICONS[template.icon] ?? <Network className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-foreground">{lens.name}</span>
+                      <span className="text-sm font-medium text-foreground">{template.name}</span>
                       {isActive && (
                         <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                           Active
@@ -382,7 +324,7 @@ function ControlsDrawerInner({
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {lens.description}
+                      {template.description}
                     </div>
                   </div>
                 </button>
@@ -406,7 +348,7 @@ function ControlsDrawerInner({
         </CollapsibleSection>
 
         {/* Edge Type Groups */}
-        {EDGE_TYPE_GROUPS.map((group) => (
+        {edgeTypeGroups.map((group) => (
           <CollapsibleSection key={group.label} title={group.label} defaultOpen={false}>
             <div className="space-y-0.5">
               {group.types

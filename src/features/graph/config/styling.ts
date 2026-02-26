@@ -12,14 +12,17 @@ export const NODE_TYPE_COLORS: Record<EntityType, { background: string; border: 
   Drug: { background: "#d1fae5", border: "#10b981", text: "#065f46" },
   Pathway: { background: "#ede9fe", border: "#8b5cf6", text: "#5b21b6" },
   Variant: { background: "#fef3c7", border: "#f59e0b", text: "#92400e" },
-  Trait: { background: "#fce7f3", border: "#ec4899", text: "#9d174d" },
+  Entity: { background: "#fce7f3", border: "#ec4899", text: "#9d174d" },
   Phenotype: { background: "#fae8ff", border: "#d946ef", text: "#86198f" },
   Study: { background: "#e0f2fe", border: "#0284c7", text: "#075985" },
   GOTerm: { background: "#dcfce7", border: "#16a34a", text: "#166534" },
   SideEffect: { background: "#fef9c3", border: "#ca8a04", text: "#854d0e" },
-  OntologyTerm: { background: "#f3e8ff", border: "#9333ea", text: "#6b21a8" },
   cCRE: { background: "#cffafe", border: "#0891b2", text: "#155e75" },
   Metabolite: { background: "#fce7f3", border: "#db2777", text: "#9d174d" },
+  Signal: { background: "#e0e7ff", border: "#6366f1", text: "#3730a3" },
+  ProteinDomain: { background: "#ede9fe", border: "#7c3aed", text: "#5b21b6" },
+  Tissue: { background: "#ccfbf1", border: "#14b8a6", text: "#115e59" },
+  CellType: { background: "#dbeafe", border: "#2563eb", text: "#1e3a8a" },
 };
 
 export const SEED_NODE_COLORS = {

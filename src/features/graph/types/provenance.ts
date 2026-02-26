@@ -1,4 +1,4 @@
-import type { LensId } from "../config/lenses";
+import type { TemplateId } from "../config/explorer-config";
 
 // =============================================================================
 // Provenance — tracks why each node/edge exists in the graph
@@ -16,7 +16,7 @@ export interface ProvenanceEvent {
   kind: ProvenanceKind;
   label: string;
   timestamp: number;
-  lensId?: LensId;
+  templateId?: TemplateId;
   stepIndex?: number;
   sourceNodeId?: string;
   sourceNodeLabel?: string;

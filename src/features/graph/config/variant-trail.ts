@@ -33,7 +33,7 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["PREDICTED_TO_AFFECT", "MISSENSE_PATHOGENIC_FOR", "CLINVAR_ANNOTATED_IN"], direction: "in", limit: 25 },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"], direction: "in", limit: 25 },
         ],
         routeBadge: "Direct",
       },
@@ -45,7 +45,7 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["CLINVAR_ASSOCIATED", "PGX_DISEASE_ASSOCIATED"], direction: "in", limit: 25 },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"], direction: "in", limit: 25 },
         ],
         routeBadge: "Direct",
       },
@@ -57,7 +57,7 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["PGX_CLINICAL_RESPONSE", "AFFECTS_RESPONSE_TO", "PGX_RESPONSE_FOR", "STUDIED_FOR_DRUG_RESPONSE", "FUNCTIONALLY_ASSAYED_FOR"], direction: "in", limit: 25 },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_DRUG"], direction: "in", limit: 25 },
         ],
         routeBadge: "Direct",
       },
@@ -65,11 +65,11 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     maxNodes: 140,
     maxEdges: 260,
   },
-  Trait: {
+  Entity: {
     routes: [
       {
         steps: [
-          { edgeTypes: ["GWAS_ASSOCIATED_WITH"], direction: "in", limit: 25, sort: "-p_value_mlog" },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 25, sort: "-p_value_mlog" },
         ],
         routeBadge: "Direct",
       },
@@ -81,7 +81,7 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["REPORTED_IN"], direction: "in", limit: 25, sort: "-p_value_mlog" },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "in", limit: 25, sort: "-p_value_mlog" },
         ],
         routeBadge: "Direct",
       },
@@ -93,7 +93,7 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["OVERLAPS"], direction: "in", limit: 25 },
+          { edgeTypes: ["VARIANT_OVERLAPS_CCRE"], direction: "in", limit: 25 },
         ],
         routeBadge: "Direct",
       },
@@ -105,7 +105,19 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["LINKED_TO_SIDE_EFFECT"], direction: "in", limit: 25 },
+          { edgeTypes: ["VARIANT_LINKED_TO_SIDE_EFFECT"], direction: "in", limit: 25 },
+        ],
+        routeBadge: "Direct",
+      },
+    ],
+    maxNodes: 140,
+    maxEdges: 260,
+  },
+  Signal: {
+    routes: [
+      {
+        steps: [
+          { edgeTypes: ["SIGNAL_HAS_VARIANT"], direction: "out", limit: 25 },
         ],
         routeBadge: "Direct",
       },
@@ -119,8 +131,8 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["PRESENTS_WITH"], direction: "in", limit: 10 },
-          { edgeTypes: ["CLINVAR_ASSOCIATED"], direction: "in", limit: 15 },
+          { edgeTypes: ["DISEASE_HAS_PHENOTYPE"], direction: "in", limit: 10 },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"], direction: "in", limit: 15 },
         ],
         routeBadge: "via Disease",
       },
@@ -132,8 +144,8 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["PARTICIPATES_IN"], direction: "in", limit: 10 },
-          { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 15 },
+          { edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY"], direction: "in", limit: 10 },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"], direction: "in", limit: 15 },
         ],
         routeBadge: "via Gene",
       },
@@ -145,23 +157,10 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["ANNOTATED_WITH"], direction: "in", limit: 10 },
-          { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 15 },
+          { edgeTypes: ["GENE_ANNOTATED_WITH_GO_TERM"], direction: "in", limit: 10 },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"], direction: "in", limit: 15 },
         ],
         routeBadge: "via Gene",
-      },
-    ],
-    maxNodes: 140,
-    maxEdges: 260,
-  },
-  OntologyTerm: {
-    routes: [
-      {
-        steps: [
-          { edgeTypes: ["SE_MAPS_TO"], direction: "in", limit: 10 },
-          { edgeTypes: ["LINKED_TO_SIDE_EFFECT"], direction: "in", limit: 15 },
-        ],
-        routeBadge: "via SideEffect",
       },
     ],
     maxNodes: 140,
@@ -173,9 +172,9 @@ export const VARIANT_TRAIL_CONFIG: Partial<Record<EntityType, VariantTrailConfig
     routes: [
       {
         steps: [
-          { edgeTypes: ["CONTAINS_METABOLITE"], direction: "in", limit: 8 },
-          { edgeTypes: ["PARTICIPATES_IN"], direction: "in", limit: 8 },
-          { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 10 },
+          { edgeTypes: ["PATHWAY_CONTAINS_METABOLITE"], direction: "in", limit: 8 },
+          { edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY"], direction: "in", limit: 8 },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"], direction: "in", limit: 10 },
         ],
         routeBadge: "via Pathway, Gene",
       },

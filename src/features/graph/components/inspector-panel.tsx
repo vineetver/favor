@@ -27,7 +27,9 @@ import type { ExplorerNode, ExplorerEdge } from "../types/node";
 import type { ProvenanceEvent } from "../types/provenance";
 import type { ExpansionConfig } from "../config/expansion";
 import type { EdgeType } from "../types/edge";
+import type { EntityType } from "../types/entity";
 import type { ConnectionsDrilldownData, ConnectionsEdgeGroup, ConnectionsStatus } from "../types/connections";
+import type { ExternalLinkConfig } from "../config/explorer-config";
 import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
 import { NODE_TYPE_COLORS } from "../config/styling";
 import { NODE_EXPANSION_CONFIG } from "../config/expansion";
@@ -616,10 +618,12 @@ interface NodeDetailProps {
   onRemove: (nodeId: string) => void;
   onFindPaths: (fromId: string, toId: string) => void;
   isExpanding: boolean;
+  externalLinks: Partial<Record<EntityType, ExternalLinkConfig[]>>;
+  enableVariantTrail: boolean;
   onRunVariantTrail?: (nodeId: string) => void;
 }
 
-function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding, onRunVariantTrail }: NodeDetailProps) {
+function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding, externalLinks, enableVariantTrail, onRunVariantTrail }: NodeDetailProps) {
   const colors = NODE_TYPE_COLORS[node.type] ?? { background: "#e2e8f0", border: "#94a3b8", text: "#334155" };
   const expansionOptions = NODE_EXPANSION_CONFIG[node.type] ?? [];
 
@@ -671,56 +675,31 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
       )}
 
       {/* External Links */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          External Resources
-        </h4>
-        <div className="flex flex-wrap gap-2">
-          {node.type === "Gene" && (
-            <>
-              <ExternalLink
-                href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${node.id}`}
-                className="text-xs text-indigo-600 hover:underline"
-              >
-                Ensembl
-              </ExternalLink>
-              <ExternalLink
-                href={`https://www.genecards.org/cgi-bin/carddisp.pl?gene=${node.label}`}
-                className="text-xs text-indigo-600 hover:underline"
-              >
-                GeneCards
-              </ExternalLink>
-            </>
-          )}
-          {node.type === "Disease" && (
-            <ExternalLink
-              href={`https://monarchinitiative.org/${node.id}`}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              Monarch Initiative
-            </ExternalLink>
-          )}
-          {node.type === "Pathway" && (
-            <ExternalLink
-              href={`https://reactome.org/PathwayBrowser/#/${node.id}`}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              Reactome
-            </ExternalLink>
-          )}
-          {node.type === "Drug" && (
-            <ExternalLink
-              href={`https://www.drugbank.com/drugs/${node.id}`}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              DrugBank
-            </ExternalLink>
-          )}
-        </div>
-      </div>
+      {(() => {
+        const links = externalLinks[node.type] ?? [];
+        if (links.length === 0) return null;
+        return (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              External Resources
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {links.map((link) => (
+                <ExternalLink
+                  key={link.label}
+                  href={link.urlTemplate.replace("{id}", node.id).replace("{label}", node.label)}
+                  className="text-xs text-indigo-600 hover:underline"
+                >
+                  {link.label}
+                </ExternalLink>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Route to Variants */}
-      {hasVariantTrail(node.type) && onRunVariantTrail && (
+      {enableVariantTrail && hasVariantTrail(node.type) && onRunVariantTrail && (
         <div className="pt-2 border-t border-border">
           <button
             className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-left hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -911,6 +890,8 @@ function InspectorPanelInner({
   onRemoveNode,
   onFindPaths,
   isExpanding,
+  externalLinks,
+  enableVariantTrail,
   onRunVariantTrail,
   activeTrailResult,
   onClearTrailResult,
@@ -958,6 +939,8 @@ function InspectorPanelInner({
           onRemove={onRemoveNode}
           onFindPaths={onFindPaths}
           isExpanding={isExpanding}
+          externalLinks={externalLinks}
+          enableVariantTrail={enableVariantTrail}
           onRunVariantTrail={onRunVariantTrail}
         />
       )}

@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
   BatchApiError,
-  createJob,
+  createCohort,
   presignUpload,
   uploadFileToS3,
   validateFile,
@@ -227,20 +227,19 @@ export function BatchWizard({ className }: BatchWizardProps) {
       setError(null);
 
       try {
-        const { job_id } = await createJob({
-          tenant_id: DEFAULT_TENANT_ID,
+        const { id } = await createCohort(DEFAULT_TENANT_ID, {
+          source: "upload",
           input_uri: inputUri,
           format: validation.suggested_patch.format,
           key_type: validation.suggested_patch.key_type,
           has_header: validation.suggested_patch.has_header,
           delimiter: validation.suggested_patch.delimiter,
           include_not_found: config.includeNotFound,
-          email: config.email || null,
-          org_name: config.orgName || null,
+          label: file.name,
           metadata: { cohort_label: file.name },
         });
 
-        router.push(`/batch-annotation/jobs/${job_id}`);
+        router.push(`/batch-annotation/jobs/${id}`);
       } catch (err) {
         const message = err instanceof BatchApiError ? err.message : "Failed to create job";
         setError(message);

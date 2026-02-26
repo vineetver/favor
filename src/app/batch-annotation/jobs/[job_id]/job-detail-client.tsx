@@ -4,7 +4,7 @@ import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
 import {
   BatchApiError,
-  cancelJob,
+  deleteCohort,
   DEFAULT_TENANT_ID,
   getCohort,
   listCohorts,
@@ -153,7 +153,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     setCancelError(null);
 
     try {
-      await cancelJob(jobId, DEFAULT_TENANT_ID);
+      await deleteCohort(jobId, DEFAULT_TENANT_ID);
       refetch();
     } catch (err) {
       const message =

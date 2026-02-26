@@ -161,11 +161,11 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "node.entity-trait",
+    selector: "node.entity-entity",
     style: {
-      "background-color": NODE_TYPE_COLORS.Trait.background,
-      "border-color": NODE_TYPE_COLORS.Trait.border,
-      color: NODE_TYPE_COLORS.Trait.text,
+      "background-color": NODE_TYPE_COLORS.Entity.background,
+      "border-color": NODE_TYPE_COLORS.Entity.border,
+      color: NODE_TYPE_COLORS.Entity.text,
     },
   },
   {
@@ -201,11 +201,35 @@ const STYLESHEET: StylesheetStyle[] = [
     },
   },
   {
-    selector: "node.entity-ontologyterm",
+    selector: "node.entity-signal",
     style: {
-      "background-color": NODE_TYPE_COLORS.OntologyTerm.background,
-      "border-color": NODE_TYPE_COLORS.OntologyTerm.border,
-      color: NODE_TYPE_COLORS.OntologyTerm.text,
+      "background-color": NODE_TYPE_COLORS.Signal.background,
+      "border-color": NODE_TYPE_COLORS.Signal.border,
+      color: NODE_TYPE_COLORS.Signal.text,
+    },
+  },
+  {
+    selector: "node.entity-proteindomain",
+    style: {
+      "background-color": NODE_TYPE_COLORS.ProteinDomain.background,
+      "border-color": NODE_TYPE_COLORS.ProteinDomain.border,
+      color: NODE_TYPE_COLORS.ProteinDomain.text,
+    },
+  },
+  {
+    selector: "node.entity-tissue",
+    style: {
+      "background-color": NODE_TYPE_COLORS.Tissue.background,
+      "border-color": NODE_TYPE_COLORS.Tissue.border,
+      color: NODE_TYPE_COLORS.Tissue.text,
+    },
+  },
+  {
+    selector: "node.entity-celltype",
+    style: {
+      "background-color": NODE_TYPE_COLORS.CellType.background,
+      "border-color": NODE_TYPE_COLORS.CellType.border,
+      color: NODE_TYPE_COLORS.CellType.text,
     },
   },
   {

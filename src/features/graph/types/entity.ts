@@ -38,8 +38,8 @@ export interface VariantEntity extends BaseEntity {
   position?: number;
 }
 
-export interface TraitEntity extends BaseEntity {
-  type: "Trait";
+export interface EntityEntity extends BaseEntity {
+  type: "Entity";
   efoId?: string;
 }
 
@@ -63,11 +63,6 @@ export interface SideEffectEntity extends BaseEntity {
   meddraId?: string;
 }
 
-export interface OntologyTermEntity extends BaseEntity {
-  type: "OntologyTerm";
-  ontologySource?: string;
-}
-
 export interface cCREEntity extends BaseEntity {
   type: "cCRE";
   accession?: string;
@@ -78,20 +73,43 @@ export interface MetaboliteEntity extends BaseEntity {
   hmdbId?: string;
 }
 
+export interface SignalEntity extends BaseEntity {
+  type: "Signal";
+  signalId?: string;
+}
+
+export interface ProteinDomainEntity extends BaseEntity {
+  type: "ProteinDomain";
+  interProId?: string;
+}
+
+export interface TissueEntity extends BaseEntity {
+  type: "Tissue";
+  uberonId?: string;
+}
+
+export interface CellTypeEntity extends BaseEntity {
+  type: "CellType";
+  cellOntologyId?: string;
+}
+
 export type ExplorerEntity =
   | GeneEntity
   | DiseaseEntity
   | DrugEntity
   | PathwayEntity
   | VariantEntity
-  | TraitEntity
+  | EntityEntity
   | PhenotypeEntity
   | StudyEntity
   | GOTermEntity
   | SideEffectEntity
-  | OntologyTermEntity
   | cCREEntity
-  | MetaboliteEntity;
+  | MetaboliteEntity
+  | SignalEntity
+  | ProteinDomainEntity
+  | TissueEntity
+  | CellTypeEntity;
 
 export type EntityType = ExplorerEntity["type"];
 
@@ -101,12 +119,15 @@ export const ENTITY_TYPES: EntityType[] = [
   "Drug",
   "Pathway",
   "Variant",
-  "Trait",
+  "Entity",
   "Phenotype",
   "Study",
   "GOTerm",
   "SideEffect",
-  "OntologyTerm",
   "cCRE",
   "Metabolite",
+  "Signal",
+  "ProteinDomain",
+  "Tissue",
+  "CellType",
 ];

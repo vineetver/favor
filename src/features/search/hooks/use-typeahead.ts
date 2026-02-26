@@ -31,11 +31,6 @@ interface UseTypeaheadOptions {
   includeLinks?: boolean;
 
   /**
-   * Include linked entities (default: true)
-   */
-  includeLinked?: boolean;
-
-  /**
    * Callback when search completes
    */
   onResults?: (results: TypeaheadResponse) => void;
@@ -53,7 +48,6 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
     types,
     limit = 5,
     includeLinks = true,
-    includeLinked = true,
     onResults,
     onError,
   } = options;
@@ -107,7 +101,6 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
           types: types?.join(","),
           limit,
           include_links: includeLinks,
-          include_linked: includeLinked,
           signal: abortControllerRef.current.signal,
         });
 
@@ -135,7 +128,7 @@ export function useTypeahead(options: UseTypeaheadOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [minLength, types, limit, includeLinks, includeLinked],
+    [minLength, types, limit, includeLinks],
   );
 
   // Debounced search

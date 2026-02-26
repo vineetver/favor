@@ -27,6 +27,7 @@ export function isBranchStep(step: LensStep): step is BranchStep {
   return "branch" in step;
 }
 
+/** @deprecated Use TemplateId from explorer-config.ts instead */
 export type LensId = "clinical" | "variant" | "regulatory" | "therapeutics" | "phenotype" | "gwas";
 
 export interface GraphLens {
@@ -40,6 +41,7 @@ export interface GraphLens {
   edgeFields?: string[];
 }
 
+/** @deprecated Use GENE_EXPLORER_CONFIG.defaultTemplateId instead */
 export const DEFAULT_LENS: LensId = "clinical";
 
 /**
@@ -91,20 +93,18 @@ export function serializeLensSteps(steps: LensStep[]): GraphQueryStepOrBranch[] 
   });
 }
 
+/** @deprecated Use GENE_EXPLORER_CONFIG.templates instead */
 export const GRAPH_LENSES: GraphLens[] = [
   // =========================================================================
   // 1) Clinical Relevance — "Is this gene causal / clinically relevant?"
   //
   // All edges are Gene→Disease. Single branch from Gene seed captures every
-  // evidence tier in one step. No overlayOnly needed — avoids the problem
-  // where overlayOnly expands from frontier (Disease) but edges come FROM Gene.
+  // evidence tier in one step.
   //
   //   Seed: Gene
   //   Step 1 branch (from Gene frontier, all direction "out"):
-  //     - ASSOCIATED_WITH_DISEASE: broad OpenTargets associations (ranked)
-  //     - CURATED_FOR + CAUSES + INHERITED_CAUSE_OF: curated causal (ClinGen/DDG2P/Orphanet)
-  //     - CIVIC_EVIDENCED_FOR: cancer clinical evidence
-  //     - THERAPEUTIC_TARGET_IN + BIOMARKER_FOR: TTD target/biomarker
+  //     - GENE_ASSOCIATED_WITH_DISEASE: broad associations (ranked)
+  //     - GENE_ALTERED_IN_DISEASE: somatic alterations
   //   Diseases deduplicated; multi-edge types between Gene↔Disease preserved.
   // =========================================================================
   {
@@ -116,10 +116,8 @@ export const GRAPH_LENSES: GraphLens[] = [
     steps: [
       {
         branch: [
-          { edgeTypes: ["ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 15, sort: "-overall_score" },
-          { edgeTypes: ["CURATED_FOR", "CAUSES", "INHERITED_CAUSE_OF"], direction: "out", limit: 30 },
-          { edgeTypes: ["CIVIC_EVIDENCED_FOR"], direction: "out", limit: 15 },
-          { edgeTypes: ["THERAPEUTIC_TARGET_IN", "BIOMARKER_FOR"], direction: "out", limit: 20 },
+          { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30, sort: "-overall_score" },
+          { edgeTypes: ["GENE_ALTERED_IN_DISEASE"], direction: "out", limit: 20 },
         ],
       },
     ],
@@ -131,11 +129,8 @@ export const GRAPH_LENSES: GraphLens[] = [
   //
   //   Seed: Gene
   //   Step 1 branch (from Gene frontier, all direction "in"):
-  //     All 5 Variant→Gene edge types. Gene is TARGET. Brings in Variants.
+  //     VARIANT_IMPLIES_GENE + VARIANT_AFFECTS_GENE. Gene is TARGET. Brings in Variants.
   //     Result set: {Gene, Variants}. Frontier → Variant.
-  //   Step 2 overlayOnly (from Variant frontier, direction "out"):
-  //     POSITIONALLY_LINKED_TO: Variant→Gene. Variant IS the frontier/source → works.
-  //     Adds consequence/HGVSc/HGVSp edges onto existing variant-gene pairs.
   // =========================================================================
   {
     id: "variant",
@@ -146,11 +141,8 @@ export const GRAPH_LENSES: GraphLens[] = [
     steps: [
       {
         branch: [
-          { edgeTypes: ["CLINVAR_ANNOTATED_IN"], direction: "in", limit: 15 },
-          { edgeTypes: ["MISSENSE_PATHOGENIC_FOR"], direction: "in", limit: 12, sort: "-max_pathogenicity" },
-          { edgeTypes: ["PREDICTED_TO_AFFECT"], direction: "in", limit: 10, sort: "-max_l2g_score" },
-          { edgeTypes: ["PREDICTED_REGULATORY_TARGET"], direction: "in", limit: 8, sort: "-score" },
-          { edgeTypes: ["ENHANCER_LINKED_TO"], direction: "in", limit: 8, sort: "-feature_score" },
+          { edgeTypes: ["VARIANT_AFFECTS_GENE"], direction: "in", limit: 20 },
+          { edgeTypes: ["VARIANT_IMPLIES_GENE"], direction: "in", limit: 20, sort: "-max_l2g_score" },
         ],
       },
     ],
@@ -161,14 +153,14 @@ export const GRAPH_LENSES: GraphLens[] = [
   // 3) Regulation & Tissue — "Regulatory elements and tissue control"
   //
   //   Seed: Gene
-  //   Step 1 branch (from Gene, direction "in"):
-  //     cCRE→Gene regulation edges. Gene is TARGET. Brings in cCREs.
+  //   Step 1 (from Gene, direction "in"):
+  //     CCRE_REGULATES_GENE. Gene is TARGET. Brings in cCREs.
   //     Result set: {Gene, cCREs}. Frontier → cCRE.
   //   Step 2 (from cCRE frontier, direction "in"):
-  //     Variant→cCRE OVERLAPS. cCRE is TARGET. Brings in Variants.
+  //     VARIANT_OVERLAPS_CCRE. cCRE is TARGET. Brings in Variants.
   //     Result set: {Gene, cCREs, Variants}. Frontier → Variant.
   //   Step 3 overlayOnly (from Variant frontier, direction "out"):
-  //     Variant→Gene edges. Variant IS the source → direction "out" works.
+  //     VARIANT_IMPLIES_GENE. Variant IS the source → direction "out" works.
   //     Gene in result set. Completes Variant → cCRE → Gene regulatory chains.
   // =========================================================================
   {
@@ -179,22 +171,21 @@ export const GRAPH_LENSES: GraphLens[] = [
     color: "#8b5cf6",
     steps: [
       {
-        branch: [
-          { edgeTypes: ["EXPERIMENTALLY_REGULATES"], direction: "in", limit: 15, sort: "-max_score" },
-          { edgeTypes: ["COMPUTATIONALLY_REGULATES"], direction: "in", limit: 10, sort: "-max_score" },
-        ],
+        edgeTypes: ["CCRE_REGULATES_GENE"],
+        direction: "in",
+        limit: 20,
+        sort: "-max_score",
       },
       {
-        edgeTypes: ["OVERLAPS"],
+        edgeTypes: ["VARIANT_OVERLAPS_CCRE"],
         direction: "in",
         limit: 20,
       },
       {
-        // Frontier: Variant. Variant→Gene edges. Variant IS the source → "out" works.
-        branch: [
-          { edgeTypes: ["PREDICTED_TO_AFFECT"], direction: "out", limit: 30, overlayOnly: true },
-          { edgeTypes: ["ENHANCER_LINKED_TO"], direction: "out", limit: 20, overlayOnly: true },
-        ],
+        edgeTypes: ["VARIANT_IMPLIES_GENE"],
+        direction: "out",
+        limit: 30,
+        overlayOnly: true,
       },
     ],
     limits: { maxNodes: 250, maxEdges: 800 },
@@ -205,17 +196,15 @@ export const GRAPH_LENSES: GraphLens[] = [
   //
   //   Seed: Gene
   //   Step 1 branch (from Gene frontier):
-  //     - TARGETS direction "in": Drug→Gene. Gene is TARGET. Brings in Drugs.
-  //     - HAS_PGX_INTERACTION + HAS_CLINICAL_DRUG_EVIDENCE direction "out":
-  //       Gene→Drug. Gene is SOURCE. Also brings in Drugs.
+  //     - DRUG_ACTS_ON_GENE direction "in": Drug→Gene. Gene is TARGET. Brings in Drugs.
+  //     - GENE_AFFECTS_DRUG_RESPONSE direction "out": Gene→Drug. Brings in Drugs.
   //     Result set: {Gene, Drugs}. Frontier → Drug.
   //   Step 2 overlayOnly (from Drug frontier, direction "out"):
-  //     TARGETS_IN_CONTEXT: Drug→Gene. Drug IS the source → "out" works.
+  //     DRUG_ACTS_ON_GENE: Drug→Gene. Drug IS the source → "out" works.
   //     Gene in result set. Adds disease-context targeting edges.
   //   Step 3 branch (from Drug frontier — unchanged by overlay):
-  //     - INDICATED_FOR "out": Drug→Disease. Brings in Diseases.
-  //     - AFFECTS_RESPONSE_TO "in": Variant→Drug. Drug is TARGET. Brings in Variants.
-  //     - PGX_CLINICAL_RESPONSE "in": same pattern.
+  //     - DRUG_INDICATED_FOR_DISEASE "out": Drug→Disease. Brings in Diseases.
+  //     - VARIANT_ASSOCIATED_WITH_DRUG "in": Variant→Drug. Drug is TARGET. Brings in Variants.
   // =========================================================================
   {
     id: "therapeutics",
@@ -225,25 +214,21 @@ export const GRAPH_LENSES: GraphLens[] = [
     color: "#22c55e",
     steps: [
       {
-        // Both Drug→Gene ("in") and Gene→Drug ("out") from Gene frontier.
         branch: [
-          { edgeTypes: ["TARGETS"], direction: "in", limit: 15 },
-          { edgeTypes: ["HAS_PGX_INTERACTION", "HAS_CLINICAL_DRUG_EVIDENCE"], direction: "out", limit: 15 },
+          { edgeTypes: ["DRUG_ACTS_ON_GENE"], direction: "in", limit: 15 },
+          { edgeTypes: ["GENE_AFFECTS_DRUG_RESPONSE"], direction: "out", limit: 15 },
         ],
       },
       {
-        // Frontier: Drug. TARGETS_IN_CONTEXT: Drug→Gene. Drug IS the source → "out" works.
-        edgeTypes: ["TARGETS_IN_CONTEXT"],
+        edgeTypes: ["DRUG_ACTS_ON_GENE"],
         direction: "out",
         limit: 30,
         overlayOnly: true,
       },
       {
-        // Frontier: Drug (unchanged by overlay).
         branch: [
-          { edgeTypes: ["INDICATED_FOR"], direction: "out", limit: 12 },
-          { edgeTypes: ["AFFECTS_RESPONSE_TO"], direction: "in", limit: 8 },
-          { edgeTypes: ["PGX_CLINICAL_RESPONSE"], direction: "in", limit: 8 },
+          { edgeTypes: ["DRUG_INDICATED_FOR_DISEASE"], direction: "out", limit: 12 },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_DRUG"], direction: "in", limit: 12 },
         ],
       },
     ],
@@ -254,11 +239,11 @@ export const GRAPH_LENSES: GraphLens[] = [
   // 5) Phenotypes — "What traits show up when this gene is perturbed?"
   //
   //   Seed: Gene
-  //   Step 1 branch (from Gene, direction "out"):
-  //     Gene→Phenotype edges. Brings in Phenotypes.
+  //   Step 1 (from Gene, direction "out"):
+  //     GENE_ASSOCIATED_WITH_PHENOTYPE. Brings in Phenotypes.
   //     Result set: {Gene, Phenotypes}. Frontier → Phenotype.
   //   Step 2 overlayOnly (from Phenotype frontier, direction "out"):
-  //     PHENOTYPE_SUBCLASS_OF: Phenotype→Phenotype (child→parent).
+  //     PHENOTYPE_HIERARCHY: Phenotype→Phenotype (child→parent).
   //     Phenotype IS the source → "out" works. Both endpoints Phenotype. ✓
   // =========================================================================
   {
@@ -269,13 +254,12 @@ export const GRAPH_LENSES: GraphLens[] = [
     color: "#ec4899",
     steps: [
       {
-        branch: [
-          { edgeTypes: ["MANIFESTS_AS"], direction: "out", limit: 20 },
-          { edgeTypes: ["MOUSE_MANIFESTS_AS"], direction: "out", limit: 15 },
-        ],
+        edgeTypes: ["GENE_ASSOCIATED_WITH_PHENOTYPE"],
+        direction: "out",
+        limit: 30,
       },
       {
-        edgeTypes: ["PHENOTYPE_SUBCLASS_OF"],
+        edgeTypes: ["PHENOTYPE_HIERARCHY"],
         direction: "out",
         limit: 15,
         overlayOnly: true,
@@ -288,20 +272,15 @@ export const GRAPH_LENSES: GraphLens[] = [
   // 6) Complex Genetics — "Combined trait-first + GWAS variant discovery"
   //
   //   Seed: Gene
-  //   Step 1 branch (from Gene, direction "out"):
-  //     Gene→Trait  SCORED_FOR_TRAIT (AbbVie scored traits). Discovers Traits.
-  //     Gene→Variant HAS_GWAS_VARIANT (GWAS Catalog variants). Discovers Variants.
-  //     Frontier → Trait + Variant.
-  //   Step 2 overlayOnly (from Trait+Variant frontier, direction "in"):
-  //     ASSOCIATED_WITH_TRAIT: Gene→Trait. Trait is in frontier, Gene is seed (in result set).
-  //     Adds GWAS Catalog trait edges onto traits already found by AbbVie scoring.
-  //     No new nodes. Frontier unchanged → Trait + Variant.
-  //   Step 3 branch (from Trait+Variant frontier, direction "out"):
-  //     Variant→Trait GWAS_ASSOCIATED_WITH — links variants to their traits.
-  //     Variant→Study REPORTED_IN — links variants to their publications.
-  //     Frontier → Trait + Variant + Study.
-  //   Step 4 overlayOnly (from full frontier, direction "out"):
-  //     Study→Trait INVESTIGATES — connects studies to traits already in set. ✓
+  //   Step 1 (from Gene, direction "out"):
+  //     GENE_ASSOCIATED_WITH_ENTITY. Discovers Entities.
+  //     Frontier → Entity.
+  //   Step 2 branch (from Entity frontier):
+  //     VARIANT_ASSOCIATED_WITH_TRAIT__Entity "in": Variant→Entity. Entity is TARGET. Discovers Variants.
+  //     VARIANT_ASSOCIATED_WITH_STUDY "out" from Variant: links variants to studies.
+  //     Frontier → Entity + Variant + Study.
+  //   Step 3 overlayOnly (from full frontier, direction "out"):
+  //     STUDY_INVESTIGATES_TRAIT__Entity — connects studies to entities already in set. ✓
   // =========================================================================
   {
     id: "gwas",
@@ -311,27 +290,18 @@ export const GRAPH_LENSES: GraphLens[] = [
     color: "#3b82f6",
     steps: [
       {
-        branch: [
-          { edgeTypes: ["SCORED_FOR_TRAIT"], direction: "out", limit: 7 },
-          { edgeTypes: ["HAS_GWAS_VARIANT"], direction: "out", limit: 12, sort: "-p_value_mlog" },
-        ],
-      },
-      {
-        // Frontier: Trait + Variant. ASSOCIATED_WITH_TRAIT: Gene→Trait.
-        // direction "in" on Trait finds Gene→Trait edges. Gene is seed → in result set. ✓
-        edgeTypes: ["ASSOCIATED_WITH_TRAIT"],
-        direction: "in",
-        limit: 50,
-        overlayOnly: true,
+        edgeTypes: ["GENE_ASSOCIATED_WITH_ENTITY"],
+        direction: "out",
+        limit: 15,
       },
       {
         branch: [
-          { edgeTypes: ["GWAS_ASSOCIATED_WITH"], direction: "out", limit: 12, sort: "-p_value_mlog" },
-          { edgeTypes: ["REPORTED_IN"], direction: "out", limit: 10, sort: "-p_value_mlog" },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12, sort: "-p_value_mlog" },
+          { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10, sort: "-p_value_mlog" },
         ],
       },
       {
-        edgeTypes: ["INVESTIGATES"],
+        edgeTypes: ["STUDY_INVESTIGATES_TRAIT__Entity"],
         direction: "out",
         limit: 15,
         overlayOnly: true,

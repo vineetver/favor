@@ -7,7 +7,6 @@
  */
 
 import type {
-  CancelResponse,
   CohortAggregateRequest,
   CohortDeriveRequest,
   CohortDetail,
@@ -19,27 +18,10 @@ import type {
   CohortTopKRequest,
   CreateCohortRequest,
   CreateCohortResponse,
-  CreateJobRequest,
-  CreateJobResponse,
   DeleteCohortResponse,
-  ErrorCode,
-  Job,
-  JobCancelled,
-  JobCancelRequested,
-  JobCompleted,
-  JobEta,
-  JobFailed,
-  JobInput,
-  JobOutput,
-  JobPending,
-  JobPollHint,
-  JobProgress,
-  JobRunning,
   JobState,
-  JobTiming,
   PresignRequest,
   PresignResponse,
-  ProcessingStage,
   ValidateRequest,
   ValidateResponse,
 } from "../types";
@@ -123,181 +105,6 @@ async function withRetry<T>(
 }
 
 // ============================================================================
-// Job Parser (Parse, Don't Validate)
-// ============================================================================
-
-/**
- * Raw API response shape (loose types for parsing)
- */
-interface RawJobResponse {
-  job_id: string;
-  state: string;
-  is_terminal: boolean;
-  can_cancel: boolean;
-  attempt: number;
-  created_at: string;
-  started_at?: string | null;
-  completed_at?: string | null;
-  input: JobInput;
-  progress?: JobProgress | null;
-  timing: JobTiming;
-  output?: JobOutput | null;
-  eta?: JobEta | null;
-  poll?: JobPollHint | null;
-  error_code?: string | null;
-  error_message?: string | null;
-  retryable?: boolean | null;
-  db_version?: string | null;
-}
-
-/**
- * Parse raw API response into discriminated union.
- *
- * This is the boundary where we transform loose API data into
- * strongly-typed Job objects. After this point, TypeScript
- * enforces that each state has exactly the fields it needs.
- *
- * @throws Error if state is unknown
- */
-export function parseJob(raw: RawJobResponse): Job {
-  const base = {
-    job_id: raw.job_id,
-    attempt: raw.attempt,
-    created_at: raw.created_at,
-    input: raw.input,
-    timing: raw.timing,
-    db_version: raw.db_version ?? undefined,
-  };
-
-  // Default poll hint if not provided - 10 seconds to avoid rate limits
-  const defaultPoll: JobPollHint = { after_ms: 10000, message: "Polling..." };
-
-  switch (raw.state) {
-    case "PENDING": {
-      const job: JobPending = {
-        ...base,
-        state: "PENDING",
-        is_terminal: false,
-        can_cancel: true,
-        poll: raw.poll ?? defaultPoll,
-      };
-      return job;
-    }
-
-    case "RUNNING": {
-      if (!raw.progress) {
-        throw new Error("RUNNING job must have progress");
-      }
-      if (!raw.started_at) {
-        throw new Error("RUNNING job must have started_at");
-      }
-      const job: JobRunning = {
-        ...base,
-        state: "RUNNING",
-        is_terminal: false,
-        can_cancel: true,
-        poll: raw.poll ?? defaultPoll,
-        started_at: raw.started_at,
-        progress: raw.progress,
-        eta: raw.eta ?? undefined,
-      };
-      return job;
-    }
-
-    case "CANCEL_REQUESTED": {
-      if (!raw.progress) {
-        throw new Error("CANCEL_REQUESTED job must have progress");
-      }
-      if (!raw.started_at) {
-        throw new Error("CANCEL_REQUESTED job must have started_at");
-      }
-      const job: JobCancelRequested = {
-        ...base,
-        state: "CANCEL_REQUESTED",
-        is_terminal: false,
-        can_cancel: false,
-        started_at: raw.started_at,
-        progress: raw.progress,
-      };
-      return job;
-    }
-
-    case "COMPLETED": {
-      if (!raw.output) {
-        throw new Error("COMPLETED job must have output");
-      }
-      if (!raw.progress) {
-        throw new Error("COMPLETED job must have progress");
-      }
-      if (!raw.started_at) {
-        throw new Error("COMPLETED job must have started_at");
-      }
-      if (!raw.completed_at) {
-        throw new Error("COMPLETED job must have completed_at");
-      }
-      const job: JobCompleted = {
-        ...base,
-        state: "COMPLETED",
-        is_terminal: true,
-        can_cancel: false,
-        started_at: raw.started_at,
-        completed_at: raw.completed_at,
-        progress: raw.progress,
-        output: raw.output,
-      };
-      return job;
-    }
-
-    case "FAILED": {
-      if (!raw.completed_at) {
-        throw new Error("FAILED job must have completed_at");
-      }
-      if (!raw.error_code) {
-        throw new Error("FAILED job must have error_code");
-      }
-      if (raw.error_message === undefined || raw.error_message === null) {
-        throw new Error("FAILED job must have error_message");
-      }
-      if (raw.retryable === undefined || raw.retryable === null) {
-        throw new Error("FAILED job must have retryable");
-      }
-      const job: JobFailed = {
-        ...base,
-        state: "FAILED",
-        is_terminal: true,
-        can_cancel: false,
-        started_at: raw.started_at ?? undefined,
-        completed_at: raw.completed_at,
-        progress: raw.progress ?? undefined,
-        error_code: raw.error_code as ErrorCode,
-        error_message: raw.error_message,
-        retryable: raw.retryable,
-      };
-      return job;
-    }
-
-    case "CANCELLED": {
-      if (!raw.completed_at) {
-        throw new Error("CANCELLED job must have completed_at");
-      }
-      const job: JobCancelled = {
-        ...base,
-        state: "CANCELLED",
-        is_terminal: true,
-        can_cancel: false,
-        started_at: raw.started_at ?? undefined,
-        completed_at: raw.completed_at,
-        progress: raw.progress ?? undefined,
-      };
-      return job;
-    }
-
-    default:
-      throw new Error(`Unknown job state: ${raw.state}`);
-  }
-}
-
-// ============================================================================
 // API Functions
 // ============================================================================
 
@@ -306,14 +113,14 @@ export function parseJob(raw: RawJobResponse): Job {
  */
 export async function presignUpload(request: PresignRequest): Promise<PresignResponse> {
   return withRetry(() =>
-    fetch(`${API_BASE}/batch/presign-upload`, {
+    fetch(`${API_BASE}/cohorts/presign-upload`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...request,
         content_type: request.content_type || getContentType(request.filename),
       }),
-    }).then((res) => handleResponse<PresignResponse>(res, "/batch/presign-upload")),
+    }).then((res) => handleResponse<PresignResponse>(res, "/cohorts/presign-upload")),
   );
 }
 
@@ -361,66 +168,12 @@ export async function uploadFileToS3(
  */
 export async function validateFile(request: ValidateRequest): Promise<ValidateResponse> {
   return withRetry(() =>
-    fetch(`${API_BASE}/batch/validate`, {
+    fetch(`${API_BASE}/cohorts/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
-    }).then((res) => handleResponse<ValidateResponse>(res, "/batch/validate")),
+    }).then((res) => handleResponse<ValidateResponse>(res, "/cohorts/validate")),
   );
-}
-
-/**
- * Step 4: Create a batch job
- */
-export async function createJob(request: CreateJobRequest): Promise<CreateJobResponse> {
-  return withRetry(() =>
-    fetch(`${API_BASE}/batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }).then((res) => handleResponse<CreateJobResponse>(res, "/batch")),
-  );
-}
-
-/**
- * Step 5: Get job status
- *
- * Returns a discriminated union Job type where TypeScript
- * will narrow the type based on job.state
- */
-export async function getJobStatus(
-  jobId: string,
-  tenantId: string,
-  includeUrls = false,
-): Promise<Job> {
-  const params = new URLSearchParams({
-    tenant_id: tenantId,
-    include_urls: String(includeUrls),
-  });
-
-  const raw = await withRetry(() =>
-    fetch(`${API_BASE}/batch/${jobId}?${params}`).then((res) =>
-      handleResponse<RawJobResponse>(res, `/batch/${jobId}`),
-    ),
-  );
-
-  return parseJob(raw);
-}
-
-/**
- * Cancel a running job
- */
-export async function cancelJob(
-  jobId: string,
-  tenantId: string,
-  reason?: string,
-): Promise<CancelResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
-  if (reason) params.set("reason", reason);
-
-  return fetch(`${API_BASE}/batch/${jobId}?${params}`, {
-    method: "DELETE",
-  }).then((res) => handleResponse<CancelResponse>(res, `/batch/${jobId}`));
 }
 
 // ============================================================================
@@ -502,12 +255,15 @@ export async function listCohorts(
 
 /**
  * Get full cohort metadata.
+ * Pass includeUrls=true to get signed output URLs on completed cohorts.
  */
 export async function getCohort(
   id: string,
   tenantId: string,
+  includeUrls = false,
 ): Promise<CohortDetail> {
   const params = new URLSearchParams({ tenant_id: tenantId });
+  if (includeUrls) params.set("include_urls", "true");
   return withRetry(() =>
     fetch(`${API_BASE}/cohorts/${id}?${params}`).then((res) =>
       handleResponse<CohortDetail>(res, `/cohorts/${id}`),

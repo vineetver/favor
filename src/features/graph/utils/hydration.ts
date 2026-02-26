@@ -1,9 +1,9 @@
 import type { ExplorerNode, ExplorerEdge } from "../types/node";
 import type { EntityType } from "../types/entity";
-import type { GeneEntity } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import type { InitialSubgraphData } from "../types/props";
 import type { NodeKey, EdgeKey } from "../types/keys";
+import type { SeedEntity } from "../config/explorer-config";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "./keys";
 import { parseTypeId, type GraphQueryResponse } from "../api";
@@ -13,8 +13,7 @@ import { parseTypeId, type GraphQueryResponse } from "../api";
  */
 export function hydrateSubgraphData(
   data: InitialSubgraphData,
-  seedGeneId: string,
-  seedGeneSymbol: string,
+  seed: SeedEntity,
   seeds: Set<string>,
 ): { nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge> } {
   const nodes = new Map<string, ExplorerNode>();
@@ -51,7 +50,7 @@ export function hydrateSubgraphData(
       id: apiNode.id,
       key: nodeKey,
       type: nodeType,
-      label: apiNode.id === seedGeneId ? seedGeneSymbol : apiNode.label,
+      label: apiNode.id === seed.id ? seed.label : apiNode.label,
       subtitle: apiNode.subtitle,
       entity: {
         type: apiNode.type,
@@ -64,20 +63,18 @@ export function hydrateSubgraphData(
   }
 
   // Ensure seed node exists
-  if (!nodes.has(seedGeneId)) {
-    const seedKey = makeNodeKey("Gene", seedGeneId);
-    nodes.set(seedGeneId, {
-      id: seedGeneId,
+  if (!nodes.has(seed.id)) {
+    const seedKey = makeNodeKey(seed.type, seed.id);
+    nodes.set(seed.id, {
+      id: seed.id,
       key: seedKey,
-      type: "Gene",
-      label: seedGeneSymbol,
+      type: seed.type,
+      label: seed.label,
       entity: {
-        type: "Gene",
-        id: seedGeneId,
-        label: seedGeneSymbol,
-        symbol: seedGeneSymbol,
-        ensemblId: seedGeneId,
-      } as GeneEntity,
+        type: seed.type,
+        id: seed.id,
+        label: seed.label,
+      } as ExplorerNode["entity"],
       isSeed: true,
       depth: 0,
     });
@@ -89,8 +86,8 @@ export function hydrateSubgraphData(
     const edgeId = createEdgeId(edgeType, apiEdge.fromId, apiEdge.toId);
     const fromNode = nodes.get(apiEdge.fromId);
     const toNode = nodes.get(apiEdge.toId);
-    const sourceKey = fromNode?.key ?? makeNodeKey("Gene" as EntityType, apiEdge.fromId);
-    const targetKey = toNode?.key ?? makeNodeKey("Gene" as EntityType, apiEdge.toId);
+    const sourceKey = fromNode?.key ?? makeNodeKey((fromNode?.type ?? seed.type) as EntityType, apiEdge.fromId);
+    const targetKey = toNode?.key ?? makeNodeKey((toNode?.type ?? seed.type) as EntityType, apiEdge.toId);
     const edgeKey = makeEdgeKey(edgeType, sourceKey, targetKey);
 
     edges.set(edgeId, {
@@ -115,8 +112,7 @@ export function hydrateSubgraphData(
  */
 export function hydrateQueryResponse(
   response: GraphQueryResponse,
-  seedGeneId: string,
-  seedGeneSymbol: string,
+  seed: SeedEntity,
   seeds: Set<string>,
 ): { nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge> } {
   const nodes = new Map<string, ExplorerNode>();
@@ -185,7 +181,7 @@ export function hydrateQueryResponse(
       id: entity.id,
       key: nodeKey,
       type: nodeType,
-      label: entity.id === seedGeneId ? seedGeneSymbol : entity.label,
+      label: entity.id === seed.id ? seed.label : entity.label,
       subtitle: entity.subtitle,
       entity: {
         type: entity.type,
@@ -198,20 +194,18 @@ export function hydrateQueryResponse(
   }
 
   // Ensure seed node exists
-  if (!nodes.has(seedGeneId)) {
-    const seedKey = makeNodeKey("Gene", seedGeneId);
-    nodes.set(seedGeneId, {
-      id: seedGeneId,
+  if (!nodes.has(seed.id)) {
+    const seedKey = makeNodeKey(seed.type, seed.id);
+    nodes.set(seed.id, {
+      id: seed.id,
       key: seedKey,
-      type: "Gene",
-      label: seedGeneSymbol,
+      type: seed.type,
+      label: seed.label,
       entity: {
-        type: "Gene",
-        id: seedGeneId,
-        label: seedGeneSymbol,
-        symbol: seedGeneSymbol,
-        ensemblId: seedGeneId,
-      } as GeneEntity,
+        type: seed.type,
+        id: seed.id,
+        label: seed.label,
+      } as ExplorerNode["entity"],
       isSeed: true,
       depth: 0,
     });

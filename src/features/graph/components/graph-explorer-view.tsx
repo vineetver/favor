@@ -26,18 +26,21 @@ import { ExplorerCytoscape } from "./explorer-cytoscape";
 import { ControlsDrawer } from "./controls-drawer";
 import { InspectorPanel } from "./inspector-panel";
 import { EdgeTooltip } from "./edge-tooltip";
+import { RankedResultsList } from "./ranked-results-list";
 import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
 import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
-import { GRAPH_LENSES, getLensEdgeFields, serializeLensSteps, isBranchStep } from "../config/lenses";
+import { getLensEdgeFields, serializeLensSteps, isBranchStep } from "../config/lenses";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
 import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/props";
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
-import type { GeneEntity, EntityType } from "../types/entity";
+import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import { getEdgeFieldsForTypes, batchEdgeTypesByFieldLimit } from "../types/edge";
-import type { ExplorerLayoutType, ViewMode, LensId } from "../types/state";
+import type { ExplorerLayoutType, ViewMode, TemplateId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
+import type { ExplorerTemplate } from "../config/explorer-config";
+import type { TemplateResultData, TemplateResultEntry } from "../types/template-results";
 import { VARIANT_TRAIL_CONFIG } from "../config/variant-trail";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
@@ -113,20 +116,98 @@ function LayoutSelector({ layout, onLayoutChange }: LayoutSelectorProps) {
 }
 
 // =============================================================================
-// (Sheet is used directly from shadcn — no custom wrapper needed)
+// Extract Ranked Results from query response
 // =============================================================================
+
+function extractTemplateResults(
+  template: ExplorerTemplate,
+  nodes: Map<string, ExplorerNode>,
+  edges: Map<string, ExplorerEdge>,
+  seedId: string,
+): TemplateResultData {
+  const targetNodes: TemplateResultEntry[] = [];
+
+  nodes.forEach((node) => {
+    if (node.id === seedId) return;
+    if (node.type !== template.targetEntityType) return;
+
+    // Find connecting edge (any edge between seed and target node)
+    let connectingEdge: ExplorerEdge | undefined;
+    let rankValue: number | null = null;
+
+    edges.forEach((edge) => {
+      if (connectingEdge) return; // take first found
+      const connects =
+        (edge.sourceId === seedId && edge.targetId === node.id) ||
+        (edge.targetId === seedId && edge.sourceId === node.id);
+      if (!connects) {
+        // Also check indirect connections (1-hop from seed)
+        const sourceNode = nodes.get(edge.sourceId);
+        const targetNode = nodes.get(edge.targetId);
+        if (
+          (edge.targetId === node.id && sourceNode?.isSeed) ||
+          (edge.sourceId === node.id && targetNode?.isSeed)
+        ) {
+          connectingEdge = edge;
+        }
+      } else {
+        connectingEdge = edge;
+      }
+    });
+
+    // If no direct/indirect edge found, find ANY edge touching this node
+    if (!connectingEdge) {
+      edges.forEach((edge) => {
+        if (connectingEdge) return;
+        if (edge.sourceId === node.id || edge.targetId === node.id) {
+          connectingEdge = edge;
+        }
+      });
+    }
+
+    if (!connectingEdge) return;
+
+    // Extract rank value from the connecting edge's fields
+    if (template.rankBy && connectingEdge.fields) {
+      const val = connectingEdge.fields[template.rankBy.field];
+      if (typeof val === "number") {
+        rankValue = val;
+      }
+    }
+
+    targetNodes.push({ node, connectingEdge, rankValue });
+  });
+
+  // Sort by rank value
+  if (template.rankBy) {
+    const dir = template.rankBy.direction === "desc" ? -1 : 1;
+    targetNodes.sort((a, b) => {
+      if (a.rankValue === null && b.rankValue === null) return 0;
+      if (a.rankValue === null) return 1;
+      if (b.rankValue === null) return -1;
+      return (a.rankValue - b.rankValue) * dir;
+    });
+  }
+
+  return {
+    templateId: template.id,
+    targetEntityType: template.targetEntityType,
+    rankLabel: template.rankBy?.label,
+    results: targetNodes,
+  };
+}
 
 // =============================================================================
 // Main Component
 // =============================================================================
 
 function GraphExplorerViewInner({
-  seedGeneId,
-  seedGeneSymbol,
+  seed,
+  config,
   schema,
   stats,
   initialSubgraph,
-  initialLensId,
+  initialTemplateId,
   className,
 }: GraphExplorerViewProps) {
   const state = useExplorerState();
@@ -144,38 +225,43 @@ function GraphExplorerViewInner({
   useEffect(() => {
     if (state.status !== "idle") return;
 
-    const seedSet = new Set([seedGeneId]);
+    const seedSet = new Set([seed.id]);
 
-    const lensId = initialLensId ?? "clinical";
-    const lensName = GRAPH_LENSES.find((l) => l.id === lensId)?.name ?? lensId;
-    const initialProv = createProvenanceEvent("lens", `${lensName} lens (initial)`, { lensId });
+    const templateId = initialTemplateId ?? config.defaultTemplateId;
+    const template = config.templates.find((t) => t.id === templateId);
+    const templateName = template?.name ?? templateId;
+    const initialProv = createProvenanceEvent("lens", `${templateName} template (initial)`, { templateId });
 
     if (initialSubgraph && initialSubgraph.edges.length > 0) {
-      const { nodes, edges } = hydrateSubgraphData(initialSubgraph, seedGeneId, seedGeneSymbol, seedSet);
-      actions.hydrateInitial({ nodes, edges, seeds: seedSet, provenance: new Map() }, lensId, initialProv);
+      const { nodes, edges } = hydrateSubgraphData(initialSubgraph, seed, seedSet);
+      actions.hydrateInitial({ nodes, edges, seeds: seedSet, provenance: new Map() }, templateId, initialProv);
+
+      // Extract ranked results from initial data
+      if (template) {
+        const results = extractTemplateResults(template, nodes, edges, seed.id);
+        actions.setTemplateResults(results);
+      }
     } else {
       // Just the seed node
-      const seedKey = makeNodeKey("Gene", seedGeneId);
+      const seedKey = makeNodeKey(seed.type, seed.id);
       const seedNode: ExplorerNode = {
-        id: seedGeneId,
+        id: seed.id,
         key: seedKey,
-        type: "Gene",
-        label: seedGeneSymbol,
+        type: seed.type,
+        label: seed.label,
         entity: {
-          type: "Gene",
-          id: seedGeneId,
-          label: seedGeneSymbol,
-          symbol: seedGeneSymbol,
-          ensemblId: seedGeneId,
-        } as GeneEntity,
+          type: seed.type,
+          id: seed.id,
+          label: seed.label,
+        } as ExplorerNode["entity"],
         isSeed: true,
         depth: 0,
       };
       const nodes = new Map<string, ExplorerNode>();
-      nodes.set(seedGeneId, seedNode);
-      actions.hydrateInitial({ nodes, edges: new Map(), seeds: seedSet, provenance: new Map() }, lensId, initialProv);
+      nodes.set(seed.id, seedNode);
+      actions.hydrateInitial({ nodes, edges: new Map(), seeds: seedSet, provenance: new Map() }, templateId, initialProv);
     }
-  }, [state.status, seedGeneId, seedGeneSymbol, initialSubgraph, initialLensId, actions]);
+  }, [state.status, seed.id, seed.label, seed.type, initialSubgraph, initialTemplateId, config, actions]);
 
   // Derived state from selectors
   const elements = useMemo(() => selectors.elements(), [selectors]);
@@ -190,7 +276,8 @@ function GraphExplorerViewInner({
   const filters = readyState?.filters ?? { edgeTypes: new Set<EdgeType>(), minSources: 0, minExperiments: 0, maxDepth: 4, showOrphans: true };
   const layout = readyState?.layout ?? "cose-bilkent";
   const viewMode = readyState?.viewMode ?? "graph";
-  const activeLens = readyState?.activeLens ?? "clinical";
+  const activeTemplate = readyState?.activeTemplate ?? config.defaultTemplateId;
+  const templateResults = readyState?.templateResults ?? null;
   const leftDrawerOpen = readyState?.leftDrawerOpen ?? true;
   const inspectorMode = readyState?.inspectorMode ?? "closed";
   const graphEdgesSize = readyState?.graph.edges.size ?? 0;
@@ -223,76 +310,81 @@ function GraphExplorerViewInner({
   }, [selection, activeTrailResult]);
 
   // ==========================================================================
-  // Lens Switching (async — stays in component)
+  // Template Switching (async — stays in component)
   // ==========================================================================
 
-  const switchLens = useCallback(async (lensId: LensId) => {
-    const lens = GRAPH_LENSES.find((l) => l.id === lensId);
-    if (!lens) return;
+  const switchTemplate = useCallback(async (templateId: TemplateId) => {
+    const template = config.templates.find((t) => t.id === templateId);
+    if (!template) return;
 
-    // Clear variant trail cache and active result on lens switch
+    // Clear variant trail cache and active result on template switch
     variantTrailCache.current.clear();
     setActiveTrailResult(null);
 
-    actions.switchLensStart(lensId);
-    const prov = createProvenanceEvent("lens", `${lens.name} lens`, { lensId });
+    actions.switchTemplateStart(templateId);
+    const prov = createProvenanceEvent("lens", `${template.name} template`, { templateId });
 
     try {
       const response = await fetchGraphQuery({
-        seeds: [{ type: "Gene", id: seedGeneId }],
-        steps: serializeLensSteps(lens.steps),
-        select: { edgeFields: getLensEdgeFields(lens) },
-        limits: lens.limits,
+        seeds: [{ type: seed.type, id: seed.id }],
+        steps: serializeLensSteps(template.steps),
+        select: { edgeFields: getLensEdgeFields(template as Parameters<typeof getLensEdgeFields>[0]) },
+        limits: template.limits,
       });
 
       if (!response?.data?.edges?.length) {
-        const seedKey = makeNodeKey("Gene", seedGeneId);
+        const seedKey = makeNodeKey(seed.type, seed.id);
         const seedNode: ExplorerNode = {
-          id: seedGeneId,
+          id: seed.id,
           key: seedKey,
-          type: "Gene",
-          label: seedGeneSymbol,
-          entity: { type: "Gene", id: seedGeneId, label: seedGeneSymbol, symbol: seedGeneSymbol, ensemblId: seedGeneId } as GeneEntity,
+          type: seed.type,
+          label: seed.label,
+          entity: { type: seed.type, id: seed.id, label: seed.label } as ExplorerNode["entity"],
           isSeed: true,
           depth: 0,
         };
         const nodes = new Map<string, ExplorerNode>();
-        nodes.set(seedGeneId, seedNode);
-        actions.switchLensSuccess(
-          { nodes, edges: new Map(), seeds: new Set([seedGeneId]), provenance: new Map() },
+        nodes.set(seed.id, seedNode);
+        actions.switchTemplateSuccess(
+          { nodes, edges: new Map(), seeds: new Set([seed.id]), provenance: new Map() },
           new Set<EdgeType>(),
           prov,
         );
+        actions.setTemplateResults(null);
         return;
       }
 
-      const seedSet = new Set([seedGeneId]);
-      const { nodes: newNodes, edges: newEdges } = hydrateQueryResponse(response, seedGeneId, seedGeneSymbol, seedSet);
+      const seedSet = new Set([seed.id]);
+      const { nodes: newNodes, edges: newEdges } = hydrateQueryResponse(response, seed, seedSet);
 
-      const lensEdgeTypes = new Set<EdgeType>();
-      for (const step of lens.steps) {
+      const templateEdgeTypes = new Set<EdgeType>();
+      for (const step of template.steps) {
         if (isBranchStep(step)) {
           for (const sub of step.branch) {
-            for (const et of sub.edgeTypes) lensEdgeTypes.add(et);
+            for (const et of sub.edgeTypes) templateEdgeTypes.add(et);
           }
         } else {
-          for (const et of step.edgeTypes) lensEdgeTypes.add(et);
+          for (const et of step.edgeTypes) templateEdgeTypes.add(et);
         }
       }
       for (const edge of response.data.edges) {
-        lensEdgeTypes.add(edge.type as EdgeType);
+        templateEdgeTypes.add(edge.type as EdgeType);
       }
 
-      actions.switchLensSuccess({ nodes: newNodes, edges: newEdges, seeds: seedSet, provenance: new Map() }, lensEdgeTypes, prov);
+      actions.switchTemplateSuccess({ nodes: newNodes, edges: newEdges, seeds: seedSet, provenance: new Map() }, templateEdgeTypes, prov);
+
+      // Extract ranked results
+      const results = extractTemplateResults(template, newNodes, newEdges, seed.id);
+      actions.setTemplateResults(results);
     } catch (error) {
-      console.error("Failed to switch lens:", error);
-      actions.switchLensError(String(error));
+      console.error("Failed to switch template:", error);
+      actions.switchTemplateError(String(error));
     }
-  }, [seedGeneId, seedGeneSymbol, actions]);
+  }, [seed, config.templates, actions]);
 
   const handleReset = useCallback(() => {
-    switchLens(activeLens);
-  }, [activeLens, switchLens]);
+    switchTemplate(activeTemplate);
+  }, [activeTemplate, switchTemplate]);
 
   // ==========================================================================
   // Event Handlers
@@ -525,8 +617,8 @@ function GraphExplorerViewInner({
     const node = selectors.getNode(nodeId);
     if (!node) return;
 
-    const config = VARIANT_TRAIL_CONFIG[node.type];
-    if (!config) return;
+    const trailConfig = VARIANT_TRAIL_CONFIG[node.type];
+    if (!trailConfig) return;
 
     // Check cache
     const cacheKey = `${node.type}:${nodeId}`;
@@ -549,7 +641,7 @@ function GraphExplorerViewInner({
       const variantEntries: Array<{ node: ExplorerNode; connectingEdge: ExplorerEdge; routeBadge: string }> = [];
       const seenVariantIds = new Set<string>();
 
-      for (const route of config.routes) {
+      for (const route of trailConfig.routes) {
         // Collect all edge types across all steps for edge field selection
         const allEdgeTypes = route.steps.flatMap((s) => s.edgeTypes) as EdgeType[];
 
@@ -562,7 +654,7 @@ function GraphExplorerViewInner({
             sort: s.sort,
           })),
           select: { edgeFields: getEdgeFieldsForTypes(allEdgeTypes).slice(0, 20) },
-          limits: { maxNodes: config.maxNodes, maxEdges: config.maxEdges },
+          limits: { maxNodes: trailConfig.maxNodes, maxEdges: trailConfig.maxEdges },
         });
 
         if (!response?.data?.edges?.length) continue;
@@ -705,6 +797,16 @@ function GraphExplorerViewInner({
     actions.selectNode(node.id, node);
   }, [actions]);
 
+  const handleResultNodeSelect = useCallback((node: ExplorerNode) => {
+    actions.selectNode(node.id, node);
+  }, [actions]);
+
+  // Selected node ID for list highlighting
+  const selectedNodeId = useMemo(() => {
+    if (selection.type === "node") return selection.nodeId;
+    return undefined;
+  }, [selection]);
+
   // ==========================================================================
   // Render
   // ==========================================================================
@@ -728,7 +830,7 @@ function GraphExplorerViewInner({
               <Network className="w-5 h-5 text-primary" />
               <h1 className="text-lg font-semibold text-foreground">Graph Explorer</h1>
               <span className="text-sm text-muted-foreground">|</span>
-              <span className="text-sm font-medium text-primary">{seedGeneSymbol}</span>
+              <span className="text-sm font-medium text-primary">{seed.label}</span>
             </div>
 
             {isExpanding && (
@@ -755,17 +857,19 @@ function GraphExplorerViewInner({
             onFiltersChange={actions.setFilters}
             layout={layout}
             onLayoutChange={actions.setLayout}
-            activeLens={activeLens}
-            onLensChange={switchLens}
+            templates={config.templates}
+            activeTemplate={activeTemplate}
+            onTemplateChange={switchTemplate}
+            edgeTypeGroups={config.edgeTypeGroups}
             onReset={handleReset}
             edgeTypeCounts={edgeTypeCounts}
             nodeTypeCounts={nodeTypeCounts}
             isExpanding={isExpanding}
           />
 
-          {/* Graph Canvas */}
-          <div className="flex-1 min-w-0 relative">
-            {viewMode !== "list" && (
+          {/* Graph Canvas / List / Split */}
+          <div className="flex-1 min-w-0 relative flex flex-col">
+            {viewMode === "graph" && (
               <ExplorerCytoscape
                 elements={elements}
                 layout={layout}
@@ -782,36 +886,71 @@ function GraphExplorerViewInner({
             )}
 
             {viewMode === "list" && (
-              <div className="absolute inset-0 overflow-auto p-4">
-                <div className="text-sm text-muted-foreground">
-                  List view coming soon...
-                </div>
+              <div className="absolute inset-0 flex flex-col">
+                {templateResults ? (
+                  <RankedResultsList
+                    results={templateResults}
+                    onSelectNode={handleResultNodeSelect}
+                    selectedNodeId={selectedNodeId}
+                    className="flex flex-col h-full"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                    Switch to a template to see ranked results.
+                  </div>
+                )}
               </div>
             )}
 
             {viewMode === "split" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1/3 border-t border-border bg-background overflow-auto p-4">
-                <div className="text-sm text-muted-foreground">
-                  Split view list coming soon...
+              <>
+                <div className="flex-1 min-h-0 relative">
+                  <ExplorerCytoscape
+                    elements={elements}
+                    layout={layout}
+                    onNodeClick={handleNodeClick}
+                    onNodeHover={handleNodeHover}
+                    onEdgeClick={handleEdgeClick}
+                    onEdgeHover={handleEdgeHover}
+                    onNodeDoubleClick={handleNodeDoubleClick}
+                    onBackgroundClick={handleBackgroundClick}
+                    selectedNodeIds={selectedNodeIds}
+                    selectedEdgeId={selectedEdgeId}
+                    className="absolute inset-0"
+                  />
                 </div>
-              </div>
+                <div className="h-1/3 border-t border-border bg-background flex flex-col">
+                  {templateResults ? (
+                    <RankedResultsList
+                      results={templateResults}
+                      onSelectNode={handleResultNodeSelect}
+                      selectedNodeId={selectedNodeId}
+                      className="flex flex-col h-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                      Switch to a template to see ranked results.
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
-            {/* No results for this lens */}
-            {graphEdgesSize === 0 && !isExpanding && (
+            {/* No results for this template */}
+            {viewMode !== "list" && graphEdgesSize === 0 && !isExpanding && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
                   <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
                   <h3 className="text-lg font-semibold text-foreground mb-2">No Results</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    No relationships found for <strong>{seedGeneSymbol}</strong> with the current lens. Try switching to a different lens.
+                    No relationships found for <strong>{seed.label}</strong> with the current template. Try switching to a different template.
                   </p>
                 </div>
               </div>
             )}
 
             {/* Edge Tooltip (follows cursor on edge hover) */}
-            <EdgeTooltip info={hoveredEdge} />
+            {viewMode !== "list" && <EdgeTooltip info={hoveredEdge} />}
           </div>
         </div>
 
@@ -849,6 +988,8 @@ function GraphExplorerViewInner({
                 onRemoveNode={removeNode}
                 onFindPaths={handleFindPaths}
                 isExpanding={isExpanding}
+                externalLinks={config.externalLinks}
+                enableVariantTrail={config.enableVariantTrail}
                 onRunVariantTrail={runVariantTrail}
                 activeTrailResult={activeTrailResult}
                 onClearTrailResult={handleClearTrailResult}

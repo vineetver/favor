@@ -30,28 +30,46 @@ export function getEntityUrl(
     }
 
     case "diseases":
-      // Disease pages: /disease/[id]
       return `/disease/${id}`;
 
     case "drugs":
-      // Drug pages: /drug/[id]
       return `/drug/${id}`;
 
     case "pathways":
-      // Pathway pages: /pathway/[id]
       return `/pathway/${id}`;
 
     case "phenotypes":
-      // Phenotype pages: /phenotype/[id]
       return `/phenotype/${id}`;
 
     case "studies":
-      // Study pages: /study/[id]
       return `/study/${id}`;
 
-    case "traits":
-      // Trait pages: /trait/[id]
-      return `/trait/${id}`;
+    case "entities":
+      return `/entity/${id}`;
+
+    case "go_terms":
+      return `/go-term/${id}`;
+
+    case "side_effects":
+      return `/side-effect/${id}`;
+
+    case "ccres":
+      return `/ccre/${id}`;
+
+    case "metabolites":
+      return `/metabolite/${id}`;
+
+    case "signals":
+      return `/signal/${id}`;
+
+    case "protein_domains":
+      return `/protein-domain/${id}`;
+
+    case "tissues":
+      return `/tissue/${id}`;
+
+    case "cell_types":
+      return `/cell-type/${id}`;
 
     default:
       return "/";
@@ -63,7 +81,7 @@ export function getEntityUrl(
  */
 export function hasEntityPage(type: EntityType): boolean {
   // Variants, genes, diseases, and drugs have dedicated pages
-  // Pathways, phenotypes, studies, traits use pivot explorer
+  // Other types use pivot explorer for now
   return (
     type === "variants" ||
     type === "genes" ||
@@ -73,7 +91,7 @@ export function hasEntityPage(type: EntityType): boolean {
 }
 
 /**
- * Get entity type label (singular)
+ * Get entity type label (singular or plural)
  */
 export function getEntityLabel(type: EntityType, singular = false): string {
   const labels: Record<EntityType, { singular: string; plural: string }> = {
@@ -84,7 +102,15 @@ export function getEntityLabel(type: EntityType, singular = false): string {
     pathways: { singular: "Pathway", plural: "Pathways" },
     phenotypes: { singular: "Phenotype", plural: "Phenotypes" },
     studies: { singular: "Study", plural: "Studies" },
-    traits: { singular: "Trait", plural: "Traits" },
+    entities: { singular: "Entity", plural: "Entities" },
+    go_terms: { singular: "GO Term", plural: "GO Terms" },
+    side_effects: { singular: "Side Effect", plural: "Side Effects" },
+    ccres: { singular: "cCRE", plural: "cCREs" },
+    metabolites: { singular: "Metabolite", plural: "Metabolites" },
+    signals: { singular: "Signal", plural: "Signals" },
+    protein_domains: { singular: "Domain", plural: "Domains" },
+    tissues: { singular: "Tissue", plural: "Tissues" },
+    cell_types: { singular: "Cell Type", plural: "Cell Types" },
   };
 
   return singular ? labels[type].singular : labels[type].plural;

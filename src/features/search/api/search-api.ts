@@ -31,10 +31,6 @@ export async function fetchTypeahead(
     searchParams.append("include_links", params.include_links.toString());
   }
 
-  if (params.include_linked !== undefined) {
-    searchParams.append("include_linked", params.include_linked.toString());
-  }
-
   const response = await fetch(
     `${API_BASE_URL}/typeahead?${searchParams.toString()}`,
     {
@@ -103,10 +99,6 @@ export async function fetchSearch(
     searchParams.append("include_links", params.include_links.toString());
   }
 
-  if (params.include_linked !== undefined) {
-    searchParams.append("include_linked", params.include_linked.toString());
-  }
-
   const response = await fetch(
     `${API_BASE_URL}/pivot?${searchParams.toString()}`,
     {
@@ -144,7 +136,6 @@ export async function fetchPivotExpansion(params: {
   searchParams.append("anchor_type", params.anchor_type);
   searchParams.append("expand", "true");
   searchParams.append("include_links", "true");
-  searchParams.append("include_linked", "true");
 
   if (params.types !== undefined) {
     searchParams.append("types", params.types);

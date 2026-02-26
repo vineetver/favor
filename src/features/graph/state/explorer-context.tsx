@@ -12,12 +12,13 @@ import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
 import type { ProvenanceEvent } from "../types/provenance";
+import type { TemplateResultData } from "../types/template-results";
 import type {
   ExplorerState,
   GraphData,
   ViewMode,
   ExplorerLayoutType,
-  LensId,
+  TemplateId,
 } from "../types/state";
 import { explorerReducer, initialExplorerState, type ExplorerAction } from "./reducer";
 import {
@@ -36,10 +37,11 @@ type ExplorerContextValue = {
   state: ExplorerState;
   dispatch: Dispatch<ExplorerAction>;
   actions: {
-    hydrateInitial: (graph: GraphData, lensId: LensId, provenance: ProvenanceEvent) => void;
-    switchLensStart: (lensId: LensId) => void;
-    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => void;
-    switchLensError: (error: string) => void;
+    hydrateInitial: (graph: GraphData, templateId: TemplateId, provenance: ProvenanceEvent) => void;
+    switchTemplateStart: (templateId: TemplateId) => void;
+    switchTemplateSuccess: (graph: GraphData, templateEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => void;
+    switchTemplateError: (error: string) => void;
+    setTemplateResults: (results: TemplateResultData | null) => void;
     expandStart: () => void;
     expandSuccess: (nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>, provenance: ProvenanceEvent) => void;
     expandError: (error: string) => void;
@@ -85,17 +87,20 @@ export function ExplorerProvider({ children }: ExplorerProviderProps) {
   const [state, dispatch] = useReducer(explorerReducer, initialExplorerState);
 
   const actions = useMemo(() => ({
-    hydrateInitial: (graph: GraphData, lensId: LensId, provenance: ProvenanceEvent) => {
-      dispatch({ type: "HYDRATE_INITIAL", graph, lensId, provenance });
+    hydrateInitial: (graph: GraphData, templateId: TemplateId, provenance: ProvenanceEvent) => {
+      dispatch({ type: "HYDRATE_INITIAL", graph, templateId, provenance });
     },
-    switchLensStart: (lensId: LensId) => {
-      dispatch({ type: "SWITCH_LENS_START", lensId });
+    switchTemplateStart: (templateId: TemplateId) => {
+      dispatch({ type: "SWITCH_TEMPLATE_START", templateId });
     },
-    switchLensSuccess: (graph: GraphData, lensEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => {
-      dispatch({ type: "SWITCH_LENS_SUCCESS", graph, lensEdgeTypes, provenance });
+    switchTemplateSuccess: (graph: GraphData, templateEdgeTypes: Set<EdgeType>, provenance: ProvenanceEvent) => {
+      dispatch({ type: "SWITCH_TEMPLATE_SUCCESS", graph, templateEdgeTypes, provenance });
     },
-    switchLensError: (error: string) => {
-      dispatch({ type: "SWITCH_LENS_ERROR", error });
+    switchTemplateError: (error: string) => {
+      dispatch({ type: "SWITCH_TEMPLATE_ERROR", error });
+    },
+    setTemplateResults: (results: TemplateResultData | null) => {
+      dispatch({ type: "SET_TEMPLATE_RESULTS", results });
     },
     expandStart: () => {
       dispatch({ type: "EXPAND_START" });

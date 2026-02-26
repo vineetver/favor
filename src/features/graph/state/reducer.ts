@@ -2,6 +2,7 @@ import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
 import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
 import type { ProvenanceEvent } from "../types/provenance";
+import type { TemplateResultData } from "../types/template-results";
 import { DEFAULT_SELECTION } from "../types/node";
 import { DEFAULT_FILTERS } from "../types/filters";
 import type {
@@ -9,7 +10,7 @@ import type {
   GraphData,
   ViewMode,
   ExplorerLayoutType,
-  LensId,
+  TemplateId,
 } from "../types/state";
 
 // =============================================================================
@@ -17,10 +18,11 @@ import type {
 // =============================================================================
 
 export type ExplorerAction =
-  | { type: "HYDRATE_INITIAL"; graph: GraphData; lensId: LensId; provenance: ProvenanceEvent }
-  | { type: "SWITCH_LENS_START"; lensId: LensId }
-  | { type: "SWITCH_LENS_SUCCESS"; graph: GraphData; lensEdgeTypes: Set<EdgeType>; provenance: ProvenanceEvent }
-  | { type: "SWITCH_LENS_ERROR"; error: string }
+  | { type: "HYDRATE_INITIAL"; graph: GraphData; templateId: TemplateId; provenance: ProvenanceEvent }
+  | { type: "SWITCH_TEMPLATE_START"; templateId: TemplateId }
+  | { type: "SWITCH_TEMPLATE_SUCCESS"; graph: GraphData; templateEdgeTypes: Set<EdgeType>; provenance: ProvenanceEvent }
+  | { type: "SWITCH_TEMPLATE_ERROR"; error: string }
+  | { type: "SET_TEMPLATE_RESULTS"; results: TemplateResultData | null }
   | { type: "EXPAND_START" }
   | { type: "EXPAND_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
   | { type: "EXPAND_ERROR"; error: string }
@@ -76,25 +78,27 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         filters: { ...DEFAULT_FILTERS, edgeTypes: new Set(DEFAULT_FILTERS.edgeTypes) },
         layout: "cose-bilkent",
         viewMode: "graph",
-        activeLens: action.lensId,
+        activeTemplate: action.templateId,
+        templateResults: null,
         leftDrawerOpen: true,
         inspectorMode: "closed",
         expansion: { status: "idle" },
       };
     }
 
-    case "SWITCH_LENS_START": {
+    case "SWITCH_TEMPLATE_START": {
       if (state.status !== "ready") return state;
       return {
         ...state,
-        activeLens: action.lensId,
+        activeTemplate: action.templateId,
+        templateResults: null,
         selection: DEFAULT_SELECTION,
         inspectorMode: "closed",
         expansion: { status: "loading" },
       };
     }
 
-    case "SWITCH_LENS_SUCCESS": {
+    case "SWITCH_TEMPLATE_SUCCESS": {
       if (state.status !== "ready") return state;
       const provenance = stampProvenance(
         new Map(),
@@ -106,17 +110,25 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         graph: { ...action.graph, provenance },
         filters: {
           ...state.filters,
-          edgeTypes: new Set([...state.filters.edgeTypes, ...action.lensEdgeTypes]),
+          edgeTypes: new Set([...state.filters.edgeTypes, ...action.templateEdgeTypes]),
         },
         expansion: { status: "idle" },
       };
     }
 
-    case "SWITCH_LENS_ERROR": {
+    case "SWITCH_TEMPLATE_ERROR": {
       if (state.status !== "ready") return state;
       return {
         ...state,
         expansion: { status: "idle" },
+      };
+    }
+
+    case "SET_TEMPLATE_RESULTS": {
+      if (state.status !== "ready") return state;
+      return {
+        ...state,
+        templateResults: action.results,
       };
     }
 

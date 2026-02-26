@@ -7,7 +7,6 @@ export { UniversalSearch } from "./components";
 export { SearchProvider, useSearch } from "./context/search-context";
 // Types
 export type {
-  EntityLinked,
   EntityLinks,
   EntityType,
   MatchReason,

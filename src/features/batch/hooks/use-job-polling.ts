@@ -2,8 +2,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
-import { getJobStatus } from "../api";
+import { getCohort } from "../api";
 import type { Job } from "../types";
+import { cohortDetailToJob } from "../types";
 
 interface UseJobPollingOptions {
   jobId: string | null;
@@ -21,9 +22,9 @@ interface UseJobPollingResult {
 }
 
 /**
- * Hook for polling job status.
- *
- * Uses server-suggested poll intervals when available (poll.after_ms)
+ * Hook for polling job status via the cohort API.
+ * Uses getCohort + cohortDetailToJob mapper for backward compat.
+ * Respects server-suggested poll intervals (poll.after_ms).
  */
 export function useJobPolling({
   jobId,
@@ -39,10 +40,9 @@ export function useJobPolling({
     queryFn: async () => {
       if (!jobId) throw new Error("No job ID");
 
-      // Always request with URLs - backend will include them when job is complete
-      const job = await getJobStatus(jobId, tenantId, true);
-
-      return job;
+      // Always request with URLs — backend includes them when cohort is ready
+      const detail = await getCohort(jobId, tenantId, true);
+      return cohortDetailToJob(detail);
     },
     enabled: enabled && !!jobId,
     refetchInterval: (query) => {

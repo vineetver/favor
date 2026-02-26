@@ -7,51 +7,28 @@ export type EntityType =
   | "variants"
   | "phenotypes"
   | "studies"
-  | "traits";
+  | "entities"
+  | "go_terms"
+  | "side_effects"
+  | "ccres"
+  | "metabolites"
+  | "signals"
+  | "protein_domains"
+  | "tissues"
+  | "cell_types";
 
 export type MatchTier =
-  | "IdExact"
-  | "NameExact"
-  | "SynonymExact"
   | "Prefix"
-  | "Contains"
-  | "Fuzzy"
-  | "Pivot";
+  | "FuzzyOrContains"
+  | "Related";
 
 export type MatchReason =
-  | "id_exact"
-  | "name_exact"
-  | "synonym_exact"
   | "prefix"
-  | "contains"
   | "fuzzy"
   | "pivot";
 
-export interface EntityLinks {
-  genes?: number;
-  diseases?: number;
-  drugs?: number;
-  variants?: number;
-  pathways?: number;
-  traits?: number;
-  phenotypes?: number;
-  studies?: number;
-  interactors?: number;
-  parents?: number;
-  children?: number;
-  targets?: number;
-}
-
-export interface EntityLinked {
-  genes?: string[];
-  diseases?: string[];
-  drugs?: string[];
-  pathways?: string[];
-  variants?: string[];
-  phenotypes?: string[];
-  studies?: string[];
-  traits?: string[];
-}
+/** Link counts keyed by entity type or relationship name (dynamic from backend) */
+export type EntityLinks = Record<string, number>;
 
 export interface TypeaheadSuggestion {
   id: string;
@@ -62,7 +39,6 @@ export interface TypeaheadSuggestion {
   match_reason: MatchReason;
   url?: string | null;
   links?: EntityLinks;
-  linked?: EntityLinked;
 }
 
 export interface TypeaheadGroup {
@@ -87,16 +63,7 @@ export interface SearchResults {
   anchor_id?: string;
   anchor_type?: EntityType;
   took_ms: number;
-  results: {
-    genes?: SearchEntity[];
-    diseases?: SearchEntity[];
-    drugs?: SearchEntity[];
-    pathways?: SearchEntity[];
-    variants?: SearchEntity[];
-    phenotypes?: SearchEntity[];
-    studies?: SearchEntity[];
-    traits?: SearchEntity[];
-  };
+  results: Partial<Record<EntityType, SearchEntity[]>>;
   total: number;
   cursor?: string;
   debug?: {
@@ -115,7 +82,6 @@ export interface TypeaheadParams {
   types?: string;
   limit?: number;
   include_links?: boolean;
-  include_linked?: boolean;
   signal?: AbortSignal;
 }
 
@@ -130,6 +96,5 @@ export interface SearchParams {
   anchor_id?: string;
   anchor_type?: EntityType;
   include_links?: boolean;
-  include_linked?: boolean;
   signal?: AbortSignal;
 }

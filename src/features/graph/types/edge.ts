@@ -3,190 +3,178 @@
 // =============================================================================
 
 export type EdgeType =
-  // Gene -> Disease edges
-  | "ASSOCIATED_WITH_DISEASE"
-  | "CURATED_FOR"
-  | "CAUSES"
-  | "CIVIC_EVIDENCED_FOR"
-  | "PGX_ASSOCIATED"
-  | "THERAPEUTIC_TARGET_IN"
-  | "SCORED_FOR_DISEASE"
-  | "BIOMARKER_FOR"
-  | "INHERITED_CAUSE_OF"
-  | "ASSERTED_FOR_DISEASE"
-  // Gene -> Drug edges
-  | "HAS_PGX_INTERACTION"
-  | "HAS_CLINICAL_DRUG_EVIDENCE"
-  | "ASSERTED_FOR_DRUG"
-  // Gene -> Trait/Variant edges
-  | "SCORED_FOR_TRAIT"
-  | "ASSOCIATED_WITH_TRAIT"
-  | "HAS_GWAS_VARIANT"
-  // Gene -> Pathway/GO edges
-  | "PARTICIPATES_IN"
-  // Gene -> Phenotype edges
-  | "MANIFESTS_AS"
-  | "MOUSE_MANIFESTS_AS"
-  // Gene -> Gene edges
-  | "INTERACTS_WITH"
-  | "INTERACTS_IN_PATHWAY"
-  | "REGULATES"
-  | "FUNCTIONALLY_RELATED"
-  // Gene -> GO/SideEffect edges
-  | "ANNOTATED_WITH"
-  | "ASSOCIATED_WITH_SIDE_EFFECT"
-  // Drug edges
-  | "TARGETS"
-  | "TARGETS_IN_CONTEXT"
-  | "INDICATED_FOR"
-  | "HAS_SIDE_EFFECT"
-  | "HAS_ADVERSE_REACTION"
-  // Variant -> Trait/Disease edges
-  | "GWAS_ASSOCIATED_WITH"
-  | "AFFECTS_RESPONSE_TO"
-  | "PGX_RESPONSE_FOR"
-  | "STUDIED_FOR_DRUG_RESPONSE"
-  | "FUNCTIONALLY_ASSAYED_FOR"
-  | "PGX_CLINICAL_RESPONSE"
-  | "PGX_DISEASE_ASSOCIATED"
-  | "CLINVAR_ASSOCIATED"
-  | "REPORTED_IN"
-  // Variant -> Gene edges
-  | "PREDICTED_TO_AFFECT"
-  | "POSITIONALLY_LINKED_TO"
-  | "ENHANCER_LINKED_TO"
-  | "PREDICTED_REGULATORY_TARGET"
-  | "MISSENSE_PATHOGENIC_FOR"
-  | "SOMATICALLY_MUTATED_IN"
-  | "CLINVAR_ANNOTATED_IN"
-  // Variant -> other
-  | "LINKED_TO_SIDE_EFFECT"
-  | "OVERLAPS"
-  // Disease/Phenotype edges
-  | "PRESENTS_WITH"
-  | "MAPS_TO"
-  | "TRAIT_PRESENTS_WITH"
-  // Study/regulatory edges
-  | "INVESTIGATES"
-  | "SE_MAPS_TO"
-  | "EXPERIMENTALLY_REGULATES"
-  | "COMPUTATIONALLY_REGULATES"
-  // Metabolite edges
-  | "CONTAINS_METABOLITE"
-  | "METABOLITE_IS_A"
-  // Ontology hierarchy edges
-  | "SUBCLASS_OF"
-  | "ANCESTOR_OF"
-  | "PHENOTYPE_SUBCLASS_OF"
-  | "PHENOTYPE_ANCESTOR_OF"
-  | "PART_OF"
-  | "PATHWAY_ANCESTOR_OF"
-  | "EFO_SUBCLASS_OF"
-  | "EFO_ANCESTOR_OF"
-  | "GO_SUBCLASS_OF"
-  | "GO_ANCESTOR_OF";
+  // Gene → Disease
+  | "GENE_ASSOCIATED_WITH_DISEASE"
+  | "GENE_ALTERED_IN_DISEASE"
+  // Gene → Drug
+  | "GENE_AFFECTS_DRUG_RESPONSE"
+  // Gene → Entity (was Trait)
+  | "GENE_ASSOCIATED_WITH_ENTITY"
+  // Gene → Pathway
+  | "GENE_PARTICIPATES_IN_PATHWAY"
+  // Gene → GOTerm
+  | "GENE_ANNOTATED_WITH_GO_TERM"
+  // Gene → Phenotype
+  | "GENE_ASSOCIATED_WITH_PHENOTYPE"
+  // Gene → Gene
+  | "GENE_INTERACTS_WITH_GENE"
+  | "GENE_PARALOG_OF_GENE"
+  // Gene → SideEffect
+  | "GENE_ASSOCIATED_WITH_SIDE_EFFECT"
+  // Gene → ProteinDomain
+  | "GENE_HAS_PROTEIN_DOMAIN"
+  // Gene → Tissue
+  | "GENE_EXPRESSED_IN_TISSUE"
+  // Drug → Gene
+  | "DRUG_ACTS_ON_GENE"
+  | "DRUG_DISPOSITION_BY_GENE"
+  // Drug → Disease
+  | "DRUG_INDICATED_FOR_DISEASE"
+  // Drug → SideEffect
+  | "DRUG_HAS_ADVERSE_EFFECT"
+  | "DRUG_PAIR_CAUSES_SIDE_EFFECT"
+  // Drug → Drug
+  | "DRUG_INTERACTS_WITH_DRUG"
+  // Variant → Gene
+  | "VARIANT_IMPLIES_GENE"
+  | "VARIANT_AFFECTS_GENE"
+  // Variant → Entity/Disease/Phenotype (trait associations)
+  | "VARIANT_ASSOCIATED_WITH_TRAIT__Entity"
+  | "VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype"
+  | "VARIANT_ASSOCIATED_WITH_TRAIT__Disease"
+  // Variant → Drug
+  | "VARIANT_ASSOCIATED_WITH_DRUG"
+  // Variant → Study
+  | "VARIANT_ASSOCIATED_WITH_STUDY"
+  // Variant → SideEffect
+  | "VARIANT_LINKED_TO_SIDE_EFFECT"
+  // Variant → cCRE
+  | "VARIANT_OVERLAPS_CCRE"
+  // cCRE → Gene
+  | "CCRE_REGULATES_GENE"
+  // Disease → Phenotype
+  | "DISEASE_HAS_PHENOTYPE"
+  // Phenotype → Phenotype
+  | "PHENOTYPE_EQUIVALENT_TO"
+  | "PHENOTYPE_HIERARCHY"
+  | "PHENOTYPE_CLOSURE"
+  // Study → Entity/Disease/Phenotype
+  | "STUDY_INVESTIGATES_TRAIT__Entity"
+  | "STUDY_INVESTIGATES_TRAIT__Disease"
+  | "STUDY_INVESTIGATES_TRAIT__Phenotype"
+  // Disease → Disease
+  | "DISEASE_SUBCLASS_OF_DISEASE"
+  | "DISEASE_ANCESTOR_OF_DISEASE"
+  // Pathway → Pathway
+  | "PATHWAY_PART_OF_PATHWAY"
+  | "PATHWAY_ANCESTOR_OF_PATHWAY"
+  // Entity → Entity (was EFO)
+  | "ENTITY_HIERARCHY"
+  | "ENTITY_CLOSURE"
+  // GO → GO
+  | "GO_HIERARCHY"
+  | "GO_CLOSURE"
+  // Metabolite
+  | "PATHWAY_CONTAINS_METABOLITE"
+  | "METABOLITE_IS_A_METABOLITE"
+  // Signal (all new)
+  | "SIGNAL_ASSOCIATED_WITH_TRAIT__Disease"
+  | "SIGNAL_ASSOCIATED_WITH_TRAIT__Entity"
+  | "SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype"
+  | "SIGNAL_HAS_VARIANT"
+  | "SIGNAL_IMPLIES_GENE"
+  // ProteinDomain → ProteinDomain
+  | "DOMAIN_SUBCLASS_OF_DOMAIN"
+  | "DOMAIN_ANCESTOR_OF_DOMAIN";
 
 /**
  * Schema-driven field catalog per edge type.
  * Source of truth: docs/GRAPH_SCHEMA section 4.
  */
 export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
-  // Gene -> Disease
-  ASSOCIATED_WITH_DISEASE: ["overall_score", "evidence_count", "num_datatypes", "genetic_association_score", "somatic_mutation_score", "known_drug_score", "source"],
-  CURATED_FOR: ["classification", "mode_of_inheritance", "expert_panel", "report_url", "source"],
-  CAUSES: ["allelic_requirement", "mutation_consequence", "confidence_category", "organ_specificity_list", "panel", "source"],
-  CIVIC_EVIDENCED_FOR: ["evidence_type", "evidence_level", "clinical_significance", "rating", "citation_id", "nct_ids", "profile_evidence_score", "source"],
-  PGX_ASSOCIATED: ["n_evidence", "pmids", "source"],
-  THERAPEUTIC_TARGET_IN: ["best_clinical_status", "evidence_count", "evidence_pmids", "source"],
-  SCORED_FOR_DISEASE: ["clinical_phase", "is_approved", "evidence_count", "mesh_heading", "source"],
-  BIOMARKER_FOR: ["biomarker_id", "biomarker_name", "icd10", "icd11", "source"],
-  INHERITED_CAUSE_OF: ["mechanism", "orphanet_gene_id", "orphanet_disease_id", "evidence_count", "evidence_pmids", "source"],
-  ASSERTED_FOR_DISEASE: ["assertion_type", "assertion_direction", "significance", "amp_category", "assertion_id", "last_review_date", "source"],
-  // Gene -> Drug
-  HAS_PGX_INTERACTION: ["n_evidence", "is_pd", "pmids", "evidence_sources", "source"],
-  HAS_CLINICAL_DRUG_EVIDENCE: ["clinical_significance", "evidence_level", "disease_context", "therapy_combination", "therapy_interaction_type", "rating", "citation_id", "source"],
-  ASSERTED_FOR_DRUG: ["assertion_type", "assertion_direction", "significance", "amp_category", "assertion_id", "last_review_date", "source"],
-  // Gene -> Trait
-  SCORED_FOR_TRAIT: ["ld_score", "reg_score", "nassoc_score", "source_score", "total_score", "source"],
-  ASSOCIATED_WITH_TRAIT: ["trait_name", "n_variants", "n_studies", "best_p_value_mlog", "best_or_beta", "source"],
-  // Drug -> Gene
-  TARGETS: ["action_type", "mechanism_of_action", "num_sources", "sources", "max_clinical_phase"],
-  TARGETS_IN_CONTEXT: ["disease_id", "disease_name", "mechanism_of_action", "max_phase", "num_trials", "trial_statuses", "trials"],
-  // Drug -> Disease
-  INDICATED_FOR: ["sources", "num_sources", "max_clinical_phase", "primary_source"],
-  // Drug -> SideEffect
-  HAS_SIDE_EFFECT: ["frequency", "frequency_description", "frequency_category", "source"],
-  HAS_ADVERSE_REACTION: ["report_count", "llr", "critical_value", "node_match_type", "source"],
-  // Variant -> Trait
-  GWAS_ASSOCIATED_WITH: ["p_value_mlog", "or_beta", "risk_allele_freq", "risk_allele", "ci_95", "mapped_genes", "source"],
-  // Variant -> Drug
-  AFFECTS_RESPONSE_TO: ["significance", "direction_of_effect", "phenotype_category", "metabolizer_type", "pmid", "source"],
-  PGX_RESPONSE_FOR: ["gene_symbol", "genotype", "pgx_category", "evidence_level", "is_direct_target", "consequence_so", "pmids", "source"],
-  STUDIED_FOR_DRUG_RESPONSE: ["study_type", "study_cases", "study_controls", "p_value", "ratio_stat_type", "ratio_stat", "ci_start", "ci_stop", "population", "pmid", "source"],
-  FUNCTIONALLY_ASSAYED_FOR: ["assay_type", "cell_type", "functional_terms", "direction_of_effect", "is_associated", "phenotype_category", "pmid", "source"],
-  PGX_CLINICAL_RESPONSE: ["evidence_level", "score", "phenotype_category", "phenotype", "pmid_count", "evidence_count", "max_evidence_score", "source"],
-  // Variant -> Disease
-  PGX_DISEASE_ASSOCIATED: ["significance", "direction_of_effect", "phenotype_category", "best_p_value", "best_ratio_stat", "max_study_cases", "max_study_controls", "n_studies", "source"],
-  CLINVAR_ASSOCIATED: ["clinical_significance", "review_status", "disease_name", "origin", "source"],
-  // Variant -> Study
-  REPORTED_IN: ["p_value_mlog", "or_beta", "risk_allele_freq", "ci_95", "risk_allele", "initial_sample_size", "replication_sample_size", "source"],
-  // Variant -> Gene
-  PREDICTED_TO_AFFECT: ["max_l2g_score", "confidence", "n_loci", "credible_set_confidence"],
-  POSITIONALLY_LINKED_TO: ["region_type", "consequence", "hgvsc", "hgvsp", "source"],
-  ENHANCER_LINKED_TO: ["enhancer_id", "feature_score", "target_score", "confidence", "source"],
-  PREDICTED_REGULATORY_TARGET: ["score", "percentile", "confidence", "source"],
-  MISSENSE_PATHOGENIC_FOR: ["protein_variant", "pathogenicity", "pathogenicity_class", "max_pathogenicity", "transcript_id", "confidence", "source"],
-  SOMATICALLY_MUTATED_IN: ["sample_count", "tier", "so_term", "transcript", "aa_change", "hgvsc", "hgvsp", "domain_id", "domain_name", "confidence", "source"],
-  CLINVAR_ANNOTATED_IN: ["clinical_significance", "review_status", "disease_name", "origin", "source"],
-  // Variant -> SideEffect
-  LINKED_TO_SIDE_EFFECT: ["gene_symbol", "drug_name", "significance", "direction", "phenotype_category", "pmid", "source"],
-  // Gene -> Variant
-  HAS_GWAS_VARIANT: ["p_value_mlog", "source"],
-  // Study -> Trait
-  INVESTIGATES: ["study_title", "trait_name", "source"],
-  // Gene -> Pathway
-  PARTICIPATES_IN: ["pathway_name", "pathway_source", "pathway_category"],
-  // Gene -> Phenotype
-  MANIFESTS_AS: ["evidence_code", "frequency", "disease_ids", "source"],
-  MOUSE_MANIFESTS_AS: ["mouse_gene_symbol", "mouse_gene_id", "n_models", "phenotype_class_labels", "source"],
-  // Disease -> Phenotype
-  PRESENTS_WITH: ["match_types", "match_count", "source"],
-  // Trait -> Disease
-  MAPS_TO: ["match_types", "match_count", "source"],
-  // Trait -> Phenotype
-  TRAIT_PRESENTS_WITH: ["match_types", "match_count", "source"],
-  // Gene -> Gene
-  INTERACTS_WITH: ["sources", "num_sources", "detection_methods", "pmids", "confidence_scores", "num_experiments", "ot_mi_score", "ot_evidence_count"],
-  INTERACTS_IN_PATHWAY: ["pathway_name", "pathway_sources", "interaction_method"],
-  REGULATES: ["interaction_type", "interaction_type_mi", "interaction_type_name", "pmid", "source"],
-  FUNCTIONALLY_RELATED: ["combined_score", "confidence", "experiments", "database", "textmining", "coexpression", "neighborhood", "homology", "source"],
-  // Gene -> GOTerm
-  ANNOTATED_WITH: ["go_namespace", "qualifier", "evidence_code", "aspect", "go_ref", "assigned_by", "annotation_date", "source"],
-  // Gene -> SideEffect
-  ASSOCIATED_WITH_SIDE_EFFECT: ["drug_name", "significance", "direction", "n_evidence", "source"],
-  // cCRE -> Gene
-  EXPERIMENTALLY_REGULATES: ["method", "max_score", "min_p_value", "n_tissues", "source"],
-  COMPUTATIONALLY_REGULATES: ["method", "max_score", "min_p_value", "n_tissues", "source"],
-  // Variant -> cCRE
-  OVERLAPS: ["annotation", "annotation_label", "ccre_size", "distance_to_center", "relative_position"],
-  // SideEffect -> OntologyTerm
-  SE_MAPS_TO: ["dst_type", "match_type"],
-  // Pathway -> Metabolite
-  CONTAINS_METABOLITE: ["pathway_source", "pathway_name", "metabolite_name"],
-  // Metabolite -> Metabolite
-  METABOLITE_IS_A: ["src_name", "dst_name", "source"],
-  // Hierarchy
-  SUBCLASS_OF: ["src_name", "dst_name", "distance", "relationship_type", "source"],
-  PHENOTYPE_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
-  PART_OF: ["src_name", "dst_name", "distance", "source"],
-  EFO_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
-  GO_SUBCLASS_OF: ["src_name", "dst_name", "distance", "source"],
-  // Closure
-  ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  PHENOTYPE_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  PATHWAY_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  EFO_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  GO_ANCESTOR_OF: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // Gene → Disease
+  GENE_ASSOCIATED_WITH_DISEASE: ["overall_score", "evidence_count", "num_datatypes", "genetic_association_score", "somatic_mutation_score", "known_drug_score", "relation_subtype", "source"],
+  GENE_ALTERED_IN_DISEASE: ["alteration_type", "sample_count", "frequency", "relation_subtype", "source"],
+  // Gene → Drug
+  GENE_AFFECTS_DRUG_RESPONSE: ["n_evidence", "clinical_significance", "evidence_level", "disease_context", "relation_subtype", "source"],
+  // Gene → Entity
+  GENE_ASSOCIATED_WITH_ENTITY: ["total_score", "ld_score", "nassoc_score", "n_variants", "n_studies", "best_p_value_mlog", "relation_subtype", "source"],
+  // Gene → Pathway
+  GENE_PARTICIPATES_IN_PATHWAY: ["pathway_name", "pathway_source", "pathway_category", "source"],
+  // Gene → GOTerm
+  GENE_ANNOTATED_WITH_GO_TERM: ["go_namespace", "qualifier", "evidence_code", "aspect", "assigned_by", "source"],
+  // Gene → Phenotype
+  GENE_ASSOCIATED_WITH_PHENOTYPE: ["evidence_code", "frequency", "disease_ids", "relation_subtype", "source"],
+  // Gene → Gene
+  GENE_INTERACTS_WITH_GENE: ["combined_score", "confidence", "num_sources", "detection_methods", "relation_subtype", "source"],
+  GENE_PARALOG_OF_GENE: ["identity_pct", "alignment_length", "source"],
+  // Gene → SideEffect
+  GENE_ASSOCIATED_WITH_SIDE_EFFECT: ["drug_name", "significance", "direction", "n_evidence", "source"],
+  // Gene → ProteinDomain
+  GENE_HAS_PROTEIN_DOMAIN: ["domain_name", "start_position", "end_position", "score", "source"],
+  // Gene → Tissue
+  GENE_EXPRESSED_IN_TISSUE: ["expression_level", "tpm", "tissue_name", "source"],
+  // Drug → Gene
+  DRUG_ACTS_ON_GENE: ["action_type", "mechanism_of_action", "num_sources", "max_clinical_phase", "relation_subtype", "source"],
+  DRUG_DISPOSITION_BY_GENE: ["disposition_type", "mechanism", "source"],
+  // Drug → Disease
+  DRUG_INDICATED_FOR_DISEASE: ["sources", "num_sources", "max_clinical_phase", "primary_source", "source"],
+  // Drug → SideEffect
+  DRUG_HAS_ADVERSE_EFFECT: ["frequency", "frequency_description", "report_count", "llr", "relation_subtype", "source"],
+  DRUG_PAIR_CAUSES_SIDE_EFFECT: ["drug_pair", "report_count", "confidence", "source"],
+  // Drug → Drug
+  DRUG_INTERACTS_WITH_DRUG: ["interaction_type", "severity", "description", "source"],
+  // Variant → Gene
+  VARIANT_IMPLIES_GENE: ["max_l2g_score", "confidence", "n_loci", "enhancer_id", "feature_score", "relation_subtype", "source"],
+  VARIANT_AFFECTS_GENE: ["clinical_significance", "review_status", "pathogenicity", "max_pathogenicity", "sample_count", "relation_subtype", "source"],
+  // Variant → Entity/Disease/Phenotype
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele_freq", "risk_allele", "ci_95", "source"],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele_freq", "risk_allele", "ci_95", "source"],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["clinical_significance", "review_status", "significance", "direction_of_effect", "relation_subtype", "source"],
+  // Variant → Drug
+  VARIANT_ASSOCIATED_WITH_DRUG: ["significance", "direction_of_effect", "phenotype_category", "evidence_level", "score", "relation_subtype", "source"],
+  // Variant → Study
+  VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele_freq", "ci_95", "risk_allele", "initial_sample_size", "source"],
+  // Variant → SideEffect
+  VARIANT_LINKED_TO_SIDE_EFFECT: ["gene_symbol", "drug_name", "significance", "direction", "phenotype_category", "pmid", "source"],
+  // Variant → cCRE
+  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "ccre_size", "distance_to_center", "relative_position"],
+  // cCRE → Gene
+  CCRE_REGULATES_GENE: ["method", "max_score", "min_p_value", "n_tissues", "relation_subtype", "source"],
+  // Disease → Phenotype
+  DISEASE_HAS_PHENOTYPE: ["match_types", "match_count", "source"],
+  // Phenotype → Phenotype
+  PHENOTYPE_EQUIVALENT_TO: ["match_types", "match_count", "source"],
+  PHENOTYPE_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
+  PHENOTYPE_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // Study → trait
+  STUDY_INVESTIGATES_TRAIT__Entity: ["study_title", "trait_name", "source"],
+  STUDY_INVESTIGATES_TRAIT__Disease: ["study_title", "trait_name", "source"],
+  STUDY_INVESTIGATES_TRAIT__Phenotype: ["study_title", "trait_name", "source"],
+  // Disease → Disease
+  DISEASE_SUBCLASS_OF_DISEASE: ["src_name", "dst_name", "distance", "relationship_type", "source"],
+  DISEASE_ANCESTOR_OF_DISEASE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // Pathway → Pathway
+  PATHWAY_PART_OF_PATHWAY: ["src_name", "dst_name", "distance", "source"],
+  PATHWAY_ANCESTOR_OF_PATHWAY: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // Entity → Entity
+  ENTITY_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
+  ENTITY_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // GO → GO
+  GO_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
+  GO_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
+  // Metabolite
+  PATHWAY_CONTAINS_METABOLITE: ["pathway_source", "pathway_name", "metabolite_name"],
+  METABOLITE_IS_A_METABOLITE: ["src_name", "dst_name", "source"],
+  // Signal
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "or_beta", "trait_name", "source"],
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "trait_name", "source"],
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "trait_name", "source"],
+  SIGNAL_HAS_VARIANT: ["lead_variant", "posterior_probability", "source"],
+  SIGNAL_IMPLIES_GENE: ["l2g_score", "confidence", "source"],
+  // ProteinDomain → ProteinDomain
+  DOMAIN_SUBCLASS_OF_DOMAIN: ["src_name", "dst_name", "distance", "source"],
+  DOMAIN_ANCESTOR_OF_DOMAIN: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
 };
 
 /**
@@ -240,94 +228,89 @@ export function batchEdgeTypesByFieldLimit(
  * Used as fallback when an edge row has no `source`/`sources` field.
  */
 export const EDGE_TYPE_DATABASE: Record<EdgeType, string> = {
-  // Gene -> Disease
-  ASSOCIATED_WITH_DISEASE: "OpenTargets",
-  CURATED_FOR: "ClinGen",
-  CAUSES: "DDG2P",
-  CIVIC_EVIDENCED_FOR: "CIViC",
-  PGX_ASSOCIATED: "PharmGKB",
-  THERAPEUTIC_TARGET_IN: "TTD",
-  SCORED_FOR_DISEASE: "AbbVie",
-  BIOMARKER_FOR: "TTD",
-  INHERITED_CAUSE_OF: "Orphanet",
-  ASSERTED_FOR_DISEASE: "CIViC",
-  // Gene -> Drug
-  HAS_PGX_INTERACTION: "PharmGKB",
-  HAS_CLINICAL_DRUG_EVIDENCE: "CIViC",
-  ASSERTED_FOR_DRUG: "CIViC",
-  // Gene -> Trait/Variant
-  SCORED_FOR_TRAIT: "AbbVie",
-  ASSOCIATED_WITH_TRAIT: "GWAS Catalog",
-  HAS_GWAS_VARIANT: "GWAS Catalog",
-  // Gene -> Pathway
-  PARTICIPATES_IN: "Reactome",
-  // Gene -> Phenotype
-  MANIFESTS_AS: "HPO",
-  MOUSE_MANIFESTS_AS: "OpenTargets",
-  // Gene -> Gene
-  INTERACTS_WITH: "BioGRID",
-  INTERACTS_IN_PATHWAY: "ConsensusPathDB",
-  REGULATES: "SIGNOR",
-  FUNCTIONALLY_RELATED: "STRING",
-  // Gene -> GO/SideEffect
-  ANNOTATED_WITH: "GOA",
-  ASSOCIATED_WITH_SIDE_EFFECT: "PharmGKB",
-  // Drug -> Gene
-  TARGETS: "OpenTargets",
-  TARGETS_IN_CONTEXT: "OpenTargets",
-  // Drug -> Disease
-  INDICATED_FOR: "OpenTargets",
-  // Drug -> SideEffect
-  HAS_SIDE_EFFECT: "SIDER",
-  HAS_ADVERSE_REACTION: "OpenTargets FAERS",
-  // Variant -> Trait
-  GWAS_ASSOCIATED_WITH: "GWAS Catalog",
-  // Variant -> Drug
-  AFFECTS_RESPONSE_TO: "PharmGKB",
-  PGX_RESPONSE_FOR: "OpenTargets",
-  STUDIED_FOR_DRUG_RESPONSE: "PharmGKB",
-  FUNCTIONALLY_ASSAYED_FOR: "PharmGKB",
-  PGX_CLINICAL_RESPONSE: "PharmGKB",
-  // Variant -> Disease
-  PGX_DISEASE_ASSOCIATED: "PharmGKB",
-  CLINVAR_ASSOCIATED: "ClinVar",
-  // Variant -> Study
-  REPORTED_IN: "GWAS Catalog",
-  // Variant -> Gene
-  PREDICTED_TO_AFFECT: "OpenTargets",
-  POSITIONALLY_LINKED_TO: "GENCODE",
-  ENHANCER_LINKED_TO: "GeneHancer",
-  PREDICTED_REGULATORY_TARGET: "PGBoost",
-  MISSENSE_PATHOGENIC_FOR: "AlphaMissense",
-  SOMATICALLY_MUTATED_IN: "COSMIC",
-  CLINVAR_ANNOTATED_IN: "ClinVar",
-  // Variant -> SideEffect
-  LINKED_TO_SIDE_EFFECT: "PharmGKB",
-  // Variant -> cCRE
-  OVERLAPS: "ENCODE",
-  // Disease/Phenotype
-  PRESENTS_WITH: "MONDO",
-  MAPS_TO: "EFO",
-  TRAIT_PRESENTS_WITH: "EFO",
-  // Study/regulatory
-  INVESTIGATES: "GWAS Catalog",
-  SE_MAPS_TO: "SIDER",
-  EXPERIMENTALLY_REGULATES: "ENCODE",
-  COMPUTATIONALLY_REGULATES: "ENCODE",
+  // Gene → Disease
+  GENE_ASSOCIATED_WITH_DISEASE: "OpenTargets",
+  GENE_ALTERED_IN_DISEASE: "COSMIC",
+  // Gene → Drug
+  GENE_AFFECTS_DRUG_RESPONSE: "PharmGKB",
+  // Gene → Entity
+  GENE_ASSOCIATED_WITH_ENTITY: "GWAS Catalog",
+  // Gene → Pathway
+  GENE_PARTICIPATES_IN_PATHWAY: "Reactome",
+  // Gene → GOTerm
+  GENE_ANNOTATED_WITH_GO_TERM: "GOA",
+  // Gene → Phenotype
+  GENE_ASSOCIATED_WITH_PHENOTYPE: "HPO",
+  // Gene → Gene
+  GENE_INTERACTS_WITH_GENE: "BioGRID",
+  GENE_PARALOG_OF_GENE: "Ensembl",
+  // Gene → SideEffect
+  GENE_ASSOCIATED_WITH_SIDE_EFFECT: "PharmGKB",
+  // Gene → ProteinDomain
+  GENE_HAS_PROTEIN_DOMAIN: "InterPro",
+  // Gene → Tissue
+  GENE_EXPRESSED_IN_TISSUE: "GTEx",
+  // Drug → Gene
+  DRUG_ACTS_ON_GENE: "OpenTargets",
+  DRUG_DISPOSITION_BY_GENE: "PharmGKB",
+  // Drug → Disease
+  DRUG_INDICATED_FOR_DISEASE: "OpenTargets",
+  // Drug → SideEffect
+  DRUG_HAS_ADVERSE_EFFECT: "SIDER",
+  DRUG_PAIR_CAUSES_SIDE_EFFECT: "TWOSIDES",
+  // Drug → Drug
+  DRUG_INTERACTS_WITH_DRUG: "DrugBank",
+  // Variant → Gene
+  VARIANT_IMPLIES_GENE: "OpenTargets",
+  VARIANT_AFFECTS_GENE: "ClinVar",
+  // Variant → Entity/Disease/Phenotype
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: "GWAS Catalog",
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: "GWAS Catalog",
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: "ClinVar",
+  // Variant → Drug
+  VARIANT_ASSOCIATED_WITH_DRUG: "PharmGKB",
+  // Variant → Study
+  VARIANT_ASSOCIATED_WITH_STUDY: "GWAS Catalog",
+  // Variant → SideEffect
+  VARIANT_LINKED_TO_SIDE_EFFECT: "PharmGKB",
+  // Variant → cCRE
+  VARIANT_OVERLAPS_CCRE: "ENCODE",
+  // cCRE → Gene
+  CCRE_REGULATES_GENE: "ENCODE",
+  // Disease → Phenotype
+  DISEASE_HAS_PHENOTYPE: "MONDO",
+  // Phenotype → Phenotype
+  PHENOTYPE_EQUIVALENT_TO: "HPO",
+  PHENOTYPE_HIERARCHY: "HPO",
+  PHENOTYPE_CLOSURE: "HPO",
+  // Study → trait
+  STUDY_INVESTIGATES_TRAIT__Entity: "GWAS Catalog",
+  STUDY_INVESTIGATES_TRAIT__Disease: "GWAS Catalog",
+  STUDY_INVESTIGATES_TRAIT__Phenotype: "GWAS Catalog",
+  // Disease → Disease
+  DISEASE_SUBCLASS_OF_DISEASE: "MONDO",
+  DISEASE_ANCESTOR_OF_DISEASE: "MONDO",
+  // Pathway → Pathway
+  PATHWAY_PART_OF_PATHWAY: "Reactome",
+  PATHWAY_ANCESTOR_OF_PATHWAY: "Reactome",
+  // Entity → Entity
+  ENTITY_HIERARCHY: "EFO",
+  ENTITY_CLOSURE: "EFO",
+  // GO → GO
+  GO_HIERARCHY: "Gene Ontology",
+  GO_CLOSURE: "Gene Ontology",
   // Metabolite
-  CONTAINS_METABOLITE: "ConsensusPathDB",
-  METABOLITE_IS_A: "ChEBI",
-  // Hierarchy
-  SUBCLASS_OF: "MONDO",
-  ANCESTOR_OF: "MONDO",
-  PHENOTYPE_SUBCLASS_OF: "HPO",
-  PHENOTYPE_ANCESTOR_OF: "HPO",
-  PART_OF: "Reactome",
-  PATHWAY_ANCESTOR_OF: "Reactome",
-  EFO_SUBCLASS_OF: "EFO",
-  EFO_ANCESTOR_OF: "EFO",
-  GO_SUBCLASS_OF: "Gene Ontology",
-  GO_ANCESTOR_OF: "Gene Ontology",
+  PATHWAY_CONTAINS_METABOLITE: "ConsensusPathDB",
+  METABOLITE_IS_A_METABOLITE: "ChEBI",
+  // Signal
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: "GWAS Catalog",
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: "GWAS Catalog",
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: "GWAS Catalog",
+  SIGNAL_HAS_VARIANT: "GWAS Catalog",
+  SIGNAL_IMPLIES_GENE: "OpenTargets",
+  // ProteinDomain → ProteinDomain
+  DOMAIN_SUBCLASS_OF_DOMAIN: "InterPro",
+  DOMAIN_ANCESTOR_OF_DOMAIN: "InterPro",
 };
 
 /**
@@ -339,100 +322,87 @@ export function getEdgeDatabase(type: EdgeType): string {
 }
 
 export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; description: string }> = {
-  // Gene -> Disease (Red/Orange family)
-  ASSOCIATED_WITH_DISEASE: { label: "Associated With Disease", color: "#ef4444", description: "Gene associated with disease" },
-  CURATED_FOR: { label: "Curated For", color: "#dc2626", description: "Gene curated for disease association" },
-  CAUSES: { label: "Causes", color: "#b91c1c", description: "Gene causes disease" },
-  CIVIC_EVIDENCED_FOR: { label: "CIViC Evidenced For", color: "#f97316", description: "CIViC clinical evidence for disease" },
-  PGX_ASSOCIATED: { label: "PGx Associated", color: "#ea580c", description: "Pharmacogenomic association" },
-  THERAPEUTIC_TARGET_IN: { label: "Therapeutic Target In", color: "#fb923c", description: "Gene is therapeutic target in disease" },
-  SCORED_FOR_DISEASE: { label: "Scored For Disease", color: "#f87171", description: "Gene scored for disease relevance" },
-  BIOMARKER_FOR: { label: "Biomarker For", color: "#e11d48", description: "Gene is biomarker for disease" },
-  INHERITED_CAUSE_OF: { label: "Inherited Cause Of", color: "#be123c", description: "Gene inherited cause of disease" },
-  ASSERTED_FOR_DISEASE: { label: "Asserted For Disease", color: "#fca5a5", description: "Gene asserted for disease" },
-
-  // Gene -> Drug (Cyan family)
-  HAS_PGX_INTERACTION: { label: "Has PGx Interaction", color: "#06b6d4", description: "Gene has pharmacogenomic interaction with drug" },
-  HAS_CLINICAL_DRUG_EVIDENCE: { label: "Has Clinical Drug Evidence", color: "#0891b2", description: "Gene has clinical drug evidence" },
-  ASSERTED_FOR_DRUG: { label: "Asserted For Drug", color: "#22d3ee", description: "Gene asserted for drug" },
-
-  // Gene -> Trait/Variant (Amber family)
-  SCORED_FOR_TRAIT: { label: "Scored For Trait", color: "#f59e0b", description: "Gene scored for trait" },
-  ASSOCIATED_WITH_TRAIT: { label: "Associated With Trait", color: "#b45309", description: "Gene associated with trait via GWAS" },
-  HAS_GWAS_VARIANT: { label: "Has GWAS Variant", color: "#d97706", description: "Gene has GWAS variant" },
-
-  // Gene -> Pathway/GO (Purple family)
-  PARTICIPATES_IN: { label: "Participates In", color: "#8b5cf6", description: "Gene participates in pathway" },
-
-  // Gene -> Phenotype (Pink family)
-  MANIFESTS_AS: { label: "Manifests As", color: "#ec4899", description: "Gene manifests as phenotype" },
-  MOUSE_MANIFESTS_AS: { label: "Mouse Manifests As", color: "#f472b6", description: "Mouse model manifests as phenotype" },
-
-  // Gene -> Gene (Blue family)
-  INTERACTS_WITH: { label: "Interacts With", color: "#3b82f6", description: "Gene interacts with gene" },
-  INTERACTS_IN_PATHWAY: { label: "Interacts In Pathway", color: "#2563eb", description: "Genes interact in pathway context" },
-  REGULATES: { label: "Regulates", color: "#1d4ed8", description: "Gene regulates gene" },
-  FUNCTIONALLY_RELATED: { label: "Functionally Related", color: "#60a5fa", description: "Functionally related genes" },
-
-  // Gene -> GO/SideEffect
-  ANNOTATED_WITH: { label: "Annotated With", color: "#a78bfa", description: "Gene annotated with GO term" },
-  ASSOCIATED_WITH_SIDE_EFFECT: { label: "Associated With Side Effect", color: "#c084fc", description: "Gene associated with side effect" },
-
-  // Drug edges (Green family)
-  TARGETS: { label: "Targets", color: "#22c55e", description: "Drug targets gene" },
-  TARGETS_IN_CONTEXT: { label: "Targets In Context", color: "#16a34a", description: "Drug targets gene in context" },
-  INDICATED_FOR: { label: "Indicated For", color: "#15803d", description: "Drug indicated for disease" },
-  HAS_SIDE_EFFECT: { label: "Has Side Effect", color: "#4ade80", description: "Drug has side effect" },
-  HAS_ADVERSE_REACTION: { label: "Has Adverse Reaction", color: "#86efac", description: "Drug has adverse reaction" },
-
-  // Variant -> Trait/Disease (Amber/Yellow family)
-  GWAS_ASSOCIATED_WITH: { label: "GWAS Associated With", color: "#eab308", description: "Variant GWAS associated with trait" },
-  AFFECTS_RESPONSE_TO: { label: "Affects Response To", color: "#ca8a04", description: "Variant affects response to drug" },
-  PGX_RESPONSE_FOR: { label: "PGx Response For", color: "#a16207", description: "Variant PGx response for drug" },
-  STUDIED_FOR_DRUG_RESPONSE: { label: "Studied For Drug Response", color: "#fbbf24", description: "Variant studied for drug response" },
-  FUNCTIONALLY_ASSAYED_FOR: { label: "Functionally Assayed For", color: "#fcd34d", description: "Variant functionally assayed" },
-  PGX_CLINICAL_RESPONSE: { label: "PGx Clinical Response", color: "#b45309", description: "Variant PGx clinical response" },
-  PGX_DISEASE_ASSOCIATED: { label: "PGx Disease Associated", color: "#92400e", description: "Variant PGx disease associated" },
-  CLINVAR_ASSOCIATED: { label: "ClinVar Associated", color: "#d97706", description: "Variant ClinVar associated" },
-  REPORTED_IN: { label: "Reported In", color: "#f59e0b", description: "Variant reported in study" },
-
-  // Variant -> Gene (Amber-orange family)
-  PREDICTED_TO_AFFECT: { label: "Predicted To Affect", color: "#fb923c", description: "Variant predicted to affect gene" },
-  POSITIONALLY_LINKED_TO: { label: "Positionally Linked To", color: "#fdba74", description: "Variant positionally linked to gene" },
-  ENHANCER_LINKED_TO: { label: "Enhancer Linked To", color: "#fed7aa", description: "Variant enhancer linked to gene" },
-  PREDICTED_REGULATORY_TARGET: { label: "Predicted Regulatory Target", color: "#f97316", description: "Variant predicted regulatory target" },
-  MISSENSE_PATHOGENIC_FOR: { label: "Missense Pathogenic For", color: "#ea580c", description: "Missense variant pathogenic for gene" },
-  SOMATICALLY_MUTATED_IN: { label: "Somatically Mutated In", color: "#c2410c", description: "Variant somatically mutated in disease" },
-  CLINVAR_ANNOTATED_IN: { label: "ClinVar Annotated In", color: "#9a3412", description: "Variant ClinVar annotated in gene" },
-
-  // Variant -> other
-  LINKED_TO_SIDE_EFFECT: { label: "Linked To Side Effect", color: "#fde047", description: "Variant linked to side effect" },
-  OVERLAPS: { label: "Overlaps", color: "#facc15", description: "Variant overlaps cCRE" },
-
-  // Disease/Phenotype edges (Rose family)
-  PRESENTS_WITH: { label: "Presents With", color: "#f43f5e", description: "Disease presents with phenotype" },
-  MAPS_TO: { label: "Maps To", color: "#d946ef", description: "Trait maps to disease" },
-  TRAIT_PRESENTS_WITH: { label: "Trait Presents With", color: "#e879f9", description: "Trait presents with phenotype" },
-
-  // Study/regulatory edges (Teal family)
-  INVESTIGATES: { label: "Investigates", color: "#14b8a6", description: "Study investigates" },
-  SE_MAPS_TO: { label: "SE Maps To", color: "#0d9488", description: "Side effect maps to" },
-  EXPERIMENTALLY_REGULATES: { label: "Experimentally Regulates", color: "#0f766e", description: "Experimentally validated regulation" },
-  COMPUTATIONALLY_REGULATES: { label: "Computationally Regulates", color: "#115e59", description: "Computationally predicted regulation" },
-
-  // Metabolite edges (Pink family)
-  CONTAINS_METABOLITE: { label: "Contains Metabolite", color: "#db2777", description: "Pathway contains metabolite" },
-  METABOLITE_IS_A: { label: "Metabolite Is A", color: "#be185d", description: "Metabolite is a subclass" },
-
-  // Ontology hierarchy edges (Neutral/Gray family)
-  SUBCLASS_OF: { label: "Subclass Of", color: "#6b7280", description: "Disease subclass of" },
-  ANCESTOR_OF: { label: "Ancestor Of", color: "#9ca3af", description: "Disease ancestor of" },
-  PHENOTYPE_SUBCLASS_OF: { label: "Phenotype Subclass Of", color: "#6b7280", description: "Phenotype subclass of" },
-  PHENOTYPE_ANCESTOR_OF: { label: "Phenotype Ancestor Of", color: "#9ca3af", description: "Phenotype ancestor of" },
-  PART_OF: { label: "Part Of", color: "#6366f1", description: "Pathway part of parent" },
-  PATHWAY_ANCESTOR_OF: { label: "Pathway Ancestor Of", color: "#818cf8", description: "Pathway ancestor of" },
-  EFO_SUBCLASS_OF: { label: "EFO Subclass Of", color: "#6b7280", description: "EFO subclass of" },
-  EFO_ANCESTOR_OF: { label: "EFO Ancestor Of", color: "#9ca3af", description: "EFO ancestor of" },
-  GO_SUBCLASS_OF: { label: "GO Subclass Of", color: "#6b7280", description: "GO subclass of" },
-  GO_ANCESTOR_OF: { label: "GO Ancestor Of", color: "#9ca3af", description: "GO ancestor of" },
+  // Gene → Disease (Red family)
+  GENE_ASSOCIATED_WITH_DISEASE: { label: "Gene–Disease Association", color: "#ef4444", description: "Gene associated with disease (scored, curated, causal)" },
+  GENE_ALTERED_IN_DISEASE: { label: "Gene Altered in Disease", color: "#dc2626", description: "Gene somatically altered in disease" },
+  // Gene → Drug (Cyan family)
+  GENE_AFFECTS_DRUG_RESPONSE: { label: "Gene Affects Drug Response", color: "#06b6d4", description: "Pharmacogenomic gene–drug interaction" },
+  // Gene → Entity (Amber family)
+  GENE_ASSOCIATED_WITH_ENTITY: { label: "Gene–Entity Association", color: "#f59e0b", description: "Gene associated with trait/entity via GWAS" },
+  // Gene → Pathway (Purple family)
+  GENE_PARTICIPATES_IN_PATHWAY: { label: "Participates in Pathway", color: "#8b5cf6", description: "Gene participates in pathway" },
+  // Gene → GOTerm (Green family)
+  GENE_ANNOTATED_WITH_GO_TERM: { label: "GO Annotation", color: "#a78bfa", description: "Gene annotated with GO term" },
+  // Gene → Phenotype (Pink family)
+  GENE_ASSOCIATED_WITH_PHENOTYPE: { label: "Gene–Phenotype Association", color: "#ec4899", description: "Gene associated with phenotype" },
+  // Gene → Gene (Blue family)
+  GENE_INTERACTS_WITH_GENE: { label: "Gene–Gene Interaction", color: "#3b82f6", description: "Protein-protein or functional interaction" },
+  GENE_PARALOG_OF_GENE: { label: "Paralog", color: "#60a5fa", description: "Paralogous gene pair" },
+  // Gene → SideEffect
+  GENE_ASSOCIATED_WITH_SIDE_EFFECT: { label: "Gene–Side Effect", color: "#c084fc", description: "Gene associated with side effect" },
+  // Gene → ProteinDomain
+  GENE_HAS_PROTEIN_DOMAIN: { label: "Has Protein Domain", color: "#7c3aed", description: "Gene encodes protein domain" },
+  // Gene → Tissue
+  GENE_EXPRESSED_IN_TISSUE: { label: "Expressed in Tissue", color: "#14b8a6", description: "Gene expressed in tissue" },
+  // Drug → Gene (Green family)
+  DRUG_ACTS_ON_GENE: { label: "Drug Acts on Gene", color: "#22c55e", description: "Drug targets or acts on gene" },
+  DRUG_DISPOSITION_BY_GENE: { label: "Drug Disposition by Gene", color: "#16a34a", description: "Drug disposition mediated by gene" },
+  // Drug → Disease
+  DRUG_INDICATED_FOR_DISEASE: { label: "Indicated for Disease", color: "#15803d", description: "Drug indicated for disease" },
+  // Drug → SideEffect
+  DRUG_HAS_ADVERSE_EFFECT: { label: "Adverse Effect", color: "#4ade80", description: "Drug has adverse effect" },
+  DRUG_PAIR_CAUSES_SIDE_EFFECT: { label: "Drug Pair Side Effect", color: "#86efac", description: "Drug pair causes side effect" },
+  // Drug → Drug
+  DRUG_INTERACTS_WITH_DRUG: { label: "Drug–Drug Interaction", color: "#34d399", description: "Drug interacts with drug" },
+  // Variant → Gene (Amber-orange family)
+  VARIANT_IMPLIES_GENE: { label: "Variant Implies Gene", color: "#fb923c", description: "Variant implicates gene (L2G, regulatory, enhancer)" },
+  VARIANT_AFFECTS_GENE: { label: "Variant Affects Gene", color: "#ea580c", description: "Variant affects gene (ClinVar, missense, somatic)" },
+  // Variant → Entity/Disease/Phenotype (Yellow family)
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: { label: "Variant–Entity GWAS", color: "#eab308", description: "Variant GWAS associated with entity" },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Variant–Phenotype GWAS", color: "#ca8a04", description: "Variant GWAS associated with phenotype" },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: { label: "Variant–Disease Association", color: "#d97706", description: "Variant associated with disease (ClinVar/PGx)" },
+  // Variant → Drug
+  VARIANT_ASSOCIATED_WITH_DRUG: { label: "Variant–Drug Response", color: "#fbbf24", description: "Variant associated with drug response" },
+  // Variant → Study
+  VARIANT_ASSOCIATED_WITH_STUDY: { label: "Reported in Study", color: "#f59e0b", description: "Variant reported in GWAS study" },
+  // Variant → SideEffect
+  VARIANT_LINKED_TO_SIDE_EFFECT: { label: "Variant–Side Effect", color: "#fde047", description: "Variant linked to side effect" },
+  // Variant → cCRE
+  VARIANT_OVERLAPS_CCRE: { label: "Overlaps cCRE", color: "#facc15", description: "Variant overlaps cCRE" },
+  // cCRE → Gene (Teal family)
+  CCRE_REGULATES_GENE: { label: "Regulates Gene", color: "#0f766e", description: "cCRE regulates gene expression" },
+  // Disease → Phenotype (Rose family)
+  DISEASE_HAS_PHENOTYPE: { label: "Disease Has Phenotype", color: "#f43f5e", description: "Disease presents with phenotype" },
+  // Phenotype → Phenotype
+  PHENOTYPE_EQUIVALENT_TO: { label: "Phenotype Equivalent", color: "#d946ef", description: "Equivalent phenotype mapping" },
+  PHENOTYPE_HIERARCHY: { label: "Phenotype Hierarchy", color: "#6b7280", description: "Phenotype subclass of" },
+  PHENOTYPE_CLOSURE: { label: "Phenotype Closure", color: "#9ca3af", description: "Phenotype ancestor of" },
+  // Study → trait (Teal family)
+  STUDY_INVESTIGATES_TRAIT__Entity: { label: "Investigates Entity", color: "#14b8a6", description: "Study investigates entity" },
+  STUDY_INVESTIGATES_TRAIT__Disease: { label: "Investigates Disease", color: "#0d9488", description: "Study investigates disease" },
+  STUDY_INVESTIGATES_TRAIT__Phenotype: { label: "Investigates Phenotype", color: "#115e59", description: "Study investigates phenotype" },
+  // Disease → Disease (Gray family)
+  DISEASE_SUBCLASS_OF_DISEASE: { label: "Disease Subclass", color: "#6b7280", description: "Disease subclass of" },
+  DISEASE_ANCESTOR_OF_DISEASE: { label: "Disease Ancestor", color: "#9ca3af", description: "Disease ancestor of" },
+  // Pathway → Pathway (Indigo family)
+  PATHWAY_PART_OF_PATHWAY: { label: "Part of Pathway", color: "#6366f1", description: "Pathway part of parent" },
+  PATHWAY_ANCESTOR_OF_PATHWAY: { label: "Pathway Ancestor", color: "#818cf8", description: "Pathway ancestor of" },
+  // Entity → Entity (Gray family)
+  ENTITY_HIERARCHY: { label: "Entity Hierarchy", color: "#6b7280", description: "Entity subclass of" },
+  ENTITY_CLOSURE: { label: "Entity Closure", color: "#9ca3af", description: "Entity ancestor of" },
+  // GO → GO
+  GO_HIERARCHY: { label: "GO Hierarchy", color: "#6b7280", description: "GO subclass of" },
+  GO_CLOSURE: { label: "GO Closure", color: "#9ca3af", description: "GO ancestor of" },
+  // Metabolite (Pink family)
+  PATHWAY_CONTAINS_METABOLITE: { label: "Contains Metabolite", color: "#db2777", description: "Pathway contains metabolite" },
+  METABOLITE_IS_A_METABOLITE: { label: "Metabolite Is A", color: "#be185d", description: "Metabolite is a subclass" },
+  // Signal (Indigo-blue family)
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: { label: "Signal–Disease", color: "#4f46e5", description: "Signal associated with disease" },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: { label: "Signal–Entity", color: "#6366f1", description: "Signal associated with entity" },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Signal–Phenotype", color: "#818cf8", description: "Signal associated with phenotype" },
+  SIGNAL_HAS_VARIANT: { label: "Signal Has Variant", color: "#a5b4fc", description: "Signal contains variant" },
+  SIGNAL_IMPLIES_GENE: { label: "Signal Implies Gene", color: "#c7d2fe", description: "Signal implicates gene" },
+  // ProteinDomain → ProteinDomain
+  DOMAIN_SUBCLASS_OF_DOMAIN: { label: "Domain Subclass", color: "#6b7280", description: "Domain subclass of" },
+  DOMAIN_ANCESTOR_OF_DOMAIN: { label: "Domain Ancestor", color: "#9ca3af", description: "Domain ancestor of" },
 };

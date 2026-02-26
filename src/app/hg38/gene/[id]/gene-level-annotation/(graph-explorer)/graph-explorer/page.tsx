@@ -5,13 +5,13 @@ import {
   fetchGraphQuery,
   parseTypeId,
 } from "@features/graph/api";
-import { ExplorerProvider } from "@features/graph/state";
-import { GraphExplorerView } from "@features/graph/components";
+import { GraphExplorer } from "@features/graph/components";
 import type { EntityType } from "@features/graph/types/entity";
 import type { EdgeType } from "@features/graph/types/edge";
 import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
 import type { InitialSubgraphData } from "@features/graph/types/props";
-import { GRAPH_LENSES, DEFAULT_LENS, getLensEdgeFields, serializeLensSteps } from "@features/graph/config/lenses";
+import { getLensEdgeFields, serializeLensSteps } from "@features/graph/config/lenses";
+import { GENE_EXPLORER_CONFIG } from "@features/graph/config/entities/gene";
 import { notFound } from "next/navigation";
 
 interface GraphExplorerPageProps {
@@ -66,16 +66,18 @@ export default async function GraphExplorerPage({
       }
     : null;
 
-  // Fetch initial subgraph for default lens via /graph/query
-  const defaultLens = GRAPH_LENSES.find((l) => l.id === DEFAULT_LENS)!;
+  // Fetch initial subgraph for default template via /graph/query
+  const defaultTemplate = GENE_EXPLORER_CONFIG.templates.find(
+    (t) => t.id === GENE_EXPLORER_CONFIG.defaultTemplateId
+  )!;
   let initialSubgraph: InitialSubgraphData | null = null;
 
   try {
     const queryResponse = await fetchGraphQuery({
       seeds: [{ type: "Gene", id: geneId }],
-      steps: serializeLensSteps(defaultLens.steps),
-      select: { edgeFields: getLensEdgeFields(defaultLens) },
-      limits: defaultLens.limits,
+      steps: serializeLensSteps(defaultTemplate.steps),
+      select: { edgeFields: getLensEdgeFields(defaultTemplate as Parameters<typeof getLensEdgeFields>[0]) },
+      limits: defaultTemplate.limits,
     });
 
     if (queryResponse?.data?.edges?.length) {
@@ -106,17 +108,14 @@ export default async function GraphExplorerPage({
 
   return (
     <div className="h-full min-h-[600px]">
-      <ExplorerProvider>
-        <GraphExplorerView
-          seedGeneId={geneId}
-          seedGeneSymbol={geneSymbol}
-          schema={schema}
-          stats={stats}
-          initialSubgraph={initialSubgraph}
-          initialLensId={DEFAULT_LENS}
-          className="h-full"
-        />
-      </ExplorerProvider>
+      <GraphExplorer
+        seed={{ type: "Gene", id: geneId, label: geneSymbol }}
+        config={GENE_EXPLORER_CONFIG}
+        initialSubgraph={initialSubgraph}
+        schema={schema}
+        stats={stats}
+        className="h-full"
+      />
     </div>
   );
 }

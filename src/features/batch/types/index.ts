@@ -146,33 +146,8 @@ export interface ValidateResponse {
 }
 
 // ============================================================================
-// Job Creation
+// (Legacy job creation types removed — use CreateCohortRequest with source: "upload")
 // ============================================================================
-
-export interface CreateJobRequest {
-  tenant_id: string;
-  input_uri: string;
-  idempotency_key?: string;
-  format?: InputFormat;
-  key_type?: KeyType;
-  has_header?: boolean;
-  delimiter?: string;
-  key_column?: string;
-  include_not_found?: boolean;
-  max_keys?: number;
-  max_runtime_sec?: number;
-  result_ttl_hours?: number;
-  email?: string | null;
-  org_name?: string | null;
-  metadata?: Record<string, unknown>;
-}
-
-export interface CreateJobResponse {
-  job_id: string;
-  state: JobState;
-  message: string;
-  created_at: string;
-}
 
 // ============================================================================
 // Job Status - Shared Types
@@ -324,14 +299,8 @@ export type Job =
   | JobCancelled;
 
 // ============================================================================
-// Job Cancellation
+// (Legacy CancelResponse removed — use DeleteCohortResponse)
 // ============================================================================
-
-export interface CancelResponse {
-  job_id: string;
-  state: JobState;
-  message: string;
-}
 
 // ============================================================================
 // Output Row (JSONL)
@@ -379,10 +348,17 @@ export interface CohortDetail {
   label: string | null;
   variant_count: number | null;
   progress: CohortProgress | null;
+  is_terminal: boolean;
+  poll: { after_ms: number; message: string } | null;
+  timing: { queued_ms?: number; processing_ms?: number; total_ms: number; total_human: string; rows_per_sec?: number } | null;
+  eta: { seconds: number; human: string } | null;
+  input: { filename: string; bytes: number; bytes_human: string } | null;
+  output: { url: string; bytes: number; bytes_human: string; sha256: string; expires_at: string; expires_in_seconds: number } | null;
   error_code: string | null;
   error_message: string | null;
+  retryable: boolean | null;
+  attempt: number;
   parent_id: string | null;
-  is_terminal: boolean;
   created_at: string;
   updated_at: string;
   started_at: string | null;
@@ -438,9 +414,20 @@ export interface CohortListResponse {
 }
 
 export interface CreateCohortRequest {
-  references: string[];
+  references?: string[];
+  source?: "inline" | "upload";
+  input_uri?: string;
   label?: string;
   idempotency_key?: string;
+  format?: InputFormat;
+  key_type?: KeyType;
+  key_column?: string;
+  has_header?: boolean;
+  delimiter?: string;
+  include_not_found?: boolean;
+  max_keys?: number;
+  max_runtime_sec?: number;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CreateCohortResponse {
@@ -495,4 +482,207 @@ export interface BatchWorkflowState {
   inputUri: string | null;
   validation: ValidateResponse | null;
   error: string | null;
+}
+
+// ============================================================================
+// Cohort → Job Mapper (backward compat for job detail UI)
+// ============================================================================
+
+/**
+ * Map CohortDetail (new API) → Job (legacy discriminated union).
+ * Allows existing UI components to keep consuming the Job type.
+ */
+export function cohortDetailToJob(detail: CohortDetail): Job {
+  // Map cohort status → job state
+  const stateMap: Record<CohortStatus, JobState> = {
+    queued: "PENDING",
+    validating: "RUNNING",
+    running: "RUNNING",
+    materializing: "RUNNING",
+    ready: "COMPLETED",
+    failed: "FAILED",
+    cancelled: "CANCELLED",
+  };
+
+  const state = stateMap[detail.status];
+
+  const defaultPoll: JobPollHint = { after_ms: 10000, message: "Polling..." };
+  const defaultTiming: JobTiming = { total_ms: 0, total_human: "0s" };
+  const defaultInput: JobInput = { filename: detail.label ?? "unknown", bytes: 0, bytes_human: "0 B" };
+
+  const base = {
+    job_id: detail.id,
+    attempt: detail.attempt,
+    created_at: detail.created_at,
+    input: detail.input ?? defaultInput,
+    timing: detail.timing ?? defaultTiming,
+  };
+
+  switch (state) {
+    case "PENDING": {
+      const job: JobPending = {
+        ...base,
+        state: "PENDING",
+        is_terminal: false,
+        can_cancel: true,
+        poll: detail.poll ?? defaultPoll,
+      };
+      return job;
+    }
+
+    case "RUNNING": {
+      const progress: JobProgress = detail.progress
+        ? {
+            stage: (detail.progress.stage as ProcessingStage) ?? "PROCESSING",
+            stage_description: detail.progress.stage ?? "Processing",
+            rows_resolved: detail.progress.rows_resolved,
+            bytes_read: 0,
+            fetched: detail.progress.fetched,
+            found: detail.progress.found,
+            not_found: detail.progress.not_found,
+            errors: detail.progress.errors,
+            total_rows: detail.progress.total_rows,
+            unique_vids: detail.progress.unique_vids,
+            duplicates: detail.progress.duplicates,
+            percent: detail.progress.percent,
+          }
+        : {
+            stage: "PROCESSING" as ProcessingStage,
+            stage_description: "Processing",
+            rows_resolved: 0,
+            bytes_read: 0,
+            fetched: 0,
+            found: 0,
+            not_found: 0,
+            errors: 0,
+          };
+
+      const job: JobRunning = {
+        ...base,
+        state: "RUNNING",
+        is_terminal: false,
+        can_cancel: true,
+        poll: detail.poll ?? defaultPoll,
+        started_at: detail.started_at ?? detail.created_at,
+        progress,
+        eta: detail.eta ?? undefined,
+      };
+      return job;
+    }
+
+    case "COMPLETED": {
+      const progress: JobProgress = detail.progress
+        ? {
+            stage: "DONE" as ProcessingStage,
+            stage_description: "Done",
+            rows_resolved: detail.progress.rows_resolved,
+            bytes_read: 0,
+            fetched: detail.progress.fetched,
+            found: detail.progress.found,
+            not_found: detail.progress.not_found,
+            errors: detail.progress.errors,
+            total_rows: detail.progress.total_rows,
+            unique_vids: detail.progress.unique_vids,
+            duplicates: detail.progress.duplicates,
+            percent: 100,
+          }
+        : {
+            stage: "DONE" as ProcessingStage,
+            stage_description: "Done",
+            rows_resolved: 0,
+            bytes_read: 0,
+            fetched: 0,
+            found: 0,
+            not_found: 0,
+            errors: 0,
+            percent: 100,
+          };
+
+      const output: JobOutput = detail.output
+        ? {
+            url: detail.output.url,
+            manifest_url: "",
+            bytes: detail.output.bytes,
+            bytes_human: detail.output.bytes_human,
+            sha256: detail.output.sha256,
+            expires_at: detail.output.expires_at,
+            expires_in_seconds: detail.output.expires_in_seconds,
+          }
+        : { url: "", manifest_url: "", bytes: 0, bytes_human: "0 B", sha256: "", expires_at: "", expires_in_seconds: 0 };
+
+      const job: JobCompleted = {
+        ...base,
+        state: "COMPLETED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: detail.started_at ?? detail.created_at,
+        completed_at: detail.completed_at ?? detail.updated_at,
+        progress,
+        output,
+      };
+      return job;
+    }
+
+    case "FAILED": {
+      const job: JobFailed = {
+        ...base,
+        state: "FAILED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: detail.started_at ?? undefined,
+        completed_at: detail.completed_at ?? detail.updated_at,
+        progress: detail.progress
+          ? {
+              stage: (detail.progress.stage as ProcessingStage) ?? "DONE",
+              stage_description: detail.progress.stage ?? "Failed",
+              rows_resolved: detail.progress.rows_resolved,
+              bytes_read: 0,
+              fetched: detail.progress.fetched,
+              found: detail.progress.found,
+              not_found: detail.progress.not_found,
+              errors: detail.progress.errors,
+              total_rows: detail.progress.total_rows,
+              unique_vids: detail.progress.unique_vids,
+              duplicates: detail.progress.duplicates,
+              percent: detail.progress.percent,
+            }
+          : undefined,
+        error_code: (detail.error_code as ErrorCode) ?? "INTERNAL_ERROR",
+        error_message: detail.error_message ?? "Unknown error",
+        retryable: detail.retryable ?? false,
+      };
+      return job;
+    }
+
+    case "CANCELLED": {
+      const job: JobCancelled = {
+        ...base,
+        state: "CANCELLED",
+        is_terminal: true,
+        can_cancel: false,
+        started_at: detail.started_at ?? undefined,
+        completed_at: detail.completed_at ?? detail.updated_at,
+        progress: detail.progress
+          ? {
+              stage: (detail.progress.stage as ProcessingStage) ?? "DONE",
+              stage_description: detail.progress.stage ?? "Cancelled",
+              rows_resolved: detail.progress.rows_resolved,
+              bytes_read: 0,
+              fetched: detail.progress.fetched,
+              found: detail.progress.found,
+              not_found: detail.progress.not_found,
+              errors: detail.progress.errors,
+              total_rows: detail.progress.total_rows,
+              unique_vids: detail.progress.unique_vids,
+              duplicates: detail.progress.duplicates,
+              percent: detail.progress.percent,
+            }
+          : undefined,
+      };
+      return job;
+    }
+
+    default:
+      throw new Error(`Unknown cohort status: ${detail.status}`);
+  }
 }
