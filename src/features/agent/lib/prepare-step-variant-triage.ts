@@ -17,6 +17,8 @@ const VARIANT_TRIAGE_TOOLS = [
 ] as const;
 
 const TOOL_CALL_BUDGET = 20;
+const MAX_STEPS = 10; // must match stepCountIs() in variant-triage.ts
+const SYNTHESIS_RESERVE = 2; // reserve last N steps for synthesis
 
 const NO_TEXT_INSTRUCTION =
   "\n\n[SYSTEM] Do NOT output explanatory text. ONLY call tools. When all analysis is done, write a summary with topGenes and topVariants.";
@@ -82,6 +84,12 @@ export function createVariantTriagePrepareStep(): PrepareStepFunction<any> {
       activeTools: [] as string[],
       system: SYNTHESIS_INSTRUCTION + (extraSystem ?? ""),
     });
+
+    // Reserve last steps for synthesis — the agent MUST write a summary
+    // before stepCountIs() kills the loop
+    if (stepNumber >= MAX_STEPS - SYNTHESIS_RESERVE) {
+      return synthesize();
+    }
 
     // Tool call budget
     if (countToolCalls(stepsData) >= TOOL_CALL_BUDGET) {

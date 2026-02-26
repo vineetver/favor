@@ -16,16 +16,16 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
     id: z.string().describe("Source entity ID (e.g., 'MONDO_0007254')"),
     edgeType: z
       .string()
-      .describe("Edge type to traverse (e.g., 'ASSOCIATED_WITH_DISEASE'). Must exist in the Edge Catalog."),
+      .describe("Edge type to traverse (e.g., 'GENE_ASSOCIATED_WITH_DISEASE'). Must exist in the schema."),
     direction: z
       .enum(["in", "out", "both"])
       .optional()
-      .describe("Edge direction. Auto-inferred from schema when omitted. Override only for self-edges (e.g., INTERACTS_WITH)."),
+      .describe("Edge direction. Auto-inferred from schema when omitted. Override only for self-edges (e.g., GENE_INTERACTS_WITH_GENE)."),
     limit: z.number().optional().default(20).describe("Max neighbors to return"),
     scoreField: z
       .string()
       .optional()
-      .describe("NUMERIC field to rank by (e.g., 'overall_score'). Auto-defaults to the edge type's default score field when omitted. NEVER use a 'filter:' field here."),
+      .describe("NUMERIC field to rank by (e.g., 'ot_score'). Auto-defaults to the edge type's default score field when omitted. NEVER use a 'filter:' field here."),
     expandOntology: z
       .boolean()
       .optional()
@@ -43,6 +43,7 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
     try {
       const data = await agentFetch<{
         data: {
+          textSummary?: string;
           neighbors: Array<{
             entity: { type: string; id: string; label: string };
             rank: number;
@@ -50,20 +51,27 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
             explanation?: string;
           }>;
         };
+        meta: {
+          resolved?: {
+            direction?: string;
+            scoreField?: string;
+            edgeSchema?: { fromType: string; toType: string };
+          };
+        };
       }>("/graph/ranked-neighbors", {
         method: "POST",
         body: {
           seed: { type, id },
           edgeType,
           ...(direction ? { direction } : {}),
-          limit: Math.min(limit ?? 20, 50),
+          limit: Math.min(limit ?? 20, 100),
           ...(scoreField ? { scoreField } : {}),
           expandDescendants: expandOntology,
         },
       });
 
       const raw = data.data?.neighbors ?? [];
-      const neighbors = raw.slice(0, 20).map((n) => ({
+      const neighbors = raw.slice(0, 50).map((n) => ({
         entity: n.entity,
         rank: n.rank,
         score: n.score,
@@ -84,8 +92,9 @@ Direction and scoreField are auto-inferred by the server. Omit them unless overr
       }
 
       return {
-        scoreField: scoreField ?? "(auto-resolved by server)",
-        scoreMeaning: "Aggregated score across all edges between the seed and each neighbor. Higher = stronger association.",
+        textSummary: data.data.textSummary,
+        resolved: data.meta?.resolved ?? {},
+        scoreField: data.meta?.resolved?.scoreField ?? scoreField ?? "(unknown)",
         totalReturned: neighbors.length,
         neighbors,
       };

@@ -17,6 +17,7 @@ interface RawEdgeSchema {
   toType: string;
   label?: string;
   defaultScoreField?: string;
+  scoreFields?: string[];
 }
 
 interface RawSchemaResponse {
@@ -32,6 +33,7 @@ interface CompactEdge {
   from: string;
   to: string;
   defaultScore?: string;
+  scoreFields?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +93,7 @@ export const getGraphSchema = tool({
         from: e.fromType,
         to: e.toType,
         ...(e.defaultScoreField ? { defaultScore: e.defaultScoreField } : {}),
+        ...(e.scoreFields?.length ? { scoreFields: e.scoreFields } : {}),
       }));
 
       if (nodeType && compactEdges.length === 0) {

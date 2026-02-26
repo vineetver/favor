@@ -37,12 +37,13 @@ export const compareEntities = tool({
   execute: async ({ entities }) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await agentFetch<{ data: any }>("/graph/compare", {
+      const data = await agentFetch<{ data: any; meta?: any }>("/graph/compare", {
         method: "POST",
         body: { entities },
       });
 
       const result = data.data;
+      const textSummary = result.textSummary as string | undefined;
 
       // Build per-edge-type comparison with raw counts + sample labels
       const comparisons: Record<
@@ -89,6 +90,7 @@ export const compareEntities = tool({
       }
 
       return {
+        textSummary,
         entities: result.entities,
         overallSimilarity: result.overallSimilarity,
         comparisons,

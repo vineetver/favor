@@ -63,12 +63,28 @@ export function isDiminishingReturns(steps: StepData[]): boolean {
   });
 }
 
-export type StuckReason = "all-errors" | "loop" | "diminishing-returns" | null;
+/** Tool name repetition: same tool called 3+ times across all steps */
+export function detectToolRepetition(steps: StepData[]): boolean {
+  const toolCounts = new Map<string, number>();
+  for (const step of steps) {
+    for (const tc of step.toolCalls ?? []) {
+      toolCounts.set(tc.toolName, (toolCounts.get(tc.toolName) ?? 0) + 1);
+    }
+  }
+  // If any single tool was called 3+ times, the model is likely stuck
+  for (const count of toolCounts.values()) {
+    if (count >= 3) return true;
+  }
+  return false;
+}
+
+export type StuckReason = "all-errors" | "loop" | "diminishing-returns" | "tool-repetition" | null;
 
 export function detectStuck(steps: StepData[]): StuckReason {
   if (isAllErrors(steps)) return "all-errors";
   if (detectLoop(steps)) return "loop";
   if (isDiminishingReturns(steps)) return "diminishing-returns";
+  if (detectToolRepetition(steps)) return "tool-repetition";
   return null;
 }
 

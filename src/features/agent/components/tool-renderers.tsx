@@ -1,6 +1,11 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Badge } from "@shared/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -9,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
+import { cn } from "@infra/utils";
 import type {
   CompressedSearchResult,
   CompressedNeighbor,
@@ -17,12 +23,12 @@ import type {
   CompressedGeneStats,
   CompressedPath,
   CompressedCohort,
-  ReportPlanOutput,
-  SubagentOutput,
   AgentPlan,
   PlanStep,
   VariantTriageOutput,
   BioContextOutput,
+  SubagentToolTrace,
+  EvidenceRef,
 } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -383,126 +389,14 @@ function normToolName(name: string): string {
   return name.toLowerCase().replace(/[_\-\s]/g, "");
 }
 
-/** Check if a normalized plan tool name matches a normalized actual tool name.
- *  First tries exact match, then substring containment as fallback
- *  (handles LLM writing "shared_neighbors" for "getSharedNeighbors"). */
+/** Check if a normalized plan tool name matches a normalized actual tool name. */
 function toolNameMatches(planTool: string, actualTool: string): boolean {
   const a = normToolName(planTool);
   const b = normToolName(actualTool);
   return a === b || b.includes(a) || a.includes(b);
 }
 
-const DONE_STATES = new Set(["output-available", "output-error"]);
 const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
-
-function getPlanItemStatusByName(
-  item: { tools: string[] },
-  siblingToolParts: ToolUIPart[],
-): PlanItemStatus | null {
-  if (item.tools.length === 0) return null;
-
-  const matchingParts = siblingToolParts.filter((p) => {
-    const name = p.toolName ?? (p.type ?? "").replace(/^tool-/, "");
-    return item.tools.some((t) => toolNameMatches(t, name));
-  });
-
-  if (matchingParts.length === 0) return null; // no match — caller uses fallback
-
-  const hasSuccess = matchingParts.some(
-    (p) => p.state === "output-available",
-  );
-  const hasError = matchingParts.some((p) => p.state === "output-error");
-  const hasRunning = matchingParts.some((p) =>
-    RUNNING_STATES.has(p.state ?? ""),
-  );
-
-  // Any successful result means the step is progressing/done
-  if (hasSuccess) return "completed";
-
-  // Still running — regardless of partial errors
-  if (hasRunning) return "in-progress";
-
-  // ALL finished, but ONLY errors (no successes) → errored
-  if (hasError && !hasSuccess) return "errored";
-
-  return "pending";
-}
-
-/**
- * Compute plan item statuses.
- *
- * Tool items: primary strategy is tool-name matching against sibling tool
- * parts.  Fallback: positional progress when names don't match.
- *
- * Synthesis item (tools: []): derives its status from the *other* plan
- * items rather than raw tool-part counts.  This avoids false "completed"
- * between tool batches (brief windows where all *issued* tool parts are
- * done but the agent is about to issue more).
- *
- * @param isStreaming - whether the assistant message is still streaming
- */
-function computePlanStatuses(
-  items: Array<{ tools: string[] }>,
-  siblingToolParts: ToolUIPart[],
-  isStreaming: boolean,
-): PlanItemStatus[] {
-  const completedCount = siblingToolParts.filter((p) =>
-    DONE_STATES.has(p.state ?? ""),
-  ).length;
-  const activeCount = siblingToolParts.filter((p) =>
-    RUNNING_STATES.has(p.state ?? ""),
-  ).length;
-
-  // Try tool-name matching first
-  const nameStatuses = items.map((item) =>
-    getPlanItemStatusByName(item, siblingToolParts),
-  );
-
-  // Check if name matching produced any non-null results for tool items
-  const toolItems = items.filter((item) => item.tools.length > 0);
-  const hasAnyNameMatch = nameStatuses.some(
-    (s, i) => items[i].tools.length > 0 && s !== null,
-  );
-
-  // --- Compute tool-item statuses first (needed for synthesis) -----------
-  const toolItemStatuses: PlanItemStatus[] = items.map((item, i) => {
-    if (item.tools.length === 0) return "pending"; // placeholder, overridden below
-
-    if (nameStatuses[i] !== null) return nameStatuses[i]!;
-    if (hasAnyNameMatch) return "pending";
-
-    // Fallback: positional progress — no name matches at all
-    const toolIndex = toolItems.indexOf(item);
-    const threshold = (toolIndex + 1) / toolItems.length;
-    const totalCount = siblingToolParts.length;
-    const ratio = completedCount / Math.max(totalCount, 1);
-
-    if (ratio >= threshold) return "completed";
-    if (activeCount > 0 && ratio >= toolIndex / toolItems.length)
-      return "in-progress";
-    if (completedCount > 0 && toolIndex === 0) return "in-progress";
-    return "pending";
-  });
-
-  // --- Synthesis items derive status from sibling plan items -------------
-  const allToolItemsDone = items.every(
-    (item, i) =>
-      item.tools.length === 0 ||
-      toolItemStatuses[i] === "completed" ||
-      toolItemStatuses[i] === "errored",
-  );
-
-  return items.map((item, i) => {
-    if (item.tools.length === 0) {
-      // Synthesis: only progresses once ALL tool-bearing plan items finish.
-      // "completed" only when streaming is done (the full response ended).
-      if (allToolItemsDone && !isStreaming) return "completed";
-      if (allToolItemsDone && isStreaming) return "in-progress";
-      return "pending";
-    }
-    return toolItemStatuses[i];
-  });
-}
 
 const QUERY_TYPE_LABELS: Record<string, string> = {
   entity_lookup: "Entity Lookup",
@@ -516,17 +410,17 @@ const QUERY_TYPE_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// New plan format helpers
+// Plan format helpers
 // ---------------------------------------------------------------------------
 
-/** Map new PlanStep to the tool name it corresponds to */
+/** Map PlanStep to the tool name it corresponds to */
 function planStepToToolName(step: PlanStep): string | null {
   if (step.do === "resolve") return "searchEntities";
   if (step.do === "delegate") return step.agent;
   return null;
 }
 
-/** Get display label for a new-format plan step */
+/** Get display label for a plan step */
 function getPlanStepLabel(step: PlanStep): string {
   if (step.do === "resolve") {
     return `Resolve entities: ${step.entities.join(", ")}`;
@@ -545,16 +439,8 @@ const AGENT_BADGES: Record<string, string> = {
   bioContext: "Graph",
 };
 
-/** Check if a plan output is the new AgentPlan format */
-function isNewPlanFormat(plan: unknown): plan is AgentPlan {
-  if (!plan || typeof plan !== "object") return false;
-  const p = plan as Record<string, unknown>;
-  return Array.isArray(p.steps) && p.steps.length > 0 &&
-    typeof (p.steps as Array<Record<string, unknown>>)[0]?.do === "string";
-}
-
-/** Compute statuses for new-format plan steps */
-function computeNewPlanStatuses(
+/** Compute statuses for plan steps */
+function computePlanStatuses(
   steps: PlanStep[],
   siblingToolParts: ToolUIPart[],
   isStreaming: boolean,
@@ -580,7 +466,6 @@ function computeNewPlanStatuses(
     return getToolPartStatus(toolName);
   });
 
-  // Synthesize step: completed when all others are done and streaming ended
   return steps.map((step, i) => {
     if (step.do === "synthesize") {
       const allOthersDone = steps.every((s, j) => {
@@ -640,49 +525,11 @@ export function PlanRenderer({
   siblingToolParts,
   isStreaming = true,
 }: {
-  plan: ReportPlanOutput | AgentPlan;
+  plan: AgentPlan;
   siblingToolParts: ToolUIPart[];
   isStreaming?: boolean;
 }) {
-  const queryType = plan.queryType;
-
-  // Detect plan format and render accordingly
-  if (isNewPlanFormat(plan)) {
-    const statuses = computeNewPlanStatuses(plan.steps, siblingToolParts, isStreaming);
-    return (
-      <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
-        <div className="flex items-center gap-2">
-          <svg className="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" />
-          </svg>
-          <span className="text-sm font-medium text-foreground">Analysis Plan</span>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            {QUERY_TYPE_LABELS[queryType] ?? queryType}
-          </Badge>
-        </div>
-        <div className="space-y-1">
-          {plan.steps.map((step, idx) => {
-            const status = statuses[idx];
-            const label = getPlanStepLabel(step);
-            const agentBadge = step.do === "delegate" ? AGENT_BADGES[step.agent] : null;
-            return (
-              <div key={`${step.do}-${idx}`} className="flex items-center gap-2 text-sm">
-                <StatusIcon status={status} />
-                {agentBadge && (
-                  <Badge variant="secondary" className="text-[9px] px-1 py-0">{agentBadge}</Badge>
-                )}
-                <span className={statusTextClass(status)}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // Old format (ReportPlanOutput with plan[].tools)
-  const oldPlan = plan as ReportPlanOutput;
-  const statuses = computePlanStatuses(oldPlan.plan, siblingToolParts, isStreaming);
+  const statuses = computePlanStatuses(plan.steps, siblingToolParts, isStreaming);
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
       <div className="flex items-center gap-2">
@@ -691,16 +538,21 @@ export function PlanRenderer({
         </svg>
         <span className="text-sm font-medium text-foreground">Analysis Plan</span>
         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-          {QUERY_TYPE_LABELS[queryType] ?? queryType}
+          {QUERY_TYPE_LABELS[plan.queryType] ?? plan.queryType}
         </Badge>
       </div>
       <div className="space-y-1">
-        {oldPlan.plan.map((item, idx) => {
+        {plan.steps.map((step, idx) => {
           const status = statuses[idx];
+          const label = getPlanStepLabel(step);
+          const agentBadge = step.do === "delegate" ? AGENT_BADGES[step.agent] : null;
           return (
-            <div key={item.id} className="flex items-center gap-2 text-sm">
+            <div key={`${step.do}-${idx}`} className="flex items-center gap-2 text-sm">
               <StatusIcon status={status} />
-              <span className={statusTextClass(status)}>{item.label}</span>
+              {agentBadge && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0">{agentBadge}</Badge>
+              )}
+              <span className={statusTextClass(status)}>{label}</span>
             </div>
           );
         })}
@@ -710,44 +562,460 @@ export function PlanRenderer({
 }
 
 // ---------------------------------------------------------------------------
+// Subagent Tool Trace Timeline
+// ---------------------------------------------------------------------------
+
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  analyzeCohort: "Analyze Cohort",
+  createCohort: "Create Cohort",
+  getCohortSchema: "Cohort Schema",
+  lookupVariant: "Lookup Variant",
+  getGeneVariantStats: "Gene Stats",
+  getGwasAssociations: "GWAS Lookup",
+  variantBatchSummary: "Batch Summary",
+  searchEntities: "Search",
+  getEntityContext: "Entity Context",
+  getRankedNeighbors: "Ranked Neighbors",
+  findPaths: "Find Paths",
+  getSharedNeighbors: "Shared Neighbors",
+  getConnections: "Connections",
+  getEdgeDetail: "Edge Detail",
+  graphTraverse: "Graph Traverse",
+  compareEntities: "Compare",
+  runEnrichment: "Enrichment",
+  getGraphSchema: "Graph Schema",
+};
+
+function TraceStatusDot({ status }: { status: "completed" | "error" }) {
+  if (status === "completed") {
+    return (
+      <svg className="size-3 shrink-0 text-emerald-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="size-3 shrink-0 text-destructive" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Trace item detail views
+// ---------------------------------------------------------------------------
+
+/** Render tool input as clean key-value pairs or formatted JSON */
+function TraceInputDisplay({ input }: { input: Record<string, unknown> }) {
+  const entries = Object.entries(input);
+  if (entries.length === 0) return null;
+
+  const isSimple = entries.every(
+    ([, v]) => typeof v === "string" || typeof v === "number" || typeof v === "boolean",
+  );
+
+  if (isSimple && entries.length <= 6) {
+    return (
+      <div className="space-y-0.5">
+        {entries.map(([key, val]) => (
+          <div key={key} className="flex items-baseline gap-2 text-[11px]">
+            <span className="font-mono text-muted-foreground/70 shrink-0 min-w-[100px]">{key}</span>
+            <span className="text-foreground font-mono break-all">{String(val)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <pre className="text-[11px] text-foreground/90 font-mono whitespace-pre-wrap break-all overflow-auto max-h-48 leading-relaxed">
+      {JSON.stringify(input, null, 2)}
+    </pre>
+  );
+}
+
+/** Render tool output: errors get red treatment, success uses specialized renderers */
+function TraceOutputDisplay({
+  toolName,
+  output,
+  status,
+}: {
+  toolName: string;
+  output: unknown;
+  status: "completed" | "error";
+}) {
+  if (status === "error" && output && typeof output === "object") {
+    const err = output as Record<string, unknown>;
+    const errorObj = err.error as Record<string, unknown> | undefined;
+    const code = String(errorObj?.code ?? err.code ?? "");
+    const message = String(errorObj?.message ?? err.message ?? "Unknown error");
+
+    return (
+      <div className="rounded-md bg-destructive/5 border border-destructive/15 px-3 py-2 space-y-1">
+        {code && (
+          <span className="inline-block font-mono text-[10px] font-semibold text-destructive/80 bg-destructive/10 rounded px-1.5 py-0.5">
+            {String(code)}
+          </span>
+        )}
+        <p className="text-[11px] text-destructive/90 leading-relaxed break-words">
+          {String(message).slice(0, 500)}
+        </p>
+      </div>
+    );
+  }
+
+  if (!output || typeof output !== "object") {
+    return output != null ? (
+      <span className="text-[11px] text-muted-foreground font-mono">{String(output)}</span>
+    ) : null;
+  }
+
+  // Try specialized renderer for known tool outputs
+  const rendered = renderToolOutput(toolName, output);
+  if (rendered) {
+    return <div className="max-h-64 overflow-auto">{rendered}</div>;
+  }
+
+  // Fallback: formatted JSON
+  const json = JSON.stringify(output, null, 2);
+  return (
+    <pre className="text-[11px] text-foreground/90 font-mono whitespace-pre-wrap break-all overflow-auto max-h-48 leading-relaxed">
+      {json.length > 2000 ? json.slice(0, 2000) + "\n..." : json}
+    </pre>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Expandable Trace Timeline
+// ---------------------------------------------------------------------------
+
+function SubagentTraceTimeline({ traces }: { traces: SubagentToolTrace[] }) {
+  const errorCount = traces.filter((t) => t.status === "error").length;
+  const successCount = traces.length - errorCount;
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b border-border/60">
+        <svg className="size-3.5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="6" height="16" x="4" y="2" rx="2" /><rect width="6" height="9" x="14" y="9" rx="2" /><path d="M22 22H2" />
+        </svg>
+        <span className="text-[11px] font-semibold text-foreground">
+          Tool Calls
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {traces.length} total
+        </span>
+        {successCount > 0 && (
+          <span className="text-[10px] text-emerald-600">{successCount} passed</span>
+        )}
+        {errorCount > 0 && (
+          <span className="text-[10px] text-destructive">{errorCount} failed</span>
+        )}
+      </div>
+
+      {/* Trace items */}
+      <div className="divide-y divide-border/40">
+        {traces.map((t, i) => {
+          const hasDetail = t.input || t.output;
+          const displayName = TOOL_DISPLAY_NAMES[t.toolName] ?? t.toolName;
+
+          if (!hasDetail) {
+            // Non-expandable compact row (no detail data available)
+            return (
+              <div
+                key={`${t.toolName}-${i}`}
+                className="flex items-center gap-2 px-3 py-1.5 text-[11px] min-w-0"
+              >
+                <TraceStatusDot status={t.status} />
+                <span className="font-medium text-foreground shrink-0">{displayName}</span>
+                <span className="text-muted-foreground truncate" title={t.inputSummary}>
+                  {t.inputSummary}
+                </span>
+                {t.outputSummary && (
+                  <>
+                    <span className="text-muted-foreground/40 shrink-0">&rarr;</span>
+                    <span
+                      className={cn(
+                        "truncate",
+                        t.status === "error" ? "text-destructive/80" : "text-muted-foreground",
+                      )}
+                      title={t.outputSummary}
+                    >
+                      {t.outputSummary.slice(0, 80)}
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <TraceExpandableItem key={`${t.toolName}-${i}`} trace={t} displayName={displayName} />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** A single expandable trace item — errors auto-expand */
+function TraceExpandableItem({
+  trace,
+  displayName,
+}: {
+  trace: SubagentToolTrace;
+  displayName: string;
+}) {
+  const [open, setOpen] = useState(trace.status === "error");
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="group/trace flex w-full items-center gap-2 px-3 py-1.5 text-[11px] min-w-0 transition-colors hover:bg-accent/30">
+        <TraceStatusDot status={trace.status} />
+        <span className="font-medium text-foreground shrink-0">{displayName}</span>
+        <span className="text-muted-foreground truncate" title={trace.inputSummary}>
+          {trace.inputSummary}
+        </span>
+        {trace.outputSummary && (
+          <>
+            <span className="text-muted-foreground/40 shrink-0">&rarr;</span>
+            <span
+              className={cn(
+                "truncate flex-1 text-left",
+                trace.status === "error" ? "text-destructive/80" : "text-muted-foreground",
+              )}
+              title={trace.outputSummary}
+            >
+              {trace.outputSummary.slice(0, 80)}
+            </span>
+          </>
+        )}
+        <svg
+          className="size-3 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/trace:rotate-180"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent>
+        <div className="px-3 pb-2.5 pt-1 ml-5 space-y-2.5">
+          {/* Input section */}
+          {trace.input && Object.keys(trace.input).length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                Input
+              </span>
+              <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-2">
+                <TraceInputDisplay input={trace.input} />
+              </div>
+            </div>
+          )}
+
+          {/* Output section */}
+          {trace.output != null && (
+            <div className="space-y-1">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                Output
+              </span>
+              <div className={cn(
+                "rounded-md border px-2.5 py-2",
+                trace.status === "error"
+                  ? "bg-destructive/[0.02] border-destructive/10"
+                  : "bg-muted/40 border-border/50",
+              )}>
+                <TraceOutputDisplay
+                  toolName={trace.toolName}
+                  output={trace.output}
+                  status={trace.status}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Subagent Renderer
 // ---------------------------------------------------------------------------
 
-export function SubagentRenderer({ data }: { data: SubagentOutput | VariantTriageOutput | BioContextOutput }) {
+const AGENT_TYPE_LABELS: Record<string, string> = {
+  variantTriage: "Cohort Analysis",
+  bioContext: "Knowledge Graph",
+};
+
+const AGENT_ICONS: Record<string, ReactNode> = {
+  variantTriage: (
+    <svg className="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 15c6.667-6 13.333 0 20-6" /><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993" /><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993" /><path d="m17 6-2.5-2.5" /><path d="m14 8-1-1" /><path d="m7 18 2.5 2.5" /><path d="m3.5 14.5.5.5" /><path d="m10 16 1 1" />
+    </svg>
+  ),
+  bioContext: (
+    <svg className="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" /><path d="M3.34 17a10 10 0 0 1 0-10" /><path d="M20.66 17a10 10 0 0 0 0-10" /><path d="M7.5 4.21a10 10 0 0 1 9 0" /><path d="M7.5 19.79a10 10 0 0 0 9 0" />
+    </svg>
+  ),
+};
+
+/** Compact count of evidence refs grouped by source */
+function EvidenceRefsSummary({ refs }: { refs: EvidenceRef[] }) {
+  const grouped = refs.reduce<Record<string, number>>((acc, r) => {
+    acc[r.source] = (acc[r.source] ?? 0) + 1;
+    return acc;
+  }, {});
+  const entries = Object.entries(grouped);
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-        <span>{data.stepsUsed} steps</span>
-        <span>{data.toolCallsMade} tool calls</span>
-        {data.toolsUsed.length > 0 && (
-          <span>Tools: {data.toolsUsed.join(", ")}</span>
+    <Collapsible>
+      <CollapsibleTrigger className="group/ev flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+        <svg className="size-3 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" />
+        </svg>
+        <span className="font-medium">{refs.length} data source{refs.length !== 1 ? "s" : ""}</span>
+        <svg
+          className="size-2.5 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/ev:rotate-180"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {entries.map(([source, count]) => (
+            <span
+              key={source}
+              className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground"
+            >
+              {TOOL_DISPLAY_NAMES[source] ?? source}
+              {count > 1 && <span className="text-muted-foreground/60">&times;{count}</span>}
+            </span>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+export function SubagentRenderer({
+  data,
+  agentType,
+}: {
+  data: VariantTriageOutput | BioContextOutput;
+  agentType?: "variantTriage" | "bioContext";
+}) {
+  const traces = "toolTrace" in data ? (data as VariantTriageOutput | BioContextOutput).toolTrace : undefined;
+  const evidenceRefs = "evidenceRefs" in data ? (data as VariantTriageOutput | BioContextOutput).evidenceRefs : undefined;
+
+  return (
+    <div className="space-y-3">
+      {/* Header: agent type + stats */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {agentType && (
+          <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/8 border border-primary/15 px-2 py-0.5">
+            <span className="text-primary">
+              {AGENT_ICONS[agentType] ?? null}
+            </span>
+            <span className="text-[11px] font-semibold text-primary">
+              {AGENT_TYPE_LABELS[agentType] ?? agentType}
+            </span>
+          </div>
         )}
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span>{data.stepsUsed} step{data.stepsUsed !== 1 ? "s" : ""}</span>
+          <span className="text-border">&middot;</span>
+          <span>{data.toolCallsMade} tool call{data.toolCallsMade !== 1 ? "s" : ""}</span>
+          <span className="text-border">&middot;</span>
+          <span>{data.toolsUsed.length} tool{data.toolsUsed.length !== 1 ? "s" : ""} used</span>
+        </div>
       </div>
-      {/* Show structured data from specialists */}
-      {"topGenes" in data && data.topGenes && data.topGenes.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Top genes:</span>
-          {data.topGenes.slice(0, 5).map((g) => (
-            <Badge key={g.symbol} variant="secondary" className="text-[10px] px-1.5 py-0">
-              {g.symbol}{g.variantCount != null && ` (${g.variantCount})`}
-            </Badge>
-          ))}
+
+      {/* Tool trace timeline (expandable items) */}
+      {traces && traces.length > 0 ? (
+        <SubagentTraceTimeline traces={traces} />
+      ) : data.toolsUsed.length > 0 ? (
+        <div className="text-xs text-muted-foreground">
+          {data.toolCallsMade} tool calls: {data.toolsUsed.join(", ")}
         </div>
-      )}
-      {"entities" in data && data.entities && data.entities.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Entities:</span>
-          {data.entities.slice(0, 5).map((e) => (
-            <Badge key={e.id} variant="secondary" className="text-[10px] px-1.5 py-0">
-              {e.label}
-            </Badge>
-          ))}
-        </div>
-      )}
+      ) : null}
+
+      {/* Structured highlights */}
+      {("topGenes" in data && data.topGenes && data.topGenes.length > 0) ||
+       ("entities" in data && data.entities && data.entities.length > 0) ||
+       ("pathways" in data && data.pathways && data.pathways.length > 0)
+        ? (
+          <div className="space-y-1.5">
+            {"topGenes" in data && data.topGenes && data.topGenes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Top genes
+                </span>
+                {data.topGenes.slice(0, 8).map((g) => (
+                  <Badge key={g.symbol} variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                    {g.symbol}
+                    {g.variantCount != null && (
+                      <span className="ml-1 text-muted-foreground/60">{g.variantCount}</span>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {"entities" in data && data.entities && data.entities.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Entities
+                </span>
+                {data.entities.slice(0, 8).map((e) => (
+                  <Badge key={e.id} variant="secondary" className="text-[10px] px-1.5 py-0">
+                    <span className="text-muted-foreground/60 mr-1">{e.type}</span>
+                    {e.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {"pathways" in data && data.pathways && data.pathways.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Pathways
+                </span>
+                {data.pathways.slice(0, 8).map((p) => (
+                  <Badge key={p.id} variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {p.label}
+                    {p.pValue != null && (
+                      <span className="ml-1 text-muted-foreground/60">p={fmt(p.pValue)}</span>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+      {/* Summary text */}
       {data.summary && (
-        <p className="text-sm text-foreground whitespace-pre-wrap">
+        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
           {data.summary}
         </p>
+      )}
+
+      {/* Evidence refs */}
+      {evidenceRefs && evidenceRefs.length > 0 && (
+        <EvidenceRefsSummary refs={evidenceRefs} />
       )}
     </div>
   );
@@ -815,20 +1083,17 @@ export function renderToolOutput(
       if (d.cohortId) return <CohortRenderer data={d} />;
       return null;
     }
-    case "reportPlan":
     case "planQuery":
       // Handled specially in chat-page.tsx as a standalone PlanRenderer
       return null;
-    case "variantTriage":
-    case "variantAnalyzer": {
-      const d = output as VariantTriageOutput | SubagentOutput;
-      if (d.summary) return <SubagentRenderer data={d} />;
+    case "variantTriage": {
+      const d = output as VariantTriageOutput;
+      if (d.summary) return <SubagentRenderer data={d} agentType="variantTriage" />;
       return null;
     }
-    case "bioContext":
-    case "graphExplorer": {
-      const d = output as BioContextOutput | SubagentOutput;
-      if (d.summary) return <SubagentRenderer data={d} />;
+    case "bioContext": {
+      const d = output as BioContextOutput;
+      if (d.summary) return <SubagentRenderer data={d} agentType="bioContext" />;
       return null;
     }
     default:
@@ -944,11 +1209,6 @@ export function getToolInputSummary(
         ? `Summarizing ${variants.length} variants`
         : "Summarizing variant batch";
     }
-    case "reportPlan": {
-      const qt = inp.queryType as string | undefined;
-      const label = qt ? QUERY_TYPE_LABELS[qt] ?? qt : "query";
-      return `Planning: ${label}`;
-    }
     case "planQuery": {
       const uq = inp.userQuery as string | undefined;
       return uq
@@ -963,15 +1223,13 @@ export function getToolInputSummary(
       const cid = inp.cohortId as string | undefined;
       return cid ? `Getting schema for cohort ${cid}` : "Getting cohort schema";
     }
-    case "variantTriage":
-    case "variantAnalyzer": {
+    case "variantTriage": {
       const task = inp.task as string | undefined;
       return task
         ? `Analyzing: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
         : "Analyzing variants";
     }
-    case "bioContext":
-    case "graphExplorer": {
+    case "bioContext": {
       const task = inp.task as string | undefined;
       return task
         ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`

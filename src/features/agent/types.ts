@@ -109,24 +109,6 @@ export type QueryType =
   | "drug_discovery"
   | "general";
 
-export interface PlanItem {
-  id: string;
-  label: string;
-  tools: string[];
-}
-
-export interface ReportPlanOutput {
-  queryType: QueryType;
-  plan: PlanItem[];
-}
-
-export interface SubagentOutput {
-  summary: string;
-  stepsUsed: number;
-  toolCallsMade: number;
-  toolsUsed: string[];
-}
-
 // ---------------------------------------------------------------------------
 // Specialist structured outputs
 // ---------------------------------------------------------------------------
@@ -137,6 +119,17 @@ export interface EvidenceRef {
   query: Record<string, unknown>;  // params used
 }
 
+export interface SubagentToolTrace {
+  toolName: string;
+  inputSummary: string;
+  status: "completed" | "error";
+  outputSummary?: string;
+  /** Full tool arguments for provenance display */
+  input?: Record<string, unknown>;
+  /** Condensed tool output (arrays capped at 10 items) */
+  output?: unknown;
+}
+
 export interface VariantTriageOutput {
   summary: string;
   topGenes?: Array<{ symbol: string; ensemblId?: string; variantCount?: number }>;
@@ -144,6 +137,7 @@ export interface VariantTriageOutput {
   cohortId?: string;
   derivedCohortId?: string;
   evidenceRefs: EvidenceRef[];
+  toolTrace?: SubagentToolTrace[];
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
@@ -155,6 +149,7 @@ export interface BioContextOutput {
   relationships?: Array<{ from: string; to: string; edgeType: string; score?: number }>;
   pathways?: Array<{ id: string; label: string; pValue?: number }>;
   evidenceRefs: EvidenceRef[];
+  toolTrace?: SubagentToolTrace[];
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
@@ -173,8 +168,8 @@ export interface PlanStepDelegate {
   do: "delegate";
   agent: "variantTriage" | "bioContext";
   task: string;
-  cohortId?: string;
-  geneSymbol?: string;
+  cohortId?: string | null;
+  geneSymbol?: string | null;
 }
 
 export interface PlanStepSynthesize {

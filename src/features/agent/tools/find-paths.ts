@@ -28,7 +28,7 @@ Use 'Type:ID' format (e.g., 'Gene:ENSG00000012048'). Optionally filter by edge t
     edgeTypes: z
       .string()
       .optional()
-      .describe("Comma-separated edge types to filter (e.g., 'ASSOCIATED_WITH_DISEASE,TARGETS')"),
+      .describe("Comma-separated edge types to filter (e.g., 'GENE_ASSOCIATED_WITH_DISEASE,DRUG_ACTS_ON_GENE')"),
   }),
   execute: async ({ from, to, maxHops, limit, edgeTypes }): Promise<CompressedPath[] | { error: boolean; message: string }> => {
     try {

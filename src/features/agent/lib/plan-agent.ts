@@ -12,8 +12,8 @@ const PlanStepSchema = z.discriminatedUnion("do", [
     do: z.literal("delegate"),
     agent: z.enum(["variantTriage", "bioContext"]),
     task: z.string().describe("Natural language task for the specialist"),
-    cohortId: z.string().optional().describe("Cohort ID if applicable"),
-    geneSymbol: z.string().optional().describe("Gene symbol if applicable"),
+    cohortId: z.string().nullable().describe("Cohort ID if applicable, null if not"),
+    geneSymbol: z.string().nullable().describe("Gene symbol if applicable, null if not"),
   }),
   z.object({
     do: z.literal("synthesize"),
@@ -47,7 +47,14 @@ RULES:
 - For drug discovery, resolve the target gene/disease, then delegate to bioContext.
 - Always end with "synthesize".
 - 2-6 steps total.
-- The "task" field in delegate steps should be a clear, specific instruction for the specialist.`;
+- CRITICAL: The "task" field in delegate steps must be a GRAPH QUERY INSTRUCTION, not a biology essay.
+  GOOD: "Find the top genes associated with Alzheimer's disease and run pathway enrichment on them"
+  GOOD: "Get metformin's gene targets and find which overlap with type 2 diabetes risk genes"
+  BAD: "Provide an overview of metformin targets (AMPK pathway including PRKAA1/PRKAA2, OCT1/SLC22A1, complex I subunits NDUFS1-8...)"
+  BAD: "Analyze BRCA1 role in homologous recombination repair via RAD51, PALB2, BRIP1..."
+- NEVER embed specific gene names, pathway names, or biological mechanisms in the task description.
+  The specialist must discover these by querying the graph — not from the planner's training data.
+- Keep task descriptions under 50 words. Describe WHAT to find, not what you already know.`;
 
 export async function runPlanAgent(userMessage: string): Promise<AgentPlan> {
   const { object } = await generateObject({

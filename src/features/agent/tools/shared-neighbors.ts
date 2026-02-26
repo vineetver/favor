@@ -17,7 +17,7 @@ export const getSharedNeighbors = tool({
       .describe("Entities to find shared neighbors for"),
     edgeType: z
       .string()
-      .describe("Edge type to traverse (e.g., 'PARTICIPATES_IN')"),
+      .describe("Edge type to traverse (e.g., 'GENE_PARTICIPATES_IN_PATHWAY')"),
     direction: z
       .enum(["in", "out"])
       .optional()

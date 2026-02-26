@@ -2,25 +2,56 @@ import { tool } from "ai";
 import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
+// Properties that are too large for LLM consumption (arrays of 100+ items)
+const HEAVY_PROPS = new Set([
+  "disease_ids", "disease_names", "target_uniprot",
+  "pubmed_ids", "source_record_id",
+]);
+
+/** Strip heavy array props from an edge to keep token usage reasonable. */
+function trimEdge(raw: Record<string, unknown>): Record<string, unknown> {
+  // Handle edges with nested props object (from /graph/edge)
+  const props = (raw.props ?? raw) as Record<string, unknown>;
+  const trimmed: Record<string, unknown> = {};
+
+  for (const [key, val] of Object.entries(props)) {
+    if (HEAVY_PROPS.has(key)) continue;
+    // Cap remaining arrays at 5 items
+    if (Array.isArray(val) && val.length > 5) {
+      trimmed[key] = val.slice(0, 5);
+      trimmed[`${key}_count`] = val.length;
+    } else {
+      trimmed[key] = val;
+    }
+  }
+
+  // Preserve evidence if present (usually small)
+  if (raw.evidence) {
+    trimmed.evidence = raw.evidence;
+  }
+
+  return trimmed;
+}
+
 export const getEdgeDetail = tool({
-  description: `Get specific edge instances (with full properties and evidence) between two entities for a SINGLE edge type.
+  description: `Get specific edge instances (with properties and evidence) between two entities for a SINGLE edge type.
 Use AFTER getConnections when you want to drill into a specific edge type's evidence/properties.
-Example: "Show me the TARGETS evidence between Imatinib and BCR-ABL."`,
+Example: "Show me the DRUG_ACTS_ON_GENE evidence between metformin and NDUFS8."`,
   inputSchema: z.object({
     from: z
       .string()
-      .describe("Source entity in Type:ID format (e.g., 'Drug:CHEMBL941')"),
+      .describe("Source entity in Type:ID format (e.g., 'Drug:CHEMBL1431')"),
     to: z
       .string()
-      .describe("Target entity in Type:ID format (e.g., 'Gene:ENSG00000097007')"),
+      .describe("Target entity in Type:ID format (e.g., 'Gene:ENSG00000110717')"),
     edgeType: z
       .string()
-      .describe("The specific edge type (e.g., 'TARGETS')"),
+      .describe("The specific edge type (e.g., 'DRUG_ACTS_ON_GENE')"),
     limit: z
       .number()
       .optional()
-      .default(10)
-      .describe("Max edge instances to return (default 10, max 50)"),
+      .default(5)
+      .describe("Max edge instances to return (default 5, max 20)"),
   }),
   execute: async ({ from, to, edgeType, limit }) => {
     try {
@@ -28,7 +59,7 @@ Example: "Show me the TARGETS evidence between Imatinib and BCR-ABL."`,
       params.set("from", from);
       params.set("to", to);
       params.set("edgeType", edgeType);
-      params.set("limit", String(Math.min(limit ?? 10, 50)));
+      params.set("limit", String(Math.min(limit ?? 5, 20)));
 
       const data = await agentFetch<{
         data: {
@@ -57,7 +88,7 @@ Example: "Show me the TARGETS evidence between Imatinib and BCR-ABL."`,
         edgeType: data.data.edgeType,
         totalInstances: data.data.count,
         hasMore: data.data.hasMore,
-        edges: edges.slice(0, 10),
+        edges: edges.slice(0, 5).map(trimEdge),
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

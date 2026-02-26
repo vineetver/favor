@@ -32,6 +32,7 @@ DO NOT use findPaths here — that finds multi-hop paths through intermediaries.
     try {
       const data = await agentFetch<{
         data: {
+          textSummary?: string;
           from: { type: string; id: string; label: string };
           to: { type: string; id: string; label: string };
           connections: Array<{
@@ -73,6 +74,7 @@ DO NOT use findPaths here — that finds multi-hop paths through intermediaries.
       }
 
       return {
+        textSummary: data.data.textSummary,
         from: data.data.from,
         to: data.data.to,
         totalEdgeTypes: data.data.summary.totalEdgeTypes,

@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import { cn } from "@infra/utils";
 import { inferOrchestration, type OrchestrationPhase } from "../lib/infer-orchestration";
-import type { ReportPlanOutput, AgentPlan } from "../types";
+import type { AgentPlan } from "../types";
 
 const PHASES: { key: OrchestrationPhase; label: string }[] = [
   { key: "resolve", label: "Resolve" },
@@ -31,7 +31,7 @@ export function OrchestrationHeader({
   toolParts: ToolUIPart[];
   isStreaming: boolean;
   hasTextContent: boolean;
-  planOutput?: ReportPlanOutput | AgentPlan | null;
+  planOutput?: AgentPlan | null;
 }) {
   const orch = useMemo(
     () => inferOrchestration(toolParts, isStreaming, hasTextContent, planOutput),

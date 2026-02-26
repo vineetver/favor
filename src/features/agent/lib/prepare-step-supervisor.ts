@@ -125,7 +125,7 @@ function getPlanStepHint(plan: AgentPlan, nextStep: PlanStep | null): string {
   if (!nextStep) return "";
 
   if (nextStep.do === "resolve") {
-    return `\n\n[SYSTEM] Execute plan step: RESOLVE. Call searchEntities for: ${nextStep.entities.join(", ")}. Collect resolved entity IDs.`;
+    return `\n\n[SYSTEM] Execute plan step: RESOLVE. Call searchEntities once for EACH entity below using ONLY the bare name as query (no extra terms):\n${nextStep.entities.map(e => `- "${e}"`).join("\n")}\nCollect resolved entity IDs from results.`;
   }
   if (nextStep.do === "delegate") {
     let hint = `\n\n[SYSTEM] Execute plan step: DELEGATE to ${nextStep.agent}. Task: "${nextStep.task}".`;

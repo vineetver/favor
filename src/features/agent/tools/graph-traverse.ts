@@ -33,7 +33,7 @@ export const graphTraverse = tool({
           sort: z
             .string()
             .optional()
-            .describe("Sort field, prefix '-' for descending (e.g., '-overall_score')"),
+            .describe("Sort field, prefix '-' for descending (e.g., '-ot_score')"),
           filters: z
             .record(z.unknown())
             .optional()

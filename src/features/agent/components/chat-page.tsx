@@ -79,7 +79,7 @@ import {
   getToolInputSummary,
   PlanRenderer,
 } from "./tool-renderers";
-import type { ReportPlanOutput, AgentPlan } from "../types";
+import type { AgentPlan } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
 import { OrchestrationHeader } from "./orchestration-header";
 
@@ -88,34 +88,12 @@ import { OrchestrationHeader } from "./orchestration-header";
 // ---------------------------------------------------------------------------
 
 const TOOL_TITLES: Record<string, string> = {
-  // Supervisor-level tools
   searchEntities: "Search Entities",
   recallMemories: "Recall Memories",
   saveMemory: "Save Memory",
   planQuery: "Analysis Plan",
   variantTriage: "Variant Triage",
   bioContext: "Knowledge Graph",
-  // Legacy / specialist tools (for old sessions + subagent internals)
-  getEntityContext: "Entity Context",
-  compareEntities: "Compare Entities",
-  getRankedNeighbors: "Ranked Neighbors",
-  runEnrichment: "Enrichment Analysis",
-  findPaths: "Find Paths",
-  getSharedNeighbors: "Shared Neighbors",
-  lookupVariant: "Variant Lookup",
-  getGeneVariantStats: "Gene Variant Stats",
-  getGwasAssociations: "GWAS Associations",
-  createCohort: "Create Cohort",
-  analyzeCohort: "Analyze Cohort",
-  getConnections: "Direct Connections",
-  getEdgeDetail: "Edge Detail",
-  graphTraverse: "Graph Traverse",
-  getGraphSchema: "Graph Schema",
-  getCohortSchema: "Cohort Schema",
-  variantBatchSummary: "Batch Summary",
-  reportPlan: "Analysis Plan",
-  graphExplorer: "Graph Explorer",
-  variantAnalyzer: "Variant Analyzer",
 };
 
 function getToolTitle(type: string): string {
@@ -173,18 +151,23 @@ function StatusDot({ state }: { state: string }) {
 // Compact tool activity group — renders N tool calls in one container
 // ---------------------------------------------------------------------------
 
+const SUBAGENT_TOOL_NAMES = new Set(["bioContext", "variantTriage"]);
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number }> }) {
   return (
-    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden min-w-0">
+    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden min-w-0 w-full">
       {tools.map(({ part }) => {
         const toolName = getToolName(part);
+        const cleanName = toolName.replace(/^tool-/, "");
         const inputSummary = getToolInputSummary(toolName, part.input);
         const title = getToolTitle(part.type);
         const isError = part.state === "output-error";
+        const isSubagent = SUBAGENT_TOOL_NAMES.has(cleanName);
+        const hasOutput = part.state === "output-available" || part.state === "output-error";
 
         return (
-          <Collapsible key={part.toolCallId} defaultOpen={isError}>
+          <Collapsible key={part.toolCallId} defaultOpen={isError || (isSubagent && hasOutput)}>
             <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
               <StatusDot state={part.state} />
               <span className="flex-1 text-left truncate font-medium text-muted-foreground">
@@ -194,9 +177,13 @@ function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number 
             </CollapsibleTrigger>
             <CollapsibleContent className="border-b border-border/40 last:border-b-0">
               <div className="space-y-3 bg-muted/20 p-3">
-                <ToolInput input={part.input} />
-                {(part.state === "output-available" ||
-                  part.state === "output-error") && (
+                {/* For subagent tools, show a cleaner input summary instead of raw JSON */}
+                {isSubagent && part.input ? (
+                  <SubagentInputSummary input={part.input as Record<string, unknown>} />
+                ) : (
+                  <ToolInput input={part.input} />
+                )}
+                {hasOutput && (
                   <ToolOutput
                     output={part.output}
                     errorText={part.errorText}
@@ -208,6 +195,98 @@ function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number 
           </Collapsible>
         );
       })}
+    </div>
+  );
+}
+
+/** Clean input display for subagent tool calls */
+function SubagentInputSummary({ input }: { input: Record<string, unknown> }) {
+  const task = input.task as string | undefined;
+  const entityIds = input.resolvedEntityIds as string[] | undefined;
+  const edgeHints = input.edgeTypeHints as string[] | undefined;
+  const cohortId = input.cohortId as string | undefined;
+  const geneSymbol = input.geneSymbol as string | undefined;
+  const variants = input.variants as string[] | undefined;
+
+  return (
+    <div className="space-y-2">
+      {task && (
+        <div className="space-y-0.5">
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            Task
+          </span>
+          <p className="text-xs text-foreground leading-relaxed">{task}</p>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {entityIds && entityIds.length > 0 && (
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Resolved Entities
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {entityIds.map((id) => (
+                <span key={id} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                  {id}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {edgeHints && edgeHints.length > 0 && (
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Edge Types
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {edgeHints.map((et) => (
+                <span key={et} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                  {et}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {cohortId && (
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Cohort
+            </span>
+            <span className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+              {cohortId}
+            </span>
+          </div>
+        )}
+        {geneSymbol && (
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Gene
+            </span>
+            <span className="text-[10px] font-mono bg-primary/10 text-primary rounded px-1.5 py-0.5">
+              {geneSymbol}
+            </span>
+          </div>
+        )}
+        {variants && variants.length > 0 && (
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Variants ({variants.length})
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {variants.slice(0, 10).map((v) => (
+                <span key={v} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                  {v}
+                </span>
+              ))}
+              {variants.length > 10 && (
+                <span className="text-[10px] text-muted-foreground">
+                  +{variants.length - 10} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -241,7 +320,7 @@ function segmentMessageParts(message: UIMessage): MessageSegment[] {
     if (isToolUIPart(part)) {
       const name = getToolName(part).replace(/^tool-/, "");
 
-      if ((name === "reportPlan" || name === "planQuery") && (part as { output?: unknown }).output) {
+      if (name === "planQuery" && (part as { output?: unknown }).output) {
         segments.push({ kind: "plan", part, key: `plan-${(part as { toolCallId?: string }).toolCallId}` });
         continue;
       }
@@ -301,10 +380,8 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
       case "analyzeCohort":
         return ["Filter to pathogenic variants only", "Which genes carry the most variants?"];
       case "variantTriage":
-      case "variantAnalyzer":
         return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
       case "bioContext":
-      case "graphExplorer":
         return ["What are the key intermediates?", "Explore a different path"];
     }
   }
@@ -390,19 +467,19 @@ function ChatMessageRenderer({
     });
   const hasToolParts = allToolParts.length > 0;
 
-  // Extract plan output (last completed reportPlan or planQuery) for OrchestrationHeader
+  // Extract plan output (last completed planQuery) for OrchestrationHeader
   const planOutput = message.parts
     .filter(
       (p) => {
         if (!isToolUIPart(p)) return false;
         const name = getToolName(p).replace(/^tool-/, "");
-        return (name === "reportPlan" || name === "planQuery") &&
+        return name === "planQuery" &&
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (p as any).state === "output-available";
       },
     )
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((p) => (p as any).output as ReportPlanOutput | AgentPlan)
+    .map((p) => (p as any).output as AgentPlan)
     .at(-1) ?? null;
 
   // All non-plan tool parts for PlanRenderer status tracking.
@@ -413,7 +490,7 @@ function ChatMessageRenderer({
       (p) => {
         if (!isToolUIPart(p)) return false;
         const name = getToolName(p).replace(/^tool-/, "");
-        return name !== "reportPlan" && name !== "planQuery";
+        return name !== "planQuery";
       },
     )
     .map((p) => {
@@ -441,7 +518,7 @@ function ChatMessageRenderer({
           </span>
         </div>
       )}
-      <MessageContent className={message.role === "assistant" ? "w-full" : undefined}>
+      <MessageContent>
         {hasReasoning && (
           <Reasoning className="w-full" isStreaming={isReasoningStreaming}>
             <ReasoningTrigger />
@@ -478,7 +555,7 @@ function ChatMessageRenderer({
             return (
               <PlanRenderer
                 key={seg.key}
-                plan={seg.part.output as ReportPlanOutput | AgentPlan}
+                plan={seg.part.output as AgentPlan}
                 siblingToolParts={siblingToolParts}
                 isStreaming={isLastMessage && isStreaming}
               />
@@ -702,7 +779,7 @@ export function ChatPage() {
               {messages.length === 0 ? (
                 <EmptyState onSelect={send} />
               ) : (
-                <div className="mx-auto max-w-3xl space-y-6">
+                <div className="mx-auto w-full max-w-3xl space-y-6">
                 {messages.map((message, index) => (
                     <motion.div
                       key={message.id || `msg-${index}`}
