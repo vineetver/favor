@@ -35,7 +35,7 @@ export default async function PathwayLeverageMapPage({
   const subgraphResponse = await fetchSubgraph({
     seeds: [{ type: "Gene", id: geneId }],
     maxDepth: 3,
-    edgeTypes: ["PARTICIPATES_IN", "PART_OF"],
+    edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY", "PATHWAY_PART_OF_PATHWAY"],
     nodeLimit: 300,
     edgeLimit: 600,
     includeProps: true,
@@ -50,7 +50,7 @@ export default async function PathwayLeverageMapPage({
   const participatingPathwayIds = new Set<string>();
 
   for (const edge of edges) {
-    if (edge.type === "PARTICIPATES_IN" && edge.from.id === geneId) {
+    if (edge.type === "GENE_PARTICIPATES_IN_PATHWAY" && edge.from.id === geneId) {
       const pathwayId = edge.to.id;
       participatingPathwayIds.add(pathwayId);
 
@@ -97,7 +97,7 @@ export default async function PathwayLeverageMapPage({
 
   // Extract hierarchy edges from PART_OF relationships
   const hierarchyEdges: PathwayHierarchyEdge[] = edges
-    .filter((e) => e.type === "PART_OF")
+    .filter((e) => e.type === "PATHWAY_PART_OF_PATHWAY")
     .map((e) => ({
       childId: e.from.id,
       parentId: e.to.id,

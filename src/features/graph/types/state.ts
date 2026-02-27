@@ -73,5 +73,3 @@ export type ExplorerState =
 // Re-export for convenience (canonical definitions in config/)
 export type { ExplorerLayoutType } from "../config/layout";
 export type { TemplateId } from "../config/explorer-config";
-/** @deprecated Use TemplateId instead */
-export type LensId = TemplateId;

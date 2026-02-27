@@ -2,7 +2,7 @@ import { createAgentUIStreamResponse } from "ai";
 import { createFavorAgent } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
 import { agentFetch } from "@features/agent/lib/api-client";
-import type { EvidenceRef } from "@features/agent/types";
+import type { EvidenceRef, ConversationContext } from "@features/agent/types";
 
 export const maxDuration = 120;
 
@@ -32,6 +32,35 @@ function extractEvidenceRefs(responseMessage: unknown): EvidenceRef[] {
   return refs;
 }
 
+/** Extract resolved entities from prior searchEntities calls in conversation */
+function extractConversationContext(messages: unknown[]): ConversationContext {
+  const resolvedEntities: Record<string, { type: string; id: string }> = {};
+  let turnCount = 0;
+
+  for (const msg of messages as Array<{
+    role: string;
+    parts?: Array<{ type: string; toolName?: string; output?: unknown }>;
+  }>) {
+    if (msg.role === "user") turnCount++;
+    if (msg.role !== "assistant" || !msg.parts) continue;
+
+    for (const part of msg.parts) {
+      if (part.type !== "tool-invocation" || part.toolName !== "searchEntities")
+        continue;
+      const output = part.output as
+        | { results?: Array<{ type: string; id: string; label: string }> }
+        | undefined;
+      if (!output?.results) continue;
+      const top = output.results[0];
+      if (top?.label && top?.type && top?.id) {
+        resolvedEntities[top.label] = { type: top.type, id: top.id };
+      }
+    }
+  }
+
+  return { resolvedEntities, turnCount };
+}
+
 /** Persist evidence refs to the session (fire-and-forget) */
 function persistEvidence(sessionId: string, refs: EvidenceRef[]): void {
   if (refs.length === 0) return;
@@ -55,7 +84,10 @@ export async function POST(req: Request) {
     }
   }
 
-  const agent = createFavorAgent(synthesisModel);
+  const agent = createFavorAgent(
+    synthesisModel,
+    extractConversationContext(messages),
+  );
 
   return createAgentUIStreamResponse({
     agent,

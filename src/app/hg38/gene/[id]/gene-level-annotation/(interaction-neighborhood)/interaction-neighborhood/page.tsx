@@ -19,7 +19,7 @@ export default async function InteractionNeighborhoodPage({
     fetchSubgraph({
       seeds: [{ type: "Gene", id }],
       maxDepth: 2,
-      edgeTypes: ["INTERACTS_WITH"],
+      edgeTypes: ["GENE_INTERACTS_WITH_GENE"],
       nodeLimit: 200,
       edgeLimit: 400,
       includeProps: true,

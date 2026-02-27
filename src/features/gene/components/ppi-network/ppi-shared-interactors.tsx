@@ -77,7 +77,7 @@ function PPISharedInteractorsInner({
       // both directions or use direction="both" if supported.
       const result = await fetchIntersection(
         selectedGenes.map((g) => ({ type: "Gene", id: g.id })),
-        "INTERACTS_WITH",
+        "GENE_INTERACTS_WITH_GENE",
         { direction: "out", limit: 50 }
       );
 

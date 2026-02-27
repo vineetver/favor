@@ -5,6 +5,7 @@ import { List } from "lucide-react";
 import type { TemplateResultData } from "../types/template-results";
 import type { ExplorerNode } from "../types/node";
 import { NODE_TYPE_COLORS } from "../config/styling";
+import { displayEntityType } from "../utils/display-names";
 
 // =============================================================================
 // Ranked Results List — shows template query results as a ranked list
@@ -42,7 +43,7 @@ function RankedResultsListInner({
         <div className="flex items-center gap-2">
           <List className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">
-            {results.results.length} {results.targetEntityType}{results.results.length !== 1 ? "s" : ""}
+            {results.results.length} {displayEntityType(results.targetEntityType)}{results.results.length !== 1 ? "s" : ""}
           </span>
         </div>
         {showScore && (

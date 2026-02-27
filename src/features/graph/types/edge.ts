@@ -88,146 +88,6 @@ export type EdgeType =
   | "DOMAIN_ANCESTOR_OF_DOMAIN";
 
 /**
- * Schema-driven field catalog per edge type.
- * Source of truth: docs/GRAPH_SCHEMA section 4.
- * @deprecated Use `resolveEdgeSelectFields` from `utils/schema-fields.ts` for primary code paths.
- * Kept as offline/SSR fallback when schema is null.
- */
-export const EDGE_TYPE_FIELDS: Partial<Record<EdgeType, string[]>> = {
-  // Gene → Disease
-  GENE_ASSOCIATED_WITH_DISEASE: ["overall_score", "evidence_count", "num_datatypes", "genetic_association_score", "somatic_mutation_score", "known_drug_score", "relation_subtype", "source"],
-  GENE_ALTERED_IN_DISEASE: ["alteration_type", "sample_count", "frequency", "relation_subtype", "source"],
-  // Gene → Drug
-  GENE_AFFECTS_DRUG_RESPONSE: ["n_evidence", "clinical_significance", "evidence_level", "disease_context", "relation_subtype", "source"],
-  // Gene → Entity
-  GENE_ASSOCIATED_WITH_ENTITY: ["total_score", "ld_score", "nassoc_score", "n_variants", "n_studies", "best_p_value_mlog", "relation_subtype", "source"],
-  // Gene → Pathway
-  GENE_PARTICIPATES_IN_PATHWAY: ["pathway_name", "pathway_source", "pathway_category", "source"],
-  // Gene → GOTerm
-  GENE_ANNOTATED_WITH_GO_TERM: ["go_namespace", "qualifier", "evidence_code", "aspect", "assigned_by", "source"],
-  // Gene → Phenotype
-  GENE_ASSOCIATED_WITH_PHENOTYPE: ["evidence_code", "frequency", "disease_ids", "relation_subtype", "source"],
-  // Gene → Gene
-  GENE_INTERACTS_WITH_GENE: ["combined_score", "confidence", "num_sources", "detection_methods", "relation_subtype", "source"],
-  GENE_PARALOG_OF_GENE: ["identity_pct", "alignment_length", "source"],
-  // Gene → SideEffect
-  GENE_ASSOCIATED_WITH_SIDE_EFFECT: ["drug_name", "significance", "direction", "n_evidence", "source"],
-  // Gene → ProteinDomain
-  GENE_HAS_PROTEIN_DOMAIN: ["domain_name", "start_position", "end_position", "score", "source"],
-  // Gene → Tissue
-  GENE_EXPRESSED_IN_TISSUE: ["expression_level", "tpm", "tissue_name", "source"],
-  // Drug → Gene
-  DRUG_ACTS_ON_GENE: ["action_type", "mechanism_of_action", "num_sources", "max_clinical_phase", "relation_subtype", "source"],
-  DRUG_DISPOSITION_BY_GENE: ["disposition_type", "mechanism", "source"],
-  // Drug → Disease
-  DRUG_INDICATED_FOR_DISEASE: ["sources", "num_sources", "max_clinical_phase", "primary_source", "source"],
-  // Drug → SideEffect
-  DRUG_HAS_ADVERSE_EFFECT: ["frequency", "frequency_description", "report_count", "llr", "relation_subtype", "source"],
-  DRUG_PAIR_CAUSES_SIDE_EFFECT: ["drug_pair", "report_count", "confidence", "source"],
-  // Drug → Drug
-  DRUG_INTERACTS_WITH_DRUG: ["interaction_type", "severity", "description", "source"],
-  // Variant → Gene
-  VARIANT_IMPLIES_GENE: ["max_l2g_score", "confidence", "n_loci", "enhancer_id", "feature_score", "relation_subtype", "source"],
-  VARIANT_AFFECTS_GENE: ["clinical_significance", "review_status", "pathogenicity", "max_pathogenicity", "sample_count", "relation_subtype", "source"],
-  // Variant → Entity/Disease/Phenotype
-  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele_freq", "risk_allele", "ci_95", "source"],
-  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele_freq", "risk_allele", "ci_95", "source"],
-  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["clinical_significance", "review_status", "significance", "direction_of_effect", "relation_subtype", "source"],
-  // Variant → Drug
-  VARIANT_ASSOCIATED_WITH_DRUG: ["significance", "direction_of_effect", "phenotype_category", "evidence_level", "score", "relation_subtype", "source"],
-  // Variant → Study
-  VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele_freq", "ci_95", "risk_allele", "initial_sample_size", "source"],
-  // Variant → SideEffect
-  VARIANT_LINKED_TO_SIDE_EFFECT: ["gene_symbol", "drug_name", "significance", "direction", "phenotype_category", "pmid", "source"],
-  // Variant → cCRE
-  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "ccre_size", "distance_to_center", "relative_position"],
-  // cCRE → Gene
-  CCRE_REGULATES_GENE: ["method", "max_score", "min_p_value", "n_tissues", "relation_subtype", "source"],
-  // Disease → Phenotype
-  DISEASE_HAS_PHENOTYPE: ["match_types", "match_count", "source"],
-  // Phenotype → Phenotype
-  PHENOTYPE_EQUIVALENT_TO: ["match_types", "match_count", "source"],
-  PHENOTYPE_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
-  PHENOTYPE_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  // Study → trait
-  STUDY_INVESTIGATES_TRAIT__Entity: ["study_title", "trait_name", "source"],
-  STUDY_INVESTIGATES_TRAIT__Disease: ["study_title", "trait_name", "source"],
-  STUDY_INVESTIGATES_TRAIT__Phenotype: ["study_title", "trait_name", "source"],
-  // Disease → Disease
-  DISEASE_SUBCLASS_OF_DISEASE: ["src_name", "dst_name", "distance", "relationship_type", "source"],
-  DISEASE_ANCESTOR_OF_DISEASE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  // Pathway → Pathway
-  PATHWAY_PART_OF_PATHWAY: ["src_name", "dst_name", "distance", "source"],
-  PATHWAY_ANCESTOR_OF_PATHWAY: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  // Entity → Entity
-  ENTITY_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
-  ENTITY_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  // GO → GO
-  GO_HIERARCHY: ["src_name", "dst_name", "distance", "source"],
-  GO_CLOSURE: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-  // Metabolite
-  PATHWAY_CONTAINS_METABOLITE: ["pathway_source", "pathway_name", "metabolite_name"],
-  METABOLITE_IS_A_METABOLITE: ["src_name", "dst_name", "source"],
-  // Signal
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "or_beta", "trait_name", "source"],
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "trait_name", "source"],
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "trait_name", "source"],
-  SIGNAL_HAS_VARIANT: ["lead_variant", "posterior_probability", "source"],
-  SIGNAL_IMPLIES_GENE: ["l2g_score", "confidence", "source"],
-  // ProteinDomain → ProteinDomain
-  DOMAIN_SUBCLASS_OF_DOMAIN: ["src_name", "dst_name", "distance", "source"],
-  DOMAIN_ANCESTOR_OF_DOMAIN: ["distance", "relationship_type", "ancestor_name", "descendant_name"],
-};
-
-/**
- * Compute the union of all schema fields for a set of edge types.
- * @deprecated Use `resolveEdgeSelectFields` from `utils/schema-fields.ts` for primary code paths.
- * Kept as offline/SSR fallback when schema is null.
- */
-export function getEdgeFieldsForTypes(edgeTypes: EdgeType[]): string[] {
-  const fields = new Set<string>();
-  for (const et of edgeTypes) {
-    const f = EDGE_TYPE_FIELDS[et];
-    if (f) for (const field of f) fields.add(field);
-  }
-  return Array.from(fields);
-}
-
-/**
- * Split edge types into batches where each batch's field union ≤ maxFields.
- * Greedy: adds edge types to the current batch until the next one would overflow.
- */
-export function batchEdgeTypesByFieldLimit(
-  edgeTypes: EdgeType[],
-  maxFields: number = 50,
-): EdgeType[][] {
-  const batches: EdgeType[][] = [];
-  let currentBatch: EdgeType[] = [];
-  let currentFields = new Set<string>();
-
-  for (const et of edgeTypes) {
-    const typeFields = EDGE_TYPE_FIELDS[et] ?? [];
-    const merged = new Set(currentFields);
-    for (const f of typeFields) merged.add(f);
-
-    if (merged.size > maxFields && currentBatch.length > 0) {
-      batches.push(currentBatch);
-      currentBatch = [et];
-      currentFields = new Set(typeFields);
-    } else {
-      currentBatch.push(et);
-      currentFields = merged;
-    }
-  }
-
-  if (currentBatch.length > 0) {
-    batches.push(currentBatch);
-  }
-
-  return batches;
-}
-
-/**
  * Static database provenance per edge type.
  * Used as fallback when an edge row has no `source`/`sources` field.
  */
@@ -332,7 +192,7 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
   // Gene → Drug (Cyan family)
   GENE_AFFECTS_DRUG_RESPONSE: { label: "Gene Affects Drug Response", color: "#06b6d4", description: "Pharmacogenomic gene–drug interaction" },
   // Gene → Entity (Amber family)
-  GENE_ASSOCIATED_WITH_ENTITY: { label: "Gene–Entity Association", color: "#f59e0b", description: "Gene associated with trait/entity via GWAS" },
+  GENE_ASSOCIATED_WITH_ENTITY: { label: "Gene–Trait Association", color: "#f59e0b", description: "Gene associated with trait via GWAS" },
   // Gene → Pathway (Purple family)
   GENE_PARTICIPATES_IN_PATHWAY: { label: "Participates in Pathway", color: "#8b5cf6", description: "Gene participates in pathway" },
   // Gene → GOTerm (Green family)
@@ -357,12 +217,12 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
   DRUG_HAS_ADVERSE_EFFECT: { label: "Adverse Effect", color: "#4ade80", description: "Drug has adverse effect" },
   DRUG_PAIR_CAUSES_SIDE_EFFECT: { label: "Drug Pair Side Effect", color: "#86efac", description: "Drug pair causes side effect" },
   // Drug → Drug
-  DRUG_INTERACTS_WITH_DRUG: { label: "Drug–Drug Interaction", color: "#34d399", description: "Drug interacts with drug" },
+  DRUG_INTERACTS_WITH_DRUG: { label: "Drug–Drug Interaction", color: "#34d399", description: "Drug-drug interaction (DrugBank)" },
   // Variant → Gene (Amber-orange family)
   VARIANT_IMPLIES_GENE: { label: "Variant Implies Gene", color: "#fb923c", description: "Variant implicates gene (L2G, regulatory, enhancer)" },
   VARIANT_AFFECTS_GENE: { label: "Variant Affects Gene", color: "#ea580c", description: "Variant affects gene (ClinVar, missense, somatic)" },
   // Variant → Entity/Disease/Phenotype (Yellow family)
-  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: { label: "Variant–Entity GWAS", color: "#eab308", description: "Variant GWAS associated with entity" },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: { label: "Variant–Trait GWAS", color: "#eab308", description: "Variant GWAS associated with trait" },
   VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Variant–Phenotype GWAS", color: "#ca8a04", description: "Variant GWAS associated with phenotype" },
   VARIANT_ASSOCIATED_WITH_TRAIT__Disease: { label: "Variant–Disease Association", color: "#d97706", description: "Variant associated with disease (ClinVar/PGx)" },
   // Variant → Drug
@@ -382,7 +242,7 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
   PHENOTYPE_HIERARCHY: { label: "Phenotype Hierarchy", color: "#6b7280", description: "Phenotype subclass of" },
   PHENOTYPE_CLOSURE: { label: "Phenotype Closure", color: "#9ca3af", description: "Phenotype ancestor of" },
   // Study → trait (Teal family)
-  STUDY_INVESTIGATES_TRAIT__Entity: { label: "Investigates Entity", color: "#14b8a6", description: "Study investigates entity" },
+  STUDY_INVESTIGATES_TRAIT__Entity: { label: "Investigates Trait", color: "#14b8a6", description: "Study investigates trait" },
   STUDY_INVESTIGATES_TRAIT__Disease: { label: "Investigates Disease", color: "#0d9488", description: "Study investigates disease" },
   STUDY_INVESTIGATES_TRAIT__Phenotype: { label: "Investigates Phenotype", color: "#115e59", description: "Study investigates phenotype" },
   // Disease → Disease (Gray family)
@@ -392,17 +252,17 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
   PATHWAY_PART_OF_PATHWAY: { label: "Part of Pathway", color: "#6366f1", description: "Pathway part of parent" },
   PATHWAY_ANCESTOR_OF_PATHWAY: { label: "Pathway Ancestor", color: "#818cf8", description: "Pathway ancestor of" },
   // Entity → Entity (Gray family)
-  ENTITY_HIERARCHY: { label: "Entity Hierarchy", color: "#6b7280", description: "Entity subclass of" },
-  ENTITY_CLOSURE: { label: "Entity Closure", color: "#9ca3af", description: "Entity ancestor of" },
+  ENTITY_HIERARCHY: { label: "Trait Hierarchy", color: "#6b7280", description: "Trait subclass hierarchy (EFO)" },
+  ENTITY_CLOSURE: { label: "Trait Closure", color: "#9ca3af", description: "Trait ancestor (transitive closure)" },
   // GO → GO
-  GO_HIERARCHY: { label: "GO Hierarchy", color: "#6b7280", description: "GO subclass of" },
-  GO_CLOSURE: { label: "GO Closure", color: "#9ca3af", description: "GO ancestor of" },
+  GO_HIERARCHY: { label: "GO Hierarchy", color: "#6b7280", description: "GO term subclass hierarchy" },
+  GO_CLOSURE: { label: "GO Closure", color: "#9ca3af", description: "GO term ancestor (transitive closure)" },
   // Metabolite (Pink family)
   PATHWAY_CONTAINS_METABOLITE: { label: "Contains Metabolite", color: "#db2777", description: "Pathway contains metabolite" },
   METABOLITE_IS_A_METABOLITE: { label: "Metabolite Is A", color: "#be185d", description: "Metabolite is a subclass" },
   // Signal (Indigo-blue family)
   SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: { label: "Signal–Disease", color: "#4f46e5", description: "Signal associated with disease" },
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: { label: "Signal–Entity", color: "#6366f1", description: "Signal associated with entity" },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: { label: "Signal–Trait", color: "#6366f1", description: "Signal associated with trait" },
   SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Signal–Phenotype", color: "#818cf8", description: "Signal associated with phenotype" },
   SIGNAL_HAS_VARIANT: { label: "Signal Has Variant", color: "#a5b4fc", description: "Signal contains variant" },
   SIGNAL_IMPLIES_GENE: { label: "Signal Implies Gene", color: "#c7d2fe", description: "Signal implicates gene" },

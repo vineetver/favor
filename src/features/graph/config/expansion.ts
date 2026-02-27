@@ -62,8 +62,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       limit: 20,
     },
     {
-      label: "Find Entities",
-      description: "GWAS entities this gene is scored or associated with",
+      label: "Find Traits",
+      description: "GWAS traits this gene is associated with",
       edgeTypes: ["GENE_ASSOCIATED_WITH_ENTITY"],
       direction: "out", targetType: "Entity", icon: "bar-chart", color: "#f59e0b",
       limit: 20,
@@ -275,8 +275,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       limit: 20,
     },
     {
-      label: "Find Entities",
-      description: "GWAS-associated entities",
+      label: "Find Traits",
+      description: "GWAS-associated traits",
       edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
       direction: "out", targetType: "Entity", icon: "activity", color: "#eab308",
       limit: 20,
@@ -320,7 +320,7 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
   Entity: [
     {
       label: "Find Genes",
-      description: "Genes scored for or associated with this entity",
+      description: "Genes scored for or associated with this trait",
       edgeTypes: ["GENE_ASSOCIATED_WITH_ENTITY"],
       direction: "in", targetType: "Gene", icon: "dna", color: "#3b82f6",
       limit: 20,
@@ -334,14 +334,14 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
     },
     {
       label: "Find Studies",
-      description: "GWAS studies investigating this entity",
+      description: "GWAS studies investigating this trait",
       edgeTypes: ["STUDY_INVESTIGATES_TRAIT__Entity"],
       direction: "in", targetType: "Study", icon: "book-open", color: "#0284c7",
       limit: 20,
     },
     {
       label: "Find Signals",
-      description: "Statistical-genetics signals for this entity",
+      description: "Statistical-genetics signals for this trait",
       edgeTypes: ["SIGNAL_ASSOCIATED_WITH_TRAIT__Entity"],
       direction: "in", targetType: "Signal", icon: "zap", color: "#6366f1",
       limit: 20,
@@ -349,8 +349,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
   ],
   Study: [
     {
-      label: "Find Entities",
-      description: "Entities this study investigates",
+      label: "Find Traits",
+      description: "Traits this study investigates",
       edgeTypes: ["STUDY_INVESTIGATES_TRAIT__Entity"],
       direction: "out", targetType: "Entity", icon: "activity", color: "#14b8a6",
       limit: 20,
@@ -457,8 +457,8 @@ export const NODE_EXPANSION_CONFIG: Record<EntityType, ExpansionConfig[]> = {
       limit: 20,
     },
     {
-      label: "Find Entities",
-      description: "Entities associated with this signal",
+      label: "Find Traits",
+      description: "Traits associated with this signal",
       edgeTypes: ["SIGNAL_ASSOCIATED_WITH_TRAIT__Entity"],
       direction: "out", targetType: "Entity", icon: "bar-chart", color: "#f59e0b",
       limit: 20,

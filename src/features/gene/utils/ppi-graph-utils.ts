@@ -115,7 +115,7 @@ export function extractPPIEdgesFromSubgraph(
   nodes.forEach((node) => nodeMap.set(node.id, node));
 
   // Filter to only INTERACTS_WITH edges
-  const ppiEdges = edges.filter((edge) => edge.type === "INTERACTS_WITH");
+  const ppiEdges = edges.filter((edge) => edge.type === "GENE_INTERACTS_WITH_GENE");
 
   return ppiEdges
     .map((edge) => {
@@ -185,8 +185,8 @@ export function extractPPIEdges(
     // Direct array of edges
     const direct = source.filter(
       (edge) =>
-        (edge as Record<string, unknown>)?.type === "INTERACTS_WITH" ||
-        (edge as Record<string, unknown>)?.edge_type === "INTERACTS_WITH",
+        (edge as Record<string, unknown>)?.type === "GENE_INTERACTS_WITH_GENE" ||
+        (edge as Record<string, unknown>)?.edge_type === "GENE_INTERACTS_WITH_GENE",
     );
     if (direct.length > 0 && ((direct[0] as Record<string, unknown>)?.neighbor || (direct[0] as Record<string, unknown>)?.score)) {
       list = direct;

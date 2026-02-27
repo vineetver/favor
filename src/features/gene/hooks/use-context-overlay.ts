@@ -44,7 +44,7 @@ export function useContextOverlay({
       setError(null);
 
       try {
-        const edgeType = type === "shared-pathways" ? "PARTICIPATES_IN" : "ASSOCIATED_WITH";
+        const edgeType = type === "shared-pathways" ? "GENE_PARTICIPATES_IN_PATHWAY" : "GENE_ASSOCIATED_WITH_DISEASE";
         const newOverlayData = new Map<string, OverlayData>();
 
         // Fetch shared context for each neighbor with the seed gene
@@ -100,7 +100,7 @@ export function useContextOverlay({
     async (nodeId: string) => {
       if (overlayType === "none" || overlayData.has(nodeId)) return;
 
-      const edgeType = overlayType === "shared-pathways" ? "PARTICIPATES_IN" : "ASSOCIATED_WITH";
+      const edgeType = overlayType === "shared-pathways" ? "GENE_PARTICIPATES_IN_PATHWAY" : "GENE_ASSOCIATED_WITH_DISEASE";
 
       try {
         const result = await fetchIntersection(

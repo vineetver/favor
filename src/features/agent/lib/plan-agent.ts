@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { nanoModel } from "./models";
-import type { AgentPlan } from "../types";
+import type { AgentPlan, ConversationContext } from "../types";
 
 const PlanStepSchema = z.discriminatedUnion("do", [
   z.object({
@@ -56,12 +56,29 @@ RULES:
   The specialist must discover these by querying the graph — not from the planner's training data.
 - Keep task descriptions under 50 words. Describe WHAT to find, not what you already know.`;
 
-export async function runPlanAgent(userMessage: string): Promise<AgentPlan> {
+export async function runPlanAgent(
+  userMessage: string,
+  context?: ConversationContext,
+): Promise<AgentPlan> {
+  let systemPrompt = PLAN_AGENT_PROMPT;
+
+  // Append previously resolved entities so the planner can skip redundant resolve steps
+  if (context && Object.keys(context.resolvedEntities).length > 0) {
+    const lines = Object.entries(context.resolvedEntities)
+      .map(([label, { type, id }]) => `- ${label} → ${type}:${id}`)
+      .join("\n");
+    systemPrompt += `\n\nPREVIOUSLY RESOLVED ENTITIES (skip "resolve" for these — the supervisor already has their IDs):
+${lines}
+
+Only add a "resolve" step for NEW entity names not listed above.
+If no new entities need resolving, start directly with "delegate".`;
+  }
+
   const { object } = await generateObject({
     model: nanoModel,
     schema: PlanSchema,
     prompt: userMessage,
-    system: PLAN_AGENT_PROMPT,
+    system: systemPrompt,
   });
   return object as AgentPlan;
 }

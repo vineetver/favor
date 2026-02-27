@@ -30,7 +30,6 @@ export interface ExplorerEdge {
   targetKey: NodeKey;
   numSources?: number;
   numExperiments?: number;
-  confidenceScores?: number[];
   evidence?: {
     sources?: string[];
     pubmedIds?: string[];

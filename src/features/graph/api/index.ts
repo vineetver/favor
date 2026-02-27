@@ -430,7 +430,16 @@ export async function fetchIntersection(
 
 export interface GraphSchemaResponse {
   data: {
-    nodeTypes: string[];
+    nodeTypes: Array<
+      | string
+      | {
+          nodeType: string;
+          description?: string;
+          summaryFields?: string[];
+          propertyCount?: number;
+          fieldsByCategory?: Record<string, string[]>;
+        }
+    >;
     edgeTypes: Array<{
       type: string;
       count: number;
@@ -440,9 +449,56 @@ export interface GraphSchemaResponse {
       defaultScoreField?: string;
       scoreFields?: string[];
       filterFields?: string[];
+      description?: string;
+      propertyCount?: number;
     }>;
     lastUpdated?: string;
   };
+}
+
+// =============================================================================
+// Schema Properties API
+// =============================================================================
+
+export interface SchemaPropertyMeta {
+  name: string;
+  dataType: string;
+  category: string;
+  filterable?: boolean;
+  sortable?: boolean;
+  heavy?: boolean;
+}
+
+export interface SchemaPropertiesResponse {
+  data: {
+    typeName: string;
+    kind: "node" | "edge";
+    propertyCount: number;
+    properties: SchemaPropertyMeta[];
+  };
+}
+
+export async function fetchSchemaProperties(
+  typeName: string,
+): Promise<SchemaPropertiesResponse | null> {
+  const url = `${API_BASE}/graph/schema/properties/${encodeURIComponent(typeName)}`;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 3600 },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.error(`Schema properties fetch failed: ${response.status}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Schema properties fetch error:", error);
+    return null;
+  }
 }
 
 export async function fetchGraphSchema(): Promise<GraphSchemaResponse | null> {
@@ -558,15 +614,40 @@ export interface ConnectionsEdgeItem {
   from: { type: string; id: string; label: string };
   to: { type: string; id: string; label: string };
   fields?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+/** Keys that are structural (not user-data) on a ConnectionsEdgeItem */
+const STRUCTURAL_KEYS = new Set(["type", "from", "to", "direction", "fields", "evidence"]);
+
+/**
+ * Normalise edge fields from either format:
+ *  - `/graph/query` puts data in `item.fields`
+ *  - `/graph/connections` and `/graph/edge` put data at top level
+ */
+export function extractEdgeFields(item: ConnectionsEdgeItem): Record<string, unknown> {
+  if (item.fields && Object.keys(item.fields).length > 0) return item.fields;
+  const fields: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(item)) {
+    if (!STRUCTURAL_KEYS.has(k) && v !== null && v !== undefined) fields[k] = v;
+  }
+  return Object.keys(fields).length > 0 ? fields : (item.fields ?? {});
 }
 
 export interface ConnectionsApiResponse {
-  edgeTypes: Array<{
-    type: string;
-    count: number;
-    direction: "out" | "in";
-    edges: ConnectionsEdgeItem[];
-  }>;
+  data: {
+    from: EntityRef;
+    to: EntityRef;
+    connections: Array<{
+      edgeType: string;
+      direction: "out" | "in";
+      label?: string;
+      count: number;
+      edges: ConnectionsEdgeItem[];
+      hasMore?: boolean;
+    }>;
+    summary?: { totalEdgeTypes: number; totalEdges: number };
+  };
 }
 
 export async function fetchConnections(options: {
@@ -609,8 +690,15 @@ export async function fetchConnections(options: {
 // =============================================================================
 
 export interface EdgePageApiResponse {
-  edges: ConnectionsEdgeItem[];
-  nextCursor?: string;
+  data: {
+    from: EntityRef;
+    to: EntityRef;
+    edgeType: string;
+    edges: ConnectionsEdgeItem[];
+    count: number;
+    hasMore?: boolean;
+    nextCursor?: string;
+  };
 }
 
 export async function fetchEdgePage(options: {

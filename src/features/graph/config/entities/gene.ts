@@ -135,7 +135,7 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
     // 6) Gene → GWAS Entity
     {
       id: "gene-gwas",
-      name: "Gene \u2192 GWAS Entity",
+      name: "Gene \u2192 GWAS Trait",
       description: "Trait associations, GWAS variants, and study evidence",
       icon: "bar-chart",
       color: "#3b82f6",

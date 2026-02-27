@@ -24,6 +24,7 @@ import { NODE_TYPE_COLORS } from "../config/styling";
 import { buildEdgeTypeStatsMap, resolveFilterFields } from "../utils/schema-fields";
 import type { EdgeType } from "../types/edge";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { displayEntityType } from "../utils/display-names";
 
 // =============================================================================
 // Template Icon Map
@@ -102,7 +103,7 @@ function NodeTypeLegend({ counts }: NodeTypeLegendProps) {
                 borderColor: colors.border,
               }}
             />
-            <span className="flex-1 text-sm text-foreground">{type}</span>
+            <span className="flex-1 text-sm text-foreground">{displayEntityType(type)}</span>
             {count > 0 && (
               <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {count}

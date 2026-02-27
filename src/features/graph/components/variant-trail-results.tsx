@@ -6,6 +6,7 @@ import type { VariantTrailResultData } from "../types/props";
 import type { ExplorerNode } from "../types/node";
 import { NODE_TYPE_COLORS } from "../config/styling";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { displayEntityType } from "../utils/display-names";
 
 // =============================================================================
 // Evidence Summary — show top 2-3 fields from connecting edge
@@ -112,7 +113,7 @@ export function VariantTrailResults({ result, onBack, onSelectNode }: VariantTra
             className="px-1.5 py-0.5 rounded text-xs"
             style={{ backgroundColor: seedColors.background, color: seedColors.text }}
           >
-            {result.seedNodeType}
+            {displayEntityType(result.seedNodeType)}
           </span>
         </div>
         <p className="text-xs text-muted-foreground">

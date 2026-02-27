@@ -36,6 +36,8 @@ import { NODE_EXPANSION_CONFIG } from "../config/expansion";
 import { hasVariantTrail } from "../config/variant-trail";
 import { VariantTrailResults } from "./variant-trail-results";
 import { buildEdgeTypeStatsMap, resolveScoreFields } from "../utils/schema-fields";
+import { displayEntityType, formatNodeId } from "../utils/display-names";
+import { EDGE_TOOLTIP_FIELDS } from "../config/edge-tooltip-fields";
 import type { GraphSchema } from "../types/schema";
 
 // =============================================================================
@@ -79,8 +81,8 @@ function ProvenanceDisplay({ events }: { events: ProvenanceEvent[] }) {
 
 /** Fields to skip (already rendered structurally or internal) */
 const SKIP_FIELDS = new Set([
-  "num_sources", "num_experiments", "src_symbol", "dst_symbol",
-  "confidence_scores", "pubmed_ids", "pmids", "detection_methods",
+  "num_experiments", "src_symbol", "dst_symbol",
+  "confidence_scores", "pubmed_ids", "pmids",
 ]);
 
 /** Fields that are PubMed IDs */
@@ -215,8 +217,10 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   return <span className="text-sm text-foreground break-words">{String(value)}</span>;
 }
 
-/** Render all fields from an edge's `fields` dict, ordered by schema scoreFields */
+/** Render all fields from an edge's `fields` dict, split into key metrics and details */
 function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unknown>; edgeType?: EdgeType; schema?: GraphSchema | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   const entries = Object.entries(fields).filter(
     ([key, value]) =>
       !SKIP_FIELDS.has(key) &&
@@ -228,41 +232,130 @@ function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unkno
 
   if (entries.length === 0) return null;
 
-  // Use schema scoreFields for priority ordering when available
+  // Build a map of curated tooltip labels (key → label)
+  const tooltipFields = edgeType ? EDGE_TOOLTIP_FIELDS[edgeType] : undefined;
+  const curatedLabelMap = new Map<string, string>();
+  if (tooltipFields) {
+    for (const tf of tooltipFields) curatedLabelMap.set(tf.key, tf.label);
+  }
+
+  // Use schema scoreFields for priority ordering
   const schemaMap = buildEdgeTypeStatsMap(schema);
   const schemaScoreFields = edgeType ? resolveScoreFields(edgeType, schemaMap) : [];
-  const schemaScoreSet = new Set(schemaScoreFields);
 
-  entries.sort(([a], [b]) => {
+  // Build the set of "key" field keys: curated tooltip fields + schema score fields
+  const keyFieldKeys = new Set<string>();
+  if (tooltipFields) {
+    for (const tf of tooltipFields) keyFieldKeys.add(tf.key);
+  }
+  for (const sf of schemaScoreFields) keyFieldKeys.add(sf);
+
+  // Split entries into key metrics and detail fields
+  const keyEntries: Array<[string, unknown]> = [];
+  const detailEntries: Array<[string, unknown]> = [];
+  for (const entry of entries) {
+    if (keyFieldKeys.has(entry[0])) {
+      keyEntries.push(entry);
+    } else {
+      detailEntries.push(entry);
+    }
+  }
+
+  // Sort key entries by: curated tooltip order first, then schema score order
+  const tooltipOrder = tooltipFields ? tooltipFields.map((tf) => tf.key) : [];
+  keyEntries.sort(([a], [b]) => {
+    const aTooltipIdx = tooltipOrder.indexOf(a);
+    const bTooltipIdx = tooltipOrder.indexOf(b);
+    if (aTooltipIdx >= 0 && bTooltipIdx >= 0) return aTooltipIdx - bTooltipIdx;
+    if (aTooltipIdx >= 0) return -1;
+    if (bTooltipIdx >= 0) return 1;
     const aSchemaIdx = schemaScoreFields.indexOf(a);
     const bSchemaIdx = schemaScoreFields.indexOf(b);
-
-    // Both in schema scoreFields → sort by schema order
     if (aSchemaIdx >= 0 && bSchemaIdx >= 0) return aSchemaIdx - bSchemaIdx;
-    // Only one in schema scoreFields → it comes first
     if (aSchemaIdx >= 0) return -1;
     if (bSchemaIdx >= 0) return 1;
+    return 0;
+  });
 
-    // Fallback: hardcoded scores first, then pubmed, then alphabetical
+  // Sort detail entries: scores first, then pubmed, then alphabetical
+  detailEntries.sort(([a], [b]) => {
     const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
     const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
     if (aScore !== bScore) return aScore - bScore;
     return a.localeCompare(b);
   });
 
-  return (
-    <div className="space-y-2.5">
-      {entries.map(([key, value]) => (
-        <div key={key} className="space-y-0.5">
-          <div className="text-xs font-medium text-muted-foreground">
-            {fieldLabel(key)}
-            {schemaScoreSet.has(key) && (
-              <span className="ml-1 text-[10px] text-primary/70">(score)</span>
-            )}
+  // Label resolver: prefer curated label, fall back to auto-generated
+  const getLabel = (key: string) => curatedLabelMap.get(key) ?? fieldLabel(key);
+
+  // Fallback: if no key entries were identified, show all entries flat (no collapsing)
+  if (keyEntries.length === 0) {
+    const allSorted = [...entries];
+    allSorted.sort(([a], [b]) => {
+      const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
+      const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
+      if (aScore !== bScore) return aScore - bScore;
+      return a.localeCompare(b);
+    });
+    return (
+      <div className="space-y-2.5">
+        {allSorted.map(([key, value]) => (
+          <div key={key} className="space-y-0.5">
+            <div className="text-xs font-medium text-muted-foreground">{getLabel(key)}</div>
+            <FieldValue fieldKey={key} value={value} />
           </div>
-          <FieldValue fieldKey={key} value={value} />
+        ))}
+      </div>
+    );
+  }
+
+  // Auto-expand details when there are only a few
+  const fewDetails = detailEntries.length <= 3;
+
+  return (
+    <div className="space-y-3">
+      {/* Key Metrics — highlighted grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {keyEntries.map(([key, value]) => (
+          <div key={key} className="bg-muted rounded-md px-2.5 py-2">
+            <div className="text-[11px] font-medium text-muted-foreground mb-0.5">
+              {getLabel(key)}
+            </div>
+            <FieldValue fieldKey={key} value={value} />
+          </div>
+        ))}
+      </div>
+
+      {/* Detail fields — collapsible (auto-expand when ≤ 3) */}
+      {detailEntries.length > 0 && (
+        <div>
+          {!fewDetails && (
+            <button
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setDetailsOpen(!detailsOpen)}
+            >
+              {detailsOpen ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+              {detailEntries.length} more field{detailEntries.length !== 1 ? "s" : ""}
+            </button>
+          )}
+          {(fewDetails || detailsOpen) && (
+            <div className={`space-y-2.5 ${fewDetails ? "" : "mt-2"}`}>
+              {detailEntries.map(([key, value]) => (
+                <div key={key} className="space-y-0.5">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {getLabel(key)}
+                  </div>
+                  <FieldValue fieldKey={key} value={value} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -270,6 +363,92 @@ function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unkno
 // =============================================================================
 // Single Edge Instance (collapsible within RelationshipGroup)
 // =============================================================================
+
+/** Shared edge content — fields, evidence, provenance */
+function EdgeContent({
+  edge,
+  provenance,
+  schema,
+}: {
+  edge: ExplorerEdge;
+  provenance: ProvenanceEvent[];
+  schema?: GraphSchema | null;
+}) {
+  const config = EDGE_TYPE_CONFIG[edge.type];
+  const hasFields = edge.fields && Object.keys(edge.fields).length > 0;
+  const hasEvidence = edge.evidence?.sources?.length || edge.evidence?.pubmedIds?.length || edge.evidence?.detectionMethods?.length;
+  const hasContent = hasFields || hasEvidence || edge.numSources !== undefined || edge.numExperiments !== undefined;
+
+  return (
+    <div className="space-y-3">
+      {config?.description && (
+        <p className="text-xs text-muted-foreground">{config.description}</p>
+      )}
+
+      {/* Schema-driven fields */}
+      {edge.fields && Object.keys(edge.fields).length > 0 && (
+        <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} />
+      )}
+
+      {/* Legacy evidence (from subgraph API with includeProps) */}
+      {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Data Sources</div>
+          <div className="flex flex-wrap gap-1">
+            {edge.evidence.sources.map((source, i) => (
+              <span key={`${source}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
+                {source}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Publications</div>
+          <div className="flex flex-wrap gap-1">
+            {edge.evidence.pubmedIds.slice(0, 5).map((pmid) => (
+              <ExternalLink
+                key={pmid}
+                href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
+                className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded hover:bg-indigo-100"
+              >
+                PMID:{pmid}
+              </ExternalLink>
+            ))}
+            {edge.evidence.pubmedIds.length > 5 && (
+              <span className="text-xs text-muted-foreground">
+                +{edge.evidence.pubmedIds.length - 5} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Detection Methods</div>
+          <div className="flex flex-wrap gap-1">
+            {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
+              <span key={`${method}-${i}`} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded">
+                {method}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasContent && (
+        <p className="text-xs text-muted-foreground italic">No additional data available</p>
+      )}
+
+      {provenance.length > 0 && (
+        <ProvenanceDisplay events={provenance} />
+      )}
+    </div>
+  );
+}
 
 function EdgeInstance({
   edge,
@@ -281,43 +460,49 @@ function EdgeInstance({
   edge: ExplorerEdge;
   provenance: ProvenanceEvent[];
   defaultOpen: boolean;
-  /** When true, renders compact header (no type label — parent group already shows it) */
+  /** When true, renders flat (no card wrapper — parent group provides structure) */
   insideGroup?: boolean;
   schema?: GraphSchema | null;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const config = EDGE_TYPE_CONFIG[edge.type];
-  const hasFields = edge.fields && Object.keys(edge.fields).length > 0;
-  const hasEvidence = edge.evidence?.sources?.length || edge.evidence?.pubmedIds?.length || edge.evidence?.detectionMethods?.length;
-  const hasContent = hasFields || hasEvidence || edge.numSources !== undefined || edge.numExperiments !== undefined;
 
+  // Inside a group: render flat, no wrapper card
+  if (insideGroup) {
+    return (
+      <div className="pt-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {getEdgeDatabase(edge.type)}
+          </span>
+          {edge.numSources !== undefined && (
+            <span className="text-xs text-muted-foreground">
+              · {edge.numSources} source{edge.numSources !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <EdgeContent edge={edge} provenance={provenance} schema={schema} />
+      </div>
+    );
+  }
+
+  // Standalone: collapsible card
   return (
-    <div className={insideGroup ? "border border-border/60 rounded-md overflow-hidden" : "border border-border rounded-lg overflow-hidden"}>
+    <div className="border border-border rounded-lg overflow-hidden">
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors"
         onClick={() => setOpen(!open)}
       >
-        {!insideGroup && (
-          <div
-            className="w-2.5 h-2.5 rounded-full shrink-0"
-            style={{ backgroundColor: config?.color ?? "#94a3b8" }}
-          />
-        )}
-        {insideGroup ? (
-          <span className="text-xs text-muted-foreground flex-1 truncate">
-            {getEdgeDatabase(edge.type)}
-            {edge.numSources !== undefined ? ` \u00b7 ${edge.numSources} sources` : ""}
-          </span>
-        ) : (
-          <>
-            <span className="text-sm font-medium text-foreground flex-1 truncate">
-              {config?.label ?? edge.type}
-            </span>
-            <span className="px-1.5 py-0.5 bg-muted text-xs text-muted-foreground rounded shrink-0">
-              {getEdgeDatabase(edge.type)}
-            </span>
-          </>
-        )}
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: config?.color ?? "#94a3b8" }}
+        />
+        <span className="text-sm font-medium text-foreground flex-1 truncate">
+          {config?.label ?? edge.type}
+        </span>
+        <span className="px-1.5 py-0.5 bg-muted text-xs text-muted-foreground rounded shrink-0">
+          {getEdgeDatabase(edge.type)}
+        </span>
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         ) : (
@@ -326,92 +511,8 @@ function EdgeInstance({
       </button>
 
       {open && (
-        <div className="px-3 pb-3 space-y-3 border-t border-border">
-          {config?.description && (
-            <p className="text-xs text-muted-foreground pt-2">{config.description}</p>
-          )}
-
-          {/* Quick stats */}
-          {(edge.numSources !== undefined || edge.numExperiments !== undefined) && (
-            <div className="flex gap-3 pt-1">
-              {edge.numSources !== undefined && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Database className="w-3 h-3 text-blue-600" />
-                  <span className="font-medium text-foreground">{edge.numSources}</span>
-                  <span className="text-muted-foreground">sources</span>
-                </div>
-              )}
-              {edge.numExperiments !== undefined && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Beaker className="w-3 h-3 text-emerald-600" />
-                  <span className="font-medium text-foreground">{edge.numExperiments}</span>
-                  <span className="text-muted-foreground">experiments</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Schema-driven fields */}
-          {edge.fields && Object.keys(edge.fields).length > 0 && (
-            <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} />
-          )}
-
-          {/* Legacy evidence (from subgraph API with includeProps) */}
-          {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground">Data Sources</div>
-              <div className="flex flex-wrap gap-1">
-                {edge.evidence.sources.map((source, i) => (
-                  <span key={`${source}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
-                    {source}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground">Publications</div>
-              <div className="flex flex-wrap gap-1">
-                {edge.evidence.pubmedIds.slice(0, 5).map((pmid) => (
-                  <ExternalLink
-                    key={pmid}
-                    href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
-                    className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded hover:bg-indigo-100"
-                  >
-                    PMID:{pmid}
-                  </ExternalLink>
-                ))}
-                {edge.evidence.pubmedIds.length > 5 && (
-                  <span className="text-xs text-muted-foreground">
-                    +{edge.evidence.pubmedIds.length - 5} more
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground">Detection Methods</div>
-              <div className="flex flex-wrap gap-1">
-                {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
-                  <span key={`${method}-${i}`} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded">
-                    {method}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!hasContent && (
-            <p className="text-xs text-muted-foreground pt-1 italic">No additional data available</p>
-          )}
-
-          {provenance.length > 0 && (
-            <ProvenanceDisplay events={provenance} />
-          )}
+        <div className="px-3 pb-3 pt-2 border-t border-border">
+          <EdgeContent edge={edge} provenance={provenance} schema={schema} />
         </div>
       )}
     </div>
@@ -671,7 +772,7 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
             className="px-2 py-0.5 rounded text-xs font-medium"
             style={{ backgroundColor: colors.background, color: colors.text }}
           >
-            {node.type}
+            {displayEntityType(node.type)}
           </span>
           {node.isSeed && (
             <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700 font-medium">
@@ -680,7 +781,7 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
           )}
         </div>
         <h3 className="text-lg font-semibold text-foreground">{node.label}</h3>
-        <p className="text-xs font-mono text-muted-foreground">{node.id}</p>
+        <p className="text-xs font-mono text-muted-foreground">{formatNodeId(node.id)}</p>
       </div>
 
       {/* Stats */}
@@ -868,7 +969,7 @@ function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailP
                 <span className="text-sm font-medium text-foreground truncate">
                   {node.label}
                 </span>
-                <span className="text-xs text-muted-foreground">{node.type}</span>
+                <span className="text-xs text-muted-foreground">{displayEntityType(node.type)}</span>
               </div>
             );
           })}

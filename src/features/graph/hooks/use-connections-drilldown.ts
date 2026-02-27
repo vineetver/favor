@@ -12,6 +12,7 @@ import type {
 import {
   fetchConnections,
   fetchEdgePage,
+  extractEdgeFields,
   type ConnectionsEdgeItem,
 } from "../api";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
@@ -41,6 +42,7 @@ function hydrateConnectionEdge(item: ConnectionsEdgeItem): ExplorerEdge {
   const sourceKey = makeNodeKey(fromType, item.from.id);
   const targetKey = makeNodeKey(toType, item.to.id);
   const edgeId = createEdgeId(edgeType, item.from.id, item.to.id);
+  const fields = extractEdgeFields(item);
 
   return {
     id: edgeId,
@@ -50,9 +52,9 @@ function hydrateConnectionEdge(item: ConnectionsEdgeItem): ExplorerEdge {
     targetId: item.to.id,
     sourceKey,
     targetKey,
-    numSources: item.fields?.num_sources as number | undefined,
-    numExperiments: item.fields?.num_experiments as number | undefined,
-    fields: item.fields,
+    numSources: fields.num_sources as number | undefined,
+    numExperiments: fields.num_experiments as number | undefined,
+    fields,
   };
 }
 
@@ -65,10 +67,11 @@ function hydrateConnectionEdge(item: ConnectionsEdgeItem): ExplorerEdge {
 function mergeEdges(
   localEdges: ExplorerEdge[],
   backendGroups: Array<{
-    type: string;
+    edgeType: string;
     count: number;
     direction: "out" | "in";
     edges: ConnectionsEdgeItem[];
+    hasMore?: boolean;
   }>,
 ): ConnectionsEdgeGroup[] {
   // Build local edge map by type
@@ -86,7 +89,7 @@ function mergeEdges(
 
   // Process backend groups
   for (const bg of backendGroups) {
-    const edgeType = bg.type as EdgeType;
+    const edgeType = bg.edgeType as EdgeType;
     const localForType = localByType.get(edgeType) ?? [];
     const hasLocalEdges = localForType.length > 0;
 
@@ -103,6 +106,7 @@ function mergeEdges(
       direction: bg.direction,
       totalCount: bg.count,
       edges: mergedEdges,
+      nextCursor: bg.hasMore ? "has_more" : undefined,
       pageStatus: "idle",
       hasLocalEdges,
     });
@@ -204,7 +208,7 @@ export function useConnectionsDrilldown({
         return;
       }
 
-      const groups = mergeEdges(localEdges, response.edgeTypes ?? []);
+      const groups = mergeEdges(localEdges, response.data?.connections ?? []);
       setData({ sourceId, targetId, groups });
       setStatus("ready");
     } catch (err) {
@@ -284,7 +288,7 @@ export function useConnectionsDrilldown({
           }
 
           const existingIds = new Set(group.edges.map((e) => e.id));
-          const newEdges = response.edges
+          const newEdges = response.data.edges
             .map(hydrateConnectionEdge)
             .filter((e) => !existingIds.has(e.id));
 
@@ -297,7 +301,7 @@ export function useConnectionsDrilldown({
                   ? {
                       ...g,
                       edges: [...g.edges, ...newEdges],
-                      nextCursor: response.nextCursor,
+                      nextCursor: response.data.nextCursor,
                       pageStatus: "idle" as const,
                     }
                   : g,

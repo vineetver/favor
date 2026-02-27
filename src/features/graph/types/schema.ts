@@ -40,12 +40,30 @@ export interface EdgeTypeStats {
   defaultScoreField?: string;
   scoreFields?: string[];
   filterFields?: string[];
+  fromType?: EntityType;
+  toType?: EntityType;
+  description?: string;
+  propertyCount?: number;
+}
+
+export interface NodeTypeStats {
+  nodeType: EntityType;
+  description?: string;
+  summaryFields?: string[];
+  propertyCount?: number;
+  fieldsByCategory?: Record<string, string[]>;
 }
 
 export interface GraphSchema {
-  nodeTypes: EntityType[];
+  nodeTypes: NodeTypeStats[];
   edgeTypes: EdgeTypeStats[];
   lastUpdated?: string;
+}
+
+/** Extract plain EntityType[] from the rich NodeTypeStats array. */
+export function getNodeTypeNames(schema: GraphSchema | null | undefined): EntityType[] {
+  if (!schema?.nodeTypes) return [];
+  return schema.nodeTypes.map((nt) => nt.nodeType);
 }
 
 export interface GraphStats {

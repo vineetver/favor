@@ -45,9 +45,9 @@ export function useContextOverlayQuery({
   const edgeType = useMemo(() => {
     switch (overlayType) {
       case "shared-pathways":
-        return "PARTICIPATES_IN";
+        return "GENE_PARTICIPATES_IN_PATHWAY";
       case "shared-diseases":
-        return "ASSOCIATED_WITH";
+        return "GENE_ASSOCIATED_WITH_DISEASE";
       default:
         return null;
     }

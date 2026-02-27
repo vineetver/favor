@@ -38,7 +38,6 @@ import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/pr
 import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
 import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
-import { getEdgeFieldsForTypes, batchEdgeTypesByFieldLimit } from "../types/edge";
 import type { TemplateId } from "../types/state";
 import type { ExpansionConfig } from "../config/expansion";
 import type { ExplorerTemplate } from "../config/explorer-config";
@@ -409,8 +408,12 @@ function GraphExplorerViewInner({
 
     try {
       if (expansion) {
-        // Split edge types into batches that each fit within the backend's 20-field limit
-        const batches = batchEdgeTypesByFieldLimit(expansion.edgeTypes as EdgeType[], 20);
+        // Split edge types into batches of 4 (resolveEdgeSelectFields caps fields at 20)
+        const allExpEdgeTypes = expansion.edgeTypes as EdgeType[];
+        const batches: EdgeType[][] = [];
+        for (let i = 0; i < allExpEdgeTypes.length; i += 4) {
+          batches.push(allExpEdgeTypes.slice(i, i + 4));
+        }
 
         const responses = await Promise.all(
           batches.map((batch) => {
@@ -549,7 +552,6 @@ function GraphExplorerViewInner({
             targetKey,
             numSources: apiEdge.props?.num_sources as number | undefined,
             numExperiments: apiEdge.props?.num_experiments as number | undefined,
-            confidenceScores: apiEdge.props?.confidence_scores as number[] | undefined,
             evidence: {
               sources: apiEdge.props?.sources as string[] | undefined,
               pubmedIds: (apiEdge.props?.pmids ?? apiEdge.props?.pubmed_ids) as string[] | undefined,

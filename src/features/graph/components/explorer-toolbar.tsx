@@ -40,6 +40,7 @@ import {
 import { memo, useCallback, useMemo, useState } from "react";
 import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { displayEntityType } from "../utils/display-names";
 import { isBranchStep } from "../config/lenses";
 import type { ExplorerLayoutType } from "../config/layout";
 import type { ViewMode, TemplateId } from "../types/state";
@@ -659,7 +660,7 @@ function ExplorerToolbarInner({
           <span className="text-muted-foreground/40">/</span>
 
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-xs text-muted-foreground">{seed.type}:</span>
+            <span className="text-xs text-muted-foreground">{displayEntityType(seed.type)}:</span>
             <span className="text-sm font-semibold text-foreground truncate">{seed.label}</span>
             <ChevronRight className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
             <span className="text-xs text-muted-foreground flex-shrink-0">Network</span>

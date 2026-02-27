@@ -198,3 +198,14 @@ export interface AgentPlan {
   queryType: QueryType;
   steps: PlanStep[];
 }
+
+// ---------------------------------------------------------------------------
+// Conversation context for follow-up awareness
+// ---------------------------------------------------------------------------
+
+export interface ConversationContext {
+  /** label → { type, id } from prior searchEntities calls */
+  resolvedEntities: Record<string, { type: string; id: string }>;
+  /** Number of prior user turns */
+  turnCount: number;
+}

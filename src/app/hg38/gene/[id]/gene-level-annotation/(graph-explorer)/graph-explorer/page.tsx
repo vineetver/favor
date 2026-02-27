@@ -8,7 +8,7 @@ import {
 import { GraphExplorer } from "@features/graph/components";
 import type { EntityType } from "@features/graph/types/entity";
 import type { EdgeType } from "@features/graph/types/edge";
-import type { GraphSchema, GraphStats } from "@features/graph/types/schema";
+import type { GraphSchema, GraphStats, NodeTypeStats } from "@features/graph/types/schema";
 import type { InitialSubgraphData } from "@features/graph/types/props";
 import { serializeLensSteps, isBranchStep } from "@features/graph/config/lenses";
 import { GENE_EXPLORER_CONFIG } from "@features/graph/config/entities/gene";
@@ -51,7 +51,17 @@ export default async function GraphExplorerPage({
   // Transform schema response to component format
   const schema: GraphSchema | null = schemaResponse?.data
     ? {
-        nodeTypes: schemaResponse.data.nodeTypes as EntityType[],
+        nodeTypes: schemaResponse.data.nodeTypes.map((nt): NodeTypeStats =>
+          typeof nt === "string"
+            ? { nodeType: nt as EntityType }
+            : {
+                nodeType: nt.nodeType as EntityType,
+                description: nt.description,
+                summaryFields: nt.summaryFields,
+                propertyCount: nt.propertyCount,
+                fieldsByCategory: nt.fieldsByCategory,
+              },
+        ),
         edgeTypes: schemaResponse.data.edgeTypes.map((et) => ({
           edgeType: et.type as EdgeType,
           count: et.count,
@@ -61,6 +71,10 @@ export default async function GraphExplorerPage({
           defaultScoreField: et.defaultScoreField,
           scoreFields: et.scoreFields,
           filterFields: et.filterFields,
+          fromType: et.sourceTypes?.[0] as EntityType | undefined,
+          toType: et.targetTypes?.[0] as EntityType | undefined,
+          description: et.description,
+          propertyCount: et.propertyCount,
         })),
         lastUpdated: schemaResponse.data.lastUpdated,
       }

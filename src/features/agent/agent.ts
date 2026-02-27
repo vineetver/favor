@@ -9,27 +9,26 @@ import { buildSupervisorPrompt } from "./lib/prompts/supervisor-prompt";
 import { createSupervisorPrepareStep } from "./lib/prepare-step-supervisor";
 import { nanoModel, NANO_PROVIDER_OPTIONS, getSynthesisModel, getSynthesisProviderOptions } from "./lib/models";
 import * as tools from "./tools";
+import { createPlanQueryTool } from "./tools/plan-query";
+import type { ConversationContext } from "./types";
 
-// ---------------------------------------------------------------------------
-// Supervisor tools — 6 tools only
-// ---------------------------------------------------------------------------
-
-const supervisorTools = {
-  planQuery: tools.planQuery,
-  searchEntities: tools.searchEntities,
-  recallMemories: tools.recallMemories,
-  saveMemory: tools.saveMemory,
-  variantTriage: tools.variantTriage,
-  bioContext: tools.bioContext,
-};
-
-export function createFavorAgent(synthesisModelId?: string) {
+export function createFavorAgent(synthesisModelId?: string, context?: ConversationContext) {
   const baseModel = getSynthesisModel(synthesisModelId);
 
   const model =
     process.env.NODE_ENV === "development"
       ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
       : baseModel;
+
+  // Build per-request tools so planQuery gets conversation context
+  const supervisorTools = {
+    planQuery: createPlanQueryTool(context),
+    searchEntities: tools.searchEntities,
+    recallMemories: tools.recallMemories,
+    saveMemory: tools.saveMemory,
+    variantTriage: tools.variantTriage,
+    bioContext: tools.bioContext,
+  };
 
   return new ToolLoopAgent({
     model,

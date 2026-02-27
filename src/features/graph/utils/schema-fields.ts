@@ -1,6 +1,5 @@
 import type { EdgeType } from "../types/edge";
 import type { GraphSchema, EdgeTypeStats } from "../types/schema";
-import { EDGE_TYPE_FIELDS, getEdgeFieldsForTypes } from "../types/edge";
 
 // =============================================================================
 // Schema Map — O(1) lookup by edge type
@@ -76,17 +75,15 @@ export function resolveFilterFields(
 
 /**
  * Compute the union of score + filter fields across multiple edge types,
- * capped at 20 (API limit). Falls back to `EDGE_TYPE_FIELDS` when schema is null.
+ * capped at 20 (API limit). Returns minimal fallback when schema is empty.
  */
 export function resolveEdgeSelectFields(
   edgeTypes: EdgeType[],
   schemaMap: EdgeTypeStatsMap,
 ): string[] {
-  // If schema is empty, fall back to hardcoded catalog
+  // If schema is empty, return minimal fallback
   if (schemaMap.size === 0) {
-    const fields = getEdgeFieldsForTypes(edgeTypes);
-    if (!fields.includes("source")) fields.push("source");
-    return fields.slice(0, 20);
+    return ["source"];
   }
 
   const fieldSet = new Set<string>();
@@ -96,12 +93,6 @@ export function resolveEdgeSelectFields(
     if (stats) {
       for (const f of stats.scoreFields ?? []) fieldSet.add(f);
       for (const f of stats.filterFields ?? []) fieldSet.add(f);
-    } else {
-      // Fall back to hardcoded fields for unknown edge types
-      const hardcoded = EDGE_TYPE_FIELDS[et];
-      if (hardcoded) {
-        for (const f of hardcoded) fieldSet.add(f);
-      }
     }
   }
 

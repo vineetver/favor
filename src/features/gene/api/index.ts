@@ -245,12 +245,13 @@ export async function fetchPathwayEnrichment(
         }),
       );
 
+    // Pathway→Gene→Disease requires depth 2 via PARTICIPATES_IN + ASSOCIATED_WITH_DISEASE
     const subgraphResponse = await fetchSubgraph({
       seeds: [{ type: "Pathway", id: pathwayId }],
-      maxDepth: 1,
-      edgeTypes: ["ASSOCIATED_WITH"],
+      maxDepth: 2,
+      edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY", "GENE_ASSOCIATED_WITH_DISEASE"],
       nodeLimit: 50,
-      edgeLimit: 50,
+      edgeLimit: 100,
       includeProps: false,
     });
 
@@ -298,7 +299,7 @@ export async function fetchPathwayDiseaseEnrichment(
     const subgraphResponse = await fetchSubgraph({
       seeds: [{ type: "Pathway", id: pathwayId }],
       maxDepth: 2,
-      edgeTypes: ["PARTICIPATES_IN", "ASSOCIATED_WITH_DISEASE"],
+      edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY", "GENE_ASSOCIATED_WITH_DISEASE"],
       nodeLimit: 500,
       edgeLimit: 1000,
       includeProps: false,
@@ -322,7 +323,7 @@ export async function fetchPathwayDiseaseEnrichment(
     let participatesInMatchCount = 0;
 
     for (const edge of edges) {
-      if (edge.type === "PARTICIPATES_IN") {
+      if (edge.type === "GENE_PARTICIPATES_IN_PATHWAY") {
         participatesInCount++;
         if (edge.to.id === pathwayId && edge.from.type === "Gene") {
           participatesInMatchCount++;
@@ -350,7 +351,7 @@ export async function fetchPathwayDiseaseEnrichment(
     let implicatedInMatchCount = 0;
 
     for (const edge of edges) {
-      if (edge.type === "ASSOCIATED_WITH_DISEASE") {
+      if (edge.type === "GENE_ASSOCIATED_WITH_DISEASE") {
         implicatedInCount++;
         const geneId = edge.from.id;
         const diseaseNode = edge.to;
