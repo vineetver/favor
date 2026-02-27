@@ -70,7 +70,7 @@ function EdgeTooltipInner({ info }: EdgeTooltipProps) {
         </div>
 
         {/* Direction */}
-        <div className="flex items-center gap-1.5 text-popover-foreground/70 mb-1">
+        <div className="flex items-center gap-1.5 text-background/70 mb-1">
           <span className="truncate max-w-[100px]">{sourceLabel}</span>
           <ArrowRight className="w-3 h-3 shrink-0" />
           <span className="truncate max-w-[100px]">{targetLabel}</span>
@@ -78,10 +78,10 @@ function EdgeTooltipInner({ info }: EdgeTooltipProps) {
 
         {/* Key fields */}
         {fieldEntries.length > 0 && (
-          <div className="border-t border-border pt-1.5 mt-1.5 space-y-0.5">
+          <div className="border-t border-background/20 pt-1.5 mt-1.5 space-y-0.5">
             {fieldEntries.map((entry) => (
               <div key={entry.label} className="flex items-center justify-between gap-3">
-                <span className="text-popover-foreground/60">{entry.label}</span>
+                <span className="text-background/60">{entry.label}</span>
                 <span className="font-medium text-white">{entry.value}</span>
               </div>
             ))}

@@ -93,6 +93,7 @@ WHEN NOT TO USE: If you already know the edge type. For a specific entity's conn
         edge: e.edgeType,
         from: e.fromType,
         to: e.toType,
+        ...(e.defaultScoreField ? { defaultScore: e.defaultScoreField } : {}),
       }));
 
       if (nodeType && compactEdges.length === 0) {

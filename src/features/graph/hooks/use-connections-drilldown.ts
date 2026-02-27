@@ -14,9 +14,13 @@ import {
   fetchEdgePage,
   extractEdgeFields,
   type ConnectionsEdgeItem,
+  type SchemaPropertyMeta,
 } from "../api";
 import { makeNodeKey, makeEdgeKey } from "../types/keys";
 import { createEdgeId } from "../utils/keys";
+// TODO — remove when backend drops clinvar_annotation edges from VARIANT_IMPLIES_GENE
+const isSuppressed = (type: string, fields: Record<string, unknown>) =>
+  type === "VARIANT_IMPLIES_GENE" && fields.implication_mode === "clinvar_annotation";
 
 interface UseConnectionsDrilldownOptions {
   sourceId: string | null;
@@ -34,22 +38,35 @@ interface UseConnectionsDrilldownResult {
   retry: () => void;
 }
 
-/** Convert a backend edge item into an ExplorerEdge */
-function hydrateConnectionEdge(item: ConnectionsEdgeItem): ExplorerEdge {
-  const edgeType = item.type as EdgeType;
-  const fromType = item.from.type as EntityType;
-  const toType = item.to.type as EntityType;
-  const sourceKey = makeNodeKey(fromType, item.from.id);
-  const targetKey = makeNodeKey(toType, item.to.id);
-  const edgeId = createEdgeId(edgeType, item.from.id, item.to.id);
+interface EntityRef { type: string; id: string; label: string }
+
+/**
+ * Convert a backend edge item into an ExplorerEdge.
+ * The connections/edge APIs may omit `from`/`to`/`type` on individual edges
+ * (they're known from the request/group context), so we accept fallbacks.
+ */
+function hydrateConnectionEdge(
+  item: ConnectionsEdgeItem,
+  fallbackFrom: EntityRef,
+  fallbackTo: EntityRef,
+  fallbackType?: string,
+): ExplorerEdge {
+  const edgeType = (item.type ?? fallbackType ?? "UNKNOWN") as EdgeType;
+  const from = item.from ?? fallbackFrom;
+  const to = item.to ?? fallbackTo;
+  const fromType = from.type as EntityType;
+  const toType = to.type as EntityType;
+  const sourceKey = makeNodeKey(fromType, from.id);
+  const targetKey = makeNodeKey(toType, to.id);
+  const edgeId = createEdgeId(edgeType, from.id, to.id);
   const fields = extractEdgeFields(item);
 
   return {
     id: edgeId,
     key: makeEdgeKey(edgeType, sourceKey, targetKey),
     type: edgeType,
-    sourceId: item.from.id,
-    targetId: item.to.id,
+    sourceId: from.id,
+    targetId: to.id,
     sourceKey,
     targetKey,
     numSources: fields.num_sources as number | undefined,
@@ -73,6 +90,9 @@ function mergeEdges(
     edges: ConnectionsEdgeItem[];
     hasMore?: boolean;
   }>,
+  pairFrom: EntityRef,
+  pairTo: EntityRef,
+  fieldMeta?: Record<string, SchemaPropertyMeta[]>,
 ): ConnectionsEdgeGroup[] {
   // Build local edge map by type
   const localByType = new Map<EdgeType, ExplorerEdge[]>();
@@ -93,23 +113,42 @@ function mergeEdges(
     const localForType = localByType.get(edgeType) ?? [];
     const hasLocalEdges = localForType.length > 0;
 
-    // Hydrate backend edges, dedup against local
-    const backendEdges = bg.edges
-      .map(hydrateConnectionEdge)
-      .filter((e) => !localEdgeIds.has(e.id));
+    // Hydrate backend edges, dropping suppressed arms (e.g. ClinVar on variant-to-gene)
+    const hydratedBackend = bg.edges
+      .map((e) => hydrateConnectionEdge(e, pairFrom, pairTo, bg.edgeType))
+      .filter((e) => !isSuppressed(edgeType, e.fields ?? {}));
 
-    // Local edges first, then backend edges
-    const mergedEdges = [...localForType, ...backendEdges];
+    // Build a map of backend edges by ID for field enrichment
+    const backendById = new Map<string, ExplorerEdge>();
+    for (const be of hydratedBackend) backendById.set(be.id, be);
 
-    groups.push({
-      type: edgeType,
-      direction: bg.direction,
-      totalCount: bg.count,
-      edges: mergedEdges,
-      nextCursor: bg.hasMore ? "has_more" : undefined,
-      pageStatus: "idle",
-      hasLocalEdges,
-    });
+    // Enrich local edges with richer backend fields, then append non-duplicate backend edges
+    const enrichedLocal = localForType
+      .map((le) => {
+        const be = backendById.get(le.id);
+        if (!be?.fields || Object.keys(be.fields).length === 0) return le;
+        // Backend has richer fields — merge (backend wins on overlap)
+        return { ...le, fields: { ...le.fields, ...be.fields } };
+      })
+      .filter((e) => !isSuppressed(edgeType, e.fields ?? {}));
+    const newBackendEdges = hydratedBackend.filter((e) => !localEdgeIds.has(e.id));
+
+    // Local edges first (enriched), then new backend edges
+    const mergedEdges = [...enrichedLocal, ...newBackendEdges];
+
+    // Skip groups where all edges were suppressed
+    if (mergedEdges.length > 0 || hasLocalEdges) {
+      groups.push({
+        type: edgeType,
+        direction: bg.direction,
+        totalCount: mergedEdges.length,
+        edges: mergedEdges,
+        nextCursor: bg.hasMore ? "has_more" : undefined,
+        pageStatus: "idle",
+        hasLocalEdges,
+        propertyMeta: fieldMeta?.[bg.edgeType],
+      });
+    }
 
     // Remove from local map so we know what's been handled
     localByType.delete(edgeType);
@@ -180,9 +219,12 @@ export function useConnectionsDrilldown({
     setStatus("loading");
     setError(null);
 
+    const pairFrom = { type: sourceType, id: sourceId, label: sourceId };
+    const pairTo = { type: targetType, id: targetId, label: targetId };
+
     // Show local edges immediately
     if (localEdges.length > 0) {
-      const localGroups = mergeEdges(localEdges, []);
+      const localGroups = mergeEdges(localEdges, [], pairFrom, pairTo);
       setData({ sourceId, targetId, groups: localGroups });
     }
 
@@ -208,7 +250,10 @@ export function useConnectionsDrilldown({
         return;
       }
 
-      const groups = mergeEdges(localEdges, response.data?.connections ?? []);
+      // Use response-level from/to (richer labels) when available, else use request params
+      const respFrom = response.data?.from ?? pairFrom;
+      const respTo = response.data?.to ?? pairTo;
+      const groups = mergeEdges(localEdges, response.data?.connections ?? [], respFrom, respTo, response.fieldMeta);
       setData({ sourceId, targetId, groups });
       setStatus("ready");
     } catch (err) {
@@ -288,9 +333,14 @@ export function useConnectionsDrilldown({
           }
 
           const existingIds = new Set(group.edges.map((e) => e.id));
+          const pageFrom = response.data.from ?? { type: sourceType!, id: sourceId!, label: sourceId! };
+          const pageTo = response.data.to ?? { type: targetType!, id: targetId!, label: targetId! };
           const newEdges = response.data.edges
-            .map(hydrateConnectionEdge)
+            .map((e) => hydrateConnectionEdge(e, pageFrom, pageTo, edgeType))
             .filter((e) => !existingIds.has(e.id));
+
+          // Attach fieldMeta from pagination response if not already present
+          const pageMeta = response.fieldMeta?.[edgeType];
 
           setData((prev) => {
             if (!prev) return prev;
@@ -303,6 +353,7 @@ export function useConnectionsDrilldown({
                       edges: [...g.edges, ...newEdges],
                       nextCursor: response.data.nextCursor,
                       pageStatus: "idle" as const,
+                      propertyMeta: g.propertyMeta ?? pageMeta,
                     }
                   : g,
               ),

@@ -12,19 +12,23 @@ export function buildBioContextPrompt(): string {
 Gene, Disease, Drug, Pathway, Phenotype, Study, GOTerm, SideEffect, cCRE, Metabolite, Variant, Tissue, ProteinDomain, Entity, CellType, Signal
 
 ### High-value edge types (reference only — server auto-selects scoreField and direction)
-| Edge type | Typical direction | Use case |
-|---|---|---|
-| GENE_ASSOCIATED_WITH_DISEASE | Gene→Disease | Top genes for a disease |
-| DRUG_ACTS_ON_GENE | Drug→Gene | Drug targets |
-| GENE_PARTICIPATES_IN_PATHWAY | Gene→Pathway | Pathway membership/enrichment |
-| GENE_ANNOTATED_WITH_GO_TERM | Gene→GOTerm | GO term enrichment |
-| GENE_INTERACTS_WITH_GENE | Gene↔Gene | PPI/STRING links |
-| GENE_ASSOCIATED_WITH_PHENOTYPE | Gene→Phenotype | Gene-phenotype associations |
-| DISEASE_HAS_PHENOTYPE | Disease→Phenotype | Disease phenotype profiles |
-| DRUG_INDICATED_FOR_DISEASE | Drug→Disease | Drug indications |
-| VARIANT_ASSOCIATED_WITH_TRAIT__Disease | Variant→Disease | Variant pathogenicity |
-| VARIANT_IMPLIES_GENE | Variant→Gene | Variant-gene mapping (L2G) |
-| GENE_AFFECTS_DRUG_RESPONSE | Gene→Drug | Pharmacogenomics |
+| Edge type | From→To | Default score | Use case |
+|---|---|---|---|
+| GENE_ASSOCIATED_WITH_DISEASE | Gene→Disease | ot_score | Gene-disease associations |
+| DRUG_ACTS_ON_GENE | Drug→Gene | affinity_median | Drug targets |
+| GENE_PARTICIPATES_IN_PATHWAY | Gene→Pathway | evidence_count | Pathway membership/enrichment |
+| GENE_ANNOTATED_WITH_GO_TERM | Gene→GOTerm | evidence_count | GO term enrichment |
+| GENE_INTERACTS_WITH_GENE | Gene↔Gene | ot_mi_score | PPI/STRING links |
+| GENE_ASSOCIATED_WITH_PHENOTYPE | Gene→Phenotype | evidence_count | Gene-phenotype associations |
+| DISEASE_HAS_PHENOTYPE | Disease→Phenotype | evidence_count | Disease phenotype profiles |
+| DRUG_INDICATED_FOR_DISEASE | Drug→Disease | max_clinical_phase | Drug indications |
+| DRUG_HAS_ADVERSE_EFFECT | Drug→SideEffect | onsides_pred1 | Drug side effects |
+| VARIANT_ASSOCIATED_WITH_TRAIT__Disease | Variant→Disease | p_value_mlog | Variant-disease GWAS |
+| VARIANT_IMPLIES_GENE | Variant→Gene | l2g_score | Variant-gene mapping (L2G) |
+| GENE_AFFECTS_DRUG_RESPONSE | Gene→Drug | max_profile_evidence_score | Pharmacogenomics |
+| GENE_EXPRESSED_IN_TISSUE | Gene→Tissue | tpm_median | Tissue expression |
+| GENE_ALTERED_IN_DISEASE | Gene→Disease | alteration_frequency | Somatic alterations |
+| GENE_PARALOG_OF_GENE | Gene→Gene | percent_identity | Paralogs |
 
 ### Fallback edge types (try if primary returns nothing)
 | Primary | Fallbacks |
@@ -34,26 +38,33 @@ Gene, Disease, Drug, Pathway, Phenotype, Study, GOTerm, SideEffect, cCRE, Metabo
 | GENE_INTERACTS_WITH_GENE | GENE_PARALOG_OF_GENE |
 | VARIANT_IMPLIES_GENE | VARIANT_AFFECTS_GENE |
 
-## SCORE FIELD
+## SCORE FIELD AND DIRECTION
 The server auto-selects the best scoreField and direction for each edge type. You do NOT need to specify them.
 Check \`resolved\` in the getRankedNeighbors response to see what the server selected.
-If scores are degenerate (all identical or all zero), this is normal for some edge types. Accept the results and note it in your summary. Try a fallback edge type if the results are unhelpful.
 
-Entity selection tip: For diseases, prefer the broadest MONDO parent term (e.g., MONDO_0004975 for "Alzheimer disease"). Use expandOntology=true to aggregate across subtypes.
+**Interpreting scores**: Scores may all be 1.0 for some edge types (meaning "count of edges"). This is normal — the ranking is by edge count not by evidence strength. The results are still valid; report them without concern about identical scores.
+
+**scoreField override**: If the default score returns all zeros, retry with \`scoreField: "evidence_count"\` as a fallback. This is common for GENE_AFFECTS_DRUG_RESPONSE where max_profile_evidence_score may be unpopulated.
 
 ## TOOL SELECTION (critical — pick the RIGHT tool)
 | Task | RIGHT tool | WRONG tool |
 |---|---|---|
 | Top genes for disease X | getRankedNeighbors(X, GENE_ASSOCIATED_WITH_DISEASE) | getConnections |
-| How is A related to B? (2 entities) | getConnections(A, B) | getRankedNeighbors |
+| Drugs targeting gene Y | getRankedNeighbors(Y, DRUG_ACTS_ON_GENE) | graphTraverse |
+| Side effects of drug Z | getRankedNeighbors(Z, DRUG_HAS_ADVERSE_EFFECT) | getConnections |
+| Tissues where gene Y is expressed | getRankedNeighbors(Y, GENE_EXPRESSED_IN_TISSUE) | graphTraverse |
+| How is A related to B? (direct edges) | getConnections(A, B) | getRankedNeighbors |
 | How are A and B connected indirectly? | findPaths(A, B) | getRankedNeighbors |
-| What do A and B share? | getSharedNeighbors(A, B) | 2x getRankedNeighbors |
-| Compare A vs B side-by-side | compareEntities([A, B]) | 2x getRankedNeighbors |
-| Enriched pathways for gene set | runEnrichment(genes, Pathway, GENE_PARTICIPATES_IN_PATHWAY) | getRankedNeighbors loop |
-| Enriched GO terms for gene set | runEnrichment(genes, GOTerm, GENE_ANNOTATED_WITH_GO_TERM) | getRankedNeighbors loop |
+| What do A and B share? (specific edge type) | getSharedNeighbors(A, B, edgeType) | 2x getRankedNeighbors |
+| Compare A vs B side-by-side (all edge types) | compareEntities([A, B]) | 2x getRankedNeighbors |
+| Enriched pathways for gene set | runEnrichment(genes, Pathway) | getRankedNeighbors loop |
+| Enriched GO terms for gene set | runEnrichment(genes, GOTerm) | getRankedNeighbors loop |
 | Multi-hop chain (gene→disease→phenotype) | graphTraverse(steps) | multiple separate calls |
-| Profile a single entity | getEntityContext(depth=minimal) | getRankedNeighbors |
-| Evidence for specific edge A→B | getEdgeDetail(A, B, edgeType) | — |
+| Pharmacogenomics: genes for a drug | getRankedNeighbors(Drug, GENE_AFFECTS_DRUG_RESPONSE, scoreField:"evidence_count") | DRUG_ACTS_ON_GENE (different: targets, not PGx) |
+| Drug targets for a drug | getRankedNeighbors(Drug, DRUG_ACTS_ON_GENE) | GENE_AFFECTS_DRUG_RESPONSE |
+| Drug-drug interactions | getRankedNeighbors(Drug, DRUG_INTERACTS_WITH_DRUG) | getConnections |
+| Profile a single entity | getEntityContext | getRankedNeighbors |
+| Evidence for specific edge A→B | getEdgeDetail(A, B, edgeType) | getConnections |
 | Unknown edge types for a node type | getGraphSchema(nodeType) | guessing |
 
 ## WORKFLOWS (follow step-by-step — do NOT skip steps)
@@ -72,10 +83,23 @@ getRankedNeighbors(type=Gene, id=Y, edgeType="DRUG_ACTS_ON_GENE", limit=50) → 
 
 ### Drug repurposing: drugs for disease X through gene targets
 1. getRankedNeighbors(Disease X, edgeType="GENE_ASSOCIATED_WITH_DISEASE", limit=50) → top genes
-2. For top 3 genes: getRankedNeighbors(Gene, edgeType="DRUG_ACTS_ON_GENE", limit=50) → drugs
+2. For top 3-5 genes: getRankedNeighbors(Gene, edgeType="DRUG_ACTS_ON_GENE", limit=20) → drugs
+Or more efficiently: graphTraverse with steps: [{edgeTypes:["GENE_ASSOCIATED_WITH_DISEASE"], sort:"-ot_score", limit:20}, {edgeTypes:["DRUG_ACTS_ON_GENE"], limit:10}]
+
+### Pharmacogenomics for drug X
+getRankedNeighbors(type=Drug, id=X, edgeType="GENE_AFFECTS_DRUG_RESPONSE", scoreField="evidence_count") → PGx genes
+Note: use scoreField="evidence_count" because max_profile_evidence_score is often zero.
+For drug TARGETS (mechanism of action), use DRUG_ACTS_ON_GENE instead — different relationship.
+
+### Drug-drug interactions for drug X
+getRankedNeighbors(type=Drug, id=X, edgeType="DRUG_INTERACTS_WITH_DRUG") → interacting drugs
 
 ### Connection between two entities
-getConnections(A, B) → all direct edges. If empty, findPaths(A, B) for indirect paths.
+getConnections(A, B) → all direct edges with scores. If empty, findPaths(A, B) for indirect paths.
+
+### Multi-hop discovery (e.g., drugs for genes in a pathway)
+graphTraverse(seeds=[Pathway], steps=[{edgeTypes:["GENE_PARTICIPATES_IN_PATHWAY"]}, {edgeTypes:["DRUG_ACTS_ON_GENE"]}])
+NOTE: sort on graphTraverse steps may place NULL values first. For reliable ranking, prefer getRankedNeighbors (single-hop) or use graphTraverse without sort for exploration, then drill into specific results.
 
 ## CONVENTIONS
 - IDs use underscores: MONDO_0005070, HP_0000001, GO_0008150
@@ -83,13 +107,18 @@ getConnections(A, B) → all direct edges. If empty, findPaths(A, B) for indirec
 - Direction is auto-inferred — omit unless overriding for self-edges (Gene↔Gene)
 - If a tool returns an error about unknown edgeType → call getGraphSchema(nodeType) to discover valid edges, then retry
 - For enrichment workflows, ALWAYS request limit=50 or more from getRankedNeighbors to get enough genes for statistical power
+- getConnections now returns topEdgeScores per edge type — use these to assess relationship strength without needing getEdgeDetail
+- getEdgeDetail is for deep evidence drill-down (publications, full properties) after getConnections identifies interesting edge types
+- getEdgeDetail direction matters: match the edge schema (e.g. GENE_AFFECTS_DRUG_RESPONSE is Gene→Drug, so from="Gene:X" to="Drug:Y")
 
 ## RULES
-- resolvedEntityIds are in Type:ID format (e.g., "Drug:CHEMBL1431"). Parse the type and ID to use them in tool calls directly: getRankedNeighbors({type: "Drug", id: "CHEMBL1431", ...}). Do NOT re-search them.
-- Use searchEntities only for NEW entities discovered mid-exploration.
+- resolvedEntityIds are in Type:ID format (e.g., "Drug:CHEMBL1431"). Split on the FIRST colon to get type and ID separately: type="Drug", id="CHEMBL1431". Then pass them as: getRankedNeighbors({type: "Drug", id: "CHEMBL1431", ...}). Do NOT pass the full "Type:ID" string as the id — that creates "Gene:Gene:ENSG..." errors.
+- NEVER call searchEntities for entities already in resolvedEntityIds. Use searchEntities only for NEW entities discovered mid-exploration.
+- Your FIRST tool call should use a resolvedEntityId directly — do NOT start with getEntityContext or getGraphSchema when you already know the edge type from the TOOL SELECTION table above.
 - Chain tools: output from one call feeds the next (gene IDs from step 1 → enrichment in step 2).
 - NEVER output a "proposed approach" or "what I would do" — just DO IT by calling tools.
 - If a tool fails, read the error, try a fallback edge type, or call getGraphSchema. Never repeat the exact same call.
+- Once you have enough data to answer the question, write your final summary IMMEDIATELY. Do not call extra tools "just in case" — every unnecessary call wastes budget.
 - Write a concise summary of tool results when done. Include actual numbers and entity names from the data.
 
 ## NEVER DO (critical anti-hallucination rules)

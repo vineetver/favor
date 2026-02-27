@@ -3,9 +3,10 @@ import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const graphTraverse = tool({
-  description: `LAST RESORT: Multi-step graph traversal for queries that chain 2+ edge types. Direction is auto-inferred per step.
-WHEN TO USE: "Find drugs targeting genes in pathway X", "Tissues where disease-associated genes are expressed." Only when simpler tools can't answer.
-WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two entities → findPaths. Shared neighbors → getSharedNeighbors. Always try simpler tools first.`,
+  description: `Multi-step graph traversal chaining 2+ edge types in one call. Direction is auto-inferred per step. Returns edge scores for sort fields.
+WHEN TO USE: "Drugs targeting genes in pathway X" (Pathway→Gene→Drug), "Tissues where disease genes are expressed" (Disease→Gene→Tissue), "Phenotypes of diseases linked to gene Y" (Gene→Disease→Phenotype). Best for multi-hop chains that would otherwise require multiple getRankedNeighbors calls.
+WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two specific entities → findPaths. Shared neighbors → getSharedNeighbors.
+TIP: sort="-fieldName" on steps ranks results, but may place NULLs first for sparse fields. For reliable single-hop ranking, prefer getRankedNeighbors.`,
   inputSchema: z.object({
     seeds: z
       .array(
@@ -44,6 +45,14 @@ WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two e
   }),
   execute: async ({ seeds, steps }) => {
     try {
+      // Collect sort fields from steps so edge scores are included in the response
+      const edgeFieldSet = new Set<string>(["evidence_count"]);
+      for (const step of steps) {
+        if (step.sort) {
+          edgeFieldSet.add(step.sort.replace(/^-/, ""));
+        }
+      }
+
       const data = await agentFetch<{
         data: {
           nodes: Record<
@@ -77,7 +86,7 @@ WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two e
         body: {
           seeds,
           steps,
-          select: { nodeFields: [], edgeFields: [] },
+          select: { nodeFields: [], edgeFields: [...edgeFieldSet].slice(0, 20) },
           limits: { maxNodes: 500, maxEdges: 2000 },
         },
         timeout: 45_000,
@@ -96,11 +105,21 @@ WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two e
         label: n.entity.label,
       }));
 
-      const edges = data.data.edges.slice(0, 200).map((e) => ({
-        type: e.type,
-        from: labelOf(e.from),
-        to: labelOf(e.to),
-      }));
+      const edges = data.data.edges.slice(0, 200).map((e) => {
+        // Filter out null/undefined field values to save LLM context tokens
+        const nonNullFields: Record<string, unknown> = {};
+        if (e.fields) {
+          for (const [k, v] of Object.entries(e.fields)) {
+            if (v != null) nonNullFields[k] = v;
+          }
+        }
+        return {
+          type: e.type,
+          from: labelOf(e.from),
+          to: labelOf(e.to),
+          ...(Object.keys(nonNullFields).length > 0 ? { scores: nonNullFields } : {}),
+        };
+      });
 
       if (nodes.length === 0) {
         return {

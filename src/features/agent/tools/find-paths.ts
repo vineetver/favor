@@ -55,7 +55,7 @@ Both 'from' and 'to' use Type:ID format (e.g. 'Gene:ENSG00000012048', 'Drug:CHEM
         rank: p.rank,
         length: p.length,
         pathText: p.pathText,
-        nodes: p.nodes,
+        nodes: p.nodes.map((n) => ({ type: n.type, id: n.id, label: n.label })),
       }));
 
       if (paths.length === 0) {

@@ -21,7 +21,7 @@ WHEN NOT TO USE: To find ranked neighbors → getRankedNeighbors. To search by n
               keyFacts?: string[];
               totalConnections?: number;
               connectedTypes?: string[];
-              connectionCounts?: Record<string, number>;
+              connectionCounts?: Array<{ edgeType: string; direction: string; targetType: string; count: number }> | Record<string, number>;
             };
             evidence?: {
               sourceCount?: number;
@@ -47,10 +47,22 @@ WHEN NOT TO USE: To find ranked neighbors → getRankedNeighbors. To search by n
       }
 
       // Format connectionCounts as availableEdgeTypes: "EDGE_TYPE (count)" sorted by count desc
-      const connectionCounts = entityData.summary?.connectionCounts ?? {};
-      const availableEdgeTypes = Object.entries(connectionCounts)
-        .sort(([, a], [, b]) => b - a)
-        .map(([edge, count]) => `${edge} (${count})`)
+      // API returns an array of {edgeType, direction, targetType, count} — deduplicate by edgeType (self-edges appear twice)
+      const rawCounts = entityData.summary?.connectionCounts;
+      let edgeEntries: Array<{ edge: string; count: number }>;
+      if (Array.isArray(rawCounts)) {
+        const deduped = new Map<string, number>();
+        for (const c of rawCounts as Array<{ edgeType: string; count: number }>) {
+          const prev = deduped.get(c.edgeType) ?? 0;
+          if (c.count > prev) deduped.set(c.edgeType, c.count);
+        }
+        edgeEntries = [...deduped.entries()].map(([edge, count]) => ({ edge, count }));
+      } else {
+        edgeEntries = Object.entries(rawCounts ?? {}).map(([edge, count]) => ({ edge, count: count as number }));
+      }
+      const availableEdgeTypes = edgeEntries
+        .sort((a, b) => b.count - a.count)
+        .map((c) => `${c.edge} (${c.count})`)
         .slice(0, 15);
 
       return {

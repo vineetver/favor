@@ -124,9 +124,9 @@ export const EDGE_TYPE_DATABASE: Record<EdgeType, string> = {
   DRUG_PAIR_CAUSES_SIDE_EFFECT: "TWOSIDES",
   // Drug → Drug
   DRUG_INTERACTS_WITH_DRUG: "DrugBank",
-  // Variant → Gene
-  VARIANT_IMPLIES_GENE: "OpenTargets",
-  VARIANT_AFFECTS_GENE: "ClinVar",
+  // Variant → Gene (multi-source — per-edge `source` field is more accurate)
+  VARIANT_IMPLIES_GENE: "ClinVar + OpenTargets",
+  VARIANT_AFFECTS_GENE: "GENCODE + AlphaMissense",
   // Variant → Entity/Disease/Phenotype
   VARIANT_ASSOCIATED_WITH_TRAIT__Entity: "GWAS Catalog",
   VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: "GWAS Catalog",
@@ -219,8 +219,8 @@ export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; 
   // Drug → Drug
   DRUG_INTERACTS_WITH_DRUG: { label: "Drug–Drug Interaction", color: "#34d399", description: "Drug-drug interaction (DrugBank)" },
   // Variant → Gene (Amber-orange family)
-  VARIANT_IMPLIES_GENE: { label: "Variant Implies Gene", color: "#fb923c", description: "Variant implicates gene (L2G, regulatory, enhancer)" },
-  VARIANT_AFFECTS_GENE: { label: "Variant Affects Gene", color: "#ea580c", description: "Variant affects gene (ClinVar, missense, somatic)" },
+  VARIANT_IMPLIES_GENE: { label: "Variant Implies Gene", color: "#fb923c", description: "Variant-to-gene causal assignment" },
+  VARIANT_AFFECTS_GENE: { label: "Variant Affects Gene", color: "#ea580c", description: "Variant molecular impact on gene" },
   // Variant → Entity/Disease/Phenotype (Yellow family)
   VARIANT_ASSOCIATED_WITH_TRAIT__Entity: { label: "Variant–Trait GWAS", color: "#eab308", description: "Variant GWAS associated with trait" },
   VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Variant–Phenotype GWAS", color: "#ca8a04", description: "Variant GWAS associated with phenotype" },

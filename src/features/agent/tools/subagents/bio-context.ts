@@ -42,12 +42,13 @@ const SUBAGENT_TIMEOUT = 90_000; // 90s
 
 interface ToolResult {
   toolName: string;
+  input?: unknown;   // SDK stores tool args here
   output: unknown;
-  args?: Record<string, unknown>;
+  args?: Record<string, unknown>; // legacy fallback
 }
 
 interface StepResult {
-  toolCalls: Array<{ toolName: string; args: Record<string, unknown> }>;
+  toolCalls: Array<{ toolName: string; input?: unknown; args?: Record<string, unknown> }>;
   toolResults: ToolResult[];
 }
 
@@ -89,6 +90,25 @@ function summarizeToolInput(name: string, args: Record<string, unknown>): string
     case "getSharedNeighbors": {
       const ents = args.entities as Array<{ id?: string }> | undefined;
       return ents?.map(e => e.id).join(", ") ?? "shared";
+    }
+    case "getGraphSchema": {
+      const nodeType = args.nodeType as string | undefined;
+      return nodeType ?? "full schema";
+    }
+    case "graphTraverse": {
+      const tSeeds = args.seeds as Array<{ type?: string; id?: string }> | undefined;
+      const tSteps = args.steps as Array<{ edgeTypes?: string[] }> | undefined;
+      const seedLabel = tSeeds?.length === 1
+        ? `${tSeeds[0].type ?? ""}:${tSeeds[0].id ?? ""}`
+        : `${tSeeds?.length ?? 0} seeds`;
+      const edgeChain = tSteps?.map(s => s.edgeTypes?.join(",")).join("→") ?? "steps";
+      return `${seedLabel}, ${edgeChain}`;
+    }
+    case "getEdgeDetail": {
+      const edFrom = args.from as string | undefined;
+      const edTo = args.to as string | undefined;
+      const edEdge = args.edgeType as string | undefined;
+      return edEdge ? `${edEdge}: ${edFrom ?? "?"} → ${edTo ?? "?"}` : "edge detail";
     }
     default:
       return Object.keys(args).slice(0, 2).join(", ") || "—";
@@ -149,6 +169,7 @@ function condenseOutput(out: unknown): unknown {
 function extractStructuredOutput(
   text: string,
   agentSteps: StepResult[],
+  tokenUsage?: { inputTokens: number; outputTokens: number; totalTokens: number },
 ): BioContextOutput {
   const entities: BioContextOutput["entities"] = [];
   const relationships: BioContextOutput["relationships"] = [];
@@ -165,12 +186,16 @@ function extractStructuredOutput(
       toolCallsMade++;
     }
 
-    for (const r of step.toolResults) {
+    for (let i = 0; i < step.toolResults.length; i++) {
+      const r = step.toolResults[i];
       const out = r.output as Record<string, unknown>;
       const hasError = !out || !!out.error;
 
+      // SDK stores tool args as `input` on both toolResults and toolCalls
+      const rawArgs = r.input ?? step.toolCalls[i]?.input ?? r.args ?? {};
+      const args = (typeof rawArgs === "object" && rawArgs !== null ? rawArgs : {}) as Record<string, unknown>;
+
       // Build tool trace entry with full provenance data
-      const args = (r.args ?? {}) as Record<string, unknown>;
       toolTrace.push({
         toolName: r.toolName,
         inputSummary: summarizeToolInput(r.toolName, args),
@@ -188,7 +213,7 @@ function extractStructuredOutput(
       evidenceRefs.push({
         source: r.toolName,
         endpoint: r.toolName,
-        query: (r.args ?? {}) as Record<string, unknown>,
+        query: args,
       });
 
       // Extract entities from getEntityContext
@@ -276,6 +301,7 @@ function extractStructuredOutput(
     stepsUsed: agentSteps.length,
     toolCallsMade,
     toolsUsed: [...toolsUsed],
+    tokenUsage,
   };
 }
 
@@ -349,9 +375,16 @@ export const bioContext = tool<BioContextInput, BioContextReturn>({
         abortSignal: controller.signal,
       });
 
+      // Extract token usage from the agent result
+      const usage = (result as unknown as { totalUsage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number } }).totalUsage;
+      const tokenUsage = usage?.totalTokens != null
+        ? { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0, totalTokens: usage.totalTokens ?? 0 }
+        : undefined;
+
       return extractStructuredOutput(
         result.text,
         result.steps as unknown as StepResult[],
+        tokenUsage,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown subagent error";

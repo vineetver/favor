@@ -467,6 +467,20 @@ export interface SchemaPropertyMeta {
   filterable?: boolean;
   sortable?: boolean;
   heavy?: boolean;
+  // YAML-enriched metadata (present when YAML metadata exists for the field)
+  label?: string;
+  description?: string;
+  fillRate?: number;
+  range?: [number, number];
+  better?: "higher" | "lower";
+  unit?: string;
+  thresholds?: Record<string, string>;
+  values?: string[];
+  // Display hints (driven by YAML → schema → API)
+  hidden?: boolean;
+  displayOrder?: number;
+  displayFormat?: "text" | "number" | "score" | "phase";
+  tooltip?: boolean;
 }
 
 export interface SchemaPropertiesResponse {
@@ -610,23 +624,34 @@ export async function searchEntities(
 // =============================================================================
 
 export interface ConnectionsEdgeItem {
-  type: string;
-  from: { type: string; id: string; label: string };
-  to: { type: string; id: string; label: string };
+  /** Present on /graph/query edges; on /graph/connections comes from the group's edgeType */
+  type?: string;
+  /** Present on /graph/query edges; on /graph/connections comes from data.from */
+  from?: { type: string; id: string; label: string };
+  /** Present on /graph/query edges; on /graph/connections comes from data.to */
+  to?: { type: string; id: string; label: string };
+  /** /graph/query nests data here; /graph/connections puts props at top level */
   fields?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
 /** Keys that are structural (not user-data) on a ConnectionsEdgeItem */
-const STRUCTURAL_KEYS = new Set(["type", "from", "to", "direction", "fields", "evidence"]);
+const STRUCTURAL_KEYS = new Set(["type", "from", "to", "direction", "fields", "evidence", "props"]);
 
 /**
- * Normalise edge fields from either format:
- *  - `/graph/query` puts data in `item.fields`
- *  - `/graph/connections` and `/graph/edge` put data at top level
+ * Normalise edge fields from any of the API response formats:
+ *  - `/graph/query`       → data in `item.fields`
+ *  - `/graph/connections`  → data in `item.props`  (+ `item.evidence`)
+ *  - `/graph/edge`         → data in `item.props`  (+ `item.evidence`)
+ *  - some endpoints        → data at top level (fallback)
  */
 export function extractEdgeFields(item: ConnectionsEdgeItem): Record<string, unknown> {
+  // Prefer explicit `fields` sub-object (graph/query format)
   if (item.fields && Object.keys(item.fields).length > 0) return item.fields;
+  // Then try `props` sub-object (connections/edge format)
+  const props = item.props as Record<string, unknown> | undefined;
+  if (props && typeof props === "object" && Object.keys(props).length > 0) return props;
+  // Fallback: collect top-level non-structural keys
   const fields: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(item)) {
     if (!STRUCTURAL_KEYS.has(k) && v !== null && v !== undefined) fields[k] = v;
@@ -648,6 +673,7 @@ export interface ConnectionsApiResponse {
     }>;
     summary?: { totalEdgeTypes: number; totalEdges: number };
   };
+  fieldMeta?: Record<string, SchemaPropertyMeta[]>;
 }
 
 export async function fetchConnections(options: {
@@ -668,6 +694,7 @@ export async function fetchConnections(options: {
         to: options.to,
         limitPerType: options.limitPerType ?? 10,
         includeReverse: options.includeReverse ?? true,
+        includeFieldMeta: true,
       }),
       signal: options.signal,
     });
@@ -699,6 +726,7 @@ export interface EdgePageApiResponse {
     hasMore?: boolean;
     nextCursor?: string;
   };
+  fieldMeta?: Record<string, SchemaPropertyMeta[]>;
 }
 
 export async function fetchEdgePage(options: {
@@ -714,6 +742,7 @@ export async function fetchEdgePage(options: {
   params.set("to", options.to);
   params.set("edgeType", options.edgeType);
   params.set("limit", String(options.limit ?? 25));
+  params.set("includeFieldMeta", "true");
   if (options.cursor) params.set("cursor", options.cursor);
 
   const url = `${API_BASE}/graph/edge?${params.toString()}`;

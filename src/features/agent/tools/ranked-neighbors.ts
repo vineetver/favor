@@ -18,17 +18,17 @@ WHEN NOT TO USE:
       .string()
       .describe("Edge type to traverse, e.g. 'GENE_ASSOCIATED_WITH_DISEASE'. Use getGraphSchema or getEntityContext to discover valid edge types."),
     limit: z.number().optional().default(50).describe("Max neighbors (default 50, max 100). Use 50+ for downstream enrichment."),
-    expandOntology: z
-      .boolean()
+    scoreField: z
+      .string()
       .optional()
-      .describe("Include descendants in ontology hierarchies (e.g. subtypes of a disease). Only useful for Disease/Phenotype seeds."),
+      .describe("Override the default score field for ranking. Use 'evidence_count' as fallback when default scores are sparse/zero. Omit to let the server auto-select."),
   }),
   execute: async ({
     type,
     id,
     edgeType,
     limit,
-    expandOntology,
+    scoreField,
   }) => {
     try {
       const data = await agentFetch<{
@@ -54,13 +54,13 @@ WHEN NOT TO USE:
           seed: { type, id },
           edgeType,
           limit: Math.min(limit ?? 50, 100),
-          expandDescendants: expandOntology,
+          ...(scoreField ? { scoreField } : {}),
         },
       });
 
       const raw = data.data?.neighbors ?? [];
       const neighbors = raw.slice(0, 50).map((n) => ({
-        entity: n.entity,
+        entity: { type: n.entity.type, id: n.entity.id, label: n.entity.label },
         rank: n.rank,
         score: n.score,
       }));

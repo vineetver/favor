@@ -9,6 +9,7 @@ import {
   Beaker,
   Expand,
   HeartPulse,
+  Info,
   Link2,
   Loader2,
   Network,
@@ -21,6 +22,12 @@ import {
   AlertTriangle,
   Microscope,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
 import { memo, useState } from "react";
 import type { InspectorPanelProps } from "../types/props";
 import type { ExplorerNode, ExplorerEdge } from "../types/node";
@@ -36,9 +43,10 @@ import { NODE_EXPANSION_CONFIG } from "../config/expansion";
 import { hasVariantTrail } from "../config/variant-trail";
 import { VariantTrailResults } from "./variant-trail-results";
 import { buildEdgeTypeStatsMap, resolveScoreFields } from "../utils/schema-fields";
+import { filterEdgeFields, buildFieldLabelMap } from "../utils/edge-field-filter";
 import { displayEntityType, formatNodeId } from "../utils/display-names";
-import { EDGE_TOOLTIP_FIELDS } from "../config/edge-tooltip-fields";
 import type { GraphSchema } from "../types/schema";
+import type { SchemaPropertyMeta } from "../api";
 
 // =============================================================================
 // Icon Map for Expansion Configs
@@ -79,31 +87,6 @@ function ProvenanceDisplay({ events }: { events: ProvenanceEvent[] }) {
 // Schema-aware Edge Field Rendering
 // =============================================================================
 
-/** Fields to skip (already rendered structurally or internal) */
-const SKIP_FIELDS = new Set([
-  "num_experiments", "src_symbol", "dst_symbol",
-  "confidence_scores", "pubmed_ids", "pmids",
-]);
-
-/** Fields that are PubMed IDs */
-const PUBMED_FIELDS = new Set([
-  "pmids", "pubmed_ids", "evidence_pmids", "citation_id", "pmid", "pubmed_id",
-]);
-
-/** Fields that are URLs */
-const URL_FIELDS = new Set(["report_url", "url"]);
-
-/** Fields that are scores — render with emphasis */
-const SCORE_FIELDS = new Set([
-  "overall_score", "total_score", "combined_score", "score", "confidence",
-  "max_l2g_score", "feature_score", "target_score", "ot_mi_score",
-  "profile_evidence_score", "max_evidence_score", "max_pathogenicity",
-  "pathogenicity", "llr", "frequency",
-  "p_value_mlog", "best_p_value", "min_p_value", "p_value",
-  "or_beta", "risk_allele_freq",
-  "best_p_value_mlog", "best_or_beta",
-]);
-
 /** Snake_case to readable label */
 function fieldLabel(key: string): string {
   return key
@@ -127,12 +110,24 @@ function formatNumber(value: number): string {
   return value.toFixed(3);
 }
 
+/** Check if a field key represents PubMed IDs (pattern match) */
+function isPubmedField(key: string): boolean {
+  const k = key.toLowerCase();
+  return k.includes("pubmed") || k.includes("pmid");
+}
+
+/** Check if a field key is a URL (pattern match) */
+function isUrlField(key: string): boolean {
+  const k = key.toLowerCase();
+  return k === "url" || k.endsWith("_url") || k === "report_url";
+}
+
 /** Render a single field value */
 function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   if (value === null || value === undefined || value === "") return null;
 
-  // PubMed IDs
-  if (PUBMED_FIELDS.has(fieldKey)) {
+  // PubMed IDs — pattern matched
+  if (isPubmedField(fieldKey)) {
     const ids = Array.isArray(value) ? value : [value];
     const pmids = ids.map(String).filter(Boolean);
     if (pmids.length === 0) return null;
@@ -154,8 +149,8 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
     );
   }
 
-  // URLs
-  if (URL_FIELDS.has(fieldKey) && typeof value === "string") {
+  // URLs — pattern matched
+  if (isUrlField(fieldKey) && typeof value === "string") {
     return (
       <ExternalLink href={value} className="text-xs text-indigo-600 hover:underline truncate">
         {value}
@@ -172,18 +167,13 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
     );
   }
 
-  // Score fields
-  if (SCORE_FIELDS.has(fieldKey) && typeof value === "number") {
+  // Number
+  if (typeof value === "number") {
     return (
       <span className="text-sm font-semibold text-foreground tabular-nums">
         {formatNumber(value)}
       </span>
     );
-  }
-
-  // Number
-  if (typeof value === "number") {
-    return <span className="text-sm text-foreground tabular-nums">{formatNumber(value)}</span>;
   }
 
   // String arrays
@@ -217,13 +207,56 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   return <span className="text-sm text-foreground break-words">{String(value)}</span>;
 }
 
-/** Render all fields from an edge's `fields` dict, split into key metrics and details */
-function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unknown>; edgeType?: EdgeType; schema?: GraphSchema | null }) {
+/** Field label with optional info tooltip showing schema description */
+function FieldHeader({ label, description, className }: {
+  label: string;
+  description?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center gap-1 ${className ?? "text-xs font-medium text-muted-foreground"}`}>
+      <span>{label}</span>
+      {description && (
+        <TooltipProvider>
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
+                <Info className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help transition-colors" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              {description}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </div>
+  );
+}
+
+/** Render all fields from an edge's `fields` dict, split into key metrics and details.
+ *  Uses meta.hidden (via filterEdgeFields) to suppress fields, meta.displayOrder
+ *  for key-field promotion, and meta.label for labels.
+ *
+ *  Key fields: entries with displayOrder → sorted by displayOrder.
+ *  Fallback: schema scoreFields when no displayOrder entries exist.
+ *  Detail fields: everything else, sorted alphabetically. */
+function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
+  fields: Record<string, unknown>;
+  edgeType?: EdgeType;
+  schema?: GraphSchema | null;
+  propertyMeta?: SchemaPropertyMeta[];
+}) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const entries = Object.entries(fields).filter(
-    ([key, value]) =>
-      !SKIP_FIELDS.has(key) &&
+  // Build schema map once
+  const schemaMap = buildEdgeTypeStatsMap(schema);
+
+  // Filter fields — meta.hidden + empty values
+  const filteredFields = filterEdgeFields(fields, propertyMeta);
+
+  const entries = Object.entries(filteredFields).filter(
+    ([, value]) =>
       value !== null &&
       value !== undefined &&
       value !== "" &&
@@ -232,76 +265,77 @@ function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unkno
 
   if (entries.length === 0) return null;
 
-  // Build a map of curated tooltip labels (key → label)
-  const tooltipFields = edgeType ? EDGE_TOOLTIP_FIELDS[edgeType] : undefined;
-  const curatedLabelMap = new Map<string, string>();
-  if (tooltipFields) {
-    for (const tf of tooltipFields) curatedLabelMap.set(tf.key, tf.label);
+  // Build metadata map for display hints
+  const metaMap = new Map<string, SchemaPropertyMeta>();
+  if (propertyMeta) {
+    for (const prop of propertyMeta) metaMap.set(prop.name, prop);
   }
 
-  // Use schema scoreFields for priority ordering
-  const schemaMap = buildEdgeTypeStatsMap(schema);
+  // Build label map from schema metadata
+  const schemaLabelMap = buildFieldLabelMap(propertyMeta);
+
+  // Key fields: entries where meta.displayOrder is set
+  const hasDisplayOrder = entries.some(([key]) => metaMap.get(key)?.displayOrder != null);
+
+  // If no displayOrder entries and propertyMeta exists, fallback to schema scoreFields
   const schemaScoreFields = edgeType ? resolveScoreFields(edgeType, schemaMap) : [];
+  const keyFieldSet = new Set<string>();
 
-  // Build the set of "key" field keys: curated tooltip fields + schema score fields
-  const keyFieldKeys = new Set<string>();
-  if (tooltipFields) {
-    for (const tf of tooltipFields) keyFieldKeys.add(tf.key);
+  if (hasDisplayOrder) {
+    for (const [key] of entries) {
+      if (metaMap.get(key)?.displayOrder != null) keyFieldSet.add(key);
+    }
+  } else if (schemaScoreFields.length > 0) {
+    for (const sf of schemaScoreFields) keyFieldSet.add(sf);
   }
-  for (const sf of schemaScoreFields) keyFieldKeys.add(sf);
 
-  // Split entries into key metrics and detail fields
+  // Split into key metrics vs. detail fields
   const keyEntries: Array<[string, unknown]> = [];
   const detailEntries: Array<[string, unknown]> = [];
   for (const entry of entries) {
-    if (keyFieldKeys.has(entry[0])) {
+    if (keyFieldSet.has(entry[0])) {
       keyEntries.push(entry);
     } else {
       detailEntries.push(entry);
     }
   }
 
-  // Sort key entries by: curated tooltip order first, then schema score order
-  const tooltipOrder = tooltipFields ? tooltipFields.map((tf) => tf.key) : [];
-  keyEntries.sort(([a], [b]) => {
-    const aTooltipIdx = tooltipOrder.indexOf(a);
-    const bTooltipIdx = tooltipOrder.indexOf(b);
-    if (aTooltipIdx >= 0 && bTooltipIdx >= 0) return aTooltipIdx - bTooltipIdx;
-    if (aTooltipIdx >= 0) return -1;
-    if (bTooltipIdx >= 0) return 1;
-    const aSchemaIdx = schemaScoreFields.indexOf(a);
-    const bSchemaIdx = schemaScoreFields.indexOf(b);
-    if (aSchemaIdx >= 0 && bSchemaIdx >= 0) return aSchemaIdx - bSchemaIdx;
-    if (aSchemaIdx >= 0) return -1;
-    if (bSchemaIdx >= 0) return 1;
-    return 0;
-  });
-
-  // Sort detail entries: scores first, then pubmed, then alphabetical
-  detailEntries.sort(([a], [b]) => {
-    const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
-    const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
-    if (aScore !== bScore) return aScore - bScore;
-    return a.localeCompare(b);
-  });
-
-  // Label resolver: prefer curated label, fall back to auto-generated
-  const getLabel = (key: string) => curatedLabelMap.get(key) ?? fieldLabel(key);
-
-  // Fallback: if no key entries were identified, show all entries flat (no collapsing)
-  if (keyEntries.length === 0) {
-    const allSorted = [...entries];
-    allSorted.sort(([a], [b]) => {
-      const aScore = SCORE_FIELDS.has(a) ? 0 : PUBMED_FIELDS.has(a) ? 2 : 1;
-      const bScore = SCORE_FIELDS.has(b) ? 0 : PUBMED_FIELDS.has(b) ? 2 : 1;
-      if (aScore !== bScore) return aScore - bScore;
-      return a.localeCompare(b);
+  // Sort key entries by displayOrder (or schema score field order)
+  if (hasDisplayOrder) {
+    keyEntries.sort(([a], [b]) => {
+      const aOrder = metaMap.get(a)?.displayOrder ?? Infinity;
+      const bOrder = metaMap.get(b)?.displayOrder ?? Infinity;
+      return aOrder - bOrder;
     });
+  } else {
+    keyEntries.sort(([a], [b]) => {
+      const aIdx = schemaScoreFields.indexOf(a);
+      const bIdx = schemaScoreFields.indexOf(b);
+      return aIdx - bIdx;
+    });
+  }
+
+  // Sort detail entries alphabetically
+  detailEntries.sort(([a], [b]) => a.localeCompare(b));
+
+  // Label resolver: meta.label > auto-generated
+  const getLabel = (key: string) => schemaLabelMap.get(key) ?? fieldLabel(key);
+
+  // Description map from property metadata (for info tooltips)
+  const descriptionMap = new Map<string, string>();
+  if (propertyMeta) {
+    for (const prop of propertyMeta) {
+      if (prop.description) descriptionMap.set(prop.name, prop.description);
+    }
+  }
+
+  // Fallback: if no key entries, show all entries flat (no collapsing)
+  if (keyEntries.length === 0) {
     return (
       <div className="space-y-2.5">
-        {allSorted.map(([key, value]) => (
+        {entries.map(([key, value]) => (
           <div key={key} className="space-y-0.5">
-            <div className="text-xs font-medium text-muted-foreground">{getLabel(key)}</div>
+            <FieldHeader label={getLabel(key)} description={descriptionMap.get(key)} />
             <FieldValue fieldKey={key} value={value} />
           </div>
         ))}
@@ -318,9 +352,11 @@ function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unkno
       <div className="grid grid-cols-2 gap-2">
         {keyEntries.map(([key, value]) => (
           <div key={key} className="bg-muted rounded-md px-2.5 py-2">
-            <div className="text-[11px] font-medium text-muted-foreground mb-0.5">
-              {getLabel(key)}
-            </div>
+            <FieldHeader
+              label={getLabel(key)}
+              description={descriptionMap.get(key)}
+              className="text-[11px] font-medium text-muted-foreground mb-0.5"
+            />
             <FieldValue fieldKey={key} value={value} />
           </div>
         ))}
@@ -346,9 +382,7 @@ function EdgeFields({ fields, edgeType, schema }: { fields: Record<string, unkno
             <div className={`space-y-2.5 ${fewDetails ? "" : "mt-2"}`}>
               {detailEntries.map(([key, value]) => (
                 <div key={key} className="space-y-0.5">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {getLabel(key)}
-                  </div>
+                  <FieldHeader label={getLabel(key)} description={descriptionMap.get(key)} />
                   <FieldValue fieldKey={key} value={value} />
                 </div>
               ))}
@@ -369,10 +403,12 @@ function EdgeContent({
   edge,
   provenance,
   schema,
+  propertyMeta,
 }: {
   edge: ExplorerEdge;
   provenance: ProvenanceEvent[];
   schema?: GraphSchema | null;
+  propertyMeta?: SchemaPropertyMeta[];
 }) {
   const config = EDGE_TYPE_CONFIG[edge.type];
   const hasFields = edge.fields && Object.keys(edge.fields).length > 0;
@@ -385,9 +421,9 @@ function EdgeContent({
         <p className="text-xs text-muted-foreground">{config.description}</p>
       )}
 
-      {/* Schema-driven fields */}
+      {/* Schema-driven fields — filtered to evidence/relationship only */}
       {edge.fields && Object.keys(edge.fields).length > 0 && (
-        <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} />
+        <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} propertyMeta={propertyMeta} />
       )}
 
       {/* Legacy evidence (from subgraph API with includeProps) */}
@@ -456,6 +492,7 @@ function EdgeInstance({
   defaultOpen,
   insideGroup,
   schema,
+  propertyMeta,
 }: {
   edge: ExplorerEdge;
   provenance: ProvenanceEvent[];
@@ -463,9 +500,16 @@ function EdgeInstance({
   /** When true, renders flat (no card wrapper — parent group provides structure) */
   insideGroup?: boolean;
   schema?: GraphSchema | null;
+  propertyMeta?: SchemaPropertyMeta[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const config = EDGE_TYPE_CONFIG[edge.type];
+
+  // Prefer per-edge source fields over static type default
+  const rawSource = edge.fields?.source ?? edge.fields?.sources;
+  const edgeSource = rawSource
+    ? (Array.isArray(rawSource) ? (rawSource as string[]).join(", ") : String(rawSource))
+    : getEdgeDatabase(edge.type);
 
   // Inside a group: render flat, no wrapper card
   if (insideGroup) {
@@ -473,7 +517,7 @@ function EdgeInstance({
       <div className="pt-2">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-medium text-muted-foreground">
-            {getEdgeDatabase(edge.type)}
+            {edgeSource}
           </span>
           {edge.numSources !== undefined && (
             <span className="text-xs text-muted-foreground">
@@ -481,7 +525,7 @@ function EdgeInstance({
             </span>
           )}
         </div>
-        <EdgeContent edge={edge} provenance={provenance} schema={schema} />
+        <EdgeContent edge={edge} provenance={provenance} schema={schema} propertyMeta={propertyMeta} />
       </div>
     );
   }
@@ -501,7 +545,7 @@ function EdgeInstance({
           {config?.label ?? edge.type}
         </span>
         <span className="px-1.5 py-0.5 bg-muted text-xs text-muted-foreground rounded shrink-0">
-          {getEdgeDatabase(edge.type)}
+          {edgeSource}
         </span>
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -512,7 +556,7 @@ function EdgeInstance({
 
       {open && (
         <div className="px-3 pb-3 pt-2 border-t border-border">
-          <EdgeContent edge={edge} provenance={provenance} schema={schema} />
+          <EdgeContent edge={edge} provenance={provenance} schema={schema} propertyMeta={propertyMeta} />
         </div>
       )}
     </div>
@@ -584,6 +628,7 @@ function RelationshipTypeGroup({
               defaultOpen={e.id === selectedEdgeId}
               insideGroup
               schema={schema}
+              propertyMeta={group.propertyMeta}
             />
           ))}
 

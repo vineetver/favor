@@ -2,10 +2,35 @@ import { tool } from "ai";
 import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
+// Priority-ordered score fields — most informative first, universal fallbacks last
+const PRIORITY_SCORE_FIELDS = [
+  "ot_score", "affinity_median", "max_clinical_phase", "tpm_median",
+  "l2g_score", "p_value_mlog", "onsides_pred1", "prr",
+  "percent_identity", "alteration_frequency", "max_profile_evidence_score",
+  "pharmgkb_score", "evidence_count", "num_sources",
+];
+
+/** Extract up to 3 representative score values from the first edge in a connection group. */
+function extractTopScores(edges: Array<Record<string, unknown>> | undefined): Record<string, number> | undefined {
+  if (!edges?.length) return undefined;
+  const props = (edges[0].props ?? edges[0]) as Record<string, unknown>;
+  const scores: Record<string, number> = {};
+  let count = 0;
+  for (const field of PRIORITY_SCORE_FIELDS) {
+    if (count >= 3) break;
+    const val = props[field];
+    if (typeof val === "number" && !Number.isNaN(val)) {
+      scores[field] = Math.round(val * 10000) / 10000;
+      count++;
+    }
+  }
+  return count > 0 ? scores : undefined;
+}
+
 export const getConnections = tool({
-  description: `Get all direct edges between two specific entities, grouped by edge type.
+  description: `Get all direct edges between two specific entities, grouped by edge type. Includes top scores per edge type.
 WHEN TO USE: "How is TP53 related to lung cancer?", "What connects Drug X to Gene Y?" — any question about the relationship between exactly two entities.
-WHEN NOT TO USE: Ranked neighbors of ONE entity → getRankedNeighbors. Multi-hop indirect paths → findPaths. Detailed edge properties → getEdgeDetail (call after this tool).`,
+WHEN NOT TO USE: Ranked neighbors of ONE entity → getRankedNeighbors. Multi-hop indirect paths → findPaths. Full edge properties/evidence → getEdgeDetail.`,
   inputSchema: z.object({
     from: z.object({
       type: z.string().describe("Source entity type (e.g., 'Gene')"),
@@ -78,12 +103,16 @@ WHEN NOT TO USE: Ranked neighbors of ONE entity → getRankedNeighbors. Multi-ho
         to: data.data.to,
         totalEdgeTypes: data.data.summary.totalEdgeTypes,
         totalEdges: data.data.summary.totalEdges,
-        connections: connections.map((c) => ({
-          edgeType: c.edgeType,
-          direction: c.direction,
-          label: c.label,
-          count: c.count,
-        })),
+        connections: connections.map((c) => {
+          const scores = extractTopScores(c.edges);
+          return {
+            edgeType: c.edgeType,
+            direction: c.direction,
+            label: c.label,
+            count: c.count,
+            ...(scores ? { topEdgeScores: scores } : {}),
+          };
+        }),
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

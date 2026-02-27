@@ -1,0 +1,348 @@
+══════════════════════════════════════════════════════════════════════
+  BioContext Subagent REAL LLM Stress Test
+  Model: gpt-5-nano | Budget: 10 steps, 20 tool calls
+══════════════════════════════════════════════════════════════════════
+✅ Graph API accessible
+
+──────────────────────────────────────────────────────────────────────
+Q1: Disease→genes→pathway enrichment
+Task: What are the top genes associated with Alzheimer's disease and what pathways are...
+IDs: Disease:MONDO_0004975
+  ✅ PASS (26.2s, 4 calls, 5 steps)
+  Tools: getRankedNeighbors → getGraphSchema → runEnrichment
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Unknown edge type 'DISEASE_ASSOCIATED_WITH_GENE'. Valid edge types: DISEASE_HAS_PHENOTYPE, VARIANT_ASSOCIATED_WITH_TRAIT__Disease, GENE_ASSOCIATED_WITH_SIDE_EFFECT, PHENOTYPE_CLOSURE, DRUG_ACTS_ON_GENE, DRUG_PAIR_CAUSES_SIDE_EFFECT, STUDY_INVESTIGATES_TRAIT__Entity, GENE_PARTICIPATES_IN_PATHWAY, GENE_HAS_PROTEIN_DOMAIN, STUDY_INVESTIGATES_TRAIT__Phenotype, ENTITY_CLOSURE, GO_HIERARCHY, VARIANT_IMPLIES_GENE, ENTITY_HIERARCHY, SIGNAL_ASSOCIATED_WITH_TRAI
+    ✓ getGraphSchema(full schema) → ok
+    ✓ getRankedNeighbors(neighbors) → 50 neighbors
+    ✓ runEnrichment(0 genes) → 20 terms
+  Summary: Here’s what the data show for Alzheimer's disease (MONDO_0004975):
+
+Top genes most strongly associated (by edge GENE_ASSOCIATED_WITH_DISEASE)
+- APP (ENSG00000142192): rank 1, score 0.7630542368076706
+...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q2: Drug repurposing via gene targets
+Task: Find drugs that could be repurposed for Parkinson's disease through its gene tar...
+IDs: Disease:MONDO_0005180
+  ✅ PASS (12.9s, 6 calls, 4 steps)
+  Tools: getRankedNeighbors
+    ✓ getRankedNeighbors(neighbors) → 50 neighbors
+    ✓ getRankedNeighbors(neighbors) → 5 neighbors
+    ✓ getRankedNeighbors(neighbors) → 2 neighbors
+    ✓ getRankedNeighbors(neighbors) → 4 neighbors
+    ✗ getRankedNeighbors(neighbors) → No neighbors found for Gene:ENSG00000184381 via DRUG_ACTS_ON_GENE
+    ✓ getRankedNeighbors(neighbors) → 5 neighbors
+  Summary: Note: I included results for LRRK2 (top gene) and its potential drugs. For GBA1 and SNCA, I queried and got results as well. Proceeding to present a concise findings summary.Here are candidate drugs t...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q3: Disease→genes→tissue expression
+Task: Which tissues most highly express the genes associated with breast cancer?...
+IDs: Disease:MONDO_0007254
+  ✅ PASS (21.3s, 4 calls, 5 steps)
+  Tools: getRankedNeighbors
+    ✓ getRankedNeighbors(neighbors) → 50 neighbors
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Unknown edge type 'GENE_EXPRESSION_IN_TISSUE'. Valid edge types: DISEASE_HAS_PHENOTYPE, VARIANT_ASSOCIATED_WITH_TRAIT__Disease, GENE_ASSOCIATED_WITH_SIDE_EFFECT, PHENOTYPE_CLOSURE, DRUG_ACTS_ON_GENE, DRUG_PAIR_CAUSES_SIDE_EFFECT, STUDY_INVESTIGATES_TRAIT__Entity, GENE_PARTICIPATES_IN_PATHWAY, GENE_HAS_PROTEIN_DOMAIN, STUDY_INVESTIGATES_TRAIT__Phenotype, ENTITY_CLOSURE, GO_HIERARCHY, VARIANT_IMPLIES_GENE, ENTITY_HIERARCHY, SIGNAL_ASSOCIATED_WITH_TRAIT__
+    ✓ getRankedNeighbors(neighbors) → 10 neighbors
+    ✓ getRankedNeighbors(neighbors) → 10 neighbors
+  Summary: Here are the genes most strongly linked to breast cancer based on the GENE_ASSOCIATED_WITH_DISEASE results for MONDO_0007254 (breast cancer), with their exact scores:
+
+- BRCA2 (0.8444264519356226)
+- B...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q4: Disease→genes→GO enrichment
+Task: What GO biological processes are enriched among type 2 diabetes genes?...
+IDs: Disease:MONDO_0005148
+  ⚠️ PARTIAL (14.3s, 3 calls, 4 steps)
+  Tools: getEntityContext → getGraphSchema
+    ✓ getEntityContext(entity) → loaded
+    ✓ getEntityContext(entity) → loaded
+    ✓ getGraphSchema(full schema) → ok
+  Summary: Here’s what I have so far for your question: “What GO biological processes are enriched among type 2 diabetes genes?”
+
+What I did and what it implies
+- Disease of interest: type 2 diabetes mellitus (M...
+  Notes: wrong tools (used: getEntityContext,getGraphSchema)
+
+──────────────────────────────────────────────────────────────────────
+Q5: Disease→drugs→gene targets
+Task: What drugs are indicated for lung cancer and what gene targets do they act on?...
+IDs: Disease:MONDO_0008903
+  ✅ PASS (30.0s, 6 calls, 5 steps)
+  Tools: getEntityContext → getRankedNeighbors
+    ✓ getEntityContext(entity) → loaded
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+    ✓ getEntityContext(entity) → loaded
+    ✓ getEntityContext(entity) → loaded
+    ✓ getEntityContext(entity) → loaded
+    ✓ getRankedNeighbors(neighbors) → 1 neighbors
+  Summary: {"type":"Drug","id":"CHEMBL4297723","edgeType":"DRUG_ACTS_ON_GENE","limit":5,"scoreField":""}{"textSummary":"Top 1 Genes for CEMIPLIMAB via DRUG_ACTS_ON_GENE (sum): PDCD1LG2 (0.00).","resolved":{"dire...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q6: Drug side effects (single call)
+Task: What are the known side effects of ibuprofen?...
+IDs: Drug:CHEMBL521
+  ✅ PASS (12.5s, 3 calls, 4 steps)
+  Tools: getEntityContext → getRankedNeighbors → getGraphSchema
+    ✓ getEntityContext(entity) → loaded
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+    ✓ getGraphSchema(full schema) → ok
+  Summary: Here’s what I found about the known side effects of ibuprofen, based on the provided Drug ID: Drug:CHEMBL521 (IBUPROFEN).
+
+- Top side effects (ranked by evidence count for edge DRUG_HAS_ADVERSE_EFFECT...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q7: Drug interactions + shared targets
+Task: What drugs interact with metformin, and do metformin and levofloxacin share any ...
+IDs: Drug:CHEMBL1431, Drug:CHEMBL5315124
+  ✅ PASS (29.1s, 5 calls, 5 steps)
+  Tools: getGraphSchema → getRankedNeighbors
+    ✓ getGraphSchema(full schema) → ok
+    ✓ getRankedNeighbors(neighbors) → 9 neighbors
+    ✓ getRankedNeighbors(neighbors) → 50 neighbors
+    ✓ getRankedNeighbors(neighbors) → 2 neighbors
+    ✓ getRankedNeighbors(neighbors) → 9 neighbors
+  Summary: Here’s what the data show for the requested questions, based on the resolved tool results.
+
+1) Drugs that interact with metformin (DRUG_INTERACTS_WITH_DRUG)
+- LEVOFLOXACIN ANHYDROUS (CHEMBL33) — score...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q8: Pharmacogenomics (scoreField override test)
+Task: What are the pharmacogenomic associations for warfarin? Which genes affect how p...
+IDs: Drug:CHEMBL1464
+  ✅ PASS (14.4s, 3 calls, 4 steps)
+  Tools: getRankedNeighbors → getEntityContext
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Unknown edge type 'DRUG_GENETIC_ASSOCIATION'. Valid edge types: DISEASE_HAS_PHENOTYPE, VARIANT_ASSOCIATED_WITH_TRAIT__Disease, GENE_ASSOCIATED_WITH_SIDE_EFFECT, PHENOTYPE_CLOSURE, DRUG_ACTS_ON_GENE, DRUG_PAIR_CAUSES_SIDE_EFFECT, STUDY_INVESTIGATES_TRAIT__Entity, GENE_PARTICIPATES_IN_PATHWAY, GENE_HAS_PROTEIN_DOMAIN, STUDY_INVESTIGATES_TRAIT__Phenotype, ENTITY_CLOSURE, GO_HIERARCHY, VARIANT_IMPLIES_GENE, ENTITY_HIERARCHY, SIGNAL_ASSOCIATED_WITH_TRAIT__D
+    ✓ getRankedNeighbors(neighbors) → 3 neighbors
+    ✓ getEntityContext(entity) → loaded
+  Summary: Here are the pharmacogenomic associations for warfarin (Drug: CHEMBL1464) based on the DRUG_ACTS_ON_GENE edge:
+
+- VKORC1 (Ensg00000167397) — top gene influencing warfarin response
+  - Score (evidence_...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q9: GWAS variants→gene mapping
+Task: What are the top GWAS variants for type 2 diabetes, and which genes do they map ...
+IDs: Disease:MONDO_0005148
+  ✅ PASS (28.8s, 8 calls, 7 steps)
+  Tools: getEntityContext → getRankedNeighbors → getGraphSchema
+    ✓ getEntityContext(entity) → loaded
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Score field 'pValue' not found on edge type 'VARIANT_ASSOCIATED_WITH_TRAIT__Disease'.\nAvailable score fields (in priority order):\n  * p_value_mlog (default)\n  * or_beta\n  * risk_allele_freq\n  * ci_lower\n  * ci_upper\n  * study_p_value\n  * ratio_stat\n  * study_ci_start\n  * study_ci_stop\n  * study_cases\n  * study_controls\n  * evidence_count"},"timestamp":"2026-02-27T23:11:15.400668+00:00"}
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+    ✓ getGraphSchema(full schema) → ok
+    ✓ getRankedNeighbors(neighbors) → 1 neighbors
+    ✓ getRankedNeighbors(neighbors) → 5 neighbors
+    ✓ getRankedNeighbors(neighbors) → 1 neighbors
+    ✓ getRankedNeighbors(neighbors) → 1 neighbors
+  Summary: Here are the top GWAS variants for type 2 diabetes mellitus and the genes they map to, based on the available edge data.
+
+Top variants and mapped genes
+- rs7903146 (internal id: 10-112998590-C-G)
+  - ...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q10: Variants→drug responses
+Task: What pathogenic variants affect TP53 and are any linked to drug responses?...
+IDs: Gene:ENSG00000141510
+  ⚠️ PARTIAL (25.7s, 4 calls, 5 steps)
+  Tools: searchEntities → getEntityContext → getRankedNeighbors
+    ✓ searchEntities(search) → 5 results
+    ✓ getEntityContext(entity) → loaded
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+  Summary: Here is what the graph data indicates for TP53 (Gene: ENSG00000141510):
+
+Variants that affect TP53 (via VARIANT_AFFECTS_GENE), top results:
+- rs28934578 (Variant: 17-7675088-C-T) — rank 1, score 586
+-...
+  Notes: searched when IDs were provided
+
+──────────────────────────────────────────────────────────────────────
+Q11: Reverse direction + schema discovery
+Task: Which regulatory elements (cCREs) are near APOE and what other genes do they reg...
+IDs: Gene:ENSG00000130203
+  ✅ PASS (27.1s, 6 calls, 7 steps)
+  Tools: getEntityContext → getRankedNeighbors
+    ✓ getEntityContext(entity) → loaded
+    ✓ getEntityContext(entity) → loaded
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Score field 'default' not found on edge type 'CCRE_REGULATES_GENE'.\nAvailable score fields (in priority order):\n  * max_score (default) — Maximum Score: higher is better, range -6.83–2805.84\n  * min_p_value — Minimum P-value: lower is better, range 0.00–1.00\n  * evidence_count — Evidence Count: higher is better, range 1.00–369.00"},"timestamp":"2026-02-27T23:12:11.623649+00:00"}
+    ✓ getRankedNeighbors(neighbors) → 20 neighbors
+    ✓ getRankedNeighbors(neighbors) → 5 neighbors
+    ✓ getRankedNeighbors(neighbors) → 5 neighbors
+  Summary: {"type":"cCRE","id":"EH38E3309135","edgeType":"CCRE_REGULATES_GENE","limit":5,"scoreField":"max_score"}{"textSummary":"Top 5 Genes for Promoter-like @ chr19:44954647-44954818 via CCRE_REGULATES_GENE (...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q12: Multi-entity comparison
+Task: Compare EGFR, ERBB2, and ERBB3 — what pathways and diseases do they share?...
+IDs: Gene:ENSG00000146648, Gene:ENSG00000141736, Gene:ENSG00000065361
+  ✅ PASS (13.7s, 3 calls, 4 steps)
+  Tools: compareEntities → getGraphSchema → getEntityContext
+    ✓ compareEntities(compare) → comparison
+    ✓ getGraphSchema(full schema) → ok
+    ✓ getEntityContext(entity) → loaded
+  Summary: Here’s a concise synthesis of what EGFR (ENSG00000146648), ERBB2 (ENSG00000141736), and ERBB3 (ENSG00000065361) share in terms of pathways and diseases, based on the comparative analysis of their gene...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q13: Connections + paths workflow
+Task: How is aspirin connected to Alzheimer's disease? Show me the direct and indirect...
+IDs: Drug:CHEMBL25, Disease:MONDO_0004975
+  ✅ PASS (25.8s, 3 calls, 4 steps)
+  Tools: getConnections → findPaths → getEdgeDetail
+    ✓ getConnections(connections) → 0 edges across 0 types
+    ✓ findPaths(paths) → 5 paths
+    ✗ getEdgeDetail(edge detail) → {"error":{"code":"INVALID_QUERY","message":"edgeType 'GENE_AFFECTS_DRUG_RESPONSE' expects Gene -> Drug, got Drug -> Gene"},"timestamp":"2026-02-27T23:13:03.510326+00:00"}
+  Summary: Here’s how aspirin (Drug: CHEMBL25) is connected to Alzheimer’s disease (Disease: MONDO_0004975), based on direct edges and plausible indirect routes through intermediary nodes.
+
+Direct connections (D...
+  Notes: 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q14: Shared neighbors (intersection)
+Task: What pathways do TP53 and RB1 share? List the overlapping pathways....
+IDs: Gene:ENSG00000141510, Gene:ENSG00000139687
+  ✅ PASS (20.0s, 4 calls, 5 steps)
+  Tools: getSharedNeighbors
+    ✓ getSharedNeighbors(shared) → 73 shared
+    ✓ getSharedNeighbors(shared) → 73 shared
+    ✓ getSharedNeighbors(shared) → 73 shared
+    ✓ getSharedNeighbors(shared) → 73 shared
+  Summary: Here are the overlapping pathways shared by TP53 (ENSG00000141510) and RB1 (ENSG00000139687), based on the latest tool results:
+
+Total shared pathways: 73
+
+Sample of overlapping pathways (Pathway ID —...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q15: Rare edge type (Pathway seed)
+Task: What metabolites are involved in the insulin signaling pathway?...
+IDs: Pathway:WP481
+  ⚠️ PARTIAL (15.9s, 5 calls, 6 steps)
+  Tools: getEntityContext → searchEntities → getGraphSchema → getRankedNeighbors
+    ✓ getEntityContext(entity) → loaded
+    ✓ searchEntities(search) → 1 results
+    ✓ getGraphSchema(full schema) → ok
+    ✗ getRankedNeighbors(neighbors) → {"error":{"code":"INVALID_QUERY","message":"Score field 'default' not found on edge type 'PATHWAY_CONTAINS_METABOLITE'.\nAvailable score fields (in priority order):\n  * evidence_count (default) — Evidence Count, range 1.00–1.00"},"timestamp":"2026-02-27T23:13:39.374871+00:00"}
+    ✗ getRankedNeighbors(neighbors) → No neighbors found for Pathway:WP481 via PATHWAY_CONTAINS_METABOLITE
+  Summary: - Pathway: WP481 (Insulin signaling)
+- From the data: totalConnections = 160, availableEdgeTypes = ["GENE_PARTICIPATES_IN_PATHWAY (160)"]
+- Metabolites via PATHWAY_CONTAINS_METABOLITE: No metabolites ...
+  Notes: searched when IDs were provided; 2 errors
+
+──────────────────────────────────────────────────────────────────────
+Q16: Disease→phenotypes→genes
+Task: What phenotypes are associated with Huntington's disease, and which genes drive ...
+IDs: Disease:MONDO_0007739
+  ✅ PASS (25.1s, 5 calls, 4 steps)
+  Tools: getRankedNeighbors → getGraphSchema
+    ✓ getRankedNeighbors(neighbors) → 50 neighbors
+    ✓ getRankedNeighbors(neighbors) → 10 neighbors
+    ✓ getRankedNeighbors(neighbors) → 10 neighbors
+    ✓ getRankedNeighbors(neighbors) → 10 neighbors
+    ✓ getGraphSchema(full schema) → ok
+  Summary: Summary of Huntington’s disease phenotypes and driving genes (based on tool results)
+
+- Top genes associated with Huntington’s disease:
+  - HTT (0.71)
+  - SLC18A2 (0.58)
+  - DRD2 (0.39)
+
+Phenotypes dr...
+  Notes: all checks passed
+
+──────────────────────────────────────────────────────────────────────
+Q17: PPI + disease cross-reference
+Task: What protein-protein interactions does APOE have, and which of those interacting...
+IDs: Gene:ENSG00000130203, Disease:MONDO_0004975
+  ⚠️ PARTIAL (18.8s, 4 calls, 5 steps)
+  Tools: getGraphSchema → getRankedNeighbors → searchEntities → getConnections
+    ✓ getGraphSchema(full schema) → ok
+    ✗ getRankedNeighbors(neighbors) → No neighbors found for Gene:Gene:ENSG00000130203 via GENE_INTERACTS_WITH_GENE
+    ✓ searchEntities(search) → 5 results
+    ✓ getConnections(connections) → 1 edges across 1 types
+  Summary: Here is what I found, using the pre-specified APOE gene ID (ENSG00000130203) and Alzheimer's disease (MONDO_0004975):
+
+1) APOE protein-protein interactions (PPI)
+- Attempted edge: GENE_INTERACTS_WITH_...
+  Notes: searched when IDs were provided; 1 errors
+
+──────────────────────────────────────────────────────────────────────
+Q18: Search required (no resolved IDs)
+Task: What genes are associated with cystic fibrosis and what drugs target them?...
+IDs: (none — must search)
+  ✅ PASS (14.7s, 3 calls, 4 steps)
+  Tools: searchEntities → getEntityContext
+    ✓ searchEntities(search) → 5 results
+    ✓ getEntityContext(entity) → loaded
+    ✓ searchEntities(search) → 3 results
+  Summary: - Gene associated with cystic fibrosis:
+  - CFTR (gene ID: ENSG00000001626). It encodes the cystic fibrosis transmembrane conductance regulator, an epithelial chloride/bicarbonate channel central to C...
+  Notes: all checks passed
+
+
+══════════════════════════════════════════════════════════════════════
+  SCORE CARD
+══════════════════════════════════════════════════════════════════════
+Query | Grade    | Calls | Steps | Tools Used
+──────────────────────────────────────────────────────────────────────
+Q1    | ✅ PASS    | 4     | 5     | getRankedNeighbors, getGraphSchema, runEnrichment
+Q2    | ✅ PASS    | 6     | 4     | getRankedNeighbors
+Q3    | ✅ PASS    | 4     | 5     | getRankedNeighbors
+Q4    | ⚠️ PARTIAL | 3     | 4     | getEntityContext, getGraphSchema
+Q5    | ✅ PASS    | 6     | 5     | getEntityContext, getRankedNeighbors
+Q6    | ✅ PASS    | 3     | 4     | getEntityContext, getRankedNeighbors, getGraphSchema
+Q7    | ✅ PASS    | 5     | 5     | getGraphSchema, getRankedNeighbors
+Q8    | ✅ PASS    | 3     | 4     | getRankedNeighbors, getEntityContext
+Q9    | ✅ PASS    | 8     | 7     | getEntityContext, getRankedNeighbors, getGraphSchema
+Q10   | ⚠️ PARTIAL | 4     | 5     | searchEntities, getEntityContext, getRankedNeighbors
+Q11   | ✅ PASS    | 6     | 7     | getEntityContext, getRankedNeighbors
+Q12   | ✅ PASS    | 3     | 4     | compareEntities, getGraphSchema, getEntityContext
+Q13   | ✅ PASS    | 3     | 4     | getConnections, findPaths, getEdgeDetail
+Q14   | ✅ PASS    | 4     | 5     | getSharedNeighbors
+Q15   | ⚠️ PARTIAL | 5     | 6     | getEntityContext, searchEntities, getGraphSchema, getRankedNeighbors
+Q16   | ✅ PASS    | 5     | 4     | getRankedNeighbors, getGraphSchema
+Q17   | ⚠️ PARTIAL | 4     | 5     | getGraphSchema, getRankedNeighbors, searchEntities, getConnections
+Q18   | ✅ PASS    | 3     | 4     | searchEntities, getEntityContext
+──────────────────────────────────────────────────────────────────────
+Total: 14 PASS, 4 PARTIAL, 0 FAIL out of 18
+
+
+FAILURE/PARTIAL ANALYSIS:
+
+  Q4: PARTIAL
+    Notes: wrong tools (used: getEntityContext,getGraphSchema)
+    Tools: getEntityContext → getGraphSchema
+    Errors: none
+
+  Q10: PARTIAL
+    Notes: searched when IDs were provided
+    Tools: searchEntities → getEntityContext → getRankedNeighbors
+    Errors: none
+
+  Q15: PARTIAL
+    Notes: searched when IDs were provided; 2 errors
+    Tools: getEntityContext → searchEntities → getGraphSchema → getRankedNeighbors
+    Errors: getRankedNeighbors: {"error":{"code":"INVALID_QUERY","message":"Score field 'default' not found on edge type 'PATHWAY_CONTAINS_METABOLITE'.\nAvailable score fields (in priority order):\n  * evidence_count (default) — Evidence Count, range 1.00–1.00"},"timestamp":"2026-02-27T23:13:39.374871+00:00"}; getRankedNeighbors: No neighbors found for Pathway:WP481 via PATHWAY_CONTAINS_METABOLITE
+
+  Q17: PARTIAL
+    Notes: searched when IDs were provided; 1 errors
+    Tools: getGraphSchema → getRankedNeighbors → searchEntities → getConnections
+    Errors: getRankedNeighbors: No neighbors found for Gene:Gene:ENSG00000130203 via GENE_INTERACTS_WITH_GENE
+
+
+PATTERNS:
+  ⚠️ Search abuse (searched when IDs provided): Q10, Q15, Q17
+
+
+Full results saved to scripts/stress-test-llm-results.json

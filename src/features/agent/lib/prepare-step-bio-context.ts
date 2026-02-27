@@ -27,6 +27,13 @@ const SYNTHESIS_RESERVE = 2; // reserve last N steps for synthesis
 const NO_TEXT_INSTRUCTION =
   "\n\n[SYSTEM] Do NOT output explanatory text. ONLY call tools. When all exploration is done, write a summary of your findings.";
 
+const CONTINUE_OR_SUMMARIZE =
+  "\n\n[SYSTEM] If you have gathered enough data to answer the question, write your final summary NOW. " +
+  "Only call more tools if you genuinely need additional data to complete the task. " +
+  "CRITICAL: Every entity, score, and p-value in your summary must come from a tool result.";
+
+const MIN_REQUIRED_CALLS = 3; // Force tool calls for first N calls, then allow summary
+
 const SYNTHESIS_INSTRUCTION =
   "\n\n[SYSTEM] Write your final summary NOW. CRITICAL RULES:\n" +
   "1. ONLY mention entities, scores, and p-values that appear in your tool results above.\n" +
@@ -122,7 +129,21 @@ export function createBioContextPrepareStep(): PrepareStepFunction<any> {
       };
     }
 
-    // All steps: tool required, all tools available
+    // After enough initial exploration, let the agent decide whether to
+    // continue or write its summary (prevents wasted getGraphSchema/getEntityContext
+    // calls when the primary workflow is already complete)
+    const totalCalls = countToolCalls(stepsData);
+    if (totalCalls >= MIN_REQUIRED_CALLS) {
+      return {
+        model: nanoModel,
+        providerOptions: NANO_PROVIDER_OPTIONS,
+        toolChoice: "auto" as const,
+        activeTools: [...BIO_CONTEXT_TOOLS].filter((t) => !tripped.has(t)),
+        system: CONTINUE_OR_SUMMARIZE,
+      };
+    }
+
+    // Early steps: force tool calls to ensure the agent starts exploring
     return {
       model: nanoModel,
       providerOptions: NANO_PROVIDER_OPTIONS,

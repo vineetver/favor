@@ -169,6 +169,7 @@ export interface BioContextOutput {
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
+  tokenUsage?: { inputTokens: number; outputTokens: number; totalTokens: number };
 }
 
 // ---------------------------------------------------------------------------
