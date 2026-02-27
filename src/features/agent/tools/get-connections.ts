@@ -3,10 +3,9 @@ import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const getConnections = tool({
-  description: `Get ALL direct edges between two specific entities, grouped by edge type and direction.
-USE THIS when the question is about the relationship between two SPECIFIC entities (e.g., "How is TP53 related to lung cancer?", "What edges connect Drug X to Gene Y?").
-DO NOT use getRankedNeighbors for pairwise questions — that tool ranks ALL neighbors of a single seed, not the relationship between two entities.
-DO NOT use findPaths here — that finds multi-hop paths through intermediaries.`,
+  description: `Get all direct edges between two specific entities, grouped by edge type.
+WHEN TO USE: "How is TP53 related to lung cancer?", "What connects Drug X to Gene Y?" — any question about the relationship between exactly two entities.
+WHEN NOT TO USE: Ranked neighbors of ONE entity → getRankedNeighbors. Multi-hop indirect paths → findPaths. Detailed edge properties → getEdgeDetail (call after this tool).`,
   inputSchema: z.object({
     from: z.object({
       type: z.string().describe("Source entity type (e.g., 'Gene')"),
@@ -84,8 +83,6 @@ DO NOT use findPaths here — that finds multi-hop paths through intermediaries.
           direction: c.direction,
           label: c.label,
           count: c.count,
-          hasMore: c.hasMore,
-          edges: c.edges.slice(0, 5),
         })),
       };
     } catch (err) {

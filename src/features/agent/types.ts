@@ -70,7 +70,15 @@ export interface CompressedNeighbor {
   entity: { type: string; id: string; label: string };
   rank: number;
   score?: number;
+  /** @deprecated No longer populated by the tool — kept for renderer compatibility */
   explanation?: string;
+}
+
+export interface RankedNeighborsResult {
+  textSummary?: string;
+  resolved: Record<string, unknown>;
+  totalReturned: number;
+  neighbors: CompressedNeighbor[];
 }
 
 export interface CompressedEnrichment {
@@ -79,6 +87,14 @@ export interface CompressedEnrichment {
   pValue: number;
   adjustedPValue: number;
   foldEnrichment: number;
+  overlappingGenes: string[];
+}
+
+export interface EnrichmentResult {
+  textSummary?: string;
+  inputSize: number;
+  backgroundSize: number;
+  enriched: CompressedEnrichment[];
 }
 
 export interface CompressedPath {

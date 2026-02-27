@@ -20,8 +20,9 @@ function extractLabel(item: any): string {
 }
 
 export const compareEntities = tool({
-  description:
-    "Compare 2-5 entities of the same type. Shows shared and unique neighbors per edge type with raw counts, plus overall similarity. Raw shared counts are more informative than Jaccard for high-degree nodes.",
+  description: `Compare 2-5 entities of the same type. Shows shared and unique neighbors per edge type with counts, plus overall similarity.
+WHEN TO USE: "Compare BRCA1 and TP53", "How similar are these genes?", "What do drugs X and Y have in common?" — any side-by-side comparison.
+WHEN NOT TO USE: Finding what specific entities share (list of shared items) → getSharedNeighbors. Direct edges between two entities → getConnections.`,
   inputSchema: z.object({
     entities: z
       .array(
@@ -80,13 +81,25 @@ export const compareEntities = tool({
         };
       }
 
-      // Also pass through raw counts object per edge type for the LLM
-      const rawCounts: Record<string, unknown> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const [edgeType, comp] of Object.entries(result.comparisons ?? {}) as [string, any][]) {
-        if (comp.counts && comparisons[edgeType]) {
-          rawCounts[edgeType] = comp.counts;
+      // Build label map from entities for readable unique keys
+      const entityLabels: Record<string, string> = {};
+      for (const ent of result.entities ?? []) {
+        entityLabels[ent.id] = ent.label;
+      }
+
+      // Re-key uniqueCounts/uniqueSamples with labels instead of IDs
+      for (const comp of Object.values(comparisons)) {
+        const labeledUniqueCounts: Record<string, number> = {};
+        const labeledUniqueSamples: Record<string, string[]> = {};
+        for (const [eid, count] of Object.entries(comp.uniqueCounts)) {
+          const label = entityLabels[eid] ?? eid;
+          labeledUniqueCounts[label] = count;
+          if (comp.uniqueSamples[eid]) {
+            labeledUniqueSamples[label] = comp.uniqueSamples[eid];
+          }
         }
+        comp.uniqueCounts = labeledUniqueCounts;
+        comp.uniqueSamples = labeledUniqueSamples;
       }
 
       return {
@@ -94,7 +107,6 @@ export const compareEntities = tool({
         entities: result.entities,
         overallSimilarity: result.overallSimilarity,
         comparisons,
-        ...(Object.keys(rawCounts).length ? { rawCounts } : {}),
       };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();

@@ -28,19 +28,15 @@ const NO_TEXT_INSTRUCTION =
   "\n\n[SYSTEM] Do NOT output explanatory text. ONLY call tools. When all exploration is done, write a summary of your findings.";
 
 const SYNTHESIS_INSTRUCTION =
-  "\n\n[SYSTEM] Write a concise summary of your exploration findings. Include key entities, relationships, and pathways discovered. " +
-  "CRITICAL: ONLY summarize data returned by tool calls above. Do NOT generate JSON, data structures, or fabricated entities. " +
-  "Do NOT invent gene names, pathway names, p-values, HGNC IDs, or any data not present in the tool outputs. " +
-  "Every fact in your summary must trace back to a specific tool result.";
+  "\n\n[SYSTEM] Write your final summary NOW. CRITICAL RULES:\n" +
+  "1. ONLY mention entities, scores, and p-values that appear in your tool results above.\n" +
+  "2. Do NOT add any genes, drugs, pathways, or facts from your training data.\n" +
+  "3. If a tool returned a textSummary, you may quote or paraphrase it.\n" +
+  "4. Cite numbers exactly as returned (do not round or fabricate).\n" +
+  "5. If you are unsure whether something was in the results, leave it out.";
 
 const RECOVERY_INSTRUCTION =
   "\n\n[SYSTEM] Your recent tool calls are not producing useful results. CHANGE YOUR APPROACH: try different tools, different entity types, different edge types. If you got an edge type error, call getGraphSchema(nodeType) to discover valid edges.";
-
-const SCORE_RETRY_INSTRUCTION =
-  "\n\n[SYSTEM] The getRankedNeighbors results have degenerate scores (all identical or all zero). " +
-  "This is normal for some edge types (e.g., many drug-gene edges lack binding affinity data). " +
-  "Accept these results and continue with the next step of your exploration. " +
-  "If the results are unhelpful, try a FALLBACK edge type from the schema instead.";
 
 const SEARCH_ABUSE_INSTRUCTION =
   "\n\n[SYSTEM] STOP calling searchEntities repeatedly for individual gene/protein names. " +
@@ -65,36 +61,12 @@ function hasExcessiveSearches(steps: StepData[]): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Degenerate score detection
-// ---------------------------------------------------------------------------
-
-function hasDegenerateScores(steps: StepData[]): boolean {
-  const recentSteps = steps.slice(-2);
-  for (const step of recentSteps) {
-    for (const r of step.toolResults ?? []) {
-      if (r.toolName !== "getRankedNeighbors") continue;
-      const out = r.output as Record<string, unknown>;
-      if (out?.error) continue;
-      const neighbors = out?.neighbors as Array<{ score?: number }> | undefined;
-      if (!neighbors || neighbors.length < 3) continue;
-      const scores = neighbors.map((n) => n.score).filter((s) => s != null) as number[];
-      if (scores.length < 3) continue;
-      const allSame = scores.every((s) => s === scores[0]);
-      const allZero = scores.every((s) => s === 0);
-      if (allSame || allZero) return true;
-    }
-  }
-  return false;
-}
-
-// ---------------------------------------------------------------------------
 // prepareStep factory for bioContext specialist
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createBioContextPrepareStep(): PrepareStepFunction<any> {
   let recoveryAttempted = false;
-  let scoreRetryAttempted = false;
   let searchAbuseWarned = false;
 
   return ({ stepNumber, steps }) => {
@@ -147,18 +119,6 @@ export function createBioContextPrepareStep(): PrepareStepFunction<any> {
           (t) => t !== "searchEntities" && !tripped.has(t),
         ),
         system: NO_TEXT_INSTRUCTION + SEARCH_ABUSE_INSTRUCTION,
-      };
-    }
-
-    // Degenerate score detection — nudge agent to retry with different scoreField
-    if (!scoreRetryAttempted && hasDegenerateScores(stepsData)) {
-      scoreRetryAttempted = true;
-      return {
-        model: nanoModel,
-        providerOptions: NANO_PROVIDER_OPTIONS,
-        toolChoice: "required" as const,
-        activeTools: [...BIO_CONTEXT_TOOLS].filter((t) => !tripped.has(t)),
-        system: NO_TEXT_INSTRUCTION + SCORE_RETRY_INSTRUCTION,
       };
     }
 

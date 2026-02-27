@@ -61,8 +61,9 @@ async function fetchSchema(): Promise<RawSchemaResponse["data"]> {
 // ---------------------------------------------------------------------------
 
 export const getGraphSchema = tool({
-  description:
-    "Look up the graph schema to discover valid node types and edge types. Use this when you're unsure which edge type connects two entity types, or after getting an unknown-edgeType error. Lightweight and cached.",
+  description: `Look up valid edge types in the graph schema. Fast and cached.
+WHEN TO USE: Unsure which edgeType connects two entity types, or after an "unknown edge type" error.
+WHEN NOT TO USE: If you already know the edge type. For a specific entity's connections → getEntityContext is more useful.`,
   inputSchema: z.object({
     nodeType: z
       .string()
@@ -92,8 +93,6 @@ export const getGraphSchema = tool({
         edge: e.edgeType,
         from: e.fromType,
         to: e.toType,
-        ...(e.defaultScoreField ? { defaultScore: e.defaultScoreField } : {}),
-        ...(e.scoreFields?.length ? { scoreFields: e.scoreFields } : {}),
       }));
 
       if (nodeType && compactEdges.length === 0) {

@@ -34,9 +34,9 @@ function trimEdge(raw: Record<string, unknown>): Record<string, unknown> {
 }
 
 export const getEdgeDetail = tool({
-  description: `Get specific edge instances (with properties and evidence) between two entities for a SINGLE edge type.
-Use AFTER getConnections when you want to drill into a specific edge type's evidence/properties.
-Example: "Show me the DRUG_ACTS_ON_GENE evidence between metformin and NDUFS8."`,
+  description: `Get detailed edge properties and evidence between two entities for ONE edge type. Uses Type:ID format.
+WHEN TO USE: After getConnections, to drill into a specific edge type's evidence/properties. "Show me the DRUG_ACTS_ON_GENE evidence between metformin and NDUFS8."
+WHEN NOT TO USE: To discover which edge types exist between two entities → getConnections first. For ranked neighbor lists → getRankedNeighbors.`,
   inputSchema: z.object({
     from: z
       .string()

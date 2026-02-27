@@ -3,8 +3,9 @@ import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const graphTraverse = tool({
-  description:
-    "LAST RESORT: Multi-step graph traversal for complex multi-hop queries that simpler tools can't answer. Prefer searchEntities, getRankedNeighbors, findPaths, getSharedNeighbors, and compareEntities first.",
+  description: `LAST RESORT: Multi-step graph traversal for queries that chain 2+ edge types. Direction is auto-inferred per step.
+WHEN TO USE: "Find drugs targeting genes in pathway X", "Tissues where disease-associated genes are expressed." Only when simpler tools can't answer.
+WHEN NOT TO USE: Single-hop neighbors → getRankedNeighbors. Path between two entities → findPaths. Shared neighbors → getSharedNeighbors. Always try simpler tools first.`,
   inputSchema: z.object({
     seeds: z
       .array(
@@ -21,42 +22,27 @@ export const graphTraverse = tool({
         z.object({
           edgeTypes: z
             .array(z.string())
-            .describe("Edge types to traverse in this step"),
-          direction: z
-            .enum(["in", "out"])
-            .optional()
-            .describe("Edge direction. Auto-inferred from schema when omitted."),
+            .describe("Edge types for this step (e.g. ['GENE_PARTICIPATES_IN_PATHWAY'])"),
           limit: z
             .number()
             .optional()
-            .describe("Max nodes per step (1-1000)"),
+            .default(20)
+            .describe("Max nodes per step (default 20, max 1000)"),
           sort: z
             .string()
             .optional()
-            .describe("Sort field, prefix '-' for descending (e.g., '-ot_score')"),
-          filters: z
-            .record(z.unknown())
-            .optional()
-            .describe("Edge property filters (e.g., { 'score__gte': 0.5 })"),
+            .describe("Sort field, prefix '-' for descending (e.g. '-ot_score')"),
           overlayOnly: z
             .boolean()
             .optional()
-            .describe("If true, edges only to existing nodes — no new nodes, frontier unchanged"),
+            .describe("If true, only add edges to existing nodes — no new nodes added. Useful for cross-linking."),
         }),
       )
       .min(1)
       .max(5)
-      .describe("Traversal steps (1-5)"),
-    nodeFields: z
-      .array(z.string())
-      .optional()
-      .describe("Node property fields to return (max 20)"),
-    edgeFields: z
-      .array(z.string())
-      .optional()
-      .describe("Edge property fields to return (max 20)"),
+      .describe("Traversal steps (1-5). Each step expands the frontier by one hop."),
   }),
-  execute: async ({ seeds, steps, nodeFields, edgeFields }) => {
+  execute: async ({ seeds, steps }) => {
     try {
       const data = await agentFetch<{
         data: {
@@ -73,7 +59,6 @@ export const graphTraverse = tool({
             from: string;
             to: string;
             fields?: Record<string, unknown>;
-            evidence?: unknown;
           }>;
           steps: Array<{
             stepIndex: number;
@@ -92,30 +77,38 @@ export const graphTraverse = tool({
         body: {
           seeds,
           steps,
-          select: {
-            nodeFields: nodeFields?.slice(0, 20),
-            edgeFields: edgeFields?.slice(0, 20),
-          },
+          select: { nodeFields: [], edgeFields: [] },
           limits: { maxNodes: 500, maxEdges: 2000 },
         },
         timeout: 45_000,
       });
 
-      const nodeEntries = Object.entries(data.data.nodes);
-      const nodes = nodeEntries.slice(0, 100).map(([key, n]) => ({
-        key,
+      const nodeMap = data.data.nodes;
+      const nodeEntries = Object.entries(nodeMap);
+
+      // Build label lookup for edges
+      const labelOf = (key: string): string =>
+        nodeMap[key]?.entity?.label ?? key;
+
+      const nodes = nodeEntries.slice(0, 100).map(([, n]) => ({
         type: n.entity.type,
         id: n.entity.id,
         label: n.entity.label,
-        ...(n.fields ? { fields: n.fields } : {}),
       }));
 
       const edges = data.data.edges.slice(0, 200).map((e) => ({
         type: e.type,
-        from: e.from,
-        to: e.to,
-        ...(e.fields ? { fields: e.fields } : {}),
+        from: labelOf(e.from),
+        to: labelOf(e.to),
       }));
+
+      if (nodes.length === 0) {
+        return {
+          error: true,
+          message: "Traversal returned no nodes. Check that seeds exist and edge types are valid.",
+          hint: "Use getEntityContext to verify available edge types for the seed entities.",
+        };
+      }
 
       return {
         nodeCount: nodeEntries.length,

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 
+import { MessageResponse } from "@shared/components/ai-elements/message";
 import { Badge } from "@shared/components/ui/badge";
 import {
   Collapsible,
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
+import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@infra/utils";
 import type {
   CompressedSearchResult,
@@ -76,6 +78,33 @@ function StatRow({ label, value }: { label: string; value: number | string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Text summary + collapsible raw data
+// ---------------------------------------------------------------------------
+
+function TextSummaryWithData({
+  textSummary,
+  children,
+}: {
+  textSummary: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <MessageResponse>{textSummary}</MessageResponse>
+      <Collapsible>
+        <CollapsibleTrigger className="group/raw flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronDownIcon className="size-3 transition-transform duration-200 group-data-[state=open]/raw:rotate-180" />
+          <span className="font-medium">View raw data</span>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          {children}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Search Results
 // ---------------------------------------------------------------------------
 
@@ -86,6 +115,7 @@ function SearchResultsRenderer({
 }) {
   if (!results.length) return <p className="text-xs text-muted-foreground">No results found.</p>;
   return (
+    <div className="overflow-x-auto">
     <Table>
       <TableHeader>
         <TableRow>
@@ -106,6 +136,7 @@ function SearchResultsRenderer({
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 }
 
@@ -114,8 +145,9 @@ function SearchResultsRenderer({
 // ---------------------------------------------------------------------------
 
 interface NeighborsOutput {
+  textSummary?: string;
+  resolved?: { direction?: string; scoreField?: string };
   scoreField?: string;
-  scoreMeaning?: string;
   totalReturned?: number;
   neighbors: CompressedNeighbor[];
 }
@@ -124,38 +156,40 @@ function NeighborsRenderer({ data }: { data: NeighborsOutput }) {
   const neighbors = data.neighbors;
   if (!neighbors?.length) return <p className="text-xs text-muted-foreground">No neighbors found.</p>;
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-12">#</TableHead>
-          <TableHead>Entity</TableHead>
-          <TableHead className="w-20">Type</TableHead>
-          {neighbors[0]?.score != null && (
-            <TableHead className="w-16 text-right">Score</TableHead>
-          )}
-          {neighbors[0]?.explanation && (
-            <TableHead>Explanation</TableHead>
-          )}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {neighbors.map((n) => (
-          <TableRow key={n.entity.id}>
-            <TableCell className="tabular-nums text-muted-foreground">{n.rank}</TableCell>
-            <TableCell className="font-medium">{n.entity.label}</TableCell>
-            <TableCell><TypeBadge type={n.entity.type} /></TableCell>
-            {n.score != null && (
-              <TableCell className="text-right tabular-nums">{fmt(n.score)}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12">#</TableHead>
+            <TableHead>Entity</TableHead>
+            <TableHead className="w-20">Type</TableHead>
+            {neighbors[0]?.score != null && (
+              <TableHead className="w-16 text-right">Score</TableHead>
             )}
-            {n.explanation && (
-              <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                {typeof n.explanation === "string" ? n.explanation : JSON.stringify(n.explanation)}
-              </TableCell>
+            {neighbors[0]?.explanation && (
+              <TableHead>Explanation</TableHead>
             )}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {neighbors.map((n) => (
+            <TableRow key={n.entity.id}>
+              <TableCell className="tabular-nums text-muted-foreground whitespace-nowrap">{n.rank}</TableCell>
+              <TableCell className="font-medium">{n.entity.label}</TableCell>
+              <TableCell><TypeBadge type={n.entity.type} /></TableCell>
+              {n.score != null && (
+                <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(n.score)}</TableCell>
+              )}
+              {n.explanation && (
+                <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                  {typeof n.explanation === "string" ? n.explanation : JSON.stringify(n.explanation)}
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -170,30 +204,50 @@ function EnrichmentRenderer({
 }) {
   if (!results.length) return <p className="text-xs text-muted-foreground">No enrichment results.</p>;
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Term</TableHead>
-          <TableHead className="w-20">Type</TableHead>
-          <TableHead className="w-16 text-right">Overlap</TableHead>
-          <TableHead className="w-20 text-right">P-value</TableHead>
-          <TableHead className="w-20 text-right">Adj P</TableHead>
-          <TableHead className="w-16 text-right">Fold</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {results.map((r) => (
-          <TableRow key={r.entity.id}>
-            <TableCell className="font-medium">{r.entity.label}</TableCell>
-            <TableCell><TypeBadge type={r.entity.type} /></TableCell>
-            <TableCell className="text-right tabular-nums">{r.overlap}</TableCell>
-            <TableCell className="text-right tabular-nums">{fmt(r.pValue)}</TableCell>
-            <TableCell className="text-right tabular-nums">{fmt(r.adjustedPValue)}</TableCell>
-            <TableCell className="text-right tabular-nums">{fmt(r.foldEnrichment)}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Term</TableHead>
+            <TableHead className="w-20">Type</TableHead>
+            <TableHead className="w-16 text-right">Overlap</TableHead>
+            <TableHead className="w-20 text-right">P-value</TableHead>
+            <TableHead className="w-20 text-right">Adj P</TableHead>
+            <TableHead className="w-16 text-right">Fold</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {results.map((r) => (
+            <TableRow key={r.entity.id}>
+              <TableCell>
+                <div>
+                  <span className="font-medium">{r.entity.label}</span>
+                  {r.overlappingGenes && r.overlappingGenes.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {r.overlappingGenes.slice(0, 6).map((g) => (
+                        <span key={g} className="text-[10px] font-mono bg-primary/8 text-primary rounded px-1 py-0">
+                          {g}
+                        </span>
+                      ))}
+                      {r.overlappingGenes.length > 6 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +{r.overlappingGenes.length - 6}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell><TypeBadge type={r.entity.type} /></TableCell>
+              <TableCell className="text-right tabular-nums">{r.overlap}</TableCell>
+              <TableCell className="text-right tabular-nums">{fmt(r.pValue)}</TableCell>
+              <TableCell className="text-right tabular-nums">{fmt(r.adjustedPValue)}</TableCell>
+              <TableCell className="text-right tabular-nums">{fmt(r.foldEnrichment)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -204,16 +258,14 @@ function EnrichmentRenderer({
 function GwasRenderer({
   data,
 }: {
-  data:
-    | CompressedGwasAssociation[]
-    | {
-        totalHits?: number;
-        uniqueTraits?: number;
-        topAssociations: CompressedGwasAssociation[];
-      };
+  data: {
+    totalHits?: number;
+    uniqueTraits?: number;
+    topAssociations: CompressedGwasAssociation[];
+  };
 }) {
-  const associations = Array.isArray(data) ? data : data.topAssociations;
-  const meta = !Array.isArray(data) ? data : null;
+  const associations = data.topAssociations;
+  const meta = data;
 
   if (!associations?.length) return <p className="text-xs text-muted-foreground">No GWAS associations found.</p>;
 
@@ -225,6 +277,7 @@ function GwasRenderer({
           {meta.uniqueTraits != null && <span>{meta.uniqueTraits} unique traits</span>}
         </div>
       )}
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -242,9 +295,9 @@ function GwasRenderer({
           {associations.map((a, i) => (
             <TableRow key={`${a.trait}-${i}`}>
               <TableCell className="font-medium">{a.trait}</TableCell>
-              <TableCell className="text-right tabular-nums">{fmt(a.pValueMlog)}</TableCell>
+              <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(a.pValueMlog)}</TableCell>
               {a.effectSize && (
-                <TableCell className="text-right tabular-nums">{a.effectSize}</TableCell>
+                <TableCell className="text-right tabular-nums whitespace-nowrap">{a.effectSize}</TableCell>
               )}
               {a.studyAccession && (
                 <TableCell className="font-mono text-xs text-muted-foreground">{a.studyAccession}</TableCell>
@@ -253,6 +306,7 @@ function GwasRenderer({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -374,11 +428,13 @@ function CohortRenderer({ data }: { data: CompressedCohort }) {
 // Plan Renderer (task list checklist)
 // ---------------------------------------------------------------------------
 
-interface ToolUIPart {
+export interface ToolUIPart {
   type: string;
   toolCallId?: string;
   toolName?: string;
   state?: string;
+  input?: unknown;
+  output?: unknown;
 }
 
 type PlanItemStatus = "completed" | "in-progress" | "pending" | "errored";
@@ -398,17 +454,6 @@ function toolNameMatches(planTool: string, actualTool: string): boolean {
 
 const RUNNING_STATES = new Set(["input-available", "input-streaming"]);
 
-const QUERY_TYPE_LABELS: Record<string, string> = {
-  entity_lookup: "Entity Lookup",
-  variant_analysis: "Variant Analysis",
-  graph_exploration: "Graph Exploration",
-  cohort_analysis: "Cohort Analysis",
-  comparison: "Comparison",
-  connection: "Connection",
-  drug_discovery: "Drug Discovery",
-  general: "General",
-};
-
 // ---------------------------------------------------------------------------
 // Plan format helpers
 // ---------------------------------------------------------------------------
@@ -427,17 +472,11 @@ function getPlanStepLabel(step: PlanStep): string {
   }
   if (step.do === "delegate") {
     const agentLabel = step.agent === "variantTriage" ? "Cohort Analysis" : "Knowledge Graph";
-    const taskPreview = step.task.length > 50 ? step.task.slice(0, 47) + "..." : step.task;
-    return `${agentLabel}: ${taskPreview}`;
+    return `${agentLabel}: ${step.task}`;
   }
   if (step.do === "synthesize") return "Synthesize findings";
   return "Processing";
 }
-
-const AGENT_BADGES: Record<string, string> = {
-  variantTriage: "Variant",
-  bioContext: "Graph",
-};
 
 /** Compute statuses for plan steps */
 function computePlanStatuses(
@@ -514,51 +553,10 @@ function StatusIcon({ status }: { status: PlanItemStatus }) {
 }
 
 function statusTextClass(status: PlanItemStatus): string {
-  if (status === "completed") return "text-muted-foreground line-through";
+  if (status === "completed") return "text-muted-foreground";
   if (status === "errored") return "text-amber-600";
   if (status === "in-progress") return "text-foreground font-medium";
   return "text-muted-foreground";
-}
-
-export function PlanRenderer({
-  plan,
-  siblingToolParts,
-  isStreaming = true,
-}: {
-  plan: AgentPlan;
-  siblingToolParts: ToolUIPart[];
-  isStreaming?: boolean;
-}) {
-  const statuses = computePlanStatuses(plan.steps, siblingToolParts, isStreaming);
-  return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2.5">
-      <div className="flex items-center gap-2">
-        <svg className="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" />
-        </svg>
-        <span className="text-sm font-medium text-foreground">Analysis Plan</span>
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-          {QUERY_TYPE_LABELS[plan.queryType] ?? plan.queryType}
-        </Badge>
-      </div>
-      <div className="space-y-1">
-        {plan.steps.map((step, idx) => {
-          const status = statuses[idx];
-          const label = getPlanStepLabel(step);
-          const agentBadge = step.do === "delegate" ? AGENT_BADGES[step.agent] : null;
-          return (
-            <div key={`${step.do}-${idx}`} className="flex items-center gap-2 text-sm">
-              <StatusIcon status={status} />
-              {agentBadge && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0">{agentBadge}</Badge>
-              )}
-              <span className={statusTextClass(status)}>{label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -854,19 +852,6 @@ const AGENT_TYPE_LABELS: Record<string, string> = {
   bioContext: "Knowledge Graph",
 };
 
-const AGENT_ICONS: Record<string, ReactNode> = {
-  variantTriage: (
-    <svg className="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 15c6.667-6 13.333 0 20-6" /><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993" /><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993" /><path d="m17 6-2.5-2.5" /><path d="m14 8-1-1" /><path d="m7 18 2.5 2.5" /><path d="m3.5 14.5.5.5" /><path d="m10 16 1 1" />
-    </svg>
-  ),
-  bioContext: (
-    <svg className="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" /><path d="M3.34 17a10 10 0 0 1 0-10" /><path d="M20.66 17a10 10 0 0 0 0-10" /><path d="M7.5 4.21a10 10 0 0 1 9 0" /><path d="M7.5 19.79a10 10 0 0 0 9 0" />
-    </svg>
-  ),
-};
-
 /** Compact count of evidence refs grouped by source */
 function EvidenceRefsSummary({ refs }: { refs: EvidenceRef[] }) {
   const grouped = refs.reduce<Record<string, number>>((acc, r) => {
@@ -912,111 +897,213 @@ function EvidenceRefsSummary({ refs }: { refs: EvidenceRef[] }) {
   );
 }
 
-export function SubagentRenderer({
-  data,
-  agentType,
-}: {
-  data: VariantTriageOutput | BioContextOutput;
-  agentType?: "variantTriage" | "bioContext";
-}) {
-  const traces = "toolTrace" in data ? (data as VariantTriageOutput | BioContextOutput).toolTrace : undefined;
-  const evidenceRefs = "evidenceRefs" in data ? (data as VariantTriageOutput | BioContextOutput).evidenceRefs : undefined;
+// ---------------------------------------------------------------------------
+// Activity Timeline — flat, compact status lines (replaces PlanRenderer,
+// SubagentCard, and SubagentRenderer)
+// ---------------------------------------------------------------------------
 
-  return (
-    <div className="space-y-3">
-      {/* Header: agent type + stats */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {agentType && (
-          <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/8 border border-primary/15 px-2 py-0.5">
-            <span className="text-primary">
-              {AGENT_ICONS[agentType] ?? null}
-            </span>
-            <span className="text-[11px] font-semibold text-primary">
-              {AGENT_TYPE_LABELS[agentType] ?? agentType}
-            </span>
+const SUBAGENT_TOOL_NAMES = new Set(["bioContext", "variantTriage"]);
+
+function PlanStepLine({
+  step,
+  status,
+  subagentPart,
+}: {
+  step: PlanStep;
+  status: PlanItemStatus;
+  subagentPart?: ToolUIPart;
+}) {
+  const label = getPlanStepLabel(step);
+
+  // Completed/errored delegate steps with output → expandable
+  if (
+    step.do === "delegate" &&
+    (status === "completed" || status === "errored") &&
+    subagentPart?.output
+  ) {
+    const output = subagentPart.output as VariantTriageOutput | BioContextOutput;
+    const traces = output.toolTrace;
+    const evidenceRefs = output.evidenceRefs;
+    const agentLabel = AGENT_TYPE_LABELS[step.agent] ?? step.agent;
+
+    return (
+      <Collapsible>
+        <CollapsibleTrigger className="group/del flex w-full items-center gap-2 py-0.5 text-sm rounded-md hover:bg-accent/30 px-1 -mx-1">
+          <StatusIcon status={status} />
+          <span className={cn(statusTextClass(status), "text-left")}>
+            {agentLabel}
+          </span>
+          <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+            {output.stepsUsed} step{output.stepsUsed !== 1 ? "s" : ""} &middot;{" "}
+            {output.toolCallsMade} tool{output.toolCallsMade !== 1 ? "s" : ""}
+          </span>
+          <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/del:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="ml-6 mt-1.5 mb-1 space-y-2">
+            {traces && traces.length > 0 && (
+              <SubagentTraceTimeline traces={traces} />
+            )}
+            {evidenceRefs && evidenceRefs.length > 0 && (
+              <EvidenceRefsSummary refs={evidenceRefs} />
+            )}
           </div>
-        )}
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span>{data.stepsUsed} step{data.stepsUsed !== 1 ? "s" : ""}</span>
-          <span className="text-border">&middot;</span>
-          <span>{data.toolCallsMade} tool call{data.toolCallsMade !== 1 ? "s" : ""}</span>
-          <span className="text-border">&middot;</span>
-          <span>{data.toolsUsed.length} tool{data.toolsUsed.length !== 1 ? "s" : ""} used</span>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
+  // Simple line for everything else
+  return (
+    <div className="flex items-center gap-2 py-0.5 text-sm">
+      <StatusIcon status={status} />
+      <span className={statusTextClass(status)}>{label}</span>
+    </div>
+  );
+}
+
+function DirectToolLine({ part }: { part: ToolUIPart }) {
+  const toolName = (part.toolName ?? part.type ?? "").replace(/^tool-/, "");
+  const inputSummary = getToolInputSummary(toolName, part.input);
+  const displayName = TOOL_DISPLAY_NAMES[toolName] ?? toolName;
+
+  const isComplete = part.state === "output-available";
+  const isError = part.state === "output-error";
+  const isRunning =
+    part.state === "input-available" || part.state === "input-streaming";
+  const status: PlanItemStatus = isComplete
+    ? "completed"
+    : isError
+      ? "errored"
+      : isRunning
+        ? "in-progress"
+        : "pending";
+
+  const hasOutput = isComplete || isError;
+
+  // Subagent tools with output → expandable with trace
+  if (SUBAGENT_TOOL_NAMES.has(toolName) && hasOutput && part.output) {
+    const output = part.output as VariantTriageOutput | BioContextOutput;
+    const traces = output.toolTrace;
+    const evidenceRefs = output.evidenceRefs;
+    const agentLabel = AGENT_TYPE_LABELS[toolName] ?? toolName;
+
+    return (
+      <Collapsible>
+        <CollapsibleTrigger className="group/dt flex w-full items-center gap-2 py-0.5 text-sm rounded-md hover:bg-accent/30 px-1 -mx-1">
+          <StatusIcon status={status} />
+          <span className={cn(statusTextClass(status), "text-left")}>
+            {agentLabel}
+          </span>
+          <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+            {output.stepsUsed} step{output.stepsUsed !== 1 ? "s" : ""} &middot;{" "}
+            {output.toolCallsMade} tool{output.toolCallsMade !== 1 ? "s" : ""}
+          </span>
+          <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/dt:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="ml-6 mt-1.5 mb-1 space-y-2">
+            {traces && traces.length > 0 && (
+              <SubagentTraceTimeline traces={traces} />
+            )}
+            {evidenceRefs && evidenceRefs.length > 0 && (
+              <EvidenceRefsSummary refs={evidenceRefs} />
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
+  // Regular tools with rendered output → expandable
+  if (hasOutput && part.output) {
+    const rendered = renderToolOutput(toolName, part.output);
+    if (rendered) {
+      return (
+        <Collapsible>
+          <CollapsibleTrigger className="group/dt flex w-full items-center gap-2 py-0.5 text-sm rounded-md hover:bg-accent/30 px-1 -mx-1">
+            <StatusIcon status={status} />
+            <span className={cn(statusTextClass(status), "flex-1 text-left")}>
+              {inputSummary ?? displayName}
+            </span>
+            <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/dt:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-6 mt-1.5 mb-1">{rendered}</div>
+          </CollapsibleContent>
+        </Collapsible>
+      );
+    }
+  }
+
+  // Simple line
+  return (
+    <div className="flex items-center gap-2 py-0.5 text-sm">
+      <StatusIcon status={status} />
+      <span className={statusTextClass(status)}>
+        {inputSummary ?? displayName}
+      </span>
+    </div>
+  );
+}
+
+export function ActivityTimeline({
+  plan,
+  siblingToolParts,
+  isStreaming,
+  isPlanStreaming,
+}: {
+  plan: AgentPlan | null;
+  siblingToolParts: ToolUIPart[];
+  isStreaming: boolean;
+  isPlanStreaming: boolean;
+}) {
+  // Planning in progress — single spinner line
+  if (isPlanStreaming) {
+    return (
+      <div className="space-y-0.5 py-1">
+        <div className="flex items-center gap-2 py-0.5 text-sm">
+          <StatusIcon status="in-progress" />
+          <span className="text-foreground font-medium">Planning...</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Tool trace timeline (expandable items) */}
-      {traces && traces.length > 0 ? (
-        <SubagentTraceTimeline traces={traces} />
-      ) : data.toolsUsed.length > 0 ? (
-        <div className="text-xs text-muted-foreground">
-          {data.toolCallsMade} tool calls: {data.toolsUsed.join(", ")}
-        </div>
-      ) : null}
+  // Plan-driven mode
+  if (plan) {
+    const statuses = computePlanStatuses(plan.steps, siblingToolParts, isStreaming);
+    return (
+      <div className="space-y-0.5 py-1">
+        {plan.steps.map((step, idx) => (
+          <PlanStepLine
+            key={`${step.do}-${idx}`}
+            step={step}
+            status={statuses[idx]}
+            subagentPart={
+              step.do === "delegate"
+                ? siblingToolParts.find((p) => {
+                    const name = (p.toolName ?? p.type ?? "").replace(
+                      /^tool-/,
+                      "",
+                    );
+                    return toolNameMatches(step.agent, name);
+                  })
+                : undefined
+            }
+          />
+        ))}
+      </div>
+    );
+  }
 
-      {/* Structured highlights */}
-      {("topGenes" in data && data.topGenes && data.topGenes.length > 0) ||
-       ("entities" in data && data.entities && data.entities.length > 0) ||
-       ("pathways" in data && data.pathways && data.pathways.length > 0)
-        ? (
-          <div className="space-y-1.5">
-            {"topGenes" in data && data.topGenes && data.topGenes.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                  Top genes
-                </span>
-                {data.topGenes.slice(0, 8).map((g) => (
-                  <Badge key={g.symbol} variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
-                    {g.symbol}
-                    {g.variantCount != null && (
-                      <span className="ml-1 text-muted-foreground/60">{g.variantCount}</span>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {"entities" in data && data.entities && data.entities.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                  Entities
-                </span>
-                {data.entities.slice(0, 8).map((e) => (
-                  <Badge key={e.id} variant="secondary" className="text-[10px] px-1.5 py-0">
-                    <span className="text-muted-foreground/60 mr-1">{e.type}</span>
-                    {e.label}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {"pathways" in data && data.pathways && data.pathways.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                  Pathways
-                </span>
-                {data.pathways.slice(0, 8).map((p) => (
-                  <Badge key={p.id} variant="secondary" className="text-[10px] px-1.5 py-0">
-                    {p.label}
-                    {p.pValue != null && (
-                      <span className="ml-1 text-muted-foreground/60">p={fmt(p.pValue)}</span>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : null}
-
-      {/* Summary text */}
-      {data.summary && (
-        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-          {data.summary}
-        </p>
-      )}
-
-      {/* Evidence refs */}
-      {evidenceRefs && evidenceRefs.length > 0 && (
-        <EvidenceRefsSummary refs={evidenceRefs} />
-      )}
+  // No-plan fallback
+  if (siblingToolParts.length === 0) return null;
+  return (
+    <div className="space-y-0.5 py-1">
+      {siblingToolParts.map((part, idx) => (
+        <DirectToolLine key={part.toolCallId ?? `tool-${idx}`} part={part} />
+      ))}
     </div>
   );
 }
@@ -1047,26 +1134,47 @@ export function renderToolOutput(
     }
     case "getRankedNeighbors": {
       const d = output as NeighborsOutput;
-      if (d.neighbors) return <NeighborsRenderer data={d} />;
-      return null;
+      if (!d.neighbors) return null;
+      if (d.textSummary) {
+        return (
+          <TextSummaryWithData textSummary={d.textSummary}>
+            <NeighborsRenderer data={d} />
+          </TextSummaryWithData>
+        );
+      }
+      return <NeighborsRenderer data={d} />;
     }
     case "runEnrichment": {
-      // Legacy array format
-      if (Array.isArray(output)) {
-        return <EnrichmentRenderer results={output as CompressedEnrichment[]} />;
-      }
-      // New object format: { textSummary, enriched: [...] }
-      const enrichObj = output as Record<string, unknown>;
+      const enrichObj = output as { textSummary?: string; enriched?: CompressedEnrichment[]; inputSize?: number; backgroundSize?: number };
       if (enrichObj.enriched && Array.isArray(enrichObj.enriched)) {
-        return <EnrichmentRenderer results={enrichObj.enriched as CompressedEnrichment[]} />;
+        if (enrichObj.textSummary) {
+          return (
+            <TextSummaryWithData textSummary={enrichObj.textSummary}>
+              <EnrichmentRenderer results={enrichObj.enriched} />
+            </TextSummaryWithData>
+          );
+        }
+        return <EnrichmentRenderer results={enrichObj.enriched} />;
+      }
+      return null;
+    }
+    case "getConnections": {
+      const d = output as { textSummary?: string };
+      if (d.textSummary) {
+        return <MessageResponse>{d.textSummary}</MessageResponse>;
+      }
+      return null;
+    }
+    case "compareEntities": {
+      const d = output as { textSummary?: string };
+      if (d.textSummary) {
+        return <MessageResponse>{d.textSummary}</MessageResponse>;
       }
       return null;
     }
     case "getGwasAssociations": {
-      const d = output as
-        | CompressedGwasAssociation[]
-        | { topAssociations: CompressedGwasAssociation[] };
-      if (Array.isArray(d) || ("topAssociations" in d && d.topAssociations)) {
+      const d = output as { totalHits?: number; uniqueTraits?: number; topAssociations: CompressedGwasAssociation[] };
+      if (d.topAssociations) {
         return <GwasRenderer data={d} />;
       }
       return null;
@@ -1090,18 +1198,10 @@ export function renderToolOutput(
       return null;
     }
     case "planQuery":
-      // Handled specially in chat-page.tsx as a standalone PlanRenderer
+    case "variantTriage":
+    case "bioContext":
+      // Handled by ActivityTimeline
       return null;
-    case "variantTriage": {
-      const d = output as VariantTriageOutput;
-      if (d.summary) return <SubagentRenderer data={d} agentType="variantTriage" />;
-      return null;
-    }
-    case "bioContext": {
-      const d = output as BioContextOutput;
-      if (d.summary) return <SubagentRenderer data={d} agentType="bioContext" />;
-      return null;
-    }
     default:
       return null;
   }
@@ -1130,10 +1230,10 @@ export function getToolInputSummary(
         : `Searching for "${q}"`;
     }
     case "getEntityContext": {
-      const id = inp.entityId as string | undefined;
-      const type = inp.entityType as string | undefined;
+      const type = inp.type as string | undefined;
+      const id = inp.id as string | undefined;
       if (!id) return null;
-      return type ? `Getting context for ${type} ${id}` : `Getting context for ${id}`;
+      return type ? `Getting context for ${type}:${id}` : `Getting context for ${id}`;
     }
     case "compareEntities": {
       const entities = inp.entities as Array<{ id?: string }> | undefined;
@@ -1141,30 +1241,38 @@ export function getToolInputSummary(
       return `Comparing ${entities.map((e) => e.id).join(" vs ")}`;
     }
     case "getRankedNeighbors": {
-      const id = inp.entityId as string | undefined;
-      const type = inp.neighborType as string | undefined;
+      const type = inp.type as string | undefined;
+      const id = inp.id as string | undefined;
+      const edge = inp.edgeType as string | undefined;
       if (!id) return null;
-      return type
-        ? `Finding ${type} neighbors of ${id}`
-        : `Finding neighbors of ${id}`;
+      return edge
+        ? `Finding ${edge} neighbors of ${type ?? ""}:${id}`
+        : `Finding neighbors of ${type ?? ""}:${id}`;
     }
     case "runEnrichment": {
-      const geneSet = inp.geneSet as string[] | undefined;
-      const lib = inp.library as string | undefined;
-      return lib
-        ? `Enrichment analysis against ${lib} (${geneSet?.length ?? 0} genes)`
-        : `Enrichment analysis (${geneSet?.length ?? 0} genes)`;
+      const genes = inp.genes as unknown[] | undefined;
+      const targetType = inp.targetType as string | undefined;
+      return targetType
+        ? `Enrichment analysis for ${targetType} (${genes?.length ?? 0} genes)`
+        : `Enrichment analysis (${genes?.length ?? 0} genes)`;
     }
     case "findPaths": {
-      const src = inp.sourceId as string | undefined;
-      const tgt = inp.targetId as string | undefined;
+      const from = inp.from as { type?: string; id?: string } | string | undefined;
+      const to = inp.to as { type?: string; id?: string } | string | undefined;
+      const fmtEntity = (e: { type?: string; id?: string } | string | undefined) => {
+        if (!e) return null;
+        if (typeof e === "string") return e;
+        return e.type ? `${e.type}:${e.id}` : e.id;
+      };
+      const src = fmtEntity(from);
+      const tgt = fmtEntity(to);
       if (!src || !tgt) return null;
       return `Finding paths from ${src} to ${tgt}`;
     }
     case "getSharedNeighbors": {
-      const entities = inp.entityIds as string[] | undefined;
+      const entities = inp.entities as Array<{ type?: string; id?: string }> | undefined;
       if (!entities?.length) return null;
-      return `Finding shared neighbors of ${entities.join(", ")}`;
+      return `Finding shared neighbors of ${entities.map((e) => e.id ?? "?").join(", ")}`;
     }
     case "lookupVariant": {
       const id = inp.variantId as string | undefined;

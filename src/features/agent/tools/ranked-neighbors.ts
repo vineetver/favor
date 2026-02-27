@@ -3,35 +3,30 @@ import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
 
 export const getRankedNeighbors = tool({
-  description: `Rank ALL neighbors of a SINGLE entity by a numeric edge score. Returns a scored list for one-to-many exploration.
-WHEN TO USE: "Top genes for disease X", "Highest-scoring drug targets of gene Y", "Best pathways for gene Z" — any question asking for a ranked list from ONE seed entity.
+  description: `Rank neighbors of ONE entity by edge score. Direction and scoreField are auto-selected by the server.
+WHEN TO USE: "Top genes for disease X", "Drug targets of gene Y", "Pathways for gene Z" — any ranked list from a single seed.
 WHEN NOT TO USE:
-- Two specific entities ("how is A related to B?") → use getConnections instead.
-- Path between entities ("how are A and B connected?") → use findPaths instead.
-- Shared neighbors of multiple entities → use getSharedNeighbors instead.
-- Side-by-side comparison → use compareEntities instead.
-Direction and scoreField are auto-inferred by the server. Do not pass scoreField — the server always selects the correct default.`,
+- Relationship between two specific entities → getConnections
+- Path between entities → findPaths
+- Shared neighbors of 2+ entities → getSharedNeighbors
+- Side-by-side comparison → compareEntities
+- Statistical enrichment of a gene set → runEnrichment`,
   inputSchema: z.object({
-    type: z.string().describe("Source entity type (e.g., 'Disease')"),
-    id: z.string().describe("Source entity ID (e.g., 'MONDO_0007254')"),
+    type: z.string().describe("Entity type, e.g. 'Gene', 'Disease', 'Drug'"),
+    id: z.string().describe("Entity ID, e.g. 'ENSG00000012048', 'MONDO_0007254'"),
     edgeType: z
       .string()
-      .describe("Edge type to traverse (e.g., 'GENE_ASSOCIATED_WITH_DISEASE'). Must exist in the schema."),
-    direction: z
-      .enum(["in", "out", "both"])
-      .optional()
-      .describe("Edge direction. Auto-inferred from schema when omitted. Override only for self-edges (e.g., GENE_INTERACTS_WITH_GENE)."),
-    limit: z.number().optional().default(20).describe("Max neighbors to return"),
+      .describe("Edge type to traverse, e.g. 'GENE_ASSOCIATED_WITH_DISEASE'. Use getGraphSchema or getEntityContext to discover valid edge types."),
+    limit: z.number().optional().default(50).describe("Max neighbors (default 50, max 100). Use 50+ for downstream enrichment."),
     expandOntology: z
       .boolean()
       .optional()
-      .describe("Expand ontology hierarchies (include subtypes/descendants)"),
+      .describe("Include descendants in ontology hierarchies (e.g. subtypes of a disease). Only useful for Disease/Phenotype seeds."),
   }),
   execute: async ({
     type,
     id,
     edgeType,
-    direction,
     limit,
     expandOntology,
   }) => {
@@ -43,7 +38,7 @@ Direction and scoreField are auto-inferred by the server. Do not pass scoreField
             entity: { type: string; id: string; label: string };
             rank: number;
             score?: number;
-            explanation?: string;
+            explanation?: { supportingSeeds?: number; topSupportingSubtypes?: string[] };
           }>;
         };
         meta: {
@@ -58,8 +53,7 @@ Direction and scoreField are auto-inferred by the server. Do not pass scoreField
         body: {
           seed: { type, id },
           edgeType,
-          ...(direction ? { direction } : {}),
-          limit: Math.min(limit ?? 20, 100),
+          limit: Math.min(limit ?? 50, 100),
           expandDescendants: expandOntology,
         },
       });
@@ -69,26 +63,19 @@ Direction and scoreField are auto-inferred by the server. Do not pass scoreField
         entity: n.entity,
         rank: n.rank,
         score: n.score,
-        explanation:
-          typeof n.explanation === "string"
-            ? n.explanation
-            : n.explanation
-              ? JSON.stringify(n.explanation)
-              : undefined,
       }));
 
       if (neighbors.length === 0) {
         return {
           error: true,
           message: `No neighbors found for ${type}:${id} via ${edgeType}`,
-          hint: "Try a different edge type or verify the entity ID with searchEntities.",
+          hint: "Check the edge type is valid for this entity type. Use getEntityContext to see available edge types, or getGraphSchema to look up the schema.",
         };
       }
 
       return {
         textSummary: data.data.textSummary,
         resolved: data.meta?.resolved ?? {},
-        scoreField: data.meta?.resolved?.scoreField ?? "(auto)",
         totalReturned: neighbors.length,
         neighbors,
       };

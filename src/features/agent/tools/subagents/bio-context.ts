@@ -113,8 +113,9 @@ function summarizeToolOutput(name: string, out: Record<string, unknown>): string
       return p ? `${p.length} paths` : "paths";
     }
     case "getConnections": {
-      const e = out.edges as unknown[] | undefined;
-      return e ? `${e.length} edges` : "connections";
+      const c = out.connections as unknown[] | undefined;
+      const total = out.totalEdges as number | undefined;
+      return c ? `${total ?? c.length} edges across ${c.length} types` : "connections";
     }
     case "runEnrichment": {
       // New format: { enriched: [...] } or old format: [...]
@@ -214,19 +215,19 @@ function extractStructuredOutput(
       }
 
       // Extract relationships from getConnections
-      if (r.toolName === "getConnections" && out.edges) {
-        const edges = out.edges as Array<{
+      // The tool returns { from, to, connections: [{ edgeType, edges: [...] }] }
+      if (r.toolName === "getConnections" && out.connections) {
+        const fromEntity = out.from as { id?: string } | undefined;
+        const toEntity = out.to as { id?: string } | undefined;
+        const connections = out.connections as Array<{
           edgeType: string;
-          from?: { id: string };
-          to?: { id: string };
-          score?: number;
+          count: number;
         }>;
-        for (const e of edges.slice(0, 10)) {
+        for (const c of connections.slice(0, 10)) {
           relationships.push({
-            from: e.from?.id ?? "unknown",
-            to: e.to?.id ?? "unknown",
-            edgeType: e.edgeType,
-            score: e.score,
+            from: fromEntity?.id ?? "unknown",
+            to: toEntity?.id ?? "unknown",
+            edgeType: c.edgeType,
           });
         }
       }

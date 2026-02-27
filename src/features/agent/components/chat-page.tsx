@@ -17,15 +17,6 @@ import {
   MessageResponse,
 } from "@shared/components/ai-elements/message";
 import {
-  ToolInput,
-  ToolOutput,
-} from "@shared/components/ai-elements/tool";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@shared/components/ui/collapsible";
-import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
@@ -46,11 +37,13 @@ import {
   SheetTitle,
 } from "@shared/components/ui/sheet";
 import {
-  ChevronDownIcon,
+  Suggestion,
+  Suggestions,
+} from "@shared/components/ai-elements/suggestion";
+import {
   CopyIcon,
   DnaIcon,
   GitCompareArrowsIcon,
-  FlaskConicalIcon,
   RouteIcon,
   CrosshairIcon,
   PanelLeftIcon,
@@ -74,32 +67,13 @@ import {
 import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
-import {
-  renderToolOutput,
-  getToolInputSummary,
-  PlanRenderer,
-} from "./tool-renderers";
+import { ActivityTimeline } from "./tool-renderers";
 import type { AgentPlan } from "../types";
 import { useAgentChat } from "../hooks/use-agent-chat";
-import { OrchestrationHeader } from "./orchestration-header";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const TOOL_TITLES: Record<string, string> = {
-  searchEntities: "Search Entities",
-  recallMemories: "Recall Memories",
-  saveMemory: "Save Memory",
-  planQuery: "Analysis Plan",
-  variantTriage: "Variant Triage",
-  bioContext: "Knowledge Graph",
-};
-
-function getToolTitle(type: string): string {
-  const name = type.replace(/^tool-/, "");
-  return TOOL_TITLES[name] ?? name.replace(/([A-Z])/g, " $1").trim();
-}
 
 const SUGGESTED_PROMPTS = [
   {
@@ -127,220 +101,6 @@ const SUGGESTED_PROMPTS = [
     icon: <DnaIcon className="size-4" />,
   },
 ];
-
-// ---------------------------------------------------------------------------
-// Compact status dot for grouped tool rows
-// ---------------------------------------------------------------------------
-
-function StatusDot({ state }: { state: string }) {
-  if (state === "output-available") {
-    return <span className="size-2 rounded-full bg-emerald-500 shrink-0" />;
-  }
-  if (state === "output-error") {
-    return <span className="size-2 rounded-full bg-destructive shrink-0" />;
-  }
-  if (state === "input-available" || state === "input-streaming") {
-    return (
-      <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
-    );
-  }
-  return <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />;
-}
-
-// ---------------------------------------------------------------------------
-// Compact tool activity group — renders N tool calls in one container
-// ---------------------------------------------------------------------------
-
-const SUBAGENT_TOOL_NAMES = new Set(["bioContext", "variantTriage"]);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ToolActivityGroup({ tools }: { tools: Array<{ part: any; index: number }> }) {
-  return (
-    <div className="not-prose rounded-lg border border-border/80 bg-card overflow-hidden min-w-0 w-full">
-      {tools.map(({ part }) => {
-        const toolName = getToolName(part);
-        const cleanName = toolName.replace(/^tool-/, "");
-        const inputSummary = getToolInputSummary(toolName, part.input);
-        const title = getToolTitle(part.type);
-        const isError = part.state === "output-error";
-        const isSubagent = SUBAGENT_TOOL_NAMES.has(cleanName);
-        const hasOutput = part.state === "output-available" || part.state === "output-error";
-
-        return (
-          <Collapsible key={part.toolCallId} defaultOpen={isError || (isSubagent && hasOutput)}>
-            <CollapsibleTrigger className="group/row flex w-full items-center gap-2.5 px-3 py-2 text-[13px] transition-colors hover:bg-accent/40 border-b border-border/40 last:border-b-0">
-              <StatusDot state={part.state} />
-              <span className="flex-1 text-left truncate font-medium text-muted-foreground">
-                {inputSummary ?? title}
-              </span>
-              <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/row:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="border-b border-border/40 last:border-b-0">
-              <div className="space-y-3 bg-muted/20 p-3">
-                {/* For subagent tools, show a cleaner input summary instead of raw JSON */}
-                {isSubagent && part.input ? (
-                  <SubagentInputSummary input={part.input as Record<string, unknown>} />
-                ) : (
-                  <ToolInput input={part.input} />
-                )}
-                {hasOutput && (
-                  <ToolOutput
-                    output={part.output}
-                    errorText={part.errorText}
-                    renderOutput={(out) => renderToolOutput(toolName, out)}
-                  />
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      })}
-    </div>
-  );
-}
-
-/** Clean input display for subagent tool calls */
-function SubagentInputSummary({ input }: { input: Record<string, unknown> }) {
-  const task = input.task as string | undefined;
-  const entityIds = input.resolvedEntityIds as string[] | undefined;
-  const edgeHints = input.edgeTypeHints as string[] | undefined;
-  const cohortId = input.cohortId as string | undefined;
-  const geneSymbol = input.geneSymbol as string | undefined;
-  const variants = input.variants as string[] | undefined;
-
-  return (
-    <div className="space-y-2">
-      {task && (
-        <div className="space-y-0.5">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-            Task
-          </span>
-          <p className="text-xs text-foreground leading-relaxed">{task}</p>
-        </div>
-      )}
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-        {entityIds && entityIds.length > 0 && (
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Resolved Entities
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {entityIds.map((id) => (
-                <span key={id} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                  {id}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {edgeHints && edgeHints.length > 0 && (
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Edge Types
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {edgeHints.map((et) => (
-                <span key={et} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                  {et}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {cohortId && (
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Cohort
-            </span>
-            <span className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-              {cohortId}
-            </span>
-          </div>
-        )}
-        {geneSymbol && (
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Gene
-            </span>
-            <span className="text-[10px] font-mono bg-primary/10 text-primary rounded px-1.5 py-0.5">
-              {geneSymbol}
-            </span>
-          </div>
-        )}
-        {variants && variants.length > 0 && (
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Variants ({variants.length})
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {variants.slice(0, 10).map((v) => (
-                <span key={v} className="text-[10px] font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                  {v}
-                </span>
-              ))}
-              {variants.length > 10 && (
-                <span className="text-[10px] text-muted-foreground">
-                  +{variants.length - 10} more
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Part grouping — clusters consecutive tool parts together
-// ---------------------------------------------------------------------------
-
-type MessageSegment =
-  | { kind: "text"; text: string; key: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { kind: "plan"; part: any; key: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { kind: "tools"; parts: Array<{ part: any; index: number }>; key: string };
-
-function segmentMessageParts(message: UIMessage): MessageSegment[] {
-  const segments: MessageSegment[] = [];
-
-  for (let i = 0; i < message.parts.length; i++) {
-    const part = message.parts[i];
-
-    if (part.type === "text") {
-      if (part.text.trim()) {
-        segments.push({ kind: "text", text: part.text, key: `text-${message.id}-${i}` });
-      }
-      continue;
-    }
-
-    if (part.type === "reasoning") continue;
-
-    if (isToolUIPart(part)) {
-      const name = getToolName(part).replace(/^tool-/, "");
-
-      if (name === "planQuery" && (part as { output?: unknown }).output) {
-        segments.push({ kind: "plan", part, key: `plan-${(part as { toolCallId?: string }).toolCallId}` });
-        continue;
-      }
-
-      // Append to existing tool group or start a new one
-      const last = segments.at(-1);
-      if (last?.kind === "tools") {
-        last.parts.push({ part, index: i });
-      } else {
-        segments.push({
-          kind: "tools",
-          parts: [{ part, index: i }],
-          key: `tg-${(part as { toolCallId?: string }).toolCallId}`,
-        });
-      }
-    }
-  }
-
-  return segments;
-}
 
 // ---------------------------------------------------------------------------
 // Follow-up suggestions
@@ -448,63 +208,50 @@ function ChatMessageRenderer({
     navigator.clipboard.writeText(textContent);
   }, [message.parts]);
 
-  const hasText = message.parts.some(
-    (p) => p.type === "text" && p.text.trim(),
-  );
-
-  // All tool parts for OrchestrationHeader
-  const allToolParts = message.parts
-    .filter((p) => isToolUIPart(p))
-    .map((p) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tp = p as any;
-      return {
-        type: tp.type as string,
-        toolName: getToolName(tp),
-        state: tp.state as string | undefined,
-        input: tp.input,
-      };
-    });
+  // Build enriched tool parts (with input/output) for ActivityTimeline
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allToolParts = message.parts.filter(isToolUIPart).map((p: any) => ({
+    type: p.type as string,
+    toolCallId: p.toolCallId as string | undefined,
+    toolName: getToolName(p) as string,
+    state: p.state as string | undefined,
+    input: p.input as unknown,
+    output: p.output as unknown,
+  }));
   const hasToolParts = allToolParts.length > 0;
 
-  // Extract plan output (last completed planQuery) for OrchestrationHeader
-  const planOutput = message.parts
-    .filter(
-      (p) => {
-        if (!isToolUIPart(p)) return false;
-        const name = getToolName(p).replace(/^tool-/, "");
-        return name === "planQuery" &&
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (p as any).state === "output-available";
-      },
-    )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((p) => (p as any).output as AgentPlan)
-    .at(-1) ?? null;
+  // Extract plan output (last completed planQuery)
+  const planPart = allToolParts.find((p) => {
+    const name = (p.toolName ?? "").replace(/^tool-/, "");
+    return name === "planQuery" && p.state === "output-available";
+  });
+  const planOutput: AgentPlan | null = planPart
+    ? (planPart.output as AgentPlan)
+    : null;
 
-  // All non-plan tool parts for PlanRenderer status tracking.
-  // Include ALL tools (including resolve-phase) so the plan can match
-  // tools like searchEntities that run before the plan tool.
-  const siblingToolParts = message.parts
-    .filter(
-      (p) => {
-        if (!isToolUIPart(p)) return false;
-        const name = getToolName(p).replace(/^tool-/, "");
-        return name !== "planQuery";
-      },
-    )
-    .map((p) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tp = p as any;
-      return {
-        type: tp.type as string,
-        toolCallId: tp.toolCallId as string | undefined,
-        toolName: getToolName(tp),
-        state: tp.state as string | undefined,
-      };
-    });
+  // Is the planQuery tool currently streaming?
+  const isPlanStreaming = allToolParts.some((p) => {
+    const name = (p.toolName ?? "").replace(/^tool-/, "");
+    return (
+      name === "planQuery" &&
+      (p.state === "input-available" || p.state === "input-streaming")
+    );
+  });
 
-  const segments = segmentMessageParts(message);
+  // Non-plan tool parts for ActivityTimeline status tracking
+  const siblingToolParts = allToolParts.filter((p) => {
+    const name = (p.toolName ?? "").replace(/^tool-/, "");
+    return name !== "planQuery";
+  });
+
+  // Text segments
+  const textSegments = message.parts
+    .filter((p): p is Extract<typeof p, { type: "text" }> =>
+      p.type === "text" && !!p.text.trim(),
+    )
+    .map((p, i) => ({ text: p.text, key: `text-${message.id}-${i}` }));
+
+  const hasText = textSegments.length > 0;
 
   return (
     <Message from={message.role}>
@@ -526,50 +273,28 @@ function ChatMessageRenderer({
           </Reasoning>
         )}
 
-        {/* Show activity indicator when streaming but no visible content yet */}
-        {isLastMessage && isStreaming && segments.length === 0 && !hasReasoning && (
+        {/* Streaming indicator before any tools appear */}
+        {isLastMessage && isStreaming && !hasToolParts && textSegments.length === 0 && !hasReasoning && (
           <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
             <Spinner className="size-4" />
             <Shimmer duration={2}>{getContextualStatus(messages)}</Shimmer>
           </div>
         )}
 
-        {/* Orchestration header — shown for assistant messages with tool calls */}
-        {message.role === "assistant" && hasToolParts && isLastMessage && isStreaming && (
-          <OrchestrationHeader
-            toolParts={allToolParts}
-            isStreaming={isStreaming}
-            hasTextContent={hasText}
-            planOutput={planOutput}
+        {/* Activity timeline — flat status lines for all tool activity */}
+        {hasToolParts && (
+          <ActivityTimeline
+            plan={planOutput}
+            siblingToolParts={siblingToolParts}
+            isStreaming={isLastMessage && isStreaming}
+            isPlanStreaming={isPlanStreaming}
           />
         )}
 
-        {segments.map((seg) => {
-          if (seg.kind === "text") {
-            return (
-              <MessageResponse key={seg.key}>{seg.text}</MessageResponse>
-            );
-          }
-
-          if (seg.kind === "plan") {
-            return (
-              <PlanRenderer
-                key={seg.key}
-                plan={seg.part.output as AgentPlan}
-                siblingToolParts={siblingToolParts}
-                isStreaming={isLastMessage && isStreaming}
-              />
-            );
-          }
-
-          if (seg.kind === "tools") {
-            return (
-              <ToolActivityGroup key={seg.key} tools={seg.parts} />
-            );
-          }
-
-          return null;
-        })}
+        {/* Final synthesis text */}
+        {textSegments.map((seg) => (
+          <MessageResponse key={seg.key}>{seg.text}</MessageResponse>
+        ))}
       </MessageContent>
 
       {message.role === "assistant" && hasText && !isStreaming && (
@@ -820,18 +545,15 @@ export function ChatPage() {
                     !isSubmitted &&
                     messages.length > 0 &&
                     messages.at(-1)?.role === "assistant" && (
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <Suggestions className="mt-1">
                         {getFollowUpSuggestions(messages).map((s) => (
-                          <button
+                          <Suggestion
                             key={s}
-                            type="button"
-                            onClick={() => send(s)}
-                            className="rounded-xl border border-border/80 bg-card px-3 py-1.5 text-xs text-muted-foreground transition-all hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground"
-                          >
-                            {s}
-                          </button>
+                            suggestion={s}
+                            onClick={send}
+                          />
                         ))}
-                      </div>
+                      </Suggestions>
                     )}
                 </div>
               )}
