@@ -71,7 +71,7 @@ import { ActivityTimeline } from "./tool-renderers";
 import { VizSpecPanel } from "./viz-spec-panel";
 import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
 import type { BatchResultEntry } from "../tools/run-batch";
-import { generateVizSpec } from "../viz";
+import { generateVizSpecs } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
 
 // ---------------------------------------------------------------------------
@@ -270,13 +270,13 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
         const batch = p.output as { results?: BatchResultEntry[] };
         for (const entry of batch.results ?? []) {
           if (entry.error || !entry.output) continue;
-          const viz = generateVizSpec(entry.toolName, entry.output, entry.input ?? {}, acc.length);
-          if (viz) acc.push(viz);
+          const vizResults = generateVizSpecs(entry.toolName, entry.output, entry.input ?? {}, acc.length);
+          acc.push(...vizResults);
         }
       } else if (!SKIP.has(name)) {
         const input = (p.input ?? {}) as Record<string, unknown>;
-        const viz = generateVizSpec(name, p.output, input, idx);
-        if (viz) acc.push(viz);
+        const vizResults = generateVizSpecs(name, p.output, input, idx);
+        acc.push(...vizResults);
       }
       return acc;
     }, []);

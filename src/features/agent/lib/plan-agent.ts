@@ -31,7 +31,7 @@ const PlanStepSchema = z.discriminatedUnion("do", [
 const PlanSchema = z.object({
   queryType: z.enum([
     "entity_lookup", "variant_analysis", "graph_exploration",
-    "cohort_analysis", "comparison", "connection", "drug_discovery", "general",
+    "cohort_analysis", "comparison", "connection", "drug_discovery", "analytics", "general",
   ]),
   steps: z.array(PlanStepSchema).min(1).max(6),
 });
@@ -91,6 +91,19 @@ NOT follow-ups (require new data):
 - New analysis: "run enrichment on those genes", "find drugs targeting those"
 - Switching topics entirely
 - Asking for data not yet retrieved: "what are the side effects?" (when only targets were retrieved)
+
+TYPED COHORTS:
+Cohorts have different data types: variant_list (default), gwas_sumstats, credible_set, fine_mapping. The agent must call getCohortSchema to discover columns before analysis.
+- GWAS cohorts: columns include p_value, beta, se, chromosome, position
+- Credible sets: columns include pip, credible_set_id
+- Fine mapping: columns include posterior_prob, bayes_factor
+- Use queryType "analytics" for statistical analysis requests (regression, PCA, clustering, testing)
+- Delegate to variantTriage for complex typed cohort analysis pipelines
+
+ANALYTICS:
+The runAnalytics tool supports: regression, PCA, clustering, statistical_test, manhattan_plot, qq_plot.
+- For simple analytics (one analysis): { do: "direct", description: "Run PCA on the cohort using runAnalytics" }
+- For complex analytics pipelines: { do: "delegate", agent: "variantTriage", task: "Run regression and clustering analysis on the cohort" }
 
 RULES:
 - Always start with "resolve" if the query mentions entity names (genes, diseases, drugs, pathways) that need ID resolution.

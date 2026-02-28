@@ -110,6 +110,56 @@ export interface ComparisonVizSpec extends VizSpecBase {
 }
 
 // ---------------------------------------------------------------------------
+// Scatter plot — x/y data points with optional regression line
+// ---------------------------------------------------------------------------
+
+export interface ScatterPlotVizSpec extends VizSpecBase {
+  type: "scatter_plot";
+  data: Array<{
+    x: number;
+    y: number;
+    label?: string;
+    category?: string;
+  }>;
+  xLabel: string;
+  yLabel: string;
+  regressionLine?: {
+    slope: number;
+    intercept: number;
+    r_squared: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// QQ plot — expected vs observed -log10(p)
+// ---------------------------------------------------------------------------
+
+export interface QQPlotVizSpec extends VizSpecBase {
+  type: "qq_plot";
+  data: Array<{
+    expected: number; // -log10(expected p)
+    observed: number; // -log10(observed p)
+    label?: string;
+  }>;
+  lambda?: number; // genomic inflation factor
+}
+
+// ---------------------------------------------------------------------------
+// Heatmap — rows x cols matrix with color-mapped cells
+// ---------------------------------------------------------------------------
+
+export interface HeatmapVizSpec extends VizSpecBase {
+  type: "heatmap";
+  rows: string[];
+  cols: string[];
+  values: number[][]; // rows[i][j] = value at (row i, col j)
+  colorScale: "diverging" | "sequential";
+  valueLabel?: string;
+  minValue?: number;
+  maxValue?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Discriminated union
 // ---------------------------------------------------------------------------
 
@@ -119,4 +169,7 @@ export type VizSpec =
   | NetworkVizSpec
   | StatCardVizSpec
   | DistributionVizSpec
-  | ComparisonVizSpec;
+  | ComparisonVizSpec
+  | ScatterPlotVizSpec
+  | QQPlotVizSpec
+  | HeatmapVizSpec;

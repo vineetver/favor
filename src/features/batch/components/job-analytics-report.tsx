@@ -186,7 +186,7 @@ const SQL_QUERIES = {
     FROM variants
     WHERE status = 'FOUND'
       AND len(list_filter(
-        variants.variant.clinvar.clnsig,
+        variants.clinvar.clnsig,
         x -> x IS NOT NULL
           AND lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%'
           AND lower(CAST(x AS VARCHAR)) NOT LIKE '%benign%'
@@ -200,18 +200,18 @@ const SQL_QUERIES = {
     FROM variants
     WHERE status = 'FOUND'
       AND GREATEST(
-        COALESCE(variants.variant.gnomad_exome.af, 0),
-        COALESCE(variants.variant.gnomad_genome.af, 0),
-        COALESCE(variants.variant.bravo.bravo_af, 0)
+        COALESCE(variants.gnomad_exome.af, 0),
+        COALESCE(variants.gnomad_genome.af, 0),
+        COALESCE(variants.bravo.bravo_af, 0)
       ) < 0.001
   `,
 
   highImpact: `
     WITH scored AS (
       SELECT GREATEST(
-        COALESCE(variants.variant.apc.conservation_v2, 0),
-        COALESCE(variants.variant.apc.protein_function_v3, 0),
-        COALESCE(variants.variant.main.cadd.phred, 0) / 2
+        COALESCE(variants.apc.conservation_v2, 0),
+        COALESCE(variants.apc.protein_function_v3, 0),
+        COALESCE(variants.main.cadd.phred, 0) / 2
       ) as integrative_max
       FROM variants
       WHERE status = 'FOUND'
@@ -231,8 +231,8 @@ const SQL_QUERIES = {
     SELECT COUNT(*) as count
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.cosmic.sample_count IS NOT NULL
-      AND variants.variant.cosmic.sample_count > 0
+      AND variants.cosmic.sample_count IS NOT NULL
+      AND variants.cosmic.sample_count > 0
   `,
 
   spliceHigh: `
@@ -240,9 +240,9 @@ const SQL_QUERIES = {
     FROM variants
     WHERE status = 'FOUND'
       AND GREATEST(
-        COALESCE(variants.variant.gnomad_exome.functional.spliceai_ds_max, 0),
-        COALESCE(variants.variant.gnomad_genome.functional.spliceai_ds_max, 0),
-        COALESCE(variants.variant.gnomad_genome.functional.pangolin_largest_ds, 0)
+        COALESCE(variants.gnomad_exome.functional.spliceai_ds_max, 0),
+        COALESCE(variants.gnomad_genome.functional.spliceai_ds_max, 0),
+        COALESCE(variants.gnomad_genome.functional.pangolin_largest_ds, 0)
       ) >= 0.5
   `,
 
@@ -253,41 +253,41 @@ const SQL_QUERIES = {
     FROM variants
     WHERE status = 'FOUND'
       AND (
-        COALESCE(variants.variant.apc.epigenetics_active, 0) >= 10
-        OR COALESCE(variants.variant.main.encode.dnase.phred, 0) >= 10
-        OR COALESCE(variants.variant.main.encode.h3k27ac.phred, 0) >= 10
-        OR (variants.variant.ccre.annotations IS NOT NULL AND variants.variant.ccre.annotations != '')
+        COALESCE(variants.apc.epigenetics_active, 0) >= 10
+        OR COALESCE(variants.main.encode.dnase.phred, 0) >= 10
+        OR COALESCE(variants.main.encode.h3k27ac.phred, 0) >= 10
+        OR (variants.ccre.annotations IS NOT NULL AND variants.ccre.annotations != '')
       )
   `,
 
   qcPassRate: `
     SELECT
-      COUNT(CASE WHEN variants.variant.bravo.filter_status IS NOT NULL AND contains(CAST(variants.variant.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) as pass_count,
-      COUNT(CASE WHEN variants.variant.bravo.filter_status IS NOT NULL THEN 1 END) as total_annotated,
-      COUNT(CASE WHEN variants.variant.bravo.filter_status IS NOT NULL AND contains(CAST(variants.variant.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) * 100.0 /
-        NULLIF(COUNT(CASE WHEN variants.variant.bravo.filter_status IS NOT NULL THEN 1 END), 0) as percentage
+      COUNT(CASE WHEN variants.bravo.filter_status IS NOT NULL AND contains(CAST(variants.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) as pass_count,
+      COUNT(CASE WHEN variants.bravo.filter_status IS NOT NULL THEN 1 END) as total_annotated,
+      COUNT(CASE WHEN variants.bravo.filter_status IS NOT NULL AND contains(CAST(variants.bravo.filter_status AS VARCHAR), 'PASS') THEN 1 END) * 100.0 /
+        NULLIF(COUNT(CASE WHEN variants.bravo.filter_status IS NOT NULL THEN 1 END), 0) as percentage
     FROM variants
     WHERE status = 'FOUND'
   `,
 
   prioritizedVariants: `
     SELECT
-      variants.variant.chromosome,
-      variants.variant.position,
-      variants.variant.variant_vcf,
-      variants.variant.genecode.consequence,
-      variants.variant.clinvar.clnsig[1] as clnsig,
-      variants.variant.clinvar.clndn[1] as clndn,
-      variants.variant.cosmic.gene as cosmic_gene,
-      variants.variant.cosmic.sample_count as cosmic_count,
-      variants.variant.alphamissense.max_pathogenicity as am_score,
-      variants.variant.main.cadd.phred as cadd,
+      variants.chromosome,
+      variants.position,
+      variants.variant_vcf,
+      variants.genecode.consequence,
+      variants.clinvar.clnsig[1] as clnsig,
+      variants.clinvar.clndn[1] as clndn,
+      variants.cosmic.gene as cosmic_gene,
+      variants.cosmic.sample_count as cosmic_count,
+      variants.alphamissense.max_pathogenicity as am_score,
+      variants.main.cadd.phred as cadd,
       (
-        CASE WHEN len(list_filter(variants.variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0 THEN 1000 ELSE 0 END +
-        CASE WHEN variants.variant.cosmic.sample_count > 0 THEN 200 ELSE 0 END +
-        COALESCE(variants.variant.apc.protein_function_v3, 0) * 20 +
-        COALESCE(variants.variant.apc.conservation_v2, 0) * 10 +
-        COALESCE(variants.variant.alphamissense.max_pathogenicity, 0) * 100
+        CASE WHEN len(list_filter(variants.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0 THEN 1000 ELSE 0 END +
+        CASE WHEN variants.cosmic.sample_count > 0 THEN 200 ELSE 0 END +
+        COALESCE(variants.apc.protein_function_v3, 0) * 20 +
+        COALESCE(variants.apc.conservation_v2, 0) * 10 +
+        COALESCE(variants.alphamissense.max_pathogenicity, 0) * 100
       ) as priority_score
     FROM variants
     WHERE status = 'FOUND'
@@ -299,22 +299,22 @@ const SQL_QUERIES = {
     SELECT COUNT(*) as count
     FROM variants
     WHERE status = 'FOUND'
-      AND len(list_filter(variants.variant.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
+      AND len(list_filter(variants.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0
   `,
 
   cosmicMedian: `
-    SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.cosmic.sample_count) as median
+    SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.cosmic.sample_count) as median
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.cosmic.sample_count IS NOT NULL
-      AND variants.variant.cosmic.sample_count > 0
+      AND variants.cosmic.sample_count IS NOT NULL
+      AND variants.cosmic.sample_count > 0
   `,
 
   topCosmicGene: `
-    SELECT CAST(variants.variant.cosmic.gene AS VARCHAR) as gene, COUNT(*) as count
+    SELECT CAST(variants.cosmic.gene AS VARCHAR) as gene, COUNT(*) as count
     FROM variants
-    WHERE status = 'FOUND' AND variants.variant.cosmic.gene IS NOT NULL
-    GROUP BY variants.variant.cosmic.gene
+    WHERE status = 'FOUND' AND variants.cosmic.gene IS NOT NULL
+    GROUP BY variants.cosmic.gene
     ORDER BY count DESC
     LIMIT 1
   `,
@@ -322,7 +322,7 @@ const SQL_QUERIES = {
   // Functional Class queries
   regionDistribution: `
     SELECT
-      COALESCE(variants.variant.genecode.region_type, 'Unknown') as region_type,
+      COALESCE(variants.genecode.region_type, 'Unknown') as region_type,
       COUNT(*) as count,
       ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
     FROM variants
@@ -333,13 +333,13 @@ const SQL_QUERIES = {
 
   consequenceDistribution: `
     SELECT
-      COALESCE(variants.variant.genecode.consequence, 'Unknown') as consequence,
+      COALESCE(variants.genecode.consequence, 'Unknown') as consequence,
       COUNT(*) as count,
       ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.genecode.consequence IS NOT NULL
-      AND variants.variant.genecode.consequence != ''
+      AND variants.genecode.consequence IS NOT NULL
+      AND variants.genecode.consequence != ''
     GROUP BY consequence
     ORDER BY count DESC
     LIMIT 10
@@ -347,11 +347,11 @@ const SQL_QUERIES = {
 
   topGenesByVariantCount: `
     WITH gene_list AS (
-      SELECT variants.variant.genecode.genes as genes
+      SELECT variants.genecode.genes as genes
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.genecode.genes IS NOT NULL
-        AND len(variants.variant.genecode.genes) > 0
+        AND variants.genecode.genes IS NOT NULL
+        AND len(variants.genecode.genes) > 0
     ),
     unnested AS (
       SELECT unnest(genes) as gene FROM gene_list
@@ -366,12 +366,12 @@ const SQL_QUERIES = {
 
   topGeneHancerTargets: `
     WITH targets_list AS (
-      SELECT variants.variant.genehancer.targets as targets
+      SELECT variants.genehancer.targets as targets
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.genehancer IS NOT NULL
-        AND variants.variant.genehancer.targets IS NOT NULL
-        AND len(variants.variant.genehancer.targets) > 0
+        AND variants.genehancer IS NOT NULL
+        AND variants.genehancer.targets IS NOT NULL
+        AND len(variants.genehancer.targets) > 0
     ),
     unnested AS (
       SELECT unnest(targets) as target FROM targets_list
@@ -395,35 +395,35 @@ const SQL_QUERIES = {
     stats AS (
       SELECT
         -- CADD
-        COUNT(CASE WHEN variants.variant.main.cadd.phred IS NOT NULL THEN 1 END) as cadd_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.main.cadd.phred) as cadd_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.main.cadd.phred) as cadd_p90,
-        COUNT(CASE WHEN variants.variant.main.cadd.phred >= 20 THEN 1 END) as cadd_top_decile,
+        COUNT(CASE WHEN variants.main.cadd.phred IS NOT NULL THEN 1 END) as cadd_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.main.cadd.phred) as cadd_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.main.cadd.phred) as cadd_p90,
+        COUNT(CASE WHEN variants.main.cadd.phred >= 20 THEN 1 END) as cadd_top_decile,
         -- LINSIGHT
-        COUNT(CASE WHEN variants.variant.linsight IS NOT NULL THEN 1 END) as linsight_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.linsight) as linsight_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.linsight) as linsight_p90,
-        COUNT(CASE WHEN variants.variant.linsight >= 0.5 THEN 1 END) as linsight_top_decile,
+        COUNT(CASE WHEN variants.linsight IS NOT NULL THEN 1 END) as linsight_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.linsight) as linsight_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.linsight) as linsight_p90,
+        COUNT(CASE WHEN variants.linsight >= 0.5 THEN 1 END) as linsight_top_decile,
         -- FATHMM-XF
-        COUNT(CASE WHEN variants.variant.fathmm_xf IS NOT NULL THEN 1 END) as fathmm_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.fathmm_xf) as fathmm_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.fathmm_xf) as fathmm_p90,
-        COUNT(CASE WHEN variants.variant.fathmm_xf >= 0.5 THEN 1 END) as fathmm_top_decile,
+        COUNT(CASE WHEN variants.fathmm_xf IS NOT NULL THEN 1 END) as fathmm_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.fathmm_xf) as fathmm_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.fathmm_xf) as fathmm_p90,
+        COUNT(CASE WHEN variants.fathmm_xf >= 0.5 THEN 1 END) as fathmm_top_decile,
         -- aPC Protein Function (check apc struct exists OR specific field)
-        COUNT(CASE WHEN variants.variant.apc IS NOT NULL THEN 1 END) as apc_pf_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.apc.protein_function_v3) as apc_pf_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.apc.protein_function_v3) as apc_pf_p90,
-        COUNT(CASE WHEN variants.variant.apc.protein_function_v3 >= 10 THEN 1 END) as apc_pf_top_decile,
+        COUNT(CASE WHEN variants.apc IS NOT NULL THEN 1 END) as apc_pf_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.apc.protein_function_v3) as apc_pf_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.apc.protein_function_v3) as apc_pf_p90,
+        COUNT(CASE WHEN variants.apc.protein_function_v3 >= 10 THEN 1 END) as apc_pf_top_decile,
         -- aPC Conservation
-        COUNT(CASE WHEN variants.variant.apc IS NOT NULL THEN 1 END) as apc_cons_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.apc.conservation_v2) as apc_cons_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.apc.conservation_v2) as apc_cons_p90,
-        COUNT(CASE WHEN variants.variant.apc.conservation_v2 >= 10 THEN 1 END) as apc_cons_top_decile,
+        COUNT(CASE WHEN variants.apc IS NOT NULL THEN 1 END) as apc_cons_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.apc.conservation_v2) as apc_cons_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.apc.conservation_v2) as apc_cons_p90,
+        COUNT(CASE WHEN variants.apc.conservation_v2 >= 10 THEN 1 END) as apc_cons_top_decile,
         -- aPC Epigenetics Active
-        COUNT(CASE WHEN variants.variant.apc IS NOT NULL THEN 1 END) as apc_epi_coverage,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.variant.apc.epigenetics_active) as apc_epi_p50,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.variant.apc.epigenetics_active) as apc_epi_p90,
-        COUNT(CASE WHEN variants.variant.apc.epigenetics_active >= 10 THEN 1 END) as apc_epi_top_decile
+        COUNT(CASE WHEN variants.apc IS NOT NULL THEN 1 END) as apc_epi_coverage,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY variants.apc.epigenetics_active) as apc_epi_p50,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY variants.apc.epigenetics_active) as apc_epi_p90,
+        COUNT(CASE WHEN variants.apc.epigenetics_active >= 10 THEN 1 END) as apc_epi_top_decile
       FROM variants
       WHERE status = 'FOUND'
     )
@@ -432,12 +432,12 @@ const SQL_QUERIES = {
 
   caddVsApcSample: `
     SELECT
-      variants.variant.main.cadd.phred as cadd,
-      variants.variant.apc.protein_function_v3 as apc
+      variants.main.cadd.phred as cadd,
+      variants.apc.protein_function_v3 as apc
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.main.cadd.phred IS NOT NULL
-      AND variants.variant.apc.protein_function_v3 IS NOT NULL
+      AND variants.main.cadd.phred IS NOT NULL
+      AND variants.apc.protein_function_v3 IS NOT NULL
     ORDER BY RANDOM()
     LIMIT 200
   `,
@@ -445,12 +445,12 @@ const SQL_QUERIES = {
   // ClinVar queries
   clinSigDistribution: `
     WITH clinvar_variants AS (
-      SELECT variants.variant.clinvar.clnsig[1] as clnsig
+      SELECT variants.clinvar.clnsig[1] as clnsig
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.clinvar.clnsig IS NOT NULL
-        AND len(variants.variant.clinvar.clnsig) > 0
-        AND variants.variant.clinvar.clnsig[1] IS NOT NULL
+        AND variants.clinvar.clnsig IS NOT NULL
+        AND len(variants.clinvar.clnsig) > 0
+        AND variants.clinvar.clnsig[1] IS NOT NULL
     ),
     total AS (
       SELECT COUNT(*) as n FROM clinvar_variants
@@ -467,11 +467,11 @@ const SQL_QUERIES = {
 
   reviewStatusDistribution: `
     WITH clinvar_variants AS (
-      SELECT variants.variant.clinvar.clnrevstat as review_status
+      SELECT variants.clinvar.clnrevstat as review_status
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.clinvar.clnrevstat IS NOT NULL
-        AND variants.variant.clinvar.clnrevstat != ''
+        AND variants.clinvar.clnrevstat IS NOT NULL
+        AND variants.clinvar.clnrevstat != ''
     ),
     total AS (
       SELECT COUNT(*) as n FROM clinvar_variants
@@ -488,11 +488,11 @@ const SQL_QUERIES = {
 
   topDiseases: `
     WITH disease_list AS (
-      SELECT variants.variant.clinvar.clndn as diseases
+      SELECT variants.clinvar.clndn as diseases
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.clinvar.clndn IS NOT NULL
-        AND len(variants.variant.clinvar.clndn) > 0
+        AND variants.clinvar.clndn IS NOT NULL
+        AND len(variants.clinvar.clndn) > 0
     ),
     unnested AS (
       SELECT unnest(diseases) as disease FROM disease_list
@@ -514,8 +514,8 @@ const SQL_QUERIES = {
     SELECT COUNT(*) as count
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.clinvar.clnsig IS NOT NULL
-      AND len(variants.variant.clinvar.clnsig) > 0
+      AND variants.clinvar.clnsig IS NOT NULL
+      AND len(variants.clinvar.clnsig) > 0
   `,
 
   // Protein Function queries
@@ -523,14 +523,14 @@ const SQL_QUERIES = {
     WITH am_variants AS (
       SELECT
         CASE
-          WHEN variants.variant.alphamissense.max_pathogenicity > 0.564 THEN 'Likely Pathogenic'
-          WHEN variants.variant.alphamissense.max_pathogenicity >= 0.34 THEN 'Ambiguous'
-          WHEN variants.variant.alphamissense.max_pathogenicity IS NOT NULL THEN 'Likely Benign'
+          WHEN variants.alphamissense.max_pathogenicity > 0.564 THEN 'Likely Pathogenic'
+          WHEN variants.alphamissense.max_pathogenicity >= 0.34 THEN 'Ambiguous'
+          WHEN variants.alphamissense.max_pathogenicity IS NOT NULL THEN 'Likely Benign'
           ELSE NULL
         END as am_class
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.alphamissense.max_pathogenicity IS NOT NULL
+        AND variants.alphamissense.max_pathogenicity IS NOT NULL
     ),
     total AS (
       SELECT COUNT(*) as n FROM am_variants WHERE am_class IS NOT NULL
@@ -552,13 +552,13 @@ const SQL_QUERIES = {
 
   topMissenseGenes: `
     WITH missense_variants AS (
-      SELECT variants.variant.genecode.genes as genes
+      SELECT variants.genecode.genes as genes
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.genecode.consequence IS NOT NULL
-        AND lower(variants.variant.genecode.consequence) LIKE '%nonsynonymous%'
-        AND variants.variant.genecode.genes IS NOT NULL
-        AND len(variants.variant.genecode.genes) > 0
+        AND variants.genecode.consequence IS NOT NULL
+        AND lower(variants.genecode.consequence) LIKE '%nonsynonymous%'
+        AND variants.genecode.genes IS NOT NULL
+        AND len(variants.genecode.genes) > 0
     ),
     unnested AS (
       SELECT unnest(genes) as gene FROM missense_variants
@@ -577,8 +577,8 @@ const SQL_QUERIES = {
     SELECT COUNT(*) as count
     FROM variants
     WHERE status = 'FOUND'
-      AND variants.variant.genecode.consequence IS NOT NULL
-      AND lower(variants.variant.genecode.consequence) LIKE '%nonsynonymous%'
+      AND variants.genecode.consequence IS NOT NULL
+      AND lower(variants.genecode.consequence) LIKE '%nonsynonymous%'
   `,
 };
 

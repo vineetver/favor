@@ -57,15 +57,22 @@ function validateFileInput(file: File): string | null {
 // File Type Chips
 // ============================================================================
 
-function FileTypeChips() {
+const ACCEPTED_DATA_TYPES = [
+  "Variant List",
+  "GWAS Summary Stats",
+  "Credible Set",
+  "Fine Mapping",
+] as const;
+
+function AcceptedDataTypes() {
   return (
     <div className="flex flex-wrap gap-2 justify-center">
-      {ACCEPTED_EXTENSIONS.map((ext) => (
+      {ACCEPTED_DATA_TYPES.map((t) => (
         <span
-          key={ext}
+          key={t}
           className="px-3 py-1 rounded-lg bg-background border border-border text-xs font-medium text-muted-foreground shadow-sm"
         >
-          {ext.toUpperCase().slice(1)}
+          {t}
         </span>
       ))}
     </div>
@@ -320,15 +327,17 @@ export function UploadDropzone({
 
         {/* Text */}
         <p className="text-base font-semibold text-foreground mb-1">
-          {isDragOver ? "Drop your file here" : "Drag & drop your variant file"}
+          {isDragOver ? "Drop your file here" : "Drag & drop your file"}
         </p>
         <p className="text-sm text-muted-foreground mb-5">or click to browse</p>
 
-        {/* File Type Chips */}
-        <FileTypeChips />
+        {/* Accepted Data Types */}
+        <AcceptedDataTypes />
 
-        {/* Max Size Note */}
-        <p className="text-xs text-muted-foreground mt-5">Maximum file size: {MAX_FILE_SIZE_MB}MB</p>
+        {/* Format + Size Note */}
+        <p className="text-xs text-muted-foreground mt-5">
+          CSV, TSV, TXT, VCF, Parquet &middot; {MAX_FILE_SIZE_MB}MB max &middot; Auto-detected
+        </p>
       </div>
     </label>
   );

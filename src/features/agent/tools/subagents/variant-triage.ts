@@ -5,7 +5,7 @@ import { buildVariantTriagePrompt } from "../../lib/prompts/variant-triage-promp
 import { createVariantTriagePrepareStep } from "../../lib/prepare-step-variant-triage";
 import type { VariantTriageOutput, EvidenceRef, ResultRef, SubagentToolTrace, VizSpec } from "../../types";
 import type { ResultStore } from "../../lib/result-store";
-import { generateVizSpec } from "../../viz";
+import { generateVizSpecs } from "../../viz";
 import { getCohortSchema } from "../cohort-schema";
 import { analyzeCohort } from "../cohort-analyze";
 import { createCohort } from "../cohort-create";
@@ -13,6 +13,7 @@ import { lookupVariant } from "../lookup-variant";
 import { getGeneVariantStats } from "../gene-variant-stats";
 import { getGwasAssociations } from "../gwas-lookup";
 import { variantBatchSummary } from "../variant-batch-summary";
+import { runAnalytics } from "../cohort-analytics";
 
 // ---------------------------------------------------------------------------
 // Specialist tools (isolated universe — no graph tools)
@@ -26,6 +27,7 @@ const VARIANT_TRIAGE_TOOLS = {
   getGeneVariantStats,
   getGwasAssociations,
   variantBatchSummary,
+  runAnalytics,
 };
 
 const SUBAGENT_TIMEOUT = 90_000; // 90s
@@ -76,6 +78,11 @@ function summarizeToolInput(name: string, args: Record<string, unknown>): string
       const variants = args.variants as unknown[] | undefined;
       return `${variants?.length ?? 0} variants`;
     }
+    case "runAnalytics": {
+      const task = args.task as { type?: string } | undefined;
+      const cid = args.cohortId as string | undefined;
+      return task?.type ? `${task.type} on ${cid ?? "cohort"}` : "analytics";
+    }
     default:
       return Object.keys(args).slice(0, 2).join(", ") || "—";
   }
@@ -105,6 +112,16 @@ function summarizeToolOutput(name: string, out: Record<string, unknown>): string
     }
     case "variantBatchSummary":
       return "summary";
+    case "runAnalytics": {
+      const taskType = out.taskType as string | undefined;
+      const charts = out.charts as unknown[] | undefined;
+      const metrics = out.metrics as Record<string, unknown> | undefined;
+      const parts: string[] = [];
+      if (taskType) parts.push(taskType);
+      if (metrics && Object.keys(metrics).length > 0) parts.push(`${Object.keys(metrics).length} metrics`);
+      if (charts?.length) parts.push(`${charts.length} charts`);
+      return parts.length > 0 ? parts.join(", ") : "analytics";
+    }
     default:
       return "ok";
   }
@@ -161,9 +178,9 @@ function extractStructuredOutput(
         output: condenseOutput(r.output),
       });
 
-      // Generate viz spec (never throws)
-      const viz = generateVizSpec(r.toolName, r.output, args, toolTrace.length - 1);
-      if (viz) vizSpecs.push(viz);
+      // Generate viz specs (never throws)
+      const vizResults = generateVizSpecs(r.toolName, r.output, args, toolTrace.length - 1);
+      vizSpecs.push(...vizResults);
 
       if (hasError) continue;
 

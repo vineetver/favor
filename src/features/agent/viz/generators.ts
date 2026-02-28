@@ -12,6 +12,9 @@ import type {
   StatCardVizSpec,
   DistributionVizSpec,
   ComparisonVizSpec,
+  ScatterPlotVizSpec,
+  QQPlotVizSpec,
+  HeatmapVizSpec,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -630,6 +633,170 @@ function genGeneVariantStats(
 }
 
 // ---------------------------------------------------------------------------
+// Analytics generators
+// ---------------------------------------------------------------------------
+
+function genAnalyticsStatCard(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): StatCardVizSpec | null {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return null;
+
+  const metrics = out?.metrics as Record<string, unknown> | undefined;
+  if (!metrics || Object.keys(metrics).length === 0) return null;
+
+  const taskType = (out.taskType as string) ?? "Analytics";
+
+  const stats: StatCardVizSpec["stats"] = Object.entries(metrics)
+    .slice(0, 8)
+    .map(([key, val]) => ({
+      label: key.replace(/_/g, " "),
+      value: typeof val === "number" ? Number(val.toFixed(4)) : String(val),
+    }));
+
+  return {
+    type: "stat_card",
+    toolCallIndex,
+    title: `${taskType} results`,
+    stats,
+  };
+}
+
+function genAnalyticsScatter(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): ScatterPlotVizSpec | null {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return null;
+
+  const charts = out?.charts as Array<Record<string, unknown>> | undefined;
+  if (!charts) return null;
+
+  // Find a scatter chart
+  const scatterChart = charts.find((c) => c.chart_type === "scatter");
+  if (!scatterChart) return null;
+
+  const chartData = scatterChart.data as Record<string, unknown> | undefined;
+  if (!chartData) return null;
+
+  const points = chartData.points as Array<{ x: number; y: number; label?: string; category?: string }> | undefined;
+  if (!points || points.length < 2) return null;
+
+  const regression = chartData.regression as { slope: number; intercept: number; r_squared: number } | undefined;
+
+  return {
+    type: "scatter_plot",
+    toolCallIndex,
+    title: (scatterChart.title as string) ?? "Scatter plot",
+    data: points.slice(0, 500),
+    xLabel: (chartData.x_label as string) ?? "X",
+    yLabel: (chartData.y_label as string) ?? "Y",
+    regressionLine: regression,
+  };
+}
+
+function genAnalyticsQQ(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): QQPlotVizSpec | null {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return null;
+
+  const charts = out?.charts as Array<Record<string, unknown>> | undefined;
+  if (!charts) return null;
+
+  // Find a QQ plot chart
+  const qqChart = charts.find((c) => c.chart_type === "qq_plot");
+  if (!qqChart) return null;
+
+  const chartData = qqChart.data as Record<string, unknown> | undefined;
+  if (!chartData) return null;
+
+  const points = chartData.points as Array<{ expected: number; observed: number; label?: string }> | undefined;
+  if (!points || points.length < 2) return null;
+
+  return {
+    type: "qq_plot",
+    toolCallIndex,
+    title: (qqChart.title as string) ?? "QQ plot",
+    data: points.slice(0, 1000),
+    lambda: chartData.lambda as number | undefined,
+  };
+}
+
+function genAnalyticsBar(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | null {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return null;
+
+  const charts = out?.charts as Array<Record<string, unknown>> | undefined;
+  if (!charts) return null;
+
+  // Find a bar chart
+  const barChart = charts.find((c) => c.chart_type === "bar");
+  if (!barChart) return null;
+
+  const chartData = barChart.data as Record<string, unknown> | undefined;
+  if (!chartData) return null;
+
+  const bars = chartData.bars as Array<{ id: string; label: string; value: number; category?: string }> | undefined;
+  if (!bars || bars.length < 2) return null;
+
+  return {
+    type: "bar_chart",
+    toolCallIndex,
+    title: (barChart.title as string) ?? "Analytics results",
+    data: bars.slice(0, 20),
+    valueLabel: (chartData.value_label as string) ?? "Value",
+    layout: "horizontal",
+  };
+}
+
+function genAnalyticsHeatmap(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): HeatmapVizSpec | null {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return null;
+
+  const charts = out?.charts as Array<Record<string, unknown>> | undefined;
+  if (!charts) return null;
+
+  const heatmapChart = charts.find((c) => c.chart_type === "heatmap");
+  if (!heatmapChart) return null;
+
+  const chartData = heatmapChart.data as Record<string, unknown> | undefined;
+  if (!chartData) return null;
+
+  const rows = chartData.rows as string[] | undefined;
+  const cols = chartData.cols as string[] | undefined;
+  const values = chartData.values as number[][] | undefined;
+
+  if (!rows?.length || !cols?.length || !values?.length) return null;
+
+  return {
+    type: "heatmap",
+    toolCallIndex,
+    title: (heatmapChart.title as string) ?? "Heatmap",
+    rows: rows.slice(0, 50),
+    cols: cols.slice(0, 50),
+    values: values.slice(0, 50).map((r) => r.slice(0, 50)),
+    colorScale: (chartData.color_scale as "diverging" | "sequential") ?? "sequential",
+    valueLabel: chartData.value_label as string | undefined,
+    minValue: chartData.min_value as number | undefined,
+    maxValue: chartData.max_value as number | undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
@@ -647,6 +814,8 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   getGwasAssociations: [genGwasAssociations],
   variantBatchSummary: [genVariantBatchSummary],
   getGeneVariantStats: [genGeneVariantStats],
+  // runAnalytics: multiple chart types from analytics pipeline
+  runAnalytics: [genAnalyticsStatCard, genAnalyticsScatter, genAnalyticsQQ, genAnalyticsBar, genAnalyticsHeatmap],
 };
 
 // ---------------------------------------------------------------------------
@@ -654,9 +823,52 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
 // ---------------------------------------------------------------------------
 
 /**
+ * Attempt to generate VizSpecs from a tool result.
+ * Returns an array of specs (may be empty). For most tools, returns at most one.
+ * For runAnalytics, may return multiple (stat card + scatter + QQ etc).
+ * Never throws — all generators are wrapped in try/catch.
+ */
+export function generateVizSpecs(
+  toolName: string,
+  output: unknown,
+  input: Record<string, unknown>,
+  toolCallIndex: number,
+): VizSpec[] {
+  const generators = GENERATOR_REGISTRY[toolName];
+  if (!generators) return [];
+
+  // For runAnalytics, collect ALL matching specs (multiple chart types)
+  if (toolName === "runAnalytics") {
+    const specs: VizSpec[] = [];
+    for (const gen of generators) {
+      try {
+        const spec = gen(output, input, toolCallIndex);
+        if (spec) specs.push(spec);
+      } catch {
+        continue;
+      }
+    }
+    return specs;
+  }
+
+  // For all other tools, return the first match only
+  for (const gen of generators) {
+    try {
+      const spec = gen(output, input, toolCallIndex);
+      if (spec) return [spec];
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
+
+/**
  * Attempt to generate a VizSpec from a tool result.
  * Returns null if no generator matches or data is insufficient.
  * Never throws — all generators are wrapped in try/catch.
+ *
+ * @deprecated Use generateVizSpecs for multi-spec support (e.g., runAnalytics).
  */
 export function generateVizSpec(
   toolName: string,
@@ -664,17 +876,6 @@ export function generateVizSpec(
   input: Record<string, unknown>,
   toolCallIndex: number,
 ): VizSpec | null {
-  const generators = GENERATOR_REGISTRY[toolName];
-  if (!generators) return null;
-
-  for (const gen of generators) {
-    try {
-      const spec = gen(output, input, toolCallIndex);
-      if (spec) return spec;
-    } catch {
-      // Never break agent flow
-      continue;
-    }
-  }
-  return null;
+  const specs = generateVizSpecs(toolName, output, input, toolCallIndex);
+  return specs[0] ?? null;
 }

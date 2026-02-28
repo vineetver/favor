@@ -180,6 +180,7 @@ export type QueryType =
   | "comparison"
   | "connection"
   | "drug_discovery"
+  | "analytics"
   | "general";
 
 // ---------------------------------------------------------------------------

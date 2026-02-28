@@ -377,6 +377,7 @@ export interface CohortListItem {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  data_type?: DataType;
 }
 
 export interface CohortDetail {

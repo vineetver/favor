@@ -14,6 +14,7 @@ const VARIANT_TRIAGE_TOOLS = [
   "getGeneVariantStats",
   "getGwasAssociations",
   "variantBatchSummary",
+  "runAnalytics",
 ] as const;
 
 const TOOL_CALL_BUDGET = 20;
@@ -54,14 +55,32 @@ function hasSchemaBeenFetched(steps: StepData[]): boolean {
   return false;
 }
 
-function getSchemaColumns(steps: StepData[]): string | null {
+interface SchemaInfo {
+  dataType?: string;
+  numericCols?: string;
+  categoricalCols?: string;
+  identityCols?: string;
+}
+
+function getSchemaInfo(steps: StepData[]): SchemaInfo | null {
   for (const step of steps) {
     for (const r of step.toolResults ?? []) {
       if (r.toolName === "getCohortSchema") {
         const out = r.output as Record<string, unknown>;
         if (out?.columns) {
-          const cols = out.columns as { score?: string[] };
-          return cols.score?.join(", ") ?? null;
+          const cols = out.columns as {
+            numeric?: string[];
+            categorical?: string[];
+            identity?: string[];
+            // Legacy compat
+            score?: string[];
+          };
+          return {
+            dataType: out.dataType as string | undefined,
+            numericCols: (cols.numeric ?? cols.score)?.join(", "),
+            categoricalCols: cols.categorical?.join(", "),
+            identityCols: cols.identity?.join(", "),
+          };
         }
       }
     }
@@ -129,10 +148,18 @@ export function createVariantTriagePrepareStep(): PrepareStepFunction<any> {
     }
 
     // Inject schema columns as system hint if available
-    const schemaColumns = getSchemaColumns(stepsData);
-    const schemaHint = schemaColumns
-      ? `\n\n[SYSTEM] Available score columns: ${schemaColumns}. Use ONLY these column names.`
-      : "";
+    const schema = getSchemaInfo(stepsData);
+    let schemaHint = "";
+    if (schema) {
+      const parts: string[] = [];
+      if (schema.dataType) parts.push(`Cohort type: ${schema.dataType}.`);
+      if (schema.numericCols) parts.push(`Available numeric columns: ${schema.numericCols}.`);
+      if (schema.categoricalCols) parts.push(`Available categorical columns: ${schema.categoricalCols}.`);
+      if (schema.identityCols) parts.push(`Available identity columns: ${schema.identityCols}.`);
+      if (parts.length > 0) {
+        schemaHint = `\n\n[SYSTEM] ${parts.join(" ")} Use ONLY these column names.`;
+      }
+    }
 
     // Steps 1+: tool required, all tools available
     return {

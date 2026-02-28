@@ -309,7 +309,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
   const wizardStep = getWizardStep(step);
 
   const stepDescription = useMemo(() => {
-    if (wizardStep === "upload") return "Upload your file to get started";
+    if (wizardStep === "upload") return "Variant lists, GWAS summary stats, credible sets, and fine mapping";
     if (wizardStep === "validate") return "Checking file format and previewing data";
     if (wizardStep === "mapping") return "Review and confirm column mapping";
     if (wizardStep === "configure") return "Configure output options before processing";

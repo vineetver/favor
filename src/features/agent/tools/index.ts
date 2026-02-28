@@ -26,3 +26,4 @@ export { lookupVariant } from "./lookup-variant";
 export { getGeneVariantStats } from "./gene-variant-stats";
 export { getGwasAssociations } from "./gwas-lookup";
 export { variantBatchSummary } from "./variant-batch-summary";
+export { runAnalytics } from "./cohort-analytics";

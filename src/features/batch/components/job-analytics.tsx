@@ -63,18 +63,18 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Distribution of variants across chromosomes",
     sql: `
       SELECT
-        variants.variant.chromosome,
+        variants.chromosome,
         COUNT(*) as variant_count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
       WHERE status = 'FOUND'
-      GROUP BY variants.variant.chromosome
+      GROUP BY variants.chromosome
       ORDER BY
         CASE
-          WHEN variants.variant.chromosome = 'X' THEN 23
-          WHEN variants.variant.chromosome = 'Y' THEN 24
-          WHEN variants.variant.chromosome = 'MT' THEN 25
-          ELSE TRY_CAST(variants.variant.chromosome AS INTEGER)
+          WHEN variants.chromosome = 'X' THEN 23
+          WHEN variants.chromosome = 'Y' THEN 24
+          WHEN variants.chromosome = 'MT' THEN 25
+          ELSE TRY_CAST(variants.chromosome AS INTEGER)
         END
     `,
     category: "distribution",
@@ -85,7 +85,7 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variant consequences from Gencode annotations",
     sql: `
       SELECT
-        COALESCE(variants.variant.genecode.consequence, 'Unknown') as consequence,
+        COALESCE(variants.genecode.consequence, 'Unknown') as consequence,
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
       FROM variants
@@ -103,7 +103,7 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Distribution of clinical significance classifications",
     sql: `
       SELECT
-        COALESCE(variants.variant.clinvar.clnsig[1], 'Not in ClinVar') as significance,
+        COALESCE(variants.clinvar.clnsig[1], 'Not in ClinVar') as significance,
         COUNT(*) as count
       FROM variants
       WHERE status = 'FOUND'
@@ -118,15 +118,15 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variants classified as pathogenic or likely pathogenic",
     sql: `
       SELECT
-        variants.variant.chromosome,
-        variants.variant.position,
-        variants.variant.variant_vcf,
-        variants.variant.clinvar.clnsig[1] as clnsig,
-        variants.variant.clinvar.clndn[1] as clndn
+        variants.chromosome,
+        variants.position,
+        variants.variant_vcf,
+        variants.clinvar.clnsig[1] as clnsig,
+        variants.clinvar.clndn[1] as clndn
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.clinvar.clnsig IS NOT NULL
-        AND len(list_filter(variants.variant.clinvar.clnsig, x -> x IS NOT NULL AND (
+        AND variants.clinvar.clnsig IS NOT NULL
+        AND len(list_filter(variants.clinvar.clnsig, x -> x IS NOT NULL AND (
           lower(CAST(x AS VARCHAR)) LIKE '%pathogenic%'
         ))) > 0
       LIMIT 100
@@ -141,12 +141,12 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         CASE
-          WHEN variants.variant.gnomad_genome.af IS NULL THEN 'Unknown'
-          WHEN variants.variant.gnomad_genome.af = 0 THEN 'Not observed'
-          WHEN variants.variant.gnomad_genome.af < 0.0001 THEN 'Ultra-rare (<0.01%)'
-          WHEN variants.variant.gnomad_genome.af < 0.001 THEN 'Very rare (0.01-0.1%)'
-          WHEN variants.variant.gnomad_genome.af < 0.01 THEN 'Rare (0.1-1%)'
-          WHEN variants.variant.gnomad_genome.af < 0.05 THEN 'Low frequency (1-5%)'
+          WHEN variants.gnomad_genome.af IS NULL THEN 'Unknown'
+          WHEN variants.gnomad_genome.af = 0 THEN 'Not observed'
+          WHEN variants.gnomad_genome.af < 0.0001 THEN 'Ultra-rare (<0.01%)'
+          WHEN variants.gnomad_genome.af < 0.001 THEN 'Very rare (0.01-0.1%)'
+          WHEN variants.gnomad_genome.af < 0.01 THEN 'Rare (0.1-1%)'
+          WHEN variants.gnomad_genome.af < 0.05 THEN 'Low frequency (1-5%)'
           ELSE 'Common (>5%)'
         END as frequency_bin,
         COUNT(*) as count,
@@ -177,8 +177,8 @@ const PRESET_QUERIES: PresetQuery[] = [
         ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM variants WHERE status = 'FOUND'), 2) as percentage
       FROM variants
       WHERE status = 'FOUND'
-        AND variants.variant.gnomad_genome.af IS NOT NULL
-        AND variants.variant.gnomad_genome.af < 0.01
+        AND variants.gnomad_genome.af IS NOT NULL
+        AND variants.gnomad_genome.af < 0.01
     `,
     category: "population",
   },
@@ -189,19 +189,19 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Variants with high functional impact predictions",
     sql: `
       SELECT
-        variants.variant.chromosome,
-        variants.variant.position,
-        variants.variant.variant_vcf,
-        variants.variant.genecode.consequence,
-        variants.variant.main.protein_predictions.sift_cat,
-        variants.variant.main.protein_predictions.polyphen_cat,
-        variants.variant.alphamissense.max_pathogenicity as am_score
+        variants.chromosome,
+        variants.position,
+        variants.variant_vcf,
+        variants.genecode.consequence,
+        variants.main.protein_predictions.sift_cat,
+        variants.main.protein_predictions.polyphen_cat,
+        variants.alphamissense.max_pathogenicity as am_score
       FROM variants
       WHERE status = 'FOUND'
         AND (
-          variants.variant.main.protein_predictions.sift_cat = 'D'
-          OR variants.variant.main.protein_predictions.polyphen_cat = 'D'
-          OR variants.variant.alphamissense.max_pathogenicity > 0.8
+          variants.main.protein_predictions.sift_cat = 'D'
+          OR variants.main.protein_predictions.polyphen_cat = 'D'
+          OR variants.alphamissense.max_pathogenicity > 0.8
         )
       LIMIT 100
     `,
@@ -214,14 +214,14 @@ const PRESET_QUERIES: PresetQuery[] = [
     sql: `
       SELECT
         CASE
-          WHEN variants.variant.main.cadd.phred IS NULL THEN 'Unknown'
-          WHEN variants.variant.main.cadd.phred < 10 THEN 'Likely benign (<10)'
-          WHEN variants.variant.main.cadd.phred < 20 THEN 'Possibly deleterious (10-20)'
-          WHEN variants.variant.main.cadd.phred < 30 THEN 'Likely deleterious (20-30)'
+          WHEN variants.main.cadd.phred IS NULL THEN 'Unknown'
+          WHEN variants.main.cadd.phred < 10 THEN 'Likely benign (<10)'
+          WHEN variants.main.cadd.phred < 20 THEN 'Possibly deleterious (10-20)'
+          WHEN variants.main.cadd.phred < 30 THEN 'Likely deleterious (20-30)'
           ELSE 'Highly deleterious (>30)'
         END as cadd_bin,
         COUNT(*) as count,
-        ROUND(AVG(variants.variant.main.cadd.phred), 2) as avg_score
+        ROUND(AVG(variants.main.cadd.phred), 2) as avg_score
       FROM variants
       WHERE status = 'FOUND'
       GROUP BY cadd_bin
@@ -236,10 +236,10 @@ const PRESET_QUERIES: PresetQuery[] = [
     description: "Genes with the most variants",
     sql: `
       SELECT
-        unnest(variants.variant.genecode.genes) as gene,
+        unnest(variants.genecode.genes) as gene,
         COUNT(*) as variant_count
       FROM variants
-      WHERE status = 'FOUND' AND variants.variant.genecode.genes IS NOT NULL
+      WHERE status = 'FOUND' AND variants.genecode.genes IS NOT NULL
       GROUP BY gene
       ORDER BY variant_count DESC
       LIMIT 50

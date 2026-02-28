@@ -7,6 +7,9 @@ import { AgentEnrichmentPlot } from "./viz/agent-enrichment-plot";
 import { AgentStatCard } from "./viz/agent-stat-card";
 import { AgentDistribution } from "./viz/agent-distribution";
 import { AgentComparison } from "./viz/agent-comparison";
+import { AgentScatterPlot } from "./viz/agent-scatter-plot";
+import { AgentQQPlot } from "./viz/agent-qq-plot";
+import { AgentHeatmap } from "./viz/agent-heatmap";
 
 // Lazy-load Cytoscape since it's heavy
 const AgentMiniNetwork = lazy(() =>
@@ -37,6 +40,12 @@ function VizSpecRenderer({ spec }: { spec: VizSpec }) {
       return <AgentDistribution spec={spec} />;
     case "comparison":
       return <AgentComparison spec={spec} />;
+    case "scatter_plot":
+      return <AgentScatterPlot spec={spec} />;
+    case "qq_plot":
+      return <AgentQQPlot spec={spec} />;
+    case "heatmap":
+      return <AgentHeatmap spec={spec} />;
     default:
       return null;
   }

@@ -180,4 +180,63 @@ export async function pollCohortUntilReady(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Analytics run helpers
+// ---------------------------------------------------------------------------
+
+const ANALYTICS_POLL_INTERVAL_MS = 2_000;
+const ANALYTICS_POLL_TIMEOUT_MS = 180_000; // 3 min
+
+export interface AnalyticsRunStatus {
+  run_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  metrics?: Record<string, unknown>;
+  viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
+  error?: string;
+}
+
+export interface AnalyticsChartData {
+  chart_id: string;
+  chart_type: string;
+  title?: string;
+  data: unknown;
+}
+
+/**
+ * Poll an analytics run until it reaches a terminal state.
+ */
+export async function pollAnalyticsRun(
+  cohortId: string,
+  runId: string,
+): Promise<AnalyticsRunStatus> {
+  const deadline = Date.now() + ANALYTICS_POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const status = await cohortFetch<AnalyticsRunStatus>(
+      `/cohorts/${encodeURIComponent(cohortId)}/analytics/runs/${encodeURIComponent(runId)}`,
+    );
+    if (status.status === "completed" || status.status === "failed") return status;
+    await new Promise((r) => setTimeout(r, ANALYTICS_POLL_INTERVAL_MS));
+  }
+
+  throw new AgentToolError(
+    408,
+    `Analytics run ${runId} did not complete within ${ANALYTICS_POLL_TIMEOUT_MS / 1000}s`,
+    "The analytics run is still processing. Try again later.",
+  );
+}
+
+/**
+ * Fetch chart visualization data for a completed analytics run.
+ */
+export async function fetchAnalyticsChart(
+  cohortId: string,
+  runId: string,
+  chartId: string,
+): Promise<AnalyticsChartData> {
+  return cohortFetch<AnalyticsChartData>(
+    `/cohorts/${encodeURIComponent(cohortId)}/analytics/runs/${encodeURIComponent(runId)}/viz?chart_id=${encodeURIComponent(chartId)}`,
+  );
+}
+
 export { AgentToolError };

@@ -45,12 +45,10 @@ export const SCORE_COLUMNS = [
   "nucdiv",
 ] as const;
 
-const scoreColumnEnum = z.enum(SCORE_COLUMNS);
-
 /**
  * Filter schema matching the v2 CohortFilter spec:
  * - Categorical: chromosome, gene, consequence, clinical_significance
- * - Generic numeric: score_above, score_below (with any score column as field)
+ * - Generic numeric: score_above, score_below (field validated server-side against dynamic schema)
  */
 const cohortFilterSchema = z.discriminatedUnion("type", [
   z.object({
@@ -75,12 +73,12 @@ const cohortFilterSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("score_above"),
-    field: scoreColumnEnum.describe("Score column name"),
+    field: z.string().describe("Numeric column name from getCohortSchema"),
     threshold: z.number().describe("Minimum threshold (inclusive). Missing values → EXCLUDED."),
   }),
   z.object({
     type: z.literal("score_below"),
-    field: scoreColumnEnum.describe("Score column name"),
+    field: z.string().describe("Numeric column name from getCohortSchema"),
     threshold: z
       .number()
       .describe(
@@ -90,14 +88,14 @@ const cohortFilterSchema = z.discriminatedUnion("type", [
 ]);
 
 export const analyzeCohort = tool({
-  description: `Analyze an existing cohort with six operations. Cohorts can have 5,000+ variants — this tool is optimized for large-scale analysis. ALWAYS use this instead of looping lookupVariant or per-variant entity searches.
-- **rows**: Query/sort/filter rows. Use sort + desc + limit for "top K" queries (e.g., sort="cadd_phred", desc=true, limit=20). select controls which columns are returned.
+  description: `Analyze an existing cohort with six operations. Works with all cohort data types (variant_list, gwas_sumstats, credible_set, fine_mapping). ALWAYS call getCohortSchema first to discover available columns — column names vary by data type.
+- **rows**: Query/sort/filter rows. Use sort + desc + limit for "top K" queries. select controls which columns are returned.
 - **groupby**: Group-by with aggregate metrics. Use group_by (any column name) + optional metrics[] for per-group stats (min/max/mean/median).
 - **derive**: Filter variants with AND logic to create a sub-cohort. The derived cohort supports all operations.
 - **prioritize**: Multi-criteria ranking via weighted rank product. Provide criteria: [{ column, desc?, weight? }]. Lower rank_score = better.
 - **compute**: Weighted composite score from multiple numeric columns. Provide weights: [{ column, weight }], normalize?: boolean.
 - **correlation**: Pearson correlation between two numeric columns. Provide x and y column names.
-Note: "apc_*" scores = Annotation Principal Component, NOT the APC gene.`,
+Note: For variant_list cohorts, "apc_*" scores = Annotation Principal Component, NOT the APC gene.`,
   inputSchema: z.object({
     cohortId: z.string().describe("Cohort ID from createCohort or a previous derive"),
     operation: z

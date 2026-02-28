@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +16,31 @@ import {
   GlobeIcon,
   SendIcon,
   FlaskConicalIcon,
+  TrendingUpIcon,
+  TargetIcon,
+  ScatterChartIcon,
+  BrainCircuitIcon,
 } from "lucide-react";
 import type { CohortListItem } from "@features/batch/types";
+import type { DataType } from "@features/batch/types";
+import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
-// Curated cohort prompts
+// Prompt type
 // ---------------------------------------------------------------------------
 
-const COHORT_PROMPTS = [
+interface CuratedPrompt {
+  label: string;
+  description: string;
+  prompt: string;
+  icon: ReactNode;
+}
+
+// ---------------------------------------------------------------------------
+// Variant list prompts (original)
+// ---------------------------------------------------------------------------
+
+const VARIANT_LIST_PROMPTS: CuratedPrompt[] = [
   {
     label: "Overview & clinical significance",
     description:
@@ -59,6 +76,161 @@ const COHORT_PROMPTS = [
 ];
 
 // ---------------------------------------------------------------------------
+// GWAS summary stats prompts
+// ---------------------------------------------------------------------------
+
+const GWAS_PROMPTS: CuratedPrompt[] = [
+  {
+    label: "Top associations",
+    description:
+      "Most significant associations ranked by p-value with effect sizes and chromosomal locations",
+    prompt:
+      "Show the top 20 most significant associations ranked by p-value. Include effect sizes (beta/OR), standard errors, and chromosomal locations.",
+    icon: <TrendingUpIcon className="size-4" />,
+  },
+  {
+    label: "Multiple testing correction",
+    description:
+      "Apply FDR/Bonferroni correction and identify genome-wide significant hits",
+    prompt:
+      "Run multiple testing correction (Bonferroni and FDR) on the p-values. How many associations survive genome-wide significance (5e-8)? Show a QQ plot.",
+    icon: <ScatterChartIcon className="size-4" />,
+  },
+  {
+    label: "Effect size analysis",
+    description:
+      "Distribution of effect sizes, direction of effects, and largest effect variants",
+    prompt:
+      "Analyze the distribution of effect sizes (beta values). What are the largest positive and negative effects? Group by chromosome.",
+    icon: <BarChart3Icon className="size-4" />,
+  },
+  {
+    label: "Regional overview",
+    description:
+      "Chromosome-level summary of association counts and peak signals",
+    prompt:
+      "Give a regional overview — group associations by chromosome, show the count and minimum p-value per chromosome. Which regions have the strongest signals?",
+    icon: <GlobeIcon className="size-4" />,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Credible set prompts
+// ---------------------------------------------------------------------------
+
+const CREDIBLE_SET_PROMPTS: CuratedPrompt[] = [
+  {
+    label: "Top PIPs",
+    description:
+      "Variants with highest posterior inclusion probabilities across credible sets",
+    prompt:
+      "Show the top 20 variants ranked by posterior inclusion probability (PIP). Include their credible set membership and gene annotations.",
+    icon: <TargetIcon className="size-4" />,
+  },
+  {
+    label: "Credible set sizes",
+    description:
+      "Size distribution of credible sets and how many variants are needed for 95% coverage",
+    prompt:
+      "Analyze the credible set sizes — group by credible set ID, show the variant count per set. How many sets have fewer than 5 variants?",
+    icon: <BarChart3Icon className="size-4" />,
+  },
+  {
+    label: "Lead variants",
+    description:
+      "Identify lead variants per credible set with highest PIPs",
+    prompt:
+      "Identify the lead variant (highest PIP) in each credible set. Show their gene, consequence, and PIP values.",
+    icon: <ShieldAlertIcon className="size-4" />,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Fine mapping prompts
+// ---------------------------------------------------------------------------
+
+const FINE_MAPPING_PROMPTS: CuratedPrompt[] = [
+  {
+    label: "Posterior probabilities",
+    description:
+      "Top variants ranked by posterior probability of being causal",
+    prompt:
+      "Show the top 20 variants ranked by posterior probability. Include gene annotations, consequence types, and Bayes factors.",
+    icon: <TargetIcon className="size-4" />,
+  },
+  {
+    label: "Causal candidates",
+    description:
+      "Filter for high-confidence causal variants and annotate with functional impact",
+    prompt:
+      "Filter for variants with posterior probability > 0.5 or Bayes factor > 10. What are the most likely causal candidates? Show their functional annotations.",
+    icon: <ShieldAlertIcon className="size-4" />,
+  },
+  {
+    label: "Bayes factor ranking",
+    description:
+      "Rank variants by Bayes factor evidence strength",
+    prompt:
+      "Rank variants by Bayes factor. Group by strength of evidence (decisive >100, strong 10-100, substantial 3-10, weak <3).",
+    icon: <TrendingUpIcon className="size-4" />,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Analytics prompts (shown for all data types)
+// ---------------------------------------------------------------------------
+
+const ANALYTICS_PROMPTS: CuratedPrompt[] = [
+  {
+    label: "PCA analysis",
+    description:
+      "Principal component analysis on numeric columns to identify structure",
+    prompt:
+      "Run PCA on the numeric columns to identify any underlying structure or clustering in the data.",
+    icon: <BrainCircuitIcon className="size-4" />,
+  },
+  {
+    label: "Clustering",
+    description:
+      "Cluster variants/rows by numeric features to identify groups",
+    prompt:
+      "Run clustering analysis on the numeric columns to identify natural groupings in the data.",
+    icon: <ScatterChartIcon className="size-4" />,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Select prompts based on data type
+// ---------------------------------------------------------------------------
+
+function getPromptsForDataType(dataType?: DataType): CuratedPrompt[] {
+  switch (dataType) {
+    case "gwas_sumstats":
+      return [...GWAS_PROMPTS, ...ANALYTICS_PROMPTS];
+    case "credible_set":
+      return [...CREDIBLE_SET_PROMPTS, ...ANALYTICS_PROMPTS];
+    case "fine_mapping":
+      return [...FINE_MAPPING_PROMPTS, ...ANALYTICS_PROMPTS];
+    case "variant_list":
+    default:
+      return [...VARIANT_LIST_PROMPTS, ...ANALYTICS_PROMPTS];
+  }
+}
+
+function getRowLabel(dataType?: DataType): string {
+  switch (dataType) {
+    case "gwas_sumstats":
+      return "associations";
+    case "credible_set":
+      return "variants in credible sets";
+    case "fine_mapping":
+      return "fine-mapped variants";
+    default:
+      return "variants";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -76,6 +248,11 @@ export function CohortPromptPicker({
   onSend,
 }: CohortPromptPickerProps) {
   const [customPrompt, setCustomPrompt] = useState("");
+
+  const prompts = useMemo(
+    () => getPromptsForDataType(cohort?.data_type),
+    [cohort?.data_type],
+  );
 
   const buildMessage = useCallback(
     (prompt: string) => {
@@ -104,6 +281,8 @@ export function CohortPromptPicker({
 
   if (!cohort) return null;
 
+  const rowLabel = getRowLabel(cohort.data_type);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 p-0 overflow-hidden">
@@ -118,7 +297,7 @@ export function CohortPromptPicker({
                 {cohort.label ?? "Untitled cohort"}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(cohort.variant_count ?? 0).toLocaleString()} variants &middot; Choose
+                {(cohort.variant_count ?? 0).toLocaleString()} {rowLabel} &middot; Choose
                 a question or write your own
               </p>
             </div>
@@ -133,7 +312,7 @@ export function CohortPromptPicker({
             Suggested questions
           </p>
           <div className="grid grid-cols-1 gap-2">
-            {COHORT_PROMPTS.map((p) => (
+            {prompts.map((p) => (
               <button
                 key={p.label}
                 type="button"

@@ -5,7 +5,7 @@ import { buildBioContextPrompt } from "../../lib/prompts/bio-context-prompt";
 import { createBioContextPrepareStep } from "../../lib/prepare-step-bio-context";
 import type { BioContextOutput, EvidenceRef, ResultRef, SubagentToolTrace, VizSpec } from "../../types";
 import type { ResultStore } from "../../lib/result-store";
-import { generateVizSpec } from "../../viz";
+import { generateVizSpecs } from "../../viz";
 import { searchEntities } from "../search-entities";
 import { getEntityContext } from "../entity-context";
 import { getRankedNeighbors } from "../ranked-neighbors";
@@ -225,9 +225,9 @@ function extractStructuredOutput(
         output: condenseOutput(r.output),
       });
 
-      // Generate viz spec (never throws)
-      const viz = generateVizSpec(r.toolName, r.output, args, toolTrace.length - 1);
-      if (viz) vizSpecs.push(viz);
+      // Generate viz specs (never throws)
+      const vizResults = generateVizSpecs(r.toolName, r.output, args, toolTrace.length - 1);
+      vizSpecs.push(...vizResults);
 
       if (hasError) continue;
 

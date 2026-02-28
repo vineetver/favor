@@ -14,7 +14,7 @@ import { createPlanQueryTool } from "./tools/plan-query";
 import { createBioContextTool, createVariantTriageTool } from "./tools/subagents";
 import { createGetResultSliceTool, createListResultsTool } from "./tools/result-tools";
 import { createRunBatchTool, type BatchResultEntry } from "./tools/run-batch";
-import { generateVizSpec } from "./viz";
+import { generateVizSpecs } from "./viz";
 import type { ConversationContext, ResultType, VizSpec } from "./types";
 
 // Map tool names to result types for auto-storage of direct tool calls
@@ -175,8 +175,8 @@ export function createFavorAgent(synthesisModelId?: string, context?: Conversati
           const batch = output as { results?: BatchResultEntry[] };
           for (const entry of batch.results ?? []) {
             if (entry.error || !entry.output) continue;
-            const viz = generateVizSpec(entry.toolName, entry.output, entry.input ?? {}, vizCollector.length);
-            if (viz) vizCollector.push(viz);
+            const vizResults = generateVizSpecs(entry.toolName, entry.output, entry.input ?? {}, vizCollector.length);
+            vizCollector.push(...vizResults);
           }
           continue;
         }
@@ -192,8 +192,8 @@ export function createFavorAgent(synthesisModelId?: string, context?: Conversati
 
         // Generate VizSpec for direct tool calls
         const input = tc.input as Record<string, unknown> | undefined;
-        const viz = generateVizSpec(tc.toolName, tr.output, input ?? {}, vizCollector.length);
-        if (viz) vizCollector.push(viz);
+        const vizResults = generateVizSpecs(tc.toolName, tr.output, input ?? {}, vizCollector.length);
+        vizCollector.push(...vizResults);
       }
 
       console.log(

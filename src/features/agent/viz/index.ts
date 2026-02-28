@@ -6,5 +6,8 @@ export type {
   StatCardVizSpec,
   DistributionVizSpec,
   ComparisonVizSpec,
+  ScatterPlotVizSpec,
+  QQPlotVizSpec,
+  HeatmapVizSpec,
 } from "./types";
-export { generateVizSpec } from "./generators";
+export { generateVizSpec, generateVizSpecs } from "./generators";
