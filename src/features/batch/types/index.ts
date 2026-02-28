@@ -12,6 +12,8 @@
 // Core Enums & Literals
 // ============================================================================
 
+export type DataType = "variant_list" | "gwas_sumstats" | "credible_set" | "fine_mapping";
+
 export type JobState =
   | "PENDING"
   | "RUNNING"
@@ -77,6 +79,8 @@ export interface ValidateRequest {
   hint_delimiter?: string;
   hint_has_header?: boolean;
   hint_key_column?: string;
+  hint_data_type?: DataType;
+  hint_column_map?: ColumnMapping[];
 }
 
 export interface KeyTypeStats {
@@ -143,6 +147,40 @@ export interface ValidateResponse {
   warnings: string[];
   suggested_patch: SuggestedSpecPatch;
   dry_run?: DryRunResult;
+}
+
+// ============================================================================
+// Typed Cohort Validation (Mode 2 — GWAS, Credible Sets, Fine Mapping)
+// ============================================================================
+
+export interface SchemaPreviewColumn {
+  original_name: string;
+  canonical_name: string;
+  kind: "numeric" | "categorical" | "identity" | "array";
+  sample_values: string[];
+  non_null_count: number;
+}
+
+export interface ColumnMapping {
+  original: string;
+  canonical: string;
+  kind: string;
+  source: "alias" | "exact" | "custom" | (string & {});
+}
+
+export interface TypedValidateResponse {
+  ok: boolean;
+  data_type: DataType;
+  confidence: number;
+  reasons: string[];
+  requires_confirmation: boolean;
+  schema_preview: SchemaPreviewColumn[];
+  suggested_column_map: ColumnMapping[];
+  variant_key_strategy: "rsid" | "chrom_pos_ref_alt" | "chrom_pos_only" | "none";
+  variant_key_columns: string[];
+  row_count_estimate: number;
+  warnings: string[];
+  errors: string[];
 }
 
 // ============================================================================
@@ -363,6 +401,11 @@ export interface CohortDetail {
   updated_at: string;
   started_at: string | null;
   completed_at: string | null;
+  // Typed cohort fields (optional — only present for GWAS/credible set/fine mapping cohorts)
+  data_type?: DataType;
+  capabilities?: string[];
+  profile?: Record<string, unknown>;
+  column_map?: ColumnMapping[];
 }
 
 export interface CohortProgress {
@@ -428,6 +471,9 @@ export interface CreateCohortRequest {
   max_keys?: number;
   max_runtime_sec?: number;
   metadata?: Record<string, unknown>;
+  // Typed cohort fields
+  data_type?: DataType;
+  column_map?: ColumnMapping[];
 }
 
 export interface CreateCohortResponse {
@@ -471,6 +517,7 @@ export type UploadStep =
   | "select"
   | "uploading"
   | "validating"
+  | "mapping"
   | "configuring"
   | "creating"
   | "submitted";
@@ -481,6 +528,8 @@ export interface BatchWorkflowState {
   uploadProgress: number;
   inputUri: string | null;
   validation: ValidateResponse | null;
+  typedValidation: TypedValidateResponse | null;
+  confirmedColumnMap: ColumnMapping[] | null;
   error: string | null;
 }
 

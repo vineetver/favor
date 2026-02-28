@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  Columns3,
   FileSpreadsheet,
   Loader2,
   Settings2,
@@ -13,16 +14,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   BatchApiError,
   createCohort,
   presignUpload,
   uploadFileToS3,
-  validateFile,
+  validateTypedCohort,
 } from "../api";
 import { DEFAULT_TENANT_ID } from "../config";
-import type { UploadStep, ValidateResponse } from "../types";
+import type {
+  ColumnMapping,
+  TypedValidateResponse,
+  UploadStep,
+} from "../types";
+import { ColumnMappingEditor } from "./column-mapping-editor";
 import { UploadDropzone } from "./upload-dropzone";
 import { ValidationSummary } from "./validation-summary";
 import { JobConfiguration, type JobConfig } from "./job-configuration";
@@ -35,7 +41,7 @@ interface BatchWizardProps {
   className?: string;
 }
 
-type WizardStep = "upload" | "validate" | "configure" | "complete";
+type WizardStep = "upload" | "validate" | "mapping" | "configure" | "complete";
 
 interface StepConfig {
   id: WizardStep;
@@ -44,11 +50,12 @@ interface StepConfig {
   icon: typeof Upload;
 }
 
-const STEPS: StepConfig[] = [
+// Steps are dynamic — "mapping" only shown for typed cohorts
+const BASE_STEPS: StepConfig[] = [
   {
     id: "upload",
     label: "Upload",
-    description: "Select your variant file",
+    description: "Select your file",
     icon: Upload,
   },
   {
@@ -56,6 +63,12 @@ const STEPS: StepConfig[] = [
     label: "Validate",
     description: "Check format + preview",
     icon: FileSpreadsheet,
+  },
+  {
+    id: "mapping",
+    label: "Mapping",
+    description: "Review column mapping",
+    icon: Columns3,
   },
   {
     id: "configure",
@@ -78,31 +91,33 @@ const STEPS: StepConfig[] = [
 function getWizardStep(step: UploadStep): WizardStep {
   if (step === "select" || step === "uploading") return "upload";
   if (step === "validating") return "validate";
+  if (step === "mapping") return "mapping";
   if (step === "configuring" || step === "creating") return "configure";
   return "complete";
 }
 
-function getStepIndex(wizardStep: WizardStep): number {
-  return STEPS.findIndex((s) => s.id === wizardStep);
-}
-
 function StepIndicator({
   currentStep,
+  isTypedCohort,
   className,
 }: {
   currentStep: UploadStep;
+  isTypedCohort: boolean;
   className?: string;
 }) {
+  const steps = useMemo(
+    () => (isTypedCohort ? BASE_STEPS : BASE_STEPS.filter((s) => s.id !== "mapping")),
+    [isTypedCohort],
+  );
   const wizardStep = getWizardStep(currentStep);
-  const currentIndex = getStepIndex(wizardStep);
+  const currentIndex = steps.findIndex((s) => s.id === wizardStep);
 
   return (
     <div className={cn("flex items-center", className)}>
-      {STEPS.map((step, index) => {
+      {steps.map((step, index) => {
         const isCompleted = index < currentIndex;
         const isCurrent = index === currentIndex;
-        const isLast = index === STEPS.length - 1;
-        const Icon = step.icon;
+        const isLast = index === steps.length - 1;
 
         return (
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
@@ -125,7 +140,7 @@ function StepIndicator({
                 <span
                   className={cn(
                     "text-sm font-medium",
-                    isCurrent ? "text-foreground" : isCompleted ? "text-muted-foreground" : "text-muted-foreground",
+                    isCurrent ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {step.label}
@@ -134,7 +149,7 @@ function StepIndicator({
             </div>
 
             {!isLast && (
-              <div className="flex-1 mx-3 h-px bg-slate-200">
+              <div className="flex-1 mx-3 h-px bg-border">
                 <div
                   className={cn(
                     "h-full transition-all duration-300",
@@ -161,14 +176,25 @@ export function BatchWizard({ className }: BatchWizardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [inputUri, setInputUri] = useState<string | null>(null);
-  const [validation, setValidation] = useState<ValidateResponse | null>(null);
+  const [validation, setValidation] = useState<TypedValidateResponse | null>(null);
+  const [confirmedColumnMap, setConfirmedColumnMap] = useState<ColumnMapping[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Only gwas_sumstats, credible_set, fine_mapping are typed cohorts.
+  // "unknown" and "variant_list" go through the simple flow.
+  const KNOWN_TYPED_DATA_TYPES = new Set(["gwas_sumstats", "credible_set", "fine_mapping"]);
+  const isTypedCohort =
+    validation !== null &&
+    KNOWN_TYPED_DATA_TYPES.has(validation.data_type) &&
+    validation.confidence >= 0.5;
 
   // Handle file selection and upload
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile);
     setError(null);
+    setValidation(null);
+    setConfirmedColumnMap(null);
     setStep("uploading");
     setUploadProgress(0);
 
@@ -182,19 +208,31 @@ export function BatchWizard({ className }: BatchWizardProps) {
       setInputUri(input_uri);
 
       setStep("validating");
-      const validationResult = await validateFile({
+
+      // Backend always returns TypedValidateResponse shape
+      const result = await validateTypedCohort({
         tenant_id: DEFAULT_TENANT_ID,
         input_uri: input_uri,
         dry_run_lookups: true,
       });
 
-      setValidation(validationResult);
+      setValidation(result);
 
-      if (validationResult.ok) {
-        setStep("configuring");
-      } else {
-        setError(validationResult.errors[0]?.message || "File validation failed");
+      if (!result.ok) {
+        setError(result.errors[0] || "File validation failed");
         setStep("select");
+        return;
+      }
+
+      // Route based on detected data type
+      const isTyped =
+        KNOWN_TYPED_DATA_TYPES.has(result.data_type) &&
+        result.confidence >= 0.5;
+
+      if (isTyped && result.suggested_column_map?.length > 0) {
+        setStep("mapping");
+      } else {
+        setStep("configuring");
       }
     } catch (err) {
       const message = err instanceof BatchApiError ? err.message : "An error occurred";
@@ -208,6 +246,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
     setFile(null);
     setInputUri(null);
     setValidation(null);
+    setConfirmedColumnMap(null);
     setError(null);
     setUploadProgress(0);
     setStep("select");
@@ -218,27 +257,43 @@ export function BatchWizard({ className }: BatchWizardProps) {
     handleClear();
   }, [handleClear]);
 
+  // Handle back from mapping to validation summary
+  const handleBackFromMapping = useCallback(() => {
+    handleClear();
+  }, [handleClear]);
+
+  // Handle column mapping confirmation
+  const handleMappingConfirm = useCallback((columnMap: ColumnMapping[]) => {
+    setConfirmedColumnMap(columnMap);
+    setStep("configuring");
+  }, []);
+
   // Handle job submission
   const handleSubmit = useCallback(
     async (config: JobConfig) => {
-      if (!inputUri || !validation || !file) return;
+      if (!inputUri || !file || !validation) return;
 
       setIsCreating(true);
       setError(null);
 
       try {
-        const { id } = await createCohort(DEFAULT_TENANT_ID, {
+        const request: Parameters<typeof createCohort>[1] = {
           source: "upload",
           input_uri: inputUri,
-          format: validation.suggested_patch.format,
-          key_type: validation.suggested_patch.key_type,
-          has_header: validation.suggested_patch.has_header,
-          delimiter: validation.suggested_patch.delimiter,
-          include_not_found: config.includeNotFound,
           label: file.name,
           metadata: { cohort_label: file.name },
-        });
+        };
 
+        if (isTypedCohort) {
+          // Typed cohort — pass data_type and column_map
+          request.data_type = validation.data_type;
+          request.column_map = confirmedColumnMap ?? validation.suggested_column_map;
+        } else {
+          // Standard variant list / unknown
+          request.include_not_found = config.includeNotFound;
+        }
+
+        const { id } = await createCohort(DEFAULT_TENANT_ID, request);
         router.push(`/batch-annotation/jobs/${id}`);
       } catch (err) {
         const message = err instanceof BatchApiError ? err.message : "Failed to create job";
@@ -246,12 +301,20 @@ export function BatchWizard({ className }: BatchWizardProps) {
         setIsCreating(false);
       }
     },
-    [inputUri, validation, file, router],
+    [inputUri, validation, confirmedColumnMap, isTypedCohort, file, router],
   );
 
   const isUploading = step === "uploading";
   const isValidating = step === "validating";
   const wizardStep = getWizardStep(step);
+
+  const stepDescription = useMemo(() => {
+    if (wizardStep === "upload") return "Upload your file to get started";
+    if (wizardStep === "validate") return "Checking file format and previewing data";
+    if (wizardStep === "mapping") return "Review and confirm column mapping";
+    if (wizardStep === "configure") return "Configure output options before processing";
+    return "Review and start processing";
+  }, [wizardStep]);
 
   return (
     <div className={cn("bg-background rounded-xl border border-border overflow-hidden flex flex-col", className)}>
@@ -261,12 +324,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Batch Annotation</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {wizardStep === "upload" && "Upload your variant file to get started"}
-              {wizardStep === "validate" && "Checking file format and previewing data"}
-              {wizardStep === "configure" && "Configure output options before processing"}
-              {wizardStep === "complete" && "Review and start processing"}
-            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">{stepDescription}</p>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/batch-annotation/jobs">
@@ -278,7 +336,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
 
         {/* Step Indicator */}
         <div className="px-6 py-3 bg-muted/80 border-t border-border">
-          <StepIndicator currentStep={step} />
+          <StepIndicator currentStep={step} isTypedCohort={isTypedCohort} />
         </div>
       </div>
 
@@ -301,6 +359,39 @@ export function BatchWizard({ className }: BatchWizardProps) {
           )}
 
           {/* ================================================================ */}
+          {/* Column Mapping Step (typed cohorts only) */}
+          {/* ================================================================ */}
+          {step === "mapping" && validation && !isCreating && (
+            <div className="space-y-6">
+              {/* Back button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackFromMapping}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Upload different file
+              </Button>
+
+              {/* Brief typed validation summary */}
+              <ValidationSummary
+                typedValidation={validation}
+                filename={file?.name}
+              />
+
+              {/* Divider */}
+              <div className="border-t border-border" />
+
+              {/* Column mapping editor */}
+              <ColumnMappingEditor
+                typedValidation={validation}
+                onConfirm={handleMappingConfirm}
+                onBack={handleBackFromMapping}
+              />
+            </div>
+          )}
+
+          {/* ================================================================ */}
           {/* Validation + Configure Step */}
           {/* ================================================================ */}
           {validation && step === "configuring" && !isCreating && (
@@ -309,21 +400,26 @@ export function BatchWizard({ className }: BatchWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleBackToUpload}
+                onClick={isTypedCohort ? () => setStep("mapping") : handleBackToUpload}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Upload different file
+                {isTypedCohort ? "Back to mapping" : "Upload different file"}
               </Button>
 
               {/* Validation Summary */}
-              <ValidationSummary validation={validation} filename={file?.name} />
+              <ValidationSummary
+                typedValidation={validation}
+                filename={file?.name}
+              />
 
               {/* Divider */}
               <div className="border-t border-border" />
 
               {/* Configuration */}
               <JobConfiguration
-                validation={validation}
+                typedValidation={validation}
+                dataType={validation.data_type}
+                isTypedCohort={isTypedCohort}
                 onSubmit={handleSubmit}
                 isSubmitting={isCreating}
               />

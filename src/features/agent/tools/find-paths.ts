@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { agentFetch, AgentToolError } from "../lib/api-client";
-import type { CompressedPath } from "../types";
+import type { PathsResult } from "../types";
 
 export const findPaths = tool({
   description: `Find shortest paths between two entities through intermediate nodes (A → X → Y → B). Shows the chain of connections.
@@ -30,7 +30,7 @@ Both 'from' and 'to' use Type:ID format (e.g. 'Gene:ENSG00000012048', 'Drug:CHEM
       .optional()
       .describe("Filter to specific edge types (e.g. ['GENE_ASSOCIATED_WITH_DISEASE', 'DRUG_ACTS_ON_GENE']). Omit for all edge types."),
   }),
-  execute: async ({ from, to, maxHops, limit, edgeTypes }): Promise<CompressedPath[] | { error: boolean; message: string; hint?: string }> => {
+  execute: async ({ from, to, maxHops, limit, edgeTypes }): Promise<PathsResult | { error: boolean; message: string; hint?: string }> => {
     try {
       const params = new URLSearchParams();
       params.set("from", from);
@@ -41,21 +41,50 @@ Both 'from' and 'to' use Type:ID format (e.g. 'Gene:ENSG00000012048', 'Drug:CHEM
 
       const data = await agentFetch<{
         data: {
+          textSummary?: string;
+          from: string;
+          to: string;
+          nodeColumns: string[];
+          nodes: Record<string, unknown[]>;
+          edgeColumns: string[];
           paths: Array<{
-            rank: number;
-            length: number;
-            pathText: string;
-            nodes: Array<{ type: string; id: string; label: string }>;
+            text: string;
+            nodes: string[];
+            edges: unknown[][];
+            score: number;
           }>;
         };
       }>(`/graph/paths?${params.toString()}`);
 
       const maxPaths = Math.min(limit ?? 5, 50);
-      const paths = (data.data.paths ?? []).slice(0, maxPaths).map((p) => ({
-        rank: p.rank,
-        length: p.length,
-        pathText: p.pathText,
-        nodes: p.nodes.map((n) => ({ type: n.type, id: n.id, label: n.label })),
+      const { nodeColumns, nodes: nodesMap } = data.data;
+
+      // Resolve column indices for hydrating nodes
+      const typeIdx = nodeColumns.indexOf("type");
+      const idIdx = nodeColumns.indexOf("id");
+      const labelIdx = nodeColumns.indexOf("label");
+
+      const paths = (data.data.paths ?? []).slice(0, maxPaths).map((p, idx) => ({
+        rank: idx + 1,
+        length: p.nodes.length - 1,
+        pathText: p.text,
+        nodes: p.nodes.map((nodeKey) => {
+          const row = nodesMap[nodeKey];
+          if (!row) {
+            // Fallback: parse Type:ID key
+            const colonIdx = nodeKey.indexOf(":");
+            return {
+              type: colonIdx > 0 ? nodeKey.slice(0, colonIdx) : "Unknown",
+              id: colonIdx > 0 ? nodeKey.slice(colonIdx + 1) : nodeKey,
+              label: nodeKey,
+            };
+          }
+          return {
+            type: (row[typeIdx] as string) ?? "Unknown",
+            id: (row[idIdx] as string) ?? nodeKey,
+            label: (row[labelIdx] as string) ?? nodeKey,
+          };
+        }),
       }));
 
       if (paths.length === 0) {
@@ -66,7 +95,12 @@ Both 'from' and 'to' use Type:ID format (e.g. 'Gene:ENSG00000012048', 'Drug:CHEM
         };
       }
 
-      return paths;
+      return {
+        textSummary: data.data.textSummary,
+        from: data.data.from,
+        to: data.data.to,
+        paths,
+      };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();
       throw err;

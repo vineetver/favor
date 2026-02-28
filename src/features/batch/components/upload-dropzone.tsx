@@ -63,7 +63,7 @@ function FileTypeChips() {
       {ACCEPTED_EXTENSIONS.map((ext) => (
         <span
           key={ext}
-          className="px-3 py-1 rounded-lg bg-white border border-border text-xs font-medium text-muted-foreground shadow-sm"
+          className="px-3 py-1 rounded-lg bg-background border border-border text-xs font-medium text-muted-foreground shadow-sm"
         >
           {ext.toUpperCase().slice(1)}
         </span>
@@ -164,7 +164,7 @@ export function UploadDropzone({
     return (
       <div
         className={cn(
-          "rounded-xl border bg-white p-6 transition-all",
+          "rounded-xl border bg-background p-6 transition-all",
           displayError ? "border-rose-200" : "border-border",
           className,
         )}
@@ -307,7 +307,7 @@ export function UploadDropzone({
             "w-16 h-16 rounded-full flex items-center justify-center mb-6 transition-all",
             isDragOver
               ? "bg-primary/10 scale-110"
-              : "bg-white border border-border shadow-sm",
+              : "bg-background border border-border shadow-sm",
           )}
         >
           <UploadCloud

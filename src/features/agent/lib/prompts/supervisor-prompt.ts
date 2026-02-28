@@ -31,6 +31,7 @@ Use direct tools for:
 - Quick comparisons: compareEntities, getConnections
 - GWAS lookups: getGwasAssociations
 - Enrichment on a known gene list: runEnrichment
+- Overlap/motif queries (e.g., "genes targeting drug X that overlap with disease Y genes"): findPatterns — ONE call instead of delegating
 
 Delegate to specialists for:
 - Complex multi-step workflows (3+ dependent tool calls)

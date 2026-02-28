@@ -15,14 +15,17 @@ import {
   Play,
 } from "lucide-react";
 import { useId, useState } from "react";
-import type { ValidateResponse } from "../types";
+import { getDataTypeLabel } from "../lib/format";
+import type { DataType, TypedValidateResponse } from "../types";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface JobConfigurationProps {
-  validation: ValidateResponse;
+  typedValidation: TypedValidateResponse;
+  dataType: DataType | string;
+  isTypedCohort: boolean;
   onSubmit: (config: JobConfig) => void;
   isSubmitting?: boolean;
   className?: string;
@@ -47,7 +50,9 @@ function formatNumber(num: number): string {
 // ============================================================================
 
 export function JobConfiguration({
-  validation,
+  typedValidation,
+  dataType,
+  isTypedCohort,
   onSubmit,
   isSubmitting = false,
   className,
@@ -70,32 +75,46 @@ export function JobConfiguration({
     <form onSubmit={handleSubmit} className={cn("space-y-5", className)}>
       {/* Section: Output Options */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 uppercase tracking-wide">
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           <FileOutput className="w-3.5 h-3.5" />
           Output options
         </div>
 
-        {/* Include Not Found Toggle */}
-        <div className="flex items-start justify-between gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
-          <div className="space-y-1">
-            <Label
-              htmlFor={switchId}
-              className="text-sm font-medium text-slate-900 cursor-pointer"
-            >
-              Include unmatched variants
-            </Label>
-            <p className="text-xs text-slate-500">
-              Output rows for variants not found in database.{" "}
-              <span className="text-slate-400">Increases output file size.</span>
-            </p>
+        {/* Typed cohort summary */}
+        {isTypedCohort && (
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-muted border border-border">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{getDataTypeLabel(dataType)}</span>
+              <span className="ml-2">
+                {typedValidation.schema_preview.length} columns mapped
+              </span>
+            </div>
           </div>
-          <Switch
-            id={switchId}
-            checked={includeNotFound}
-            onCheckedChange={setIncludeNotFound}
-            disabled={isSubmitting}
-          />
-        </div>
+        )}
+
+        {/* Include Not Found Toggle — only for variant lists */}
+        {!isTypedCohort && (
+          <div className="flex items-start justify-between gap-4 p-4 rounded-lg bg-muted border border-border">
+            <div className="space-y-1">
+              <Label
+                htmlFor={switchId}
+                className="text-sm font-medium text-foreground cursor-pointer"
+              >
+                Include unmatched variants
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Output rows for variants not found in database.{" "}
+                <span className="text-muted-foreground/70">Increases output file size.</span>
+              </p>
+            </div>
+            <Switch
+              id={switchId}
+              checked={includeNotFound}
+              onCheckedChange={setIncludeNotFound}
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
       </div>
 
       {/* Section: Notifications (Collapsed) */}
@@ -105,23 +124,23 @@ export function JobConfiguration({
           onClick={() => setShowNotifications(!showNotifications)}
           className="flex items-center justify-between w-full text-left"
         >
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
             <Bell className="w-3.5 h-3.5" />
             Notifications
-            <span className="normal-case font-normal text-slate-400">(optional)</span>
+            <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
           </div>
           {showNotifications ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-muted-foreground/70" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground/70" />
           )}
         </button>
 
         {showNotifications && (
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+          <div className="p-4 rounded-lg bg-muted border border-border space-y-4">
             <div className="space-y-2">
-              <Label htmlFor={emailId} className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
+              <Label htmlFor={emailId} className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground/70" />
                 Email when complete
               </Label>
               <Input
@@ -132,7 +151,7 @@ export function JobConfiguration({
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 We'll send a single email when your job finishes (success or failure).
               </p>
             </div>
@@ -141,11 +160,10 @@ export function JobConfiguration({
       </div>
 
       {/* Submit Button - Always visible, right-aligned feel */}
-      <div className="pt-3 border-t border-slate-200">
+      <div className="pt-3 border-t border-border">
         <div className="flex items-center justify-between gap-4">
-          <div className="text-sm text-slate-500">
-            {validation.is_estimate ? "~" : ""}
-            {formatNumber(validation.estimated_rows)} variants to process
+          <div className="text-sm text-muted-foreground">
+            ~{formatNumber(typedValidation.row_count_estimate)} rows to process
           </div>
           <Button type="submit" disabled={isSubmitting} size="lg">
             {isSubmitting ? (

@@ -28,6 +28,7 @@ const GRAPH_TOOLS = [
   "getEntityContext",
   "getRankedNeighbors",
   "findPaths",
+  "findPatterns",
   "getSharedNeighbors",
   "getConnections",
   "getEdgeDetail",

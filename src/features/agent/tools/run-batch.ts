@@ -8,6 +8,7 @@ const BATCHABLE = new Set([
   "getEntityContext",
   "getRankedNeighbors",
   "findPaths",
+  "findPatterns",
   "getSharedNeighbors",
   "getConnections",
   "getEdgeDetail",
@@ -33,6 +34,7 @@ const STORE_MAP: Record<string, ResultType> = {
   getRankedNeighbors: "neighbor_list",
   runEnrichment: "enrichment_list",
   findPaths: "traversal_graph",
+  findPatterns: "pattern_matches",
   getSharedNeighbors: "entity_list",
   compareEntities: "comparison",
   getConnections: "connection_map",
@@ -52,6 +54,7 @@ function summarize(toolName: string, out: Record<string, unknown>): string | nul
     case "getRankedNeighbors": return arr("neighbors") ? `${arr("neighbors")!.length} neighbors` : null;
     case "runEnrichment": return arr("enriched") ? `${arr("enriched")!.length} enriched terms` : null;
     case "findPaths": return arr("paths") ? `${arr("paths")!.length} paths` : null;
+    case "findPatterns": return arr("matches") ? `${arr("matches")!.length} pattern matches` : null;
     case "getSharedNeighbors": return arr("neighbors") ? `${arr("neighbors")!.length} shared neighbors` : null;
     case "compareEntities": return "entity comparison";
     case "getConnections": return arr("connections") ? `${arr("connections")!.length} connection types` : null;

@@ -17,8 +17,8 @@ interface StatCardProps {
 
 const VARIANT_STYLES: Record<StatCardVariant, { container: string; value: string }> = {
   default: {
-    container: "bg-slate-50 border-slate-200",
-    value: "text-slate-900",
+    container: "bg-muted border-border",
+    value: "text-foreground",
   },
   positive: {
     container: "bg-emerald-50 border-emerald-200",
@@ -54,8 +54,8 @@ export function StatCard({
     <div className={cn("p-4 rounded-xl border", styles.container, className)}>
       {Icon && (
         <div className="flex items-center gap-2 mb-2">
-          <Icon className="w-4 h-4 text-slate-400" />
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <Icon className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {label}
           </span>
         </div>
@@ -64,12 +64,12 @@ export function StatCard({
         {displayValue}
       </div>
       {!Icon && (
-        <div className="text-xs text-slate-500 mt-1 text-center">
+        <div className="text-xs text-muted-foreground mt-1 text-center">
           {label}
-          {percentage && <span className="ml-1 text-slate-400">({percentage})</span>}
+          {percentage && <span className="ml-1 text-muted-foreground/70">({percentage})</span>}
         </div>
       )}
-      {subValue && <div className="text-xs text-slate-500 mt-1">{subValue}</div>}
+      {subValue && <div className="text-xs text-muted-foreground mt-1">{subValue}</div>}
     </div>
   );
 }

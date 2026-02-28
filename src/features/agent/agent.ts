@@ -22,6 +22,7 @@ const AUTO_STORE_MAP: Record<string, ResultType> = {
   getRankedNeighbors: "neighbor_list",
   runEnrichment: "enrichment_list",
   findPaths: "traversal_graph",
+  findPatterns: "pattern_matches",
   getSharedNeighbors: "entity_list",
   compareEntities: "comparison",
   getConnections: "connection_map",
@@ -47,7 +48,13 @@ function getAutoStoreSummary(toolName: string, output: Record<string, unknown>):
     }
     case "findPaths": {
       const p = output.paths as unknown[] | undefined;
-      return p ? `${p.length} paths` : null;
+      const ts = output.textSummary as string | undefined;
+      return ts ?? (p ? `${p.length} paths` : null);
+    }
+    case "findPatterns": {
+      const m = output.matches as unknown[] | undefined;
+      const ts = output.textSummary as string | undefined;
+      return ts ?? (m ? `${m.length} pattern matches` : null);
     }
     case "getSharedNeighbors": {
       const s = output.neighbors as unknown[] | undefined;
@@ -111,6 +118,7 @@ export function createFavorAgent(synthesisModelId?: string, context?: Conversati
     getEntityContext: tools.getEntityContext,
     getRankedNeighbors: tools.getRankedNeighbors,
     findPaths: tools.findPaths,
+    findPatterns: tools.findPatterns,
     getSharedNeighbors: tools.getSharedNeighbors,
     getConnections: tools.getConnections,
     getEdgeDetail: tools.getEdgeDetail,

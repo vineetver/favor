@@ -39,7 +39,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                     "relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-all duration-300",
                     isCompleted && "bg-emerald-500 text-white",
                     isCurrent && "bg-primary text-white ring-4 ring-primary/20",
-                    isPending && "bg-slate-100 text-slate-400"
+                    isPending && "bg-muted text-muted-foreground"
                   )}
                 >
                   {isCompleted ? (
@@ -48,7 +48,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                     <span className={cn(
                       "h-2 w-2 rounded-full",
                       isCurrent && "bg-white animate-pulse",
-                      isPending && "bg-slate-300"
+                      isPending && "bg-muted-foreground/40"
                     )} />
                   )}
                 </div>
@@ -57,7 +57,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                     "text-[10px] font-medium uppercase tracking-wide transition-colors",
                     isCompleted && "text-emerald-600",
                     isCurrent && "text-primary",
-                    isPending && "text-slate-400"
+                    isPending && "text-muted-foreground"
                   )}
                 >
                   {config.shortLabel}
@@ -66,7 +66,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
 
               {/* Connector line */}
               {!isLast && (
-                <div className="flex-1 mx-2 h-0.5 rounded-full bg-slate-100 overflow-hidden">
+                <div className="flex-1 mx-2 h-0.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",

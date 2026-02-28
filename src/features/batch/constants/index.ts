@@ -207,6 +207,23 @@ export const ERROR_RECOVERY_CONFIG: Record<ErrorCode, ErrorRecoveryConfig> = {
   },
 };
 
+// ============================================================================
+// Typed Cohort Stage Config
+// ============================================================================
+
+export interface TypedCohortStageConfig {
+  label: string;
+  description: string;
+}
+
+export const TYPED_COHORT_STAGES: Record<string, TypedCohortStageConfig> = {
+  validating: { label: "Validating", description: "Detecting data type and validating schema" },
+  mapping: { label: "Column Mapping", description: "Reviewing and confirming column mappings" },
+  profiling: { label: "Profiling", description: "Computing column statistics and summaries" },
+  indexing: { label: "Indexing", description: "Building variant key index" },
+  ready: { label: "Ready", description: "Cohort is ready for analysis" },
+};
+
 /**
  * Get error recovery config for an error code
  * Returns a default config for unknown error codes

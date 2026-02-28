@@ -20,6 +20,7 @@ export {
   ValidationSummary,
   JobConfiguration,
   type JobConfig,
+  ColumnMappingEditor,
   JobProgressCard,
   JobsDashboard,
   JobAnalytics,

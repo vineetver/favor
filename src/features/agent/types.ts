@@ -108,6 +108,25 @@ export interface CompressedPath {
   nodes: Array<{ type: string; id: string; label: string }>;
 }
 
+export interface PathsResult {
+  textSummary?: string;
+  from: string;
+  to: string;
+  paths: CompressedPath[];
+}
+
+export interface CompressedPatternMatch {
+  vars: Record<string, { type: string; id: string; label: string }>;
+  edges: Array<{ type: string; from: string; to: string }>;
+  score?: number;
+}
+
+export interface PatternsResult {
+  textSummary?: string;
+  matches: CompressedPatternMatch[];
+  counts: { returned: number; limit: number };
+}
+
 export interface CompressedCohort {
   cohortId: string;
   variantCount: number;
@@ -132,6 +151,7 @@ export type ResultType =
   | "comparison"
   | "gwas_list"
   | "gene_stats"
+  | "pattern_matches"
   | "raw";
 
 export interface ResultRef {

@@ -10,6 +10,7 @@ import { searchEntities } from "../search-entities";
 import { getEntityContext } from "../entity-context";
 import { getRankedNeighbors } from "../ranked-neighbors";
 import { findPaths } from "../find-paths";
+import { findPatterns } from "../find-patterns";
 import { getSharedNeighbors } from "../shared-neighbors";
 import { getConnections } from "../get-connections";
 import { getEdgeDetail } from "../get-edge-detail";
@@ -27,6 +28,7 @@ const BIO_CONTEXT_TOOLS = {
   getEntityContext,
   getRankedNeighbors,
   findPaths,
+  findPatterns,
   getSharedNeighbors,
   getConnections,
   getEdgeDetail,
@@ -106,6 +108,12 @@ function summarizeToolInput(name: string, args: Record<string, unknown>): string
       const edgeChain = tSteps?.map(s => s.edgeTypes?.join(",")).join("→") ?? "steps";
       return `${seedLabel}, ${edgeChain}`;
     }
+    case "findPatterns": {
+      const pattern = args.pattern as Array<{ var?: string; type?: string; edge?: string }> | undefined;
+      const nodeVars = pattern?.filter(p => p.var).map(p => `${p.var}:${p.type}`).join(", ") ?? "pattern";
+      const edgeCount = pattern?.filter(p => p.edge).length ?? 0;
+      return `${nodeVars} (${edgeCount} edges)`;
+    }
     case "getEdgeDetail": {
       const edFrom = args.from as string | undefined;
       const edTo = args.to as string | undefined;
@@ -131,7 +139,7 @@ function summarizeToolOutput(name: string, out: Record<string, unknown>): string
       return n ? `${n.length} neighbors` : "neighbors";
     }
     case "findPaths": {
-      const p = Array.isArray(out) ? out : (out.paths as unknown[] | undefined);
+      const p = out.paths as unknown[] | undefined;
       return p ? `${p.length} paths` : "paths";
     }
     case "getConnections": {
@@ -146,6 +154,11 @@ function summarizeToolOutput(name: string, out: Record<string, unknown>): string
     }
     case "compareEntities":
       return "comparison";
+    case "findPatterns": {
+      const m = out.matches as unknown[] | undefined;
+      const c = out.counts as { returned?: number } | undefined;
+      return m ? `${c?.returned ?? m.length} matches` : "matches";
+    }
     case "getSharedNeighbors": {
       const s = out.neighbors as unknown[] | undefined;
       const total = out.totalShared as number | undefined;
@@ -275,7 +288,7 @@ function extractStructuredOutput(
 
       // Store findPaths result
       if (r.toolName === "findPaths") {
-        const paths = Array.isArray(out) ? out : (out.paths as unknown[] | undefined);
+        const paths = out.paths as unknown[] | undefined;
         if (store && paths && paths.length > 0) {
           const inputSummary = summarizeToolInput(r.toolName, args);
           resultRefs.push(store.put("traversal_graph", "findPaths", paths, `${paths.length} paths: ${inputSummary}`));
@@ -307,6 +320,15 @@ function extractStructuredOutput(
           const edges = out.edges as unknown[] | undefined;
           const summary = nodes ? `${nodes.length} nodes, ${edges?.length ?? 0} edges` : "traversal";
           resultRefs.push(store.put("traversal_graph", "graphTraverse", out, `${summary}: ${inputSummary}`));
+        }
+      }
+
+      // Store findPatterns result
+      if (r.toolName === "findPatterns" && !out.error) {
+        const matches = out.matches as unknown[] | undefined;
+        if (store && matches && matches.length > 0) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("pattern_matches", "findPatterns", matches, `${matches.length} pattern matches: ${inputSummary}`));
         }
       }
 

@@ -1,29 +1,22 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import { Button } from "@shared/components/ui/button";
 import {
   AlertTriangle,
   CheckCircle2,
-  Copy,
-  FileText,
-  Lightbulb,
   XCircle,
   Zap,
 } from "lucide-react";
-import { useCallback, useState } from "react";
 import {
-  formatBytes,
   formatNumber,
-  formatPercent,
-  getFormatLabel,
-  getKeyTypeLabel,
+  getDataTypeLabel,
+  getVariantKeyStrategyLabel,
 } from "../lib/format";
-import type { ValidateResponse } from "../types";
+import type { TypedValidateResponse } from "../types";
 import { StatCard } from "./stat-card";
 
 interface ValidationSummaryProps {
-  validation: ValidateResponse;
+  typedValidation: TypedValidateResponse;
   filename?: string;
   className?: string;
 }
@@ -64,9 +57,7 @@ function StatusHeader({
           <AlertTriangle className="w-4 h-4 text-amber-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-amber-800">Ready with warnings</h3>
-          </div>
+          <h3 className="text-sm font-semibold text-amber-800">Ready with warnings</h3>
           <p className="text-sm text-amber-600 mt-0.5">
             {filename && <span className="font-medium">{filename}</span>}
             {filename && " — "}Review the warnings below before continuing
@@ -93,247 +84,133 @@ function StatusHeader({
 }
 
 // ============================================================================
-// Detected Format Badges
-// ============================================================================
-
-function FormatBadges({ validation }: { validation: ValidateResponse }) {
-  const { suggested_patch } = validation;
-  const isRsId = validation.key_type_detected === "RSID";
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-        <FileText className="w-3 h-3" />
-        {getFormatLabel(validation.format_detected)}
-      </span>
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium",
-          isRsId ? "bg-amber-100 text-amber-700" : "bg-muted text-foreground",
-        )}
-      >
-        <Zap className="w-3 h-3" />
-        {getKeyTypeLabel(validation.key_type_detected)}
-        {isRsId && " (slower)"}
-      </span>
-      {suggested_patch.has_header && (
-        <span className="px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground">
-          Header detected
-        </span>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Data Preview with row numbers
-// ============================================================================
-
-function DataPreview({
-  validation,
-  maxRows = 5,
-}: {
-  validation: ValidateResponse;
-  maxRows?: number;
-}) {
-  const [copied, setCopied] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  const { stats } = validation;
-  const examples: string[] = [];
-
-  if (stats?.examples?.vcf?.length > 0) {
-    examples.push(...stats.examples.vcf);
-  } else if (stats?.examples?.rsid?.length > 0) {
-    examples.push(...stats.examples.rsid);
-  } else if (stats?.examples?.vid?.length > 0) {
-    examples.push(...stats.examples.vid);
-  }
-
-  if (examples.length === 0) return null;
-
-  const displayedExamples = expanded ? examples.slice(0, 25) : examples.slice(0, maxRows);
-  const remainingRows = validation.estimated_rows - displayedExamples.length;
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(displayedExamples.join("\n"));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [displayedExamples]);
-
-  return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <div className="px-3 py-2 bg-muted border-b border-border flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Data preview</span>
-        <div className="flex items-center gap-2">
-          {examples.length > maxRows && (
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {expanded ? "Show less" : `Show ${Math.min(25, examples.length)} rows`}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <Copy className="w-3 h-3" />
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-      </div>
-      <div className="p-3 bg-white max-h-64 overflow-auto">
-        <table className="w-full text-xs font-mono">
-          <tbody>
-            {displayedExamples.map((example, i) => (
-              <tr key={i} className="hover:bg-muted">
-                <td className="pr-3 py-0.5 text-muted-foreground text-right select-none w-8">
-                  {i + 1}
-                </td>
-                <td className="py-0.5 text-muted-foreground truncate">{example}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {remainingRows > 0 && (
-          <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
-            + {formatNumber(remainingRows)} more rows
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Recommendation callout
-// ============================================================================
-
-function RecommendationCallout({ validation }: { validation: ValidateResponse }) {
-  const isRsId = validation.key_type_detected === "RSID";
-
-  if (!isRsId) return null;
-
-  return (
-    <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
-      <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-      <div className="text-xs text-blue-700">
-        <span className="font-medium">Tip:</span> Using VCF format (chr-pos-ref-alt) instead of
-        rsIDs will process faster and provide more accurate matches.
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Main Component
 // ============================================================================
 
 export function ValidationSummary({
-  validation,
+  typedValidation,
   filename,
   className,
 }: ValidationSummaryProps) {
-  const { stats, dry_run, errors, warnings, suggested_patch } = validation;
-  const hasErrors = errors.length > 0;
-  const hasWarnings = warnings.length > 0;
-  const isLowConfidence = stats.confidence < 0.7;
-  const isRsId = validation.key_type_detected === "RSID";
-  const needsAttention = hasWarnings || isLowConfidence || isRsId;
-
-  // Calculate rates
-  const totalSampled = stats.rsid + stats.vcf + stats.vid + stats.invalid;
-  const invalidRate = totalSampled > 0 ? stats.invalid / totalSampled : 0;
-  const validRate = 1 - invalidRate;
-  const matchRate = dry_run?.variant_found_rate ?? 0;
+  const hasErrors = typedValidation.errors.length > 0;
+  const hasWarnings = typedValidation.warnings.length > 0;
+  const isLowConfidence = typedValidation.confidence < 0.7;
+  const needsAttention = hasWarnings || isLowConfidence;
 
   return (
     <div className={cn("space-y-4", className)}>
       {/* Status Header */}
-      <StatusHeader ok={validation.ok} needsAttention={needsAttention} filename={filename} />
+      <StatusHeader ok={typedValidation.ok} needsAttention={needsAttention} filename={filename} />
 
-      {/* Errors - blocking issues */}
-      {!validation.ok && hasErrors && (
+      {/* Errors */}
+      {!typedValidation.ok && hasErrors && (
         <div className="space-y-2">
-          {errors.map((error, i) => (
+          {typedValidation.errors.map((error, i) => (
             <div
               key={i}
               className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 border border-rose-200"
             >
               <XCircle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
-              <div className="text-sm text-rose-700">
-                <span className="font-medium">{error.code}:</span> {error.message}
-                {error.line && (
-                  <span className="text-rose-500 ml-1">(line {error.line})</span>
-                )}
-              </div>
+              <span className="text-sm text-rose-700">{error}</span>
             </div>
           ))}
         </div>
       )}
 
       {/* Success content */}
-      {validation.ok && (
+      {typedValidation.ok && (
         <>
-          {/* Format badges */}
-          <FormatBadges validation={validation} />
+          {/* Data type + variant key badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-xs font-medium text-primary">
+              <Zap className="w-3 h-3" />
+              {getDataTypeLabel(typedValidation.data_type)}
+            </span>
+            {typedValidation.variant_key_strategy !== "none" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
+                {getVariantKeyStrategyLabel(typedValidation.variant_key_strategy)}
+              </span>
+            )}
+          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             <StatCard
-              value={`${validation.is_estimate ? "~" : ""}${formatNumber(validation.estimated_rows)}`}
+              value={`~${formatNumber(typedValidation.row_count_estimate)}`}
               label="Rows"
             />
             <StatCard
-              value={formatPercent(matchRate)}
-              label="Match rate"
-              variant={matchRate >= 0.8 ? "positive" : matchRate >= 0.5 ? "warning" : "negative"}
+              value={String(typedValidation.schema_preview.length)}
+              label="Columns"
             />
             <StatCard
-              value={formatPercent(validRate)}
-              label="Valid keys"
-              variant={invalidRate > 0.1 ? "negative" : "default"}
+              value={`${Math.round(typedValidation.confidence * 100)}%`}
+              label="Confidence"
+              variant={typedValidation.confidence >= 0.9 ? "positive" : typedValidation.confidence >= 0.7 ? "warning" : "negative"}
             />
           </div>
 
-          {/* Recommendation for rsID users */}
-          <RecommendationCallout validation={validation} />
+          {/* Schema preview table */}
+          {typedValidation.schema_preview.length > 0 && (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="px-3 py-2 bg-muted border-b border-border">
+                <span className="text-xs font-medium text-muted-foreground">Schema preview</span>
+              </div>
+              <div className="p-3 bg-background max-h-64 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">Column</th>
+                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">Kind</th>
+                      <th className="text-left py-1 font-medium text-muted-foreground">Samples</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {typedValidation.schema_preview.slice(0, 10).map((col) => (
+                      <tr key={col.original_name} className="hover:bg-muted">
+                        <td className="py-1 pr-3 font-mono text-foreground">{col.original_name}</td>
+                        <td className="py-1 pr-3">
+                          <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                            {col.kind}
+                          </span>
+                        </td>
+                        <td className="py-1 font-mono text-muted-foreground truncate max-w-[200px]">
+                          {col.sample_values.slice(0, 3).join(", ")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {typedValidation.schema_preview.length > 10 && (
+                  <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+                    + {typedValidation.schema_preview.length - 10} more columns
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* Data Preview */}
-          <DataPreview validation={validation} />
-
-          {/* Warnings - non-blocking issues */}
+          {/* Warnings */}
           {(hasWarnings || isLowConfidence) && (
             <div className="space-y-2">
               {isLowConfidence && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
                   <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                   <div className="text-sm text-amber-700">
-                    <span className="font-medium">Low confidence ({formatPercent(stats.confidence)}):</span>{" "}
-                    File may contain mixed key types
+                    <span className="font-medium">Low confidence ({Math.round(typedValidation.confidence * 100)}%):</span>{" "}
+                    Auto-detection is uncertain. Please review the column mapping.
                   </div>
                 </div>
               )}
-              {warnings
-                .filter(
-                  (w) =>
-                    !w.toLowerCase().includes("rsid") &&
-                    !w.toLowerCase().includes("suggested settings") &&
-                    !w.toLowerCase().includes("mixed key types") &&
-                    !w.toLowerCase().includes("low confidence"),
-                )
-                .map((warning, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200"
-                  >
-                    <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-amber-700">{warning}</span>
-                  </div>
-                ))}
+              {typedValidation.warnings.map((warning, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <span className="text-sm text-amber-700">{warning}</span>
+                </div>
+              ))}
             </div>
           )}
         </>

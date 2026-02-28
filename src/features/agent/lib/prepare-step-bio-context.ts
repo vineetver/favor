@@ -11,6 +11,7 @@ const BIO_CONTEXT_TOOLS = [
   "getEntityContext",
   "getRankedNeighbors",
   "findPaths",
+  "findPatterns",
   "getSharedNeighbors",
   "getConnections",
   "getEdgeDetail",

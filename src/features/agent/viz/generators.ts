@@ -120,17 +120,16 @@ function genFindPaths(
   input: Record<string, unknown>,
   toolCallIndex: number,
 ): NetworkVizSpec | null {
-  // findPaths returns an array of CompressedPath directly (or { error: true })
-  if (!Array.isArray(output)) return null;
-
-  const paths = output as Array<{
+  // New format: PathsResult { paths: CompressedPath[] }
+  const out = output as Record<string, unknown>;
+  const paths = out?.paths as Array<{
     rank: number;
     length: number;
     pathText: string;
     nodes: Array<{ type: string; id: string; label: string }>;
-  }>;
+  }> | undefined;
 
-  if (paths.length < 1) return null;
+  if (!paths || paths.length < 1) return null;
 
   // Deduplicate nodes and build edges from top 5 paths
   const nodeMap = new Map<string, { id: string; label: string; type: string }>();
@@ -180,6 +179,57 @@ function genFindPaths(
       ...n,
       isSeed: seedIds.has(n.id),
     })),
+    edges: edges.slice(0, 100),
+  };
+}
+
+function genFindPatterns(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): NetworkVizSpec | null {
+  const out = output as Record<string, unknown>;
+  const matches = out?.matches as Array<{
+    vars: Record<string, { type: string; id: string; label: string }>;
+    edges: Array<{ type: string; from: string; to: string }>;
+    score?: number;
+  }> | undefined;
+
+  if (!matches || matches.length < 1) return null;
+
+  // Build deduplicated nodes and edges from top matches
+  const nodeMap = new Map<string, { id: string; label: string; type: string }>();
+  const edgeSet = new Set<string>();
+  const edges: NetworkVizSpec["edges"] = [];
+
+  for (const match of matches.slice(0, 10)) {
+    for (const entity of Object.values(match.vars)) {
+      if (!nodeMap.has(entity.id)) {
+        nodeMap.set(entity.id, { id: entity.id, label: entity.label, type: entity.type });
+      }
+    }
+    for (const e of match.edges) {
+      const key = `${e.from}->${e.to}:${e.type}`;
+      if (!edgeSet.has(key)) {
+        edgeSet.add(key);
+        // Extract IDs from Type:ID format
+        const fromId = e.from.includes(":") ? e.from.split(":").slice(1).join(":") : e.from;
+        const toId = e.to.includes(":") ? e.to.split(":").slice(1).join(":") : e.to;
+        edges.push({ source: fromId, target: toId, type: e.type });
+      }
+    }
+  }
+
+  const nodes = [...nodeMap.values()].slice(0, 50);
+  if (nodes.length < 2) return null;
+
+  const counts = out?.counts as { returned?: number } | undefined;
+
+  return {
+    type: "network",
+    toolCallIndex,
+    title: `Pattern matches (${counts?.returned ?? matches.length} found)`,
+    nodes: nodes.map((n) => ({ ...n, isSeed: false })),
     edges: edges.slice(0, 100),
   };
 }
@@ -587,6 +637,7 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   getRankedNeighbors: [genRankedNeighbors],
   runEnrichment: [genEnrichment],
   findPaths: [genFindPaths],
+  findPatterns: [genFindPatterns],
   graphTraverse: [genGraphTraverse],
   getConnections: [genConnections],
   compareEntities: [genCompareEntities],

@@ -25,6 +25,9 @@ import type {
   CompressedGeneStats,
   CompressedPath,
   CompressedCohort,
+  CompressedPatternMatch,
+  PathsResult,
+  PatternsResult,
   AgentPlan,
   PlanStep,
   VariantTriageOutput,
@@ -402,6 +405,44 @@ function PathsRenderer({ paths }: { paths: CompressedPath[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Patterns
+// ---------------------------------------------------------------------------
+
+function PatternsRenderer({ data }: { data: PatternsResult }) {
+  if (!data.matches.length) return <p className="text-xs text-muted-foreground">No pattern matches found.</p>;
+  return (
+    <div className="space-y-2">
+      {data.textSummary && (
+        <p className="text-xs text-muted-foreground">{data.textSummary}</p>
+      )}
+      {data.matches.slice(0, 10).map((m, idx) => (
+        <div key={idx} className="flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+          <span className="shrink-0 text-xs font-medium text-muted-foreground mt-0.5">#{idx + 1}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1 text-xs">
+              {Object.entries(m.vars).map(([varName, entity], i) => (
+                <span key={varName} className="inline-flex items-center gap-1">
+                  {i > 0 && <span className="text-muted-foreground mx-0.5">&mdash;</span>}
+                  <TypeBadge type={entity.type} />
+                  <span className="font-medium text-foreground">{entity.label}</span>
+                  <span className="text-muted-foreground text-[10px]">({varName})</span>
+                </span>
+              ))}
+            </div>
+          </div>
+          {m.score != null && (
+            <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">{m.score.toFixed(2)}</span>
+          )}
+        </div>
+      ))}
+      {data.counts.returned > 10 && (
+        <p className="text-[10px] text-muted-foreground">Showing 10 of {data.counts.returned} matches</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Cohort
 // ---------------------------------------------------------------------------
 
@@ -575,6 +616,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   getEntityContext: "Entity Context",
   getRankedNeighbors: "Ranked Neighbors",
   findPaths: "Find Paths",
+  findPatterns: "Find Patterns",
   getSharedNeighbors: "Shared Neighbors",
   getConnections: "Connections",
   getEdgeDetail: "Edge Detail",
@@ -1187,8 +1229,16 @@ export function renderToolOutput(
       return null;
     }
     case "findPaths": {
-      if (Array.isArray(output)) {
-        return <PathsRenderer paths={output as CompressedPath[]} />;
+      const fp = output as PathsResult;
+      if (fp?.paths && Array.isArray(fp.paths)) {
+        return <PathsRenderer paths={fp.paths as CompressedPath[]} />;
+      }
+      return null;
+    }
+    case "findPatterns": {
+      const pat = output as PatternsResult;
+      if (pat?.matches && Array.isArray(pat.matches)) {
+        return <PatternsRenderer data={pat} />;
       }
       return null;
     }
@@ -1268,6 +1318,13 @@ export function getToolInputSummary(
       const tgt = fmtEntity(to);
       if (!src || !tgt) return null;
       return `Finding paths from ${src} to ${tgt}`;
+    }
+    case "findPatterns": {
+      const pattern = inp.pattern as Array<{ var?: string; type?: string; edge?: string }> | undefined;
+      if (!pattern?.length) return null;
+      const nodeVars = pattern.filter(p => p.var).map(p => p.type).join(", ");
+      const edgeCount = pattern.filter(p => p.edge).length;
+      return `Finding ${nodeVars} patterns (${edgeCount} edge constraints)`;
     }
     case "getSharedNeighbors": {
       const entities = inp.entities as Array<{ type?: string; id?: string }> | undefined;

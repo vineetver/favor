@@ -58,6 +58,8 @@ Check \`resolved\` in the getRankedNeighbors response to see what the server sel
 | Enriched pathways for gene set | runEnrichment(genes, Pathway) | getRankedNeighbors loop |
 | Enriched GO terms for gene set | runEnrichment(genes, GOTerm) | getRankedNeighbors loop |
 | Multi-hop chain (gene→disease→phenotype) | graphTraverse(steps) | multiple separate calls |
+| Overlap query (genes targeting drug X AND associated with disease Y) | findPatterns(pattern) | 2x getRankedNeighbors + manual intersection |
+| Structural motif (entities matching A→B→C pattern) | findPatterns(pattern) | graphTraverse + manual filtering |
 | Pharmacogenomics: genes for a drug | getRankedNeighbors(Drug, GENE_AFFECTS_DRUG_RESPONSE) | DRUG_ACTS_ON_GENE (different: targets, not PGx) |
 | Drug targets for a drug | getRankedNeighbors(Drug, DRUG_ACTS_ON_GENE) | GENE_AFFECTS_DRUG_RESPONSE |
 | Drug-drug interactions | getRankedNeighbors(Drug, DRUG_INTERACTS_WITH_DRUG) | getConnections |
@@ -99,6 +101,19 @@ getConnections(A, B) → all direct edges with scores. If empty, findPaths(A, B)
 graphTraverse(seeds=[Pathway], steps=[{edgeTypes:["GENE_PARTICIPATES_IN_PATHWAY"]}, {edgeTypes:["DRUG_ACTS_ON_GENE"]}])
 NOTE: sort on graphTraverse steps may place NULL values first. For reliable ranking, prefer getRankedNeighbors (single-hop) or use graphTraverse without sort for exploration, then drill into specific results.
 
+### Pattern/motif search (e.g., "genes targeted by drug X that are also associated with disease Y")
+findPatterns({
+  pattern: [
+    {var:"drug", type:"Drug"}, {var:"g", type:"Gene"}, {var:"d", type:"Disease"},
+    {edge:"DRUG_ACTS_ON_GENE", from:"drug", to:"g"},
+    {edge:"GENE_ASSOCIATED_WITH_DISEASE", from:"g", to:"d"}
+  ],
+  filters: {"drug.drug_name__contains": "metformin"},
+  return: ["g", "d"],
+  limit: 50
+})
+Use findPatterns for complex structural queries requiring entities to match multiple relationship constraints simultaneously. Much more efficient than running multiple getRankedNeighbors and intersecting manually.
+
 ## CONVENTIONS
 - IDs use underscores: MONDO_0005070, HP_0000001, GO_0008150
 - Edge types: UPPER_SNAKE_CASE
@@ -120,13 +135,15 @@ NOTE: sort on graphTraverse steps may place NULL values first. For reliable rank
 - Write a concise summary of tool results when done. Include actual numbers and entity names from the data.
 
 ## NEVER DO (critical anti-hallucination rules)
+- NEVER INVENT EDGE TYPE NAMES. Only use edge types from the table above (e.g., DRUG_ACTS_ON_GENE, GENE_ASSOCIATED_WITH_DISEASE). NEVER use made-up names like "DRUG_TARGETS_GENE", "DISEASE_GENE_ASSOCIATED", "GENE_DISEASE_ASSOCIATION", "TARGETS", etc. If unsure, call getGraphSchema(nodeType) first.
 - NEVER fabricate data in your summary. Every entity name, score, and p-value must come from a tool result.
 - NEVER add entities to your summary that were not in any tool response.
 - When writing your final summary, re-read the tool results and only report what is actually there.
 - NEVER search for genes you "already know" from training data. If the task says "find genes for disease X", you MUST call getRankedNeighbors on Disease X — not searchEntities("BRCA1"), searchEntities("TP53"), etc.
 - NEVER list genes, pathways, or drugs that were not returned by a tool call.
 - NEVER call searchEntities in a loop for individual gene names. That burns your entire tool budget. Use searchEntities only to resolve the SEED entity, then use graph tools to discover related genes.
-- NEVER fabricate overlaps. Use getSharedNeighbors (server-side intersection) or compute intersection from actual IDs returned by getRankedNeighbors.
+- NEVER fabricate overlaps. Use getSharedNeighbors (server-side intersection), findPatterns (structural motif), or compute intersection from actual IDs returned by getRankedNeighbors.
+- NEVER repeat a tool call with the same arguments. If you already got results from getRankedNeighbors(Drug:X, DRUG_ACTS_ON_GENE), do NOT call it again.
 - NEVER skip calling a tool because you "already know the answer." The graph may contain data your training data does not.
 - If the task mentions specific entity IDs in resolvedEntityIds, start your first tool call with those IDs. Do not re-search them.`;
 }

@@ -52,6 +52,13 @@ Examples of "direct" steps:
 - GWAS lookup: { do: "direct", description: "Get GWAS associations for variant" }
 - Simple neighbor query: { do: "direct", description: "Get ranked neighbors for the resolved gene" }
 - Simple enrichment: { do: "direct", description: "Run enrichment on the gene list" }
+- Overlap/motif queries: { do: "direct", description: "Use findPatterns to find genes targeted by drug X that overlap with disease Y genes" }
+
+OVERLAP / MOTIF QUERIES (prefer findPatterns):
+When the user asks about overlap, intersection, or structural patterns across multiple entities/relationships, use findPatterns directly.
+- "What genes does drug X target that are also associated with disease Y?" → { do: "direct", description: "Use findPatterns with Drug→Gene→Disease pattern" }
+- "Which pathways contain genes that interact with gene X?" → { do: "direct", description: "Use findPatterns with Gene→Gene→Pathway pattern" }
+Do NOT delegate these to bioContext — findPatterns handles them in one call.
 
 BATCH STEPS (parallel execution):
 Use { do: "batch" } when the same operation must run on multiple entities independently.

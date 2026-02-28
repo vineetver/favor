@@ -9,6 +9,7 @@ export { planQuery } from "./plan-query";
 export { getEntityContext } from "./entity-context";
 export { getRankedNeighbors } from "./ranked-neighbors";
 export { findPaths } from "./find-paths";
+export { findPatterns } from "./find-patterns";
 export { getSharedNeighbors } from "./shared-neighbors";
 export { getConnections } from "./get-connections";
 export { getEdgeDetail } from "./get-edge-detail";

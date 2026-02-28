@@ -22,6 +22,7 @@ import type {
   JobState,
   PresignRequest,
   PresignResponse,
+  TypedValidateResponse,
   ValidateRequest,
   ValidateResponse,
 } from "../types";
@@ -55,6 +56,7 @@ function getContentType(filename: string): string {
     tsv: "text/tab-separated-values",
     txt: "text/plain",
     vcf: "text/plain",
+    parquet: "application/x-parquet",
   };
   return types[ext || ""] || "application/octet-stream";
 }
@@ -164,7 +166,7 @@ export async function uploadFileToS3(
 }
 
 /**
- * Step 3: Validate uploaded file
+ * Step 3: Validate uploaded file (variant list mode)
  */
 export async function validateFile(request: ValidateRequest): Promise<ValidateResponse> {
   return withRetry(() =>
@@ -173,6 +175,21 @@ export async function validateFile(request: ValidateRequest): Promise<ValidateRe
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     }).then((res) => handleResponse<ValidateResponse>(res, "/cohorts/validate")),
+  );
+}
+
+/**
+ * Step 3 (alt): Validate uploaded file as typed cohort (GWAS, credible sets, fine mapping).
+ * Same endpoint — backend discriminates based on detected content.
+ * Returns typed validation with schema preview and column mapping suggestions.
+ */
+export async function validateTypedCohort(request: ValidateRequest): Promise<TypedValidateResponse> {
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((res) => handleResponse<TypedValidateResponse>(res, "/cohorts/validate")),
   );
 }
 

@@ -11,10 +11,11 @@ export const ACCEPTED_FILE_TYPES = {
   "text/csv": [".csv"],
   "text/tab-separated-values": [".tsv"],
   "text/plain": [".txt", ".vcf"],
-  "application/octet-stream": [".vcf"],
+  "application/octet-stream": [".vcf", ".parquet"],
+  "application/x-parquet": [".parquet"],
 } as const;
 
-export const ACCEPTED_EXTENSIONS = [".csv", ".tsv", ".txt", ".vcf"];
+export const ACCEPTED_EXTENSIONS = [".csv", ".tsv", ".txt", ".vcf", ".parquet"];
 
 // Default fields to include in output
 export const DEFAULT_OUTPUT_FIELDS = [
