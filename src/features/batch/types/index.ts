@@ -145,6 +145,8 @@ export interface ValidateResponse {
   warnings: string[];
   suggested_patch: SuggestedSpecPatch;
   dry_run?: DryRunResult;
+  delimiter?: string;
+  has_header?: boolean;
 }
 
 // ============================================================================
@@ -179,6 +181,8 @@ export interface TypedValidateResponse {
   row_count_estimate: number;
   warnings: string[];
   errors: string[];
+  delimiter?: string;
+  has_header?: boolean;
 }
 
 // ============================================================================

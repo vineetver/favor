@@ -278,6 +278,8 @@ export function BatchWizard({ className }: BatchWizardProps) {
           source: "upload",
           input_uri: inputUri,
           label: file.name,
+          delimiter: validation.delimiter,
+          has_header: validation.has_header,
           metadata: { cohort_label: file.name },
         };
 
