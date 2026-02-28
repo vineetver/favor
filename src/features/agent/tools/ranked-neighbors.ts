@@ -21,7 +21,7 @@ WHEN NOT TO USE:
     scoreField: z
       .string()
       .optional()
-      .describe("Override the default score field for ranking. Use 'evidence_count' as fallback when default scores are sparse/zero. Omit to let the server auto-select."),
+      .describe("Omit on first call to let the server auto-select. If results come back with degenerate scores (all 0 or all identical), retry with a different field. If an invalid field is passed, the error response lists all available fields for that edge type — use one of those."),
   }),
   execute: async ({
     type,

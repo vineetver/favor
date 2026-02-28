@@ -3,7 +3,9 @@ import { z } from "zod";
 import { nanoModel } from "../../lib/models";
 import { buildBioContextPrompt } from "../../lib/prompts/bio-context-prompt";
 import { createBioContextPrepareStep } from "../../lib/prepare-step-bio-context";
-import type { BioContextOutput, EvidenceRef, SubagentToolTrace } from "../../types";
+import type { BioContextOutput, EvidenceRef, ResultRef, SubagentToolTrace, VizSpec } from "../../types";
+import type { ResultStore } from "../../lib/result-store";
+import { generateVizSpec } from "../../viz";
 import { searchEntities } from "../search-entities";
 import { getEntityContext } from "../entity-context";
 import { getRankedNeighbors } from "../ranked-neighbors";
@@ -169,6 +171,7 @@ function condenseOutput(out: unknown): unknown {
 function extractStructuredOutput(
   text: string,
   agentSteps: StepResult[],
+  store: ResultStore | null,
   tokenUsage?: { inputTokens: number; outputTokens: number; totalTokens: number },
 ): BioContextOutput {
   const entities: BioContextOutput["entities"] = [];
@@ -176,6 +179,8 @@ function extractStructuredOutput(
   const pathways: BioContextOutput["pathways"] = [];
   const evidenceRefs: EvidenceRef[] = [];
   const toolTrace: SubagentToolTrace[] = [];
+  const vizSpecs: VizSpec[] = [];
+  const resultRefs: ResultRef[] = [];
   const toolsUsed = new Set<string>();
   let toolCallsMade = 0;
   const seenEntityIds = new Set<string>();
@@ -207,6 +212,10 @@ function extractStructuredOutput(
         output: condenseOutput(r.output),
       });
 
+      // Generate viz spec (never throws)
+      const viz = generateVizSpec(r.toolName, r.output, args, toolTrace.length - 1);
+      if (viz) vizSpecs.push(viz);
+
       if (hasError) continue;
 
       // Collect evidence refs
@@ -225,7 +234,7 @@ function extractStructuredOutput(
         }
       }
 
-      // Extract entities from getRankedNeighbors
+      // Extract entities from getRankedNeighbors + store result
       if (r.toolName === "getRankedNeighbors" && out.neighbors) {
         const neighbors = out.neighbors as Array<{
           entity: { type: string; id: string; label: string };
@@ -237,10 +246,13 @@ function extractStructuredOutput(
             entities.push({ type: n.entity.type, id: n.entity.id, label: n.entity.label });
           }
         }
+        if (store) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("neighbor_list", "getRankedNeighbors", neighbors, `${neighbors.length} neighbors: ${inputSummary}`));
+        }
       }
 
-      // Extract relationships from getConnections
-      // The tool returns { from, to, connections: [{ edgeType, edges: [...] }] }
+      // Extract relationships from getConnections + store result
       if (r.toolName === "getConnections" && out.connections) {
         const fromEntity = out.from as { id?: string } | undefined;
         const toEntity = out.to as { id?: string } | undefined;
@@ -255,10 +267,50 @@ function extractStructuredOutput(
             edgeType: c.edgeType,
           });
         }
+        if (store) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("connection_map", "getConnections", connections, `${connections.length} connection types: ${inputSummary}`));
+        }
       }
 
-      // Extract pathways from runEnrichment
-      // The enrichment tool now returns { textSummary, enriched: [...] } or the old array format
+      // Store findPaths result
+      if (r.toolName === "findPaths") {
+        const paths = Array.isArray(out) ? out : (out.paths as unknown[] | undefined);
+        if (store && paths && paths.length > 0) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("traversal_graph", "findPaths", paths, `${paths.length} paths: ${inputSummary}`));
+        }
+      }
+
+      // Store getSharedNeighbors result
+      if (r.toolName === "getSharedNeighbors" && out.neighbors) {
+        const neighbors = out.neighbors as unknown[];
+        if (store && neighbors.length > 0) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("entity_list", "getSharedNeighbors", neighbors, `${neighbors.length} shared neighbors: ${inputSummary}`));
+        }
+      }
+
+      // Store compareEntities result
+      if (r.toolName === "compareEntities" && !out.error) {
+        if (store) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          resultRefs.push(store.put("comparison", "compareEntities", out, `comparison: ${inputSummary}`));
+        }
+      }
+
+      // Store graphTraverse result
+      if (r.toolName === "graphTraverse" && !out.error) {
+        if (store) {
+          const inputSummary = summarizeToolInput(r.toolName, args);
+          const nodes = out.nodes as unknown[] | undefined;
+          const edges = out.edges as unknown[] | undefined;
+          const summary = nodes ? `${nodes.length} nodes, ${edges?.length ?? 0} edges` : "traversal";
+          resultRefs.push(store.put("traversal_graph", "graphTraverse", out, `${summary}: ${inputSummary}`));
+        }
+      }
+
+      // Extract pathways from runEnrichment + store result
       if (r.toolName === "runEnrichment") {
         let enrichments: Array<{
           entity: { type: string; id: string; label: string };
@@ -267,10 +319,8 @@ function extractStructuredOutput(
         }> = [];
 
         if (Array.isArray(out)) {
-          // Legacy array format
           enrichments = out;
         } else if (out.enriched && Array.isArray(out.enriched)) {
-          // New object format: { textSummary, enriched: [...] }
           enrichments = out.enriched as typeof enrichments;
         } else if (Array.isArray(r.output)) {
           enrichments = r.output;
@@ -287,8 +337,20 @@ function extractStructuredOutput(
             });
           }
         }
+
+        if (store && enrichments.length > 0) {
+          resultRefs.push(store.put("enrichment_list", "runEnrichment", enrichments, `${enrichments.length} enriched pathways`));
+        }
       }
     }
+  }
+
+  // Store extracted entities as a result ref
+  if (store && entities.length > 0) {
+    resultRefs.push(store.put("entity_list", "bioContext", entities, `${entities.length} entities discovered`));
+  }
+  if (store && pathways.length > 0) {
+    resultRefs.push(store.put("pathway_list", "bioContext", pathways, `${pathways.length} pathways`));
   }
 
   return {
@@ -298,6 +360,8 @@ function extractStructuredOutput(
     pathways: pathways.length > 0 ? pathways : undefined,
     evidenceRefs,
     toolTrace: toolTrace.length > 0 ? toolTrace : undefined,
+    vizSpecs: vizSpecs.length > 0 ? vizSpecs : undefined,
+    resultRefs: resultRefs.length > 0 ? resultRefs : undefined,
     stepsUsed: agentSteps.length,
     toolCallsMade,
     toolsUsed: [...toolsUsed],
@@ -341,82 +405,98 @@ const bioContextInputSchema = z.object({
 type BioContextInput = z.infer<typeof bioContextInputSchema>;
 type BioContextReturn = BioContextOutput | { error: boolean; message: string };
 
-export const bioContext = tool<BioContextInput, BioContextReturn>({
-  description:
-    "Delegate knowledge graph exploration to a specialist sub-agent. Handles: gene-disease associations, drug targets, pathway enrichment, entity comparison, path finding, shared neighbors, multi-hop traversal. Returns structured entities, relationships, and pathways discovered. Use for any graph exploration or biological context task.",
-  inputSchema: bioContextInputSchema,
-  execute: async ({
-    task,
-    resolvedEntityIds,
-  }): Promise<BioContextReturn> => {
-    // Filter out non-seed types (Study, Signal, Entity) that cause bad tool calls
-    const filteredIds = filterResolvedIds(resolvedEntityIds);
+function buildRefAnnotation(refs: ResultRef[]): string {
+  if (refs.length === 0) return "";
+  const lines = refs.map((r) => `- ${r.refId}: ${r.summary} (${r.itemCount} items)`);
+  return `\n\nStored results (use getResultSlice to access):\n${lines.join("\n")}`;
+}
 
-    const contextParts = [`Task: ${task}`];
-    if (filteredIds.length) {
-      contextParts.push(`Pre-resolved entity IDs (use these directly in tool calls, do NOT re-search): ${filteredIds.join(", ")}`);
-    }
+/** Factory: creates a bioContext tool that writes to the given ResultStore */
+export function createBioContextTool(store: ResultStore) {
+  return tool<BioContextInput, BioContextReturn>({
+    description:
+      "Delegate knowledge graph exploration to a specialist sub-agent. Handles: gene-disease associations, drug targets, pathway enrichment, entity comparison, path finding, shared neighbors, multi-hop traversal. Returns structured entities, relationships, and pathways discovered. Use for complex multi-step graph exploration tasks (3+ dependent tool calls).",
+    inputSchema: bioContextInputSchema,
+    execute: async ({
+      task,
+      resolvedEntityIds,
+    }): Promise<BioContextReturn> => {
+      const filteredIds = filterResolvedIds(resolvedEntityIds);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), SUBAGENT_TIMEOUT);
+      const contextParts = [`Task: ${task}`];
+      if (filteredIds.length) {
+        contextParts.push(`Pre-resolved entity IDs (use these directly in tool calls, do NOT re-search): ${filteredIds.join(", ")}`);
+      }
 
-    try {
-      const agent = new ToolLoopAgent({
-        model: nanoModel,
-        instructions: buildBioContextPrompt(),
-        tools: BIO_CONTEXT_TOOLS,
-        stopWhen: stepCountIs(10),
-        prepareStep: createBioContextPrepareStep(),
-        maxOutputTokens: 4000,
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), SUBAGENT_TIMEOUT);
 
-      const result = await agent.generate({
-        prompt: contextParts.join("\n"),
-        abortSignal: controller.signal,
-      });
+      try {
+        const agent = new ToolLoopAgent({
+          model: nanoModel,
+          instructions: buildBioContextPrompt(),
+          tools: BIO_CONTEXT_TOOLS,
+          stopWhen: stepCountIs(10),
+          prepareStep: createBioContextPrepareStep(),
+          maxOutputTokens: 4000,
+        });
 
-      // Extract token usage from the agent result
-      const usage = (result as unknown as { totalUsage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number } }).totalUsage;
-      const tokenUsage = usage?.totalTokens != null
-        ? { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0, totalTokens: usage.totalTokens ?? 0 }
-        : undefined;
+        const result = await agent.generate({
+          prompt: contextParts.join("\n"),
+          abortSignal: controller.signal,
+        });
 
-      return extractStructuredOutput(
-        result.text,
-        result.steps as unknown as StepResult[],
-        tokenUsage,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown subagent error";
-      return { error: true, message: `Bio context failed: ${message}` };
-    } finally {
-      clearTimeout(timer);
-    }
-  },
-  toModelOutput: ({ output }) => {
-    if (output && "error" in output && (output as { error: boolean }).error) {
-      return { type: "text" as const, value: JSON.stringify(output) };
-    }
-    const o = output as BioContextOutput;
-    // If the sub-agent produced a summary, use it
-    if (o.summary) {
-      return { type: "text" as const, value: o.summary };
-    }
-    // Fallback: serialize structured data so supervisor can still synthesize
-    const fallback: Record<string, unknown> = {};
-    if (o.entities?.length) fallback.entities = o.entities;
-    if (o.relationships?.length) fallback.relationships = o.relationships;
-    if (o.pathways?.length) fallback.pathways = o.pathways;
-    if (o.toolTrace?.length) {
-      fallback.toolResults = o.toolTrace
+        const usage = (result as unknown as { totalUsage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number } }).totalUsage;
+        const tokenUsage = usage?.totalTokens != null
+          ? { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0, totalTokens: usage.totalTokens ?? 0 }
+          : undefined;
+
+        return extractStructuredOutput(
+          result.text,
+          result.steps as unknown as StepResult[],
+          store,
+          tokenUsage,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown subagent error";
+        return { error: true, message: `Bio context failed: ${message}` };
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    toModelOutput: ({ output }) => {
+      if (output && "error" in output && (output as { error: boolean }).error) {
+        return { type: "text" as const, value: JSON.stringify(output) };
+      }
+      const o = output as BioContextOutput;
+      const refAnnotation = o.resultRefs ? buildRefAnnotation(o.resultRefs) : "";
+
+      // Build compact tool trace for supervisor context
+      const traceLines = (o.toolTrace ?? [])
         .filter((t) => t.status === "completed")
-        .map((t) => ({ tool: t.toolName, input: t.inputSummary, output: t.outputSummary }));
-    }
-    return {
-      type: "text" as const,
-      value: Object.keys(fallback).length > 0
-        ? JSON.stringify(fallback)
-        : "No results found.",
-    };
-  },
-});
+        .map((t) => `${t.toolName}(${t.inputSummary}) → ${t.outputSummary}`);
+      const traceBlock = traceLines.length > 0
+        ? `\n\nTool calls made:\n${traceLines.join("\n")}`
+        : "";
+
+      if (o.summary) {
+        return { type: "text" as const, value: o.summary + traceBlock + refAnnotation };
+      }
+      const fallback: Record<string, unknown> = {};
+      if (o.entities?.length) fallback.entities = o.entities;
+      if (o.relationships?.length) fallback.relationships = o.relationships;
+      if (o.pathways?.length) fallback.pathways = o.pathways;
+      if (o.toolTrace?.length) {
+        fallback.toolResults = o.toolTrace
+          .filter((t) => t.status === "completed")
+          .map((t) => ({ tool: t.toolName, input: t.inputSummary, output: t.outputSummary }));
+      }
+      return {
+        type: "text" as const,
+        value: (Object.keys(fallback).length > 0
+          ? JSON.stringify(fallback)
+          : "No results found.") + refAnnotation,
+      };
+    },
+  });
+}

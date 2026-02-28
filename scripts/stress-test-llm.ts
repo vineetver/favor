@@ -5,8 +5,11 @@
  * Usage: npx tsx scripts/stress-test-llm.ts
  */
 
-import { bioContext } from "../src/features/agent/tools/subagents/bio-context";
+import { createBioContextTool } from "../src/features/agent/tools/subagents/bio-context";
+import { ResultStore } from "../src/features/agent/lib/result-store";
 import type { BioContextOutput, SubagentToolTrace } from "../src/features/agent/types";
+
+const bioContext = createBioContextTool(new ResultStore());
 import { writeFileSync } from "fs";
 
 // ---------------------------------------------------------------------------
@@ -274,7 +277,7 @@ async function runQuery(query: TestQuery): Promise<GradeResult> {
 
   const start = Date.now();
   try {
-    const result = await bioContext.execute({
+    const result = await bioContext.execute!({
       task: query.task,
       resolvedEntityIds: query.resolvedEntityIds,
     }, { toolCallId: query.id, messages: [], abortSignal: AbortSignal.timeout(120_000) } as any);

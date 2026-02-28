@@ -3,6 +3,10 @@
  * These are the shapes returned to the LLM after compression.
  */
 
+import type { VizSpec } from "./viz/types";
+
+export type { VizSpec } from "./viz/types";
+
 export interface CompressedSearchResult {
   type: string;
   id: string;
@@ -112,6 +116,39 @@ export interface CompressedCohort {
 }
 
 // ---------------------------------------------------------------------------
+// Result store types (cross-turn persistence)
+// ---------------------------------------------------------------------------
+
+export type ResultType =
+  | "entity_list"
+  | "neighbor_list"
+  | "enrichment_list"
+  | "pathway_list"
+  | "variant_list"
+  | "gene_list"
+  | "cohort"
+  | "connection_map"
+  | "traversal_graph"
+  | "comparison"
+  | "gwas_list"
+  | "gene_stats"
+  | "raw";
+
+export interface ResultRef {
+  refId: string;
+  type: ResultType;
+  toolName: string;
+  summary: string;
+  itemCount: number;
+}
+
+export interface StoredResult {
+  ref: ResultRef;
+  data: unknown;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
 // Query routing + planning types
 // ---------------------------------------------------------------------------
 
@@ -154,6 +191,8 @@ export interface VariantTriageOutput {
   derivedCohortId?: string;
   evidenceRefs: EvidenceRef[];
   toolTrace?: SubagentToolTrace[];
+  vizSpecs?: VizSpec[];
+  resultRefs?: ResultRef[];
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
@@ -166,6 +205,8 @@ export interface BioContextOutput {
   pathways?: Array<{ id: string; label: string; pValue?: number }>;
   evidenceRefs: EvidenceRef[];
   toolTrace?: SubagentToolTrace[];
+  vizSpecs?: VizSpec[];
+  resultRefs?: ResultRef[];
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
@@ -189,11 +230,21 @@ export interface PlanStepDelegate {
   geneSymbol?: string | null;
 }
 
+export interface PlanStepDirect {
+  do: "direct";
+  description: string;
+}
+
+export interface PlanStepBatch {
+  do: "batch";
+  description: string;
+}
+
 export interface PlanStepSynthesize {
   do: "synthesize";
 }
 
-export type PlanStep = PlanStepResolve | PlanStepDelegate | PlanStepSynthesize;
+export type PlanStep = PlanStepResolve | PlanStepDelegate | PlanStepDirect | PlanStepBatch | PlanStepSynthesize;
 
 export interface AgentPlan {
   queryType: QueryType;
@@ -209,4 +260,6 @@ export interface ConversationContext {
   resolvedEntities: Record<string, { type: string; id: string }>;
   /** Number of prior user turns */
   turnCount: number;
+  /** Stored results from prior specialist/tool outputs for cross-turn persistence */
+  priorResults?: Array<{ ref: ResultRef; data: unknown }>;
 }

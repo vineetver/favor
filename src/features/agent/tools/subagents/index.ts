@@ -1,2 +1,2 @@
-export { variantTriage } from "./variant-triage";
-export { bioContext } from "./bio-context";
+export { createVariantTriageTool } from "./variant-triage";
+export { createBioContextTool } from "./bio-context";

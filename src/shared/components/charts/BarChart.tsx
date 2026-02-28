@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import { useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -15,7 +15,7 @@ import {
 import { ChartLegend } from "./ChartLegend";
 import { BarChartTooltip } from "./ChartTooltip";
 import { DEFAULT_BAR_COLOR, getLegendItems, getRowColor } from "./colors";
-import type { BarChartProps } from "./types";
+import type { BarChartProps, ColorScheme } from "./types";
 
 /** Internal chart data format */
 interface ChartRow {
@@ -27,18 +27,53 @@ interface ChartRow {
   color: string;
 }
 
+// Stable default references — avoids new objects on every render that break useMemo deps
+const DEFAULT_COLOR_SCHEME: ColorScheme = { type: "single", color: DEFAULT_BAR_COLOR };
+const DEFAULT_EXCLUDE_IDS: string[] = [];
+const DEFAULT_VALUE_FORMATTER = (v: number) => v.toFixed(3);
+
+function BarChartTooltipContent({
+  active,
+  payload,
+  valueFormatter: fmt,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartRow }>;
+  valueFormatter: (v: number) => string;
+}) {
+  return <BarChartTooltip active={active} payload={payload} valueFormatter={fmt} />;
+}
+
+// Stable rotated tick component — avoids inline function in XAxis tick prop
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function RotatedTick({ x, y, payload }: any) {
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={8}
+      fontSize={11}
+      fill="#64748b"
+      textAnchor="end"
+      transform={`rotate(-45, ${x}, ${y})`}
+    >
+      {payload.value}
+    </text>
+  );
+}
+
 /**
  * Configurable bar chart component.
  * Supports horizontal/vertical layout, gradient and categorical coloring.
  */
-export function BarChart({
+export const BarChart = memo(function BarChart({
   data,
-  colorScheme = { type: "single", color: DEFAULT_BAR_COLOR },
+  colorScheme = DEFAULT_COLOR_SCHEME,
   colorField = "derived",
   layout = "horizontal",
   showLegend = true,
-  excludeIds = [],
-  valueFormatter = (v) => v.toFixed(3),
+  excludeIds = DEFAULT_EXCLUDE_IDS,
+  valueFormatter = DEFAULT_VALUE_FORMATTER,
   emptyMessage = "No data available for visualization",
   className,
 }: BarChartProps) {
@@ -90,14 +125,26 @@ export function BarChart({
     return getLegendItems(colorScheme);
   }, [showLegend, colorScheme]);
 
-  // Calculate responsive height
+  // Calculate responsive height — capped to prevent overflow
   const chartHeight = useMemo(() => {
     if (layout === "horizontal") {
-      // Horizontal bars need more height for more rows
-      return Math.max(400, chartData.length * 38);
+      return Math.min(600, Math.max(300, chartData.length * 38));
     }
     return 400;
   }, [layout, chartData.length]);
+
+  // Stable tooltip content — avoids inline closure that creates new reference on every render
+  const tooltipContent = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ({ active, payload }: any) => (
+      <BarChartTooltipContent
+        active={active}
+        payload={payload as Array<{ payload: ChartRow }>}
+        valueFormatter={valueFormatter}
+      />
+    ),
+    [valueFormatter],
+  );
 
   // Empty state
   if (chartData.length === 0) {
@@ -145,7 +192,7 @@ export function BarChart({
               <XAxis
                 type="number"
                 domain={[0, "auto"]}
-                tickFormatter={(value) => valueFormatter(value)}
+                tickFormatter={valueFormatter}
                 tick={{ fontSize: 11, fill: "#64748b" }}
               />
               <YAxis
@@ -160,39 +207,19 @@ export function BarChart({
               <XAxis
                 type="category"
                 dataKey="label"
-                tick={({ x, y, payload }) => (
-                  <text
-                    x={x}
-                    y={y}
-                    dy={8}
-                    fontSize={11}
-                    fill="#64748b"
-                    textAnchor="end"
-                    transform={`rotate(-45, ${x}, ${y})`}
-                  >
-                    {payload.value}
-                  </text>
-                )}
+                tick={RotatedTick}
                 height={80}
               />
               <YAxis
                 type="number"
                 domain={[0, "auto"]}
-                tickFormatter={(value) => valueFormatter(value)}
+                tickFormatter={valueFormatter}
                 tick={{ fontSize: 11, fill: "#64748b" }}
               />
             </>
           )}
 
-          <Tooltip
-            content={({ active, payload }) => (
-              <BarChartTooltip
-                active={active}
-                payload={payload as Array<{ payload: ChartRow }>}
-                valueFormatter={valueFormatter}
-              />
-            )}
-          />
+          <Tooltip content={tooltipContent} />
 
           <Bar
             dataKey="value"
@@ -207,4 +234,4 @@ export function BarChart({
       </ResponsiveContainer>
     </div>
   );
-}
+});

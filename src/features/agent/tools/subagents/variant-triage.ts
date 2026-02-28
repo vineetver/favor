@@ -3,7 +3,9 @@ import { z } from "zod";
 import { nanoModel } from "../../lib/models";
 import { buildVariantTriagePrompt } from "../../lib/prompts/variant-triage-prompt";
 import { createVariantTriagePrepareStep } from "../../lib/prepare-step-variant-triage";
-import type { VariantTriageOutput, EvidenceRef, SubagentToolTrace } from "../../types";
+import type { VariantTriageOutput, EvidenceRef, ResultRef, SubagentToolTrace, VizSpec } from "../../types";
+import type { ResultStore } from "../../lib/result-store";
+import { generateVizSpec } from "../../viz";
 import { getCohortSchema } from "../cohort-schema";
 import { analyzeCohort } from "../cohort-analyze";
 import { createCohort } from "../cohort-create";
@@ -123,12 +125,15 @@ function condenseOutput(out: unknown): unknown {
 function extractStructuredOutput(
   text: string,
   agentSteps: StepResult[],
+  store: ResultStore | null,
   inputCohortId?: string,
 ): VariantTriageOutput {
   const topGenes: VariantTriageOutput["topGenes"] = [];
   const topVariants: VariantTriageOutput["topVariants"] = [];
   const evidenceRefs: EvidenceRef[] = [];
   const toolTrace: SubagentToolTrace[] = [];
+  const vizSpecs: VizSpec[] = [];
+  const resultRefs: ResultRef[] = [];
   let derivedCohortId: string | undefined;
   const toolsUsed = new Set<string>();
   let toolCallsMade = 0;
@@ -155,6 +160,10 @@ function extractStructuredOutput(
         input: Object.keys(args).length > 0 ? args : undefined,
         output: condenseOutput(r.output),
       });
+
+      // Generate viz spec (never throws)
+      const viz = generateVizSpec(r.toolName, r.output, args, toolTrace.length - 1);
+      if (viz) vizSpecs.push(viz);
 
       if (hasError) continue;
 
@@ -206,6 +215,18 @@ function extractStructuredOutput(
     }
   }
 
+  // Store extracted data as result refs
+  if (store && topGenes.length > 0) {
+    resultRefs.push(store.put("gene_list", "variantTriage", topGenes, `${topGenes.length} top genes from cohort analysis`));
+  }
+  if (store && topVariants.length > 0) {
+    resultRefs.push(store.put("variant_list", "variantTriage", topVariants, `${topVariants.length} top variants from cohort analysis`));
+  }
+  if (store && (inputCohortId || derivedCohortId)) {
+    const cid = derivedCohortId ?? inputCohortId;
+    resultRefs.push(store.put("cohort", "variantTriage", { cohortId: cid, derivedCohortId }, `cohort ${cid}`));
+  }
+
   return {
     summary: text,
     topGenes: topGenes.length > 0 ? topGenes : undefined,
@@ -214,6 +235,8 @@ function extractStructuredOutput(
     derivedCohortId,
     evidenceRefs,
     toolTrace: toolTrace.length > 0 ? toolTrace : undefined,
+    vizSpecs: vizSpecs.length > 0 ? vizSpecs : undefined,
+    resultRefs: resultRefs.length > 0 ? resultRefs : undefined,
     stepsUsed: agentSteps.length,
     toolCallsMade,
     toolsUsed: [...toolsUsed],
@@ -249,77 +272,95 @@ const variantTriageInputSchema = z.object({
 type VariantTriageInput = z.infer<typeof variantTriageInputSchema>;
 type VariantTriageReturn = VariantTriageOutput | { error: boolean; message: string };
 
-export const variantTriage = tool<VariantTriageInput, VariantTriageReturn>({
-  description:
-    "Delegate variant/cohort analysis to a specialist sub-agent. Handles: cohort ranking, grouping, filtering, multi-criteria prioritization, gene burden stats, GWAS associations, variant batch summaries. Returns structured topGenes and topVariants for bridging to knowledge graph. Use for any cohort or variant analysis workflow.",
-  inputSchema: variantTriageInputSchema,
-  execute: async ({
-    task,
-    cohortId,
-    variants,
-    geneSymbol,
-    resolvedEntityIds,
-  }): Promise<VariantTriageReturn> => {
-    const contextParts = [`Task: ${task}`];
-    if (cohortId) contextParts.push(`Existing cohort: ${cohortId}`);
-    if (variants?.length) contextParts.push(`Variants: ${JSON.stringify(variants)}`);
-    if (geneSymbol) contextParts.push(`Gene: ${geneSymbol}`);
-    if (resolvedEntityIds?.length) contextParts.push(`Resolved entity IDs: ${resolvedEntityIds.join(", ")}`);
+function buildRefAnnotation(refs: ResultRef[]): string {
+  if (refs.length === 0) return "";
+  const lines = refs.map((r) => `- ${r.refId}: ${r.summary} (${r.itemCount} items)`);
+  return `\n\nStored results (use getResultSlice to access):\n${lines.join("\n")}`;
+}
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), SUBAGENT_TIMEOUT);
+/** Factory: creates a variantTriage tool that writes to the given ResultStore */
+export function createVariantTriageTool(store: ResultStore) {
+  return tool<VariantTriageInput, VariantTriageReturn>({
+    description:
+      "Delegate variant/cohort analysis to a specialist sub-agent. Handles: cohort ranking, grouping, filtering, multi-criteria prioritization, gene burden stats, GWAS associations, variant batch summaries. Returns structured topGenes and topVariants for bridging to knowledge graph. Use for complex cohort analysis workflows (3+ dependent tool calls).",
+    inputSchema: variantTriageInputSchema,
+    execute: async ({
+      task,
+      cohortId,
+      variants,
+      geneSymbol,
+      resolvedEntityIds,
+    }): Promise<VariantTriageReturn> => {
+      const contextParts = [`Task: ${task}`];
+      if (cohortId) contextParts.push(`Existing cohort: ${cohortId}`);
+      if (variants?.length) contextParts.push(`Variants: ${JSON.stringify(variants)}`);
+      if (geneSymbol) contextParts.push(`Gene: ${geneSymbol}`);
+      if (resolvedEntityIds?.length) contextParts.push(`Resolved entity IDs: ${resolvedEntityIds.join(", ")}`);
 
-    try {
-      const agent = new ToolLoopAgent({
-        model: nanoModel,
-        instructions: buildVariantTriagePrompt(),
-        tools: VARIANT_TRIAGE_TOOLS,
-        stopWhen: stepCountIs(10),
-        prepareStep: createVariantTriagePrepareStep(),
-        maxOutputTokens: 4000,
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), SUBAGENT_TIMEOUT);
 
-      const result = await agent.generate({
-        prompt: contextParts.join("\n"),
-        abortSignal: controller.signal,
-      });
+      try {
+        const agent = new ToolLoopAgent({
+          model: nanoModel,
+          instructions: buildVariantTriagePrompt(),
+          tools: VARIANT_TRIAGE_TOOLS,
+          stopWhen: stepCountIs(10),
+          prepareStep: createVariantTriagePrepareStep(),
+          maxOutputTokens: 4000,
+        });
 
-      return extractStructuredOutput(
-        result.text,
-        result.steps as unknown as StepResult[],
-        cohortId,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown subagent error";
-      return { error: true, message: `Variant triage failed: ${message}` };
-    } finally {
-      clearTimeout(timer);
-    }
-  },
-  toModelOutput: ({ output }) => {
-    if (output && "error" in output && (output as { error: boolean }).error) {
-      return { type: "text" as const, value: JSON.stringify(output) };
-    }
-    const o = output as VariantTriageOutput;
-    // If the sub-agent produced a summary, use it
-    if (o.summary) {
-      return { type: "text" as const, value: o.summary };
-    }
-    // Fallback: serialize structured data so supervisor can still synthesize
-    const fallback: Record<string, unknown> = {};
-    if (o.topGenes?.length) fallback.topGenes = o.topGenes;
-    if (o.topVariants?.length) fallback.topVariants = o.topVariants;
-    if (o.cohortId) fallback.cohortId = o.cohortId;
-    if (o.toolTrace?.length) {
-      fallback.toolResults = o.toolTrace
+        const result = await agent.generate({
+          prompt: contextParts.join("\n"),
+          abortSignal: controller.signal,
+        });
+
+        return extractStructuredOutput(
+          result.text,
+          result.steps as unknown as StepResult[],
+          store,
+          cohortId,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown subagent error";
+        return { error: true, message: `Variant triage failed: ${message}` };
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    toModelOutput: ({ output }) => {
+      if (output && "error" in output && (output as { error: boolean }).error) {
+        return { type: "text" as const, value: JSON.stringify(output) };
+      }
+      const o = output as VariantTriageOutput;
+      const refAnnotation = o.resultRefs ? buildRefAnnotation(o.resultRefs) : "";
+
+      // Build compact tool trace for supervisor context
+      const traceLines = (o.toolTrace ?? [])
         .filter((t) => t.status === "completed")
-        .map((t) => ({ tool: t.toolName, input: t.inputSummary, output: t.outputSummary }));
-    }
-    return {
-      type: "text" as const,
-      value: Object.keys(fallback).length > 0
-        ? JSON.stringify(fallback)
-        : "No results found.",
-    };
-  },
-});
+        .map((t) => `${t.toolName}(${t.inputSummary}) → ${t.outputSummary}`);
+      const traceBlock = traceLines.length > 0
+        ? `\n\nTool calls made:\n${traceLines.join("\n")}`
+        : "";
+
+      if (o.summary) {
+        return { type: "text" as const, value: o.summary + traceBlock + refAnnotation };
+      }
+      const fallback: Record<string, unknown> = {};
+      if (o.topGenes?.length) fallback.topGenes = o.topGenes;
+      if (o.topVariants?.length) fallback.topVariants = o.topVariants;
+      if (o.cohortId) fallback.cohortId = o.cohortId;
+      if (o.toolTrace?.length) {
+        fallback.toolResults = o.toolTrace
+          .filter((t) => t.status === "completed")
+          .map((t) => ({ tool: t.toolName, input: t.inputSummary, output: t.outputSummary }));
+      }
+      return {
+        type: "text" as const,
+        value: (Object.keys(fallback).length > 0
+          ? JSON.stringify(fallback)
+          : "No results found.") + refAnnotation,
+      };
+    },
+  });
+}

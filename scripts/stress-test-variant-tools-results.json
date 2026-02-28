@@ -1,0 +1,3297 @@
+[
+  {
+    "id": "T1.1",
+    "name": "createCohort",
+    "grade": "PASS",
+    "elapsed": 6.109,
+    "notes": "cohortId=37a61438-bd98-463f-993f-07b53cdbf9f6, variants=43, resolved=43/0, notFound=0",
+    "output": {
+      "cohortId": "37a61438-bd98-463f-993f-07b53cdbf9f6",
+      "variantCount": 43,
+      "resolution": {
+        "total": 0,
+        "resolved": 43,
+        "notFound": 0
+      },
+      "summary": "Cohort has 43 variants with 45 queryable columns (37 numeric, 3 categorical, 3 identity, 2 array)."
+    }
+  },
+  {
+    "id": "T2.1",
+    "name": "getCohortSchema",
+    "grade": "PASS",
+    "elapsed": 0.053,
+    "notes": "rowCount=43, scoreColumns=36, categoricalColumns=4",
+    "output": {
+      "cohortId": "37a61438-bd98-463f-993f-07b53cdbf9f6",
+      "rowCount": 43,
+      "summary": "Cohort has 43 variants with 45 queryable columns (37 numeric, 3 categorical, 3 identity, 2 array).",
+      "columns": {
+        "score": [
+          "cadd_phred",
+          "cadd_raw",
+          "revel",
+          "alpha_missense",
+          "gnomad_af",
+          "gnomad_exome_af",
+          "bravo_af",
+          "linsight",
+          "fathmm_xf",
+          "apc_conservation",
+          "apc_epigenetics",
+          "apc_protein_function",
+          "apc_proximity_to_coding",
+          "apc_local_nucleotide_diversity",
+          "apc_mutation_density",
+          "apc_transcription_factor",
+          "apc_mappability",
+          "apc_micro_rna",
+          "spliceai_ds_max",
+          "pangolin_largest_ds",
+          "sift_val",
+          "polyphen_val",
+          "gerp_rs",
+          "priphcons",
+          "mamphcons",
+          "verphcons",
+          "priphylop",
+          "mamphylop",
+          "verphylop",
+          "tg_all",
+          "polyphen2_hdiv",
+          "polyphen2_hvar",
+          "mutation_taster",
+          "mutation_assessor",
+          "recombination_rate",
+          "nucdiv"
+        ],
+        "categorical": [
+          "chromosome",
+          "gene",
+          "consequence",
+          "clinical_significance"
+        ],
+        "select": [
+          "variant_vcf",
+          "rsid",
+          "chromosome",
+          "gene",
+          "consequence",
+          "clinical_significance",
+          "cadd_phred",
+          "cadd_raw",
+          "revel",
+          "alpha_missense",
+          "gnomad_af",
+          "gnomad_exome_af",
+          "bravo_af",
+          "linsight",
+          "fathmm_xf",
+          "apc_conservation",
+          "apc_epigenetics",
+          "apc_protein_function",
+          "apc_proximity_to_coding",
+          "apc_local_nucleotide_diversity",
+          "apc_mutation_density",
+          "apc_transcription_factor",
+          "apc_mappability",
+          "apc_micro_rna",
+          "spliceai_ds_max",
+          "pangolin_largest_ds",
+          "sift_val",
+          "polyphen_val",
+          "gerp_rs",
+          "priphcons",
+          "mamphcons",
+          "verphcons",
+          "priphylop",
+          "mamphylop",
+          "verphylop",
+          "tg_all",
+          "polyphen2_hdiv",
+          "polyphen2_hvar",
+          "mutation_taster",
+          "mutation_assessor",
+          "recombination_rate",
+          "nucdiv"
+        ]
+      }
+    }
+  },
+  {
+    "id": "T2.2",
+    "name": "getCohortSchema error",
+    "grade": "PASS",
+    "elapsed": 0.003,
+    "notes": "Correct error: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid cohort ID format (expected UUI",
+    "output": {
+      "error": true,
+      "status": 400,
+      "message": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid cohort ID format (expected UUID)\"},\"timestamp\":\"2026-02-28T00:41:35.317910+00:00\"}",
+      "hint": "Bad request — check the parameters."
+    }
+  },
+  {
+    "id": "T3.1",
+    "name": "rows",
+    "grade": "PASS",
+    "elapsed": 0.875,
+    "notes": "10 rows, top CADD=36, total=43",
+    "output": {
+      "summary": "Showing 10 of 43 variants (offset 0), sorted by cadd_phred desc.",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs5219",
+          "chromosome": null,
+          "gene": [
+            "KCNJ11"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800497",
+          "chromosome": null,
+          "gene": [
+            "ANKK1"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs11571833",
+          "chromosome": null,
+          "gene": [
+            "BRCA2"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": 0.005998869892209768
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs80357906",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "frameshift insertion",
+          "cadd_phred": 34,
+          "gnomad_af": 0.00005256929944152944
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.700000762939453,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.5,
+          "gnomad_af": 0.2751699984073639
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "gnomad_af": 0
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": 0.00007232269854284823
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.299999237060547,
+          "gnomad_af": null
+        }
+      ],
+      "total": 43
+    }
+  },
+  {
+    "id": "T3.2",
+    "name": "rows+select",
+    "grade": "PASS",
+    "elapsed": 0.765,
+    "notes": "5 rows, columns: variant_vcf,gene,cadd_phred,revel,gnomad_af",
+    "output": {
+      "summary": "Showing 5 of 43 variants (offset 0).",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "cadd_phred": 27.5,
+          "revel": 0.842,
+          "gnomad_af": 0.2751699984073639
+        },
+        {
+          "variant_vcf": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "cadd_phred": 23.5,
+          "revel": null,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "cadd_phred": 27.700000762939453,
+          "revel": null,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "gene": [
+            "PPARG"
+          ],
+          "cadd_phred": 16.719999313354492,
+          "revel": null,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "gene": [
+            "PPARG"
+          ],
+          "cadd_phred": 13.6899995803833,
+          "revel": null,
+          "gnomad_af": 0.08922050148248672
+        }
+      ],
+      "total": 43
+    }
+  },
+  {
+    "id": "T3.3",
+    "name": "rows+filter",
+    "grade": "PARTIAL",
+    "elapsed": 0.792,
+    "notes": "Got unexpected gene: BRCA2",
+    "output": {
+      "summary": "Showing 7 of 7 variants (offset 0).",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs11571833",
+          "chromosome": null,
+          "gene": [
+            "BRCA2"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": 0.005998869892209768
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs80357906",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "frameshift insertion",
+          "cadd_phred": 34,
+          "gnomad_af": 0.00005256929944152944
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": 0.00007232269854284823
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.299999237060547,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.100000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs429358",
+          "chromosome": null,
+          "gene": [
+            "APOE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 17.93000030517578,
+          "gnomad_af": 0.15735900402069092
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs7412",
+          "chromosome": null,
+          "gene": [
+            "APOE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.299999237060547,
+          "gnomad_af": 0.07783740013837814
+        }
+      ],
+      "total": 7
+    }
+  },
+  {
+    "id": "T3.4",
+    "name": "rows+score_above",
+    "grade": "PASS",
+    "elapsed": 0.749,
+    "notes": "21 rows with CADD>20, total=21",
+    "output": {
+      "summary": "Showing 21 of 21 variants (offset 0), sorted by cadd_phred desc.",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs5219",
+          "chromosome": null,
+          "gene": [
+            "KCNJ11"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800497",
+          "chromosome": null,
+          "gene": [
+            "ANKK1"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs11571833",
+          "chromosome": null,
+          "gene": [
+            "BRCA2"
+          ],
+          "consequence": "stopgain",
+          "cadd_phred": 36,
+          "gnomad_af": 0.005998869892209768
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs80357906",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "frameshift insertion",
+          "cadd_phred": 34,
+          "gnomad_af": 0.00005256929944152944
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.700000762939453,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.5,
+          "gnomad_af": 0.2751699984073639
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "gnomad_af": 0
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": 0.00007232269854284823
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.299999237060547,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800562",
+          "chromosome": null,
+          "gene": [
+            "HFE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.200000762939453,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.100000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800562",
+          "chromosome": null,
+          "gene": [
+            "HFE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "gnomad_af": 0.03729270026087761
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs7412",
+          "chromosome": null,
+          "gene": [
+            "APOE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.299999237060547,
+          "gnomad_af": 0.07783740013837814
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.100000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24.200000762939453,
+          "gnomad_af": 0.000013142200259608217
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs75932628",
+          "chromosome": null,
+          "gene": [
+            "TREM2"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24,
+          "gnomad_af": 0.0019955099560320377
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 23.5,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs63750847",
+          "chromosome": null,
+          "gene": [
+            "APP"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 21.299999237060547,
+          "gnomad_af": 0.0002825490082614124
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs5219",
+          "chromosome": null,
+          "gene": [
+            "KCNJ11"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 20.799999237060547,
+          "gnomad_af": 0.7141820192337036
+        }
+      ],
+      "total": 21
+    }
+  },
+  {
+    "id": "T4.1",
+    "name": "groupby gene",
+    "grade": "PASS",
+    "elapsed": 0.389,
+    "notes": "15 gene groups, total_groups=15",
+    "output": {
+      "summary": "Grouped by gene: 15 groups. Top: [\"TREM2\"] (5), [\"HFE\"] (4), [\"BRCA1\"] (4).",
+      "group_by": "gene",
+      "buckets": [
+        {
+          "group_key": [
+            "TREM2"
+          ],
+          "count": 5
+        },
+        {
+          "group_key": [
+            "HFE"
+          ],
+          "count": 4
+        },
+        {
+          "group_key": [
+            "BRCA1"
+          ],
+          "count": 4
+        },
+        {
+          "group_key": [
+            "TCF7L2"
+          ],
+          "count": 4
+        },
+        {
+          "group_key": [
+            "MTHFR"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "ANKK1"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "KCNJ11"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "HBB"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "KRAS"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "PPARG"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "TP53"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "APOE"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "APP"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "BRCA2"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "COMT"
+          ],
+          "count": 1
+        }
+      ],
+      "total_groups": 15
+    }
+  },
+  {
+    "id": "T4.2",
+    "name": "groupby consequence",
+    "grade": "PASS",
+    "elapsed": 0.435,
+    "notes": "5 consequence types",
+    "output": {
+      "summary": "Grouped by consequence: 5 groups. Top: nonsynonymous SNV (34), null (4), stopgain (3).",
+      "group_by": "consequence",
+      "buckets": [
+        {
+          "group_key": "nonsynonymous SNV",
+          "count": 34
+        },
+        {
+          "group_key": null,
+          "count": 4
+        },
+        {
+          "group_key": "stopgain",
+          "count": 3
+        },
+        {
+          "group_key": "synonymous SNV",
+          "count": 1
+        },
+        {
+          "group_key": "frameshift insertion",
+          "count": 1
+        }
+      ],
+      "total_groups": 5
+    }
+  },
+  {
+    "id": "T4.3",
+    "name": "groupby clin_sig",
+    "grade": "PASS",
+    "elapsed": 0.39,
+    "notes": "14 significance categories",
+    "output": {
+      "summary": "Grouped by clinical_significance: 14 groups. Top: [] (14), [\"Pathogenic\"] (5), [\"Benign/Likely_benign\"] (4).",
+      "group_by": "clinical_significance",
+      "buckets": [
+        {
+          "group_key": [],
+          "count": 14
+        },
+        {
+          "group_key": [
+            "Pathogenic"
+          ],
+          "count": 5
+        },
+        {
+          "group_key": [
+            "Benign/Likely_benign"
+          ],
+          "count": 4
+        },
+        {
+          "group_key": [
+            "Likely_benign"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "Uncertain_significance"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "Benign"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "drug_response"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "Pathogenic/Likely_pathogenic"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "risk_factor"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "Likely_risk_allele"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "Pathogenic/Pathogenic,_low_penetrance",
+            "other",
+            "risk_factor"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "Pathogenic/Likely_pathogenic/Pathogenic,_low_penetrance",
+            "other"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "Conflicting_classifications_of_pathogenicity",
+            "other",
+            "risk_factor"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "Likely_pathogenic"
+          ],
+          "count": 1
+        }
+      ],
+      "total_groups": 14
+    }
+  },
+  {
+    "id": "T4.4",
+    "name": "groupby+metrics",
+    "grade": "PASS",
+    "elapsed": 0.437,
+    "notes": "15 groups, bucket keys: group_key,count,cadd_phred_min,cadd_phred_max,cadd_phred_mean,cadd_phred_median,revel_min,revel_max,revel_mean,revel_median",
+    "output": {
+      "summary": "Grouped by gene: 15 groups. Top: [\"TREM2\"] (5), [\"HFE\"] (4), [\"BRCA1\"] (4).",
+      "group_by": "gene",
+      "buckets": [
+        {
+          "group_key": [
+            "TREM2"
+          ],
+          "count": 5,
+          "cadd_phred_min": 7.466000080108643,
+          "cadd_phred_max": 24,
+          "cadd_phred_mean": 15.479200077056884,
+          "cadd_phred_median": 14.960000038146973,
+          "revel_min": 0.039,
+          "revel_max": 0.335,
+          "revel_mean": 0.206,
+          "revel_median": 0.244
+        },
+        {
+          "group_key": [
+            "HFE"
+          ],
+          "count": 4,
+          "cadd_phred_min": 12.319999694824219,
+          "cadd_phred_max": 26.200000762939453,
+          "cadd_phred_mean": 20.68250036239624,
+          "cadd_phred_median": 23.702500343322754,
+          "revel_min": 0.315,
+          "revel_max": 0.872,
+          "revel_mean": 0.5935,
+          "revel_median": 0.5935
+        },
+        {
+          "group_key": [
+            "BRCA1"
+          ],
+          "count": 4,
+          "cadd_phred_min": 26.100000381469727,
+          "cadd_phred_max": 34,
+          "cadd_phred_mean": 28.199999809265137,
+          "cadd_phred_median": 26.299999237060547,
+          "revel_min": 0.789,
+          "revel_max": 0.789,
+          "revel_mean": 0.789,
+          "revel_median": 0.789
+        },
+        {
+          "group_key": [
+            "TCF7L2"
+          ],
+          "count": 4,
+          "cadd_phred_min": 2.36899995803833,
+          "cadd_phred_max": 3.63700008392334,
+          "cadd_phred_mean": 3.0082499980926514,
+          "cadd_phred_median": 3.013249933719635,
+          "revel_min": null,
+          "revel_max": null,
+          "revel_mean": null,
+          "revel_median": null
+        },
+        {
+          "group_key": [
+            "MTHFR"
+          ],
+          "count": 3,
+          "cadd_phred_min": 23.5,
+          "cadd_phred_max": 27.700000762939453,
+          "cadd_phred_mean": 26.233333587646484,
+          "cadd_phred_median": 27.5,
+          "revel_min": 0.842,
+          "revel_max": 0.842,
+          "revel_mean": 0.842,
+          "revel_median": 0.842
+        },
+        {
+          "group_key": [
+            "ANKK1"
+          ],
+          "count": 3,
+          "cadd_phred_min": 7.728000164031982,
+          "cadd_phred_max": 36,
+          "cadd_phred_mean": 17.97599999109904,
+          "cadd_phred_median": 10.199999809265137,
+          "revel_min": 0.059,
+          "revel_max": 0.059,
+          "revel_mean": 0.059,
+          "revel_median": 0.059
+        },
+        {
+          "group_key": [
+            "KCNJ11"
+          ],
+          "count": 3,
+          "cadd_phred_min": 19.139999389648438,
+          "cadd_phred_max": 36,
+          "cadd_phred_mean": 25.31333287556966,
+          "cadd_phred_median": 20.799999237060547,
+          "revel_min": 0.168,
+          "revel_max": 0.168,
+          "revel_mean": 0.168,
+          "revel_median": 0.168
+        },
+        {
+          "group_key": [
+            "HBB"
+          ],
+          "count": 3,
+          "cadd_phred_min": 9.350000381469727,
+          "cadd_phred_max": 15.880000114440918,
+          "cadd_phred_mean": 13.626666704813639,
+          "cadd_phred_median": 15.649999618530273,
+          "revel_min": 0.535,
+          "revel_max": 0.535,
+          "revel_mean": 0.535,
+          "revel_median": 0.535
+        },
+        {
+          "group_key": [
+            "KRAS"
+          ],
+          "count": 3,
+          "cadd_phred_min": 24.200000762939453,
+          "cadd_phred_max": 26.399999618530273,
+          "cadd_phred_mean": 25.400000254313152,
+          "cadd_phred_median": 25.600000381469727,
+          "revel_min": 0.875,
+          "revel_max": 0.875,
+          "revel_mean": 0.875,
+          "revel_median": 0.875
+        },
+        {
+          "group_key": [
+            "PPARG"
+          ],
+          "count": 3,
+          "cadd_phred_min": 13.6899995803833,
+          "cadd_phred_max": 16.719999313354492,
+          "cadd_phred_mean": 14.773332913716635,
+          "cadd_phred_median": 13.90999984741211,
+          "revel_min": null,
+          "revel_max": null,
+          "revel_mean": null,
+          "revel_median": null
+        },
+        {
+          "group_key": [
+            "TP53"
+          ],
+          "count": 3,
+          "cadd_phred_min": 11.720000267028809,
+          "cadd_phred_max": 26.600000381469727,
+          "cadd_phred_mean": 21.140000343322754,
+          "cadd_phred_median": 25.100000381469727,
+          "revel_min": 0.927,
+          "revel_max": 0.927,
+          "revel_mean": 0.927,
+          "revel_median": 0.927
+        },
+        {
+          "group_key": [
+            "APOE"
+          ],
+          "count": 2,
+          "cadd_phred_min": 17.93000030517578,
+          "cadd_phred_max": 25.299999237060547,
+          "cadd_phred_mean": 21.614999771118164,
+          "cadd_phred_median": 21.614999771118164,
+          "revel_min": 0.229,
+          "revel_max": 0.588,
+          "revel_mean": 0.4085,
+          "revel_median": 0.4085
+        },
+        {
+          "group_key": [
+            "APP"
+          ],
+          "count": 1,
+          "cadd_phred_min": 21.299999237060547,
+          "cadd_phred_max": 21.299999237060547,
+          "cadd_phred_mean": 21.299999237060547,
+          "cadd_phred_median": 21.299999237060547,
+          "revel_min": 0.342,
+          "revel_max": 0.342,
+          "revel_mean": 0.342,
+          "revel_median": 0.342
+        },
+        {
+          "group_key": [
+            "BRCA2"
+          ],
+          "count": 1,
+          "cadd_phred_min": 36,
+          "cadd_phred_max": 36,
+          "cadd_phred_mean": 36,
+          "cadd_phred_median": 36,
+          "revel_min": null,
+          "revel_max": null,
+          "revel_mean": null,
+          "revel_median": null
+        },
+        {
+          "group_key": [
+            "COMT"
+          ],
+          "count": 1,
+          "cadd_phred_min": 12.399999618530273,
+          "cadd_phred_max": 12.399999618530273,
+          "cadd_phred_mean": 12.399999618530273,
+          "cadd_phred_median": 12.399999618530273,
+          "revel_min": 0.249,
+          "revel_max": 0.249,
+          "revel_mean": 0.249,
+          "revel_median": 0.249
+        }
+      ],
+      "total_groups": 15
+    }
+  },
+  {
+    "id": "T4.5",
+    "name": "groupby chromosome",
+    "grade": "PASS",
+    "elapsed": 0.371,
+    "notes": "11 chromosomes",
+    "output": {
+      "summary": "Grouped by chromosome: 11 groups. Top: null (9), null (9), null (7).",
+      "group_by": "chromosome",
+      "buckets": [
+        {
+          "group_key": null,
+          "count": 9
+        },
+        {
+          "group_key": null,
+          "count": 9
+        },
+        {
+          "group_key": null,
+          "count": 7
+        },
+        {
+          "group_key": null,
+          "count": 4
+        },
+        {
+          "group_key": null,
+          "count": 3
+        },
+        {
+          "group_key": null,
+          "count": 3
+        },
+        {
+          "group_key": null,
+          "count": 3
+        },
+        {
+          "group_key": null,
+          "count": 2
+        },
+        {
+          "group_key": null,
+          "count": 1
+        },
+        {
+          "group_key": null,
+          "count": 1
+        },
+        {
+          "group_key": null,
+          "count": 1
+        }
+      ],
+      "total_groups": 11
+    }
+  },
+  {
+    "id": "T5.1",
+    "name": "derive clin_sig",
+    "grade": "PASS",
+    "elapsed": 0.564,
+    "notes": "derivedCohortId=98da6075-da6d-49b3-81e9-13e0f2c71004, variantCount=6",
+    "output": {
+      "summary": "Derived cohort 98da6075-da6d-49b3-81e9-13e0f2c71004 from 37a61438-bd98-463f-993f-07b53cdbf9f6 with filters [clinical_significance in [Pathogenic,Likely_pathogenic]]: 43 → 6 variants.",
+      "derivedCohortId": "98da6075-da6d-49b3-81e9-13e0f2c71004",
+      "parentId": "37a61438-bd98-463f-993f-07b53cdbf9f6",
+      "filtersApplied": [
+        "clinical_significance in [Pathogenic,Likely_pathogenic]"
+      ],
+      "variantCount": 6,
+      "childSummary": {
+        "text_summary": "Cohort 98da6075-da6d-49b3-81e9-13e0f2c71004 has 6 variants across 4 genes (top: BRCA1 (2), KRAS (2), TP53 (1)). Clinical: 5 Pathogenic, 1 Likely_pathogenic. Top consequence: nonsynonymous SNV (5), frameshift insertion (1).",
+        "cohort_id": "98da6075-da6d-49b3-81e9-13e0f2c71004",
+        "vid_count": 6,
+        "by_gene": [
+          {
+            "geneSymbol": "BRCA1",
+            "count": 2,
+            "pathogenic": 2,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "KRAS",
+            "count": 2,
+            "pathogenic": 2,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "TP53",
+            "count": 1,
+            "pathogenic": 1,
+            "functionalImpact": 1
+          },
+          {
+            "geneSymbol": "HBB",
+            "count": 1,
+            "pathogenic": 1,
+            "functionalImpact": 1
+          }
+        ],
+        "by_consequence": [
+          {
+            "category": "nonsynonymous SNV",
+            "count": 5
+          },
+          {
+            "category": "frameshift insertion",
+            "count": 1
+          }
+        ],
+        "by_clinical_significance": [
+          {
+            "category": "Pathogenic",
+            "count": 5
+          },
+          {
+            "category": "Likely_pathogenic",
+            "count": 1
+          }
+        ],
+        "by_frequency": [
+          {
+            "category": "unknown",
+            "count": 3
+          },
+          {
+            "category": "ultra_rare (<0.01%)",
+            "count": 2
+          },
+          {
+            "category": "low_frequency (1-5%)",
+            "count": 1
+          }
+        ],
+        "highlights": [
+          {
+            "rsid": "rs80357906",
+            "vcf": "17-43057062-T-TG",
+            "gene": "BRCA1",
+            "consequence": "frameshift insertion",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 34,
+            "spliceaiDsMax": 0,
+            "gnomadAf": 0.00005256929944152944,
+            "bravoAf": 0.000034002
+          },
+          {
+            "rsid": "rs121912651",
+            "vcf": "17-7674221-G-A",
+            "gene": "TP53",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.600000381469727,
+            "revel": 0.927,
+            "alphaMissense": 0.9968000054359436,
+            "spliceaiDsMax": 0,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "gnomadAf": 0,
+            "apcConservation": 20.398757934570312,
+            "apcEpigenetics": 11.632781982421875,
+            "apcProteinFunction": 31.191471099853516
+          },
+          {
+            "rsid": "rs121913529",
+            "vcf": "12-25245350-C-A",
+            "gene": "KRAS",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.399999618530273,
+            "alphaMissense": 0.9948999881744385,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 27.326358795166016,
+            "apcEpigenetics": 7.093606948852539,
+            "apcProteinFunction": 29.321840286254883
+          },
+          {
+            "rsid": "rs28897696",
+            "vcf": "17-43063903-G-T",
+            "gene": "BRCA1",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.100000381469727,
+            "alphaMissense": 0.9711999893188477,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 25.39251136779785,
+            "apcEpigenetics": 5.713502407073975,
+            "apcProteinFunction": 31.584932327270508
+          },
+          {
+            "rsid": "rs121913529",
+            "vcf": "12-25245350-C-G",
+            "gene": "KRAS",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Likely_pathogenic",
+            "caddPhred": 25.600000381469727,
+            "alphaMissense": 0.9574999809265137,
+            "siftCat": "deleterious",
+            "polyphenCat": "possibly_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 27.326358795166016,
+            "apcEpigenetics": 7.093606948852539,
+            "apcProteinFunction": 24.478593826293945
+          },
+          {
+            "rsid": "rs334",
+            "vcf": "11-5227002-T-A",
+            "gene": "HBB",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 15.649999618530273,
+            "revel": 0.535,
+            "alphaMissense": 0.22290000319480896,
+            "spliceaiDsMax": 0,
+            "siftCat": "deleterious",
+            "polyphenCat": "benign",
+            "metasvmPred": "T",
+            "gnomadAf": 0.012718800455331802,
+            "bravoAf": 0.0265443,
+            "tgAll": 0.0273562,
+            "apcConservation": 9.553360939025879,
+            "apcEpigenetics": 9.555222511291504,
+            "apcProteinFunction": 22.729379653930664
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "T5.2",
+    "name": "derive compound",
+    "grade": "PASS",
+    "elapsed": 0.367,
+    "notes": "derivedCohortId=106b72ed-47a0-40ff-bfbd-9057ef169e66, variantCount=0",
+    "output": {
+      "summary": "Derived cohort 106b72ed-47a0-40ff-bfbd-9057ef169e66 from 37a61438-bd98-463f-993f-07b53cdbf9f6 with filters [gnomad_af<0.01; consequence in [missense_variant]; cadd_phred>=20]: 43 → 0 variants.",
+      "derivedCohortId": "106b72ed-47a0-40ff-bfbd-9057ef169e66",
+      "parentId": "37a61438-bd98-463f-993f-07b53cdbf9f6",
+      "filtersApplied": [
+        "gnomad_af<0.01",
+        "consequence in [missense_variant]",
+        "cadd_phred>=20"
+      ],
+      "variantCount": 0,
+      "childSummary": {
+        "text_summary": "Cohort 106b72ed-47a0-40ff-bfbd-9057ef169e66 has 0 variants across 0 genes (top: none). Clinical: none annotated. Top consequence: none.",
+        "cohort_id": "106b72ed-47a0-40ff-bfbd-9057ef169e66",
+        "vid_count": 0,
+        "by_gene": [],
+        "by_consequence": [],
+        "by_clinical_significance": [],
+        "by_frequency": [],
+        "highlights": []
+      }
+    }
+  },
+  {
+    "id": "T5.3",
+    "name": "derive no-filter error",
+    "grade": "PASS",
+    "elapsed": 0,
+    "notes": "Correct validation: derive requires at least one filter.",
+    "output": {
+      "error": true,
+      "message": "derive requires at least one filter.",
+      "hint": "Use score_above, score_below, or categorical filters (gene, consequence, clinical_significance, chromosome)."
+    }
+  },
+  {
+    "id": "T5.4",
+    "name": "rows on derived",
+    "grade": "PASS",
+    "elapsed": 0.703,
+    "notes": "6 rows from derived cohort, total=6",
+    "output": {
+      "summary": "Showing 6 of 6 variants (offset 0), sorted by cadd_phred desc.",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs80357906",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "frameshift insertion",
+          "cadd_phred": 34,
+          "gnomad_af": 0.00005256929944152944
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "gnomad_af": 0
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.100000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "gnomad_af": null
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs334",
+          "chromosome": null,
+          "gene": [
+            "HBB"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 15.649999618530273,
+          "gnomad_af": 0.012718800455331802
+        }
+      ],
+      "total": 6
+    }
+  },
+  {
+    "id": "T5.5",
+    "name": "groupby on derived",
+    "grade": "PASS",
+    "elapsed": 0.358,
+    "notes": "4 gene groups in derived cohort",
+    "output": {
+      "summary": "Grouped by gene: 4 groups. Top: [\"KRAS\"] (2), [\"BRCA1\"] (2), [\"HBB\"] (1).",
+      "group_by": "gene",
+      "buckets": [
+        {
+          "group_key": [
+            "KRAS"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "BRCA1"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "HBB"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "TP53"
+          ],
+          "count": 1
+        }
+      ],
+      "total_groups": 4
+    }
+  },
+  {
+    "id": "T6.1",
+    "name": "prioritize",
+    "grade": "PASS",
+    "elapsed": 0.422,
+    "notes": "10 ranked rows, top rank_score=4, total_ranked=16",
+    "output": {
+      "summary": "Ranked 16 variants by cadd_phred desc, revel desc, apc_conservation desc. Lower rank_score = better.",
+      "criteria": [
+        "cadd_phred desc",
+        "revel desc",
+        "apc_conservation desc"
+      ],
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.5,
+          "revel": 0.842,
+          "apc_conservation": 33.013084411621094,
+          "cadd_phred_rank": 1,
+          "revel_rank": 4,
+          "apc_conservation_rank": 1,
+          "rank_score": 4
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "revel": 0.927,
+          "apc_conservation": 20.398757934570312,
+          "cadd_phred_rank": 2,
+          "revel_rank": 1,
+          "apc_conservation_rank": 5,
+          "rank_score": 4.47213595499958
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24.200000762939453,
+          "revel": 0.875,
+          "apc_conservation": 27.326358795166016,
+          "cadd_phred_rank": 6,
+          "revel_rank": 2,
+          "apc_conservation_rank": 2,
+          "rank_score": 16.970562748477143
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800562",
+          "chromosome": null,
+          "gene": [
+            "HFE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "revel": 0.872,
+          "apc_conservation": 25.25654411315918,
+          "cadd_phred_rank": 4,
+          "revel_rank": 3,
+          "apc_conservation_rank": 4,
+          "rank_score": 24
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "revel": 0.789,
+          "apc_conservation": 25.39251136779785,
+          "cadd_phred_rank": 3,
+          "revel_rank": 5,
+          "apc_conservation_rank": 3,
+          "rank_score": 25.980762113533157
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs7412",
+          "chromosome": null,
+          "gene": [
+            "APOE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.299999237060547,
+          "revel": 0.588,
+          "apc_conservation": 15.538447380065918,
+          "cadd_phred_rank": 5,
+          "revel_rank": 6,
+          "apc_conservation_rank": 11,
+          "rank_score": 99.498743710662
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs63750847",
+          "chromosome": null,
+          "gene": [
+            "APP"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 21.299999237060547,
+          "revel": 0.342,
+          "apc_conservation": 20.34632110595703,
+          "cadd_phred_rank": 8,
+          "revel_rank": 8,
+          "apc_conservation_rank": 6,
+          "rank_score": 156.76734353812338
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs75932628",
+          "chromosome": null,
+          "gene": [
+            "TREM2"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24,
+          "revel": 0.335,
+          "apc_conservation": 17.326946258544922,
+          "cadd_phred_rank": 7,
+          "revel_rank": 9,
+          "apc_conservation_rank": 10,
+          "rank_score": 199.22349259060792
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs334",
+          "chromosome": null,
+          "gene": [
+            "HBB"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 15.649999618530273,
+          "revel": 0.535,
+          "apc_conservation": 9.553360939025879,
+          "cadd_phred_rank": 12,
+          "revel_rank": 7,
+          "apc_conservation_rank": 14,
+          "rank_score": 314.2992204890111
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs5219",
+          "chromosome": null,
+          "gene": [
+            "KCNJ11"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 20.799999237060547,
+          "revel": 0.168,
+          "apc_conservation": 19.642620086669922,
+          "cadd_phred_rank": 9,
+          "revel_rank": 14,
+          "apc_conservation_rank": 7,
+          "rank_score": 333.3646651941384
+        }
+      ],
+      "total_ranked": 16
+    }
+  },
+  {
+    "id": "T6.2",
+    "name": "prioritize no-criteria error",
+    "grade": "PASS",
+    "elapsed": 0,
+    "notes": "Correct validation: prioritize requires at least one criterion.",
+    "output": {
+      "error": true,
+      "message": "prioritize requires at least one criterion.",
+      "hint": "Provide criteria: [{ column: 'cadd_phred', desc: true, weight: 1.0 }]"
+    }
+  },
+  {
+    "id": "T7.1",
+    "name": "compute",
+    "grade": "PASS",
+    "elapsed": 0.448,
+    "notes": "10 scored rows, top composite_score=4.408489437255712, total=16",
+    "output": {
+      "summary": "Computed composite score from cadd_phred (w=2.0), revel (w=1.5), alpha_missense (w=1.0) (normalized). 16 variants scored, top score: 4.408.",
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "revel": 0.927,
+          "alpha_missense": 0.9968000054359436,
+          "composite_score": 4.408489437255712
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800562",
+          "chromosome": null,
+          "gene": [
+            "HFE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "revel": 0.872,
+          "alpha_missense": 0.9585000276565552,
+          "composite_score": 4.175936736146238
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24.200000762939453,
+          "revel": 0.875,
+          "alpha_missense": 0.9983999729156494,
+          "composite_score": 4.082722284927857
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1801133",
+          "chromosome": null,
+          "gene": [
+            "MTHFR"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 27.5,
+          "revel": 0.842,
+          "alpha_missense": 0.6323999762535095,
+          "composite_score": 3.9759219787343487
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "revel": 0.789,
+          "alpha_missense": 0.6381000280380249,
+          "composite_score": 3.7825074217344636
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs7412",
+          "chromosome": null,
+          "gene": [
+            "APOE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.299999237060547,
+          "revel": 0.588,
+          "alpha_missense": 0.4221999943256378,
+          "composite_score": 3.1087153913870966
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs75932628",
+          "chromosome": null,
+          "gene": [
+            "TREM2"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24,
+          "revel": 0.335,
+          "alpha_missense": 0.1873999983072281,
+          "composite_score": 2.3074710061897172
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs63750847",
+          "chromosome": null,
+          "gene": [
+            "APP"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 21.299999237060547,
+          "revel": 0.342,
+          "alpha_missense": 0.07090000063180923,
+          "composite_score": 1.9286390124073207
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs75932628",
+          "chromosome": null,
+          "gene": [
+            "TREM2"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 19.770000457763672,
+          "revel": 0.244,
+          "alpha_missense": 0.3327000141143799,
+          "composite_score": 1.882527937434181
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs334",
+          "chromosome": null,
+          "gene": [
+            "HBB"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 15.649999618530273,
+          "revel": 0.535,
+          "alpha_missense": 0.22290000319480896,
+          "composite_score": 1.8486320229549242
+        }
+      ],
+      "total_scored": 16
+    }
+  },
+  {
+    "id": "T7.2",
+    "name": "compute no-weights error",
+    "grade": "PASS",
+    "elapsed": 0,
+    "notes": "Correct validation: compute requires at least one weight.",
+    "output": {
+      "error": true,
+      "message": "compute requires at least one weight.",
+      "hint": "Provide weights: [{ column: 'cadd_phred', weight: 0.5 }]"
+    }
+  },
+  {
+    "id": "T8.1",
+    "name": "correlation",
+    "grade": "PASS",
+    "elapsed": 0.428,
+    "notes": "r=0.7944, n=16, x_mean=19.69, y_mean=0.46",
+    "output": {
+      "summary": "Correlation between cadd_phred and revel: r=0.794 (n=16). strongly correlated.",
+      "x": "cadd_phred",
+      "y": "revel",
+      "r": 0.7944122763603412,
+      "n": 16,
+      "x_mean": 19.68524992465973,
+      "y_mean": 0.46299999999999997,
+      "x_stddev": 6.744433576809227,
+      "y_stddev": 0.31139535427919707
+    }
+  },
+  {
+    "id": "T8.2",
+    "name": "correlation 2",
+    "grade": "PASS",
+    "elapsed": 0.43,
+    "notes": "r=0.6467, n=42",
+    "output": {
+      "summary": "Correlation between cadd_phred and apc_conservation: r=0.647 (n=42). moderately correlated.",
+      "x": "cadd_phred",
+      "y": "apc_conservation",
+      "r": 0.6466761578069427,
+      "n": 42,
+      "x_mean": 18.98278570175171,
+      "y_mean": 16.752996637707664,
+      "x_stddev": 9.02244765612013,
+      "y_stddev": 8.458835973285657
+    }
+  },
+  {
+    "id": "T8.3",
+    "name": "correlation no-y error",
+    "grade": "PASS",
+    "elapsed": 0,
+    "notes": "Correct error: correlation requires x and y column names.",
+    "output": {
+      "error": true,
+      "message": "correlation requires x and y column names.",
+      "hint": "Provide x and y (e.g., x='cadd_phred', y='revel')"
+    }
+  },
+  {
+    "id": "T9.1",
+    "name": "lookupVariant",
+    "grade": "PASS",
+    "elapsed": 0.059,
+    "notes": "Got response — keys: rsid,vcf,gene,consequence,clinicalSignificance,caddPhred,revel,alphaMissense",
+    "output": {
+      "rsid": "rs429358",
+      "vcf": "19-44908684-T-C",
+      "gene": "APOE",
+      "consequence": "nonsynonymous SNV",
+      "clinicalSignificance": "Conflicting_classifications_of_pathogenicity",
+      "caddPhred": 17.93000030517578,
+      "revel": 0.229,
+      "alphaMissense": 0.0364999994635582,
+      "spliceaiDsMax": 0,
+      "siftCat": "tolerated",
+      "polyphenCat": "benign",
+      "metasvmPred": "T",
+      "gnomadAf": 0.15735900402069092,
+      "bravoAf": 0.155314,
+      "tgAll": 0.150559,
+      "apcConservation": 17.447378158569336,
+      "apcEpigenetics": 5.772336006164551,
+      "apcProteinFunction": 21.575054168701172
+    }
+  },
+  {
+    "id": "T9.2",
+    "name": "lookupVariant minimal",
+    "grade": "PASS",
+    "elapsed": 0.064,
+    "notes": "Minimal depth response received",
+    "output": {
+      "vcf": "19-44908822-C-T",
+      "rsid": "rs7412",
+      "gene": "APOE",
+      "consequence": "nonsynonymous SNV",
+      "clinicalSignificance": "drug_response",
+      "caddPhred": 25.299999237060547,
+      "gnomadAf": 0.07783740013837814
+    }
+  },
+  {
+    "id": "T9.3",
+    "name": "lookupVariant error",
+    "grade": "PASS",
+    "elapsed": 0.039,
+    "notes": "Correct error: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Variant not found\"},\"timestamp\":\"2026-02",
+    "output": {
+      "error": true,
+      "status": 404,
+      "message": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Variant not found\"},\"timestamp\":\"2026-02-28T00:41:46.406845+00:00\"}",
+      "hint": "Resource not found. Verify the ID exists."
+    }
+  },
+  {
+    "id": "T10.1",
+    "name": "geneVariantStats",
+    "grade": "PASS",
+    "elapsed": 0.129,
+    "notes": "gene=BRCA1, totalVariants=384931, pathogenic=2471, actionable=92",
+    "output": {
+      "gene": "BRCA1",
+      "totalVariants": 384931,
+      "snvCount": 377862,
+      "indelCount": 7069,
+      "clinvar": {
+        "pathogenic": 2471,
+        "likelyPathogenic": 252,
+        "benign": 698,
+        "likelyBenign": 2482,
+        "vus": 4136,
+        "conflicting": 0
+      },
+      "consequence": {
+        "lof": 3062,
+        "missense": 13279,
+        "nonsense": 1021,
+        "frameshift": 2127,
+        "inframe": 118,
+        "splice": 601,
+        "synonymous": 3674
+      },
+      "location": {
+        "exonic": 53675,
+        "intronic": 322213,
+        "utr": 8527,
+        "splicing": 601,
+        "regulatory": 2554
+      },
+      "frequency": {
+        "common": 723,
+        "lowFreq": 2901,
+        "rare": 29153,
+        "ultraRare": 0,
+        "singleton": 13680
+      },
+      "scores": {
+        "highCadd": 8884,
+        "highRevel": 220,
+        "highAlphaMissense": 1087,
+        "splicingAffecting": 140,
+        "siftDeleterious": 7125,
+        "polyphenDamaging": 5870
+      },
+      "actionable": 92
+    }
+  },
+  {
+    "id": "T10.2",
+    "name": "geneVariantStats TP53",
+    "grade": "PASS",
+    "elapsed": 0.064,
+    "notes": "gene=TP53, totalVariants=78656, lof=439, missense=3565",
+    "output": {
+      "gene": "TP53",
+      "totalVariants": 78656,
+      "snvCount": 77304,
+      "indelCount": 1352,
+      "clinvar": {
+        "pathogenic": 256,
+        "likelyPathogenic": 242,
+        "benign": 53,
+        "likelyBenign": 830,
+        "vus": 815,
+        "conflicting": 0
+      },
+      "consequence": {
+        "lof": 439,
+        "missense": 3565,
+        "nonsense": 251,
+        "frameshift": 197,
+        "inframe": 55,
+        "splice": 232,
+        "synonymous": 1082
+      },
+      "location": {
+        "exonic": 5150,
+        "intronic": 61706,
+        "utr": 11601,
+        "splicing": 232,
+        "regulatory": 3811
+      },
+      "frequency": {
+        "common": 195,
+        "lowFreq": 629,
+        "rare": 6258,
+        "ultraRare": 0,
+        "singleton": 2919
+      },
+      "scores": {
+        "highCadd": 2434,
+        "highRevel": 256,
+        "highAlphaMissense": 955,
+        "splicingAffecting": 46,
+        "siftDeleterious": 1349,
+        "polyphenDamaging": 1343
+      },
+      "actionable": 22
+    }
+  },
+  {
+    "id": "T10.3",
+    "name": "geneVariantStats error",
+    "grade": "PASS",
+    "elapsed": 0.045,
+    "notes": "Correct error: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Gene 'FAKEGENE12345' not found\"},\"timest",
+    "output": {
+      "error": true,
+      "status": 404,
+      "message": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Gene 'FAKEGENE12345' not found\"},\"timestamp\":\"2026-02-28T00:41:46.644730+00:00\"}",
+      "hint": "Resource not found. Verify the ID exists."
+    }
+  },
+  {
+    "id": "T11.1",
+    "name": "gwas rs7903146",
+    "grade": "PASS",
+    "elapsed": 0.134,
+    "notes": "646 hits, top trait=\"Medication use (drugs used in diabetes)\", -log10(p)=174.22184874961636",
+    "output": {
+      "totalHits": 646,
+      "uniqueTraits": 103,
+      "topStudy": "GCST90018981",
+      "topAssociations": [
+        {
+          "trait": "Medication use (drugs used in diabetes)",
+          "pValueMlog": 174.22184874961636,
+          "effectSize": "0.3169",
+          "studyAccession": "GCST90018981"
+        },
+        {
+          "trait": "Type 2 diabetes",
+          "pValueMlog": 33.69897000433602,
+          "effectSize": "1.65",
+          "studyAccession": "GCST000012"
+        },
+        {
+          "trait": "Type 2 diabetes",
+          "pValueMlog": 29.045757490560675,
+          "effectSize": "1.49",
+          "studyAccession": "GCST000277"
+        },
+        {
+          "trait": "Gestational diabetes mellitus",
+          "pValueMlog": 18.69897000433602,
+          "effectSize": "0.18",
+          "studyAccession": "GCST90428870"
+        },
+        {
+          "trait": "Type 2 diabetes",
+          "pValueMlog": 15.221848749616356,
+          "effectSize": "1.31",
+          "studyAccession": "GCST000277"
+        },
+        {
+          "trait": "Type 1 diabetes",
+          "pValueMlog": 14,
+          "effectSize": "0.1668",
+          "studyAccession": "GCST90018925"
+        },
+        {
+          "trait": "Fasting blood glucose (BMI interaction)",
+          "pValueMlog": 13.69897000433602,
+          "effectSize": "0.0024",
+          "studyAccession": "GCST001527"
+        },
+        {
+          "trait": "Body mass index",
+          "pValueMlog": 13.522878745280336,
+          "effectSize": "0.021",
+          "studyAccession": "GCST006368"
+        },
+        {
+          "trait": "Type 2 diabetes",
+          "pValueMlog": 11.096910013008056,
+          "effectSize": "1.54",
+          "studyAccession": "GCST000383"
+        },
+        {
+          "trait": "Never eat sugar vs no sugar restrictions (UKB data field 6144)",
+          "pValueMlog": 10.522878745280336,
+          "effectSize": "0.0148024",
+          "studyAccession": "GCST90132934"
+        }
+      ]
+    }
+  },
+  {
+    "id": "T11.2",
+    "name": "gwas gene:APOE",
+    "grade": "PASS",
+    "elapsed": 0.135,
+    "notes": "10 associations for APOE",
+    "output": [
+      {
+        "trait": "Alzheimer’s disease polygenic risk score (upper quantile vs lower quantile)",
+        "pValueMlog": 155.52287874528034,
+        "effectSize": null,
+        "studyAccession": "GCST90132260"
+      },
+      {
+        "trait": "Baseline memory",
+        "pValueMlog": 28.154901959985743,
+        "effectSize": "0.08778",
+        "studyAccession": "GCST90448427"
+      },
+      {
+        "trait": "Alzheimer's disease",
+        "pValueMlog": 22.69897000433602,
+        "effectSize": "1.6754",
+        "studyAccession": "GCST007600"
+      },
+      {
+        "trait": "Baseline memory",
+        "pValueMlog": 20.045757490560675,
+        "effectSize": "0.084115",
+        "studyAccession": "GCST90448418"
+      },
+      {
+        "trait": "Baseline memory",
+        "pValueMlog": 18.096910013008056,
+        "effectSize": "0.083171",
+        "studyAccession": "GCST90448424"
+      },
+      {
+        "trait": "Alzheimer's disease",
+        "pValueMlog": 15.221848749616356,
+        "effectSize": "1.665856",
+        "studyAccession": "GCST007600"
+      },
+      {
+        "trait": "Baseline memory in impaired cognition",
+        "pValueMlog": 11.221848749616356,
+        "effectSize": "0.102271",
+        "studyAccession": "GCST90448419"
+      },
+      {
+        "trait": "Phospholipids to total lipids ratio in large HDL",
+        "pValueMlog": 10.522878745280336,
+        "effectSize": "0.0268116",
+        "studyAccession": "GCST90092853"
+      },
+      {
+        "trait": "Baseline memory in impaired cognition",
+        "pValueMlog": 9.69897000433602,
+        "effectSize": "0.099928",
+        "studyAccession": "GCST90448425"
+      },
+      {
+        "trait": "Alzheimer's disease",
+        "pValueMlog": 8.698970004336019,
+        "effectSize": "1.700015",
+        "studyAccession": "GCST007600"
+      }
+    ]
+  },
+  {
+    "id": "T11.3",
+    "name": "gwas trait filter",
+    "grade": "PASS",
+    "elapsed": 0.122,
+    "notes": "10 Alzheimer-related associations",
+    "output": {
+      "totalHits": 50,
+      "uniqueTraits": 11,
+      "topStudy": "GCST90475496",
+      "topAssociations": [
+        {
+          "trait": "Biological Mother: Alzheimer's / Other Dementia",
+          "pValueMlog": 323,
+          "effectSize": "0.4395",
+          "studyAccession": "GCST90475496"
+        },
+        {
+          "trait": "Biological Mother: Alzheimer's / Other Dementia",
+          "pValueMlog": 323,
+          "effectSize": "0.4344",
+          "studyAccession": "GCST90479700"
+        },
+        {
+          "trait": "Late-onset Alzheimer's disease",
+          "pValueMlog": 300,
+          "effectSize": null,
+          "studyAccession": "GCST90044699"
+        },
+        {
+          "trait": "Alzheimer's disease (PheCode 290.11)",
+          "pValueMlog": 266.5228787452804,
+          "effectSize": "0.9424",
+          "studyAccession": "GCST90476499"
+        },
+        {
+          "trait": "Biological Father: Alzheimer's / Other Dementia",
+          "pValueMlog": 169,
+          "effectSize": "0.3501",
+          "studyAccession": "GCST90479579"
+        },
+        {
+          "trait": "Biological Father: Alzheimer's / Other Dementia",
+          "pValueMlog": 149.52287874528034,
+          "effectSize": "0.3694",
+          "studyAccession": "GCST90475249"
+        },
+        {
+          "trait": "Alzheimer's disease, proxy Alzheimer's disease or related dementias",
+          "pValueMlog": 149.22184874961636,
+          "effectSize": null,
+          "studyAccession": "GCST90267627"
+        },
+        {
+          "trait": "Biological Sibling: Alzheimer's / Other Dementia",
+          "pValueMlog": 107.39794000867204,
+          "effectSize": "0.5168",
+          "studyAccession": "GCST90476375"
+        },
+        {
+          "trait": "Biological Grandparent (maternal): Alzheimer's / Other Dementia",
+          "pValueMlog": 70,
+          "effectSize": "0.2255",
+          "studyAccession": "GCST90479689"
+        },
+        {
+          "trait": "Alzheimer's disease pathology",
+          "pValueMlog": 69,
+          "effectSize": "4.22",
+          "studyAccession": "GCST90276158"
+        }
+      ]
+    }
+  },
+  {
+    "id": "T11.4",
+    "name": "gwas error",
+    "grade": "PASS",
+    "elapsed": 0.038,
+    "notes": "Correct error: No GWAS associations found for this variant.",
+    "output": {
+      "error": true,
+      "message": "No GWAS associations found for this variant.",
+      "hint": "Try without the p-value filter or check the variant ID."
+    }
+  },
+  {
+    "id": "T12.1",
+    "name": "batchSummary",
+    "grade": "PASS",
+    "elapsed": 0.163,
+    "notes": "resolved=5/10, genes=7, consequences=4, highlights=5",
+    "output": {
+      "textSummary": "10 variants submitted, 5 resolved (0 not found). Mapped to 7 genes (top: TREM2 (5), BRCA1 (4), TP53 (3)). Clinical: 4 Pathogenic, 3 Uncertain_significance, 2 Pathogenic/Likely_pathogenic, 2 Likely_benign. Top consequence: nonsynonymous SNV (16), synonymous SNV (1), stopgain (1).",
+      "resolution": {
+        "total": 10,
+        "found": 5,
+        "notFound": 0,
+        "ambiguous": 5,
+        "errors": 0
+      },
+      "byGene": [
+        {
+          "geneSymbol": "TREM2",
+          "count": 5,
+          "pathogenic": 0,
+          "functionalImpact": 5
+        },
+        {
+          "geneSymbol": "BRCA1",
+          "count": 4,
+          "pathogenic": 2,
+          "functionalImpact": 4
+        },
+        {
+          "geneSymbol": "TP53",
+          "count": 3,
+          "pathogenic": 2,
+          "functionalImpact": 2
+        },
+        {
+          "geneSymbol": "KRAS",
+          "count": 3,
+          "pathogenic": 3,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "APOE",
+          "count": 2,
+          "pathogenic": 0,
+          "functionalImpact": 2
+        },
+        {
+          "geneSymbol": "BRCA2",
+          "count": 1,
+          "pathogenic": 0,
+          "functionalImpact": 1
+        },
+        {
+          "geneSymbol": "APP",
+          "count": 1,
+          "pathogenic": 0,
+          "functionalImpact": 1
+        }
+      ],
+      "byConsequence": [
+        {
+          "category": "nonsynonymous SNV",
+          "count": 16
+        },
+        {
+          "category": "synonymous SNV",
+          "count": 1
+        },
+        {
+          "category": "stopgain",
+          "count": 1
+        },
+        {
+          "category": "frameshift insertion",
+          "count": 1
+        }
+      ],
+      "byClinicalSignificance": [
+        {
+          "category": "Pathogenic",
+          "count": 4
+        },
+        {
+          "category": "Uncertain_significance",
+          "count": 3
+        },
+        {
+          "category": "Pathogenic/Likely_pathogenic",
+          "count": 2
+        },
+        {
+          "category": "Likely_benign",
+          "count": 2
+        },
+        {
+          "category": "Benign",
+          "count": 2
+        },
+        {
+          "category": "drug_response",
+          "count": 1
+        },
+        {
+          "category": "Benign/Likely_benign",
+          "count": 1
+        },
+        {
+          "category": "Likely_pathogenic",
+          "count": 1
+        },
+        {
+          "category": "Conflicting_classifications_of_pathogenicity",
+          "count": 1
+        },
+        {
+          "category": "other",
+          "count": 1
+        },
+        {
+          "category": "risk_factor",
+          "count": 1
+        }
+      ],
+      "byFrequency": [
+        {
+          "category": "unknown",
+          "count": 8
+        },
+        {
+          "category": "ultra_rare (<0.01%)",
+          "count": 5
+        },
+        {
+          "category": "rare (0.1-1%)",
+          "count": 3
+        },
+        {
+          "category": "common (>5%)",
+          "count": 2
+        },
+        {
+          "category": "very_rare (0.01-0.1%)",
+          "count": 1
+        }
+      ],
+      "highlights": [
+        {
+          "rsid": "rs80357906",
+          "vcf": "17-43057062-T-TG",
+          "gene": "BRCA1",
+          "csq": "frameshift insertion",
+          "clin": "Pathogenic",
+          "cadd": 34,
+          "af": 0.00005256929944152944
+        },
+        {
+          "rsid": "rs121912651",
+          "vcf": "17-7674221-G-A",
+          "gene": "TP53",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.600000381469727,
+          "af": 0
+        },
+        {
+          "rsid": "rs121913529",
+          "vcf": "12-25245350-C-A",
+          "gene": "KRAS",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.399999618530273
+        },
+        {
+          "rsid": "rs28897696",
+          "vcf": "17-43063903-G-T",
+          "gene": "BRCA1",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.100000381469727
+        },
+        {
+          "rsid": "rs121913529",
+          "vcf": "12-25245350-C-G",
+          "gene": "KRAS",
+          "csq": "nonsynonymous SNV",
+          "clin": "Likely_pathogenic",
+          "cadd": 25.600000381469727
+        }
+      ]
+    }
+  },
+  {
+    "id": "T12.2",
+    "name": "batchSummary 20",
+    "grade": "PASS",
+    "elapsed": 0.2,
+    "notes": "resolved=6/20, byGene=15, byClinSig=14, byFreq=6",
+    "output": {
+      "textSummary": "20 variants submitted, 6 resolved (0 not found). Mapped to 15 genes (top: TREM2 (5), BRCA1 (4), HFE (4)). Clinical: 5 Pathogenic, 4 Benign/Likely_benign, 4 risk_factor, 3 Likely_benign. Top consequence: nonsynonymous SNV (34), stopgain (3), frameshift insertion (1).",
+      "resolution": {
+        "total": 20,
+        "found": 6,
+        "notFound": 0,
+        "ambiguous": 14,
+        "errors": 0
+      },
+      "byGene": [
+        {
+          "geneSymbol": "TREM2",
+          "count": 5,
+          "pathogenic": 0,
+          "functionalImpact": 5
+        },
+        {
+          "geneSymbol": "BRCA1",
+          "count": 4,
+          "pathogenic": 2,
+          "functionalImpact": 4
+        },
+        {
+          "geneSymbol": "HFE",
+          "count": 4,
+          "pathogenic": 0,
+          "functionalImpact": 4
+        },
+        {
+          "geneSymbol": "TCF7L2",
+          "count": 4,
+          "pathogenic": 0,
+          "functionalImpact": 0
+        },
+        {
+          "geneSymbol": "HBB",
+          "count": 3,
+          "pathogenic": 1,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "ANKK1",
+          "count": 3,
+          "pathogenic": 0,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "KCNJ11",
+          "count": 3,
+          "pathogenic": 0,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "PPARG",
+          "count": 3,
+          "pathogenic": 0,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "KRAS",
+          "count": 3,
+          "pathogenic": 3,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "MTHFR",
+          "count": 3,
+          "pathogenic": 0,
+          "functionalImpact": 3
+        },
+        {
+          "geneSymbol": "TP53",
+          "count": 3,
+          "pathogenic": 2,
+          "functionalImpact": 2
+        },
+        {
+          "geneSymbol": "APOE",
+          "count": 2,
+          "pathogenic": 0,
+          "functionalImpact": 2
+        },
+        {
+          "geneSymbol": "BRCA2",
+          "count": 1,
+          "pathogenic": 0,
+          "functionalImpact": 1
+        },
+        {
+          "geneSymbol": "COMT",
+          "count": 1,
+          "pathogenic": 0,
+          "functionalImpact": 1
+        },
+        {
+          "geneSymbol": "APP",
+          "count": 1,
+          "pathogenic": 0,
+          "functionalImpact": 1
+        }
+      ],
+      "byConsequence": [
+        {
+          "category": "nonsynonymous SNV",
+          "count": 34
+        },
+        {
+          "category": "stopgain",
+          "count": 3
+        },
+        {
+          "category": "frameshift insertion",
+          "count": 1
+        },
+        {
+          "category": "synonymous SNV",
+          "count": 1
+        }
+      ],
+      "byClinicalSignificance": [
+        {
+          "category": "Pathogenic",
+          "count": 5
+        },
+        {
+          "category": "Benign/Likely_benign",
+          "count": 4
+        },
+        {
+          "category": "risk_factor",
+          "count": 4
+        },
+        {
+          "category": "Likely_benign",
+          "count": 3
+        },
+        {
+          "category": "other",
+          "count": 3
+        },
+        {
+          "category": "Benign",
+          "count": 3
+        },
+        {
+          "category": "Uncertain_significance",
+          "count": 3
+        },
+        {
+          "category": "Pathogenic/Likely_pathogenic",
+          "count": 2
+        },
+        {
+          "category": "drug_response",
+          "count": 2
+        },
+        {
+          "category": "Conflicting_classifications_of_pathogenicity",
+          "count": 1
+        },
+        {
+          "category": "Likely_risk_allele",
+          "count": 1
+        },
+        {
+          "category": "Pathogenic/Pathogenic,_low_penetrance",
+          "count": 1
+        },
+        {
+          "category": "Likely_pathogenic",
+          "count": 1
+        },
+        {
+          "category": "Pathogenic/Likely_pathogenic/Pathogenic,_low_penetrance",
+          "count": 1
+        }
+      ],
+      "byFrequency": [
+        {
+          "category": "unknown",
+          "count": 22
+        },
+        {
+          "category": "common (>5%)",
+          "count": 10
+        },
+        {
+          "category": "ultra_rare (<0.01%)",
+          "count": 5
+        },
+        {
+          "category": "rare (0.1-1%)",
+          "count": 3
+        },
+        {
+          "category": "low_frequency (1-5%)",
+          "count": 2
+        },
+        {
+          "category": "very_rare (0.01-0.1%)",
+          "count": 1
+        }
+      ],
+      "highlights": [
+        {
+          "rsid": "rs80357906",
+          "vcf": "17-43057062-T-TG",
+          "gene": "BRCA1",
+          "csq": "frameshift insertion",
+          "clin": "Pathogenic",
+          "cadd": 34,
+          "af": 0.00005256929944152944
+        },
+        {
+          "rsid": "rs121912651",
+          "vcf": "17-7674221-G-A",
+          "gene": "TP53",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.600000381469727,
+          "af": 0
+        },
+        {
+          "rsid": "rs121913529",
+          "vcf": "12-25245350-C-A",
+          "gene": "KRAS",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.399999618530273
+        },
+        {
+          "rsid": "rs28897696",
+          "vcf": "17-43063903-G-T",
+          "gene": "BRCA1",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 26.100000381469727
+        },
+        {
+          "rsid": "rs121913529",
+          "vcf": "12-25245350-C-G",
+          "gene": "KRAS",
+          "csq": "nonsynonymous SNV",
+          "clin": "Likely_pathogenic",
+          "cadd": 25.600000381469727
+        },
+        {
+          "rsid": "rs334",
+          "vcf": "11-5227002-T-A",
+          "gene": "HBB",
+          "csq": "nonsynonymous SNV",
+          "clin": "Pathogenic",
+          "cadd": 15.649999618530273,
+          "af": 0.012718800455331802
+        },
+        {
+          "rsid": "rs11571833",
+          "vcf": "13-32398489-A-T",
+          "gene": "BRCA2",
+          "csq": "stopgain",
+          "clin": "Benign",
+          "cadd": 36,
+          "af": 0.005998869892209768
+        },
+        {
+          "rsid": "rs1800497",
+          "vcf": "11-113400106-G-T",
+          "gene": "ANKK1",
+          "csq": "stopgain",
+          "cadd": 36
+        },
+        {
+          "rsid": "rs5219",
+          "vcf": "11-17388025-T-A",
+          "gene": "KCNJ11",
+          "csq": "stopgain",
+          "cadd": 36
+        },
+        {
+          "rsid": "rs1801133",
+          "vcf": "1-11796321-G-T",
+          "gene": "MTHFR",
+          "csq": "nonsynonymous SNV",
+          "cadd": 27.700000762939453
+        }
+      ]
+    }
+  },
+  {
+    "id": "T13.1",
+    "name": "pipeline derive",
+    "grade": "PASS",
+    "elapsed": 0.413,
+    "notes": "derivedId=3077318d-44d1-4684-910a-9681cf107f5b, count=33",
+    "output": {
+      "summary": "Derived cohort 3077318d-44d1-4684-910a-9681cf107f5b from 37a61438-bd98-463f-993f-07b53cdbf9f6 with filters [gnomad_af<0.05]: 43 → 33 variants.",
+      "derivedCohortId": "3077318d-44d1-4684-910a-9681cf107f5b",
+      "parentId": "37a61438-bd98-463f-993f-07b53cdbf9f6",
+      "filtersApplied": [
+        "gnomad_af<0.05"
+      ],
+      "variantCount": 33,
+      "childSummary": {
+        "text_summary": "Cohort 3077318d-44d1-4684-910a-9681cf107f5b has 33 variants across 13 genes (top: TREM2 (5), BRCA1 (4), HBB (3)). Clinical: 5 Pathogenic, 3 Uncertain_significance, 3 Likely_benign, 2 Benign. Top consequence: nonsynonymous SNV (26), stopgain (3), synonymous SNV (1).",
+        "cohort_id": "3077318d-44d1-4684-910a-9681cf107f5b",
+        "vid_count": 33,
+        "by_gene": [
+          {
+            "geneSymbol": "TREM2",
+            "count": 5,
+            "pathogenic": 0,
+            "functionalImpact": 5
+          },
+          {
+            "geneSymbol": "BRCA1",
+            "count": 4,
+            "pathogenic": 2,
+            "functionalImpact": 4
+          },
+          {
+            "geneSymbol": "HBB",
+            "count": 3,
+            "pathogenic": 1,
+            "functionalImpact": 3
+          },
+          {
+            "geneSymbol": "KRAS",
+            "count": 3,
+            "pathogenic": 3,
+            "functionalImpact": 3
+          },
+          {
+            "geneSymbol": "HFE",
+            "count": 3,
+            "pathogenic": 0,
+            "functionalImpact": 3
+          },
+          {
+            "geneSymbol": "TP53",
+            "count": 3,
+            "pathogenic": 2,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "ANKK1",
+            "count": 2,
+            "pathogenic": 0,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "MTHFR",
+            "count": 2,
+            "pathogenic": 0,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "PPARG",
+            "count": 2,
+            "pathogenic": 0,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "TCF7L2",
+            "count": 2,
+            "pathogenic": 0,
+            "functionalImpact": 0
+          },
+          {
+            "geneSymbol": "KCNJ11",
+            "count": 2,
+            "pathogenic": 0,
+            "functionalImpact": 2
+          },
+          {
+            "geneSymbol": "BRCA2",
+            "count": 1,
+            "pathogenic": 0,
+            "functionalImpact": 1
+          },
+          {
+            "geneSymbol": "APP",
+            "count": 1,
+            "pathogenic": 0,
+            "functionalImpact": 1
+          }
+        ],
+        "by_consequence": [
+          {
+            "category": "nonsynonymous SNV",
+            "count": 26
+          },
+          {
+            "category": "stopgain",
+            "count": 3
+          },
+          {
+            "category": "synonymous SNV",
+            "count": 1
+          },
+          {
+            "category": "frameshift insertion",
+            "count": 1
+          }
+        ],
+        "by_clinical_significance": [
+          {
+            "category": "Pathogenic",
+            "count": 5
+          },
+          {
+            "category": "Uncertain_significance",
+            "count": 3
+          },
+          {
+            "category": "Likely_benign",
+            "count": 3
+          },
+          {
+            "category": "Benign",
+            "count": 2
+          },
+          {
+            "category": "Pathogenic/Likely_pathogenic",
+            "count": 2
+          },
+          {
+            "category": "Likely_pathogenic",
+            "count": 1
+          },
+          {
+            "category": "risk_factor",
+            "count": 1
+          },
+          {
+            "category": "Pathogenic/Pathogenic,_low_penetrance",
+            "count": 1
+          },
+          {
+            "category": "other",
+            "count": 1
+          },
+          {
+            "category": "Likely_risk_allele",
+            "count": 1
+          },
+          {
+            "category": "Benign/Likely_benign",
+            "count": 1
+          }
+        ],
+        "by_frequency": [
+          {
+            "category": "unknown",
+            "count": 22
+          },
+          {
+            "category": "ultra_rare (<0.01%)",
+            "count": 5
+          },
+          {
+            "category": "rare (0.1-1%)",
+            "count": 3
+          },
+          {
+            "category": "low_frequency (1-5%)",
+            "count": 2
+          },
+          {
+            "category": "very_rare (0.01-0.1%)",
+            "count": 1
+          }
+        ],
+        "highlights": [
+          {
+            "rsid": "rs80357906",
+            "vcf": "17-43057062-T-TG",
+            "gene": "BRCA1",
+            "consequence": "frameshift insertion",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 34,
+            "spliceaiDsMax": 0,
+            "gnomadAf": 0.00005256929944152944,
+            "bravoAf": 0.000034002
+          },
+          {
+            "rsid": "rs121912651",
+            "vcf": "17-7674221-G-A",
+            "gene": "TP53",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.600000381469727,
+            "revel": 0.927,
+            "alphaMissense": 0.9968000054359436,
+            "spliceaiDsMax": 0,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "gnomadAf": 0,
+            "apcConservation": 20.398757934570312,
+            "apcEpigenetics": 11.632781982421875,
+            "apcProteinFunction": 31.191471099853516
+          },
+          {
+            "rsid": "rs121913529",
+            "vcf": "12-25245350-C-A",
+            "gene": "KRAS",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.399999618530273,
+            "alphaMissense": 0.9948999881744385,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 27.326358795166016,
+            "apcEpigenetics": 7.093606948852539,
+            "apcProteinFunction": 29.321840286254883
+          },
+          {
+            "rsid": "rs28897696",
+            "vcf": "17-43063903-G-T",
+            "gene": "BRCA1",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 26.100000381469727,
+            "alphaMissense": 0.9711999893188477,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 25.39251136779785,
+            "apcEpigenetics": 5.713502407073975,
+            "apcProteinFunction": 31.584932327270508
+          },
+          {
+            "rsid": "rs121913529",
+            "vcf": "12-25245350-C-G",
+            "gene": "KRAS",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Likely_pathogenic",
+            "caddPhred": 25.600000381469727,
+            "alphaMissense": 0.9574999809265137,
+            "siftCat": "deleterious",
+            "polyphenCat": "possibly_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 27.326358795166016,
+            "apcEpigenetics": 7.093606948852539,
+            "apcProteinFunction": 24.478593826293945
+          },
+          {
+            "rsid": "rs334",
+            "vcf": "11-5227002-T-A",
+            "gene": "HBB",
+            "consequence": "nonsynonymous SNV",
+            "clinicalSignificance": "Pathogenic",
+            "caddPhred": 15.649999618530273,
+            "revel": 0.535,
+            "alphaMissense": 0.22290000319480896,
+            "spliceaiDsMax": 0,
+            "siftCat": "deleterious",
+            "polyphenCat": "benign",
+            "metasvmPred": "T",
+            "gnomadAf": 0.012718800455331802,
+            "bravoAf": 0.0265443,
+            "tgAll": 0.0273562,
+            "apcConservation": 9.553360939025879,
+            "apcEpigenetics": 9.555222511291504,
+            "apcProteinFunction": 22.729379653930664
+          },
+          {
+            "rsid": "rs5219",
+            "vcf": "11-17388025-T-A",
+            "gene": "KCNJ11",
+            "consequence": "stopgain",
+            "caddPhred": 36,
+            "apcConservation": 19.642620086669922,
+            "apcEpigenetics": 18.48099136352539,
+            "apcProteinFunction": 20.695127487182617
+          },
+          {
+            "rsid": "rs1800497",
+            "vcf": "11-113400106-G-T",
+            "gene": "ANKK1",
+            "consequence": "stopgain",
+            "caddPhred": 36,
+            "apcConservation": 9.550619125366211,
+            "apcEpigenetics": 3.49566388130188,
+            "apcProteinFunction": 20.695127487182617
+          },
+          {
+            "rsid": "rs11571833",
+            "vcf": "13-32398489-A-T",
+            "gene": "BRCA2",
+            "consequence": "stopgain",
+            "clinicalSignificance": "Benign",
+            "caddPhred": 36,
+            "spliceaiDsMax": 0,
+            "gnomadAf": 0.005998869892209768,
+            "bravoAf": 0.00539121,
+            "tgAll": 0.00439297,
+            "apcConservation": 8.409189224243164,
+            "apcEpigenetics": 3.9574170112609863,
+            "apcProteinFunction": 20.695127487182617
+          },
+          {
+            "rsid": "rs1801133",
+            "vcf": "1-11796321-G-T",
+            "gene": "MTHFR",
+            "consequence": "nonsynonymous SNV",
+            "caddPhred": 27.700000762939453,
+            "alphaMissense": 0.9757999777793884,
+            "siftCat": "deleterious",
+            "polyphenCat": "probably_damaging",
+            "metasvmPred": "D",
+            "apcConservation": 33.013084411621094,
+            "apcEpigenetics": 19.727102279663086,
+            "apcProteinFunction": 35.69010543823242
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "T13.2",
+    "name": "pipeline prioritize",
+    "grade": "PASS",
+    "elapsed": 0.556,
+    "notes": "5 prioritized from derived cohort",
+    "output": {
+      "summary": "Ranked 9 variants by cadd_phred desc, revel desc. Lower rank_score = better.",
+      "criteria": [
+        "cadd_phred desc",
+        "revel desc"
+      ],
+      "rows": [
+        {
+          "variant_vcf": null,
+          "rsid": "rs121912651",
+          "chromosome": null,
+          "gene": [
+            "TP53"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.600000381469727,
+          "revel": 0.927,
+          "cadd_phred_rank": 1,
+          "revel_rank": 1,
+          "rank_score": 1
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs28897696",
+          "chromosome": null,
+          "gene": [
+            "BRCA1"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 26.399999618530273,
+          "revel": 0.789,
+          "cadd_phred_rank": 2,
+          "revel_rank": 4,
+          "rank_score": 16
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs1800562",
+          "chromosome": null,
+          "gene": [
+            "HFE"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 25.600000381469727,
+          "revel": 0.872,
+          "cadd_phred_rank": 3,
+          "revel_rank": 3,
+          "rank_score": 27
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs121913529",
+          "chromosome": null,
+          "gene": [
+            "KRAS"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24.200000762939453,
+          "revel": 0.875,
+          "cadd_phred_rank": 4,
+          "revel_rank": 2,
+          "rank_score": 32
+        },
+        {
+          "variant_vcf": null,
+          "rsid": "rs75932628",
+          "chromosome": null,
+          "gene": [
+            "TREM2"
+          ],
+          "consequence": "nonsynonymous SNV",
+          "cadd_phred": 24,
+          "revel": 0.335,
+          "cadd_phred_rank": 5,
+          "revel_rank": 7,
+          "rank_score": 175
+        }
+      ],
+      "total_ranked": 9
+    }
+  },
+  {
+    "id": "T13.3",
+    "name": "pipeline groupby",
+    "grade": "PASS",
+    "elapsed": 0.414,
+    "notes": "13 genes in rare subset",
+    "output": {
+      "summary": "Grouped by gene: 13 groups. Top: [\"TREM2\"] (5), [\"BRCA1\"] (4), [\"HBB\"] (3).",
+      "group_by": "gene",
+      "buckets": [
+        {
+          "group_key": [
+            "TREM2"
+          ],
+          "count": 5
+        },
+        {
+          "group_key": [
+            "BRCA1"
+          ],
+          "count": 4
+        },
+        {
+          "group_key": [
+            "HBB"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "TP53"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "HFE"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "KRAS"
+          ],
+          "count": 3
+        },
+        {
+          "group_key": [
+            "MTHFR"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "ANKK1"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "KCNJ11"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "TCF7L2"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "PPARG"
+          ],
+          "count": 2
+        },
+        {
+          "group_key": [
+            "APP"
+          ],
+          "count": 1
+        },
+        {
+          "group_key": [
+            "BRCA2"
+          ],
+          "count": 1
+        }
+      ],
+      "total_groups": 13
+    }
+  }
+]

@@ -42,9 +42,7 @@ Gene, Disease, Drug, Pathway, Phenotype, Study, GOTerm, SideEffect, cCRE, Metabo
 The server auto-selects the best scoreField and direction for each edge type. You do NOT need to specify them.
 Check \`resolved\` in the getRankedNeighbors response to see what the server selected.
 
-**Interpreting scores**: Scores may all be 1.0 for some edge types (meaning "count of edges"). This is normal — the ranking is by edge count not by evidence strength. The results are still valid; report them without concern about identical scores.
-
-**scoreField override**: If the default score returns all zeros, retry with \`scoreField: "evidence_count"\` as a fallback. This is common for GENE_AFFECTS_DRUG_RESPONSE where max_profile_evidence_score may be unpopulated.
+**Degenerate scores**: If scores are all 0, all 1, or all identical, the default scoreField is not meaningful for that edge type. Pass an invalid scoreField (e.g., \`"_"\`) — the error response lists all available fields. Pick a meaningful one and retry.
 
 ## TOOL SELECTION (critical — pick the RIGHT tool)
 | Task | RIGHT tool | WRONG tool |
@@ -60,7 +58,7 @@ Check \`resolved\` in the getRankedNeighbors response to see what the server sel
 | Enriched pathways for gene set | runEnrichment(genes, Pathway) | getRankedNeighbors loop |
 | Enriched GO terms for gene set | runEnrichment(genes, GOTerm) | getRankedNeighbors loop |
 | Multi-hop chain (gene→disease→phenotype) | graphTraverse(steps) | multiple separate calls |
-| Pharmacogenomics: genes for a drug | getRankedNeighbors(Drug, GENE_AFFECTS_DRUG_RESPONSE, scoreField:"evidence_count") | DRUG_ACTS_ON_GENE (different: targets, not PGx) |
+| Pharmacogenomics: genes for a drug | getRankedNeighbors(Drug, GENE_AFFECTS_DRUG_RESPONSE) | DRUG_ACTS_ON_GENE (different: targets, not PGx) |
 | Drug targets for a drug | getRankedNeighbors(Drug, DRUG_ACTS_ON_GENE) | GENE_AFFECTS_DRUG_RESPONSE |
 | Drug-drug interactions | getRankedNeighbors(Drug, DRUG_INTERACTS_WITH_DRUG) | getConnections |
 | Profile a single entity | getEntityContext | getRankedNeighbors |
@@ -87,8 +85,8 @@ getRankedNeighbors(type=Gene, id=Y, edgeType="DRUG_ACTS_ON_GENE", limit=50) → 
 Or more efficiently: graphTraverse with steps: [{edgeTypes:["GENE_ASSOCIATED_WITH_DISEASE"], sort:"-ot_score", limit:20}, {edgeTypes:["DRUG_ACTS_ON_GENE"], limit:10}]
 
 ### Pharmacogenomics for drug X
-getRankedNeighbors(type=Drug, id=X, edgeType="GENE_AFFECTS_DRUG_RESPONSE", scoreField="evidence_count") → PGx genes
-Note: use scoreField="evidence_count" because max_profile_evidence_score is often zero.
+getRankedNeighbors(type=Drug, id=X, edgeType="GENE_AFFECTS_DRUG_RESPONSE") → PGx genes
+If scores are degenerate, discover available fields by passing an invalid scoreField (e.g., "_"), then retry with a meaningful one.
 For drug TARGETS (mechanism of action), use DRUG_ACTS_ON_GENE instead — different relationship.
 
 ### Drug-drug interactions for drug X

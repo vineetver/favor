@@ -1,7 +1,7 @@
 "use client";
 
 import { isToolUIPart, getToolName, type UIMessage } from "ai";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Conversation,
@@ -68,7 +68,10 @@ import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
 import { ActivityTimeline } from "./tool-renderers";
-import type { AgentPlan } from "../types";
+import { VizSpecPanel } from "./viz-spec-panel";
+import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
+import type { BatchResultEntry } from "../tools/run-batch";
+import { generateVizSpec } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
 
 // ---------------------------------------------------------------------------
@@ -178,17 +181,17 @@ function getContextualStatus(messages: UIMessage[]): string {
 // Message Renderer
 // ---------------------------------------------------------------------------
 
-function ChatMessageRenderer({
+const ChatMessageRenderer = memo(function ChatMessageRenderer({
   message,
-  messages,
   isLastMessage,
   isStreaming,
+  contextualStatus,
   showReasoning,
 }: {
   message: UIMessage;
-  messages: UIMessage[];
   isLastMessage: boolean;
   isStreaming: boolean;
+  contextualStatus: string;
   showReasoning: boolean;
 }) {
   // Consolidate reasoning parts into a single block
@@ -208,48 +211,86 @@ function ChatMessageRenderer({
     navigator.clipboard.writeText(textContent);
   }, [message.parts]);
 
-  // Build enriched tool parts (with input/output) for ActivityTimeline
+  // Stable fingerprint of tool parts — only changes when a tool is added or its
+  // state transitions (e.g. input-available → output-available), NOT on every
+  // text token during streaming.  This prevents cascading re-renders through
+  // vizSpecs → chart components → ResponsiveContainer resize observer loops.
+  const toolFingerprint = message.parts
+    .filter(isToolUIPart)
+    .map((p) => `${getToolName(p)}:${(p as Record<string, unknown>).state}`)
+    .join("|");
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allToolParts = message.parts.filter(isToolUIPart).map((p: any) => ({
-    type: p.type as string,
-    toolCallId: p.toolCallId as string | undefined,
-    toolName: getToolName(p) as string,
-    state: p.state as string | undefined,
-    input: p.input as unknown,
-    output: p.output as unknown,
-  }));
+  const allToolParts = useMemo(() =>
+    message.parts.filter(isToolUIPart).map((p: any) => ({
+      type: p.type as string,
+      toolCallId: p.toolCallId as string | undefined,
+      toolName: getToolName(p) as string,
+      state: p.state as string | undefined,
+      input: p.input as unknown,
+      output: p.output as unknown,
+    })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [toolFingerprint],
+  );
   const hasToolParts = allToolParts.length > 0;
 
-  // Extract plan output (last completed planQuery)
-  const planPart = allToolParts.find((p) => {
-    const name = (p.toolName ?? "").replace(/^tool-/, "");
-    return name === "planQuery" && p.state === "output-available";
-  });
-  const planOutput: AgentPlan | null = planPart
-    ? (planPart.output as AgentPlan)
-    : null;
+  // Extract plan output, streaming state, and non-plan tool parts — all memoized
+  const { planOutput, isPlanStreaming, siblingToolParts } = useMemo(() => {
+    let plan: AgentPlan | null = null;
+    let planStreaming = false;
+    const siblings: typeof allToolParts = [];
 
-  // Is the planQuery tool currently streaming?
-  const isPlanStreaming = allToolParts.some((p) => {
-    const name = (p.toolName ?? "").replace(/^tool-/, "");
-    return (
-      name === "planQuery" &&
-      (p.state === "input-available" || p.state === "input-streaming")
-    );
-  });
+    for (const p of allToolParts) {
+      const name = (p.toolName ?? "").replace(/^tool-/, "");
+      if (name === "planQuery") {
+        if (p.state === "output-available" && p.output) plan = p.output as AgentPlan;
+        if (p.state === "input-available" || p.state === "input-streaming") planStreaming = true;
+      } else {
+        siblings.push(p);
+      }
+    }
 
-  // Non-plan tool parts for ActivityTimeline status tracking
-  const siblingToolParts = allToolParts.filter((p) => {
-    const name = (p.toolName ?? "").replace(/^tool-/, "");
-    return name !== "planQuery";
-  });
+    return { planOutput: plan, isPlanStreaming: planStreaming, siblingToolParts: siblings };
+  }, [allToolParts]);
 
-  // Text segments
-  const textSegments = message.parts
-    .filter((p): p is Extract<typeof p, { type: "text" }> =>
-      p.type === "text" && !!p.text.trim(),
-    )
-    .map((p, i) => ({ text: p.text, key: `text-${message.id}-${i}` }));
+  // Extract vizSpecs — memoized to prevent infinite re-render loops in chart/network children
+  const vizSpecs = useMemo(() => {
+    const SPECIALIST = new Set(["bioContext", "variantTriage"]);
+    const SKIP = new Set(["planQuery", "searchEntities", "recallMemories", "saveMemory", "getResultSlice", "listResults", "getGraphSchema", "getCohortSchema", "getEdgeDetail", "runBatch"]);
+
+    return allToolParts.reduce<VizSpec[]>((acc, p, idx) => {
+      const name = (p.toolName ?? "").replace(/^tool-/, "");
+      if (p.state !== "output-available" || !p.output) return acc;
+
+      if (SPECIALIST.has(name)) {
+        const output = p.output as VariantTriageOutput | BioContextOutput;
+        if (output.vizSpecs?.length) acc.push(...output.vizSpecs);
+      } else if (name === "runBatch") {
+        const batch = p.output as { results?: BatchResultEntry[] };
+        for (const entry of batch.results ?? []) {
+          if (entry.error || !entry.output) continue;
+          const viz = generateVizSpec(entry.toolName, entry.output, entry.input ?? {}, acc.length);
+          if (viz) acc.push(viz);
+        }
+      } else if (!SKIP.has(name)) {
+        const input = (p.input ?? {}) as Record<string, unknown>;
+        const viz = generateVizSpec(name, p.output, input, idx);
+        if (viz) acc.push(viz);
+      }
+      return acc;
+    }, []);
+  }, [allToolParts]);
+
+  const textSegments = useMemo(
+    () =>
+      message.parts
+        .filter((p): p is Extract<typeof p, { type: "text" }> =>
+          p.type === "text" && !!p.text.trim(),
+        )
+        .map((p, i) => ({ text: p.text, key: `text-${message.id}-${i}` })),
+    [message.parts, message.id],
+  );
 
   const hasText = textSegments.length > 0;
 
@@ -277,7 +318,7 @@ function ChatMessageRenderer({
         {isLastMessage && isStreaming && !hasToolParts && textSegments.length === 0 && !hasReasoning && (
           <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
             <Spinner className="size-4" />
-            <Shimmer duration={2}>{getContextualStatus(messages)}</Shimmer>
+            <Shimmer duration={2}>{contextualStatus}</Shimmer>
           </div>
         )}
 
@@ -290,6 +331,9 @@ function ChatMessageRenderer({
             isPlanStreaming={isPlanStreaming}
           />
         )}
+
+        {/* Deterministic visualizations from tool results */}
+        {vizSpecs.length > 0 && <VizSpecPanel vizSpecs={vizSpecs} />}
 
         {/* Final synthesis text */}
         {textSegments.map((seg) => (
@@ -316,7 +360,7 @@ function ChatMessageRenderer({
       )}
     </Message>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Empty State
@@ -514,9 +558,9 @@ export function ChatPage() {
                     >
                       <ChatMessageRenderer
                         message={message}
-                        messages={messages}
                         isLastMessage={index === messages.length - 1}
                         isStreaming={isStreaming}
+                        contextualStatus={getContextualStatus(messages)}
                         showReasoning={synthesisModel === "thinking"}
                       />
                     </motion.div>
