@@ -5,7 +5,6 @@ import { Card, CardContent } from "@shared/components/ui/card";
 import {
   BatchApiError,
   deleteCohort,
-  DEFAULT_TENANT_ID,
   getCohort,
   listCohorts,
   JobDetailView,
@@ -114,14 +113,13 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
 
   const { job, isLoading, error, refetch } = useJobPolling({
     jobId,
-    tenantId: DEFAULT_TENANT_ID,
     enabled: !isPaused,
   });
 
   // Fetch cohort detail for the label (the jobId in the URL is actually the cohort ID)
   const { data: cohort } = useQuery({
     queryKey: ["cohort-detail", jobId],
-    queryFn: () => getCohort(jobId, DEFAULT_TENANT_ID),
+    queryFn: () => getCohort(jobId),
     enabled: !!jobId,
     staleTime: 60_000,
   });
@@ -129,7 +127,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   // Fetch derived sub-cohorts of this parent
   const { data: derivedData } = useQuery({
     queryKey: ["derived-cohorts", jobId],
-    queryFn: () => listCohorts(DEFAULT_TENANT_ID, { parent_id: jobId, limit: 50 }),
+    queryFn: () => listCohorts({ parent_id: jobId, limit: 50 }),
     enabled: !!jobId && !!job?.is_terminal,
     staleTime: 30_000,
   });
@@ -153,7 +151,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     setCancelError(null);
 
     try {
-      await deleteCohort(jobId, DEFAULT_TENANT_ID);
+      await deleteCohort(jobId);
       refetch();
     } catch (err) {
       const message =

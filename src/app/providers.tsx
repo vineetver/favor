@@ -1,5 +1,6 @@
 "use client";
 import { SearchProvider } from "@features/search";
+import { AuthProvider } from "@shared/hooks";
 import {
   defaultShouldDehydrateQuery,
   isServer,
@@ -46,10 +47,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SearchProvider>
-        {children}
-        <ReactQueryDevtools />
-      </SearchProvider>
+      <AuthProvider>
+        <SearchProvider>
+          {children}
+          <ReactQueryDevtools />
+        </SearchProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

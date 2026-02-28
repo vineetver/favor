@@ -3,10 +3,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { presignUpload, uploadFileToS3 } from "../api";
-import { DEFAULT_TENANT_ID } from "../config";
 
 interface UseBatchUploadOptions {
-  tenantId?: string;
   onSuccess?: (inputUri: string) => void;
   onError?: (error: Error) => void;
 }
@@ -23,7 +21,7 @@ interface UseBatchUploadResult {
  * Hook for handling file upload to S3 via presigned URL
  */
 export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUploadResult {
-  const { tenantId = DEFAULT_TENANT_ID, onSuccess, onError } = options;
+  const { onSuccess, onError } = options;
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const presignMutation = useMutation({
@@ -42,7 +40,6 @@ export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUpl
       try {
         // Step 1: Get presigned URL
         const { upload_url, input_uri } = await presignMutation.mutateAsync({
-          tenant_id: tenantId,
           filename: file.name,
           content_type: file.type || "application/octet-stream",
         });
@@ -61,7 +58,7 @@ export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUpl
         throw uploadError;
       }
     },
-    [tenantId, presignMutation, onSuccess, onError],
+    [presignMutation, onSuccess, onError],
   );
 
   const reset = useCallback(() => {

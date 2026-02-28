@@ -16,3 +16,5 @@ export {
   useClientSearchParams,
   updateClientUrl,
 } from "./use-client-search-params";
+
+export { AuthProvider, useAuth } from "./use-auth";

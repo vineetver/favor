@@ -505,6 +505,7 @@ export function DiseasePortfolioOverview({
     fetch(`${API_BASE}/entities/preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ ids }),
     })
       .then((r) => (r.ok ? r.json() : null))
@@ -537,6 +538,7 @@ export function DiseasePortfolioOverview({
     fetch(`${API_BASE}/graph/connections`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         from: { type: "Gene", id: geneId },
         to: { type: "Disease", id: selectedId },

@@ -2,11 +2,9 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { validateFile } from "../api";
-import { DEFAULT_TENANT_ID } from "../config";
 import type { ValidateResponse } from "../types";
 
 interface UseBatchValidateOptions {
-  tenantId?: string;
   onSuccess?: (validation: ValidateResponse) => void;
   onError?: (error: Error) => void;
 }
@@ -23,7 +21,7 @@ interface UseBatchValidateResult {
  * Hook for validating uploaded files before creating batch jobs
  */
 export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatchValidateResult {
-  const { tenantId = DEFAULT_TENANT_ID, onSuccess, onError } = options;
+  const { onSuccess, onError } = options;
 
   const mutation = useMutation({
     mutationFn: validateFile,
@@ -37,7 +35,6 @@ export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatc
 
   const validate = async (inputUri: string, dryRunLookups = true) => {
     return mutation.mutateAsync({
-      tenant_id: tenantId,
       input_uri: inputUri,
       dry_run_lookups: dryRunLookups,
     });

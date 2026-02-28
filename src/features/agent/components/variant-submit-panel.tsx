@@ -68,7 +68,6 @@ function parseVariantLines(text: string): string[] {
 // ---------------------------------------------------------------------------
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
-const TENANT_ID = "default-tenant";
 const POLL_INTERVAL_MS = 1_500;
 const POLL_TIMEOUT_MS = 120_000;
 
@@ -77,9 +76,10 @@ async function createCohortAsync(
   label: string,
 ): Promise<{ cohort_id: string; vid_count: number }> {
   // Step 1: POST /cohorts → { id, status, created_at }
-  const submitRes = await fetch(`${API_BASE}/cohorts?tenant_id=${TENANT_ID}`, {
+  const submitRes = await fetch(`${API_BASE}/cohorts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({
       references: variants,
       label,
@@ -112,7 +112,8 @@ async function createCohortAsync(
 
   while (Date.now() < deadline) {
     const statusRes = await fetch(
-      `${API_BASE}/cohorts/${cohortId}/status?tenant_id=${TENANT_ID}`,
+      `${API_BASE}/cohorts/${cohortId}/status`,
+      { credentials: "include" },
     );
     if (!statusRes.ok) {
       throw new Error(`Cohort status check failed (${statusRes.status})`);

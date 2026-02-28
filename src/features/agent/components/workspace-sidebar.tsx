@@ -15,7 +15,6 @@ import { CohortListItem as CohortCard } from "./cohort-list-item";
 import { CohortPromptPicker } from "./cohort-prompt-picker";
 import type { CohortListItem } from "@features/batch/types";
 import { deleteCohort } from "@features/batch/api";
-import { DEFAULT_TENANT_ID } from "@features/batch/config";
 import { useCohorts } from "@features/batch/hooks/use-cohorts";
 import { useSessions } from "../hooks/use-sessions";
 
@@ -107,7 +106,7 @@ export function WorkspaceSidebar({
     cohorts,
     isLoading: cohortsLoading,
     refetch: refetchCohorts,
-  } = useCohorts({ tenantId: DEFAULT_TENANT_ID });
+  } = useCohorts();
 
   // Refetch both when sessionId changes (new session created)
   const refetchAll = useCallback(() => {
@@ -121,7 +120,7 @@ export function WorkspaceSidebar({
 
   const handleCohortRemoved = useCallback(
     (cohortId: string) => {
-      deleteCohort(cohortId, DEFAULT_TENANT_ID)
+      deleteCohort(cohortId)
         .then(() => refetchCohorts())
         .catch(() => {});
     },

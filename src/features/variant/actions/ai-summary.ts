@@ -33,6 +33,7 @@ export async function getVariantSummary(
   const response = await fetch(`${API_BASE}/ai-text?${searchParams}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     cache: "no-store",
   });
 
@@ -58,6 +59,7 @@ export async function generateVariantSummary(params: {
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({
       entity_type: "variant",
       entity_id: params.vcf,

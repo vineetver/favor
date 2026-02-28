@@ -118,6 +118,7 @@ export async function presignUpload(request: PresignRequest): Promise<PresignRes
     fetch(`${API_BASE}/cohorts/presign-upload`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         ...request,
         content_type: request.content_type || getContentType(request.filename),
@@ -173,6 +174,7 @@ export async function validateFile(request: ValidateRequest): Promise<ValidateRe
     fetch(`${API_BASE}/cohorts/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse<ValidateResponse>(res, "/cohorts/validate")),
   );
@@ -188,6 +190,7 @@ export async function validateTypedCohort(request: ValidateRequest): Promise<Typ
     fetch(`${API_BASE}/cohorts/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse<TypedValidateResponse>(res, "/cohorts/validate")),
   );
@@ -236,35 +239,34 @@ export function getStateDescription(state: JobState): string {
  * Create a cohort from inline variant references.
  */
 export async function createCohort(
-  tenantId: string,
   request: CreateCohortRequest,
 ): Promise<CreateCohortResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts?${params}`, {
+    fetch(`${API_BASE}/cohorts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse<CreateCohortResponse>(res, "/cohorts")),
   );
 }
 
 /**
- * List cohorts for a tenant with optional status filter and cursor pagination.
+ * List cohorts with optional status filter and cursor pagination.
  */
 export async function listCohorts(
-  tenantId: string,
   opts?: { status?: CohortStatus; source?: string; parent_id?: string; limit?: number; cursor?: string },
 ): Promise<CohortListResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
+  const params = new URLSearchParams();
   if (opts?.status) params.set("status", opts.status);
   if (opts?.source) params.set("source", opts.source);
   if (opts?.parent_id) params.set("parent_id", opts.parent_id);
   if (opts?.limit) params.set("limit", String(opts.limit));
   if (opts?.cursor) params.set("cursor", opts.cursor);
 
+  const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts?${params}`).then((res) =>
+    fetch(`${API_BASE}/cohorts${qs ? `?${qs}` : ""}`, { credentials: "include" }).then((res) =>
       handleResponse<CohortListResponse>(res, "/cohorts"),
     ),
   );
@@ -276,13 +278,13 @@ export async function listCohorts(
  */
 export async function getCohort(
   id: string,
-  tenantId: string,
   includeUrls = false,
 ): Promise<CohortDetail> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
+  const params = new URLSearchParams();
   if (includeUrls) params.set("include_urls", "true");
+  const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}?${params}`).then((res) =>
+    fetch(`${API_BASE}/cohorts/${id}${qs ? `?${qs}` : ""}`, { credentials: "include" }).then((res) =>
       handleResponse<CohortDetail>(res, `/cohorts/${id}`),
     ),
   );
@@ -293,11 +295,9 @@ export async function getCohort(
  */
 export async function getCohortStatus(
   id: string,
-  tenantId: string,
 ): Promise<CohortStatusResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/status?${params}`).then((res) =>
+    fetch(`${API_BASE}/cohorts/${id}/status`, { credentials: "include" }).then((res) =>
       handleResponse<CohortStatusResponse>(res, `/cohorts/${id}/status`),
     ),
   );
@@ -308,11 +308,10 @@ export async function getCohortStatus(
  */
 export async function deleteCohort(
   id: string,
-  tenantId: string,
 ): Promise<DeleteCohortResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
-  return fetch(`${API_BASE}/cohorts/${id}?${params}`, {
+  return fetch(`${API_BASE}/cohorts/${id}`, {
     method: "DELETE",
+    credentials: "include",
   }).then((res) => handleResponse<DeleteCohortResponse>(res, `/cohorts/${id}`));
 }
 
@@ -321,11 +320,9 @@ export async function deleteCohort(
  */
 export async function getCohortSummary(
   id: string,
-  tenantId: string,
 ): Promise<CohortSummary> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/summary?${params}`).then((res) =>
+    fetch(`${API_BASE}/cohorts/${id}/summary`, { credentials: "include" }).then((res) =>
       handleResponse<CohortSummary>(res, `/cohorts/${id}/summary`),
     ),
   );
@@ -336,14 +333,13 @@ export async function getCohortSummary(
  */
 export async function cohortTopK(
   id: string,
-  tenantId: string,
   request: CohortTopKRequest,
 ): Promise<unknown> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/topk?${params}`, {
+    fetch(`${API_BASE}/cohorts/${id}/topk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse(res, `/cohorts/${id}/topk`)),
   );
@@ -354,14 +350,13 @@ export async function cohortTopK(
  */
 export async function cohortAggregate(
   id: string,
-  tenantId: string,
   request: CohortAggregateRequest,
 ): Promise<unknown> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/aggregate?${params}`, {
+    fetch(`${API_BASE}/cohorts/${id}/aggregate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse(res, `/cohorts/${id}/aggregate`)),
   );
@@ -372,14 +367,13 @@ export async function cohortAggregate(
  */
 export async function cohortDerive(
   id: string,
-  tenantId: string,
   request: CohortDeriveRequest,
 ): Promise<unknown> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/derive?${params}`, {
+    fetch(`${API_BASE}/cohorts/${id}/derive`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse(res, `/cohorts/${id}/derive`)),
   );
@@ -390,12 +384,11 @@ export async function cohortDerive(
  */
 export async function cohortExport(
   id: string,
-  tenantId: string,
 ): Promise<CohortExportResponse> {
-  const params = new URLSearchParams({ tenant_id: tenantId });
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/export?${params}`, {
+    fetch(`${API_BASE}/cohorts/${id}/export`, {
       method: "POST",
+      credentials: "include",
     }).then((res) =>
       handleResponse<CohortExportResponse>(res, `/cohorts/${id}/export`),
     ),

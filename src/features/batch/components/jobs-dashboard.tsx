@@ -31,7 +31,6 @@ import {
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { formatDate, formatNumber } from "../lib/format";
-import { DEFAULT_TENANT_ID } from "../config";
 import { deleteCohort } from "../api";
 import { useCohorts } from "../hooks/use-cohorts";
 import type { CohortListItem, CohortStatus } from "../types";
@@ -386,13 +385,11 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
 
-  const { cohorts, isLoading, refetch } = useCohorts({
-    tenantId: DEFAULT_TENANT_ID,
-  });
+  const { cohorts, isLoading, refetch } = useCohorts();
 
   const handleRemove = useCallback(
     async (id: string) => {
-      await deleteCohort(id, DEFAULT_TENANT_ID);
+      await deleteCohort(id);
       refetch();
     },
     [refetch],

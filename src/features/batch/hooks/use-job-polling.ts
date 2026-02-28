@@ -8,7 +8,6 @@ import { cohortDetailToJob } from "../types";
 
 interface UseJobPollingOptions {
   jobId: string | null;
-  tenantId: string;
   enabled?: boolean;
   onComplete?: (job: Job) => void;
   onFailed?: (job: Job) => void;
@@ -28,7 +27,6 @@ interface UseJobPollingResult {
  */
 export function useJobPolling({
   jobId,
-  tenantId,
   enabled = true,
   onComplete,
   onFailed,
@@ -36,12 +34,12 @@ export function useJobPolling({
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["batch-job", jobId, tenantId],
+    queryKey: ["batch-job", jobId],
     queryFn: async () => {
       if (!jobId) throw new Error("No job ID");
 
       // Always request with URLs — backend includes them when cohort is ready
-      const detail = await getCohort(jobId, tenantId, true);
+      const detail = await getCohort(jobId, true);
       return cohortDetailToJob(detail);
     },
     enabled: enabled && !!jobId,

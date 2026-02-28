@@ -6,7 +6,6 @@ import type { CohortStatusResponse } from "../types";
 
 interface UseCohortPollingOptions {
   cohortId: string | null;
-  tenantId: string;
   enabled?: boolean;
 }
 
@@ -22,14 +21,13 @@ interface UseCohortPollingResult {
  */
 export function useCohortPolling({
   cohortId,
-  tenantId,
   enabled = true,
 }: UseCohortPollingOptions): UseCohortPollingResult {
   const query = useQuery({
-    queryKey: ["cohort-status", cohortId, tenantId],
+    queryKey: ["cohort-status", cohortId],
     queryFn: async () => {
       if (!cohortId) throw new Error("No cohort ID");
-      return getCohortStatus(cohortId, tenantId);
+      return getCohortStatus(cohortId);
     },
     enabled: enabled && !!cohortId,
     refetchInterval: (query) => {

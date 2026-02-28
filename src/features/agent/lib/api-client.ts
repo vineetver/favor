@@ -91,9 +91,17 @@ export async function agentFetch<T>(
         body: options?.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
         cache: "no-store",
+        credentials: "include",
       });
 
       if (!res.ok) {
+        // Redirect to login on 401
+        if (res.status === 401 && typeof window !== "undefined") {
+          window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(window.location.href)}`;
+          // Return a never-resolving promise to prevent further execution
+          return new Promise<T>(() => {});
+        }
+
         const body = await res.text();
         const hint = parseErrorHint(res.status, body);
         const err = new AgentToolError(res.status, body.slice(0, 500), hint);
@@ -134,16 +142,12 @@ export async function agentFetch<T>(
   throw lastError;
 }
 
-/** Cohort calls need tenant_id */
+/** Cohort calls (tenant identity comes from session cookie) */
 export function cohortFetch<T>(
   path: string,
   options?: Parameters<typeof agentFetch>[1],
 ) {
-  const separator = path.includes("?") ? "&" : "?";
-  return agentFetch<T>(
-    `${path}${separator}tenant_id=default-tenant`,
-    options,
-  );
+  return agentFetch<T>(path, options);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,13 +163,12 @@ const POLL_TIMEOUT_MS = 120_000;
  */
 export async function pollCohortUntilReady(
   cohortId: string,
-  tenantId: string,
 ): Promise<CohortStatusResponse> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
     const status = await agentFetch<CohortStatusResponse>(
-      `/cohorts/${cohortId}/status?tenant_id=${tenantId}`,
+      `/cohorts/${cohortId}/status`,
     );
     if (status.is_terminal) return status;
     await new Promise((r) =>

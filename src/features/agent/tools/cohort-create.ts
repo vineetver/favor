@@ -51,7 +51,7 @@ export const createCohort = tool({
       }
 
       // Step 2: Poll cohort status until terminal
-      const statusResult = await pollCohortUntilReady(cohortId, "default-tenant");
+      const statusResult = await pollCohortUntilReady(cohortId);
 
       if (statusResult.status === "failed") {
         return {

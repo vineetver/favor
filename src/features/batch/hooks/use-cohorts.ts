@@ -5,7 +5,6 @@ import { listCohorts } from "../api";
 import type { CohortListItem, CohortStatus } from "../types";
 
 interface UseCohortsOptions {
-  tenantId: string;
   statusFilter?: CohortStatus;
 }
 
@@ -20,14 +19,13 @@ interface UseCohortsResult {
  * Hook to list cohorts from the API, replacing localStorage-based job tracking.
  * Refetches every 5s when there are non-terminal cohorts.
  */
-export function useCohorts({
-  tenantId,
-  statusFilter,
-}: UseCohortsOptions): UseCohortsResult {
+export function useCohorts(options: UseCohortsOptions = {}): UseCohortsResult {
+  const { statusFilter } = options;
+
   const query = useQuery({
-    queryKey: ["cohorts", tenantId, statusFilter],
+    queryKey: ["cohorts", statusFilter],
     queryFn: () =>
-      listCohorts(tenantId, {
+      listCohorts({
         status: statusFilter,
         limit: 100,
       }),

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RequireAuth } from "@shared/components/require-auth";
 import { BatchAnnotationClient } from "./batch-annotation-client";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function BatchAnnotationPage() {
-  return <BatchAnnotationClient />;
+  return (
+    <RequireAuth>
+      <BatchAnnotationClient />
+    </RequireAuth>
+  );
 }

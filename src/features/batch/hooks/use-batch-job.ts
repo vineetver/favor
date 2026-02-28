@@ -3,12 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { createCohort, deleteCohort, getCohort } from "../api";
-import { DEFAULT_TENANT_ID, JOB_POLL_INTERVAL_MS } from "../config";
+import { JOB_POLL_INTERVAL_MS } from "../config";
 import type { InputFormat, Job, KeyType } from "../types";
 import { cohortDetailToJob } from "../types";
 
 interface UseBatchJobOptions {
-  tenantId?: string;
   onJobCreated?: (jobId: string) => void;
   onJobCompleted?: (job: Job) => void;
   onJobFailed?: (job: Job) => void;
@@ -43,7 +42,6 @@ interface UseBatchJobResult {
  */
 export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult {
   const {
-    tenantId = DEFAULT_TENANT_ID,
     onJobCreated,
     onJobCompleted,
     onJobFailed,
@@ -56,8 +54,8 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
 
   // Create cohort mutation (replaces createJob)
   const createMutation = useMutation({
-    mutationFn: (request: Parameters<typeof createCohort>[1]) =>
-      createCohort(tenantId, request),
+    mutationFn: (request: Parameters<typeof createCohort>[0]) =>
+      createCohort(request),
     onSuccess: (data) => {
       setJobId(data.id);
       onJobCreated?.(data.id);
@@ -72,7 +70,7 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
   // Delete/cancel cohort mutation (replaces cancelJob)
   const cancelMutation = useMutation({
     mutationFn: ({ cohortId }: { cohortId: string }) =>
-      deleteCohort(cohortId, tenantId),
+      deleteCohort(cohortId),
     onSuccess: () => {
       if (jobId) {
         queryClient.invalidateQueries({ queryKey: ["batch-job", jobId] });
@@ -87,15 +85,15 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
 
   // Poll cohort status, map to Job
   const jobStatusQuery = useQuery({
-    queryKey: ["batch-job", jobId, tenantId],
+    queryKey: ["batch-job", jobId],
     queryFn: async () => {
       if (!jobId) throw new Error("No job ID");
-      const detail = await getCohort(jobId, tenantId, false);
+      const detail = await getCohort(jobId, false);
       const job = cohortDetailToJob(detail);
 
       // If completed, re-fetch with URLs
       if (job.state === "COMPLETED") {
-        const completeDetail = await getCohort(jobId, tenantId, true);
+        const completeDetail = await getCohort(jobId, true);
         const completeJob = cohortDetailToJob(completeDetail);
         onJobCompleted?.(completeJob);
         return completeJob;

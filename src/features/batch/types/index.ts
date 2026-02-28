@@ -57,7 +57,6 @@ export type ErrorCode =
 // ============================================================================
 
 export interface PresignRequest {
-  tenant_id: string;
   filename: string;
   content_type?: string;
 }
@@ -72,7 +71,6 @@ export interface PresignResponse {
 // ============================================================================
 
 export interface ValidateRequest {
-  tenant_id: string;
   input_uri: string;
   dry_run_lookups?: boolean;
   hint_format?: InputFormat;

@@ -22,20 +22,13 @@ export interface AgentMessage {
 }
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const TENANT_ID = "default-tenant";
-
-// ---------------------------------------------------------------------------
 // Session CRUD
 // ---------------------------------------------------------------------------
 
 export async function createAgentSession(
   title?: string,
 ): Promise<AgentSession> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
-  return agentFetch<AgentSession>(`/agent/sessions?${params}`, {
+  return agentFetch<AgentSession>("/agent/sessions", {
     method: "POST",
     body: { title: title ?? null },
   });
@@ -44,16 +37,12 @@ export async function createAgentSession(
 export async function listAgentSessions(
   limit = 50,
 ): Promise<AgentSession[]> {
-  const params = new URLSearchParams({
-    tenant_id: TENANT_ID,
-    limit: String(limit),
-  });
+  const params = new URLSearchParams({ limit: String(limit) });
   return agentFetch<AgentSession[]>(`/agent/sessions?${params}`);
 }
 
 export async function deleteAgentSession(sessionId: string): Promise<void> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
-  await agentFetch<unknown>(`/agent/sessions/${sessionId}?${params}`, {
+  await agentFetch<unknown>(`/agent/sessions/${sessionId}`, {
     method: "DELETE",
   });
 }
@@ -66,9 +55,8 @@ export async function appendAgentMessage(
   sessionId: string,
   msg: { role: string; content: string; metadata?: object },
 ): Promise<AgentMessage> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
   return agentFetch<AgentMessage>(
-    `/agent/sessions/${sessionId}/messages?${params}`,
+    `/agent/sessions/${sessionId}/messages`,
     { method: "POST", body: msg },
   );
 }
@@ -76,9 +64,8 @@ export async function appendAgentMessage(
 export async function listAgentMessages(
   sessionId: string,
 ): Promise<AgentMessage[]> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
   return agentFetch<AgentMessage[]>(
-    `/agent/sessions/${sessionId}/messages?${params}`,
+    `/agent/sessions/${sessionId}/messages`,
   );
 }
 
@@ -106,8 +93,7 @@ export async function searchMemories(
   query: string,
   limit = 10,
 ): Promise<AgentMemory[]> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
-  return agentFetch<AgentMemory[]>(`/agent/memories/search?${params}`, {
+  return agentFetch<AgentMemory[]>("/agent/memories/search", {
     method: "POST",
     body: { query, limit },
   });
@@ -121,8 +107,7 @@ export async function upsertMemory(mem: {
   value?: object;
   confidence?: number;
 }): Promise<AgentMemory> {
-  const params = new URLSearchParams({ tenant_id: TENANT_ID });
-  return agentFetch<AgentMemory>(`/agent/memories?${params}`, {
+  return agentFetch<AgentMemory>("/agent/memories", {
     method: "PUT",
     body: mem,
   });

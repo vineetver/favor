@@ -29,5 +29,3 @@ export const DEFAULT_OUTPUT_FIELDS = [
 export const JOB_POLL_INTERVAL_MS = 10000; // 10 seconds - backend updates every 10s
 export const JOB_POLL_MAX_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-// Tenant ID (in production, this would come from auth)
-export const DEFAULT_TENANT_ID = "default-tenant";

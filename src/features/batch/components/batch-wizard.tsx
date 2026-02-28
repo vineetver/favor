@@ -22,7 +22,6 @@ import {
   uploadFileToS3,
   validateTypedCohort,
 } from "../api";
-import { DEFAULT_TENANT_ID } from "../config";
 import type {
   ColumnMapping,
   TypedValidateResponse,
@@ -200,7 +199,6 @@ export function BatchWizard({ className }: BatchWizardProps) {
 
     try {
       const { upload_url, input_uri } = await presignUpload({
-        tenant_id: DEFAULT_TENANT_ID,
         filename: selectedFile.name,
       });
 
@@ -211,7 +209,6 @@ export function BatchWizard({ className }: BatchWizardProps) {
 
       // Backend always returns TypedValidateResponse shape
       const result = await validateTypedCohort({
-        tenant_id: DEFAULT_TENANT_ID,
         input_uri: input_uri,
         dry_run_lookups: true,
       });
@@ -277,7 +274,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
       setError(null);
 
       try {
-        const request: Parameters<typeof createCohort>[1] = {
+        const request: Parameters<typeof createCohort>[0] = {
           source: "upload",
           input_uri: inputUri,
           label: file.name,
@@ -293,7 +290,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
           request.include_not_found = config.includeNotFound;
         }
 
-        const { id } = await createCohort(DEFAULT_TENANT_ID, request);
+        const { id } = await createCohort(request);
         router.push(`/batch-annotation/jobs/${id}`);
       } catch (err) {
         const message = err instanceof BatchApiError ? err.message : "Failed to create job";

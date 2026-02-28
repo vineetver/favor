@@ -37,6 +37,7 @@ export async function fetchTypeahead(
       headers: {
         Accept: "application/json",
       },
+      credentials: "include",
       // Don't cache typeahead for real-time feel
       cache: "no-store",
       // Pass abort signal to cancel in-flight requests
@@ -105,6 +106,7 @@ export async function fetchSearch(
       headers: {
         Accept: "application/json",
       },
+      credentials: "include",
       // Cache search results for 5 minutes
       next: { revalidate: 300 },
       signal: params.signal,
@@ -151,6 +153,7 @@ export async function fetchPivotExpansion(params: {
       headers: {
         Accept: "application/json",
       },
+      credentials: "include",
       cache: "no-store",
       signal: params.signal,
     },

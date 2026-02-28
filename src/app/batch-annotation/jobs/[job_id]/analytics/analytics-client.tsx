@@ -3,7 +3,6 @@
 import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
 import {
-  DEFAULT_TENANT_ID,
   JobAnalytics,
   useJobPolling,
 } from "@features/batch";
@@ -40,7 +39,6 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   // Poll for job status to get output URL
   const { job, isLoading, error } = useJobPolling({
     jobId,
-    tenantId: DEFAULT_TENANT_ID,
   });
 
   // Loading state

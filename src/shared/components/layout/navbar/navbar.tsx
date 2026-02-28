@@ -1,15 +1,17 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { useAuth } from "@shared/hooks";
 import { Button } from "@shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
-import { ChevronDown, Menu, Sparkles } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { MobileDrawer } from "./mobile-drawer";
@@ -35,9 +37,57 @@ function NavLink({ item }: { item: NavItem }) {
   );
 }
 
+function UserAvatar({
+  name,
+  picture,
+  size = "sm",
+}: {
+  name?: string;
+  picture?: string;
+  size?: "sm" | "md";
+}) {
+  const dims = size === "md" ? "h-9 w-9" : "h-8 w-8";
+  const text = size === "md" ? "text-sm" : "text-xs";
+
+  if (picture) {
+    return (
+      <img
+        src={picture}
+        alt={name || "User"}
+        className={cn(dims, "rounded-full object-cover ring-2 ring-border/40")}
+      />
+    );
+  }
+
+  const initials = name
+    ? name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "U";
+
+  return (
+    <div
+      className={cn(
+        dims,
+        "rounded-full flex items-center justify-center",
+        "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground",
+        "ring-2 ring-primary/20",
+        text,
+        "font-semibold",
+      )}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export function Navbar() {
   const scrolled = useScrolled();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { user, isAuthenticated, isLoading, login, logout } = useAuth();
 
   return (
     <>
@@ -121,7 +171,88 @@ export function Navbar() {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex-1 flex justify-end items-center gap-6 z-10">
+            <div className="flex-1 flex justify-end items-center gap-3 z-10">
+              {/* Auth: Sign in / User menu */}
+              {!isLoading && (
+                <div className="hidden md:flex items-center">
+                  {isAuthenticated && user ? (
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1 rounded-full",
+                            "transition-all duration-200",
+                            "hover:bg-muted/60",
+                            "focus:outline-none",
+                          )}
+                        >
+                          <UserAvatar
+                            name={user.name}
+                            picture={user.picture}
+                          />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        sideOffset={8}
+                        className="w-72 p-0 rounded-xl overflow-hidden"
+                      >
+                        <div className="bg-muted/40 px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar
+                              name={user.name}
+                              picture={user.picture}
+                              size="md"
+                            />
+                            <div className="flex-1 min-w-0">
+                              {user.name && user.name !== user.email ? (
+                                <>
+                                  <p className="text-sm font-semibold truncate text-foreground">
+                                    {user.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {user.email}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-sm font-medium truncate text-foreground">
+                                  {user.email}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-1.5">
+                          <DropdownMenuItem
+                            onClick={logout}
+                            className={cn(
+                              "px-3 py-2.5 rounded-lg cursor-pointer text-sm",
+                              "text-muted-foreground",
+                              "hover:text-destructive hover:bg-destructive/10",
+                              "transition-colors duration-150",
+                            )}
+                          >
+                            <LogOut className="w-4 h-4 mr-2.5" />
+                            Sign out
+                          </DropdownMenuItem>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => login()}
+                      className="rounded-full px-4 text-sm font-medium"
+                    >
+                      <User className="w-4 h-4 mr-1.5" />
+                      Sign in
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="hidden md:flex h-5 w-px bg-border" />
 
               <Link
