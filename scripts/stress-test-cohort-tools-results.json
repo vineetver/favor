@@ -1,0 +1,246 @@
+[
+  {
+    "id": "A0",
+    "name": "auth",
+    "grade": "PASS",
+    "elapsed": 1.061,
+    "notes": "Auth OK (HTTP 200)",
+    "responseKeys": [
+      "text_summary",
+      "row_count",
+      "columns",
+      "data_type",
+      "confidence",
+      "has_variant_resolution",
+      "variant_key_strategy",
+      "column_map",
+      "profile",
+      "annotation_pack",
+      "qc_warnings",
+      "capabilities"
+    ],
+    "rawSnippet": "{\"text_summary\":\"Cohort (gwas_sumstats) has 9472 rows with 66 queryable columns (21 numeric, 43 categorical, 1 identity, 1 array).\",\"row_count\":9472,\"columns\":[{\"name\":\"row_id\",\"kind\":\"identity\"},{\"name\":\"raw_ref\",\"kind\":\"categorical\"},{\"name\":\"ref_type\",\"kind\":\"categorical\"},{\"name\":\"status\",\"kind\":\"categorical\"},{\"name\":\"error\",\"kind\":\"categorical\"},{\"name\":\"variants_vid\",\"kind\":\"numeric\"},{\"name\":\"variants_chrom_id\",\"kind\":\"numeric\"},{\"name\":\"variants_position0\",\"kind\":\"numeric\"},{\"name\":\"var"
+  },
+  {
+    "id": "T1.1",
+    "name": "Schema for GWAS cohort 84a8d62b...",
+    "grade": "FAIL",
+    "elapsed": 0.794,
+    "notes": "Exception: d.capabilities.join is not a function"
+  },
+  {
+    "id": "T2.1",
+    "name": "rows",
+    "grade": "FAIL",
+    "elapsed": 0.284,
+    "notes": "HTTP 400: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid query: Unknown column: 'variant_vcf'. Available: row_id, raw_ref, ref_type, status, error, variants_vid, variants_chrom_id, variants_position0, variants_is_hashed, variants_hash30, variants_pos_bin_1m, variants_chromosome, variants_position, variants"
+  },
+  {
+    "id": "T2.2",
+    "name": "rows+select",
+    "grade": "PASS",
+    "elapsed": 2.004,
+    "notes": "3 rows, selected: [variants_vid,variants_chrom_id,variants_position0,variants_hash30,variants_pos_bin_1m], actual keys: [variants_vid,variants_chrom_id,variants_position0,variants_hash30,variants_pos_bin_1m]",
+    "responseKeys": [
+      "sampleRow"
+    ],
+    "rawSnippet": "{\"sampleRow\":{\"variants_vid\":5768422899249582000,\"variants_chrom_id\":10,\"variants_position0\":1776673,\"variants_hash30\":null,\"variants_pos_bin_1m\":1}}"
+  },
+  {
+    "id": "T2.3",
+    "name": "rows+filter",
+    "grade": "FAIL",
+    "elapsed": 0.269,
+    "notes": "HTTP 400: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid query: Unknown column: 'variant_vcf'. Available: row_id, raw_ref, ref_type, status, error, variants_vid, variants_chrom_id, variants_position0, variants_is_hashed, variants_hash30, variants_pos_bin_1m, variants_chromosome, variants_position, variants"
+  },
+  {
+    "id": "T2.4",
+    "name": "rows asc",
+    "grade": "FAIL",
+    "elapsed": 0.302,
+    "notes": "HTTP 400: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid query: Unknown column: 'variant_vcf'. Available: row_id, raw_ref, ref_type, status, error, variants_vid, variants_chrom_id, variants_position0, variants_is_hashed, variants_hash30, variants_pos_bin_1m, variants_chromosome, variants_position, variants"
+  },
+  {
+    "id": "T3.1",
+    "name": "groupby",
+    "grade": "PASS",
+    "elapsed": 0.731,
+    "notes": "100 groups, total_groups=100, bucket keys=[group_key,count]",
+    "responseKeys": [
+      "total_groups",
+      "sampleBucket"
+    ],
+    "rawSnippet": "{\"total_groups\":100,\"sampleBucket\":{\"group_key\":null,\"count\":2}}"
+  },
+  {
+    "id": "T3.2",
+    "name": "groupby+metrics",
+    "grade": "PASS",
+    "elapsed": 1.714,
+    "notes": "100 groups, bucket keys=[group_key,count,variants_vid_min,variants_vid_max,variants_vid_mean,variants_vid_median,variants_chrom_id_min,variants_chrom_id_max,variants_chrom_id_mean,variants_chrom_id_median]",
+    "responseKeys": [
+      "sampleBucket"
+    ],
+    "rawSnippet": "{\"sampleBucket\":{\"group_key\":null,\"count\":2,\"variants_vid_min\":5767826605318480000,\"variants_vid_max\":5767826605318480000,\"variants_vid_mean\":5767826605318480000,\"variants_vid_median\":5767826605318480000,\"variants_chrom_id_min\":10,\"variants_chrom_id_max\":10,\"variants_chrom_id_mean\":10,\"variants_chrom_id_median\":10}}"
+  },
+  {
+    "id": "T4.1",
+    "name": "derive",
+    "grade": "FAIL",
+    "elapsed": 0.232,
+    "notes": "HTTP 400: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Unknown score field 'variants_vid'. Available: cadd_phred, cadd_raw, revel, alpha_missense, gnomad_af, gnomad_exome_af, bravo_af, linsight, fathmm_xf, apc_conservation, apc_epigenetics, apc_protein_function, apc_proximity_to_coding, apc_local_nucleotide_dive"
+  },
+  {
+    "id": "T5.1",
+    "name": "prioritize",
+    "grade": "PASS",
+    "elapsed": 5.443,
+    "notes": "10 rows, total_ranked=9472, row keys=[row_id,raw_ref,ref_type,status,error,variants_is_hashed,variants_chromosome,variants_variant_vcf,variants_bravo,variants_genecode,variants_ucsc,variants_dbsnp,variants_dbnsfp,variants_refseq,variants_cage,variants_genehancer,variants_super_enhancer,variants_clinvar,variants_main,variants_tg,variants_mappability,variants_gnomad_exome,variants_gnomad_genome,variants_mutation_rate,variants_funseq,variants_aloft,variants_alphamissense,variants_ccre,variants_apc,variants_cosmic,variants_epigenetic_phred,variants_pgboost,original_hm_variant_id,original_hm_rsid,original_hm_other_allele,original_hm_effect_allele,original_hm_odds_ratio,original_hm_ci_lower,original_hm_ci_upper,original_rsid,original_chromosome,original_other_allele,original_effect_allele,original_ci_lower,original_ci_upper,variants_vid,variants_chrom_id,variants_position0,variants_vid_rank,variants_chrom_id_rank,variants_position0_rank,rank_score]",
+    "responseKeys": [
+      "total_ranked",
+      "sampleRow"
+    ],
+    "rawSnippet": "{\"total_ranked\":9472,\"sampleRow\":{\"row_id\":9645,\"raw_ref\":null,\"ref_type\":null,\"status\":null,\"error\":null,\"variants_is_hashed\":false,\"variants_chromosome\":\"10\",\"variants_variant_vcf\":\"10-2023506-C-G\",\"variants_bravo\":{\"bravo_an\":264690,\"bravo_ac\":119298,\"bravo_af\":0.450708,\"filter_status\":\"PASS\"},\"variants_genecode\":{\"region_type\":\"intergenic\",\"genes\":[\"AL441943.1\",\"LINC00700\"],\"consequence\":null,\"transcripts\":[]},\"variants_ucsc\":{\"region_type\":\"intergenic\",\"transcripts\":[\"ENST00000413603.5\",\"EN"
+  },
+  {
+    "id": "T6.1",
+    "name": "compute",
+    "grade": "PASS",
+    "elapsed": 5.684,
+    "notes": "10 rows, total_scored=9472, row keys=[row_id,raw_ref,ref_type,status,error,variants_is_hashed,variants_chromosome,variants_variant_vcf,variants_bravo,variants_genecode,variants_ucsc,variants_dbsnp,variants_dbnsfp,variants_refseq,variants_cage,variants_genehancer,variants_super_enhancer,variants_clinvar,variants_main,variants_tg,variants_mappability,variants_gnomad_exome,variants_gnomad_genome,variants_mutation_rate,variants_funseq,variants_aloft,variants_alphamissense,variants_ccre,variants_apc,variants_cosmic,variants_epigenetic_phred,variants_pgboost,original_hm_variant_id,original_hm_rsid,original_hm_other_allele,original_hm_effect_allele,original_hm_odds_ratio,original_hm_ci_lower,original_hm_ci_upper,original_rsid,original_chromosome,original_other_allele,original_effect_allele,original_ci_lower,original_ci_upper,variants_vid,variants_chrom_id,variants_position0,composite_score]",
+    "responseKeys": [
+      "total_scored",
+      "sampleRow"
+    ],
+    "rawSnippet": "{\"total_scored\":9472,\"sampleRow\":{\"row_id\":9645,\"raw_ref\":null,\"ref_type\":null,\"status\":null,\"error\":null,\"variants_is_hashed\":false,\"variants_chromosome\":\"10\",\"variants_variant_vcf\":\"10-2023506-C-G\",\"variants_bravo\":{\"bravo_an\":264690,\"bravo_ac\":119298,\"bravo_af\":0.450708,\"filter_status\":\"PASS\"},\"variants_genecode\":{\"region_type\":\"intergenic\",\"genes\":[\"AL441943.1\",\"LINC00700\"],\"consequence\":null,\"transcripts\":[]},\"variants_ucsc\":{\"region_type\":\"intergenic\",\"transcripts\":[\"ENST00000413603.5\",\"EN"
+  },
+  {
+    "id": "T7.1",
+    "name": "correlation",
+    "grade": "PASS",
+    "elapsed": 1.459,
+    "notes": "r=0.9923149258547933, n=9472, x_mean=5766720839385099000, y_mean=9.998838682432432",
+    "responseKeys": [
+      "text_summary",
+      "x",
+      "y",
+      "r",
+      "n",
+      "x_mean",
+      "y_mean",
+      "x_stddev",
+      "y_stddev"
+    ],
+    "rawSnippet": "{\"text_summary\":\"Correlation between variants_vid and variants_chrom_id: r=0.992 (n=9472). strongly correlated.\",\"x\":\"variants_vid\",\"y\":\"variants_chrom_id\",\"r\":0.9923149258547933,\"n\":9472,\"x_mean\":5766720839385099000,\"y_mean\":9.998838682432432,\"x_stddev\":9683726240541534,\"y_stddev\":0.03406011428252814}"
+  },
+  {
+    "id": "T8.1",
+    "name": "pca submit",
+    "grade": "FAIL",
+    "elapsed": 0.149,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T9.1",
+    "name": "cluster submit",
+    "grade": "FAIL",
+    "elapsed": 0.119,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T10.1",
+    "name": "regression submit",
+    "grade": "FAIL",
+    "elapsed": 0.121,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T11.1",
+    "name": "stat submit",
+    "grade": "FAIL",
+    "elapsed": 0.157,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T12.1",
+    "name": "qq submit",
+    "grade": "FAIL",
+    "elapsed": 0.131,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T13.1",
+    "name": "manhattan submit",
+    "grade": "FAIL",
+    "elapsed": 0.126,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T14.1",
+    "name": "create cohort",
+    "grade": "PASS",
+    "elapsed": 1.057,
+    "notes": "id=d0eba9f3-fa30-4f13-a102-34b635882381, status=queued",
+    "responseKeys": [
+      "id",
+      "status",
+      "created_at"
+    ],
+    "rawSnippet": "{\"id\":\"d0eba9f3-fa30-4f13-a102-34b635882381\",\"status\":\"queued\",\"created_at\":\"2026-03-01T00:30:55.569993+00:00\"}"
+  },
+  {
+    "id": "T14.2",
+    "name": "poll status",
+    "grade": "PASS",
+    "elapsed": 5.353,
+    "notes": "status=ready, progress={\"stage\":\"Done\",\"percent\":100,\"rows_resolved\":0,\"fetched\":43,\"found\":43,\"not_found\":0,\"errors\":0,\"total_rows\":20,\"unique_vids\":43,\"duplicates\":0,\"bytes_read\":0}",
+    "responseKeys": [
+      "id",
+      "status",
+      "progress",
+      "is_terminal"
+    ],
+    "rawSnippet": "{\"id\":\"d0eba9f3-fa30-4f13-a102-34b635882381\",\"status\":\"ready\",\"progress\":{\"stage\":\"Done\",\"percent\":100,\"rows_resolved\":0,\"fetched\":43,\"found\":43,\"not_found\":0,\"errors\":0,\"total_rows\":20,\"unique_vids\":43,\"duplicates\":0,\"bytes_read\":0},\"is_terminal\":true}"
+  },
+  {
+    "id": "T14.3",
+    "name": "variant schema",
+    "grade": "PASS",
+    "elapsed": 0.176,
+    "notes": "row_count=43, data_type=undefined, columns=45",
+    "responseKeys": [
+      "text_summary",
+      "row_count",
+      "columns"
+    ],
+    "rawSnippet": "{\"text_summary\":\"Cohort (variant_list) has 43 rows with 45 queryable columns (37 numeric, 3 categorical, 3 identity, 2 array).\",\"row_count\":43,\"columns\":[{\"name\":\"vid\",\"kind\":\"identity\"},{\"name\":\"variant_vcf\",\"kind\":\"identity\"},{\"name\":\"chromosome\",\"kind\":\"categorical\"},{\"name\":\"position\",\"kind\":\"numeric\"},{\"name\":\"rsid\",\"kind\":\"identity\"},{\"name\":\"consequence\",\"kind\":\"categorical\"},{\"name\":\"region_type\",\"kind\":\"categorical\"},{\"name\":\"gene\",\"kind\":\"array\"},{\"name\":\"clinical_significance\",\"kind\":"
+  },
+  {
+    "id": "T14.4",
+    "name": "variant PCA",
+    "grade": "FAIL",
+    "elapsed": 0.11,
+    "notes": "HTTP 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T15.1",
+    "name": "404",
+    "grade": "PARTIAL",
+    "elapsed": 0.12,
+    "notes": "Got 400 instead of 404: {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Invalid cohort ID format (expected UUID)\"},\"timestamp\":\"20"
+  },
+  {
+    "id": "T15.2",
+    "name": "bad task",
+    "grade": "PASS",
+    "elapsed": 0.171,
+    "notes": "Correct 400: Failed to deserialize query string: missing field `tenant_id`"
+  },
+  {
+    "id": "T15.3",
+    "name": "bad cols",
+    "grade": "PASS",
+    "elapsed": 0.131,
+    "notes": "Immediate error 400: Failed to deserialize query string: missing field `tenant_id`"
+  }
+]

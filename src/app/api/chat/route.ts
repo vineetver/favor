@@ -1,5 +1,5 @@
 import { createAgentUIStreamResponse, ToolLoopAgent, stepCountIs } from "ai";
-import { createFavorAgent } from "@features/agent/agent";
+import { createFavorAgent, createAgentTools } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
 import { agentFetch } from "@features/agent/lib/api-client";
 import { classifyQuery } from "@features/agent/lib/query-classifier";
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
     const fastAgent = new ToolLoopAgent({
       model: getSynthesisModel(synthesisModel),
       instructions: buildSupervisorPrompt() + "\n\n[SYSTEM] This is a follow-up. Write a thorough response using ONLY data from prior tool results in the conversation above. Do NOT call any tools. Do NOT use training knowledge to fill gaps.",
-      tools: {},
+      tools: createAgentTools(context).tools,
       stopWhen: stepCountIs(1),
       maxOutputTokens: 8000,
       ...(synthProviderOpts ? { providerOptions: synthProviderOpts } : {}),

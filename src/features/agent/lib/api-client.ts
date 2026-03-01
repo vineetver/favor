@@ -74,6 +74,25 @@ export async function agentFetch<T>(
   const idemKey = idempotencyKey(path, options?.body);
   let lastError: unknown;
 
+  // Server-side: forward cookies from the incoming Next.js request
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Idempotency-Key": idemKey,
+  };
+  if (typeof window === "undefined") {
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      const cookieStr = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ");
+      if (cookieStr) headers["Cookie"] = cookieStr;
+    } catch {
+      // Not in a Next.js request context — skip
+    }
+  }
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(
@@ -84,10 +103,7 @@ export async function agentFetch<T>(
     try {
       const res = await fetch(`${API_BASE}${path}`, {
         method: options?.method ?? "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": idemKey,
-        },
+        headers,
         body: options?.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
         cache: "no-store",

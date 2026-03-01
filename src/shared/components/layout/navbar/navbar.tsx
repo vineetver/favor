@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
-import { ChevronDown, LogOut, Menu, Sparkles, User } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Settings, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { MobileDrawer } from "./mobile-drawer";
@@ -224,6 +224,20 @@ export function Navbar() {
                           </div>
                         </div>
                         <div className="p-1.5">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href="/settings"
+                              className={cn(
+                                "px-3 py-2.5 rounded-lg cursor-pointer text-sm",
+                                "text-muted-foreground",
+                                "hover:text-foreground hover:bg-muted/80",
+                                "transition-colors duration-150",
+                              )}
+                            >
+                              <Settings className="w-4 h-4 mr-2.5" />
+                              Settings
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={logout}
                             className={cn(

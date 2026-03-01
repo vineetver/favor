@@ -90,21 +90,13 @@ function getAutoStoreSummary(toolName: string, output: Record<string, unknown>):
   }
 }
 
-export function createFavorAgent(synthesisModelId?: string, context?: ConversationContext) {
-  const baseModel = getSynthesisModel(synthesisModelId);
-
-  const model =
-    process.env.NODE_ENV === "development"
-      ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
-      : baseModel;
-
-  // Create per-request ResultStore and hydrate from prior turns
+/** Build the full tool set for the agent. Exported for use by the fast-path. */
+export function createAgentTools(context?: ConversationContext) {
   const resultStore = new ResultStore();
   if (context?.priorResults?.length) {
     resultStore.hydrate(context.priorResults);
   }
 
-  // Build per-request tools
   const supervisorTools = {
     // Planning & memory
     planQuery: createPlanQueryTool(context),
@@ -139,11 +131,23 @@ export function createFavorAgent(synthesisModelId?: string, context?: Conversati
     bioContext: createBioContextTool(resultStore),
   };
 
-  // runBatch needs the registry — add after object is built
   const allTools = {
     ...supervisorTools,
     runBatch: createRunBatchTool(supervisorTools, resultStore),
   };
+
+  return { tools: allTools, resultStore };
+}
+
+export function createFavorAgent(synthesisModelId?: string, context?: ConversationContext) {
+  const baseModel = getSynthesisModel(synthesisModelId);
+
+  const model =
+    process.env.NODE_ENV === "development"
+      ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
+      : baseModel;
+
+  const { tools: allTools, resultStore } = createAgentTools(context);
 
   // Collect VizSpecs from direct tool calls
   const vizCollector: VizSpec[] = [];
