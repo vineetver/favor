@@ -44,6 +44,7 @@ WORKSPACE: pin, set_cohort, remember
 
 Key patterns:
   explore { seeds: [{label:"BRCA1"}], into: ["diseases","drugs"] }
+  explore { seeds: [{label:"BRCA1"}], into: ["protein_domains"] }
   explore { mode: "compare", seeds: [{label:"Metformin"},{label:"type 2 diabetes"}] }
   explore { mode: "enrich", seeds: [{label:"BRCA1"},{label:"TP53"},{label:"ATM"}], target: "pathways" }
   traverse { seed: {label:"TP53"}, steps: [{into:"diseases", top:20}, {enrich:"pathways"}] }
@@ -54,7 +55,7 @@ Key patterns:
 
 Seed formats: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
 IMPORTANT: For fuzzy seeds, use ONLY {label:"..."} — do NOT include a type field. The resolver handles type detection. Only use {type,id} when you have the exact entity ID.
-Target intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds
+Target intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains
 
 ### AskUser
 Clarify ambiguous intent, offer choices.`;
@@ -80,12 +81,15 @@ Pick the RIGHT mode for the question:
 - "Enriched pathways for these genes" → explore mode:enrich { seeds:[...3+], target:"pathways" }
 - "Genes similar to TP53" → explore mode:similar { seeds:[{label:"TP53"}] }
 - "Tell me about BRCA1" → explore mode:context { seeds:[{label:"BRCA1"}] }
+- "Protein domains of BRCA1" / "domain architecture" → explore { seeds:[{label:"BRCA1"}], into:["protein_domains"] }
 - "How many disease edges does TP53 have?" → explore mode:aggregate { seeds:[{label:"TP53"}], edge_type:"...", metric:"count" }
 - "Multi-hop: gene → diseases → pathways" → traverse { seed:{label:"..."}, steps:[{into:"diseases"},{enrich:"pathways"}] }
 - "Path from Gene X to Disease Y" → traverse mode:paths { from:"Gene:...", to:"Disease:..." }
+- "How are X and Y connected?" / "relationship between" → BOTH traverse mode:paths AND explore mode:compare (paths show direct links, compare shows shared neighbors + Jaccard similarity)
 - "Genes that connect Drug X to Disease Y" / structural pattern → query { pattern:[...], return_vars:[...] }
 
 CRITICAL: For overlap / intersection / "shared between" questions, use explore mode:compare or query — NEVER two separate explores.
+CRITICAL: For "how connected" / "relationship between" questions on same-type entities, use BOTH paths + compare for a complete picture.
 
 ## GRAPH vs COHORT — Decision Rule
 - GRAPH commands (explore, traverse, query) work on the knowledge graph. No active cohort needed.

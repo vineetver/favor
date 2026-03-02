@@ -812,7 +812,9 @@ function genProteinDomains(
   toolCallIndex: number,
 ): ProteinStructureVizSpec | null {
   const out = output as Record<string, unknown>;
-  const pd = out?._proteinDomains as {
+  // RunResult shape: { text_summary, data: { _proteinDomains, resolved_seeds, ... }, state_delta }
+  const data = out?.data as Record<string, unknown> | undefined;
+  const pd = data?._proteinDomains as {
     proteinLength?: number;
     alphafoldId?: string | null;
     domains?: Array<{
@@ -828,7 +830,7 @@ function genProteinDomains(
 
   if (!pd?.domains?.length || !pd.proteinLength) return null;
 
-  const seeds = out?.resolved_seeds as Array<{ label?: string }> | undefined;
+  const seeds = data?.resolved_seeds as Array<{ label?: string }> | undefined;
   const geneLabel = seeds?.[0]?.label ?? "Protein";
 
   return {

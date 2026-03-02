@@ -305,7 +305,7 @@ WORKSPACE: pin, set_cohort, remember
 
 SEED FORMATS: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
 IMPORTANT: For fuzzy name seeds, use ONLY {label:"..."} without a type field. The resolver detects the type. Only use {type,id} for exact entity IDs.
-TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds`,
+TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains`,
     inputSchema: runInputSchema,
     execute: async (cmd) => {
       const ctx = getContext();
