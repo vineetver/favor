@@ -80,6 +80,7 @@ export async function executeRun(
 const targetIntents = z.enum([
   "diseases", "drugs", "pathways", "variants",
   "phenotypes", "tissues", "genes", "proteins", "compounds",
+  "protein_domains",
 ]);
 
 const flatSeedRef = z.object({
