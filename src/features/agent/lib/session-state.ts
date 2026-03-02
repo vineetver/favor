@@ -105,16 +105,15 @@ export async function updateSessionState(
 export async function patchSessionState(
   sessionId: string,
   patch: Partial<SessionState>,
-): Promise<void> {
-  try {
-    await agentFetch(`/agent/sessions/${sessionId}/state`, {
+  expectedVersion: number,
+): Promise<{ version: number }> {
+  return agentFetch<{ version: number }>(
+    `/agent/sessions/${sessionId}/state`,
+    {
       method: "PATCH",
-      body: patch,
-    });
-  } catch {
-    // Non-critical — state will be refreshed next turn
-    console.error("[session-state] Patch failed, will refresh next turn");
-  }
+      body: { delta: patch, expected_version: expectedVersion },
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------

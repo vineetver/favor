@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,10 +13,22 @@ import type { ProteinStructureVizSpec } from "../../viz/types";
 // ---------------------------------------------------------------------------
 
 const TRACK_HEIGHT = 28;
-const LABEL_HEIGHT = 20;
-const PADDING_X = 40; // space for scale labels
+const TICK_HEIGHT = 6;
+const PADDING_X = 40;
+const AXIS_GAP = 4; // gap between track bottom and tick top
 
-function DomainMap({
+/** Pick a "nice" tick step so we get roughly 5–10 ticks. */
+function niceTickStep(length: number): number {
+  const rough = length / 8;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const normalized = rough / mag;
+  if (normalized <= 1) return mag;
+  if (normalized <= 2) return 2 * mag;
+  if (normalized <= 5) return 5 * mag;
+  return 10 * mag;
+}
+
+const DomainMap = memo(function DomainMap({
   domains,
   proteinLength,
 }: {
@@ -39,12 +51,68 @@ function DomainMap({
 
   const trackWidth = width - PADDING_X * 2;
   const scale = trackWidth > 0 ? trackWidth / proteinLength : 0;
-  const svgHeight = TRACK_HEIGHT + LABEL_HEIGHT + 12;
+  const trackBottom = 6 + TRACK_HEIGHT;
+  const tickTop = trackBottom + AXIS_GAP;
+  const labelY = tickTop + TICK_HEIGHT + 10;
+  const svgHeight = labelY + 4;
+
+  // Build tick positions
+  const ticks = useMemo(() => {
+    const step = niceTickStep(proteinLength);
+    const result: number[] = [1];
+    let pos = step;
+    while (pos < proteinLength) {
+      result.push(pos);
+      pos += step;
+    }
+    result.push(proteinLength);
+    return result;
+  }, [proteinLength]);
+
+  // Deduplicate legend by name (not id — different InterPro IDs can share a name)
+  const legendItems = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const d of domains) {
+      if (!seen.has(d.name)) seen.set(d.name, d.color);
+    }
+    return [...seen.entries()].map(([name, color]) => ({ name, color }));
+  }, [domains]);
+
+  // Domain coverage %
+  const coverage = useMemo(() => {
+    if (!domains.length || !proteinLength) return 0;
+    // Merge overlapping ranges then sum
+    const sorted = [...domains].sort((a, b) => a.start - b.start);
+    let covered = 0;
+    let curStart = sorted[0].start;
+    let curEnd = sorted[0].end;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].start <= curEnd + 1) {
+        curEnd = Math.max(curEnd, sorted[i].end);
+      } else {
+        covered += curEnd - curStart + 1;
+        curStart = sorted[i].start;
+        curEnd = sorted[i].end;
+      }
+    }
+    covered += curEnd - curStart + 1;
+    return Math.round((covered / proteinLength) * 100);
+  }, [domains, proteinLength]);
 
   return (
     <div ref={containerRef} className="w-full">
       {width > 0 && (
         <>
+          {/* Header */}
+          <div className="flex items-baseline justify-between px-1 mb-1">
+            <p className="text-[10px] font-medium text-muted-foreground">
+              Domain architecture
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {proteinLength} aa &middot; {coverage}% annotated
+            </p>
+          </div>
+
           <svg
             width={width}
             height={svgHeight}
@@ -63,11 +131,11 @@ function DomainMap({
             />
 
             {/* Domain blocks */}
-            {domains.map((d) => {
+            {domains.map((d, i) => {
               const x = PADDING_X + (d.start - 1) * scale;
               const w = Math.max((d.end - d.start + 1) * scale, 2);
               return (
-                <Tooltip key={d.id}>
+                <Tooltip key={`${d.id}-${d.start}-${i}`}>
                   <TooltipTrigger asChild>
                     <rect
                       x={x}
@@ -95,34 +163,45 @@ function DomainMap({
               );
             })}
 
-            {/* Scale labels */}
-            <text
-              x={PADDING_X}
-              y={TRACK_HEIGHT + 20}
-              className="fill-muted-foreground text-[10px]"
-              textAnchor="start"
-            >
-              1
-            </text>
-            <text
-              x={PADDING_X + trackWidth}
-              y={TRACK_HEIGHT + 20}
-              className="fill-muted-foreground text-[10px]"
-              textAnchor="end"
-            >
-              {proteinLength}
-            </text>
+            {/* Tick marks + labels */}
+            {ticks.map((pos) => {
+              const x = PADDING_X + (pos - 1) * scale;
+              const isEnd = pos === 1 || pos === proteinLength;
+              return (
+                <g key={pos}>
+                  <line
+                    x1={x}
+                    y1={tickTop}
+                    x2={x}
+                    y2={tickTop + TICK_HEIGHT}
+                    stroke="currentColor"
+                    strokeWidth={1}
+                    className="text-muted-foreground/40"
+                  />
+                  <text
+                    x={x}
+                    y={labelY}
+                    textAnchor={
+                      pos === 1 ? "start" : pos === proteinLength ? "end" : "middle"
+                    }
+                    className={`fill-muted-foreground ${isEnd ? "text-[10px] font-medium" : "text-[9px]"}`}
+                  >
+                    {pos}
+                  </text>
+                </g>
+              );
+            })}
           </svg>
 
-          {/* Legend */}
+          {/* Legend — deduplicated by name */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">
-            {domains.map((d) => (
-              <div key={d.id} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            {legendItems.map((item) => (
+              <div key={item.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <span
                   className="inline-block size-2.5 rounded-sm shrink-0"
-                  style={{ backgroundColor: d.color }}
+                  style={{ backgroundColor: item.color }}
                 />
-                <span className="truncate max-w-[140px]">{d.name}</span>
+                <span className="truncate max-w-[140px]">{item.name}</span>
               </div>
             ))}
           </div>
@@ -130,7 +209,7 @@ function DomainMap({
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // AlphaFold 3D viewer (3Dmol.js from CDN)
@@ -138,8 +217,8 @@ function DomainMap({
 
 const PLDDT_COLORS = [
   { label: "Very high (>90)", color: "#0053d6", min: 90 },
-  { label: "Confident (70–90)", color: "#65cbf3", min: 70 },
-  { label: "Low (50–70)", color: "#ffdb13", min: 50 },
+  { label: "Confident (70\u201390)", color: "#65cbf3", min: 70 },
+  { label: "Low (50\u201370)", color: "#ffdb13", min: 50 },
   { label: "Very low (<50)", color: "#ff7d45", min: 0 },
 ];
 
@@ -169,57 +248,103 @@ function load3Dmol(): Promise<$3Dmol> {
   return mol3dPromise;
 }
 
-function AlphaFoldViewer({ alphafoldId }: { alphafoldId: string }) {
+const AlphaFoldViewer = memo(function AlphaFoldViewer({
+  alphafoldId,
+}: {
+  alphafoldId: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<unknown>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  const initViewer = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     const el = containerRef.current;
     if (!el) return;
 
-    try {
-      const $3Dmol = await load3Dmol();
-      const cifUrl = `https://alphafold.ebi.ac.uk/files/AF-${alphafoldId}-F1-model_v4.cif`;
-      const resp = await fetch(cifUrl);
-      if (!resp.ok) throw new Error(`AlphaFold fetch failed: ${resp.status}`);
-      const cifData = await resp.text();
+    (async () => {
+      try {
+        const $3Dmol = await load3Dmol();
+        if (cancelled) return;
 
-      // Clear any previous viewer
-      el.innerHTML = "";
+        // Resolve CIF URL via AlphaFold API (version-agnostic)
+        let cifUrl: string | null = null;
+        try {
+          const apiResp = await fetch(
+            `https://alphafold.ebi.ac.uk/api/prediction/${alphafoldId}`,
+          );
+          if (apiResp.ok) {
+            const entries = (await apiResp.json()) as Array<{ cifUrl?: string }>;
+            cifUrl = entries?.[0]?.cifUrl ?? null;
+          }
+        } catch {
+          // API failed — skip
+        }
 
-      const viewer = $3Dmol.createViewer(el, {
-        backgroundColor: "white",
-      });
-      viewerRef.current = viewer;
+        // Fallback: guess common versions
+        if (!cifUrl) {
+          for (const ver of [6, 4, 3]) {
+            const url = `https://alphafold.ebi.ac.uk/files/AF-${alphafoldId}-F1-model_v${ver}.cif`;
+            try {
+              const resp = await fetch(url, { method: "HEAD" });
+              if (resp.ok) {
+                cifUrl = url;
+                break;
+              }
+            } catch {
+              continue;
+            }
+          }
+        }
 
-      viewer.addModel(cifData, "cif");
-      // Color by pLDDT (stored in B-factor)
-      viewer.setStyle({}, {
-        cartoon: {
-          colorfunc: (atom: { b: number }) => {
-            const b = atom.b;
-            if (b > 90) return "#0053d6";
-            if (b > 70) return "#65cbf3";
-            if (b > 50) return "#ffdb13";
-            return "#ff7d45";
+        if (!cifUrl || cancelled) {
+          if (!cancelled) setStatus("error");
+          return;
+        }
+
+        const cifResp = await fetch(cifUrl);
+        if (!cifResp.ok) {
+          if (!cancelled) setStatus("error");
+          return;
+        }
+        const cifData = await cifResp.text();
+        if (cancelled) return;
+
+        el.innerHTML = "";
+
+        const viewer = $3Dmol.createViewer(el, {
+          backgroundColor: "white",
+        });
+        viewerRef.current = viewer;
+
+        viewer.addModel(cifData, "cif");
+        viewer.setStyle(
+          {},
+          {
+            cartoon: {
+              colorfunc: (atom: { b: number }) => {
+                const b = atom.b;
+                if (b > 90) return "#0053d6";
+                if (b > 70) return "#65cbf3";
+                if (b > 50) return "#ffdb13";
+                return "#ff7d45";
+              },
+            },
           },
-        },
-      });
-      viewer.zoomTo();
-      viewer.render();
-      setStatus("ready");
-    } catch {
-      setStatus("error");
-    }
-  }, [alphafoldId]);
+        );
+        viewer.zoomTo();
+        viewer.render();
+        if (!cancelled) setStatus("ready");
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    })();
 
-  useEffect(() => {
-    initViewer();
     return () => {
+      cancelled = true;
       viewerRef.current = null;
     };
-  }, [initViewer]);
+  }, [alphafoldId]);
 
   return (
     <div className="space-y-2">
@@ -227,28 +352,37 @@ function AlphaFoldViewer({ alphafoldId }: { alphafoldId: string }) {
         AlphaFold structure ({alphafoldId})
       </p>
 
-      {status === "loading" && (
-        <div className="h-[300px] w-full rounded-md border border-border bg-muted animate-pulse flex items-center justify-center">
-          <span className="text-xs text-muted-foreground">Loading 3D structure...</span>
-        </div>
-      )}
-      {status === "error" && (
-        <div className="h-[300px] w-full rounded-md border border-border bg-muted flex items-center justify-center">
-          <span className="text-xs text-muted-foreground">Could not load AlphaFold structure</span>
-        </div>
-      )}
-
-      <div
-        ref={containerRef}
-        className={`w-full rounded-md border border-border ${status === "ready" ? "" : status === "loading" ? "hidden" : "hidden"}`}
-        style={{ height: 300 }}
-      />
+      {/* Container is always in the DOM at full size so 3Dmol.js can initialize.
+          Loading/error overlays sit on top via absolute positioning. */}
+      <div className="relative" style={{ height: 300 }}>
+        {status === "loading" && (
+          <div className="absolute inset-0 z-10 rounded-md border border-border bg-muted animate-pulse flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">
+              Loading 3D structure...
+            </span>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="absolute inset-0 z-10 rounded-md border border-border bg-muted flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">
+              Could not load AlphaFold structure
+            </span>
+          </div>
+        )}
+        <div
+          ref={containerRef}
+          className="w-full h-full rounded-md border border-border"
+        />
+      </div>
 
       {/* pLDDT color legend */}
       {status === "ready" && (
         <div className="flex flex-wrap gap-x-3 gap-y-1 px-1">
           {PLDDT_COLORS.map((c) => (
-            <div key={c.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div
+              key={c.label}
+              className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+            >
               <span
                 className="inline-block size-2.5 rounded-sm shrink-0"
                 style={{ backgroundColor: c.color }}
@@ -260,7 +394,7 @@ function AlphaFoldViewer({ alphafoldId }: { alphafoldId: string }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Combined component

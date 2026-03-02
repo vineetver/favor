@@ -61,7 +61,7 @@ export async function handleQuery(
     if (cmd.seeds) {
       const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
       for (let i = 0; i < resolved.length; i++) {
-        filters[`s${i}.id`] = resolved[i].id;
+        filters[`s${i}.id__eq`] = resolved[i].id;
       }
     }
 
@@ -80,7 +80,7 @@ export async function handleQuery(
       method: "POST",
       body: {
         pattern,
-        returnVars: cmd.return_vars,
+        return: cmd.return_vars,
         filters: Object.keys(filters).length > 0 ? filters : undefined,
         limit: Math.min(cmd.limit ?? 20, 100),
         select: cmd.select ? {

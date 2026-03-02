@@ -50,11 +50,14 @@ SCOPES:
               }>;
             }>(`/graph/search?${params.toString()}`);
 
+            const MAX_SUB = 150;
             results.entities = (data.results ?? []).slice(0, 5).map((r) => ({
               type: r.entity.type,
               id: r.entity.id,
               label: r.entity.label,
-              subtitle: r.entity.subtitle,
+              subtitle: r.entity.subtitle && r.entity.subtitle.length > MAX_SUB
+                ? `${r.entity.subtitle.slice(0, MAX_SUB).trimEnd()}…`
+                : r.entity.subtitle,
               score: r.match.confidence,
             }));
           } catch {

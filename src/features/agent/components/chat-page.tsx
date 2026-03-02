@@ -6,7 +6,6 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from "@shared/components/ai-elements/conversation";
 import {
@@ -43,13 +42,8 @@ import {
 import {
   CopyIcon,
   DnaIcon,
-  GitCompareArrowsIcon,
-  RouteIcon,
-  CrosshairIcon,
   PanelLeftIcon,
-  PillIcon,
   PlusIcon,
-  Share2Icon,
   ThumbsUpIcon,
   ThumbsDownIcon,
   XIcon,
@@ -68,42 +62,12 @@ import { motion } from "motion/react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { AgentErrorBoundary } from "./error-boundary";
 import { ActivityTimeline } from "./tool-renderers";
+import { EmptyState } from "./empty-state";
 import { VizSpecPanel } from "./viz-spec-panel";
 import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
 import { isArtifactRef } from "../lib/compact-message";
 import { generateVizSpecs } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const SUGGESTED_PROMPTS = [
-  {
-    text: "What pathways are enriched among the top genes linked to Alzheimer's disease?",
-    icon: <Share2Icon className="size-4" />,
-  },
-  {
-    text: "Look up variant rs429358 — pathogenicity scores, population frequencies, and GWAS trait associations",
-    icon: <CrosshairIcon className="size-4" />,
-  },
-  {
-    text: "What genes does metformin target, and do any overlap with type 2 diabetes risk genes?",
-    icon: <PillIcon className="size-4" />,
-  },
-  {
-    text: "How are BRCA1 and PARP1 connected? Trace the shortest paths and shared disease associations.",
-    icon: <RouteIcon className="size-4" />,
-  },
-  {
-    text: "Compare TP53, BRCA2, and ATM — shared pathways, disease overlap, and variant burden",
-    icon: <GitCompareArrowsIcon className="size-4" />,
-  },
-  {
-    text: "Create a cohort from rs429358, rs7412, rs75932628, rs63750847, rs143332484 — rank by CADD score and summarize by consequence type",
-    icon: <DnaIcon className="size-4" />,
-  },
-];
 
 // ---------------------------------------------------------------------------
 // Follow-up suggestions
@@ -113,45 +77,51 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
   const last = messages.at(-1);
   if (!last || last.role !== "assistant") return [];
 
-  // Find the last tool used
   const toolParts = last.parts.filter((p) => isToolUIPart(p));
   const lastTool = toolParts.at(-1);
 
   if (lastTool) {
     const name = getToolName(lastTool).replace(/^tool-/, "");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const args = (lastTool as any).args as Record<string, unknown> | undefined;
+
     switch (name) {
-      case "searchEntities":
-        return ["Get detailed context on the top result", "Compare the top results"];
-      case "lookupVariant":
-        return ["Show GWAS trait associations for this variant", "What pathogenicity scores does it have?"];
-      case "getEntityContext":
-        return ["What pathways is this gene in?", "Find ranked disease associations"];
-      case "runEnrichment":
-        return ["Explain the top enriched term", "Which genes drive the enrichment?"];
-      case "getGeneVariantStats":
-        return ["Show the most pathogenic variants by CADD", "Create a cohort from these variants"];
-      case "getRankedNeighbors":
-        return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
-      case "findPaths":
-        return ["What diseases do they share?", "Are there alternative connections?"];
-      case "getGwasAssociations":
-        return ["Which trait has the strongest signal?", "Look up the gene this variant affects"];
-      case "compareEntities":
-        return ["Run pathway enrichment on the shared genes", "Show variant burden for each"];
-      case "createCohort":
-        return ["Rank variants by CADD score", "Summarize by clinical significance"];
-      case "analyzeCohort":
-        return ["Filter to pathogenic variants only", "Which genes carry the most variants?"];
-      case "variantTriage":
-        return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
-      case "bioContext":
-        return ["What are the key intermediates?", "Explore a different path"];
-      case "Run":
+      case "Run": {
+        const command = args?.command as string | undefined;
+        const mode = args?.mode as string | undefined;
+        if (command === "explore" && mode === "neighbors")
+          return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
+        if (command === "explore" && mode === "compare")
+          return ["Run enrichment on the shared genes", "Show unique associations for each"];
+        if (command === "explore" && mode === "enrich")
+          return ["Which genes drive the top enriched term?", "Explore the most significant pathway"];
+        if (command === "traverse" && mode === "chain")
+          return ["Explore the next hop", "Summarize the chain"];
+        if (command === "traverse" && mode === "paths")
+          return ["What diseases do they share?", "Are there alternative connections?"];
+        if (command === "query")
+          return ["Refine this pattern", "Show details for the top matches"];
+        if (command === "rows")
+          return ["Filter to pathogenic variants only", "Group by clinical significance"];
+        if (command === "groupby")
+          return ["Drill into the largest group", "Visualize this distribution"];
+        if (command === "create_cohort")
+          return ["Show me the cohort schema", "Rank variants by CADD score"];
+        if (command === "derive")
+          return ["Summarize the derived cohort", "Compare with the parent"];
+        if (command === "prioritize" || command === "compute")
+          return ["Explore the top-ranked genes in the graph", "Export these results"];
+        if (command === "analytics")
+          return ["Visualize the results", "What do these results mean?"];
         return ["Tell me more about these results", "What else can we explore?"];
+      }
       case "Search":
         return ["Get details on the top result", "Search for something related"];
       case "Read":
-        return ["What does this data tell us?", "Can you summarize the key findings?"];
+        return ["What does this data tell us?", "Summarize the key findings"];
+      case "State":
+        return ["What can I do with the active cohort?", "Show me available analyses"];
     }
   }
 
@@ -261,11 +231,19 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   }, [allToolParts]);
 
   // Extract vizSpecs — prefer persisted _vizSpecs from compacted messages,
-  // fall back to generating from tool outputs (live streaming or legacy messages)
+  // fall back to generating from tool outputs (live streaming or legacy messages).
+  // IMPORTANT: `message` must NOT be a dependency here — it changes on every
+  // streaming token, which would produce a new vizSpecs array on every render,
+  // bypassing VizSpecPanel memo and triggering Recharts ResizeObserver loops.
+  const persistedVizSpecs = useMemo(
+    () => (message as unknown as Record<string, unknown>)._vizSpecs as VizSpec[] | undefined,
+    // message.id is stable for the lifetime of a message — _vizSpecs is set once on load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [message.id],
+  );
+
   const vizSpecs = useMemo(() => {
-    // Persisted vizSpecs from compacted messages (set during persistence in route.ts)
-    const persisted = (message as unknown as Record<string, unknown>)._vizSpecs as VizSpec[] | undefined;
-    if (persisted?.length) return persisted;
+    if (persistedVizSpecs?.length) return persistedVizSpecs;
 
     const SPECIALIST = new Set(["bioContext", "variantTriage"]);
     const SKIP = new Set(["planQuery", "searchEntities", "recalMemories", "saveMemory", "getResultSlice", "listResults", "getGraphSchema", "getCohortSchema", "getEdgeDetail", "runBatch"]);
@@ -294,7 +272,7 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
       }
       return acc;
     }, []);
-  }, [allToolParts, message]);
+  }, [allToolParts, persistedVizSpecs]);
 
   const textSegments = useMemo(
     () =>
@@ -375,39 +353,6 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
     </Message>
   );
 });
-
-// ---------------------------------------------------------------------------
-// Empty State
-// ---------------------------------------------------------------------------
-
-function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
-  return (
-    <ConversationEmptyState>
-      <div className="flex flex-col items-center gap-10 w-full max-w-4xl px-4">
-        <h2 className="text-foreground text-lg font-semibold text-center leading-snug tracking-tight max-w-md">
-          Navigate the entire genomic landscape — from variant to phenotype — in seconds.
-        </h2>
-
-        {/* Suggested prompts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
-          {SUGGESTED_PROMPTS.map((prompt) => (
-            <button
-              key={prompt.text}
-              type="button"
-              onClick={() => onSelect(prompt.text)}
-              className="group/card flex items-start gap-3.5 rounded-2xl border border-border/60 bg-card px-4 py-4 text-left text-[13px] leading-relaxed text-muted-foreground transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.03] hover:text-foreground hover:shadow-sm"
-            >
-              <span className="mt-0.5 shrink-0 rounded-xl bg-muted p-2 text-muted-foreground/60 transition-colors group-hover/card:bg-primary/10 group-hover/card:text-primary">
-                {prompt.icon}
-              </span>
-              <span>{prompt.text}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </ConversationEmptyState>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Chat Page

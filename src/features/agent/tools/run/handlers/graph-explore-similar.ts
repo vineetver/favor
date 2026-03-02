@@ -5,7 +5,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError } from "./graph";
+import { errorResult, catchError, trimEntitySubtitles } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -44,11 +44,17 @@ export async function handleExploreSimilar(
     }>(url);
 
     const similar = data.data?.similar ?? [];
+    trimEntitySubtitles(similar);
+
+    const edgeContext = cmd.edge_types?.length
+      ? ` based on shared ${cmd.edge_types.join(", ")} connections`
+      : " based on shared graph neighborhood";
 
     return {
       text_summary: data.data?.textSummary ??
-        `Found ${similar.length} entities similar to ${seed.label}`,
+        `Found ${similar.length} entities similar to ${seed.label}${edgeContext}`,
       data: {
+        _method: `Similarity is computed by comparing shared neighbors in the graph. Higher scores indicate more overlapping connections${cmd.edge_types?.length ? ` via ${cmd.edge_types.join(", ")}` : ""}.`,
         seed,
         similar: similar.slice(0, cmd.top_k ?? 20),
       },

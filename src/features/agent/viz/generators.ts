@@ -833,6 +833,16 @@ function genProteinDomains(
   const seeds = data?.resolved_seeds as Array<{ label?: string }> | undefined;
   const geneLabel = seeds?.[0]?.label ?? "Protein";
 
+  // Assign one color per unique domain name (not per instance)
+  const nameToColor = new Map<string, string>();
+  let colorIdx = 0;
+  for (const d of pd.domains) {
+    if (!nameToColor.has(d.name)) {
+      nameToColor.set(d.name, DOMAIN_PALETTE[colorIdx % DOMAIN_PALETTE.length]);
+      colorIdx++;
+    }
+  }
+
   return {
     type: "protein_structure",
     toolCallIndex,
@@ -840,10 +850,315 @@ function genProteinDomains(
     geneLabel,
     proteinLength: pd.proteinLength,
     alphafoldId: pd.alphafoldId ?? null,
-    domains: pd.domains.map((d, i) => ({
+    domains: pd.domains.map((d) => ({
       ...d,
-      color: DOMAIN_PALETTE[i % DOMAIN_PALETTE.length],
+      color: nameToColor.get(d.name) ?? DOMAIN_PALETTE[0],
     })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Run-tool explore generators (read from output.data)
+// ---------------------------------------------------------------------------
+
+/** Helper: unwrap RunResult → data */
+function runData(output: unknown): Record<string, unknown> | null {
+  const out = output as Record<string, unknown>;
+  return (out?.data as Record<string, unknown>) ?? null;
+}
+
+function genRunExploreNeighbors(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const results = data.results as Record<string, {
+    count: number;
+    top: Array<{ type: string; id: string; label: string; score?: number }>;
+    edgeType: string;
+    scoreField?: string;
+  }> | undefined;
+  if (!results) return null;
+
+  // Pick the first branch with ≥3 scored entities
+  for (const [intent, branch] of Object.entries(results)) {
+    if (!branch.top?.length || branch.top.length < 3) continue;
+    const hasScores = branch.top.some((n) => n.score != null && n.score > 0);
+    if (!hasScores) continue;
+
+    const seeds = data.resolved_seeds as Array<{ label?: string }> | undefined;
+    const seedLabel = seeds?.[0]?.label ?? "entity";
+
+    return {
+      type: "bar_chart",
+      toolCallIndex,
+      title: `${intent} of ${seedLabel}`,
+      data: branch.top.slice(0, 20).map((n) => ({
+        id: n.id,
+        label: n.label,
+        value: n.score ?? 0,
+        category: n.type,
+      })),
+      valueLabel: branch.scoreField ?? "Score",
+      layout: "horizontal",
+    };
+  }
+  return null;
+}
+
+function genRunExploreCompare(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const entities = data.entities as Array<{ type: string; id: string; label: string }> | undefined;
+  const shared = data.shared as Array<{
+    entity: { type: string; id: string; label: string };
+    sharedBy: string[];
+    score?: number;
+  }> | undefined;
+
+  if (!entities || entities.length < 2 || !shared || shared.length < 2) return null;
+
+  const labels = entities.map((e) => e.label).join(" vs ");
+
+  return {
+    type: "bar_chart",
+    toolCallIndex,
+    title: `Shared neighbors: ${labels}`,
+    data: shared.slice(0, 20).map((s) => ({
+      id: s.entity.id,
+      label: s.entity.label,
+      value: s.score ?? s.sharedBy.length,
+      category: s.entity.type,
+    })),
+    valueLabel: "Score",
+    layout: "horizontal",
+  };
+}
+
+function genRunExploreEnrich(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): EnrichmentVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const enriched = data.enriched as Array<{
+    entity: { type: string; id: string; label: string };
+    overlap: number;
+    pValue: number;
+    adjustedPValue: number;
+    foldEnrichment: number;
+    overlappingGenes: string[];
+  }> | undefined;
+
+  if (!enriched || enriched.length < 2) return null;
+
+  return {
+    type: "enrichment_plot",
+    toolCallIndex,
+    title: "Pathway & term enrichment",
+    data: enriched.slice(0, 20).map((e) => ({
+      id: e.entity.id,
+      label: e.entity.label,
+      negLogAdjP: -Math.log10(Math.max(e.adjustedPValue, 1e-300)),
+      foldEnrichment: e.foldEnrichment,
+      overlap: e.overlap,
+      overlappingGenes: e.overlappingGenes?.slice(0, 10) ?? [],
+    })),
+  };
+}
+
+function genRunExploreSimilar(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const seed = data.seed as { label?: string } | undefined;
+  const similar = data.similar as Array<{
+    entity: { type: string; id: string; label: string };
+    score: number;
+  }> | undefined;
+
+  if (!similar || similar.length < 3) return null;
+
+  return {
+    type: "bar_chart",
+    toolCallIndex,
+    title: `Entities similar to ${seed?.label ?? "seed"}`,
+    data: similar.slice(0, 20).map((s) => ({
+      id: s.entity.id,
+      label: s.entity.label,
+      value: s.score,
+      category: s.entity.type,
+    })),
+    valueLabel: "Similarity",
+    layout: "horizontal",
+  };
+}
+
+function genRunExploreAggregate(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | StatCardVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const seed = data.seed as { label?: string } | undefined;
+  const buckets = data.buckets as Array<{ key: string; value: number }> | undefined;
+  const value = data.value as number | undefined;
+  const metric = data.metric as string | undefined;
+  const edgeType = data.edgeType as string | undefined;
+
+  if (buckets && buckets.length >= 2) {
+    return {
+      type: "bar_chart",
+      toolCallIndex,
+      title: `${metric ?? "Aggregate"}: ${edgeType ?? "edges"} of ${seed?.label ?? "entity"}`,
+      data: buckets.slice(0, 20).map((b) => ({
+        id: b.key,
+        label: b.key,
+        value: b.value,
+      })),
+      valueLabel: metric ?? "Value",
+      layout: "horizontal",
+    };
+  }
+
+  if (value != null) {
+    return {
+      type: "stat_card",
+      toolCallIndex,
+      title: `${seed?.label ?? "Entity"} aggregation`,
+      stats: [{ label: `${metric ?? "Value"} (${edgeType ?? "edges"})`, value }],
+    };
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Run-tool traverse generators
+// ---------------------------------------------------------------------------
+
+function genRunTraverseChain(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): BarChartVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const seed = data.seed as { label?: string } | undefined;
+  const steps = data.steps as Array<{
+    intent: string;
+    edgeType: string;
+    scoreField?: string;
+    count: number;
+    top: Array<{ type: string; id: string; label: string; score?: number }>;
+  }> | undefined;
+
+  if (!steps?.length) return null;
+
+  // Show the last step with scored results — that's the "answer"
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const step = steps[i];
+    if (!step.top?.length || step.top.length < 2) continue;
+    const hasScores = step.top.some((n) => n.score != null && n.score > 0);
+    if (!hasScores) continue;
+
+    const hops = steps.map((s) => s.intent).join(" → ");
+
+    return {
+      type: "bar_chart",
+      toolCallIndex,
+      title: `${seed?.label ?? "seed"} → ${hops}`,
+      data: step.top.slice(0, 20).map((n) => ({
+        id: n.id,
+        label: n.label,
+        value: n.score ?? 0,
+        category: n.type,
+      })),
+      valueLabel: step.scoreField ?? "Score",
+      layout: "horizontal",
+    };
+  }
+
+  return null;
+}
+
+function genRunTraversePaths(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): NetworkVizSpec | null {
+  const data = runData(output);
+  if (!data) return null;
+
+  const paths = data.paths as Array<{
+    rank: number;
+    length: number;
+    pathText: string;
+    nodes: Array<{ type: string; id: string; label: string }>;
+  }> | undefined;
+
+  if (!paths || paths.length < 1) return null;
+
+  const from = data.from as string | undefined;
+  const to = data.to as string | undefined;
+
+  const nodeMap = new Map<string, { id: string; label: string; type: string }>();
+  const edgeSet = new Set<string>();
+  const edges: NetworkVizSpec["edges"] = [];
+
+  const seedIds = new Set<string>();
+  if (from) {
+    const id = from.includes(":") ? from.split(":").slice(1).join(":") : from;
+    seedIds.add(id);
+  }
+  if (to) {
+    const id = to.includes(":") ? to.split(":").slice(1).join(":") : to;
+    seedIds.add(id);
+  }
+
+  for (const path of paths.slice(0, 5)) {
+    for (const node of path.nodes) {
+      if (!nodeMap.has(node.id)) {
+        nodeMap.set(node.id, { id: node.id, label: node.label, type: node.type });
+      }
+    }
+    for (let i = 0; i < path.nodes.length - 1; i++) {
+      const src = path.nodes[i];
+      const tgt = path.nodes[i + 1];
+      const key = `${src.id}->${tgt.id}`;
+      if (!edgeSet.has(key)) {
+        edgeSet.add(key);
+        edges.push({ source: src.id, target: tgt.id, type: "path_edge" });
+      }
+    }
+  }
+
+  const nodes = [...nodeMap.values()].slice(0, 50);
+  if (nodes.length < 2) return null;
+
+  return {
+    type: "network",
+    toolCallIndex,
+    title: `Paths: ${from ?? "source"} → ${to ?? "target"}`,
+    nodes: nodes.map((n) => ({ ...n, isSeed: seedIds.has(n.id) })),
+    edges: edges.slice(0, 100),
   };
 }
 
@@ -860,15 +1175,22 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   getConnections: [genConnections],
   compareEntities: [genCompareEntities],
   getSharedNeighbors: [genSharedNeighbors],
-  // analyzeCohort has two generators — groupby and correlation
   analyzeCohort: [genAnalyzeCohortGroupby, genAnalyzeCohortCorrelation],
   getGwasAssociations: [genGwasAssociations],
   variantBatchSummary: [genVariantBatchSummary],
   getGeneVariantStats: [genGeneVariantStats],
-  // runAnalytics: multiple chart types from analytics pipeline
   runAnalytics: [genAnalyticsStatCard, genAnalyticsScatter, genAnalyticsQQ, genAnalyticsBar, genAnalyticsHeatmap],
-  // run_explore: protein domain architecture from explore neighbors
-  run_explore: [genProteinDomains],
+  // Run tool — explore modes (collect ALL matches: protein domains + chart)
+  run_explore: [
+    genProteinDomains,
+    genRunExploreNeighbors,
+    genRunExploreCompare,
+    genRunExploreEnrich,
+    genRunExploreSimilar,
+    genRunExploreAggregate,
+  ],
+  // Run tool — traverse modes
+  run_traverse: [genRunTraverseChain, genRunTraversePaths],
 };
 
 // ---------------------------------------------------------------------------
@@ -896,8 +1218,9 @@ export function generateVizSpecs(
   const generators = GENERATOR_REGISTRY[resolved];
   if (!generators) return [];
 
-  // For runAnalytics, collect ALL matching specs (multiple chart types)
-  if (toolName === "runAnalytics") {
+  // For runAnalytics and run_explore, collect ALL matching specs
+  // (e.g. protein domains + bar chart, or stat card + scatter)
+  if (resolved === "runAnalytics" || resolved === "run_explore") {
     const specs: VizSpec[] = [];
     for (const gen of generators) {
       try {

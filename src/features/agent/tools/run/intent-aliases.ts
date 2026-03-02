@@ -13,9 +13,15 @@ export const INTENT_TO_TYPE: Record<TargetIntent, string> = {
   phenotypes: "Phenotype",
   tissues: "Tissue",
   genes: "Gene",
-  proteins: "Protein",
-  compounds: "Compound",
+  proteins: "Gene", // no Protein node — resolve to Gene (has protein/domain info)
+  compounds: "Drug", // no Compound node — resolve to Drug
   protein_domains: "ProteinDomain",
+  ccres: "cCRE",
+  side_effects: "SideEffect",
+  go_terms: "GOTerm",
+  metabolites: "Metabolite",
+  studies: "Study",
+  signals: "Signal",
 };
 
 export interface EdgeTypeInfo {

@@ -42,11 +42,18 @@ export async function getCachedGraphSchema(portal?: string): Promise<GraphSchema
 // Shared: enrichment edge type mapping
 // ---------------------------------------------------------------------------
 
+/** Static edge map for enrichment — keyed by target node type.
+ *  Used by explore-enrich (gene seeds) and as fallback for traverse-chain enrich.
+ *  Traverse-chain prefers dynamic inference via findEdgesConnecting. */
 export const TARGET_EDGE_MAP: Record<string, string> = {
   Pathway: "GENE_PARTICIPATES_IN_PATHWAY",
   Disease: "GENE_ASSOCIATED_WITH_DISEASE",
   GOTerm: "GENE_ANNOTATED_WITH_GO_TERM",
   Phenotype: "GENE_ASSOCIATED_WITH_PHENOTYPE",
+  Drug: "DRUG_ACTS_ON_GENE",
+  Tissue: "GENE_EXPRESSED_IN_TISSUE",
+  SideEffect: "GENE_ASSOCIATED_WITH_SIDE_EFFECT",
+  ProteinDomain: "GENE_HAS_PROTEIN_DOMAIN",
 };
 
 // ---------------------------------------------------------------------------
@@ -75,6 +82,67 @@ export function catchError(err: unknown): RunResult {
     data: { error: true, message },
     state_delta: {},
   };
+}
+
+// ---------------------------------------------------------------------------
+// Shared: edge type annotation helper
+// ---------------------------------------------------------------------------
+
+const MAX_TEXT_LENGTH = 150;
+
+function trimText(s: string, max = MAX_TEXT_LENGTH): string {
+  return s.length <= max ? s : `${s.slice(0, max).trimEnd()}…`;
+}
+
+/**
+ * Trim subtitle on an entity object in-place.
+ * Handles both { subtitle } and nested { entity: { subtitle } } shapes.
+ */
+export function trimEntitySubtitles<T>(items: T[]): T[] {
+  for (const item of items) {
+    if (item && typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      if (typeof obj.subtitle === "string") {
+        obj.subtitle = trimText(obj.subtitle);
+      }
+      // nested { entity: { subtitle } }
+      if (obj.entity && typeof obj.entity === "object") {
+        const ent = obj.entity as Record<string, unknown>;
+        if (typeof ent.subtitle === "string") {
+          ent.subtitle = trimText(ent.subtitle);
+        }
+      }
+    }
+  }
+  return items;
+}
+
+/**
+ * Look up edge type label + description from cached schema.
+ * Returns a single annotation line: "EDGE_TYPE: <full description>"
+ * or null if the edge type is not found.
+ */
+export async function edgeTypeAnnotation(edgeType: string): Promise<string | null> {
+  const schema = await getCachedGraphSchema();
+  const entry = schema.edgeTypes.find((e) => e.edgeType === edgeType);
+  if (!entry?.description) return null;
+  return `${edgeType}: ${entry.description}`;
+}
+
+/**
+ * Build annotation lines for multiple edge types.
+ * Returns empty string if no annotations found.
+ */
+export async function edgeTypeAnnotations(edgeTypes: string[]): Promise<string> {
+  const schema = await getCachedGraphSchema();
+  const lines: string[] = [];
+  for (const et of edgeTypes) {
+    const entry = schema.edgeTypes.find((e) => e.edgeType === et);
+    if (entry?.description) {
+      lines.push(`${et}: ${entry.description}`);
+    }
+  }
+  return lines.length > 0 ? `\n\nEdge types:\n${lines.join("\n")}` : "";
 }
 
 // ---------------------------------------------------------------------------

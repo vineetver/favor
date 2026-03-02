@@ -6,6 +6,12 @@
 import { agentFetch, AgentToolError } from "../../lib/api-client";
 import type { SeedRef, EntityRef } from "./types";
 
+const MAX_SUBTITLE_LENGTH = 150;
+function trimSubtitle(s?: string): string | undefined {
+  if (!s) return s;
+  return s.length <= MAX_SUBTITLE_LENGTH ? s : `${s.slice(0, MAX_SUBTITLE_LENGTH).trimEnd()}…`;
+}
+
 interface ResolveResult {
   results: Array<{
     query: string;
@@ -126,7 +132,7 @@ export async function resolveSeeds(
             type: r.entity.type,
             id: r.entity.id,
             label: r.entity.label,
-            subtitle: r.entity.subtitle,
+            subtitle: trimSubtitle(r.entity.subtitle),
           });
         }
       }
@@ -170,7 +176,7 @@ async function improveLowConfidenceMatches(
           type: top.entity.type,
           id: top.entity.id,
           label: top.entity.label,
-          subtitle: top.entity.subtitle,
+          subtitle: trimSubtitle(top.entity.subtitle),
         };
       }
     } catch {

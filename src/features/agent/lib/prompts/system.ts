@@ -49,13 +49,13 @@ Key patterns:
   explore { mode: "enrich", seeds: [{label:"BRCA1"},{label:"TP53"},{label:"ATM"}], target: "pathways" }
   traverse { seed: {label:"TP53"}, steps: [{into:"diseases", top:20}, {enrich:"pathways"}] }
   traverse { mode: "paths", from: "Gene:ENSG00000141510", to: "Disease:MONDO_0007254" }
-  query { seeds: [{label:"Metformin"},{label:"type 2 diabetes"}], pattern: [{var:"d",type:"Drug"},{var:"g",type:"Gene"},{var:"dis",type:"Disease"},{var:"e1",edge:"DRUG_TARGETS_GENE",from:"d",to:"g"},{var:"e2",edge:"GENE_ASSOCIATED_WITH_DISEASE",from:"g",to:"dis"}], return_vars: ["g"], limit: 50 }
+  query { seeds: [{label:"Metformin"},{label:"type 2 diabetes"}], pattern: [{var:"d",type:"Drug"},{var:"g",type:"Gene"},{var:"dis",type:"Disease"},{edge:"DRUG_ACTS_ON_GENE",from:"d",to:"g"},{edge:"GENE_ASSOCIATED_WITH_DISEASE",from:"g",to:"dis"}], return_vars: ["g"], limit: 50 }
   rows { sort: "cadd_phred", desc: true, limit: 20 }
   analytics { method: "pca", params: { type: "pca", features: { numeric: [...] } } }
 
 Seed formats: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
 IMPORTANT: For fuzzy seeds, use ONLY {label:"..."} — do NOT include a type field. The resolver handles type detection. Only use {type,id} when you have the exact entity ID.
-Target intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains
+Target intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, side_effects, go_terms, metabolites, studies, signals
 
 ### AskUser
 Clarify ambiguous intent, offer choices.`;
@@ -83,11 +83,13 @@ Pick the RIGHT mode for the question:
 - "Tell me about BRCA1" → explore mode:context { seeds:[{label:"BRCA1"}] }
 - "Protein domains of BRCA1" / "domain architecture" → explore { seeds:[{label:"BRCA1"}], into:["protein_domains"] }
 - "How many disease edges does TP53 have?" → explore mode:aggregate { seeds:[{label:"TP53"}], edge_type:"...", metric:"count" }
-- "Multi-hop: gene → diseases → pathways" → traverse { seed:{label:"..."}, steps:[{into:"diseases"},{enrich:"pathways"}] }
+- "Multi-hop: gene → diseases → drugs" → traverse { seed:{label:"..."}, steps:[{into:"diseases", top:20},{into:"drugs", top:20}] }
+- "Enriched pathways from gene → diseases chain" → traverse { seed:{label:"..."}, steps:[{into:"diseases"},{enrich:"pathways"}] }
 - "Path from Gene X to Disease Y" → traverse mode:paths { from:"Gene:...", to:"Disease:..." }
 - "How are X and Y connected?" / "relationship between" → BOTH traverse mode:paths AND explore mode:compare (paths show direct links, compare shows shared neighbors + Jaccard similarity)
 - "Genes that connect Drug X to Disease Y" / structural pattern → query { pattern:[...], return_vars:[...] }
 
+CRITICAL: In traverse chains, prefer {into:"drugs"} over {enrich:"drugs"} for connectivity. Use {enrich:...} only when you need statistical over-representation (Fisher's exact test, needs 3+ entities from previous step). The chain auto-backtracks: if no edge exists between consecutive types, it branches from the nearest valid ancestor.
 CRITICAL: For overlap / intersection / "shared between" questions, use explore mode:compare or query — NEVER two separate explores.
 CRITICAL: For "how connected" / "relationship between" questions on same-type entities, use BOTH paths + compare for a complete picture.
 CRITICAL: For "protein domains" / "domain architecture" / "domain structure" questions, ALWAYS use Run explore { into:["protein_domains"] } — NEVER use Read. The Run tool fetches domain positions and enables the visual domain map.

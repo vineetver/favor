@@ -132,8 +132,10 @@ export function createPrepareStep(
         if (output && "state_delta" in output && output.state_delta && currentState) {
           const delta = output.state_delta as RunResult["state_delta"];
           currentState = applyStateDelta(currentState, delta);
-          // Persist asynchronously
-          patchSessionState(sessionId, currentState).catch(() => {});
+          // Persist asynchronously — update version on success
+          patchSessionState(sessionId, currentState, stateVersion)
+            .then((resp) => { stateVersion = resp.version; })
+            .catch(() => { /* Non-critical — state will refresh next turn */ });
         }
       }
     }

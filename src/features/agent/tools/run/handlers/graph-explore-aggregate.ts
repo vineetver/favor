@@ -5,7 +5,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError } from "./graph";
+import { errorResult, catchError, edgeTypeAnnotation } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -28,6 +28,9 @@ export async function handleExploreAggregate(
 
     const seed = resolved[0];
 
+    // Get edge description for context
+    const annotation = await edgeTypeAnnotation(cmd.edge_type);
+
     const data = await agentFetch<{
       data: {
         textSummary?: string;
@@ -41,6 +44,7 @@ export async function handleExploreAggregate(
           count?: number;
         }>;
       };
+      meta?: { resolved?: { scoreField?: string; direction?: string } };
     }>("/graph/edges/aggregate", {
       method: "POST",
       body: {
@@ -56,6 +60,7 @@ export async function handleExploreAggregate(
     });
 
     const result = data.data;
+    const resolvedScoreField = data.meta?.resolved?.scoreField ?? cmd.score_field;
     const summary = result?.textSummary ??
       (result?.buckets
         ? `${cmd.metric} of ${cmd.edge_type} for ${seed.label}: ${result.buckets.length} groups`
@@ -66,7 +71,10 @@ export async function handleExploreAggregate(
       data: {
         seed,
         edgeType: cmd.edge_type,
+        edgeDescription: annotation ?? undefined,
         metric: cmd.metric,
+        scoreField: resolvedScoreField ?? undefined,
+        ...(cmd.group_by ? { groupBy: cmd.group_by } : {}),
         ...(result?.value !== undefined ? { value: result.value } : {}),
         ...(result?.buckets ? { buckets: result.buckets } : {}),
       },

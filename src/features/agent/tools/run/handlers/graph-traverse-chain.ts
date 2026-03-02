@@ -1,123 +1,593 @@
 /**
  * traverse mode: chain — multi-hop traversal with intent-first steps.
+ *
+ * Strategy: build a single /graph/query request with proper steps (including
+ * branches when consecutive types lack a direct edge). Falls back to per-step
+ * /graph/ranked-neighbors when the batch query fails.
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
+import type { RunCommand, RunResult, EntityRef, TraverseStep, TargetIntent } from "../types";
 import {
   INTENT_TO_TYPE,
   findEdgesConnecting,
+  type GraphSchemaResponse,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { getCachedGraphSchema, TARGET_EDGE_MAP, errorResult, catchError } from "./graph";
+import {
+  getCachedGraphSchema,
+  TARGET_EDGE_MAP,
+  errorResult,
+  catchError,
+  edgeTypeAnnotation,
+} from "./graph";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
+
+/** Scored entity for chain results */
+interface ScoredEntity extends EntityRef {
+  rank?: number;
+  score?: number;
+}
+
+/** Enriched entity for enrichment steps */
+interface EnrichedEntity extends EntityRef {
+  pValue?: number;
+  foldEnrichment?: number;
+  overlap?: number;
+}
+
+/** Unified step result used across all execution paths */
+interface StepResult {
+  step: number;
+  intent: string;
+  edgeType: string;
+  edgeDescription?: string;
+  scoreField?: string;
+  entities: (ScoredEntity | EnrichedEntity)[];
+}
+
+/** Annotated "into" step with resolved source depth and edge type */
+interface AnnotatedIntoStep {
+  userStepIndex: number;
+  intent: string;
+  targetType: string;
+  edgeType: string;
+  defaultScoreField?: string;
+  sourceDepth: number; // -1 if no edge found
+  limit: number;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1: Annotate steps — resolve edge types and detect backtrack points
+// ---------------------------------------------------------------------------
+
+function annotateIntoSteps(
+  steps: TraverseStep[],
+  seedType: string,
+  schema: GraphSchemaResponse,
+): { intoSteps: AnnotatedIntoStep[]; enrichIndices: number[] } {
+  const typeStack: string[] = [seedType];
+  const intoSteps: AnnotatedIntoStep[] = [];
+  const enrichIndices: number[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+
+    if ("into" in step) {
+      const targetType = INTENT_TO_TYPE[step.into];
+      if (!targetType) continue;
+
+      let found = false;
+      // Try current frontier first, then backtrack through type stack
+      for (let d = typeStack.length - 1; d >= 0; d--) {
+        const edges = findEdgesConnecting(schema, typeStack[d], targetType);
+        if (edges.length > 0) {
+          intoSteps.push({
+            userStepIndex: i,
+            intent: step.into,
+            targetType,
+            edgeType: edges[0].edgeType,
+            defaultScoreField: edges[0].defaultScoreField,
+            sourceDepth: d,
+            limit: Math.min(step.top ?? 20, 100),
+          });
+          // Only extend the type stack for linear continuations
+          if (d === typeStack.length - 1) {
+            typeStack.push(targetType);
+          }
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        intoSteps.push({
+          userStepIndex: i,
+          intent: step.into,
+          targetType,
+          edgeType: "none",
+          sourceDepth: -1,
+          limit: step.top ?? 20,
+        });
+      }
+    } else if ("enrich" in step) {
+      enrichIndices.push(i);
+    }
+  }
+
+  return { intoSteps, enrichIndices };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Build /graph/query steps from annotated into steps
+// ---------------------------------------------------------------------------
+
+function buildQuerySteps(
+  intoSteps: AnnotatedIntoStep[],
+): Array<Record<string, unknown>> {
+  const valid = intoSteps.filter((s) => s.sourceDepth >= 0);
+  if (valid.length === 0) return [];
+
+  // Group by source depth — steps at the same depth expand from the same frontier
+  const byDepth = new Map<number, AnnotatedIntoStep[]>();
+  for (const s of valid) {
+    const group = byDepth.get(s.sourceDepth) ?? [];
+    group.push(s);
+    byDepth.set(s.sourceDepth, group);
+  }
+
+  const sortedDepths = [...byDepth.keys()].sort((a, b) => a - b);
+  const querySteps: Array<Record<string, unknown>> = [];
+
+  for (const depth of sortedDepths) {
+    const group = byDepth.get(depth)!;
+    if (group.length === 1) {
+      // Single edge — linear step
+      const s = group[0];
+      querySteps.push({
+        edgeTypes: [s.edgeType],
+        limit: s.limit,
+        sort: s.defaultScoreField ? `-${s.defaultScoreField}` : undefined,
+      });
+    } else {
+      // Multiple edges from same frontier — branch
+      querySteps.push({
+        branch: group.map((s) => ({
+          edgeTypes: [s.edgeType],
+          limit: s.limit,
+          sort: s.defaultScoreField ? `-${s.defaultScoreField}` : undefined,
+        })),
+      });
+    }
+  }
+
+  return querySteps;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3a: Execute via /graph/query (batch)
+// ---------------------------------------------------------------------------
+
+async function executeViaQuery(
+  seed: EntityRef,
+  intoSteps: AnnotatedIntoStep[],
+): Promise<StepResult[] | null> {
+  const querySteps = buildQuerySteps(intoSteps);
+  if (querySteps.length === 0) return null;
+
+  try {
+    const resp = await agentFetch<{
+      data: {
+        nodes: Record<
+          string,
+          { entity: EntityRef; fields?: Record<string, unknown> }
+        >;
+        edges: Array<{
+          type: string;
+          from: string;
+          to: string;
+          fields?: Record<string, unknown>;
+        }>;
+      };
+      meta?: { nodeCount?: number; edgeCount?: number };
+    }>("/graph/query", {
+      method: "POST",
+      body: {
+        seeds: [{ type: seed.type, id: seed.id }],
+        steps: querySteps,
+        select: {
+          nodeFields: ["label", "subtitle"].slice(0, 20),
+          edgeFields: [
+            "score",
+            "overall_score",
+            "combined_score",
+          ].slice(0, 20),
+        },
+        limits: { maxNodes: 1000, maxEdges: 5000 },
+      },
+    });
+
+    const nodes = resp.data?.nodes ?? {};
+    const edges = resp.data?.edges ?? [];
+
+    // Map each annotated step to its result nodes via edge type matching
+    const results: StepResult[] = [];
+    for (const ann of intoSteps) {
+      if (ann.edgeType === "none") {
+        results.push({
+          step: ann.userStepIndex,
+          intent: ann.intent,
+          edgeType: "none",
+          entities: [],
+        });
+        continue;
+      }
+
+      // Collect target nodes from edges of this step's edge type
+      const stepEdges = edges.filter((e) => e.type === ann.edgeType);
+      const targetEntities: ScoredEntity[] = [];
+      const seen = new Set<string>();
+
+      for (const edge of stepEdges) {
+        const fromType = edge.from.split(":")[0];
+        const toType = edge.to.split(":")[0];
+        const targetKey =
+          toType === ann.targetType
+            ? edge.to
+            : fromType === ann.targetType
+              ? edge.from
+              : null;
+
+        if (!targetKey || seen.has(targetKey)) continue;
+        seen.add(targetKey);
+
+        const node = nodes[targetKey];
+        if (!node?.entity) continue;
+
+        const score = (edge.fields?.overall_score ??
+          edge.fields?.score ??
+          edge.fields?.combined_score) as number | undefined;
+
+        targetEntities.push({
+          ...node.entity,
+          rank: targetEntities.length + 1,
+          score: typeof score === "number" ? score : undefined,
+        });
+      }
+
+      const annotation = await edgeTypeAnnotation(ann.edgeType);
+      results.push({
+        step: ann.userStepIndex,
+        intent: ann.intent,
+        edgeType: ann.edgeType,
+        edgeDescription: annotation ?? undefined,
+        scoreField: ann.defaultScoreField,
+        entities: targetEntities.slice(0, ann.limit),
+      });
+    }
+
+    return results;
+  } catch {
+    // Query failed — caller should fall back to per-step approach
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3b: Fallback — per-step ranked-neighbors
+// ---------------------------------------------------------------------------
+
+async function executePerStep(
+  seed: EntityRef,
+  intoSteps: AnnotatedIntoStep[],
+): Promise<StepResult[]> {
+  const results: StepResult[] = [];
+  // Track entities at each typeStack depth so backtracked steps use the
+  // correct source instead of always chaining linearly.
+  // Depth 0 = original seed; depth N = entities produced by the first
+  // linear step that extended the stack to that level.
+  const entitiesAtDepth = new Map<number, EntityRef[]>();
+  entitiesAtDepth.set(0, [seed]);
+
+  for (const ann of intoSteps) {
+    if (ann.edgeType === "none") {
+      results.push({
+        step: ann.userStepIndex,
+        intent: ann.intent,
+        edgeType: "none",
+        entities: [],
+      });
+      continue;
+    }
+
+    // Pick seeds from the correct source depth (enables automatic backtracking)
+    const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(
+      0,
+      10,
+    );
+
+    const annotation = await edgeTypeAnnotation(ann.edgeType);
+
+    try {
+      const data = await agentFetch<{
+        data: {
+          neighbors: Array<{
+            entity: EntityRef;
+            rank: number;
+            score?: number;
+          }>;
+        };
+        meta?: { resolved?: { scoreField?: string } };
+      }>("/graph/ranked-neighbors", {
+        method: "POST",
+        body: {
+          seed: { type: stepSeeds[0].type, id: stepSeeds[0].id },
+          edgeType: ann.edgeType,
+          limit: ann.limit,
+        },
+      });
+
+      const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
+        (n) => ({
+          ...n.entity,
+          rank: n.rank,
+          score: n.score,
+        }),
+      );
+
+      // Register results at the next depth level so future steps that
+      // backtrack to this depth can find the correct source entities.
+      const resultDepth = ann.sourceDepth + 1;
+      if (!entitiesAtDepth.has(resultDepth)) {
+        entitiesAtDepth.set(resultDepth, entities);
+      }
+
+      results.push({
+        step: ann.userStepIndex,
+        intent: ann.intent,
+        edgeType: ann.edgeType,
+        edgeDescription: annotation ?? undefined,
+        scoreField:
+          data.meta?.resolved?.scoreField ?? ann.defaultScoreField,
+        entities,
+      });
+    } catch {
+      results.push({
+        step: ann.userStepIndex,
+        intent: ann.intent,
+        edgeType: ann.edgeType,
+        edgeDescription: annotation ?? undefined,
+        entities: [],
+      });
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Enrichment step execution
+// ---------------------------------------------------------------------------
+
+async function executeEnrichStep(
+  step: Extract<TraverseStep, { enrich: string }>,
+  userStepIndex: number,
+  inputEntities: EntityRef[],
+): Promise<StepResult | null> {
+  const targetType = INTENT_TO_TYPE[step.enrich];
+  if (!targetType) return null;
+
+  if (inputEntities.length < 3) {
+    // Not enough entities for statistical enrichment — return null so
+    // the caller can fall back to connectivity (ranked-neighbors).
+    return null;
+  }
+
+  // Dynamically infer the edge connecting input entities to target type,
+  // falling back to the static TARGET_EDGE_MAP for Gene-centric enrichment.
+  const inputType = inputEntities[0].type;
+  let expectedEdge: string | undefined;
+
+  const schema = await getCachedGraphSchema();
+  const dynamicEdges = findEdgesConnecting(schema, inputType, targetType);
+  if (dynamicEdges.length > 0) {
+    expectedEdge = dynamicEdges[0].edgeType;
+  } else {
+    expectedEdge = TARGET_EDGE_MAP[targetType];
+  }
+
+  if (!expectedEdge) return null;
+
+  const annotation = await edgeTypeAnnotation(expectedEdge);
+
+  const data = await agentFetch<{
+    data: {
+      enriched: Array<{
+        entity: EntityRef;
+        overlap: number;
+        pValue: number;
+        adjustedPValue: number;
+        foldEnrichment: number;
+      }>;
+    };
+  }>("/graph/enrichment", {
+    method: "POST",
+    body: {
+      inputSet: inputEntities
+        .slice(0, 50)
+        .map((e) => ({ type: e.type, id: e.id })),
+      targetType,
+      edgeType: expectedEdge,
+      pValueCutoff: step.p_cutoff ?? 0.05,
+      limit: step.top ?? 20,
+    },
+  });
+
+  const entities: EnrichedEntity[] = (data.data?.enriched ?? []).map((e) => ({
+    ...e.entity,
+    pValue: e.pValue,
+    foldEnrichment: e.foldEnrichment,
+    overlap: e.overlap,
+  }));
+
+  return {
+    step: userStepIndex,
+    intent: step.enrich,
+    edgeType: expectedEdge,
+    edgeDescription: annotation ?? undefined,
+    scoreField: "Fisher's exact test p-value",
+    entities,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Fallback: enrich → connectivity when input set is too small
+// ---------------------------------------------------------------------------
+
+async function executeFallbackInto(
+  intent: TargetIntent,
+  userStepIndex: number,
+  inputEntities: EntityRef[],
+  schema: GraphSchemaResponse,
+  limit: number,
+): Promise<StepResult | null> {
+  const targetType = INTENT_TO_TYPE[intent];
+  if (!targetType) return null;
+
+  const inputType = inputEntities[0].type;
+  const edges = findEdgesConnecting(schema, inputType, targetType);
+  if (edges.length === 0) return null;
+
+  const edgeInfo = edges[0];
+  const annotation = await edgeTypeAnnotation(edgeInfo.edgeType);
+
+  try {
+    const data = await agentFetch<{
+      data: {
+        neighbors: Array<{
+          entity: EntityRef;
+          rank: number;
+          score?: number;
+        }>;
+      };
+      meta?: { resolved?: { scoreField?: string } };
+    }>("/graph/ranked-neighbors", {
+      method: "POST",
+      body: {
+        seed: { type: inputEntities[0].type, id: inputEntities[0].id },
+        edgeType: edgeInfo.edgeType,
+        limit: Math.min(limit, 100),
+      },
+    });
+
+    const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
+      (n) => ({
+        ...n.entity,
+        rank: n.rank,
+        score: n.score,
+      }),
+    );
+
+    return {
+      step: userStepIndex,
+      intent,
+      edgeType: edgeInfo.edgeType,
+      edgeDescription: annotation ?? undefined,
+      scoreField:
+        data.meta?.resolved?.scoreField ?? edgeInfo.defaultScoreField,
+      entities,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main handler
+// ---------------------------------------------------------------------------
 
 export async function handleTraverseChain(
   cmd: TraverseCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
   try {
-    if (!cmd.seed) {
-      return errorResult("chain mode requires a 'seed' entity.");
-    }
-    if (!cmd.steps || cmd.steps.length === 0) {
+    if (!cmd.seed) return errorResult("chain mode requires a 'seed' entity.");
+    if (!cmd.steps?.length)
       return errorResult("chain mode requires at least one step.");
-    }
 
     const resolvedSeeds = await resolveSeeds([cmd.seed], resolvedCache);
-    if (resolvedSeeds.length === 0) {
+    if (!resolvedSeeds.length)
       return errorResult("Could not resolve seed entity.");
-    }
 
     const seed = resolvedSeeds[0];
     const schema = await getCachedGraphSchema();
-    let currentType = seed.type;
-    const allResults: Array<{ step: number; intent: string; entities: EntityRef[] }> = [];
 
-    for (let i = 0; i < cmd.steps.length; i++) {
-      const step = cmd.steps[i];
+    // Phase 1: Annotate steps — resolve edges and detect backtracks
+    const { intoSteps, enrichIndices } = annotateIntoSteps(
+      cmd.steps,
+      seed.type,
+      schema,
+    );
 
-      if ("into" in step) {
-        const targetType = INTENT_TO_TYPE[step.into];
-        if (!targetType) continue;
+    // Phase 2+3: Execute into steps via batch query, fall back to per-step
+    const intoResults =
+      (await executeViaQuery(seed, intoSteps)) ??
+      (await executePerStep(seed, intoSteps));
 
-        const edgeTypes = findEdgesConnecting(schema, currentType, targetType);
-        if (edgeTypes.length === 0) {
-          allResults.push({ step: i, intent: step.into, entities: [] });
-          continue;
-        }
+    // Phase 4: Execute enrich steps (with auto-fallback to connectivity)
+    const enrichResults: StepResult[] = [];
+    for (const idx of enrichIndices) {
+      const step = cmd.steps[idx] as Extract<TraverseStep, { enrich: string }>;
 
-        const seeds = i > 0 && allResults[i - 1]?.entities.length
-          ? allResults[i - 1].entities.slice(0, 10)
-          : [seed];
+      // Find closest preceding step's entities as input
+      const allSoFar = [...intoResults, ...enrichResults].sort(
+        (a, b) => a.step - b.step,
+      );
+      const prevStep = allSoFar
+        .filter((r) => r.step < idx && r.entities.length > 0)
+        .at(-1);
+      const inputEntities = prevStep?.entities.length
+        ? prevStep.entities
+        : [seed];
 
-        const data = await agentFetch<{
-          data: { neighbors: Array<{ entity: EntityRef; rank: number; score?: number }> };
-        }>("/graph/ranked-neighbors", {
-          method: "POST",
-          body: {
-            seed: { type: seeds[0].type, id: seeds[0].id },
-            edgeType: edgeTypes[0].edgeType,
-            limit: Math.min(step.top ?? 20, 100),
-          },
-        });
+      let result = await executeEnrichStep(step, idx, inputEntities);
 
-        const entities = (data.data?.neighbors ?? []).map((n) => n.entity);
-        allResults.push({ step: i, intent: step.into, entities });
-        currentType = targetType;
-      } else if ("enrich" in step) {
-        const targetType = INTENT_TO_TYPE[step.enrich];
-        if (!targetType) continue;
-
-        const inputSet = i > 0 && allResults[i - 1]?.entities.length
-          ? allResults[i - 1].entities.slice(0, 50)
-          : [seed];
-
-        if (inputSet.length < 3) {
-          allResults.push({ step: i, intent: step.enrich, entities: [] });
-          continue;
-        }
-
-        const expectedEdge = TARGET_EDGE_MAP[targetType];
-        if (!expectedEdge) continue;
-
-        const data = await agentFetch<{
-          data: {
-            enriched: Array<{
-              entity: EntityRef;
-              overlap: number;
-              pValue: number;
-              adjustedPValue: number;
-              foldEnrichment: number;
-            }>;
-          };
-        }>("/graph/enrichment", {
-          method: "POST",
-          body: {
-            inputSet: inputSet.map((e) => ({ type: e.type, id: e.id })),
-            targetType,
-            edgeType: expectedEdge,
-            pValueCutoff: step.p_cutoff ?? 0.05,
-            limit: step.top ?? 20,
-          },
-        });
-
-        const entities = (data.data?.enriched ?? []).map((e) => e.entity);
-        allResults.push({ step: i, intent: step.enrich, entities });
+      // Fallback: if enrichment couldn't run (< 3 input entities), use
+      // connectivity (ranked-neighbors) instead so the chain doesn't break.
+      if (!result) {
+        result = await executeFallbackInto(
+          step.enrich,
+          idx,
+          inputEntities,
+          schema,
+          step.top ?? 20,
+        );
       }
+
+      if (result) enrichResults.push(result);
     }
 
-    const summary = allResults
-      .map((r) => `Step ${r.step + 1} (${r.intent}): ${r.entities.length} results`)
-      .join("; ");
+    // Merge and sort by user step index
+    const allResults = [...intoResults, ...enrichResults].sort(
+      (a, b) => a.step - b.step,
+    );
+
+    // Build informative summary with edge context
+    const stepSummaries = allResults.map((r) => {
+      const scoreInfo = r.scoreField ? ` ranked by ${r.scoreField}` : "";
+      return `Step ${r.step + 1} → ${r.entities.length} ${r.intent} via ${r.edgeType}${scoreInfo}`;
+    });
 
     return {
-      text_summary: `Traversal from ${seed.label}: ${summary}`,
+      text_summary: `Traversal from ${seed.label}:\n${stepSummaries.join("\n")}`,
       data: {
         seed,
         steps: allResults.map((r) => ({
           intent: r.intent,
+          edgeType: r.edgeType,
+          edgeDescription: r.edgeDescription,
+          scoreField: r.scoreField,
           count: r.entities.length,
           top: r.entities.slice(0, 10),
         })),

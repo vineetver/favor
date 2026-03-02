@@ -5,7 +5,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError } from "./graph";
+import { errorResult, catchError, trimEntitySubtitles } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -40,6 +40,7 @@ export async function handleExploreContext(
     });
 
     const entities = data.data?.entities ?? [];
+    trimEntitySubtitles(entities);
     const names = resolved.map((e) => e.label).join(", ");
 
     return {

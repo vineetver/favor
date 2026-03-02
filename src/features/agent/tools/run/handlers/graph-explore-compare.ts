@@ -4,9 +4,8 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
-import { findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { getCachedGraphSchema, errorResult, catchError } from "./graph";
+import { errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -20,16 +19,12 @@ export async function handleExploreCompare(
       return errorResult("compare mode requires at least 2 resolved entities.");
     }
 
-    // Auto-infer edge_type from schema if not provided
-    let edgeType = cmd.edge_type;
-    if (!edgeType) {
-      const schema = await getCachedGraphSchema();
-      const edges = findEdgesConnecting(schema, resolved[0].type, resolved[0].type);
-      // Pick first edge that connects this type to anything
-      if (edges.length > 0) {
-        edgeType = edges[0].edgeType;
-      }
-    }
+    // Auto-infer edge_type from schema if not provided.
+    // The intersect API can auto-infer too, so passing undefined is fine.
+    const edgeType = cmd.edge_type;
+
+    // Get edge description for context
+    const annotation = edgeType ? await edgeTypeAnnotation(edgeType) : null;
 
     const data = await agentFetch<{
       data: {
@@ -54,16 +49,20 @@ export async function handleExploreCompare(
     });
 
     const shared = data.data?.shared ?? [];
+    trimEntitySubtitles(shared);
+
+    const entityNames = resolved.map((e) => e.label).join(" vs ");
     const summary = data.data?.textSummary ??
-      `Compared ${resolved.length} entities: ${shared.length} shared neighbors`;
+      `Compared ${entityNames} via ${edgeType}: ${shared.length} shared neighbors`;
 
     return {
       text_summary: summary,
       data: {
         entities: resolved,
+        edgeType,
+        edgeDescription: annotation ?? undefined,
         shared,
         unique: data.data?.unique,
-        edgeType,
       },
       state_delta: {
         pinned_entities: resolved,

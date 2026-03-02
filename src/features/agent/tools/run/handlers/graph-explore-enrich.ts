@@ -6,7 +6,7 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { INTENT_TO_TYPE } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { TARGET_EDGE_MAP, errorResult, catchError } from "./graph";
+import { TARGET_EDGE_MAP, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -34,6 +34,9 @@ export async function handleExploreEnrich(
       return errorResult(`No enrichment edge type for target: ${targetType}`);
     }
 
+    // Get edge description for context
+    const annotation = await edgeTypeAnnotation(expectedEdge);
+
     const data = await agentFetch<{
       data: {
         textSummary?: string;
@@ -59,7 +62,9 @@ export async function handleExploreEnrich(
       },
     });
 
-    const enriched = (data.data?.enriched ?? []).slice(0, 20).map((e) => ({
+    const rawEnriched = data.data?.enriched ?? [];
+    trimEntitySubtitles(rawEnriched);
+    const enriched = rawEnriched.slice(0, 20).map((e) => ({
       entity: e.entity,
       overlap: e.overlap,
       pValue: e.pValue,
@@ -72,9 +77,16 @@ export async function handleExploreEnrich(
       return errorResult(`No significant enrichment found (p < ${cmd.p_cutoff ?? 0.05})`);
     }
 
+    const pCutoff = cmd.p_cutoff ?? 0.05;
+    const summary = data.data.textSummary ??
+      `${enriched.length} enriched ${cmd.target} (Fisher's exact test, p < ${pCutoff})`;
+
     return {
-      text_summary: data.data.textSummary ?? `${enriched.length} enriched ${cmd.target}`,
+      text_summary: summary,
       data: {
+        _method: `Fisher's exact test — tests whether your ${resolved.length} input genes are over-represented in each ${targetType} compared to the genome background (${data.data.backgroundSize} genes). Low p-values indicate statistically significant enrichment.`,
+        edgeType: expectedEdge,
+        edgeDescription: annotation ?? undefined,
         inputSize: data.data.inputSize,
         backgroundSize: data.data.backgroundSize,
         enriched,
