@@ -24,10 +24,15 @@ export async function handleQuery(
   try {
     let pattern = cmd.pattern;
 
+    // Resolve seeds once and reuse
+    let resolvedSeeds: EntityRef[] | undefined;
+    if (cmd.seeds && cmd.seeds.length > 0) {
+      resolvedSeeds = await resolveSeeds(cmd.seeds, resolvedCache);
+    }
+
     // If no explicit pattern but seeds + description, build pattern from schema
-    if (!pattern && cmd.seeds && cmd.seeds.length > 0) {
-      const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
-      if (resolved.length === 0) {
+    if (!pattern && resolvedSeeds && resolvedSeeds.length > 0) {
+      if (resolvedSeeds.length === 0) {
         return errorResult("Could not resolve any seeds for pattern building.", tc);
       }
 
@@ -35,8 +40,8 @@ export async function handleQuery(
       pattern = [];
 
       // Create a variable for each resolved seed with type constraint and ID filter
-      for (let i = 0; i < resolved.length; i++) {
-        const seed = resolved[i];
+      for (let i = 0; i < resolvedSeeds.length; i++) {
+        const seed = resolvedSeeds[i];
         pattern.push({
           var: `s${i}`,
           type: seed.type,
@@ -44,8 +49,8 @@ export async function handleQuery(
       }
 
       // If there are exactly 2 seeds, try to infer an edge connecting them
-      if (resolved.length === 2) {
-        const edgeType = inferEdgeType(schema, resolved[0].type, resolved[1].type);
+      if (resolvedSeeds.length === 2) {
+        const edgeType = inferEdgeType(schema, resolvedSeeds[0].type, resolvedSeeds[1].type);
         if (edgeType) {
           pattern.push({
             var: "e0",
@@ -56,7 +61,7 @@ export async function handleQuery(
         }
       }
 
-      tc.add({ step: "buildPattern", kind: "decision", message: `Built pattern from ${resolved.length} seeds` });
+      tc.add({ step: "buildPattern", kind: "decision", message: `Built pattern from ${resolvedSeeds.length} seeds` });
     }
 
     if (!pattern || pattern.length === 0) {
@@ -68,10 +73,9 @@ export async function handleQuery(
 
     // Build filters from resolved seeds (constrain var nodes to specific IDs)
     const filters: Record<string, unknown> = { ...cmd.filters };
-    if (cmd.seeds) {
-      const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
-      for (let i = 0; i < resolved.length; i++) {
-        filters[`s${i}.id__eq`] = resolved[i].id;
+    if (resolvedSeeds) {
+      for (let i = 0; i < resolvedSeeds.length; i++) {
+        filters[`s${i}.id__eq`] = resolvedSeeds[i].id;
       }
     }
 

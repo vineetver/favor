@@ -46,12 +46,18 @@ export async function handleRows(
       ? (result.rows as unknown[]).slice(0, maxRows)
       : result.rows;
 
+    const total = typeof result.total === "number" ? result.total : 0;
+    const rowCount = Array.isArray(rows) ? rows.length : 0;
+    const isIncomplete = total > maxRows;
+
     return okResult({
-      text_summary: (result.text_summary as string) ?? `Showing ${Array.isArray(rows) ? rows.length : 0} of ${result.total ?? "?"} variants (offset ${cmd.offset ?? 0}).`,
+      text_summary: (result.text_summary as string) ?? `Showing ${rowCount} of ${result.total ?? "?"} variants (offset ${cmd.offset ?? 0}).`,
       data: { rows, total: result.total },
       state_delta: {},
       next_reads: [{ path: `cohort/${cohortId}/schema` }],
       tc,
+      incomplete: isIncomplete,
+      next_cursor: isIncomplete ? (cmd.offset ?? 0) + maxRows : undefined,
     });
   } catch (err) {
     return catchToResult(err, tc);
@@ -84,11 +90,16 @@ export async function handleGroupby(
       ? (result.buckets as unknown[]).slice(0, maxBuckets)
       : result.buckets;
 
+    const totalGroups = typeof result.total_groups === "number" ? result.total_groups : 0;
+    const isIncomplete = totalGroups > maxBuckets;
+
     return okResult({
       text_summary: (result.text_summary as string) ?? `${Array.isArray(buckets) ? buckets.length : 0} groups by ${cmd.group_by}`,
       data: { group_by: result.group_by, buckets, total_groups: result.total_groups },
       state_delta: {},
       tc,
+      incomplete: isIncomplete,
+      next_cursor: isIncomplete ? maxBuckets : undefined,
     });
   } catch (err) {
     return catchToResult(err, tc);
@@ -102,9 +113,13 @@ export async function handleCorrelation(
   const cohortId = getCohortId(cmd, activeCohortId);
   if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
+  const tc = new TraceCollector();
+
   try {
     const body: Record<string, unknown> = { x: cmd.x, y: cmd.y };
     if (cmd.filters?.length) body.filters = cmd.filters;
+
+    tc.add({ step: "fetchCorrelation", kind: "call", message: `POST /cohorts/${cohortId}/correlation` });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/correlation`,
@@ -119,9 +134,10 @@ export async function handleCorrelation(
         x_stddev: result.x_stddev, y_stddev: result.y_stddev,
       },
       state_delta: {},
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -132,16 +148,23 @@ export async function handleDerive(
   const cohortId = getCohortId(cmd, activeCohortId);
   if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
+  const tc = new TraceCollector();
+
   try {
     const body: Record<string, unknown> = { filters: cmd.filters };
     if (cmd.label) body.label = cmd.label;
+
+    tc.add({ step: "derive", kind: "call", message: `POST /cohorts/${cohortId}/derive` });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/derive`,
       { method: "POST", body, timeout: 60_000 },
     );
 
-    const derivedId = result.cohort_id as string;
+    const derivedId = typeof result.cohort_id === "string" ? result.cohort_id : undefined;
+    if (!derivedId) {
+      return errorResult({ message: "Derive returned no cohort_id.", code: "cohort_processing_failed", tc });
+    }
     const rowCount = (result.vid_count as number) ?? 0;
 
     return okResult({
@@ -157,9 +180,10 @@ export async function handleDerive(
         derived_cohorts: [{ id: derivedId, label: cmd.label, row_count: rowCount }],
       },
       next_reads: [{ path: `cohort/${derivedId}/schema` }],
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -170,10 +194,14 @@ export async function handlePrioritize(
   const cohortId = getCohortId(cmd, activeCohortId);
   if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
+  const tc = new TraceCollector();
+
   try {
     const body: Record<string, unknown> = { criteria: cmd.criteria };
     if (cmd.limit) body.limit = cmd.limit;
     if (cmd.filters?.length) body.filters = cmd.filters;
+
+    tc.add({ step: "prioritize", kind: "call", message: `POST /cohorts/${cohortId}/prioritize` });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/prioritize`,
@@ -188,9 +216,10 @@ export async function handlePrioritize(
       text_summary: `Prioritized ${result.total_ranked ?? 0} variants by ${cmd.criteria.map(c => c.column).join(", ")}`,
       data: { criteria: result.criteria, rows, total_ranked: result.total_ranked },
       state_delta: {},
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -201,11 +230,15 @@ export async function handleCompute(
   const cohortId = getCohortId(cmd, activeCohortId);
   if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
+  const tc = new TraceCollector();
+
   try {
     const body: Record<string, unknown> = { weights: cmd.weights };
     if (cmd.normalize != null) body.normalize = cmd.normalize;
     if (cmd.limit) body.limit = cmd.limit;
     if (cmd.filters?.length) body.filters = cmd.filters;
+
+    tc.add({ step: "compute", kind: "call", message: `POST /cohorts/${cohortId}/compute` });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/compute`,
@@ -220,8 +253,9 @@ export async function handleCompute(
       text_summary: `Computed weighted score for ${result.total_scored ?? 0} variants`,
       data: { rows, total_scored: result.total_scored },
       state_delta: {},
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }

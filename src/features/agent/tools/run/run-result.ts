@@ -6,6 +6,7 @@
  */
 
 import { AgentToolError } from "../../lib/api-client";
+import { type ToolErrorCode, classifyApiError } from "./error-classify";
 
 // ---------------------------------------------------------------------------
 // Core types
@@ -14,11 +15,14 @@ import { AgentToolError } from "../../lib/api-client";
 export type ToolStatus = "ok" | "error" | "need_clarification" | "partial";
 
 export interface ToolError {
-  code: string;
+  code: ToolErrorCode | string;
   message: string;
   hint?: string;
   details?: unknown;
   http_status?: number;
+  field_path?: string;
+  expected?: string;
+  got?: string;
 }
 
 export interface ToolWarning {
@@ -153,6 +157,9 @@ export interface RunResultEnvelope {
   };
   next_reads?: Array<{ path: string; reason?: string }>;
 
+  incomplete?: boolean;
+  next_cursor?: string | number;
+
   error?: ToolError;
   warnings?: ToolWarning[];
   trace?: TraceEntry[];
@@ -172,6 +179,8 @@ interface OkOpts {
   resolved_info?: ResolvedInfo;
   suggested_next?: SuggestedNext[];
   budgets_remaining?: BudgetsRemaining;
+  incomplete?: boolean;
+  next_cursor?: string | number;
 }
 
 export function okResult(opts: OkOpts): RunResultEnvelope {
@@ -182,6 +191,7 @@ export function okResult(opts: OkOpts): RunResultEnvelope {
     state_delta: opts.state_delta ?? {},
     ...(opts.artifacts?.length ? { artifacts: opts.artifacts } : {}),
     ...(opts.next_reads?.length ? { next_reads: opts.next_reads } : {}),
+    ...(opts.incomplete ? { incomplete: true, next_cursor: opts.next_cursor } : {}),
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
     ...(opts.tc?.candidates.length ? { candidates: opts.tc.candidates } : {}),
@@ -251,13 +261,29 @@ export function needClarificationResult(opts: {
   };
 }
 
+/** Return a valid "ok" envelope for empty results (not an error). */
+export function emptyResult(opts: {
+  reason: string;
+  tc?: TraceCollector;
+  suggested_next?: SuggestedNext[];
+}): RunResultEnvelope {
+  return okResult({
+    text_summary: opts.reason,
+    data: { empty: true, reason: opts.reason },
+    state_delta: {},
+    tc: opts.tc,
+    suggested_next: opts.suggested_next,
+  });
+}
+
 /** Convert an AgentToolError or unknown error into an errorResult */
 export function catchToResult(err: unknown, tc?: TraceCollector): RunResultEnvelope {
   if (err instanceof AgentToolError) {
+    const classified = classifyApiError(err.status, err.detail);
     return errorResult({
-      message: err.detail,
-      code: `http_${err.status}`,
-      hint: err.recoveryHint,
+      message: classified.message,
+      code: classified.code,
+      hint: classified.hint ?? err.recoveryHint,
       http_status: err.status,
       tc,
     });

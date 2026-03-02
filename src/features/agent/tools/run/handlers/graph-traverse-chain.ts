@@ -250,8 +250,10 @@ async function executeViaQuery(
       const seen = new Set<string>();
 
       for (const edge of stepEdges) {
-        const fromType = edge.from.split(":")[0];
-        const toType = edge.to.split(":")[0];
+        const fromColonIdx = edge.from.indexOf(":");
+        const fromType = fromColonIdx > 0 ? edge.from.slice(0, fromColonIdx) : edge.from;
+        const toColonIdx = edge.to.indexOf(":");
+        const toType = toColonIdx > 0 ? edge.to.slice(0, toColonIdx) : edge.to;
         const targetKey =
           toType === ann.targetType
             ? edge.to

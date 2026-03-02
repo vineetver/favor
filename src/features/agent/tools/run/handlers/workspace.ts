@@ -19,7 +19,11 @@ export async function handlePin(
 export async function handleSetCohort(
   cmd: Extract<RunCommand, { command: "set_cohort" }>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
+    tc.add({ step: "fetchSchema", kind: "call", message: `GET /cohorts/${cmd.cohort_id}/schema` });
+
     const schema = await cohortFetch<{
       row_count?: number;
       data_type?: string;
@@ -36,9 +40,10 @@ export async function handleSetCohort(
       },
       state_delta: { active_cohort_id: cmd.cohort_id },
       next_reads: [{ path: `cohort/${cmd.cohort_id}/schema` }],
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -46,7 +51,11 @@ export async function handleRemember(
   cmd: Extract<RunCommand, { command: "remember" }>,
   sessionId?: string,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
+    tc.add({ step: "writeMemory", kind: "call", message: `PUT /agent/memories key=${cmd.key}` });
+
     await agentFetch("/agent/memories", {
       method: "PUT",
       body: {
@@ -63,9 +72,10 @@ export async function handleRemember(
       text_summary: `Remembered: ${cmd.key}`,
       data: { key: cmd.key, content: cmd.content },
       state_delta: {},
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -78,10 +88,14 @@ export async function handleExport(
     return errorResult({ message: "No active cohort to export.", code: "no_cohort" });
   }
 
+  const tc = new TraceCollector();
+  tc.warn("not_implemented", "Export is not yet implemented. The user can export from the cohort UI.");
+
   return okResult({
-    text_summary: `Cohort ${cohortId} ready for export`,
-    data: { cohortId, exportReady: true },
+    text_summary: `Export not yet available for cohort ${cohortId}. Use the cohort UI to export.`,
+    data: { cohortId, exportAvailable: false },
     state_delta: {},
+    tc,
   });
 }
 
@@ -118,7 +132,16 @@ export async function handleCreateCohort(
     const statusResult = await pollCohortUntilReady(cohortId);
 
     if (statusResult.status === "failed") {
-      return errorResult({ message: `Cohort processing failed: ${statusResult.status}`, code: "create_failed", tc });
+      const progressErrors = statusResult.progress?.errors;
+      const failDetail = progressErrors
+        ? `${progressErrors} resolution errors`
+        : "unknown reason";
+      return errorResult({
+        message: `Cohort processing failed: ${failDetail}`,
+        code: "cohort_processing_failed",
+        hint: "Check that the references are valid variant identifiers (rsIDs, VCF-style, etc.).",
+        tc,
+      });
     }
 
     const schema = await cohortFetch<{

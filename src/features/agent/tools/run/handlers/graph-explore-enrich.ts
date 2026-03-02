@@ -11,7 +11,7 @@ import type { RunCommand, RunResult, EntityRef } from "../types";
 import { INTENT_TO_TYPE, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { okResult, emptyResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -118,7 +118,14 @@ export async function handleExploreEnrich(
     }));
 
     if (enriched.length === 0) {
-      return errorResult(`No significant enrichment found (p < ${cmd.p_cutoff ?? 0.05})`, tc);
+      return emptyResult({
+        reason: `No significant enrichment found (p < ${cmd.p_cutoff ?? 0.05})`,
+        tc,
+        suggested_next: [
+          { action: "Run", params: { command: "explore", mode: "enrich", p_cutoff: Math.min((cmd.p_cutoff ?? 0.05) * 10, 1) }, reason: "Relax p-value cutoff to find weaker signals" },
+          { action: "Run", params: { command: "explore", mode: "neighbors", into: [cmd.target] }, reason: "Try direct neighbor exploration instead" },
+        ],
+      });
     }
 
     const pCutoff = cmd.p_cutoff ?? 0.05;
@@ -129,13 +136,13 @@ export async function handleExploreEnrich(
     return okResult({
       text_summary: summary,
       data: {
-        _method: `${method} — tests whether your ${resolved.length} input ${inputType}s are over-represented in each ${targetType} compared to the background (${data.data.backgroundSize} entities). Low p-values indicate statistically significant enrichment.`,
+        _method: `${method} — tests whether your ${resolved.length} input ${inputType}s are over-represented in each ${targetType} compared to the background (${data.data?.backgroundSize ?? 0} entities). Low p-values indicate statistically significant enrichment.`,
         edgeType: expectedEdge,
         edgeDescription: annotation ?? undefined,
         edgeStrategy,
         inputType,
-        inputSize: data.data.inputSize,
-        backgroundSize: data.data.backgroundSize,
+        inputSize: data.data?.inputSize ?? 0,
+        backgroundSize: data.data?.backgroundSize ?? 0,
         enriched,
       },
       state_delta: {},

@@ -8,6 +8,7 @@ import {
   fetchAnalyticsChart,
 } from "../../../lib/api-client";
 import type { AnalyticsChartData } from "../../../lib/api-client";
+// Note: handleViz uses cohortFetch directly to support max_points param
 import type { RunCommand, RunResult } from "../types";
 import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
@@ -49,17 +50,20 @@ export async function handleAnalytics(
       });
     }
 
-    // Fetch chart data
-    const charts: AnalyticsChartData[] = [];
-    for (const chart of result.viz_charts ?? []) {
-      try {
-        const chartData = await fetchAnalyticsChart(cohortId, run_id, chart.chart_id);
-        charts.push(chartData);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
-      }
-    }
+    // Fetch chart data in parallel
+    const chartSpecs = result.viz_charts ?? [];
+    const chartResults = await Promise.all(
+      chartSpecs.map(async (chart) => {
+        try {
+          return await fetchAnalyticsChart(cohortId, run_id, chart.chart_id);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
+          return null;
+        }
+      }),
+    );
+    const charts = chartResults.filter((c): c is AnalyticsChartData => c !== null);
 
     return okResult({
       text_summary: result.summary ?? `${cmd.method} completed`,
@@ -95,17 +99,20 @@ export async function handleAnalyticsPoll(
       });
     }
 
-    // Fetch chart data
-    const charts: AnalyticsChartData[] = [];
-    for (const chart of result.viz_charts ?? []) {
-      try {
-        const chartData = await fetchAnalyticsChart(cmd.cohort_id, cmd.run_id, chart.chart_id);
-        charts.push(chartData);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
-      }
-    }
+    // Fetch chart data in parallel
+    const chartSpecs = result.viz_charts ?? [];
+    const chartResults = await Promise.all(
+      chartSpecs.map(async (chart) => {
+        try {
+          return await fetchAnalyticsChart(cmd.cohort_id, cmd.run_id, chart.chart_id);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
+          return null;
+        }
+      }),
+    );
+    const charts = chartResults.filter((c): c is AnalyticsChartData => c !== null);
 
     return okResult({
       text_summary: result.summary ?? `Run ${cmd.run_id}: ${result.status}`,
@@ -127,19 +134,22 @@ export async function handleAnalyticsPoll(
 export async function handleViz(
   cmd: Extract<RunCommand, { command: "viz" }>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
-    const chartData = await fetchAnalyticsChart(
-      cmd.cohort_id,
-      cmd.run_id,
-      cmd.chart_id,
-    );
+    const maxPointsParam = cmd.max_points ? `&max_points=${cmd.max_points}` : "";
+    tc.add({ step: "fetchViz", kind: "call", message: `GET viz chart ${cmd.chart_id}${maxPointsParam ? ` (max_points=${cmd.max_points})` : ""}` });
+
+    const vizUrl = `/cohorts/${encodeURIComponent(cmd.cohort_id)}/analytics/runs/${encodeURIComponent(cmd.run_id)}/viz?chart_id=${encodeURIComponent(cmd.chart_id)}${maxPointsParam}`;
+    const chartData = await cohortFetch<AnalyticsChartData>(vizUrl);
 
     return okResult({
       text_summary: chartData.title ?? `Chart ${cmd.chart_id}`,
       data: chartData as unknown as Record<string, unknown>,
       state_delta: {},
+      tc,
     });
   } catch (err) {
-    return catchToResult(err);
+    return catchToResult(err, tc);
   }
 }

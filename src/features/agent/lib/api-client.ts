@@ -1,4 +1,5 @@
 import type { CohortStatusResponse } from "@features/batch/types";
+import { classifyApiError } from "../tools/run/error-classify";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -47,17 +48,7 @@ class AgentToolError extends Error {
 
 /** Parse API error into actionable hint for the LLM */
 function parseErrorHint(status: number, body: string): string | undefined {
-  if (status === 400) {
-    if (body.includes("score")) return "Check the score column name — see Score Columns list.";
-    if (body.includes("filter")) return "Check the filter format — use score_above/score_below with a valid field.";
-    if (body.includes("entity") || body.includes("not found"))
-      return "Entity not found. Try searchEntities to find the correct ID.";
-    return "Bad request — check the parameters.";
-  }
-  if (status === 404) return "Resource not found. Verify the ID exists.";
-  if (status === 429) return "Rate limited. Wait a moment, then retry.";
-  if (status >= 500) return "Server error — try again or use an alternative approach.";
-  return undefined;
+  return classifyApiError(status, body).hint;
 }
 
 const MAX_RETRIES = 2;

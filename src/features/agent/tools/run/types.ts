@@ -316,3 +316,4 @@ export type {
   SuggestedNext,
   BudgetsRemaining,
 } from "./run-result";
+export type { ToolErrorCode } from "./error-classify";

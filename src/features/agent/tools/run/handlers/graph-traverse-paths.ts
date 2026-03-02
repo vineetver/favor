@@ -6,7 +6,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult } from "../types";
 import { errorResult, catchError, getCachedGraphSchema } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { okResult, emptyResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -90,7 +90,14 @@ export async function handleTraversePaths(
     });
 
     if (paths.length === 0) {
-      return errorResult(`No paths found between ${cmd.from} and ${cmd.to}`, tc);
+      return emptyResult({
+        reason: `No paths found between ${cmd.from} and ${cmd.to}`,
+        tc,
+        suggested_next: [
+          { action: "Run", params: { command: "traverse", mode: "paths", max_hops: Math.min((cmd.max_hops ?? 3) + 1, 5) }, reason: "Increase max_hops to search deeper" },
+          { action: "Run", params: { command: "explore", mode: "context" }, reason: "Check entity context to verify both entities exist" },
+        ],
+      });
     }
 
     // Build edge type annotations from schema and embed into summary

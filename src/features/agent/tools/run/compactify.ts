@@ -62,6 +62,10 @@ function buildEnvelope(
   if (result.suggested_next?.length) envelope.suggested_next = result.suggested_next;
   if (result.budgets_remaining) envelope.budgets_remaining = result.budgets_remaining;
   if (result.error) envelope.error = result.error;
+  if (result.incomplete) {
+    envelope.incomplete = true;
+    if (result.next_cursor != null) envelope.next_cursor = result.next_cursor;
+  }
 
   return envelope;
 }
