@@ -6,6 +6,12 @@
 import { agentFetch, AgentToolError } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import type { GraphSchemaResponse } from "../intent-aliases";
+import {
+  errorResult as makeErrorResult,
+  catchToResult,
+  TraceCollector,
+  type RunResultEnvelope,
+} from "../run-result";
 
 // Mode handlers — explore
 import { handleExploreNeighbors } from "./graph-explore-neighbors";
@@ -57,31 +63,17 @@ export const TARGET_EDGE_MAP: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Shared: error helpers
+// Shared: error helpers (delegates to run-result.ts)
 // ---------------------------------------------------------------------------
 
-export function errorResult(message: string): RunResult {
-  return {
-    text_summary: message,
-    data: { error: true, message },
-    state_delta: {},
-  };
+/** Simple error result with a message string */
+export function errorResult(message: string, tc?: TraceCollector): RunResultEnvelope {
+  return makeErrorResult({ message, tc });
 }
 
-export function catchError(err: unknown): RunResult {
-  if (err instanceof AgentToolError) {
-    return {
-      text_summary: err.detail,
-      data: err.toToolResult(),
-      state_delta: {},
-    };
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  return {
-    text_summary: `Internal error: ${message}`,
-    data: { error: true, message },
-    state_delta: {},
-  };
+/** Convert caught error to RunResult */
+export function catchError(err: unknown, tc?: TraceCollector): RunResultEnvelope {
+  return catchToResult(err, tc);
 }
 
 // ---------------------------------------------------------------------------

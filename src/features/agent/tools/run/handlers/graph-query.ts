@@ -1,5 +1,9 @@
 /**
  * query command — structural pattern matching via /graph/patterns.
+ *
+ * Fixed response field mapping:
+ *   - match.bindings → match.vars (actual API)
+ *   - data.totalMatches → data.counts.returned (actual API)
  */
 
 import { agentFetch } from "../../../lib/api-client";
@@ -7,6 +11,7 @@ import type { RunCommand, RunResult, EntityRef } from "../types";
 import { inferEdgeType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { getCachedGraphSchema, errorResult, catchError } from "./graph";
+import { okResult, TraceCollector } from "../run-result";
 
 type QueryCmd = Extract<RunCommand, { command: "query" }>;
 
@@ -14,6 +19,8 @@ export async function handleQuery(
   cmd: QueryCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
     let pattern = cmd.pattern;
 
@@ -21,7 +28,7 @@ export async function handleQuery(
     if (!pattern && cmd.seeds && cmd.seeds.length > 0) {
       const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
       if (resolved.length === 0) {
-        return errorResult("Could not resolve any seeds for pattern building.");
+        return errorResult("Could not resolve any seeds for pattern building.", tc);
       }
 
       const schema = await getCachedGraphSchema();
@@ -48,11 +55,14 @@ export async function handleQuery(
           });
         }
       }
+
+      tc.add({ step: "buildPattern", kind: "decision", message: `Built pattern from ${resolved.length} seeds` });
     }
 
     if (!pattern || pattern.length === 0) {
       return errorResult(
         "query requires either a 'pattern' array or 'seeds' to build a pattern from.",
+        tc,
       );
     }
 
@@ -70,12 +80,19 @@ export async function handleQuery(
         textSummary?: string;
         nodeColumns?: string[];
         nodes?: Record<string, unknown[]>;
+        edgeColumns?: string[];
         matches: Array<{
-          bindings: Record<string, string>;
+          vars: Record<string, string>;
+          edges?: unknown[][];
           score?: number;
         }>;
-        totalMatches?: number;
+        counts: {
+          returned: number;
+          limit?: number;
+        };
       };
+      meta?: { requestId?: string; resolved?: unknown; warnings?: unknown[] };
+      fieldMeta?: unknown;
     }>("/graph/patterns", {
       method: "POST",
       body: {
@@ -90,10 +107,13 @@ export async function handleQuery(
       },
     });
 
-    const matches = data.data?.matches ?? [];
-    const total = data.data?.totalMatches ?? matches.length;
+    tc.mergeApiWarnings(data.meta?.warnings);
+    const resolvedInfo = tc.extractResolvedInfo(data.meta);
 
-    return {
+    const matches = data.data?.matches ?? [];
+    const total = data.data?.counts?.returned ?? matches.length;
+
+    return okResult({
       text_summary: data.data?.textSummary ??
         `Pattern matched ${matches.length} results (${total} total)`,
       data: {
@@ -102,10 +122,14 @@ export async function handleQuery(
         totalMatches: total,
         ...(data.data?.nodeColumns ? { nodeColumns: data.data.nodeColumns } : {}),
         ...(data.data?.nodes ? { nodes: data.data.nodes } : {}),
+        ...(data.data?.edgeColumns ? { edgeColumns: data.data.edgeColumns } : {}),
+        ...(data.fieldMeta ? { fieldMeta: data.fieldMeta } : {}),
       },
       state_delta: {},
-    };
+      tc,
+      resolved_info: resolvedInfo,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchError(err, tc);
   }
 }

@@ -3,14 +3,15 @@
  * Dispatches RunCommand to the appropriate handler.
  */
 
-import { z } from "zod";
+import { z, type ZodError } from "zod";
 import { tool } from "ai";
-import { type RunCommand, type RunResult, type EntityRef } from "./types";
+import { type RunCommand, type RunResult, type EntityRef, runCommandSchema } from "./types";
 import { handleRows, handleGroupby, handleCorrelation, handleDerive, handlePrioritize, handleCompute } from "./handlers/cohort";
 import { handleAnalytics, handleAnalyticsPoll, handleViz } from "./handlers/analytics";
 import { handleExplore, handleTraverse, handleQuery } from "./handlers/graph";
 import { handlePin, handleSetCohort, handleRemember, handleExport, handleCreateCohort } from "./handlers/workspace";
 import { compactRunForModel } from "./compactify";
+import { errorResult } from "./run-result";
 
 export type { RunCommand, RunResult, EntityRef } from "./types";
 export { runCommandSchema } from "./types";
@@ -53,22 +54,86 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   create_cohort: (cmd) => handleCreateCohort(cmd as Extract<RunCommand, { command: "create_cohort" }>),
 };
 
+// ---------------------------------------------------------------------------
+// Phase 3: Schema-first command validation
+// ---------------------------------------------------------------------------
+
+/** Required-field hints per command — shown in validation errors */
+const COMMAND_HINTS: Record<string, string> = {
+  rows: "Optional: select, filters, sort, desc, limit, offset",
+  groupby: "Required: group_by. Optional: metrics, filters, bin_width, limit",
+  correlation: "Required: x, y. Optional: filters",
+  derive: "Required: filters (min 1). Optional: label",
+  prioritize: "Required: criteria [{column, desc?, weight?}]. Optional: filters, limit",
+  compute: "Required: weights [{column, weight}]. Optional: normalize, filters, limit",
+  analytics: "Required: method, params (with type-specific fields). Optional: cohort_id",
+  "analytics.poll": "Required: cohort_id, run_id",
+  viz: "Required: cohort_id, run_id, chart_id. Optional: max_points",
+  export: "Optional: cohort_id",
+  create_cohort: "Required: references (min 1). Optional: label",
+  explore: "Required: seeds (1-10). Mode-specific: neighbors(into), compare(edge_type?), enrich(target), similar(top_k?), context(sections?), aggregate(edge_type,metric)",
+  traverse: "Chain: seed, steps [{into/enrich}]. Paths: from, to (as 'Type:ID'). Optional: max_hops, limit",
+  query: "Required: pattern [{var, type?, edge?, from?, to?}] or description. Optional: seeds, return_vars, filters, limit",
+  pin: "Required: entities [{type, id, label}]",
+  set_cohort: "Required: cohort_id",
+  remember: "Required: key, content. Optional: value",
+};
+
+/** Format Zod issues into concise error lines */
+function formatZodErrors(error: ZodError): string[] {
+  return error.issues.map((issue) => {
+    const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+    return `${path}: ${issue.message}`;
+  });
+}
+
+/**
+ * Validate flat LLM input against the typed RunCommand schema.
+ * Returns validated RunCommand or a structured error result.
+ */
+function validateCommand(
+  flat: Record<string, unknown>,
+): { ok: true; cmd: RunCommand } | { ok: false; error: RunResult } {
+  const result = runCommandSchema.safeParse(flat);
+  if (result.success) {
+    return { ok: true, cmd: result.data };
+  }
+
+  const command = flat.command as string | undefined;
+  const issues = formatZodErrors(result.error);
+  const hint = command ? COMMAND_HINTS[command] : undefined;
+
+  return {
+    ok: false,
+    error: errorResult({
+      message: `Invalid ${command ?? "unknown"} command: ${issues.join("; ")}`,
+      code: "validation_error",
+      hint: hint ?? "Check the command documentation for required fields.",
+      details: { issues },
+    }),
+  };
+}
+
 /**
  * Execute a Run command.
+ * Validates flat input against typed schema before dispatching.
  */
 export async function executeRun(
-  command: RunCommand,
+  command: Record<string, unknown>,
   ctx: RunContext,
 ): Promise<RunResult> {
-  const handler = COMMAND_HANDLERS[command.command];
+  const validated = validateCommand(command);
+  if (!validated.ok) return validated.error;
+
+  const cmd = validated.cmd;
+  const handler = COMMAND_HANDLERS[cmd.command];
   if (!handler) {
-    return {
-      text_summary: `Unknown command: ${command.command}`,
-      data: { error: true, message: `Unknown command: ${command.command}` },
-      state_delta: {},
-    };
+    return errorResult({
+      message: `Unknown command: ${cmd.command}`,
+      code: "unknown_command",
+    });
   }
-  return handler(command, ctx);
+  return handler(cmd, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -80,7 +145,8 @@ export async function executeRun(
 const targetIntents = z.enum([
   "diseases", "drugs", "pathways", "variants",
   "phenotypes", "tissues", "genes", "proteins", "compounds",
-  "protein_domains",
+  "protein_domains", "ccres",
+  "side_effects", "go_terms", "metabolites", "studies", "signals",
 ]);
 
 const flatSeedRef = z.object({
@@ -310,13 +376,12 @@ TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes,
     inputSchema: runInputSchema,
     execute: async (cmd) => {
       const ctx = getContext();
-      const result = await executeRun(cmd as unknown as RunCommand, ctx);
-      return result;
+      return executeRun(cmd as Record<string, unknown>, ctx);
     },
     toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
       const cmd = opts.input as { command: string };
       const result = opts.output as RunResult;
-      if (result.data?.error) {
+      if (result.status === "error" || result.status === "need_clarification" || result.data?.error) {
         return { type: "json" as const, value: result as unknown as null };
       }
       return compactRunForModel(cmd.command, result);

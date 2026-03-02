@@ -1,10 +1,14 @@
 /**
  * SeedRef resolution — resolve fuzzy labels, artifact refs, and cohort refs
  * into concrete { type, id, label } entities.
+ *
+ * Phase 4: Returns match-quality + candidates for disambiguation.
+ * Phase 5: TraceCollector for observability.
  */
 
 import { agentFetch, AgentToolError } from "../../lib/api-client";
 import type { SeedRef, EntityRef } from "./types";
+import type { Candidate } from "./run-result";
 
 const MAX_SUBTITLE_LENGTH = 150;
 function trimSubtitle(s?: string): string | undefined {
@@ -15,7 +19,7 @@ function trimSubtitle(s?: string): string | undefined {
 interface ResolveResult {
   results: Array<{
     query: string;
-    status: string; // API returns lowercase "matched" / "not_found"
+    status: string;
     entity?: { type: string; id: string; label: string; subtitle?: string };
     confidence?: number;
     matchTier?: string;
@@ -32,62 +36,97 @@ interface SearchResult {
 /** Confidence threshold — below this we fall back to search */
 const MIN_CONFIDENCE = 0.9;
 
+/** Per-seed resolution metadata */
+export interface SeedResolution {
+  entity: EntityRef;
+  confidence: number;
+  strategy: "exact" | "resolve" | "search_fallback" | "artifact" | "cohort";
+  low_confidence: boolean;
+  fallback_used: boolean;
+  candidates?: Candidate[];
+}
+
 /**
  * Normalize a fuzzy label for better resolve matching.
- * Strips possessive forms ("Alzheimer's" → "Alzheimer") which cause
- * the resolve endpoint to match subtypes via synonyms instead of
- * the canonical parent entity.
  */
 function normalizeLabel(label: string): string {
   return label
-    .replace(/\u2019s\b/g, "") // curly apostrophe possessive
-    .replace(/'s\b/g, "")      // straight apostrophe possessive
+    .replace(/\u2019s\b/g, "")
+    .replace(/'s\b/g, "")
     .trim();
 }
 
 /**
  * Resolve an array of SeedRefs into concrete EntityRefs.
- * Supports exact, fuzzy, artifact-based, and cohort-based seeds.
+ * Returns resolutions with metadata (confidence, strategy, candidates).
  */
-export async function resolveSeeds(
+export async function resolveSeedsWithMeta(
   refs: SeedRef[],
   resolvedCache?: Record<string, EntityRef>,
-): Promise<EntityRef[]> {
-  const resolved: EntityRef[] = [];
+): Promise<SeedResolution[]> {
+  const resolutions: SeedResolution[] = [];
 
   // Batch fuzzy labels for a single API call
   const fuzzyLabels: Array<{ index: number; label: string }> = [];
   const exactRefs: Array<{ index: number; ref: { type: string; id: string } }> = [];
+  // Track which resolution index maps to which seed
+  const resolutionIndices: Array<{ seedIndex: number; resolutionIndex: number }> = [];
 
   for (let i = 0; i < refs.length; i++) {
     const ref = refs[i];
 
     if ("type" in ref && "id" in ref) {
-      // Exact ID — check cache first
       const cacheKey = `${ref.type}:${ref.id}`;
       const cached = resolvedCache?.[cacheKey];
       if (cached) {
-        resolved.push(cached);
+        resolutions.push({
+          entity: cached,
+          confidence: 1.0,
+          strategy: "exact",
+          low_confidence: false,
+          fallback_used: false,
+        });
       } else {
         exactRefs.push({ index: i, ref: ref as { type: string; id: string } });
       }
     } else if ("label" in ref) {
       const label = (ref as { label: string }).label;
-      // Check cache by label too
       const cached = resolvedCache?.[label];
       if (cached) {
-        resolved.push(cached);
+        resolutions.push({
+          entity: cached,
+          confidence: 1.0,
+          strategy: "exact",
+          low_confidence: false,
+          fallback_used: false,
+        });
       } else {
         fuzzyLabels.push({ index: i, label });
       }
     } else if ("from_artifact" in ref) {
       const artRef = ref as { from_artifact: number; field?: string };
       const entities = await extractEntitiesFromArtifact(artRef.from_artifact, artRef.field);
-      resolved.push(...entities);
+      for (const entity of entities) {
+        resolutions.push({
+          entity,
+          confidence: 1.0,
+          strategy: "artifact",
+          low_confidence: false,
+          fallback_used: false,
+        });
+      }
     } else if ("from_cohort" in ref) {
       const cohortRef = ref as { from_cohort: string; top?: number };
       const entities = await extractEntitiesFromCohort(cohortRef.from_cohort, cohortRef.top);
-      resolved.push(...entities);
+      for (const entity of entities) {
+        resolutions.push({
+          entity,
+          confidence: 0.95,
+          strategy: "cohort",
+          low_confidence: false,
+          fallback_used: false,
+        });
+      }
     }
   }
 
@@ -111,7 +150,6 @@ export async function resolveSeeds(
         body: { queries },
       });
 
-      // Track low-confidence fuzzy results for search fallback
       const lowConfidenceLabels: Array<{ label: string; resolvedIndex: number }> = [];
 
       for (let i = 0; i < result.results.length; i++) {
@@ -119,36 +157,124 @@ export async function resolveSeeds(
         if (r.status.toLowerCase() === "matched" && r.entity) {
           const confidence = r.confidence ?? 1.0;
           const meta = queryMeta[i];
+          const isLowConfidence = meta?.type === "fuzzy" && confidence < MIN_CONFIDENCE;
 
-          if (meta?.type === "fuzzy" && confidence < MIN_CONFIDENCE) {
-            // Low confidence fuzzy match — mark for search fallback
+          if (isLowConfidence) {
             lowConfidenceLabels.push({
               label: meta.originalLabel ?? r.query,
-              resolvedIndex: resolved.length,
+              resolvedIndex: resolutions.length,
             });
           }
 
-          resolved.push({
-            type: r.entity.type,
-            id: r.entity.id,
-            label: r.entity.label,
-            subtitle: trimSubtitle(r.entity.subtitle),
+          resolutions.push({
+            entity: {
+              type: r.entity.type,
+              id: r.entity.id,
+              label: r.entity.label,
+              subtitle: trimSubtitle(r.entity.subtitle),
+            },
+            confidence,
+            strategy: meta?.type === "exact" ? "exact" : "resolve",
+            low_confidence: isLowConfidence,
+            fallback_used: false,
           });
+        } else {
+          // Not found — attempt search fallback
+          const meta = queryMeta[i];
+          if (meta?.type === "fuzzy") {
+            const label = meta.originalLabel ?? r.query;
+            const searchRes = await searchFallback(label);
+            if (searchRes) {
+              resolutions.push(searchRes);
+            }
+          }
         }
       }
 
       // Search fallback for low-confidence fuzzy matches
       if (lowConfidenceLabels.length > 0) {
-        await improveLowConfidenceMatches(resolved, lowConfidenceLabels);
+        await improveLowConfidenceMatches(resolutions, lowConfidenceLabels);
       }
     } catch (err) {
-      // Partial resolution is OK — return what we have
       const detail = err instanceof AgentToolError ? err.detail : (err instanceof Error ? err.message : String(err));
       console.error("[resolve-seeds] Batch resolve failed:", detail);
     }
   }
 
-  return resolved;
+  return resolutions;
+}
+
+/**
+ * Legacy API — resolve SeedRefs to EntityRefs (without metadata).
+ * All existing callers use this.
+ */
+export async function resolveSeeds(
+  refs: SeedRef[],
+  resolvedCache?: Record<string, EntityRef>,
+): Promise<EntityRef[]> {
+  const resolutions = await resolveSeedsWithMeta(refs, resolvedCache);
+  return resolutions.map((r) => r.entity);
+}
+
+/** Get resolution candidates for the first seed (for disambiguation). */
+export function getResolutionCandidates(resolutions: SeedResolution[]): Candidate[] {
+  const candidates: Candidate[] = [];
+  for (const res of resolutions) {
+    if (res.low_confidence || res.candidates?.length) {
+      candidates.push({
+        type: res.entity.type,
+        id: res.entity.id,
+        label: res.entity.label,
+        score: res.confidence,
+        source: res.strategy === "search_fallback" ? "search" : "resolve",
+        reason: res.low_confidence ? "Low confidence match" : undefined,
+      });
+      if (res.candidates) {
+        candidates.push(...res.candidates);
+      }
+    }
+  }
+  return candidates;
+}
+
+/**
+ * Search fallback for unresolved labels.
+ */
+async function searchFallback(label: string): Promise<SeedResolution | null> {
+  try {
+    const normalized = normalizeLabel(label);
+    const searchResult = await agentFetch<SearchResult>(
+      `/graph/search?q=${encodeURIComponent(normalized)}&limit=3`,
+    );
+
+    const top = searchResult.results?.[0];
+    if (!top?.entity) return null;
+
+    const confidence = top.match?.confidence ?? 0;
+    const candidates: Candidate[] = searchResult.results.slice(1, 3).map((r) => ({
+      type: r.entity.type,
+      id: r.entity.id,
+      label: r.entity.label,
+      score: r.match?.confidence,
+      source: "search" as const,
+    }));
+
+    return {
+      entity: {
+        type: top.entity.type,
+        id: top.entity.id,
+        label: top.entity.label,
+        subtitle: trimSubtitle(top.entity.subtitle),
+      },
+      confidence,
+      strategy: "search_fallback",
+      low_confidence: confidence < MIN_CONFIDENCE,
+      fallback_used: true,
+      candidates: candidates.length > 0 ? candidates : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -156,28 +282,49 @@ export async function resolveSeeds(
  * If search returns a higher-confidence match, replace in-place.
  */
 async function improveLowConfidenceMatches(
-  resolved: EntityRef[],
+  resolutions: SeedResolution[],
   lowConfidence: Array<{ label: string; resolvedIndex: number }>,
 ): Promise<void> {
   for (const { label, resolvedIndex } of lowConfidence) {
     try {
       const normalized = normalizeLabel(label);
       const searchResult = await agentFetch<SearchResult>(
-        `/graph/search?q=${encodeURIComponent(normalized)}&limit=1`,
+        `/graph/search?q=${encodeURIComponent(normalized)}&limit=3`,
       );
 
       const top = searchResult.results?.[0];
       if (!top?.entity) continue;
 
       const searchConf = top.match?.confidence ?? 0;
+
+      // Collect candidates
+      const candidates: Candidate[] = searchResult.results.slice(0, 3).map((r) => ({
+        type: r.entity.type,
+        id: r.entity.id,
+        label: r.entity.label,
+        score: r.match?.confidence,
+        source: "search" as const,
+      }));
+
       if (searchConf >= MIN_CONFIDENCE) {
-        // Search found a better match — replace the resolve result
-        resolved[resolvedIndex] = {
-          type: top.entity.type,
-          id: top.entity.id,
-          label: top.entity.label,
-          subtitle: trimSubtitle(top.entity.subtitle),
+        // Search found a better match — replace
+        resolutions[resolvedIndex] = {
+          entity: {
+            type: top.entity.type,
+            id: top.entity.id,
+            label: top.entity.label,
+            subtitle: trimSubtitle(top.entity.subtitle),
+          },
+          confidence: searchConf,
+          strategy: "search_fallback",
+          low_confidence: false,
+          fallback_used: true,
+          candidates,
         };
+      } else {
+        // Still low confidence — attach candidates for disambiguation
+        resolutions[resolvedIndex].candidates = candidates;
+        resolutions[resolvedIndex].fallback_used = true;
       }
     } catch {
       // Non-critical — keep the resolve result
@@ -222,7 +369,6 @@ async function extractEntitiesFromCohort(
   top?: number,
 ): Promise<EntityRef[]> {
   try {
-    // Get top genes from cohort by groupby
     const result = await agentFetch<{
       buckets?: Array<{ key: string; count: number }>;
     }>(`/cohorts/${encodeURIComponent(cohortId)}/groupby`, {
@@ -232,7 +378,6 @@ async function extractEntitiesFromCohort(
 
     if (!result.buckets) return [];
 
-    // Resolve gene names to entities
     const geneNames = result.buckets.map((b) => b.key).filter(Boolean);
     if (geneNames.length === 0) return [];
 

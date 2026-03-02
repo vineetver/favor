@@ -3,10 +3,11 @@
  *
  * execute() returns full data for the frontend (p.output).
  * toModelOutput calls compactRunForModel to give the model a trimmed view:
- *   - text_summary (always)
+ *   - status + text_summary (always)
  *   - top-K preview of large arrays
  *   - _truncation metadata when data was trimmed
  *   - state_delta / artifacts / next_reads pass through
+ *   - trace / warnings / candidates / suggested_next / budgets_remaining pass through
  */
 
 import type { RunResult } from "./types";
@@ -29,21 +30,40 @@ export function compactRunForModel(
   command: string,
   result: RunResult,
 ): CompactValue {
-  if (result.data?.error) {
+  if (result.status === "error" || result.data?.error) {
     return json(result);
   }
 
   const compactor = COMPACTORS[command];
-  if (!compactor) return json(result);
+  if (!compactor) return json(buildEnvelope(result));
 
-  const compactData = compactor(result.data);
-  return json({
+  const compactData = compactor(result.data ?? {});
+  return json(buildEnvelope(result, compactData));
+}
+
+/** Build the model-facing envelope with all new fields */
+function buildEnvelope(
+  result: RunResult,
+  compactData?: Record<string, unknown>,
+): Record<string, unknown> {
+  const envelope: Record<string, unknown> = {
+    status: result.status,
     text_summary: result.text_summary,
-    data: compactData,
-    ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
+    data: compactData ?? result.data,
     state_delta: result.state_delta,
-    ...(result.next_reads?.length ? { next_reads: result.next_reads } : {}),
-  });
+  };
+
+  if (result.artifacts?.length) envelope.artifacts = result.artifacts;
+  if (result.next_reads?.length) envelope.next_reads = result.next_reads;
+  if (result.warnings?.length) envelope.warnings = result.warnings;
+  if (result.trace?.length) envelope.trace = result.trace;
+  if (result.candidates?.length) envelope.candidates = result.candidates;
+  if (result.resolved_info) envelope.resolved_info = result.resolved_info;
+  if (result.suggested_next?.length) envelope.suggested_next = result.suggested_next;
+  if (result.budgets_remaining) envelope.budgets_remaining = result.budgets_remaining;
+  if (result.error) envelope.error = result.error;
+
+  return envelope;
 }
 
 // ---------------------------------------------------------------------------
@@ -160,6 +180,34 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
       out._truncation = truncation(10, buckets.length);
     }
   }
+  // Pass through compare results
+  if (data.comparisons) out.comparisons = data.comparisons;
+  if (data.overallSimilarity) out.overallSimilarity = data.overallSimilarity;
+  if (data.sharedNeighbors) {
+    const shared = asArray(data.sharedNeighbors);
+    out.sharedNeighbors = shared.slice(0, 10);
+    if (shared.length > 10) {
+      out._truncation = truncation(10, shared.length);
+    }
+  }
+  // Pass through context entities
+  if (data.entities) {
+    const entities = asArray(data.entities);
+    out.entities = entities.slice(0, 3);
+    if (entities.length > 3) {
+      out._truncation = truncation(3, entities.length);
+    }
+  }
+  // Pass through similar results
+  if (data.similar) {
+    const similar = asArray(data.similar);
+    out.similar = similar.slice(0, 5);
+    if (similar.length > 5) {
+      out._truncation = truncation(5, similar.length);
+    }
+  }
+  // Pass through method description
+  if (data._method) out._method = data._method;
   return out;
 }
 

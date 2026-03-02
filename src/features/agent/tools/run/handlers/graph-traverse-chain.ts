@@ -4,6 +4,8 @@
  * Strategy: build a single /graph/query request with proper steps (including
  * branches when consecutive types lack a direct edge). Falls back to per-step
  * /graph/ranked-neighbors when the batch query fails.
+ *
+ * Phase 5: Full trace instrumentation — every decision/call/fallback recorded.
  */
 
 import { agentFetch } from "../../../lib/api-client";
@@ -21,6 +23,7 @@ import {
   catchError,
   edgeTypeAnnotation,
 } from "./graph";
+import { okResult, partialResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -66,6 +69,7 @@ function annotateIntoSteps(
   steps: TraverseStep[],
   seedType: string,
   schema: GraphSchemaResponse,
+  tc: TraceCollector,
 ): { intoSteps: AnnotatedIntoStep[]; enrichIndices: number[] } {
   const typeStack: string[] = [seedType];
   const intoSteps: AnnotatedIntoStep[] = [];
@@ -76,14 +80,16 @@ function annotateIntoSteps(
 
     if ("into" in step) {
       const targetType = INTENT_TO_TYPE[step.into];
-      if (!targetType) continue;
+      if (!targetType) {
+        tc.warn("unknown_intent", `Step ${i}: unknown intent "${step.into}"`);
+        continue;
+      }
 
       let found = false;
-      // Try current frontier first, then backtrack through type stack
       for (let d = typeStack.length - 1; d >= 0; d--) {
         const edges = findEdgesConnecting(schema, typeStack[d], targetType);
         if (edges.length > 0) {
-          intoSteps.push({
+          const ann: AnnotatedIntoStep = {
             userStepIndex: i,
             intent: step.into,
             targetType,
@@ -91,8 +97,15 @@ function annotateIntoSteps(
             defaultScoreField: edges[0].defaultScoreField,
             sourceDepth: d,
             limit: Math.min(step.top ?? 20, 100),
+          };
+          intoSteps.push(ann);
+
+          tc.add({
+            step: `annotateStep_${i}`,
+            kind: "decision",
+            message: `${step.into}: ${typeStack[d]}→${targetType} via ${edges[0].edgeType} (depth=${d})`,
           });
-          // Only extend the type stack for linear continuations
+
           if (d === typeStack.length - 1) {
             typeStack.push(targetType);
           }
@@ -102,6 +115,7 @@ function annotateIntoSteps(
       }
 
       if (!found) {
+        tc.warn("no_edge", `Step ${i}: no edge ${typeStack.at(-1)}→${targetType}`);
         intoSteps.push({
           userStepIndex: i,
           intent: step.into,
@@ -113,6 +127,7 @@ function annotateIntoSteps(
       }
     } else if ("enrich" in step) {
       enrichIndices.push(i);
+      tc.add({ step: `annotateStep_${i}`, kind: "decision", message: `enrich: ${step.enrich}` });
     }
   }
 
@@ -129,7 +144,6 @@ function buildQuerySteps(
   const valid = intoSteps.filter((s) => s.sourceDepth >= 0);
   if (valid.length === 0) return [];
 
-  // Group by source depth — steps at the same depth expand from the same frontier
   const byDepth = new Map<number, AnnotatedIntoStep[]>();
   for (const s of valid) {
     const group = byDepth.get(s.sourceDepth) ?? [];
@@ -143,7 +157,6 @@ function buildQuerySteps(
   for (const depth of sortedDepths) {
     const group = byDepth.get(depth)!;
     if (group.length === 1) {
-      // Single edge — linear step
       const s = group[0];
       querySteps.push({
         edgeTypes: [s.edgeType],
@@ -151,7 +164,6 @@ function buildQuerySteps(
         sort: s.defaultScoreField ? `-${s.defaultScoreField}` : undefined,
       });
     } else {
-      // Multiple edges from same frontier — branch
       querySteps.push({
         branch: group.map((s) => ({
           edgeTypes: [s.edgeType],
@@ -172,11 +184,14 @@ function buildQuerySteps(
 async function executeViaQuery(
   seed: EntityRef,
   intoSteps: AnnotatedIntoStep[],
+  tc: TraceCollector,
 ): Promise<StepResult[] | null> {
   const querySteps = buildQuerySteps(intoSteps);
   if (querySteps.length === 0) return null;
 
   try {
+    tc.add({ step: "batchQuery", kind: "call", message: `POST /graph/query with ${querySteps.length} steps` });
+
     const resp = await agentFetch<{
       data: {
         nodes: Record<
@@ -190,7 +205,7 @@ async function executeViaQuery(
           fields?: Record<string, unknown>;
         }>;
       };
-      meta?: { nodeCount?: number; edgeCount?: number };
+      meta?: { nodeCount?: number; edgeCount?: number; warnings?: unknown[] };
     }>("/graph/query", {
       method: "POST",
       body: {
@@ -208,10 +223,16 @@ async function executeViaQuery(
       },
     });
 
+    tc.mergeApiWarnings(resp.meta?.warnings);
+    tc.add({
+      step: "batchQueryResult",
+      kind: "timing",
+      message: `Got ${resp.meta?.nodeCount ?? 0} nodes, ${resp.meta?.edgeCount ?? 0} edges`,
+    });
+
     const nodes = resp.data?.nodes ?? {};
     const edges = resp.data?.edges ?? [];
 
-    // Map each annotated step to its result nodes via edge type matching
     const results: StepResult[] = [];
     for (const ann of intoSteps) {
       if (ann.edgeType === "none") {
@@ -224,7 +245,6 @@ async function executeViaQuery(
         continue;
       }
 
-      // Collect target nodes from edges of this step's edge type
       const stepEdges = edges.filter((e) => e.type === ann.edgeType);
       const targetEntities: ScoredEntity[] = [];
       const seen = new Set<string>();
@@ -268,8 +288,10 @@ async function executeViaQuery(
     }
 
     return results;
-  } catch {
-    // Query failed — caller should fall back to per-step approach
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    tc.add({ step: "batchQueryFailed", kind: "fallback", message: `Query failed: ${msg}` });
+    tc.warn("batch_query_failed", `Batch query failed, falling back to per-step: ${msg}`);
     return null;
   }
 }
@@ -281,12 +303,11 @@ async function executeViaQuery(
 async function executePerStep(
   seed: EntityRef,
   intoSteps: AnnotatedIntoStep[],
+  tc: TraceCollector,
 ): Promise<StepResult[]> {
+  tc.add({ step: "perStepFallback", kind: "fallback", message: `Executing ${intoSteps.length} steps individually` });
+
   const results: StepResult[] = [];
-  // Track entities at each typeStack depth so backtracked steps use the
-  // correct source instead of always chaining linearly.
-  // Depth 0 = original seed; depth N = entities produced by the first
-  // linear step that extended the stack to that level.
   const entitiesAtDepth = new Map<number, EntityRef[]>();
   entitiesAtDepth.set(0, [seed]);
 
@@ -301,15 +322,12 @@ async function executePerStep(
       continue;
     }
 
-    // Pick seeds from the correct source depth (enables automatic backtracking)
-    const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(
-      0,
-      10,
-    );
-
+    const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(0, 10);
     const annotation = await edgeTypeAnnotation(ann.edgeType);
 
     try {
+      tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "call", message: `ranked-neighbors: ${ann.edgeType}` });
+
       const data = await agentFetch<{
         data: {
           neighbors: Array<{
@@ -318,7 +336,7 @@ async function executePerStep(
             score?: number;
           }>;
         };
-        meta?: { resolved?: { scoreField?: string } };
+        meta?: { resolved?: { scoreField?: string }; warnings?: unknown[] };
       }>("/graph/ranked-neighbors", {
         method: "POST",
         body: {
@@ -328,6 +346,8 @@ async function executePerStep(
         },
       });
 
+      tc.mergeApiWarnings(data.meta?.warnings);
+
       const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
         (n) => ({
           ...n.entity,
@@ -336,8 +356,6 @@ async function executePerStep(
         }),
       );
 
-      // Register results at the next depth level so future steps that
-      // backtrack to this depth can find the correct source entities.
       const resultDepth = ann.sourceDepth + 1;
       if (!entitiesAtDepth.has(resultDepth)) {
         entitiesAtDepth.set(resultDepth, entities);
@@ -348,11 +366,12 @@ async function executePerStep(
         intent: ann.intent,
         edgeType: ann.edgeType,
         edgeDescription: annotation ?? undefined,
-        scoreField:
-          data.meta?.resolved?.scoreField ?? ann.defaultScoreField,
+        scoreField: data.meta?.resolved?.scoreField ?? ann.defaultScoreField,
         entities,
       });
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      tc.warn("step_failed", `Step ${ann.userStepIndex} (${ann.intent}): ${msg}`);
       results.push({
         step: ann.userStepIndex,
         intent: ann.intent,
@@ -374,18 +393,20 @@ async function executeEnrichStep(
   step: Extract<TraverseStep, { enrich: string }>,
   userStepIndex: number,
   inputEntities: EntityRef[],
+  tc: TraceCollector,
 ): Promise<StepResult | null> {
   const targetType = INTENT_TO_TYPE[step.enrich];
   if (!targetType) return null;
 
   if (inputEntities.length < 3) {
-    // Not enough entities for statistical enrichment — return null so
-    // the caller can fall back to connectivity (ranked-neighbors).
+    tc.add({
+      step: `enrich_${userStepIndex}`,
+      kind: "decision",
+      message: `Only ${inputEntities.length} entities — too few for enrichment, will fallback`,
+    });
     return null;
   }
 
-  // Dynamically infer the edge connecting input entities to target type,
-  // falling back to the static TARGET_EDGE_MAP for Gene-centric enrichment.
   const inputType = inputEntities[0].type;
   let expectedEdge: string | undefined;
 
@@ -393,13 +414,17 @@ async function executeEnrichStep(
   const dynamicEdges = findEdgesConnecting(schema, inputType, targetType);
   if (dynamicEdges.length > 0) {
     expectedEdge = dynamicEdges[0].edgeType;
+    tc.add({ step: `enrich_${userStepIndex}`, kind: "decision", message: `Schema edge: ${expectedEdge}` });
   } else {
     expectedEdge = TARGET_EDGE_MAP[targetType];
+    tc.add({ step: `enrich_${userStepIndex}`, kind: "fallback", message: `Static map fallback: ${expectedEdge}` });
   }
 
   if (!expectedEdge) return null;
 
   const annotation = await edgeTypeAnnotation(expectedEdge);
+
+  tc.add({ step: `enrich_${userStepIndex}`, kind: "call", message: `POST /graph/enrichment` });
 
   const data = await agentFetch<{
     data: {
@@ -411,6 +436,7 @@ async function executeEnrichStep(
         foldEnrichment: number;
       }>;
     };
+    meta?: { warnings?: unknown[] };
   }>("/graph/enrichment", {
     method: "POST",
     body: {
@@ -423,6 +449,8 @@ async function executeEnrichStep(
       limit: step.top ?? 20,
     },
   });
+
+  tc.mergeApiWarnings(data.meta?.warnings);
 
   const entities: EnrichedEntity[] = (data.data?.enriched ?? []).map((e) => ({
     ...e.entity,
@@ -451,6 +479,7 @@ async function executeFallbackInto(
   inputEntities: EntityRef[],
   schema: GraphSchemaResponse,
   limit: number,
+  tc: TraceCollector,
 ): Promise<StepResult | null> {
   const targetType = INTENT_TO_TYPE[intent];
   if (!targetType) return null;
@@ -463,6 +492,12 @@ async function executeFallbackInto(
   const annotation = await edgeTypeAnnotation(edgeInfo.edgeType);
 
   try {
+    tc.add({
+      step: `enrichFallback_${userStepIndex}`,
+      kind: "fallback",
+      message: `Enrichment unavailable, using ranked-neighbors: ${edgeInfo.edgeType}`,
+    });
+
     const data = await agentFetch<{
       data: {
         neighbors: Array<{
@@ -471,7 +506,7 @@ async function executeFallbackInto(
           score?: number;
         }>;
       };
-      meta?: { resolved?: { scoreField?: string } };
+      meta?: { resolved?: { scoreField?: string }; warnings?: unknown[] };
     }>("/graph/ranked-neighbors", {
       method: "POST",
       body: {
@@ -480,6 +515,8 @@ async function executeFallbackInto(
         limit: Math.min(limit, 100),
       },
     });
+
+    tc.mergeApiWarnings(data.meta?.warnings);
 
     const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
       (n) => ({
@@ -498,7 +535,9 @@ async function executeFallbackInto(
         data.meta?.resolved?.scoreField ?? edgeInfo.defaultScoreField,
       entities,
     };
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    tc.warn("fallback_failed", `Enrichment fallback ${userStepIndex}: ${msg}`);
     return null;
   }
 }
@@ -511,36 +550,39 @@ export async function handleTraverseChain(
   cmd: TraverseCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
-    if (!cmd.seed) return errorResult("chain mode requires a 'seed' entity.");
+    if (!cmd.seed) return errorResult("chain mode requires a 'seed' entity.", tc);
     if (!cmd.steps?.length)
-      return errorResult("chain mode requires at least one step.");
+      return errorResult("chain mode requires at least one step.", tc);
 
     const resolvedSeeds = await resolveSeeds([cmd.seed], resolvedCache);
     if (!resolvedSeeds.length)
-      return errorResult("Could not resolve seed entity.");
+      return errorResult("Could not resolve seed entity.", tc);
 
     const seed = resolvedSeeds[0];
     const schema = await getCachedGraphSchema();
 
     // Phase 1: Annotate steps — resolve edges and detect backtracks
+    tc.add({ step: "annotateSteps", kind: "decision", message: `Annotating ${cmd.steps.length} steps from ${seed.type}` });
     const { intoSteps, enrichIndices } = annotateIntoSteps(
       cmd.steps,
       seed.type,
       schema,
+      tc,
     );
 
     // Phase 2+3: Execute into steps via batch query, fall back to per-step
     const intoResults =
-      (await executeViaQuery(seed, intoSteps)) ??
-      (await executePerStep(seed, intoSteps));
+      (await executeViaQuery(seed, intoSteps, tc)) ??
+      (await executePerStep(seed, intoSteps, tc));
 
     // Phase 4: Execute enrich steps (with auto-fallback to connectivity)
     const enrichResults: StepResult[] = [];
     for (const idx of enrichIndices) {
       const step = cmd.steps[idx] as Extract<TraverseStep, { enrich: string }>;
 
-      // Find closest preceding step's entities as input
       const allSoFar = [...intoResults, ...enrichResults].sort(
         (a, b) => a.step - b.step,
       );
@@ -551,10 +593,8 @@ export async function handleTraverseChain(
         ? prevStep.entities
         : [seed];
 
-      let result = await executeEnrichStep(step, idx, inputEntities);
+      let result = await executeEnrichStep(step, idx, inputEntities, tc);
 
-      // Fallback: if enrichment couldn't run (< 3 input entities), use
-      // connectivity (ranked-neighbors) instead so the chain doesn't break.
       if (!result) {
         result = await executeFallbackInto(
           step.enrich,
@@ -562,6 +602,7 @@ export async function handleTraverseChain(
           inputEntities,
           schema,
           step.top ?? 20,
+          tc,
         );
       }
 
@@ -579,7 +620,13 @@ export async function handleTraverseChain(
       return `Step ${r.step + 1} → ${r.entities.length} ${r.intent} via ${r.edgeType}${scoreInfo}`;
     });
 
-    return {
+    // Determine if any steps failed
+    const failedSteps = allResults.filter((r) => r.entities.length === 0);
+    const hasPartialFailure = failedSteps.length > 0 && allResults.some((r) => r.entities.length > 0);
+
+    const resultFn = hasPartialFailure ? partialResult : okResult;
+
+    return resultFn({
       text_summary: `Traversal from ${seed.label}:\n${stepSummaries.join("\n")}`,
       data: {
         seed,
@@ -592,11 +639,10 @@ export async function handleTraverseChain(
           top: r.entities.slice(0, 10),
         })),
       },
-      state_delta: {
-        pinned_entities: [seed],
-      },
-    };
+      state_delta: { pinned_entities: [seed] },
+      tc,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchError(err, tc);
   }
 }

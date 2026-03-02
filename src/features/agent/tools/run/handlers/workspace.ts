@@ -2,25 +2,23 @@
  * Workspace command handlers: pin, set_cohort, remember, export, create_cohort
  */
 
-import { agentFetch, cohortFetch, pollCohortUntilReady, AgentToolError } from "../../../lib/api-client";
+import { agentFetch, cohortFetch, pollCohortUntilReady } from "../../../lib/api-client";
 import type { RunCommand, RunResult } from "../types";
+import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
 export async function handlePin(
   cmd: Extract<RunCommand, { command: "pin" }>,
 ): Promise<RunResult> {
-  return {
+  return okResult({
     text_summary: `Pinned ${cmd.entities.length} entities`,
     data: { pinned: cmd.entities },
-    state_delta: {
-      pinned_entities: cmd.entities,
-    },
-  };
+    state_delta: { pinned_entities: cmd.entities },
+  });
 }
 
 export async function handleSetCohort(
   cmd: Extract<RunCommand, { command: "set_cohort" }>,
 ): Promise<RunResult> {
-  // Verify the cohort exists by fetching its schema
   try {
     const schema = await cohortFetch<{
       row_count?: number;
@@ -28,7 +26,7 @@ export async function handleSetCohort(
       text_summary?: string;
     }>(`/cohorts/${encodeURIComponent(cmd.cohort_id)}/schema`, { timeout: 30_000 });
 
-    return {
+    return okResult({
       text_summary: `Active cohort set to ${cmd.cohort_id} (${schema.row_count ?? 0} rows, type: ${schema.data_type ?? "unknown"})`,
       data: {
         cohortId: cmd.cohort_id,
@@ -36,13 +34,11 @@ export async function handleSetCohort(
         dataType: schema.data_type,
         summary: schema.text_summary,
       },
-      state_delta: {
-        active_cohort_id: cmd.cohort_id,
-      },
-      next_reads: [`cohort/${cmd.cohort_id}/schema`],
-    };
+      state_delta: { active_cohort_id: cmd.cohort_id },
+      next_reads: [{ path: `cohort/${cmd.cohort_id}/schema` }],
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err);
   }
 }
 
@@ -63,13 +59,13 @@ export async function handleRemember(
       },
     });
 
-    return {
+    return okResult({
       text_summary: `Remembered: ${cmd.key}`,
       data: { key: cmd.key, content: cmd.content },
       state_delta: {},
-    };
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err);
   }
 }
 
@@ -79,25 +75,27 @@ export async function handleExport(
 ): Promise<RunResult> {
   const cohortId = cmd.cohort_id ?? activeCohortId;
   if (!cohortId) {
-    return errorResult("No active cohort to export.");
+    return errorResult({ message: "No active cohort to export.", code: "no_cohort" });
   }
 
-  // For now, return the cohort ID and suggest the user download via UI
-  return {
+  return okResult({
     text_summary: `Cohort ${cohortId} ready for export`,
     data: { cohortId, exportReady: true },
     state_delta: {},
-  };
+  });
 }
 
 export async function handleCreateCohort(
   cmd: Extract<RunCommand, { command: "create_cohort" }>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
     const idempotencyKey = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const cohortLabel = cmd.label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`;
 
-    // Step 1: Create cohort
+    tc.add({ step: "createCohort", kind: "call", message: `POST /cohorts with ${cmd.references.length} references` });
+
     const submitResult = await cohortFetch<{
       id: string;
       status: string;
@@ -113,17 +111,16 @@ export async function handleCreateCohort(
 
     const cohortId = submitResult.id;
     if (!cohortId) {
-      return errorResult("Cohort creation returned no ID.");
+      return errorResult({ message: "Cohort creation returned no ID.", code: "create_failed", tc });
     }
 
-    // Step 2: Poll until ready
+    tc.add({ step: "pollCohort", kind: "call", message: `Polling cohort ${cohortId}` });
     const statusResult = await pollCohortUntilReady(cohortId);
 
     if (statusResult.status === "failed") {
-      return errorResult(`Cohort processing failed: ${statusResult.status}`);
+      return errorResult({ message: `Cohort processing failed: ${statusResult.status}`, code: "create_failed", tc });
     }
 
-    // Step 3: Get schema for row count
     const schema = await cohortFetch<{
       text_summary?: string;
       row_count?: number;
@@ -131,7 +128,7 @@ export async function handleCreateCohort(
 
     const variantCount = schema.row_count ?? statusResult.progress?.found ?? 0;
 
-    return {
+    return okResult({
       text_summary: `Created cohort with ${variantCount} variants`,
       data: {
         cohortId,
@@ -143,40 +140,11 @@ export async function handleCreateCohort(
         },
         summary: schema.text_summary ?? `Cohort created with ${variantCount} variants.`,
       },
-      state_delta: {
-        active_cohort_id: cohortId,
-      },
-      next_reads: [`cohort/${cohortId}/schema`],
-    };
+      state_delta: { active_cohort_id: cohortId },
+      next_reads: [{ path: `cohort/${cohortId}/schema` }],
+      tc,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err, tc);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function errorResult(message: string): RunResult {
-  return {
-    text_summary: message,
-    data: { error: true, message },
-    state_delta: {},
-  };
-}
-
-function catchError(err: unknown): RunResult {
-  if (err instanceof AgentToolError) {
-    return {
-      text_summary: err.detail,
-      data: err.toToolResult(),
-      state_delta: {},
-    };
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  return {
-    text_summary: `Internal error: ${message}`,
-    data: { error: true, message },
-    state_delta: {},
-  };
 }

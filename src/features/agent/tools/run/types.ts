@@ -295,7 +295,7 @@ export const runCommandSchema = z.discriminatedUnion("command", [
 export type RunCommand = z.infer<typeof runCommandSchema>;
 
 // ---------------------------------------------------------------------------
-// Run result — output contract
+// Run result — output contract (canonical envelope)
 // ---------------------------------------------------------------------------
 
 export interface EntityRef {
@@ -305,16 +305,14 @@ export interface EntityRef {
   subtitle?: string;
 }
 
-export interface RunResult {
-  text_summary: string;
-  data: Record<string, unknown>;
-  artifacts?: Array<{ id: number; type: string; summary: string }>;
-  state_delta: {
-    active_cohort_id?: string;
-    new_artifact_ids?: number[];
-    pinned_entities?: EntityRef[];
-    active_job_ids?: string[];
-    derived_cohorts?: Array<{ id: string; label?: string; row_count: number }>;
-  };
-  next_reads?: string[];
-}
+export type { RunResultEnvelope as RunResult } from "./run-result";
+export type {
+  ToolStatus,
+  ToolError,
+  ToolWarning,
+  TraceEntry,
+  Candidate,
+  ResolvedInfo,
+  SuggestedNext,
+  BudgetsRemaining,
+} from "./run-result";

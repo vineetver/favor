@@ -1,5 +1,9 @@
 /**
  * explore mode: neighbors — find related entities from seeds via ranked-neighbors or graph/query.
+ *
+ * M9: Added expandDescendants support for disease queries.
+ * Phase 5: TraceCollector for observability.
+ * Phase 6: Budget-bounded intent processing.
  */
 
 import { agentFetch } from "../../../lib/api-client";
@@ -12,6 +16,7 @@ import {
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
+import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -25,22 +30,40 @@ interface ScoredEntity {
   score?: number;
 }
 
+/** Max intents to process per call to bound fan-out */
+const MAX_INTENTS_PER_CALL = 5;
+
 export async function handleExploreNeighbors(
   cmd: ExploreCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
     if (!cmd.into || cmd.into.length === 0) {
-      return errorResult("neighbors mode requires at least one target intent in 'into'.");
+      return errorResult("neighbors mode requires at least one target intent in 'into'.", tc);
     }
 
     const resolvedSeeds = await resolveSeeds(cmd.seeds, resolvedCache);
     if (resolvedSeeds.length === 0) {
-      return errorResult("Could not resolve any seeds. Check entity names.");
+      return errorResult("Could not resolve any seeds. Check entity names.", tc);
     }
 
     const schema = await getCachedGraphSchema();
     const seedType = resolvedSeeds[0].type;
+
+    // Phase 6: Bound intents
+    const intents = cmd.into.slice(0, MAX_INTENTS_PER_CALL);
+    if (cmd.into.length > MAX_INTENTS_PER_CALL) {
+      tc.warn("intents_capped", `Processing ${MAX_INTENTS_PER_CALL} of ${cmd.into.length} intents`);
+    }
+
+    // M9: Auto-enable expandDescendants for disease seeds
+    const isDiseaseQuery = seedType === "Disease";
+    if (isDiseaseQuery) {
+      tc.add({ step: "diseaseExpansion", kind: "decision", message: "Disease seed detected — expandDescendants available" });
+    }
+
     const branchResults: Record<string, {
       count: number;
       top: ScoredEntity[];
@@ -49,39 +72,51 @@ export async function handleExploreNeighbors(
       description?: string;
     }> = {};
     const allPinnedEntities: EntityRef[] = [...resolvedSeeds];
+    let apiCalls = 0;
 
-    for (const intent of cmd.into) {
+    for (const intent of intents) {
       const targetType = INTENT_TO_TYPE[intent];
       if (!targetType) continue;
 
       const edgeTypes = findEdgesConnecting(schema, seedType, targetType);
-      if (edgeTypes.length === 0) continue;
+      if (edgeTypes.length === 0) {
+        tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType}` });
+        continue;
+      }
 
       const bestEdge = edgeTypes[0];
-      // Get edge description for context
       const annotation = await edgeTypeAnnotation(bestEdge.edgeType);
 
       try {
         if (resolvedSeeds.length === 1) {
+          tc.add({ step: `intent_${intent}`, kind: "call", message: `ranked-neighbors: ${bestEdge.edgeType}` });
+          apiCalls++;
+
           const data = await agentFetch<{
             data: {
               textSummary?: string;
+              seed?: unknown;
+              expandedSeeds?: unknown[];
+              aggregation?: string;
               neighbors: Array<{
                 entity: { type: string; id: string; label: string; subtitle?: string };
                 rank: number;
                 score?: number;
               }>;
             };
-            meta?: { resolved?: { scoreField?: string; direction?: string } };
+            meta?: { requestId?: string; resolved?: { scoreField?: string; direction?: string }; warnings?: unknown[] };
           }>("/graph/ranked-neighbors", {
             method: "POST",
             body: {
               seed: { type: resolvedSeeds[0].type, id: resolvedSeeds[0].id },
               edgeType: bestEdge.edgeType,
               limit: Math.min(cmd.limit ?? 20, 100),
+              // M9: expandDescendants for disease queries
+              ...(isDiseaseQuery ? { expandDescendants: true, expandLimit: 500 } : {}),
             },
           });
 
+          tc.mergeApiWarnings(data.meta?.warnings);
           const neighbors = (data.data?.neighbors ?? []).slice(0, cmd.limit ?? 20);
           trimEntitySubtitles(neighbors);
           const scoreField = data.meta?.resolved?.scoreField ?? bestEdge.defaultScoreField;
@@ -101,6 +136,9 @@ export async function handleExploreNeighbors(
             description: annotation ?? undefined,
           };
         } else {
+          tc.add({ step: `intent_${intent}`, kind: "call", message: `graph/query multi-seed: ${bestEdge.edgeType}` });
+          apiCalls++;
+
           const nodeFields = getSummaryFields(schema, targetType).slice(0, 5);
           const edgeFields = bestEdge.defaultScoreField ? [bestEdge.defaultScoreField] : [];
 
@@ -114,7 +152,7 @@ export async function handleExploreNeighbors(
                 fields?: Record<string, unknown>;
               }>;
             };
-            meta: { nodeCount: number; edgeCount: number };
+            meta: { nodeCount: number; edgeCount: number; warnings?: unknown[] };
           }>("/graph/query", {
             method: "POST",
             body: {
@@ -131,6 +169,8 @@ export async function handleExploreNeighbors(
               limits: { maxNodes: 500, maxEdges: 2000 },
             },
           });
+
+          tc.mergeApiWarnings(queryResult.meta?.warnings);
 
           // Build score map from edges
           const scoreMap = new Map<string, number>();
@@ -173,15 +213,20 @@ export async function handleExploreNeighbors(
             description: annotation ?? undefined,
           };
         }
-      } catch {
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        tc.warn("intent_failed", `${intent}: ${msg}`);
         branchResults[intent] = { count: 0, top: [], edgeType: bestEdge.edgeType };
       }
     }
 
     // Optionally run enrichment for pathways with 3+ seeds
     let enrichmentResult: Record<string, unknown> | null = null;
-    if (cmd.into.includes("pathways" as TargetIntent) && resolvedSeeds.length >= 3) {
+    if (intents.includes("pathways" as TargetIntent) && resolvedSeeds.length >= 3) {
       try {
+        tc.add({ step: "autoEnrich", kind: "call", message: "Auto-enrichment for pathways (3+ seeds)" });
+        apiCalls++;
+
         const enrichData = await agentFetch<{
           data: {
             enriched: Array<{
@@ -192,6 +237,7 @@ export async function handleExploreNeighbors(
               foldEnrichment: number;
             }>;
           };
+          meta?: { warnings?: unknown[] };
         }>("/graph/enrichment", {
           method: "POST",
           body: {
@@ -202,9 +248,11 @@ export async function handleExploreNeighbors(
             limit: 20,
           },
         });
+        tc.mergeApiWarnings(enrichData.meta?.warnings);
         enrichmentResult = { enriched: enrichData.data?.enriched ?? [] };
-      } catch {
-        // Non-critical
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        tc.warn("enrichment_failed", `Auto-enrichment failed: ${msg}`);
       }
     }
 
@@ -216,6 +264,9 @@ export async function handleExploreNeighbors(
       );
       if (domainBranch) {
         try {
+          tc.add({ step: "proteinDomains", kind: "call", message: "Fetching protein domain positions" });
+          apiCalls++;
+
           const edgeFields = [
             "start_residue", "end_residue", "domain_name", "domain_type",
             "mean_plddt", "alphafold_id", "protein_length", "interpro_id",
@@ -284,14 +335,14 @@ export async function handleExploreNeighbors(
           }
 
           if (domains.length > 0) {
-            // Infer protein length from max end position if not provided
             if (!proteinLength) {
               proteinLength = Math.max(...domains.map((d) => d.end));
             }
             proteinDomainData = { proteinLength, alphafoldId, domains };
           }
-        } catch {
-          // Non-critical — viz just won't appear
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          tc.warn("protein_domains_failed", `Protein domain fetch failed: ${msg}`);
         }
       }
     }
@@ -306,9 +357,13 @@ export async function handleExploreNeighbors(
     const seedNames = resolvedSeeds.map((s) => s.label).join(", ");
     const summary = parts.length > 0
       ? `Explored ${seedNames} → found ${parts.join(", ")}`
-      : `Explored ${seedNames} → no results for ${cmd.into.join(", ")}`;
+      : `Explored ${seedNames} → no results for ${intents.join(", ")}`;
 
-    return {
+    // Determine if partial (some intents failed)
+    const failedIntents = Object.entries(branchResults).filter(([, v]) => v.count === 0);
+    const hasPartialFailure = failedIntents.length > 0 && parts.length > 0;
+
+    const result = okResult({
       text_summary: summary,
       data: {
         results: branchResults,
@@ -316,11 +371,17 @@ export async function handleExploreNeighbors(
         ...(enrichmentResult ? { enrichment: enrichmentResult } : {}),
         ...(proteinDomainData ? { _proteinDomains: proteinDomainData } : {}),
       },
-      state_delta: {
-        pinned_entities: allPinnedEntities,
-      },
-    };
+      state_delta: { pinned_entities: allPinnedEntities },
+      tc,
+      budgets_remaining: { api_calls: Math.max(0, 15 - apiCalls) },
+    });
+
+    if (hasPartialFailure) {
+      result.status = "partial";
+    }
+
+    return result;
   } catch (err) {
-    return catchError(err);
+    return catchError(err, tc);
   }
 }

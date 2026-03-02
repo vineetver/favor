@@ -5,16 +5,19 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchError, getCachedGraphSchema, trimEntitySubtitles } from "./graph";
+import { errorResult, catchError, getCachedGraphSchema } from "./graph";
+import { okResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
 export async function handleTraversePaths(
   cmd: TraverseCmd,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
     if (!cmd.from || !cmd.to) {
-      return errorResult("paths mode requires 'from' and 'to' entity refs (format: 'Type:ID').");
+      return errorResult("paths mode requires 'from' and 'to' entity refs (format: 'Type:ID').", tc);
     }
 
     const params = new URLSearchParams();
@@ -22,6 +25,8 @@ export async function handleTraversePaths(
     params.set("to", cmd.to);
     params.set("maxHops", String(Math.min(cmd.max_hops ?? 3, 5)));
     params.set("limit", String(Math.min(cmd.limit ?? 5, 50)));
+
+    tc.add({ step: "fetchPaths", kind: "call", message: `GET /graph/paths from=${cmd.from} to=${cmd.to}` });
 
     const [data, schema] = await Promise.all([
       agentFetch<{
@@ -38,21 +43,23 @@ export async function handleTraversePaths(
             score: number;
           }>;
         };
+        meta?: { requestId?: string; resolved?: unknown; warnings?: unknown[] };
       }>(`/graph/paths?${params.toString()}`),
       getCachedGraphSchema(),
     ]);
+
+    tc.mergeApiWarnings(data.meta?.warnings);
+    const resolvedInfo = tc.extractResolvedInfo(data.meta);
 
     const { nodeColumns, nodes: nodesMap } = data.data;
     const typeIdx = nodeColumns.indexOf("type");
     const idIdx = nodeColumns.indexOf("id");
     const labelIdx = nodeColumns.indexOf("label");
-    const subtitleIdx = nodeColumns.indexOf("subtitle");
 
     // Collect unique edge types used across all paths
     const usedEdgeTypes = new Set<string>();
 
     const paths = (data.data.paths ?? []).slice(0, cmd.limit ?? 5).map((p, idx) => {
-      // Extract edge types from this path's edges array
       for (const edge of p.edges) {
         if (Array.isArray(edge) && typeof edge[0] === "string") {
           usedEdgeTypes.add(edge[0]);
@@ -83,7 +90,7 @@ export async function handleTraversePaths(
     });
 
     if (paths.length === 0) {
-      return errorResult(`No paths found between ${cmd.from} and ${cmd.to}`);
+      return errorResult(`No paths found between ${cmd.from} and ${cmd.to}`, tc);
     }
 
     // Build edge type annotations from schema and embed into summary
@@ -107,7 +114,7 @@ export async function handleTraversePaths(
       ? `${baseSummary}\n\nEdge types in these paths:\n${annotationLines.join("\n")}`
       : baseSummary;
 
-    return {
+    return okResult({
       text_summary: textSummary,
       data: {
         _method: "Shortest path search through the knowledge graph. Each path shows a chain of entities connected by typed relationships.",
@@ -117,8 +124,10 @@ export async function handleTraversePaths(
         paths,
       },
       state_delta: {},
-    };
+      tc,
+      resolved_info: resolvedInfo,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchError(err, tc);
   }
 }

@@ -6,10 +6,10 @@ import {
   cohortFetch,
   pollAnalyticsRun,
   fetchAnalyticsChart,
-  AgentToolError,
 } from "../../../lib/api-client";
 import type { AnalyticsChartData } from "../../../lib/api-client";
 import type { RunCommand, RunResult } from "../types";
+import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
 export async function handleAnalytics(
   cmd: Extract<RunCommand, { command: "analytics" }>,
@@ -17,11 +17,14 @@ export async function handleAnalytics(
 ): Promise<RunResult> {
   const cohortId = cmd.cohort_id ?? activeCohortId;
   if (!cohortId) {
-    return errorResult("No active cohort. Use set_cohort first.");
+    return errorResult({ message: "No active cohort. Use set_cohort first.", code: "no_cohort" });
   }
 
+  const tc = new TraceCollector();
+
   try {
-    // Submit analytics run
+    tc.add({ step: "submitAnalytics", kind: "call", message: `POST /cohorts/${cohortId}/analytics/run` });
+
     const submitResp = await cohortFetch<{
       run_id: string;
       status: string;
@@ -34,19 +37,16 @@ export async function handleAnalytics(
 
     const { run_id } = submitResp;
 
-    // Poll until completion
+    tc.add({ step: "pollAnalytics", kind: "call", message: `Polling run ${run_id}` });
     const result = await pollAnalyticsRun(cohortId, run_id);
 
     if (result.status === "failed") {
-      return {
-        text_summary: result.error ?? "Analytics run failed",
-        data: {
-          error: true,
-          message: result.error ?? "Analytics run failed",
-          hint: "Check column names and task parameters. Use Read cohort/{id}/schema to verify.",
-        },
-        state_delta: {},
-      };
+      return errorResult({
+        message: result.error ?? "Analytics run failed",
+        code: "analytics_failed",
+        hint: "Check column names and task parameters. Use Read cohort/{id}/schema to verify.",
+        tc,
+      });
     }
 
     // Fetch chart data
@@ -55,12 +55,13 @@ export async function handleAnalytics(
       try {
         const chartData = await fetchAnalyticsChart(cohortId, run_id, chart.chart_id);
         charts.push(chartData);
-      } catch {
-        // Skip individual chart fetch failures
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
       }
     }
 
-    return {
+    return okResult({
       text_summary: result.summary ?? `${cmd.method} completed`,
       data: {
         taskType: cmd.method,
@@ -70,24 +71,28 @@ export async function handleAnalytics(
         charts,
       },
       state_delta: {},
-    };
+      tc,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err, tc);
   }
 }
 
 export async function handleAnalyticsPoll(
   cmd: Extract<RunCommand, { command: "analytics.poll" }>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
+    tc.add({ step: "pollAnalytics", kind: "call", message: `Polling run ${cmd.run_id}` });
     const result = await pollAnalyticsRun(cmd.cohort_id, cmd.run_id);
 
     if (result.status === "failed") {
-      return {
-        text_summary: result.error ?? "Analytics run failed",
-        data: { error: true, message: result.error },
-        state_delta: {},
-      };
+      return errorResult({
+        message: result.error ?? "Analytics run failed",
+        code: "analytics_failed",
+        tc,
+      });
     }
 
     // Fetch chart data
@@ -96,12 +101,13 @@ export async function handleAnalyticsPoll(
       try {
         const chartData = await fetchAnalyticsChart(cmd.cohort_id, cmd.run_id, chart.chart_id);
         charts.push(chartData);
-      } catch {
-        // Skip failures
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
       }
     }
 
-    return {
+    return okResult({
       text_summary: result.summary ?? `Run ${cmd.run_id}: ${result.status}`,
       data: {
         runId: cmd.run_id,
@@ -111,9 +117,10 @@ export async function handleAnalyticsPoll(
         charts,
       },
       state_delta: {},
-    };
+      tc,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err, tc);
   }
 }
 
@@ -127,40 +134,12 @@ export async function handleViz(
       cmd.chart_id,
     );
 
-    return {
+    return okResult({
       text_summary: chartData.title ?? `Chart ${cmd.chart_id}`,
       data: chartData as unknown as Record<string, unknown>,
       state_delta: {},
-    };
+    });
   } catch (err) {
-    return catchError(err);
+    return catchToResult(err);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function errorResult(message: string): RunResult {
-  return {
-    text_summary: message,
-    data: { error: true, message },
-    state_delta: {},
-  };
-}
-
-function catchError(err: unknown): RunResult {
-  if (err instanceof AgentToolError) {
-    return {
-      text_summary: err.detail,
-      data: err.toToolResult(),
-      state_delta: {},
-    };
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  return {
-    text_summary: `Internal error: ${message}`,
-    data: { error: true, message },
-    state_delta: {},
-  };
 }

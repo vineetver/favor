@@ -451,18 +451,45 @@ async function readArtifact(artifactId: string, offset: number, limit: number) {
 }
 
 async function readEntityProfile(type: string, id: string) {
-  // GET /graph/{entity_type}/{id}?include=counts
+  // M10: Support richer includes — counts, edges, rollups, agreements
   try {
     const resp = await agentFetch<{
       data: Record<string, unknown>;
       included?: Record<string, unknown>;
       meta?: Record<string, unknown>;
-    }>(`/graph/${encodeURIComponent(type)}/${encodeURIComponent(id)}?include=counts`);
+    }>(`/graph/${encodeURIComponent(type)}/${encodeURIComponent(id)}?include=counts,edges,rollups`);
 
     const counts = resp.included?.counts as Record<string, unknown> | undefined;
-    return {
+    const edges = resp.included?.edges as Record<string, unknown> | undefined;
+    const rollups = resp.included?.rollups as Record<string, unknown> | undefined;
+
+    const result: Record<string, unknown> = {
       entity: curateEntityForLLM(type, resp.data ?? {}, counts),
     };
+
+    // Include edge summary if available (compacted)
+    if (edges && typeof edges === "object") {
+      const edgeSummary: Record<string, unknown> = {};
+      for (const [edgeType, detail] of Object.entries(edges)) {
+        const d = detail as { count?: number; topNeighbors?: unknown[] } | undefined;
+        if (d) {
+          edgeSummary[edgeType] = {
+            count: d.count,
+            ...(d.topNeighbors ? { topNeighbors: (d.topNeighbors as unknown[]).slice(0, 5) } : {}),
+          };
+        }
+      }
+      if (Object.keys(edgeSummary).length > 0) {
+        result.edges = edgeSummary;
+      }
+    }
+
+    // Include rollups if available
+    if (rollups) {
+      result.rollups = rollups;
+    }
+
+    return result;
   } catch (err) {
     if (err instanceof AgentToolError && err.status === 404) {
       return { error: true, message: `Entity not found: ${type}:${id}` };

@@ -1,11 +1,16 @@
 /**
  * explore mode: similar — find structurally similar entities via /graph/similar.
+ *
+ * Fixed response field mapping:
+ *   - similar[].sharedEdges → similar[].sharedNeighbors (actual API)
+ *   - Added explanations[] from API response
  */
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
 import { errorResult, catchError, trimEntitySubtitles } from "./graph";
+import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -13,10 +18,12 @@ export async function handleExploreSimilar(
   cmd: ExploreCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
+  const tc = new TraceCollector();
+
   try {
     const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
     if (resolved.length === 0) {
-      return errorResult("Could not resolve seed entity.");
+      return errorResult("Could not resolve seed entity.", tc);
     }
 
     const seed = resolved[0];
@@ -31,17 +38,26 @@ export async function handleExploreSimilar(
     const qs = params.toString();
     const url = `/graph/similar/${encodeURIComponent(seed.type)}/${encodeURIComponent(seed.id)}${qs ? `?${qs}` : ""}`;
 
+    tc.add({ step: "fetchSimilar", kind: "call", message: `GET ${url}` });
+
     const data = await agentFetch<{
       data: {
         textSummary?: string;
-        seed: { type: string; id: string; label: string };
+        query: { type: string; id: string; label: string };
+        method?: string;
+        edgeTypes?: string[];
         similar: Array<{
           entity: { type: string; id: string; label: string };
           score: number;
-          sharedEdges?: number;
+          sharedNeighbors: number;
+          explanations?: string[];
         }>;
       };
+      meta?: { requestId?: string; resolved?: unknown; warnings?: unknown[] };
     }>(url);
+
+    tc.mergeApiWarnings(data.meta?.warnings);
+    const resolvedInfo = tc.extractResolvedInfo(data.meta);
 
     const similar = data.data?.similar ?? [];
     trimEntitySubtitles(similar);
@@ -49,20 +65,27 @@ export async function handleExploreSimilar(
     const edgeContext = cmd.edge_types?.length
       ? ` based on shared ${cmd.edge_types.join(", ")} connections`
       : " based on shared graph neighborhood";
+    const method = data.data?.method ?? "jaccard";
 
-    return {
+    return okResult({
       text_summary: data.data?.textSummary ??
         `Found ${similar.length} entities similar to ${seed.label}${edgeContext}`,
       data: {
-        _method: `Similarity is computed by comparing shared neighbors in the graph. Higher scores indicate more overlapping connections${cmd.edge_types?.length ? ` via ${cmd.edge_types.join(", ")}` : ""}.`,
-        seed,
-        similar: similar.slice(0, cmd.top_k ?? 20),
+        _method: `Similarity is computed using ${method} method by comparing shared neighbors in the graph. Higher scores indicate more overlapping connections${cmd.edge_types?.length ? ` via ${cmd.edge_types.join(", ")}` : ""}.`,
+        seed: data.data?.query ?? seed,
+        method,
+        similar: similar.slice(0, cmd.top_k ?? 20).map((s) => ({
+          entity: s.entity,
+          score: s.score,
+          sharedNeighbors: s.sharedNeighbors,
+          ...(s.explanations?.length ? { explanations: s.explanations } : {}),
+        })),
       },
-      state_delta: {
-        pinned_entities: [seed],
-      },
-    };
+      state_delta: { pinned_entities: [seed] },
+      tc,
+      resolved_info: resolvedInfo,
+    });
   } catch (err) {
-    return catchError(err);
+    return catchError(err, tc);
   }
 }
