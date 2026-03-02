@@ -70,6 +70,7 @@ import { AgentErrorBoundary } from "./error-boundary";
 import { ActivityTimeline } from "./tool-renderers";
 import { VizSpecPanel } from "./viz-spec-panel";
 import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
+import { isArtifactRef } from "../lib/compact-message";
 import { generateVizSpecs } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
 
@@ -145,7 +146,6 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
         return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
       case "bioContext":
         return ["What are the key intermediates?", "Explore a different path"];
-      // V2 tools
       case "Run":
         return ["Tell me more about these results", "What else can we explore?"];
       case "Search":
@@ -260,14 +260,22 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
     return { planOutput: plan, isPlanStreaming: planStreaming, siblingToolParts: siblings };
   }, [allToolParts]);
 
-  // Extract vizSpecs — memoized to prevent infinite re-render loops in chart/network children
+  // Extract vizSpecs — prefer persisted _vizSpecs from compacted messages,
+  // fall back to generating from tool outputs (live streaming or legacy messages)
   const vizSpecs = useMemo(() => {
+    // Persisted vizSpecs from compacted messages (set during persistence in route.ts)
+    const persisted = (message as unknown as Record<string, unknown>)._vizSpecs as VizSpec[] | undefined;
+    if (persisted?.length) return persisted;
+
     const SPECIALIST = new Set(["bioContext", "variantTriage"]);
-    const SKIP = new Set(["planQuery", "searchEntities", "recallMemories", "saveMemory", "getResultSlice", "listResults", "getGraphSchema", "getCohortSchema", "getEdgeDetail", "runBatch"]);
+    const SKIP = new Set(["planQuery", "searchEntities", "recalMemories", "saveMemory", "getResultSlice", "listResults", "getGraphSchema", "getCohortSchema", "getEdgeDetail", "runBatch"]);
 
     return allToolParts.reduce<VizSpec[]>((acc, p, idx) => {
       const name = (p.toolName ?? "").replace(/^tool-/, "");
       if (p.state !== "output-available" || !p.output) return acc;
+
+      // Skip artifact refs — no data to generate from
+      if (isArtifactRef(p.output)) return acc;
 
       if (SPECIALIST.has(name)) {
         const output = p.output as VariantTriageOutput | BioContextOutput;
@@ -286,7 +294,7 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
       }
       return acc;
     }, []);
-  }, [allToolParts]);
+  }, [allToolParts, message]);
 
   const textSegments = useMemo(
     () =>

@@ -1,11 +1,37 @@
-import { createAgentUIStreamResponse, ToolLoopAgent, stepCountIs } from "ai";
-import { createFavorAgentV2, createAgentToolsV2 } from "@features/agent/agent-v2";
+import { createAgentUIStreamResponse, ToolLoopAgent, stepCountIs, type UIMessage } from "ai";
+import { createFavorAgent, createAgentTools } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
 import { classifyQuery } from "@features/agent/lib/query-classifier";
-import { buildSystemPromptV2 } from "@features/agent/lib/prompts/system-v2";
+import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
 import { getSynthesisModel, getSynthesisProviderOptions } from "@features/agent/lib/models";
+import { compactMessageForStorage } from "@features/agent/lib/compact-message";
 
 export const maxDuration = 120;
+
+/** Persist assistant message with compaction. Falls back to full message on error. */
+async function persistCompacted(
+  sessionId: string,
+  responseMessage: UIMessage,
+  vizSpecs?: unknown[],
+) {
+  // Embed vizSpecs in the serialized message so they survive the round-trip
+  const embed = (msg: UIMessage) =>
+    vizSpecs?.length ? { ...msg, _vizSpecs: vizSpecs } : msg;
+
+  try {
+    const compacted = await compactMessageForStorage(sessionId, responseMessage);
+    await appendAgentMessage(sessionId, {
+      role: "assistant",
+      content: JSON.stringify(embed(compacted)),
+    });
+  } catch (err) {
+    console.error("[chat/route] Compaction failed, persisting full message:", err);
+    await appendAgentMessage(sessionId, {
+      role: "assistant",
+      content: JSON.stringify(embed(responseMessage)),
+    });
+  }
+}
 
 export async function POST(req: Request) {
   const { messages, sessionId, synthesisModel } = await req.json();
@@ -39,10 +65,10 @@ export async function POST(req: Request) {
   // Fast-path: explanation-only (no tools, single LLM call)
   if (route.type === "explanation_only") {
     const synthProviderOpts = getSynthesisProviderOptions(synthesisModel);
-    const { tools } = createAgentToolsV2(effectiveSessionId);
+    const { tools } = createAgentTools(effectiveSessionId);
     const fastAgent = new ToolLoopAgent({
       model: getSynthesisModel(synthesisModel),
-      instructions: buildSystemPromptV2() + "\n\n[SYSTEM] This is a follow-up. Write a thorough response using ONLY data from prior tool results in the conversation above. Do NOT call any tools.",
+      instructions: buildSystemPrompt() + "\n\n[SYSTEM] This is a follow-up. Write a thorough response using ONLY data from prior tool results in the conversation above. Do NOT call any tools.",
       tools,
       stopWhen: stepCountIs(1),
       maxOutputTokens: 8000,
@@ -54,10 +80,7 @@ export async function POST(req: Request) {
       uiMessages: messages,
       onFinish: sessionId
         ? ({ responseMessage }) => {
-            appendAgentMessage(sessionId, {
-              role: "assistant",
-              content: JSON.stringify(responseMessage),
-            }).catch((err) =>
+            persistCompacted(sessionId, responseMessage).catch((err) =>
               console.error("[chat/route] Failed to persist assistant message:", err),
             );
           }
@@ -66,17 +89,14 @@ export async function POST(req: Request) {
   }
 
   // Full agent loop
-  const agent = createFavorAgentV2(effectiveSessionId, synthesisModel);
+  const { agent, getVizSpecs } = createFavorAgent(effectiveSessionId, synthesisModel);
 
   return createAgentUIStreamResponse({
     agent,
     uiMessages: messages,
     onFinish: sessionId
       ? ({ responseMessage }) => {
-          appendAgentMessage(sessionId, {
-            role: "assistant",
-            content: JSON.stringify(responseMessage),
-          }).catch((err) =>
+          persistCompacted(sessionId, responseMessage, getVizSpecs()).catch((err) =>
             console.error("[chat/route] Failed to persist assistant message:", err),
           );
         }

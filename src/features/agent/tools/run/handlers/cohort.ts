@@ -35,13 +35,14 @@ export async function handleRows(
       { method: "POST", body, timeout: 60_000 },
     );
 
-    const maxRows = Math.min(cmd.limit ?? 50, 100);
+    const DEFAULT_ROW_LIMIT = 10;
+    const maxRows = Math.min(cmd.limit ?? DEFAULT_ROW_LIMIT, 200);
     const rows = Array.isArray(result.rows)
       ? (result.rows as unknown[]).slice(0, maxRows)
       : result.rows;
 
     return {
-      text_summary: (result.text_summary as string) ?? `${Array.isArray(rows) ? rows.length : 0} rows returned`,
+      text_summary: (result.text_summary as string) ?? `Showing ${Array.isArray(rows) ? rows.length : 0} of ${result.total ?? "?"} variants (offset ${cmd.offset ?? 0}).`,
       data: { rows, total: result.total },
       state_delta: {},
       next_reads: [`cohort/${cohortId}/schema`],
@@ -171,7 +172,7 @@ export async function handlePrioritize(
     );
 
     const rows = Array.isArray(result.rows)
-      ? (result.rows as unknown[]).slice(0, Math.min(cmd.limit ?? 50, 100))
+      ? (result.rows as unknown[]).slice(0, Math.min(cmd.limit ?? 10, 200))
       : result.rows;
 
     return {
@@ -203,7 +204,7 @@ export async function handleCompute(
     );
 
     const rows = Array.isArray(result.rows)
-      ? (result.rows as unknown[]).slice(0, Math.min(cmd.limit ?? 50, 100))
+      ? (result.rows as unknown[]).slice(0, Math.min(cmd.limit ?? 10, 200))
       : result.rows;
 
     return {

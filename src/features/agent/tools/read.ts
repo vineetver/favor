@@ -19,7 +19,7 @@ export const readTool = tool({
 
 PATHS:
   cohort/{id}/schema            — Full schema with columns, methods, auto_config
-  cohort/{id}/sample?limit=50   — Sample rows
+  cohort/{id}/sample             — Sample rows (default 2 rows for quick peek)
   cohort/{id}/profile           — Column stats, QC
   run/{cohort_id}/{run_id}      — Analytics run result
   run/{cohort_id}/{run_id}/viz/{chart_id} — Chart data
@@ -47,7 +47,7 @@ PATHS:
           return await readCohortSchema(cohortId);
         }
         if (sub === "sample") {
-          const limit = extractQueryParam(path, "limit", 50);
+          const limit = extractQueryParam(path, "limit", 2);
           return await readCohortSample(cohortId, limit);
         }
         if (sub === "profile") {
@@ -69,7 +69,7 @@ PATHS:
       if (root === "artifact" && parts[1]) {
         const artifactId = parts[1];
         const offset = extractQueryParam(path, "offset", 0);
-        const limit = extractQueryParam(path, "limit", 50);
+        const limit = extractQueryParam(path, "limit", 5);
         return await readArtifact(artifactId, offset, limit);
       }
 
@@ -102,6 +102,27 @@ PATHS:
       if (err instanceof AgentToolError) return err.toToolResult();
       throw err;
     }
+  },
+  toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+    const { path } = opts.input as { path: string };
+    const parts = path.split("/").filter(Boolean);
+    const result = opts.output as Record<string, unknown>;
+
+    // Errors pass through
+    if (result.error) return jsonOut(result);
+
+    // Artifact slices can be large — cap items for model
+    if (parts[0] === "artifact") {
+      return compactArtifactForModel(result);
+    }
+
+    // Run results may have large chart data arrays
+    if (parts[0] === "run" && parts.length >= 3) {
+      return compactRunResultForModel(result);
+    }
+
+    // Everything else passes through (schema, sample, profile, entity, variant, graph schema)
+    return jsonOut(result);
   },
 });
 
@@ -254,4 +275,48 @@ async function readGraphSchemaType(type: string) {
 function extractQueryParam(path: string, param: string, defaultValue: number): number {
   const match = path.match(new RegExp(`[?&]${param}=(\\d+)`));
   return match ? parseInt(match[1], 10) : defaultValue;
+}
+
+// ---------------------------------------------------------------------------
+// toModelOutput compactors
+// ---------------------------------------------------------------------------
+
+/** Type-safe JSON output for toModelOutput — avoids Record<string, unknown> vs JSONValue mismatch */
+function jsonOut(value: unknown) {
+  return { type: "json" as const, value: value as null };
+}
+
+function compactArtifactForModel(data: Record<string, unknown>) {
+  const items = Array.isArray(data.items) ? data.items as unknown[] : [];
+  if (items.length <= 5) return jsonOut(data);
+
+  return jsonOut({
+    ...data,
+    items: items.slice(0, 5),
+    _truncation: { truncated: true, returned: 5, total: items.length },
+  });
+}
+
+function compactRunResultForModel(data: Record<string, unknown>) {
+  // Strip large chart point arrays from analytics results
+  const result = data.result as Record<string, unknown> | undefined;
+  if (!result) return jsonOut(data);
+
+  const charts = result.charts as Array<Record<string, unknown>> | undefined;
+  if (!Array.isArray(charts)) return jsonOut(data);
+
+  const compactCharts = charts.map((chart) => {
+    const points = Array.isArray(chart.data) ? chart.data as unknown[] : [];
+    if (points.length <= 20) return chart;
+    return {
+      ...chart,
+      data: points.slice(0, 20),
+      _truncation: { truncated: true, returned: 20, total: points.length },
+    };
+  });
+
+  return jsonOut({
+    ...data,
+    result: { ...result, charts: compactCharts },
+  });
 }

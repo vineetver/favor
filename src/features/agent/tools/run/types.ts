@@ -209,38 +209,64 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     label: z.string().optional(),
   }),
 
-  // Graph commands
+  // Graph commands — 3 mode-dispatched primitives
   z.object({
     command: z.literal("explore"),
+    mode: z.enum(["neighbors", "compare", "enrich", "similar", "context", "aggregate"]).default("neighbors"),
     seeds: z.array(seedRefSchema).min(1).max(10),
-    into: z.array(targetIntentSchema).min(1),
+    // neighbors
+    into: z.array(targetIntentSchema).optional(),
     limit: z.number().optional(),
     depth: z.number().optional(),
+    // compare (intersect)
+    edge_type: z.string().optional(),
+    direction: z.enum(["in", "out"]).optional(),
+    // enrich
+    target: targetIntentSchema.optional(),
+    p_cutoff: z.number().optional(),
+    // similar
+    edge_types: z.array(z.string()).optional(),
+    top_k: z.number().optional(),
+    // context
+    sections: z.array(z.enum(["summary", "neighbors", "evidence", "ontology"])).optional(),
+    context_depth: z.enum(["minimal", "standard", "detailed"]).optional(),
+    // aggregate
+    metric: z.enum(["count", "avg", "sum", "min", "max"]).optional(),
+    group_by: z.string().optional(),
+    score_field: z.string().optional(),
+    filters: z.record(z.unknown()).optional(),
   }),
   z.object({
     command: z.literal("traverse"),
-    seed: seedRefSchema,
-    steps: z.array(traverseStepSchema).min(1).max(5),
-  }),
-  z.object({
-    command: z.literal("paths"),
-    from: z.string().describe("Entity ref: 'Type:ID'"),
-    to: z.string().describe("Entity ref: 'Type:ID'"),
+    mode: z.enum(["chain", "paths"]).default("chain"),
+    // chain
+    seed: seedRefSchema.optional(),
+    steps: z.array(traverseStepSchema).optional(),
+    // paths
+    from: z.string().optional().describe("Entity ref: 'Type:ID'"),
+    to: z.string().optional().describe("Entity ref: 'Type:ID'"),
     max_hops: z.number().optional(),
     limit: z.number().optional(),
+    include_edge_detail: z.boolean().optional(),
   }),
   z.object({
-    command: z.literal("compare"),
-    entities: z.array(seedRefSchema).min(2).max(10),
-    into: z.array(targetIntentSchema).optional(),
+    command: z.literal("query"),
+    description: z.string().optional().describe("Natural language description of the pattern"),
+    seeds: z.array(seedRefSchema).optional(),
+    pattern: z.array(z.object({
+      var: z.string(),
+      type: z.string().optional(),
+      edge: z.string().optional(),
+      from: z.string().optional(),
+      to: z.string().optional(),
+    })).optional(),
+    return_vars: z.array(z.string()).optional(),
+    filters: z.record(z.unknown()).optional(),
     limit: z.number().optional(),
-  }),
-  z.object({
-    command: z.literal("enrich"),
-    input_set: z.array(seedRefSchema).min(3),
-    target: targetIntentSchema,
-    p_cutoff: z.number().optional(),
-    limit: z.number().optional(),
+    select: z.object({
+      edgeFields: z.array(z.string()).optional(),
+      includeEvidence: z.boolean().optional(),
+    }).optional(),
   }),
 
   // Workspace commands

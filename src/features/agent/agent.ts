@@ -1,6 +1,5 @@
 /**
- * V2 Agent factory — 5 tools, observe-decide-act loop.
- * Replaces the 23-tool supervisor + specialist architecture.
+ * Agent factory — 5 tools, observe-decide-act loop.
  */
 
 import {
@@ -10,8 +9,8 @@ import {
   wrapLanguageModel,
 } from "ai";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-import { buildSystemPromptV2 } from "./lib/prompts/system-v2";
-import { createPrepareStepV2 } from "./lib/prepare-step-v2";
+import { buildSystemPrompt } from "./lib/prompts/system";
+import { createPrepareStep } from "./lib/prepare-step";
 import { getSynthesisModel, getSynthesisProviderOptions } from "./lib/models";
 import { createStateTool } from "./tools/state";
 import { readTool } from "./tools/read";
@@ -23,10 +22,10 @@ import type { VizSpec } from "./types";
 import { generateVizSpecs } from "./viz";
 
 // ---------------------------------------------------------------------------
-// V2 tool assembly
+// Tool assembly
 // ---------------------------------------------------------------------------
 
-export function createAgentToolsV2(sessionId: string) {
+export function createAgentTools(sessionId: string) {
   // Mutable state for context
   let activeCohortId: string | null = null;
   const resolvedEntities: Record<string, EntityRef> = {};
@@ -68,10 +67,10 @@ export function createAgentToolsV2(sessionId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// V2 Agent factory
+// Agent factory
 // ---------------------------------------------------------------------------
 
-export function createFavorAgentV2(
+export function createFavorAgent(
   sessionId: string,
   synthesisModelId?: string,
 ) {
@@ -82,17 +81,17 @@ export function createFavorAgentV2(
       ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
       : baseModel;
 
-  const { tools, onRunResult } = createAgentToolsV2(sessionId);
+  const { tools, onRunResult } = createAgentTools(sessionId);
 
-  // VizSpec collector
+  // VizSpec collector — exposed via getVizSpecs for persistence
   const vizCollector: VizSpec[] = [];
 
-  return new ToolLoopAgent({
+  const agent = new ToolLoopAgent({
     model,
-    instructions: buildSystemPromptV2(),
+    instructions: buildSystemPrompt(),
     maxOutputTokens: 8000,
     stopWhen: stepCountIs(8),
-    prepareStep: createPrepareStepV2(
+    prepareStep: createPrepareStep(
       sessionId,
       getSynthesisProviderOptions(synthesisModelId),
     ),
@@ -124,7 +123,7 @@ export function createFavorAgentV2(
 
       console.log(
         JSON.stringify({
-          event: "agent_v2_step",
+          event: "agent_step",
           tools: toolCalls.map((tc) => tc.toolName),
           errors: toolResults
             .filter((r) => (r.output as Record<string, unknown>)?.error)
@@ -135,8 +134,10 @@ export function createFavorAgentV2(
       );
     },
   });
+
+  return { agent, getVizSpecs: () => vizCollector };
 }
 
 // Type export
-const _typeAgent = createFavorAgentV2("__type_only__");
-export type AgentV2UIMessage = InferAgentUIMessage<typeof _typeAgent>;
+const { agent: _typeAgent } = createFavorAgent("__type_only__");
+export type AgentUIMessage = InferAgentUIMessage<typeof _typeAgent>;

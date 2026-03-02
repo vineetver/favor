@@ -1,13 +1,12 @@
 /**
- * V2 prepareStep — simplified observe-decide-act loop.
- * No planning phase, no specialist delegation, no plan tracking.
- * Just: state → tools → synthesis.
+ * prepareStep — simplified observe-decide-act loop.
+ * state → tools → synthesis.
  */
 
 import type { PrepareStepFunction } from "ai";
 import { isContextHeavy, isContextCritical } from "./context-budget";
 import { fetchSessionState, applyStateDelta, patchSessionState, type SessionState } from "./session-state";
-import { buildSystemPromptV2 } from "./prompts/system-v2";
+import { buildSystemPrompt } from "./prompts/system";
 import type { RunResult } from "../tools/run/types";
 
 // Matches SharedV3ProviderOptions from ai SDK
@@ -73,7 +72,7 @@ const MAX_STEPS = 8;
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createPrepareStepV2(
+export function createPrepareStep(
   sessionId: string,
   synthesisProviderOptions?: ProviderOptions,
 ): PrepareStepFunction<any> {
@@ -101,7 +100,7 @@ export function createPrepareStepV2(
 
       return {
         toolChoice: "auto" as const,
-        system: buildSystemPromptV2(currentState ?? undefined),
+        system: buildSystemPrompt(currentState ?? undefined),
       };
     }
 
@@ -145,7 +144,7 @@ export function createPrepareStepV2(
     // --- 8. Otherwise: let model decide ---
     return {
       toolChoice: "auto" as const,
-      system: buildSystemPromptV2(currentState ?? undefined) + hint,
+      system: buildSystemPrompt(currentState ?? undefined) + hint,
     };
   };
 }

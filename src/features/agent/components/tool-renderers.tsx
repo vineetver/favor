@@ -17,6 +17,7 @@ import {
 } from "@shared/components/ui/table";
 import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@infra/utils";
+import { isArtifactRef, type ArtifactRef } from "../lib/compact-message";
 import type {
   CompressedSearchResult,
   CompressedNeighbor,
@@ -657,7 +658,6 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   compareEntities: "Compare",
   runEnrichment: "Enrichment",
   getGraphSchema: "Graph Schema",
-  // V2 tools
   State: "State",
   Read: "Read",
   Search: "Search",
@@ -1067,6 +1067,33 @@ function PlanStepLine({
   );
 }
 
+/** Compact line for artifact-ref outputs (compacted messages on reload) */
+function ArtifactRefLine({
+  part,
+  ref,
+}: {
+  part: ToolUIPart;
+  ref: ArtifactRef;
+}) {
+  const toolName = (part.toolName ?? part.type ?? "").replace(/^tool-/, "");
+  const inputSummary = getToolInputSummary(toolName, part.input);
+  const summary = ref.text_summary;
+
+  return (
+    <div className="flex items-center gap-2 py-0.5 text-sm">
+      <StatusIcon status="completed" />
+      <span className="text-muted-foreground flex-1 min-w-0 truncate">
+        {inputSummary ?? (TOOL_DISPLAY_NAMES[toolName] ?? toolName)}
+      </span>
+      {summary && (
+        <span className="text-[11px] text-muted-foreground truncate max-w-[50%]">
+          {summary.length > 80 ? summary.slice(0, 77) + "..." : summary}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function DirectToolLine({ part }: { part: ToolUIPart }) {
   const toolName = (part.toolName ?? part.type ?? "").replace(/^tool-/, "");
   const inputSummary = getToolInputSummary(toolName, part.input);
@@ -1085,6 +1112,11 @@ function DirectToolLine({ part }: { part: ToolUIPart }) {
         : "pending";
 
   const hasOutput = isComplete || isError;
+
+  // Handle artifact refs (compacted outputs from session reload)
+  if (hasOutput && part.output && isArtifactRef(part.output)) {
+    return <ArtifactRefLine part={part} ref={part.output} />;
+  }
 
   // Extract brief output summary for inline display
   const outputBrief = (() => {
@@ -1322,6 +1354,9 @@ export function renderToolOutput(
 ): ReactNode | null {
   if (!output || typeof output !== "object") return null;
 
+  // Artifact refs have no inline data to render
+  if (isArtifactRef(output)) return null;
+
   // Check for error responses
   if ("error" in (output as Record<string, unknown>) && (output as Record<string, unknown>).error === true) {
     return null; // Let default error handling take over
@@ -1420,7 +1455,7 @@ export function renderToolOutput(
 }
 
 // ---------------------------------------------------------------------------
-// V2 Run command summary helper
+// Run command summary helper
 // ---------------------------------------------------------------------------
 
 function getRunCommandSummary(
@@ -1670,7 +1705,6 @@ export function getToolInputSummary(
         ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
         : "Exploring graph";
     }
-    // V2 tools
     case "State":
       return "Fetching workspace state";
     case "Read": {

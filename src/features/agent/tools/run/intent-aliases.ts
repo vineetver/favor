@@ -83,3 +83,16 @@ export function getSummaryFields(
     schema.nodeTypes.find((n) => n.nodeType === nodeType)?.summaryFields ?? []
   );
 }
+
+/**
+ * Infer the best edge type connecting two node types.
+ * Returns null if no edge connects them.
+ */
+export function inferEdgeType(
+  schema: GraphSchemaResponse,
+  fromType: string,
+  toType: string,
+): string | null {
+  const edges = findEdgesConnecting(schema, fromType, toType);
+  return edges[0]?.edgeType ?? null;
+}

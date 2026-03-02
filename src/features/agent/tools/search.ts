@@ -165,5 +165,36 @@ SCOPES:
         throw err;
       }
     },
+    toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+      const results = opts.output as Record<string, unknown>;
+      if (results.error) return jsonOut(results);
+
+      const compact: Record<string, unknown> = { ...results };
+
+      // Cap entity results to 5 for model context
+      if (Array.isArray(compact.entities)) {
+        const full = compact.entities as unknown[];
+        if (full.length > 5) {
+          compact.entities = full.slice(0, 5);
+          compact._entities_truncation = { truncated: true, returned: 5, total: full.length };
+        }
+      }
+
+      // Cap column results to 10
+      if (Array.isArray(compact.columns)) {
+        const full = compact.columns as unknown[];
+        if (full.length > 10) {
+          compact.columns = full.slice(0, 10);
+          compact._columns_truncation = { truncated: true, returned: 10, total: full.length };
+        }
+      }
+
+      return jsonOut(compact);
+    },
   });
+}
+
+/** Type-safe JSON output for toModelOutput */
+function jsonOut(value: unknown) {
+  return { type: "json" as const, value: value as null };
 }

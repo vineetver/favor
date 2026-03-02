@@ -8,8 +8,9 @@ import { tool } from "ai";
 import { type RunCommand, type RunResult, type EntityRef } from "./types";
 import { handleRows, handleGroupby, handleCorrelation, handleDerive, handlePrioritize, handleCompute } from "./handlers/cohort";
 import { handleAnalytics, handleAnalyticsPoll, handleViz } from "./handlers/analytics";
-import { handleExplore, handleTraverse, handlePaths, handleCompare, handleEnrich } from "./handlers/graph";
+import { handleExplore, handleTraverse, handleQuery } from "./handlers/graph";
 import { handlePin, handleSetCohort, handleRemember, handleExport, handleCreateCohort } from "./handlers/workspace";
+import { compactRunForModel } from "./compactify";
 
 export type { RunCommand, RunResult, EntityRef } from "./types";
 export { runCommandSchema } from "./types";
@@ -39,12 +40,10 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   "analytics.poll": (cmd) => handleAnalyticsPoll(cmd as Extract<RunCommand, { command: "analytics.poll" }>),
   viz: (cmd) => handleViz(cmd as Extract<RunCommand, { command: "viz" }>),
 
-  // Graph
+  // Graph — 3 mode-dispatched primitives
   explore: (cmd, ctx) => handleExplore(cmd as Extract<RunCommand, { command: "explore" }>, ctx.resolvedEntities),
   traverse: (cmd, ctx) => handleTraverse(cmd as Extract<RunCommand, { command: "traverse" }>, ctx.resolvedEntities),
-  paths: (cmd) => handlePaths(cmd as Extract<RunCommand, { command: "paths" }>),
-  compare: (cmd, ctx) => handleCompare(cmd as Extract<RunCommand, { command: "compare" }>, ctx.resolvedEntities),
-  enrich: (cmd, ctx) => handleEnrich(cmd as Extract<RunCommand, { command: "enrich" }>, ctx.resolvedEntities),
+  query: (cmd, ctx) => handleQuery(cmd as Extract<RunCommand, { command: "query" }>, ctx.resolvedEntities),
 
   // Workspace
   pin: (cmd) => handlePin(cmd as Extract<RunCommand, { command: "pin" }>),
@@ -188,7 +187,7 @@ const runInputSchema = z.object({
   command: z.enum([
     "rows", "groupby", "correlation", "derive", "prioritize", "compute",
     "analytics", "analytics.poll", "viz", "export", "create_cohort",
-    "explore", "traverse", "paths", "compare", "enrich",
+    "explore", "traverse", "query",
     "pin", "set_cohort", "remember",
   ]),
 
@@ -200,7 +199,7 @@ const runInputSchema = z.object({
   filters: z.array(flatCohortFilter).optional().describe("Cohort filters"),
   sort: z.string().optional().describe("Sort column (rows, explore)"),
   desc: z.boolean().optional().describe("Sort descending (rows)"),
-  limit: z.number().optional().describe("Max results"),
+  limit: z.number().optional().describe("Max results (default 10 for rows; only increase when user asks)"),
   offset: z.number().optional().describe("Pagination offset (rows)"),
 
   // --- groupby ---
@@ -234,27 +233,43 @@ const runInputSchema = z.object({
   // --- create_cohort ---
   references: z.array(z.string()).optional().describe("Variant references (rsIDs or chr-pos-ref-alt)"),
 
-  // --- explore ---
-  seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, multi-seed)"),
-  into: z.array(targetIntents).optional().describe("Target intents (explore, compare)"),
-  depth: z.number().optional().describe("Traversal depth (explore)"),
+  // --- explore (mode-dispatched) ---
+  mode: z.string().optional().describe("Sub-mode: explore(neighbors|compare|enrich|similar|context|aggregate), traverse(chain|paths)"),
+  seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, query)"),
+  into: z.array(targetIntents).optional().describe("Target intents (explore neighbors)"),
+  depth: z.number().optional().describe("Traversal depth (explore neighbors)"),
+  edge_type: z.string().optional().describe("Edge type (explore compare/aggregate)"),
+  direction: z.enum(["in", "out"]).optional().describe("Edge direction (explore compare/aggregate)"),
+  target: targetIntents.optional().describe("Target intent (explore enrich)"),
+  p_cutoff: z.number().optional().describe("P-value cutoff (explore enrich)"),
+  edge_types: z.array(z.string()).optional().describe("Edge types filter (explore similar)"),
+  top_k: z.number().optional().describe("Top K similar entities (explore similar)"),
+  sections: z.array(z.string()).optional().describe("Context sections (explore context)"),
+  context_depth: z.enum(["minimal", "standard", "detailed"]).optional().describe("Context depth (explore context)"),
+  metric: z.enum(["count", "avg", "sum", "min", "max"]).optional().describe("Aggregation metric (explore aggregate)"),
+  score_field: z.string().optional().describe("Score field for aggregation (explore aggregate)"),
 
-  // --- traverse ---
-  seed: flatSeedRef.optional().describe("Single seed ref (traverse)"),
-  steps: z.array(flatTraverseStep).optional().describe("Traversal steps"),
+  // --- traverse (mode-dispatched) ---
+  seed: flatSeedRef.optional().describe("Single seed ref (traverse chain)"),
+  steps: z.array(flatTraverseStep).optional().describe("Traversal steps (traverse chain)"),
+  from: z.string().optional().describe("Source entity 'Type:ID' (traverse paths)"),
+  to: z.string().optional().describe("Target entity 'Type:ID' (traverse paths)"),
+  max_hops: z.number().optional().describe("Max path hops (traverse paths)"),
+  include_edge_detail: z.boolean().optional().describe("Enrich paths with edge details (traverse paths)"),
 
-  // --- paths ---
-  from: z.string().optional().describe("Source entity 'Type:ID' (paths)"),
-  to: z.string().optional().describe("Target entity 'Type:ID' (paths)"),
-  max_hops: z.number().optional().describe("Max path hops (paths)"),
+  // --- query ---
+  description: z.string().optional().describe("Natural language pattern description (query)"),
+  pattern: z.array(z.object({
+    var: z.string(),
+    type: z.string().optional(),
+    edge: z.string().optional(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+  })).optional().describe("Structural pattern (query)"),
+  return_vars: z.array(z.string()).optional().describe("Variables to return (query)"),
 
-  // --- compare / pin ---
-  entities: z.array(flatSeedRef).optional().describe("For pin: [{type, id, label}]. For compare: seed refs"),
-
-  // --- enrich ---
-  input_set: z.array(flatSeedRef).optional().describe("Input gene set (enrich, 3+)"),
-  target: targetIntents.optional().describe("Target intent (enrich)"),
-  p_cutoff: z.number().optional().describe("P-value cutoff (enrich)"),
+  // --- pin ---
+  entities: z.array(flatSeedRef).optional().describe("For pin: [{type, id, label}]"),
 
   // --- remember ---
   key: z.string().optional().describe("Memory key (remember)"),
@@ -270,43 +285,40 @@ export function createRunTool(getContext: () => RunContext) {
     description: `Execute work: cohort queries, analytics, graph exploration, workspace management.
 
 COHORT COMMANDS (require active cohort or cohort_id):
-  rows       — Query/sort/filter rows
-  groupby    — Group-by counts + metrics
-  correlation — Pearson r between two columns
-  derive     — Filter to sub-cohort
-  prioritize — Multi-criteria rank
-  compute    — Weighted composite score
-  analytics  — ML/statistical analysis (async, polls internally)
-  analytics.poll — Check analytics run status
-  viz        — Fetch chart data for completed run
-  export     — Export active cohort
-  create_cohort — Create from variant references
+  rows, groupby, correlation, derive, prioritize, compute, analytics, analytics.poll, viz, export, create_cohort
 
-GRAPH COMMANDS:
-  explore    — Find related entities (diseases, drugs, pathways) from seeds
-  traverse   — Multi-hop traversal with intent-first steps
-  paths      — Shortest paths between two entities
-  compare    — Side-by-side entity comparison
-  enrich     — Statistical over-representation test (3+ entities)
+GRAPH COMMANDS (3 mode-dispatched primitives):
+  explore (mode: neighbors|compare|enrich|similar|context|aggregate)
+    neighbors — { seeds, into: ["diseases","drugs"] }  (default mode)
+    compare   — { mode:"compare", seeds:[...2+], edge_type? }
+    enrich    — { mode:"enrich", seeds:[...3+], target:"pathways" }
+    similar   — { mode:"similar", seeds:[{label:"TP53"}], top_k? }
+    context   — { mode:"context", seeds, sections?, context_depth? }
+    aggregate — { mode:"aggregate", seeds, edge_type, metric:"count" }
+  traverse (mode: chain|paths)
+    chain     — { seed, steps:[{into:"diseases"},{enrich:"pathways"}] }  (default mode)
+    paths     — { mode:"paths", from:"Gene:ENSG...", to:"Disease:MONDO_..." }
+  query — structural pattern matching
+    { pattern:[{var:"a",type:"Gene"},{var:"b",type:"Disease"},{var:"e",edge:"GENE_ASSOCIATED_WITH_DISEASE",from:"a",to:"b"}], return_vars:["a","b"] }
 
-WORKSPACE COMMANDS:
-  pin        — Pin entities to workspace
-  set_cohort — Set active cohort
-  remember   — Store a memory
+WORKSPACE: pin, set_cohort, remember
 
-SEED FORMATS (for graph commands):
-  Exact:    { type: "Gene", id: "ENSG00000141510" }
-  Fuzzy:    { label: "BRCA1" }
-  Artifact: { from_artifact: 42, field: "genes" }
-  Cohort:   { from_cohort: "abc-123", top: 5 }
-
-TARGET INTENTS (for explore/traverse):
-  diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds`,
+SEED FORMATS: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
+IMPORTANT: For fuzzy name seeds, use ONLY {label:"..."} without a type field. The resolver detects the type. Only use {type,id} for exact entity IDs.
+TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds`,
     inputSchema: runInputSchema,
     execute: async (cmd) => {
       const ctx = getContext();
       const result = await executeRun(cmd as unknown as RunCommand, ctx);
       return result;
+    },
+    toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+      const cmd = opts.input as { command: string };
+      const result = opts.output as RunResult;
+      if (result.data?.error) {
+        return { type: "json" as const, value: result as unknown as null };
+      }
+      return compactRunForModel(cmd.command, result);
     },
   });
 }

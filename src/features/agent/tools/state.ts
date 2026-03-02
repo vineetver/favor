@@ -105,5 +105,31 @@ export function createStateTool(sessionId: string) {
         throw err;
       }
     },
+    toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+      const state = opts.output as Record<string, unknown>;
+      const schema = state.schema as {
+        columns: unknown[];
+        numeric_columns: string[];
+        categorical_columns: string[];
+      } | null;
+
+      if (schema && schema.columns.length > 30) {
+        return jsonOut({
+          ...state,
+          schema: {
+            ...schema,
+            columns: schema.columns.slice(0, 30),
+            _columns_truncation: { truncated: true, returned: 30, total: schema.columns.length },
+          },
+        });
+      }
+
+      return jsonOut(state);
+    },
   });
+}
+
+/** Type-safe JSON output for toModelOutput */
+function jsonOut(value: unknown) {
+  return { type: "json" as const, value: value as null };
 }

@@ -1,4 +1,4 @@
-// V2 tool exports — 5 tools
+// Tool exports — 5 tools
 export { createStateTool } from "./state";
 export { readTool } from "./read";
 export { createSearchTool } from "./search";
