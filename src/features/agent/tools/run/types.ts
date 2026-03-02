@@ -52,6 +52,7 @@ export type SeedRef = z.infer<typeof seedRefSchema>;
 const targetIntentSchema = z.enum([
   "diseases", "drugs", "pathways", "variants",
   "phenotypes", "tissues", "genes", "proteins", "compounds",
+  "protein_domains",
 ]);
 
 export type TargetIntent = z.infer<typeof targetIntentSchema>;

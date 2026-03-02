@@ -160,6 +160,27 @@ export interface HeatmapVizSpec extends VizSpecBase {
 }
 
 // ---------------------------------------------------------------------------
+// Protein structure — domain architecture + 3D viewer
+// ---------------------------------------------------------------------------
+
+export interface ProteinStructureVizSpec extends VizSpecBase {
+  type: "protein_structure";
+  geneLabel: string;
+  proteinLength: number;
+  alphafoldId: string | null;
+  domains: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    start: number; // 1-based residue
+    end: number;
+    type?: string; // "Domain", "Family", "Repeat"
+    meanPlddt?: number;
+    color: string; // pre-assigned from palette
+  }>;
+}
+
+// ---------------------------------------------------------------------------
 // Discriminated union
 // ---------------------------------------------------------------------------
 
@@ -172,4 +193,5 @@ export type VizSpec =
   | ComparisonVizSpec
   | ScatterPlotVizSpec
   | QQPlotVizSpec
-  | HeatmapVizSpec;
+  | HeatmapVizSpec
+  | ProteinStructureVizSpec;

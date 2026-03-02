@@ -11,10 +11,16 @@ import { AgentScatterPlot } from "./viz/agent-scatter-plot";
 import { AgentQQPlot } from "./viz/agent-qq-plot";
 import { AgentHeatmap } from "./viz/agent-heatmap";
 
-// Lazy-load Cytoscape since it's heavy
+// Lazy-load heavy renderers
 const AgentMiniNetwork = lazy(() =>
   import("./viz/agent-mini-network").then((m) => ({
     default: m.AgentMiniNetwork,
+  })),
+);
+
+const AgentProteinStructure = lazy(() =>
+  import("./viz/agent-protein-structure").then((m) => ({
+    default: m.AgentProteinStructure,
   })),
 );
 
@@ -46,6 +52,16 @@ function VizSpecRenderer({ spec }: { spec: VizSpec }) {
       return <AgentQQPlot spec={spec} />;
     case "heatmap":
       return <AgentHeatmap spec={spec} />;
+    case "protein_structure":
+      return (
+        <Suspense
+          fallback={
+            <div className="h-[300px] w-full rounded-md border border-border bg-muted animate-pulse" />
+          }
+        >
+          <AgentProteinStructure spec={spec} />
+        </Suspense>
+      );
     default:
       return null;
   }

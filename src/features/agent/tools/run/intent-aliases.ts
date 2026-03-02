@@ -15,6 +15,7 @@ export const INTENT_TO_TYPE: Record<TargetIntent, string> = {
   genes: "Gene",
   proteins: "Protein",
   compounds: "Compound",
+  protein_domains: "ProteinDomain",
 };
 
 export interface EdgeTypeInfo {
@@ -35,6 +36,8 @@ export interface GraphSchemaResponse {
     edgeType: string;
     fromType: string;
     toType: string;
+    label?: string;
+    description?: string;
     defaultScoreField?: string;
     propertyCount?: number;
     properties?: string[];

@@ -15,6 +15,7 @@ import type {
   ScatterPlotVizSpec,
   QQPlotVizSpec,
   HeatmapVizSpec,
+  ProteinStructureVizSpec,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -797,6 +798,54 @@ function genAnalyticsHeatmap(
 }
 
 // ---------------------------------------------------------------------------
+// Protein domain architecture
+// ---------------------------------------------------------------------------
+
+const DOMAIN_PALETTE = [
+  "#8b5cf6", "#06b6d4", "#f59e0b", "#10b981",
+  "#ef4444", "#3b82f6", "#ec4899", "#84cc16",
+];
+
+function genProteinDomains(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): ProteinStructureVizSpec | null {
+  const out = output as Record<string, unknown>;
+  const pd = out?._proteinDomains as {
+    proteinLength?: number;
+    alphafoldId?: string | null;
+    domains?: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      start: number;
+      end: number;
+      type?: string;
+      meanPlddt?: number;
+    }>;
+  } | undefined;
+
+  if (!pd?.domains?.length || !pd.proteinLength) return null;
+
+  const seeds = out?.resolved_seeds as Array<{ label?: string }> | undefined;
+  const geneLabel = seeds?.[0]?.label ?? "Protein";
+
+  return {
+    type: "protein_structure",
+    toolCallIndex,
+    title: `Protein domains of ${geneLabel}`,
+    geneLabel,
+    proteinLength: pd.proteinLength,
+    alphafoldId: pd.alphafoldId ?? null,
+    domains: pd.domains.map((d, i) => ({
+      ...d,
+      color: DOMAIN_PALETTE[i % DOMAIN_PALETTE.length],
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
@@ -816,6 +865,8 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   getGeneVariantStats: [genGeneVariantStats],
   // runAnalytics: multiple chart types from analytics pipeline
   runAnalytics: [genAnalyticsStatCard, genAnalyticsScatter, genAnalyticsQQ, genAnalyticsBar, genAnalyticsHeatmap],
+  // run_explore: protein domain architecture from explore neighbors
+  run_explore: [genProteinDomains],
 };
 
 // ---------------------------------------------------------------------------
@@ -834,7 +885,13 @@ export function generateVizSpecs(
   input: Record<string, unknown>,
   toolCallIndex: number,
 ): VizSpec[] {
-  const generators = GENERATOR_REGISTRY[toolName];
+  // Resolve "Run" → "run_<command>" so client-side matches server-side keys
+  const resolved =
+    toolName === "Run" && typeof input.command === "string"
+      ? `run_${input.command}`
+      : toolName;
+
+  const generators = GENERATOR_REGISTRY[resolved];
   if (!generators) return [];
 
   // For runAnalytics, collect ALL matching specs (multiple chart types)

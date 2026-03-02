@@ -9,5 +9,6 @@ export type {
   ScatterPlotVizSpec,
   QQPlotVizSpec,
   HeatmapVizSpec,
+  ProteinStructureVizSpec,
 } from "./types";
 export { generateVizSpec, generateVizSpecs } from "./generators";
