@@ -206,10 +206,36 @@ export async function pollCohortUntilReady(
 const ANALYTICS_POLL_INTERVAL_MS = 2_000;
 const ANALYTICS_POLL_TIMEOUT_MS = 180_000; // 3 min
 
+/** Raw response from GET /cohorts/{id}/analytics/runs/{run_id} */
+interface AnalyticsRunRaw {
+  id: string;
+  cohort_id: string;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  task_type?: string;
+  progress?: { stage: string; percent: number };
+  // Completed runs: result may be nested under `result` or flat on the object
+  result?: {
+    metrics?: Record<string, unknown>;
+    summary?: string;
+    viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
+    artifacts?: unknown[];
+  };
+  // Some backends put these flat
+  metrics?: Record<string, unknown>;
+  summary?: string;
+  viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
+  // Failed runs: error fields
+  error_message?: string;
+  error_code?: string;
+  error?: string; // legacy fallback
+}
+
+/** Flattened status returned to tool consumers */
 export interface AnalyticsRunStatus {
   run_id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
   metrics?: Record<string, unknown>;
+  summary?: string;
   viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
   error?: string;
 }
@@ -219,6 +245,18 @@ export interface AnalyticsChartData {
   chart_type: string;
   title?: string;
   data: unknown;
+}
+
+/** Flatten the raw run response into a tool-friendly shape */
+function flattenRunStatus(raw: AnalyticsRunRaw): AnalyticsRunStatus {
+  return {
+    run_id: raw.id,
+    status: raw.status,
+    metrics: raw.result?.metrics ?? raw.metrics,
+    summary: raw.result?.summary ?? raw.summary,
+    viz_charts: raw.result?.viz_charts ?? raw.viz_charts,
+    error: raw.error_message ?? raw.error,
+  };
 }
 
 /**
@@ -231,10 +269,12 @@ export async function pollAnalyticsRun(
   const deadline = Date.now() + ANALYTICS_POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    const status = await cohortFetch<AnalyticsRunStatus>(
+    const raw = await cohortFetch<AnalyticsRunRaw>(
       `/cohorts/${encodeURIComponent(cohortId)}/analytics/runs/${encodeURIComponent(runId)}`,
     );
-    if (status.status === "completed" || status.status === "failed") return status;
+    if (raw.status === "completed" || raw.status === "failed" || raw.status === "cancelled") {
+      return flattenRunStatus(raw);
+    }
     await new Promise((r) => setTimeout(r, ANALYTICS_POLL_INTERVAL_MS));
   }
 

@@ -11,8 +11,13 @@ import {
 } from "lucide-react";
 
 import { VariantSubmitPanel } from "./variant-submit-panel";
-import { CohortListItem as CohortCard } from "./cohort-list-item";
 import { CohortPromptPicker } from "./cohort-prompt-picker";
+import {
+  WorkspaceTree,
+  ResourceViewer,
+  RESOURCE_VIEWER_CLOSED,
+  type ResourceViewerState,
+} from "./workspace-tree";
 import type { CohortListItem } from "@features/batch/types";
 import { deleteCohort } from "@features/batch/api";
 import { useCohorts } from "@features/batch/hooks/use-cohorts";
@@ -35,7 +40,7 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Collapsible section
+// Collapsible section (kept for conversations)
 // ---------------------------------------------------------------------------
 
 function SidebarSection({
@@ -98,21 +103,15 @@ export function WorkspaceSidebar({
   const [showSubmit, setShowSubmit] = useState(false);
 
   // ---- Sessions ----
-  const { sessions, isLoading: sessionsLoading, deleteSession, refetch: refetchSessions } =
-    useSessions();
-
-  // ---- Cohorts (backend-backed via useCohorts) ----
   const {
-    cohorts,
-    isLoading: cohortsLoading,
-    refetch: refetchCohorts,
-  } = useCohorts();
+    sessions,
+    isLoading: sessionsLoading,
+    deleteSession,
+    refetch: refetchSessions,
+  } = useSessions();
 
-  // Refetch both when sessionId changes (new session created)
-  const refetchAll = useCallback(() => {
-    refetchSessions();
-    refetchCohorts();
-  }, [refetchSessions, refetchCohorts]);
+  // ---- Cohorts (for prompt picker + tree deletion) ----
+  const { cohorts, refetch: refetchCohorts } = useCohorts();
 
   const handleCohortCreated = useCallback(() => {
     refetchCohorts();
@@ -132,9 +131,12 @@ export function WorkspaceSidebar({
     null,
   );
 
-  const handleNewCohortConversation = useCallback((cohort: CohortListItem) => {
-    setSelectedCohort(cohort);
-  }, []);
+  const handleNewCohortConversation = useCallback(
+    (cohort: CohortListItem) => {
+      setSelectedCohort(cohort);
+    },
+    [],
+  );
 
   const handleCohortPromptSend = useCallback(
     (message: string) => {
@@ -149,9 +151,7 @@ export function WorkspaceSidebar({
   const handleAnalyzeCohort = useCallback(
     (cohortId: string) => {
       const cohort = cohorts.find((c) => c.id === cohortId);
-      if (cohort) {
-        handleNewCohortConversation(cohort);
-      }
+      if (cohort) handleNewCohortConversation(cohort);
     },
     [cohorts, handleNewCohortConversation],
   );
@@ -166,10 +166,33 @@ export function WorkspaceSidebar({
     [deleteSession, sessionId, onNewChat],
   );
 
+  // ---- Resource viewer (schema / sample) ----
+  const [resourceViewer, setResourceViewer] = useState<ResourceViewerState>(
+    RESOURCE_VIEWER_CLOSED,
+  );
+
+  const handleOpenResource = useCallback(
+    (kind: "schema" | "sample", cohortId: string, cohortLabel: string) => {
+      setResourceViewer({ open: true, kind, cohortId, cohortLabel });
+    },
+    [],
+  );
+
+  const handleCloseResource = useCallback(() => {
+    setResourceViewer(RESOURCE_VIEWER_CLOSED);
+  }, []);
+
+  // ---- Tree sends messages via onSendMessage ----
+  const handleTreeSendMessage = useCallback(
+    (text: string) => {
+      onNewChat();
+      onSendMessage(text);
+    },
+    [onSendMessage, onNewChat],
+  );
+
   const isEmpty =
-    sessions.length === 0 &&
-    cohorts.length === 0 &&
-    !showSubmit;
+    sessions.length === 0 && cohorts.length === 0 && !showSubmit;
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
@@ -196,25 +219,13 @@ export function WorkspaceSidebar({
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="py-2">
-          {/* Cohorts */}
-          {cohorts.length > 0 && (
-            <SidebarSection
-              title="Cohorts"
-              count={cohorts.length}
-              defaultOpen
-            >
-              <div className="space-y-1.5 px-2 pb-1">
-                {cohorts.map((cohort) => (
-                  <CohortCard
-                    key={cohort.id}
-                    cohort={cohort}
-                    onNewConversation={handleNewCohortConversation}
-                    onRemove={handleCohortRemoved}
-                  />
-                ))}
-              </div>
-            </SidebarSection>
-          )}
+          {/* File explorer tree */}
+          <WorkspaceTree
+            onSendMessage={handleTreeSendMessage}
+            onNewCohortConversation={handleNewCohortConversation}
+            onDeleteCohort={handleCohortRemoved}
+            onOpenResource={handleOpenResource}
+          />
 
           {/* Conversations */}
           {sessions.length > 0 && (
@@ -303,6 +314,9 @@ export function WorkspaceSidebar({
         }}
         onSend={handleCohortPromptSend}
       />
+
+      {/* Resource viewer (schema / sample) */}
+      <ResourceViewer state={resourceViewer} onClose={handleCloseResource} />
     </div>
   );
 }

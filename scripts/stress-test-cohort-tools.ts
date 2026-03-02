@@ -42,7 +42,7 @@ loadEnv();
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const API_KEY = process.env.FAVOR_API_KEY || "";
-const GWAS_COHORT_ID = process.env.TEST_COHORT_ID || "84a8d62b-bee9-45e5-ae4f-2913323740e0";
+const GWAS_COHORT_ID = process.env.TEST_COHORT_ID || "13de3fc8-5535-432e-b6be-32bd84226e83"; // gwas_sumstats_real
 
 // Well-known GWAS variants for cohort creation
 const TEST_VARIANTS = [
@@ -168,7 +168,7 @@ async function pollAnalytics(
     const resp = await api(`/cohorts/${cohortId}/analytics/runs/${runId}`);
     if (!resp.ok) return resp;
     const d = resp.data as any;
-    if (d.status === "completed" || d.status === "failed") return resp;
+    if (d.status === "completed" || d.status === "failed" || d.status === "cancelled") return resp;
     await new Promise((r) => setTimeout(r, 2_000));
   }
   return { status: 408, ok: false, data: { error: "Poll timeout" }, raw: "timeout" };
@@ -227,10 +227,11 @@ async function main() {
       notes.push(`HTTP ${resp.status}`);
       if (d.row_count != null) notes.push(`row_count=${d.row_count}`);
       if (d.data_type) notes.push(`data_type=${d.data_type}`);
-      if (d.capabilities) notes.push(`capabilities=[${d.capabilities.join(",")}]`);
+      if (d.capabilities) notes.push(`capabilities=${JSON.stringify(d.capabilities)}`);
       if (d.columns?.length) notes.push(`columns=${d.columns.length}`);
       if (d.text_summary) notes.push(`has text_summary`);
       if (d.profile) notes.push(`has profile`);
+      if (d.available_methods?.length) notes.push(`available_methods=${d.available_methods.length}`);
       return grade("T1.1", "schema", "PASS", notes.join(", "), d);
     },
   );
@@ -238,13 +239,33 @@ async function main() {
   // Dump full column listing
   if (schemaData?.columns) {
     console.log("\n  📋 FULL COLUMN LISTING:");
-    const cols = schemaData.columns as Array<{ name: string; kind: string; [k: string]: unknown }>;
+    const cols = schemaData.columns as Array<{ name: string; kind: string; namespace?: string; role?: string; [k: string]: unknown }>;
     const byKind: Record<string, string[]> = {};
     for (const c of cols) {
       (byKind[c.kind] ??= []).push(c.name);
     }
     for (const [kind, names] of Object.entries(byKind)) {
       console.log(`    ${kind}: [${names.join(", ")}]`);
+    }
+    // Log namespace/role if present
+    const hasNamespace = cols.some(c => c.namespace);
+    if (hasNamespace) {
+      const byNs: Record<string, string[]> = {};
+      for (const c of cols) {
+        (byNs[c.namespace ?? "unknown"] ??= []).push(c.name);
+      }
+      console.log("\n  📋 BY NAMESPACE:");
+      for (const [ns, names] of Object.entries(byNs)) {
+        console.log(`    ${ns}: [${names.join(", ")}]`);
+      }
+    }
+  }
+
+  // Dump available methods
+  if (schemaData?.available_methods?.length) {
+    console.log("\n  📊 AVAILABLE METHODS:");
+    for (const m of schemaData.available_methods) {
+      console.log(`    ${m.method} (${m.category}): available=${m.available}, auto_config=${JSON.stringify(m.auto_config)}`);
     }
   }
 
@@ -254,19 +275,45 @@ async function main() {
   console.log("\n─── GROUP 2: analyzeCohort(rows) on GWAS cohort ───");
 
   // We need to know actual column names from schema
-  const numericCols = schemaData?.columns
+  const allNumericCols = schemaData?.columns
     ?.filter((c: any) => c.kind === "numeric")
     ?.map((c: any) => c.name) ?? [];
 
+  // Filter out internal ID/position columns that are useless for analytics
+  const INTERNAL_COLS = new Set([
+    "variants_vid", "variants_chrom_id", "variants_position0",
+    "variants_hash30", "variants_pos_bin_1m", "variants_position",
+    "variants_is_hashed", "row_id",
+    "original_hm_chrom", "original_hm_pos", "original_hm_code",
+    "original_position",
+  ]);
+  const numericCols = allNumericCols.filter((c: string) => !INTERNAL_COLS.has(c));
+
+  // Prefer GWAS-specific columns for analytics (complete data, no NaN issues)
+  const gwasNumericCols = numericCols.filter((c: string) =>
+    c.startsWith("original_") && !INTERNAL_COLS.has(c),
+  );
+  // Annotation columns (may have missing values)
+  const annotNumericCols = numericCols.filter((c: string) =>
+    !c.startsWith("original_") && !INTERNAL_COLS.has(c),
+  );
+  console.log(`  GWAS-specific numeric cols (${gwasNumericCols.length}): [${gwasNumericCols.join(", ")}]`);
+  console.log(`  Annotation numeric cols (${annotNumericCols.length}): [${annotNumericCols.join(", ")}]`);
+  console.log(`  All numeric cols (${allNumericCols.length}): [${allNumericCols.slice(0, 10).join(", ")}${allNumericCols.length > 10 ? "..." : ""}]`);
+  console.log(`  Analytics-ready numeric cols (${numericCols.length}): [${numericCols.slice(0, 10).join(", ")}${numericCols.length > 10 ? "..." : ""}]`);
+
   const firstNumericCol = numericCols[0] ?? "original_p_value";
   console.log(`  Using numeric column for sort: ${firstNumericCol}`);
+
+  // Always send explicit select for GWAS cohorts (default select has variant_list-only columns)
+  const defaultSelect = numericCols.slice(0, 5);
 
   await run(
     "T2.1",
     `Rows: top 10 by ${firstNumericCol}`,
     () => api(`/cohorts/${GWAS_COHORT_ID}/rows`, {
       method: "POST",
-      body: { sort: firstNumericCol, desc: true, limit: 10 },
+      body: { sort: firstNumericCol, desc: true, limit: 10, select: defaultSelect },
     }),
     (resp) => {
       if (!resp.ok) return grade("T2.1", "rows", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
@@ -298,14 +345,16 @@ async function main() {
     },
   );
 
-  // Rows with score filter
+  // Rows with score filter — score_above/score_below only work with the 36 standard annotation columns
+  const annotationCol = numericCols.find((c: string) => c.includes("fathmm") || c.includes("cadd") || c.includes("linsight"));
   await run(
     "T2.3",
-    "Rows: filter score_above on first numeric col",
+    `Rows: filter score_above on ${annotationCol ?? "N/A"}`,
     () => api(`/cohorts/${GWAS_COHORT_ID}/rows`, {
       method: "POST",
       body: {
-        filters: [{ type: "score_above", field: firstNumericCol, threshold: 0 }],
+        ...(annotationCol ? { filters: [{ type: "score_above", field: annotationCol, threshold: 0 }] } : {}),
+        select: defaultSelect,
         limit: 5,
       },
     }),
@@ -325,7 +374,7 @@ async function main() {
     `Rows: top 10 by ${pvalCol} ascending (most significant)`,
     () => api(`/cohorts/${GWAS_COHORT_ID}/rows`, {
       method: "POST",
-      body: { sort: pvalCol, desc: false, limit: 10 },
+      body: { sort: pvalCol, desc: false, limit: 10, select: defaultSelect },
     }),
     (resp) => {
       if (!resp.ok) return grade("T2.4", "rows asc", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
@@ -393,13 +442,15 @@ async function main() {
 
   let derivedGwasId: string | null = null;
 
+  // Derive uses score_above/score_below which only accept the 36 standard annotation columns
+  const deriveScoreCol = annotationCol?.replace("variants_", "") ?? "fathmm_xf";
   const deriveResult = await run(
     "T4.1",
-    `Derive: ${firstNumericCol} > 0`,
+    `Derive: ${deriveScoreCol} > 0`,
     () => api(`/cohorts/${GWAS_COHORT_ID}/derive`, {
       method: "POST",
       body: {
-        filters: [{ type: "score_above", field: firstNumericCol, threshold: 0 }],
+        filters: [{ type: "score_above", field: deriveScoreCol, threshold: 0 }],
         label: "stress-test-derived",
       },
     }),
@@ -416,8 +467,9 @@ async function main() {
     derivedGwasId = ((deriveResult as any).data as any)?.cohort_id ?? null;
   }
 
-  // Derive with categorical filter (if available)
-  if (categoricalCols.includes("chromosome")) {
+  // Derive with categorical filter — use a categorical column that matches a known filter type
+  const hasChrCol = categoricalCols.some((c: string) => c.includes("chromosome"));
+  if (hasChrCol) {
     await run(
       "T4.2",
       "Derive: chromosome filter",
@@ -519,17 +571,29 @@ async function main() {
   // ====================================================================
   console.log("\n─── GROUP 8: runAnalytics(pca) ───");
 
-  const pcaCols = numericCols.slice(0, 5);
-  console.log(`  PCA columns: [${pcaCols.join(", ")}]`);
+  // Analytics endpoints
+  const analyticsUrl = (cohortId: string) => `/cohorts/${cohortId}/analytics/run`;
+  const analyticsVizUrl = (cohortId: string, runId: string, chartId: string) =>
+    `/cohorts/${cohortId}/analytics/runs/${runId}/viz?chart_id=${chartId}`;
+
+  // Use available_methods auto_config if present, otherwise fall back to numericCols
+  const availableMethods = schemaData?.available_methods ?? [];
+  const getAutoConfig = (method: string) => availableMethods.find((m: any) => m.method === method)?.auto_config;
+
+  // Pick analytics-appropriate columns — prefer GWAS-specific cols (complete data),
+  // fall back to annotation cols. Never trust auto_config blindly (it may include internal IDs).
+  const bestAnalyticsCols = gwasNumericCols.length >= 3 ? gwasNumericCols : numericCols;
+  const pcaCols = bestAnalyticsCols.slice(0, 5);
+  console.log(`  PCA columns: [${pcaCols.join(", ")}] (source: ${gwasNumericCols.length >= 3 ? "gwas cols" : "numericCols"})`);
 
   let pcaRunId: string | null = null;
 
   const pcaSubmit = await run(
     "T8.1",
     "PCA: submit run",
-    () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+    () => api(analyticsUrl(GWAS_COHORT_ID), {
       method: "POST",
-      body: { task: { type: "pca", columns: pcaCols, n_components: 2 } },
+      body: { task: { type: "pca", features: { numeric: pcaCols }, n_components: 2 } },
     }),
     (resp) => {
       if (!resp.ok) return grade("T8.1", "pca submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
@@ -552,9 +616,10 @@ async function main() {
       (resp) => {
         if (!resp.ok) return grade("T8.2", "pca poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
         const d = resp.data as any;
-        if (d.status === "failed") return grade("T8.2", "pca poll", "FAIL", `Failed: ${d.error}`, d);
+        if (d.status === "failed") return grade("T8.2", "pca poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+        const r = d.result ?? d;
         return grade("T8.2", "pca poll", "PASS",
-          `status=${d.status}, metrics keys=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}], viz_charts=${d.viz_charts?.length ?? 0}`,
+          `status=${d.status}, metrics keys=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], viz_charts=${r.viz_charts?.length ?? 0}`,
           d);
       },
     );
@@ -562,23 +627,25 @@ async function main() {
     // Fetch charts
     if (pcaPoll && (pcaPoll as any).ok) {
       const pollData = (pcaPoll as any).data as any;
-      if (pollData.viz_charts?.length) {
-        for (const chart of pollData.viz_charts) {
+      const pcaResult = pollData.result ?? pollData;
+      if (pcaResult.viz_charts?.length) {
+        for (const chart of pcaResult.viz_charts) {
+          const chartId = chart.chart_id ?? chart;
           await run(
-            `T8.3-${chart.chart_id}`,
-            `PCA chart: ${chart.chart_type} (${chart.chart_id})`,
-            () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/runs/${pcaRunId}/viz?chart_id=${chart.chart_id}`),
+            `T8.3-${chartId}`,
+            `PCA chart: ${chart.chart_type ?? chartId}`,
+            () => api(analyticsVizUrl(GWAS_COHORT_ID, pcaRunId!, chartId)),
             (resp) => {
-              if (!resp.ok) return grade(`T8.3-${chart.chart_id}`, "pca chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+              if (!resp.ok) return grade(`T8.3-${chartId}`, "pca chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
               const d = resp.data as any;
-              return grade(`T8.3-${chart.chart_id}`, "pca chart", "PASS",
+              return grade(`T8.3-${chartId}`, "pca chart", "PASS",
                 `chart_type=${d.chart_type}, title=${d.title}, data keys=[${d.data ? Object.keys(d.data).join(",") : typeof d.data}]`,
                 d);
             },
           );
         }
-      } else if (pollData.metrics) {
-        console.log(`  📊 PCA metrics: ${JSON.stringify(pollData.metrics).slice(0, 500)}`);
+      } else {
+        console.log(`  ℹ️  PCA completed with no viz_charts. metrics: ${JSON.stringify(pcaResult.metrics).slice(0, 300)}`);
       }
     }
   }
@@ -593,9 +660,9 @@ async function main() {
   const clusterSubmit = await run(
     "T9.1",
     "Clustering: submit kmeans",
-    () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+    () => api(analyticsUrl(GWAS_COHORT_ID), {
       method: "POST",
-      body: { task: { type: "clustering", columns: pcaCols, method: "kmeans", n_clusters: 3 } },
+      body: { task: { type: "kmeans", features: { numeric: pcaCols }, k: 3 } },
     }),
     (resp) => {
       if (!resp.ok) return grade("T9.1", "cluster submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
@@ -611,19 +678,42 @@ async function main() {
   }
 
   if (clusterRunId) {
-    await run(
+    const clusterPoll = await run(
       "T9.2",
       "Clustering: poll until complete",
       () => pollAnalytics(GWAS_COHORT_ID, clusterRunId!),
       (resp) => {
         if (!resp.ok) return grade("T9.2", "cluster poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
         const d = resp.data as any;
-        if (d.status === "failed") return grade("T9.2", "cluster poll", "FAIL", `Failed: ${d.error}`, d);
+        if (d.status === "failed") return grade("T9.2", "cluster poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+        const r = d.result ?? d;
         return grade("T9.2", "cluster poll", "PASS",
-          `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}], charts=${d.viz_charts?.length ?? 0}`,
+          `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
           d);
       },
     );
+
+    // Fetch cluster charts
+    if (clusterPoll && (clusterPoll as any).ok) {
+      const cResult = ((clusterPoll as any).data as any)?.result;
+      if (cResult?.viz_charts?.length) {
+        for (const chart of cResult.viz_charts) {
+          const chartId = chart.chart_id ?? chart;
+          await run(
+            `T9.3-${chartId}`,
+            `Cluster chart: ${chart.chart_type ?? chartId}`,
+            () => api(analyticsVizUrl(GWAS_COHORT_ID, clusterRunId!, chartId)),
+            (resp) => {
+              if (!resp.ok) return grade(`T9.3-${chartId}`, "cluster chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+              const d = resp.data as any;
+              return grade(`T9.3-${chartId}`, "cluster chart", "PASS",
+                `chart_type=${d.chart_type}, title=${d.title}, data keys=[${d.data ? Object.keys(d.data).join(",") : typeof d.data}]`,
+                d);
+            },
+          );
+        }
+      }
+    }
   }
 
   // ====================================================================
@@ -631,20 +721,23 @@ async function main() {
   // ====================================================================
   console.log("\n─── GROUP 10: runAnalytics(regression) ───");
 
+  const regTarget = bestAnalyticsCols[0] ?? numericCols[0];
+  const regFeatures = bestAnalyticsCols.slice(1, 4);
+  console.log(`  Regression target: ${regTarget}, features: [${regFeatures.join(", ")}]`);
+
   if (numericCols.length >= 3) {
     let regRunId: string | null = null;
 
     const regSubmit = await run(
       "T10.1",
       "Regression: linear",
-      () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
         method: "POST",
         body: {
           task: {
-            type: "regression",
-            target: numericCols[0],
-            features: numericCols.slice(1, 4),
-            method: "linear",
+            type: "linear_regression",
+            target: { field: regTarget },
+            features: { numeric: Array.isArray(regFeatures) ? regFeatures : numericCols.slice(1, 4) },
           },
         },
       }),
@@ -662,19 +755,42 @@ async function main() {
     }
 
     if (regRunId) {
-      await run(
+      const regPoll = await run(
         "T10.2",
         "Regression: poll until complete",
         () => pollAnalytics(GWAS_COHORT_ID, regRunId!),
         (resp) => {
           if (!resp.ok) return grade("T10.2", "regression poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
           const d = resp.data as any;
-          if (d.status === "failed") return grade("T10.2", "regression poll", "FAIL", `Failed: ${d.error}`, d);
+          if (d.status === "failed") return grade("T10.2", "regression poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
           return grade("T10.2", "regression poll", "PASS",
-            `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}]`,
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
             d);
         },
       );
+
+      // Fetch regression charts (pred_vs_actual, residuals, coef_bar)
+      if (regPoll && (regPoll as any).ok) {
+        const rResult = ((regPoll as any).data as any)?.result;
+        if (rResult?.viz_charts?.length) {
+          for (const chart of rResult.viz_charts) {
+            const chartId = chart.chart_id ?? chart;
+            await run(
+              `T10.3-${chartId}`,
+              `Regression chart: ${chart.chart_type ?? chartId}`,
+              () => api(analyticsVizUrl(GWAS_COHORT_ID, regRunId!, chartId)),
+              (resp) => {
+                if (!resp.ok) return grade(`T10.3-${chartId}`, "reg chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+                const d = resp.data as any;
+                return grade(`T10.3-${chartId}`, "reg chart", "PASS",
+                  `chart_type=${d.chart_type}, title=${d.title}, data keys=[${d.data ? Object.keys(d.data).join(",") : typeof d.data}]`,
+                  d);
+              },
+            );
+          }
+        }
+      }
     }
   }
 
@@ -683,21 +799,25 @@ async function main() {
   // ====================================================================
   console.log("\n─── GROUP 11: runAnalytics(statistical_test) ───");
 
-  if (numericCols.length >= 1 && categoricalCols.length >= 1) {
+  const permAutoConfig = getAutoConfig("permutation_test");
+  const permX = permAutoConfig?.x_column ?? bestAnalyticsCols[0];
+  const permY = permAutoConfig?.y_column ?? bestAnalyticsCols[1];
+  console.log(`  Permutation test: x=${permX}, y=${permY} (source: ${permAutoConfig ? "auto_config" : "bestAnalyticsCols"})`);
+
+  if (numericCols.length >= 2) {
     let statRunId: string | null = null;
 
     const statSubmit = await run(
       "T11.1",
-      `Statistical test: anova on ${numericCols[0]} by ${categoricalCols[0]}`,
-      () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+      `Permutation test: ${permX} vs ${permY}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
         method: "POST",
         body: {
           task: {
-            type: "statistical_test",
-            test: "anova",
-            column: numericCols[0],
-            group_by: categoricalCols[0],
-            correction: "fdr_bh",
+            type: "permutation_test",
+            x_column: permX,
+            y_column: permY,
+            n_permutations: 1000,
           },
         },
       }),
@@ -722,9 +842,10 @@ async function main() {
         (resp) => {
           if (!resp.ok) return grade("T11.2", "stat poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
           const d = resp.data as any;
-          if (d.status === "failed") return grade("T11.2", "stat poll", "FAIL", `Failed: ${d.error}`, d);
+          if (d.status === "failed") return grade("T11.2", "stat poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
           return grade("T11.2", "stat poll", "PASS",
-            `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}]`,
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}]`,
             d);
         },
       );
@@ -732,19 +853,23 @@ async function main() {
   }
 
   // ====================================================================
-  // GROUP 12: runAnalytics — QQ plot
+  // GROUP 12: runAnalytics — multiple_testing_correction (QQ)
   // ====================================================================
-  console.log("\n─── GROUP 12: runAnalytics(qq_plot) ───");
+  console.log("\n─── GROUP 12: runAnalytics(multiple_testing_correction) ───");
 
-  if (pvalCol) {
+  const mtcAutoConfig = getAutoConfig("multiple_testing_correction");
+  const mtcPvalCol = mtcAutoConfig?.p_value_column ?? pvalCol;
+  console.log(`  MTC p_value_column: ${mtcPvalCol} (source: ${mtcAutoConfig ? "auto_config" : "pvalCol fallback"})`);
+
+  if (mtcPvalCol) {
     let qqRunId: string | null = null;
 
     const qqSubmit = await run(
       "T12.1",
-      `QQ plot: p_value_column=${pvalCol}`,
-      () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+      `Multiple testing correction (QQ): p_value_column=${mtcPvalCol}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
         method: "POST",
-        body: { task: { type: "qq_plot", p_value_column: pvalCol } },
+        body: { task: { type: "multiple_testing_correction", p_value_column: mtcPvalCol, method: "bh" } },
       }),
       (resp) => {
         if (!resp.ok) return grade("T12.1", "qq submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
@@ -760,61 +885,320 @@ async function main() {
     }
 
     if (qqRunId) {
-      await run(
+      const qqPoll = await run(
         "T12.2",
         "QQ plot: poll until complete",
         () => pollAnalytics(GWAS_COHORT_ID, qqRunId!),
         (resp) => {
           if (!resp.ok) return grade("T12.2", "qq poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
           const d = resp.data as any;
-          if (d.status === "failed") return grade("T12.2", "qq poll", "FAIL", `Failed: ${d.error}`, d);
+          if (d.status === "failed") return grade("T12.2", "qq poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
           return grade("T12.2", "qq poll", "PASS",
-            `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}], charts=${d.viz_charts?.length ?? 0}`,
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
             d);
         },
       );
+
+      // Fetch QQ chart (qq_plot)
+      if (qqPoll && (qqPoll as any).ok) {
+        const qqResult = ((qqPoll as any).data as any)?.result;
+        if (qqResult?.viz_charts?.length) {
+          for (const chart of qqResult.viz_charts) {
+            const chartId = chart.chart_id ?? chart;
+            await run(
+              `T12.3-${chartId}`,
+              `QQ chart: ${chart.chart_type ?? chartId}`,
+              () => api(analyticsVizUrl(GWAS_COHORT_ID, qqRunId!, chartId)),
+              (resp) => {
+                if (!resp.ok) return grade(`T12.3-${chartId}`, "qq chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+                const d = resp.data as any;
+                return grade(`T12.3-${chartId}`, "qq chart", "PASS",
+                  `chart_type=${d.chart_type}, title=${d.title}, data keys=[${d.data ? Object.keys(d.data).join(",") : typeof d.data}]`,
+                  d);
+              },
+            );
+          }
+        }
+      }
     }
   }
 
   // ====================================================================
-  // GROUP 13: runAnalytics — Manhattan plot
+  // GROUP 13: runAnalytics — feature_importance
   // ====================================================================
-  console.log("\n─── GROUP 13: runAnalytics(manhattan_plot) ───");
+  console.log("\n─── GROUP 13: runAnalytics(feature_importance) ───");
 
-  if (pvalCol) {
-    let manhattanRunId: string | null = null;
+  const fiTarget = regTarget;
+  const fiFeatures = regFeatures;
+  console.log(`  Feature importance target: ${fiTarget}, features: [${fiFeatures.join(", ")}]`);
 
-    const manhattanSubmit = await run(
+  if (numericCols.length >= 3) {
+    let fiRunId: string | null = null;
+
+    const fiSubmit = await run(
       "T13.1",
-      `Manhattan plot: p_value_column=${pvalCol}`,
-      () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+      `Feature importance: target=${fiTarget}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
         method: "POST",
-        body: { task: { type: "manhattan_plot", p_value_column: pvalCol } },
+        body: {
+          task: {
+            type: "feature_importance",
+            target: { field: fiTarget },
+            features: { numeric: Array.isArray(fiFeatures) ? fiFeatures : numericCols.slice(1, 4) },
+          },
+        },
       }),
       (resp) => {
-        if (!resp.ok) return grade("T13.1", "manhattan submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        if (!resp.ok) return grade("T13.1", "feat imp submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
         const d = resp.data as any;
-        return grade("T13.1", "manhattan submit", d.run_id ? "PASS" : "FAIL",
+        return grade("T13.1", "feat imp submit", d.run_id ? "PASS" : "FAIL",
           `run_id=${d.run_id}`,
           d);
       },
     );
 
-    if (manhattanSubmit && (manhattanSubmit as any).ok) {
-      manhattanRunId = ((manhattanSubmit as any).data as any)?.run_id ?? null;
+    if (fiSubmit && (fiSubmit as any).ok) {
+      fiRunId = ((fiSubmit as any).data as any)?.run_id ?? null;
     }
 
-    if (manhattanRunId) {
-      await run(
+    if (fiRunId) {
+      const fiPoll = await run(
         "T13.2",
-        "Manhattan plot: poll until complete",
-        () => pollAnalytics(GWAS_COHORT_ID, manhattanRunId!),
+        "Feature importance: poll until complete",
+        () => pollAnalytics(GWAS_COHORT_ID, fiRunId!),
         (resp) => {
-          if (!resp.ok) return grade("T13.2", "manhattan poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          if (!resp.ok) return grade("T13.2", "feat imp poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
           const d = resp.data as any;
-          if (d.status === "failed") return grade("T13.2", "manhattan poll", "FAIL", `Failed: ${d.error}`, d);
-          return grade("T13.2", "manhattan poll", "PASS",
-            `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}], charts=${d.viz_charts?.length ?? 0}`,
+          const result = d.result ?? d;
+          if (d.status === "failed") return grade("T13.2", "feat imp poll", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          return grade("T13.2", "feat imp poll", "PASS",
+            `status=${d.status}, metrics=[${result.metrics ? Object.keys(result.metrics).join(",") : "none"}], charts=${result.viz_charts?.length ?? 0}`,
+            d);
+        },
+      );
+
+      // Fetch feature importance charts
+      if (fiPoll && (fiPoll as any).ok) {
+        const fiResult = ((fiPoll as any).data as any)?.result;
+        if (fiResult?.viz_charts?.length) {
+          for (const chart of fiResult.viz_charts) {
+            const chartId = chart.chart_id ?? chart;
+            await run(
+              `T13.3-${chartId}`,
+              `Feat imp chart: ${chart.chart_type ?? chartId}`,
+              () => api(analyticsVizUrl(GWAS_COHORT_ID, fiRunId!, chartId)),
+              (resp) => {
+                if (!resp.ok) return grade(`T13.3-${chartId}`, "fi chart", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+                const d = resp.data as any;
+                return grade(`T13.3-${chartId}`, "fi chart", "PASS",
+                  `chart_type=${d.chart_type}, title=${d.title}, data keys=[${d.data ? Object.keys(d.data).join(",") : typeof d.data}]`,
+                  d);
+              },
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // ====================================================================
+  // GROUP 14: Additional analytics methods (GWAS cohort)
+  // ====================================================================
+  console.log("\n─── GROUP 14: Additional analytics methods ───");
+
+  // --- 14a: elastic_net ---
+  if (bestAnalyticsCols.length >= 3) {
+    const enTarget = bestAnalyticsCols[0];
+    const enFeatures = bestAnalyticsCols.slice(1, 4);
+
+    const enSubmit = await run(
+      "T14a.1",
+      `Elastic net: target=${enTarget}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
+        method: "POST",
+        body: {
+          task: {
+            type: "elastic_net",
+            target: { field: enTarget },
+            features: { numeric: enFeatures },
+            l1_ratio: 0.5,
+            lambda: 0.01,
+          },
+        },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T14a.1", "elastic_net submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T14a.1", "elastic_net submit", d.run_id ? "PASS" : "FAIL", `run_id=${d.run_id}`, d);
+      },
+    );
+
+    let enRunId: string | null = null;
+    if (enSubmit && (enSubmit as any).ok) {
+      enRunId = ((enSubmit as any).data as any)?.run_id ?? null;
+    }
+
+    if (enRunId) {
+      await run(
+        "T14a.2",
+        "Elastic net: poll",
+        () => pollAnalytics(GWAS_COHORT_ID, enRunId!),
+        (resp) => {
+          if (!resp.ok) return grade("T14a.2", "elastic_net poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          const d = resp.data as any;
+          if (d.status === "failed") return grade("T14a.2", "elastic_net poll", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
+          return grade("T14a.2", "elastic_net poll", "PASS",
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
+            d);
+        },
+      );
+    }
+  }
+
+  // --- 14b: hierarchical_clustering ---
+  if (bestAnalyticsCols.length >= 3) {
+    const hcFeatures = bestAnalyticsCols.slice(0, 4);
+
+    const hcSubmit = await run(
+      "T14b.1",
+      `Hierarchical clustering: ${hcFeatures.length} features`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
+        method: "POST",
+        body: {
+          task: {
+            type: "hierarchical_clustering",
+            features: { numeric: hcFeatures },
+            n_clusters: 3,
+            linkage: "ward",
+          },
+        },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T14b.1", "hier_cluster submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T14b.1", "hier_cluster submit", d.run_id ? "PASS" : "FAIL", `run_id=${d.run_id}`, d);
+      },
+    );
+
+    let hcRunId: string | null = null;
+    if (hcSubmit && (hcSubmit as any).ok) {
+      hcRunId = ((hcSubmit as any).data as any)?.run_id ?? null;
+    }
+
+    if (hcRunId) {
+      await run(
+        "T14b.2",
+        "Hierarchical clustering: poll",
+        () => pollAnalytics(GWAS_COHORT_ID, hcRunId!),
+        (resp) => {
+          if (!resp.ok) return grade("T14b.2", "hier_cluster poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          const d = resp.data as any;
+          if (d.status === "failed") return grade("T14b.2", "hier_cluster poll", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
+          return grade("T14b.2", "hier_cluster poll", "PASS",
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
+            d);
+        },
+      );
+    }
+  }
+
+  // --- 14c: bootstrap_ci ---
+  if (bestAnalyticsCols.length >= 2) {
+    const bsCols = bestAnalyticsCols.slice(0, 3);
+
+    const bsSubmit = await run(
+      "T14c.1",
+      `Bootstrap CI: ${bsCols.join("+")}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
+        method: "POST",
+        body: {
+          task: {
+            type: "bootstrap_ci",
+            statistic: { stat: "mean" },
+            columns: bsCols,
+            n_bootstrap: 500,
+            confidence: 0.95,
+          },
+        },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T14c.1", "bootstrap_ci submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T14c.1", "bootstrap_ci submit", d.run_id ? "PASS" : "FAIL", `run_id=${d.run_id}`, d);
+      },
+    );
+
+    let bsRunId: string | null = null;
+    if (bsSubmit && (bsSubmit as any).ok) {
+      bsRunId = ((bsSubmit as any).data as any)?.run_id ?? null;
+    }
+
+    if (bsRunId) {
+      await run(
+        "T14c.2",
+        "Bootstrap CI: poll",
+        () => pollAnalytics(GWAS_COHORT_ID, bsRunId!),
+        (resp) => {
+          if (!resp.ok) return grade("T14c.2", "bootstrap_ci poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          const d = resp.data as any;
+          if (d.status === "failed") return grade("T14c.2", "bootstrap_ci poll", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
+          return grade("T14c.2", "bootstrap_ci poll", "PASS",
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
+            d);
+        },
+      );
+    }
+  }
+
+  // --- 14d: logistic_regression (need a binary-ish target) ---
+  // Use a categorical column or create a binary split from a numeric column
+  const logRegCategoricalTarget = categoricalCols.find((c: string) =>
+    c.includes("chromosome") || c.includes("ref_type") || c.includes("status"),
+  );
+  if (logRegCategoricalTarget && bestAnalyticsCols.length >= 2) {
+    const lrFeatures = bestAnalyticsCols.slice(0, 3);
+
+    const lrSubmit = await run(
+      "T14d.1",
+      `Logistic regression: target=${logRegCategoricalTarget}`,
+      () => api(analyticsUrl(GWAS_COHORT_ID), {
+        method: "POST",
+        body: {
+          task: {
+            type: "logistic_regression",
+            target: { field: logRegCategoricalTarget, positive_values: ["10"] },
+            features: { numeric: lrFeatures },
+          },
+        },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T14d.1", "logistic_reg submit", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T14d.1", "logistic_reg submit", d.run_id ? "PASS" : "FAIL", `run_id=${d.run_id}`, d);
+      },
+    );
+
+    let lrRunId: string | null = null;
+    if (lrSubmit && (lrSubmit as any).ok) {
+      lrRunId = ((lrSubmit as any).data as any)?.run_id ?? null;
+    }
+
+    if (lrRunId) {
+      await run(
+        "T14d.2",
+        "Logistic regression: poll",
+        () => pollAnalytics(GWAS_COHORT_ID, lrRunId!),
+        (resp) => {
+          if (!resp.ok) return grade("T14d.2", "logistic_reg poll", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          const d = resp.data as any;
+          if (d.status === "failed") return grade("T14d.2", "logistic_reg poll", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
+          return grade("T14d.2", "logistic_reg poll", "PASS",
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}], charts=${r.viz_charts?.length ?? 0}`,
             d);
         },
       );
@@ -822,14 +1206,162 @@ async function main() {
   }
 
   // ====================================================================
-  // GROUP 14: createCohort (variant_list) + schema
+  // GROUP 15: Typed cohorts — credible_set + fine_mapping
   // ====================================================================
-  console.log("\n─── GROUP 14: createCohort (variant_list) ───");
+  console.log("\n─── GROUP 15: Typed cohorts (credible_set, fine_mapping) ───");
+
+  const CREDIBLE_SET_ID = "23fca0a7-6aef-475d-b006-f028ecd5f5b8";
+  const FINE_MAPPING_ID = "4b298756-01b3-49c8-8416-ffe9641a1ffb";
+
+  // --- 15a: credible_set schema + rows ---
+  let csSchemaData: any = null;
+  await run(
+    "T15a.1",
+    "Credible set: schema",
+    () => api(`/cohorts/${CREDIBLE_SET_ID}/schema`),
+    (resp) => {
+      if (!resp.ok) return grade("T15a.1", "cs schema", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      const d = resp.data as any;
+      csSchemaData = d;
+      return grade("T15a.1", "cs schema", "PASS",
+        `row_count=${d.row_count}, data_type=${d.data_type}, columns=${d.columns?.length}`,
+        d);
+    },
+  );
+
+  if (csSchemaData) {
+    const csNumeric = csSchemaData.columns?.filter((c: any) => c.kind === "numeric")?.map((c: any) => c.name) ?? [];
+    const csSelect = csNumeric.slice(0, 5);
+    console.log(`  CS numeric cols (${csNumeric.length}): [${csNumeric.slice(0, 8).join(", ")}${csNumeric.length > 8 ? "..." : ""}]`);
+
+    await run(
+      "T15a.2",
+      "Credible set: top rows",
+      () => api(`/cohorts/${CREDIBLE_SET_ID}/rows`, {
+        method: "POST",
+        body: { limit: 5, select: csSelect },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T15a.2", "cs rows", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T15a.2", "cs rows", d.rows?.length ? "PASS" : "PARTIAL",
+          `${d.rows?.length ?? 0} rows, total=${d.total}`,
+          d);
+      },
+    );
+
+    // PCA on credible_set
+    if (csNumeric.length >= 3) {
+      const csPcaCols = csNumeric.filter((c: string) => !INTERNAL_COLS.has(c)).slice(0, 5);
+      await run(
+        "T15a.3",
+        `Credible set PCA: ${csPcaCols.slice(0, 3).join(",")}...`,
+        async () => {
+          const submit = await api(analyticsUrl(CREDIBLE_SET_ID), {
+            method: "POST",
+            body: { task: { type: "pca", features: { numeric: csPcaCols }, n_components: 2 } },
+          });
+          if (!submit.ok) return submit;
+          const runId = (submit.data as any).run_id;
+          if (!runId) return submit;
+          return pollAnalytics(CREDIBLE_SET_ID, runId);
+        },
+        (resp) => {
+          if (!resp.ok) return grade("T15a.3", "cs PCA", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          const d = resp.data as any;
+          if (d.status === "failed") return grade("T15a.3", "cs PCA", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          const r = d.result ?? d;
+          return grade("T15a.3", "cs PCA", "PASS",
+            `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}]`,
+            d);
+        },
+      );
+    }
+  }
+
+  // --- 15b: fine_mapping schema + rows ---
+  let fmSchemaData: any = null;
+  await run(
+    "T15b.1",
+    "Fine mapping: schema",
+    () => api(`/cohorts/${FINE_MAPPING_ID}/schema`),
+    (resp) => {
+      if (!resp.ok) return grade("T15b.1", "fm schema", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      const d = resp.data as any;
+      fmSchemaData = d;
+      return grade("T15b.1", "fm schema", "PASS",
+        `row_count=${d.row_count}, data_type=${d.data_type}, columns=${d.columns?.length}`,
+        d);
+    },
+  );
+
+  if (fmSchemaData) {
+    const fmNumeric = fmSchemaData.columns?.filter((c: any) => c.kind === "numeric")?.map((c: any) => c.name) ?? [];
+    const fmSelect = fmNumeric.slice(0, 5);
+    console.log(`  FM numeric cols (${fmNumeric.length}): [${fmNumeric.slice(0, 8).join(", ")}${fmNumeric.length > 8 ? "..." : ""}]`);
+
+    await run(
+      "T15b.2",
+      "Fine mapping: top rows",
+      () => api(`/cohorts/${FINE_MAPPING_ID}/rows`, {
+        method: "POST",
+        body: { limit: 5, select: fmSelect },
+      }),
+      (resp) => {
+        if (!resp.ok) return grade("T15b.2", "fm rows", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+        const d = resp.data as any;
+        return grade("T15b.2", "fm rows", d.rows?.length ? "PASS" : "PARTIAL",
+          `${d.rows?.length ?? 0} rows, total=${d.total}`,
+          d);
+      },
+    );
+
+    // Regression on fine_mapping
+    if (fmNumeric.length >= 3) {
+      const fmCols = fmNumeric.filter((c: string) => !INTERNAL_COLS.has(c)).slice(0, 5);
+      if (fmCols.length >= 2) {
+        await run(
+          "T15b.3",
+          `Fine mapping regression: target=${fmCols[0]}`,
+          async () => {
+            const submit = await api(analyticsUrl(FINE_MAPPING_ID), {
+              method: "POST",
+              body: {
+                task: {
+                  type: "linear_regression",
+                  target: { field: fmCols[0] },
+                  features: { numeric: fmCols.slice(1, 4) },
+                },
+              },
+            });
+            if (!submit.ok) return submit;
+            const runId = (submit.data as any).run_id;
+            if (!runId) return submit;
+            return pollAnalytics(FINE_MAPPING_ID, runId);
+          },
+          (resp) => {
+            if (!resp.ok) return grade("T15b.3", "fm regression", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+            const d = resp.data as any;
+            if (d.status === "failed") return grade("T15b.3", "fm regression", "FAIL", `Failed: ${d.error_message ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+            const r = d.result ?? d;
+            return grade("T15b.3", "fm regression", "PASS",
+              `status=${d.status}, metrics=[${r.metrics ? Object.keys(r.metrics).join(",") : "none"}]`,
+              d);
+          },
+        );
+      }
+    }
+  }
+
+  // ====================================================================
+  // GROUP 16: createCohort (variant_list) + schema
+  // ====================================================================
+  console.log("\n─── GROUP 16: createCohort (variant_list) ───");
 
   let variantCohortId: string | null = null;
 
   const createResult = await run(
-    "T14.1",
+    "T16.1",
     "Create variant_list cohort from 20 rsIDs",
     () => api("/cohorts", {
       method: "POST",
@@ -841,9 +1373,9 @@ async function main() {
       timeout: 60_000,
     }),
     (resp) => {
-      if (!resp.ok) return grade("T14.1", "create cohort", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+      if (!resp.ok) return grade("T16.1", "create cohort", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
       const d = resp.data as any;
-      return grade("T14.1", "create cohort", d.id ? "PASS" : "FAIL",
+      return grade("T16.1", "create cohort", d.id ? "PASS" : "FAIL",
         `id=${d.id}, status=${d.status}`,
         d);
     },
@@ -856,7 +1388,7 @@ async function main() {
     // Poll until ready
     if (variantCohortId) {
       await run(
-        "T14.2",
+        "T16.2",
         "Poll cohort status until ready",
         async () => {
           const deadline = Date.now() + 120_000;
@@ -870,39 +1402,47 @@ async function main() {
           return { status: 408, ok: false, data: { error: "timeout" }, raw: "timeout" };
         },
         (resp) => {
-          if (!resp.ok) return grade("T14.2", "poll status", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
+          if (!resp.ok) return grade("T16.2", "poll status", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
           const d = resp.data as any;
-          return grade("T14.2", "poll status", d.status === "ready" ? "PASS" : "FAIL",
+          return grade("T16.2", "poll status", d.status === "ready" ? "PASS" : "FAIL",
             `status=${d.status}, progress=${JSON.stringify(d.progress)}`,
             d);
         },
       );
 
-      // Schema for variant_list cohort
+      // Schema for variant_list cohort — also discover available_methods
+      let variantSchemaData: any = null;
       await run(
-        "T14.3",
+        "T16.3",
         "Schema for variant_list cohort",
         () => api(`/cohorts/${variantCohortId}/schema`),
         (resp) => {
-          if (!resp.ok) return grade("T14.3", "variant schema", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
+          if (!resp.ok) return grade("T16.3", "variant schema", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
           const d = resp.data as any;
-          return grade("T14.3", "variant schema", "PASS",
-            `row_count=${d.row_count}, data_type=${d.data_type}, columns=${d.columns?.length}`,
+          variantSchemaData = d;
+          return grade("T16.3", "variant schema", "PASS",
+            `row_count=${d.row_count}, data_type=${d.data_type}, columns=${d.columns?.length}, available_methods=${d.available_methods?.length ?? 0}`,
             d);
         },
       );
 
-      // PCA on variant_list cohort
+      // PCA on variant_list cohort — use schema columns or available_methods auto_config
+      const vlPcaAutoConfig = variantSchemaData?.available_methods?.find((m: any) => m.method === "pca")?.auto_config;
+      const vlPcaFeatures = vlPcaAutoConfig?.features?.numeric ?? vlPcaAutoConfig?.features ??
+        variantSchemaData?.columns?.filter((c: any) => c.kind === "numeric")?.map((c: any) => c.name)?.slice(0, 5) ??
+        ["cadd_phred", "revel", "gnomad_af", "fathmm_xf", "apc_conservation"];
+      console.log(`    variant PCA features: [${vlPcaFeatures.join(", ")}] (source: ${vlPcaAutoConfig ? "auto_config" : "schema/fallback"})`);
+
       await run(
-        "T14.4",
-        "PCA on variant_list cohort (cadd, revel, gnomad_af, fathmm_xf, apc_conservation)",
+        "T16.4",
+        `PCA on variant_list cohort (${vlPcaFeatures.slice(0, 3).join(", ")}...)`,
         async () => {
-          const submit = await api(`/cohorts/${variantCohortId}/analytics/run`, {
+          const submit = await api(analyticsUrl(variantCohortId!), {
             method: "POST",
             body: {
               task: {
                 type: "pca",
-                columns: ["cadd_phred", "revel", "gnomad_af", "fathmm_xf", "apc_conservation"],
+                features: { numeric: vlPcaFeatures },
                 n_components: 2,
               },
             },
@@ -913,10 +1453,10 @@ async function main() {
           return pollAnalytics(variantCohortId!, runId);
         },
         (resp) => {
-          if (!resp.ok) return grade("T14.4", "variant PCA", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
+          if (!resp.ok) return grade("T16.4", "variant PCA", "FAIL", `HTTP ${resp.status}: ${resp.raw.slice(0, 300)}`);
           const d = resp.data as any;
-          if (d.status === "failed") return grade("T14.4", "variant PCA", "FAIL", `Failed: ${d.error}`, d);
-          return grade("T14.4", "variant PCA", "PASS",
+          if (d.status === "failed") return grade("T16.4", "variant PCA", "FAIL", `Failed: ${d.error_message ?? d.error ?? "unknown"} (code: ${d.error_code ?? "none"})`, d);
+          return grade("T16.4", "variant PCA", "PASS",
             `status=${d.status}, metrics=[${d.metrics ? Object.keys(d.metrics).join(",") : "none"}], charts=${d.viz_charts?.length ?? 0}`,
             d);
         },
@@ -925,52 +1465,52 @@ async function main() {
   }
 
   // ====================================================================
-  // GROUP 15: Error handling
+  // GROUP 17: Error handling
   // ====================================================================
-  console.log("\n─── GROUP 15: Error handling ───");
+  console.log("\n─── GROUP 17: Error handling ───");
 
   // Non-existent cohort
   await run(
-    "T15.1",
+    "T17.1",
     "Schema: nonexistent cohort",
     () => api("/cohorts/nonexistent-abc-123/schema"),
     (resp) => {
-      if (resp.status === 404) return grade("T15.1", "404", "PASS", `Correct 404: ${resp.raw.slice(0, 100)}`);
-      if (!resp.ok) return grade("T15.1", "404", "PARTIAL", `Got ${resp.status} instead of 404: ${resp.raw.slice(0, 100)}`);
-      return grade("T15.1", "404", "FAIL", "Expected error but got success");
+      if (resp.status === 404 || resp.status === 400) return grade("T17.1", "bad id", "PASS", `Correct ${resp.status}: ${resp.raw.slice(0, 100)}`);
+      if (!resp.ok) return grade("T17.1", "bad id", "PARTIAL", `Got ${resp.status} instead of 400/404: ${resp.raw.slice(0, 100)}`);
+      return grade("T17.1", "bad id", "FAIL", "Expected error but got success");
     },
   );
 
   // Invalid analytics task
   await run(
-    "T15.2",
+    "T17.2",
     "Analytics: invalid task type",
-    () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+    () => api(analyticsUrl(GWAS_COHORT_ID), {
       method: "POST",
       body: { task: { type: "invalid_type" } },
     }),
     (resp) => {
-      if (resp.status >= 400 && resp.status < 500) return grade("T15.2", "bad task", "PASS", `Correct ${resp.status}: ${resp.raw.slice(0, 200)}`);
-      return grade("T15.2", "bad task", "FAIL", `Unexpected ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      if (resp.status >= 400 && resp.status < 500) return grade("T17.2", "bad task", "PASS", `Correct ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      return grade("T17.2", "bad task", "FAIL", `Unexpected ${resp.status}: ${resp.raw.slice(0, 200)}`);
     },
   );
 
   // PCA with bad columns
   await run(
-    "T15.3",
+    "T17.3",
     "Analytics: PCA with invalid columns",
-    () => api(`/cohorts/${GWAS_COHORT_ID}/analytics/run`, {
+    () => api(analyticsUrl(GWAS_COHORT_ID), {
       method: "POST",
-      body: { task: { type: "pca", columns: ["nonexistent_col_1", "nonexistent_col_2"] } },
+      body: { task: { type: "pca", features: { numeric: ["nonexistent_col_1", "nonexistent_col_2"] } } },
     }),
     (resp) => {
       // Could be immediate 400 or async failure
-      if (resp.status >= 400 && resp.status < 500) return grade("T15.3", "bad cols", "PASS", `Immediate error ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      if (resp.status >= 400 && resp.status < 500) return grade("T17.3", "bad cols", "PASS", `Immediate error ${resp.status}: ${resp.raw.slice(0, 200)}`);
       if (resp.ok) {
         const d = resp.data as any;
-        if (d.run_id) return grade("T15.3", "bad cols", "PARTIAL", `Accepted (async validation) — run_id=${d.run_id}. Will fail during polling.`);
+        if (d.run_id) return grade("T17.3", "bad cols", "PARTIAL", `Accepted (async validation) — run_id=${d.run_id}. Will fail during polling.`);
       }
-      return grade("T15.3", "bad cols", "PARTIAL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
+      return grade("T17.3", "bad cols", "PARTIAL", `HTTP ${resp.status}: ${resp.raw.slice(0, 200)}`);
     },
   );
 

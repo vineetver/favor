@@ -70,7 +70,6 @@ import { AgentErrorBoundary } from "./error-boundary";
 import { ActivityTimeline } from "./tool-renderers";
 import { VizSpecPanel } from "./viz-spec-panel";
 import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
-import type { BatchResultEntry } from "../tools/run-batch";
 import { generateVizSpecs } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
 
@@ -146,6 +145,13 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
         return ["Show the top pathogenic variants", "Bridge to knowledge graph"];
       case "bioContext":
         return ["What are the key intermediates?", "Explore a different path"];
+      // V2 tools
+      case "Run":
+        return ["Tell me more about these results", "What else can we explore?"];
+      case "Search":
+        return ["Get details on the top result", "Search for something related"];
+      case "Read":
+        return ["What does this data tell us?", "Can you summarize the key findings?"];
     }
   }
 
@@ -267,7 +273,7 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
         const output = p.output as VariantTriageOutput | BioContextOutput;
         if (output.vizSpecs?.length) acc.push(...output.vizSpecs);
       } else if (name === "runBatch") {
-        const batch = p.output as { results?: BatchResultEntry[] };
+        const batch = p.output as { results?: Array<{ toolName: string; input?: Record<string, unknown>; output?: unknown; error?: boolean }> };
         for (const entry of batch.results ?? []) {
           if (entry.error || !entry.output) continue;
           const vizResults = generateVizSpecs(entry.toolName, entry.output, entry.input ?? {}, acc.length);

@@ -394,3 +394,111 @@ export async function cohortExport(
     ),
   );
 }
+
+// ============================================================================
+// Analytics Runs
+// ============================================================================
+
+export interface AnalyticsRunListItem {
+  id: string;
+  cohort_id: string;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  task_type?: string;
+  created_at?: string;
+  viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
+}
+
+interface AnalyticsRunListResponse {
+  runs: AnalyticsRunListItem[];
+  count: number;
+}
+
+/**
+ * List analytics runs for a cohort.
+ */
+export async function listAnalyticsRuns(
+  cohortId: string,
+  opts?: { status?: string; limit?: number },
+): Promise<AnalyticsRunListResponse> {
+  const params = new URLSearchParams();
+  if (opts?.status) params.set("status", opts.status);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+
+  return withRetry(() =>
+    fetch(
+      `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/analytics/runs${qs ? `?${qs}` : ""}`,
+      { credentials: "include" },
+    ).then((res) =>
+      handleResponse<AnalyticsRunListResponse>(
+        res,
+        `/cohorts/${cohortId}/analytics/runs`,
+      ),
+    ),
+  );
+}
+
+// ============================================================================
+// Cohort Schema & Sample (client-side)
+// ============================================================================
+
+export interface SchemaColumn {
+  name: string;
+  kind: "numeric" | "categorical" | "identity" | "array" | "select";
+  namespace?: string;
+  role?: string;
+}
+
+export interface CohortSchemaResponse {
+  row_count?: number;
+  text_summary?: string;
+  data_type?: string;
+  columns?: SchemaColumn[];
+  capabilities?: Record<string, boolean>;
+  available_methods?: Array<{ method: string; category: string; description: string; available: boolean }>;
+}
+
+/**
+ * Fetch cohort schema (columns, row count, data type).
+ */
+export async function getCohortSchemaClient(
+  id: string,
+): Promise<CohortSchemaResponse> {
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${encodeURIComponent(id)}/schema`, {
+      credentials: "include",
+    }).then((res) =>
+      handleResponse<CohortSchemaResponse>(res, `/cohorts/${id}/schema`),
+    ),
+  );
+}
+
+export interface CohortRowsResponse {
+  rows: Record<string, unknown>[];
+  total: number;
+  text_summary?: string;
+}
+
+/**
+ * Fetch a sample of rows from a cohort.
+ */
+export async function getCohortSampleClient(
+  id: string,
+  opts?: { limit?: number; select?: string[] },
+): Promise<CohortRowsResponse> {
+  const body: Record<string, unknown> = {
+    limit: opts?.limit ?? 10,
+  };
+  if (opts?.select?.length) body.select = opts.select;
+
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${encodeURIComponent(id)}/rows`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    }).then((res) =>
+      handleResponse<CohortRowsResponse>(res, `/cohorts/${id}/rows`),
+    ),
+  );
+}

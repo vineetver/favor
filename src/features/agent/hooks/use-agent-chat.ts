@@ -3,7 +3,7 @@
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { AgentUIMessage } from "../agent";
+import type { AgentV2UIMessage as AgentUIMessage } from "../agent-v2";
 import { DEFAULT_SYNTHESIS_MODEL, type SynthesisModelId } from "../lib/models";
 import type { PromptInputMessage } from "@shared/components/ai-elements/prompt-input";
 import {

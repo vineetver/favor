@@ -516,6 +516,8 @@ function getPlanStepLabel(step: PlanStep): string {
     return `${agentLabel}: ${step.task}`;
   }
   if (step.do === "synthesize") return "Synthesize findings";
+  if (step.do === "direct") return step.description || "Processing";
+  if (step.do === "batch") return step.description || "Batch processing";
   return "Processing";
 }
 
@@ -525,6 +527,20 @@ function computePlanStatuses(
   siblingToolParts: ToolUIPart[],
   isStreaming: boolean,
 ): PlanItemStatus[] {
+  // Collect tool part names claimed by resolve/delegate steps
+  const claimedNames = new Set<string>();
+  for (const step of steps) {
+    const toolName = planStepToToolName(step);
+    if (toolName) claimedNames.add(normToolName(toolName));
+  }
+
+  // Unclaimed tool parts = tools triggered by direct/batch steps
+  const unclaimedParts = siblingToolParts.filter((p) => {
+    const name = normToolName(p.toolName ?? (p.type ?? "").replace(/^tool-/, ""));
+    // Not claimed by any resolve/delegate step
+    return ![...claimedNames].some((cn) => toolNameMatches(cn, name));
+  });
+
   const getToolPartStatus = (toolName: string): PlanItemStatus => {
     const matching = siblingToolParts.filter((p) => {
       const name = (p.toolName ?? (p.type ?? "").replace(/^tool-/, ""));
@@ -540,7 +556,23 @@ function computePlanStatuses(
     return "pending";
   };
 
+  /** Status for direct/batch steps: derived from unclaimed tool parts */
+  const getUnclaimedStatus = (): PlanItemStatus => {
+    if (unclaimedParts.length === 0) {
+      // No unclaimed tools yet — in-progress if streaming (tools may still come), pending otherwise
+      return isStreaming ? "in-progress" : "pending";
+    }
+    const hasSuccess = unclaimedParts.some((p) => p.state === "output-available");
+    const hasError = unclaimedParts.some((p) => p.state === "output-error");
+    const hasRunning = unclaimedParts.some((p) => RUNNING_STATES.has(p.state ?? ""));
+    if (hasRunning) return "in-progress";
+    if (hasSuccess) return "completed";
+    if (hasError) return "errored";
+    return "in-progress"; // parts exist but in unknown state — treat as running
+  };
+
   const toolStepStatuses = steps.map((step) => {
+    if (step.do === "direct" || step.do === "batch") return getUnclaimedStatus();
     const toolName = planStepToToolName(step);
     if (!toolName) return "pending" as PlanItemStatus; // synthesize step
     return getToolPartStatus(toolName);
@@ -606,6 +638,7 @@ function statusTextClass(status: PlanItemStatus): string {
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   analyzeCohort: "Analyze Cohort",
+  runAnalytics: "Run Analytics",
   createCohort: "Create Cohort",
   getCohortSchema: "Cohort Schema",
   lookupVariant: "Lookup Variant",
@@ -624,6 +657,12 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   compareEntities: "Compare",
   runEnrichment: "Enrichment",
   getGraphSchema: "Graph Schema",
+  // V2 tools
+  State: "State",
+  Read: "Read",
+  Search: "Search",
+  Run: "Run",
+  AskUser: "Ask User",
 };
 
 function TraceStatusDot({ status }: { status: "completed" | "error" }) {
@@ -671,6 +710,30 @@ function TraceInputDisplay({ input }: { input: Record<string, unknown> }) {
     <pre className="text-[11px] text-foreground/90 font-mono whitespace-pre-wrap break-all overflow-auto max-h-48 leading-relaxed">
       {JSON.stringify(input, null, 2)}
     </pre>
+  );
+}
+
+/** Truncated JSON display with expandable "show more" */
+function TruncatedJson({ data }: { data: unknown }) {
+  const [expanded, setExpanded] = useState(false);
+  const json = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  const isLong = json.length > 2000;
+
+  return (
+    <div>
+      <pre className="text-[11px] text-foreground/90 font-mono whitespace-pre-wrap break-all overflow-auto max-h-64 leading-relaxed">
+        {isLong && !expanded ? json.slice(0, 2000) + "\n..." : json}
+      </pre>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1023,6 +1086,21 @@ function DirectToolLine({ part }: { part: ToolUIPart }) {
 
   const hasOutput = isComplete || isError;
 
+  // Extract brief output summary for inline display
+  const outputBrief = (() => {
+    if (!hasOutput || !part.output || typeof part.output !== "object") return null;
+    const out = part.output as Record<string, unknown>;
+    if (out.error === true) {
+      const msg = (out.message as string) ?? "Error";
+      return msg.length > 60 ? msg.slice(0, 57) + "..." : msg;
+    }
+    if (typeof out.text_summary === "string") {
+      const ts = out.text_summary as string;
+      return ts.length > 80 ? ts.slice(0, 77) + "..." : ts;
+    }
+    return null;
+  })();
+
   // Subagent tools with output → expandable with trace
   if (SUBAGENT_TOOL_NAMES.has(toolName) && hasOutput && part.output) {
     const output = part.output as VariantTriageOutput | BioContextOutput;
@@ -1076,9 +1154,57 @@ function DirectToolLine({ part }: { part: ToolUIPart }) {
         </Collapsible>
       );
     }
+
+    // Generic fallback: show raw input/output JSON for any tool with output
+    return (
+      <Collapsible>
+        <CollapsibleTrigger className="group/dt flex w-full items-center gap-2 py-0.5 text-sm rounded-md hover:bg-accent/30 px-1 -mx-1">
+          <StatusIcon status={status} />
+          <span className={cn(statusTextClass(status), "flex-1 text-left min-w-0")}>
+            {inputSummary ?? displayName}
+          </span>
+          {outputBrief && (
+            <span className={cn(
+              "text-[11px] truncate max-w-[40%]",
+              isError ? "text-destructive/70" : "text-muted-foreground",
+            )}>
+              {outputBrief}
+            </span>
+          )}
+          <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/40 transition-transform duration-200 group-data-[state=open]/dt:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="ml-6 mt-1.5 mb-1 space-y-2.5">
+            {part.input != null && typeof part.input === "object" && Object.keys(part.input as object).length > 0 && (
+              <div className="space-y-1">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Input
+                </span>
+                <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-2">
+                  <TraceInputDisplay input={part.input as Record<string, unknown>} />
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                Output
+              </span>
+              <div className={cn(
+                "rounded-md border px-2.5 py-2",
+                isError
+                  ? "bg-destructive/[0.02] border-destructive/10"
+                  : "bg-muted/40 border-border/50",
+              )}>
+                <TruncatedJson data={part.output} />
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
   }
 
-  // Simple line
+  // Simple line (no output yet)
   return (
     <div className="flex items-center gap-2 py-0.5 text-sm">
       <StatusIcon status={status} />
@@ -1115,25 +1241,47 @@ export function ActivityTimeline({
   // Plan-driven mode
   if (plan) {
     const statuses = computePlanStatuses(plan.steps, siblingToolParts, isStreaming);
+
+    // Collect tool names claimed by resolve/delegate steps
+    const claimedNames = new Set<string>();
+    for (const step of plan.steps) {
+      const tn = planStepToToolName(step);
+      if (tn) claimedNames.add(normToolName(tn));
+    }
+    // Unclaimed = direct tool calls triggered by direct/batch steps
+    const unclaimedParts = siblingToolParts.filter((p) => {
+      const name = normToolName(p.toolName ?? (p.type ?? "").replace(/^tool-/, ""));
+      return ![...claimedNames].some((cn) => toolNameMatches(cn, name));
+    });
+
     return (
       <div className="space-y-0.5 py-1">
         {plan.steps.map((step, idx) => (
-          <PlanStepLine
-            key={`${step.do}-${idx}`}
-            step={step}
-            status={statuses[idx]}
-            subagentPart={
-              step.do === "delegate"
-                ? siblingToolParts.find((p) => {
-                    const name = (p.toolName ?? p.type ?? "").replace(
-                      /^tool-/,
-                      "",
-                    );
-                    return toolNameMatches(step.agent, name);
-                  })
-                : undefined
-            }
-          />
+          <div key={`${step.do}-${idx}`}>
+            <PlanStepLine
+              step={step}
+              status={statuses[idx]}
+              subagentPart={
+                step.do === "delegate"
+                  ? siblingToolParts.find((p) => {
+                      const name = (p.toolName ?? p.type ?? "").replace(
+                        /^tool-/,
+                        "",
+                      );
+                      return toolNameMatches(step.agent, name);
+                    })
+                  : undefined
+              }
+            />
+            {/* Show actual tool calls under direct/batch steps */}
+            {(step.do === "direct" || step.do === "batch") && unclaimedParts.length > 0 && (
+              <div className="ml-6 space-y-0.5">
+                {unclaimedParts.map((part, pidx) => (
+                  <DirectToolLine key={part.toolCallId ?? `unclaimed-${pidx}`} part={part} />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     );
@@ -1141,11 +1289,25 @@ export function ActivityTimeline({
 
   // No-plan fallback
   if (siblingToolParts.length === 0) return null;
+
+  const completedParts = siblingToolParts.filter(
+    (p) => p.state === "output-available" || p.state === "output-error",
+  );
+  const toolSequence = completedParts.map((p) => {
+    const name = (p.toolName ?? p.type ?? "").replace(/^tool-/, "");
+    return TOOL_DISPLAY_NAMES[name] ?? name;
+  });
+
   return (
     <div className="space-y-0.5 py-1">
       {siblingToolParts.map((part, idx) => (
         <DirectToolLine key={part.toolCallId ?? `tool-${idx}`} part={part} />
       ))}
+      {completedParts.length >= 2 && !isStreaming && (
+        <div className="pt-1 text-[10px] text-muted-foreground/60">
+          {completedParts.length} steps &middot; {toolSequence.join(" → ")}
+        </div>
+      )}
     </div>
   );
 }
@@ -1258,6 +1420,102 @@ export function renderToolOutput(
 }
 
 // ---------------------------------------------------------------------------
+// V2 Run command summary helper
+// ---------------------------------------------------------------------------
+
+function getRunCommandSummary(
+  command: string,
+  inp: Record<string, unknown>,
+): string {
+  switch (command) {
+    case "explore": {
+      const seeds = inp.seeds as Array<{ label?: string; id?: string }> | undefined;
+      const into = inp.into as string[] | undefined;
+      const seedLabel = seeds?.[0]?.label ?? seeds?.[0]?.id ?? "entities";
+      const targetLabel = into?.join(", ") ?? "neighbors";
+      return `explore ${seedLabel} → ${targetLabel}`;
+    }
+    case "rows": {
+      const sort = inp.sort as string | undefined;
+      const limit = inp.limit as number | undefined;
+      const parts = ["rows"];
+      if (sort) parts.push(`sort: ${sort}`);
+      if (limit) parts.push(`limit: ${limit}`);
+      return parts.length > 1 ? `${parts[0]} (${parts.slice(1).join(", ")})` : parts[0];
+    }
+    case "groupby": {
+      const groupBy = inp.group_by as string | undefined;
+      return groupBy ? `group by ${groupBy}` : "group by";
+    }
+    case "correlation": {
+      const x = inp.x as string | undefined;
+      const y = inp.y as string | undefined;
+      return x && y ? `correlation: ${x} vs ${y}` : "correlation";
+    }
+    case "derive": {
+      const label = inp.label as string | undefined;
+      return label ? `derive cohort: ${label}` : "derive cohort";
+    }
+    case "prioritize": {
+      const criteria = inp.criteria as Array<{ column?: string }> | undefined;
+      const cols = criteria?.map((c) => c.column).filter(Boolean).join(", ");
+      return cols ? `prioritize by ${cols}` : "prioritize";
+    }
+    case "compute": {
+      const weights = inp.weights as Array<{ column?: string }> | undefined;
+      const cols = weights?.map((w) => w.column).filter(Boolean).join(", ");
+      return cols ? `compute score: ${cols}` : "compute score";
+    }
+    case "analytics": {
+      const method = inp.method as string | undefined;
+      return method ? `analytics: ${method.replace(/_/g, " ")}` : "analytics";
+    }
+    case "analytics.poll": {
+      return "polling analytics result";
+    }
+    case "viz": {
+      const chartId = inp.chart_id as string | undefined;
+      return chartId ? `viz: ${chartId}` : "generating visualization";
+    }
+    case "export":
+      return "export cohort";
+    case "create_cohort": {
+      const refs = inp.references as string[] | undefined;
+      return refs?.length ? `create cohort (${refs.length} variants)` : "create cohort";
+    }
+    case "enrich": {
+      const inputSet = inp.input_set as unknown[] | undefined;
+      const target = inp.target as string | undefined;
+      return target
+        ? `enrich ${inputSet?.length ?? "?"} genes → ${target}`
+        : `enrich ${inputSet?.length ?? "?"} genes`;
+    }
+    case "traverse":
+      return "traverse graph";
+    case "paths": {
+      const from = inp.from as string | undefined;
+      const to = inp.to as string | undefined;
+      return from && to ? `paths: ${from} → ${to}` : "find paths";
+    }
+    case "compare": {
+      const entities = inp.entities as Array<{ label?: string; id?: string }> | undefined;
+      const labels = entities?.map((e) => e.label ?? e.id ?? "?").join(" vs ");
+      return labels ? `compare ${labels}` : "compare entities";
+    }
+    case "pin":
+      return "pin entities";
+    case "set_cohort":
+      return "set active cohort";
+    case "remember": {
+      const key = inp.key as string | undefined;
+      return key ? `remember: ${key}` : "saving memory";
+    }
+    default:
+      return command;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Human-readable tool input summaries
 // ---------------------------------------------------------------------------
 
@@ -1356,6 +1614,12 @@ export function getToolInputSummary(
         ? `Running ${op} on cohort ${cohortId}`
         : "Analyzing cohort";
     }
+    case "runAnalytics": {
+      const task = inp.task as { type?: string } | undefined;
+      const taskType = task?.type;
+      if (taskType === "gwas_qc") return "Running GWAS QC";
+      return taskType ? `Running ${taskType.replace(/_/g, " ")}` : "Running analytics";
+    }
     case "getConnections": {
       const from = inp.from as { type?: string; id?: string } | undefined;
       const to = inp.to as { type?: string; id?: string } | undefined;
@@ -1405,6 +1669,34 @@ export function getToolInputSummary(
       return task
         ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
         : "Exploring graph";
+    }
+    // V2 tools
+    case "State":
+      return "Fetching workspace state";
+    case "Read": {
+      const path = inp.path as string | undefined;
+      if (!path) return "Reading resource";
+      return `Read ${path.length > 50 ? path.slice(0, 47) + "..." : path}`;
+    }
+    case "Search": {
+      const q = inp.query as string | undefined;
+      const scope = inp.scope as string | undefined;
+      if (!q) return "Searching";
+      return scope && scope !== "all"
+        ? `Search "${q}" (${scope})`
+        : `Search "${q}"`;
+    }
+    case "Run": {
+      const cmd = inp.command as string | undefined;
+      if (!cmd) return "Running command";
+      return getRunCommandSummary(cmd, inp);
+    }
+    case "AskUser": {
+      const question = inp.question as string | undefined;
+      if (!question) return "Asking user";
+      return question.length > 60
+        ? question.slice(0, 57) + "..."
+        : question;
     }
     default:
       return null;
