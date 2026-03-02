@@ -90,6 +90,7 @@ Pick the RIGHT mode for the question:
 
 CRITICAL: For overlap / intersection / "shared between" questions, use explore mode:compare or query — NEVER two separate explores.
 CRITICAL: For "how connected" / "relationship between" questions on same-type entities, use BOTH paths + compare for a complete picture.
+CRITICAL: For "protein domains" / "domain architecture" / "domain structure" questions, ALWAYS use Run explore { into:["protein_domains"] } — NEVER use Read. The Run tool fetches domain positions and enables the visual domain map.
 
 ## GRAPH vs COHORT — Decision Rule
 - GRAPH commands (explore, traverse, query) work on the knowledge graph. No active cohort needed.
