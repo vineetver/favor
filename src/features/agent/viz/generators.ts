@@ -687,14 +687,29 @@ function genAnalyticsScatter(
   if (!points || points.length < 2) return null;
 
   const regression = chartData.regression as { slope: number; intercept: number; r_squared: number } | undefined;
+  const ct = (scatterChart.chart_type as string) ?? "";
+  let xLabel = chartData.x_label as string | undefined;
+  let yLabel = chartData.y_label as string | undefined;
+  if (!xLabel || !yLabel) {
+    if (ct.includes("pred_vs_actual") || ct.includes("predicted_vs_actual")) {
+      xLabel ??= "Actual";
+      yLabel ??= "Predicted";
+    } else if (ct.includes("residual")) {
+      xLabel ??= "Predicted";
+      yLabel ??= "Residual";
+    } else {
+      xLabel ??= "X";
+      yLabel ??= "Y";
+    }
+  }
 
   return {
     type: "scatter_plot",
     toolCallIndex,
     title: (scatterChart.title as string) ?? "Scatter plot",
     data: points.slice(0, 500),
-    xLabel: (chartData.x_label as string) ?? "X",
-    yLabel: (chartData.y_label as string) ?? "Y",
+    xLabel,
+    yLabel,
     regressionLine: regression,
   };
 }
@@ -855,6 +870,136 @@ function genProteinDomains(
       color: nameToColor.get(d.name) ?? DOMAIN_PALETTE[0],
     })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Run-tool analytics: shape-driven multi-chart generator
+// Iterates ALL charts in the result and creates a VizSpec for each.
+// Solves the "only first scatter rendered" bug (e.g. pred_vs_actual + residuals).
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate VizSpecs for all charts in a Run analytics result.
+ * Returns stat card from metrics + one viz per chart (shape-driven).
+ */
+function generateRunAnalyticsAllSpecs(
+  output: unknown,
+  _input: Record<string, unknown>,
+  toolCallIndex: number,
+): VizSpec[] {
+  const out = output as Record<string, unknown>;
+  if (out?.error) return [];
+  const data = out?.data as Record<string, unknown> | undefined;
+  if (!data) return [];
+
+  const specs: VizSpec[] = [];
+
+  // 1. Stat card from metrics
+  const metrics = data.metrics as Record<string, unknown> | undefined;
+  if (metrics && Object.keys(metrics).length > 0) {
+    const taskType = (data.taskType as string) ?? "Analytics";
+    const stats: StatCardVizSpec["stats"] = Object.entries(metrics)
+      .slice(0, 8)
+      .map(([key, val]) => ({
+        label: key.replace(/_/g, " "),
+        value: typeof val === "number" ? Number(val.toFixed(4)) : String(val),
+      }));
+    specs.push({ type: "stat_card", toolCallIndex, title: `${taskType} results`, stats });
+  }
+
+  // 2. One viz per chart — shape-driven (not chart_type name-driven)
+  const charts = data.charts as Array<Record<string, unknown>> | undefined;
+  if (!charts?.length) return specs;
+
+  for (const chart of charts) {
+    const chartData = chart.data as Record<string, unknown> | undefined;
+    if (!chartData) continue;
+    const title = (chart.title as string) ?? "Chart";
+    const chartType = chart.chart_type as string | undefined;
+
+    try {
+      // QQ plot (check first — points have expected/observed, not x/y)
+      if (chartType === "qq_plot") {
+        const pts = chartData.points as Array<{ expected: number; observed: number; label?: string }> | undefined;
+        if (pts && pts.length >= 2) {
+          specs.push({
+            type: "qq_plot", toolCallIndex, title,
+            data: pts.slice(0, 1000),
+            lambda: chartData.lambda as number | undefined,
+          });
+          continue;
+        }
+      }
+
+      // Heatmap (rows/cols/values matrix)
+      const hRows = chartData.rows as string[] | undefined;
+      const hCols = chartData.cols as string[] | undefined;
+      const hVals = chartData.values as number[][] | undefined;
+      if (hRows?.length && hCols?.length && hVals?.length) {
+        specs.push({
+          type: "heatmap", toolCallIndex, title,
+          rows: hRows.slice(0, 50),
+          cols: hCols.slice(0, 50),
+          values: hVals.slice(0, 50).map((r) => r.slice(0, 50)),
+          colorScale: (chartData.color_scale as "diverging" | "sequential") ?? "sequential",
+          valueLabel: chartData.value_label as string | undefined,
+          minValue: chartData.min_value as number | undefined,
+          maxValue: chartData.max_value as number | undefined,
+        });
+        continue;
+      }
+
+      // Bar chart (bars array)
+      const bars = chartData.bars as Array<{ label: string; value: number; id?: string; category?: string }> | undefined;
+      if (bars && bars.length >= 1) {
+        specs.push({
+          type: "bar_chart", toolCallIndex, title,
+          data: bars.slice(0, 30).map((b) => ({
+            id: b.id ?? b.label,
+            label: b.label,
+            value: b.value,
+            category: b.category,
+          })),
+          valueLabel: (chartData.value_label as string) ?? "Value",
+          layout: "horizontal",
+        });
+        continue;
+      }
+
+      // Scatter (points with x/y)
+      const points = chartData.points as Array<{ x: number; y: number; label?: string; category?: string }> | undefined;
+      if (points && points.length >= 2) {
+        // Derive axis labels from chart_type when backend doesn't provide them
+        let xLabel = chartData.x_label as string | undefined;
+        let yLabel = chartData.y_label as string | undefined;
+        if (!xLabel || !yLabel) {
+          const ct = chartType ?? "";
+          if (ct.includes("pred_vs_actual") || ct.includes("predicted_vs_actual")) {
+            xLabel ??= "Actual";
+            yLabel ??= "Predicted";
+          } else if (ct.includes("residual")) {
+            xLabel ??= "Predicted";
+            yLabel ??= "Residual";
+          } else {
+            xLabel ??= "X";
+            yLabel ??= "Y";
+          }
+        }
+        specs.push({
+          type: "scatter_plot", toolCallIndex, title,
+          data: points.slice(0, 500),
+          xLabel,
+          yLabel,
+          regressionLine: chartData.regression as { slope: number; intercept: number; r_squared: number } | undefined,
+        });
+        continue;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return specs;
 }
 
 // ---------------------------------------------------------------------------
@@ -1180,6 +1325,8 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   variantBatchSummary: [genVariantBatchSummary],
   getGeneVariantStats: [genGeneVariantStats],
   runAnalytics: [genAnalyticsStatCard, genAnalyticsScatter, genAnalyticsQQ, genAnalyticsBar, genAnalyticsHeatmap],
+  // run_analytics is handled by generateRunAnalyticsAllSpecs (shape-driven, multi-chart)
+  // — see special case in generateVizSpecs below
   // Run tool — explore modes (collect ALL matches: protein domains + chart)
   run_explore: [
     genProteinDomains,
@@ -1214,6 +1361,15 @@ export function generateVizSpecs(
     toolName === "Run" && typeof input.command === "string"
       ? `run_${input.command}`
       : toolName;
+
+  // Run analytics: shape-driven multi-chart generator (handles ALL charts)
+  if (resolved === "run_analytics") {
+    try {
+      return generateRunAnalyticsAllSpecs(output, input, toolCallIndex);
+    } catch {
+      return [];
+    }
+  }
 
   const generators = GENERATOR_REGISTRY[resolved];
   if (!generators) return [];

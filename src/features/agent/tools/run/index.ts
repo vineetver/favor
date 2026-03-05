@@ -1,6 +1,7 @@
 /**
- * Run tool — command router.
- * Dispatches RunCommand to the appropriate handler.
+ * Run tool — command router with pre-gates, post-processing, and anti-spam.
+ *
+ * Flow: validate → preToolUse (schema + column fix) → handler → postToolUse (fingerprint + empty recovery) → escalateOnFailure
  */
 
 import { z, type ZodError } from "zod";
@@ -10,16 +11,21 @@ import { handleRows, handleGroupby, handleCorrelation, handleDerive, handlePrior
 import { handleAnalytics, handleAnalyticsPoll, handleViz } from "./handlers/analytics";
 import { handleExplore, handleTraverse, handleQuery } from "./handlers/graph";
 import { handlePin, handleSetCohort, handleRemember, handleExport, handleCreateCohort } from "./handlers/workspace";
+import { handleTopHits, handleQcSummary, handleGwasMinimal, handleVariantProfile, handleCompareCohorts } from "./handlers/workflows";
 import { compactRunForModel } from "./compactify";
-import { errorResult } from "./run-result";
+import { errorResult, type TraceCollector } from "./run-result";
+import { type CohortSchemaCache, fetchAndCacheSchema, getCachedSchema, getFingerprint } from "./schema-cache";
+import { extractColumnRefs, recoverUnknownColumn, applyColumnCorrections, type ColumnRecovery } from "./column-match";
+import { type NextAction, type Repair, recoverEmptyResult, isEmptyData, hasFilters, getFilters, describeFilter } from "./recovery";
 
 export type { RunCommand, RunResult, EntityRef } from "./types";
 export { runCommandSchema } from "./types";
 
-interface RunContext {
+export interface RunContext {
   activeCohortId?: string;
   sessionId?: string;
   resolvedEntities?: Record<string, EntityRef>;
+  schemaCache?: CohortSchemaCache;
 }
 
 type CommandHandler = (
@@ -41,6 +47,13 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   "analytics.poll": (cmd) => handleAnalyticsPoll(cmd as Extract<RunCommand, { command: "analytics.poll" }>),
   viz: (cmd) => handleViz(cmd as Extract<RunCommand, { command: "viz" }>),
 
+  // Workflow commands
+  top_hits: (cmd, ctx) => handleTopHits(cmd as Extract<RunCommand, { command: "top_hits" }>, ctx),
+  qc_summary: (cmd, ctx) => handleQcSummary(cmd as Extract<RunCommand, { command: "qc_summary" }>, ctx),
+  gwas_minimal: (cmd, ctx) => handleGwasMinimal(cmd as Extract<RunCommand, { command: "gwas_minimal" }>, ctx),
+  variant_profile: (cmd, ctx) => handleVariantProfile(cmd as Extract<RunCommand, { command: "variant_profile" }>, ctx),
+  compare_cohorts: (cmd, ctx) => handleCompareCohorts(cmd as Extract<RunCommand, { command: "compare_cohorts" }>, ctx),
+
   // Graph — 3 mode-dispatched primitives
   explore: (cmd, ctx) => handleExplore(cmd as Extract<RunCommand, { command: "explore" }>, ctx.resolvedEntities),
   traverse: (cmd, ctx) => handleTraverse(cmd as Extract<RunCommand, { command: "traverse" }>, ctx.resolvedEntities),
@@ -53,6 +66,263 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   export: (cmd, ctx) => handleExport(cmd as Extract<RunCommand, { command: "export" }>, ctx.activeCohortId),
   create_cohort: (cmd) => handleCreateCohort(cmd as Extract<RunCommand, { command: "create_cohort" }>),
 };
+
+// ---------------------------------------------------------------------------
+// Command classification
+// ---------------------------------------------------------------------------
+
+const COHORT_COMMANDS = new Set([
+  "rows", "groupby", "correlation", "derive", "prioritize", "compute",
+  "analytics", "analytics.poll", "viz", "export", "create_cohort",
+  "top_hits", "qc_summary", "gwas_minimal", "variant_profile", "compare_cohorts",
+]);
+
+const NEEDS_SCHEMA = new Set([
+  "rows", "groupby", "correlation", "prioritize", "compute", "analytics",
+  "top_hits", "gwas_minimal",
+]);
+
+// ---------------------------------------------------------------------------
+// Pre-gate: preventable error checks BEFORE handler dispatch
+// ---------------------------------------------------------------------------
+
+function getCohortIdFromCmd(cmd: Record<string, unknown>, activeCohortId?: string): string | null {
+  return (cmd.cohort_id as string) ?? activeCohortId ?? null;
+}
+
+async function preToolUse(
+  cmd: RunCommand,
+  ctx: RunContext,
+): Promise<{ result: RunResult; repairs?: Repair[] } | null> {
+  const cmdRecord = cmd as unknown as Record<string, unknown>;
+
+  // Gate 1: Cohort required
+  if (COHORT_COMMANDS.has(cmd.command)) {
+    const cohortId = getCohortIdFromCmd(cmdRecord, ctx.activeCohortId);
+    if (!cohortId && cmd.command !== "create_cohort") {
+      return {
+        result: errorResult({
+          message: "No active cohort.",
+          code: "missing_param",
+          next_actions: [
+            { tool: "Run", args: { command: "set_cohort" }, reason: "Set an active cohort first", confidence: 0.9 },
+          ],
+        }),
+      };
+    }
+
+    // Gate 2: Auto-fetch schema if stale/missing
+    if (cohortId && NEEDS_SCHEMA.has(cmd.command)) {
+      try {
+        const cached = getCachedSchema(cohortId);
+        if (!cached || cached.cohortId !== cohortId) {
+          ctx.schemaCache = await fetchAndCacheSchema(cohortId);
+        } else {
+          ctx.schemaCache = cached;
+        }
+      } catch {
+        // Schema fetch failed — continue without validation (handler may still work)
+      }
+    }
+
+    // Gate 3: Column validation + auto-correction
+    if (ctx.schemaCache) {
+      const columns = extractColumnRefs(cmdRecord);
+      if (columns.length > 0) {
+        const recoveries = columns.map((col) =>
+          recoverUnknownColumn(col.name, ctx.schemaCache!, col.expectedKind),
+        );
+
+        const needsUser = recoveries.filter((r) => r.action === "needs_user");
+        const autoFixed = recoveries.filter((r) => r.action === "auto_corrected");
+
+        if (needsUser.length > 0) {
+          return {
+            result: errorResult({
+              message: `Unknown columns: ${needsUser.map((r) => r.input).join(", ")}`,
+              code: "validation_error",
+              next_actions: [
+                ...needsUser.map((r): NextAction => ({
+                  tool: "AskUser",
+                  args: {
+                    question: `Which column did you mean by "${r.input}"?`,
+                    options: [r.best_match?.column, r.runner_up?.column].filter(Boolean),
+                  },
+                  reason: r.reason,
+                  reason_code: "column_ambiguous",
+                })),
+                {
+                  tool: "Read",
+                  args: { path: `cohort/${cohortId}/schema` },
+                  reason: "View all available columns",
+                  confidence: 0.5,
+                },
+              ],
+            }),
+          };
+        }
+
+        if (autoFixed.length > 0) {
+          applyColumnCorrections(cmdRecord, autoFixed);
+          const repairs: Repair[] = autoFixed
+            .filter((r): r is ColumnRecovery & { best_match: NonNullable<ColumnRecovery["best_match"]> } => !!r.best_match)
+            .map((r) => ({
+              field: columns.find((c) => c.name === r.input)?.field_path ?? "unknown",
+              received: r.input,
+              corrected: r.best_match.column,
+            }));
+          return { result: null as unknown as RunResult, repairs };
+        }
+      }
+    }
+  }
+
+  // Gate 4: Analytics feature count limit
+  if (cmd.command === "analytics") {
+    const analyticsCmd = cmd as Extract<RunCommand, { command: "analytics" }>;
+    const params = analyticsCmd.params as { features?: { numeric?: string[] } };
+    const numericCount = params?.features?.numeric?.length ?? 0;
+    if (numericCount > 20) {
+      return {
+        result: errorResult({
+          message: `Too many features (${numericCount}, max 20).`,
+          code: "validation_error",
+          next_actions: [{
+            tool: "Run",
+            args: { command: "analytics", method: "feature_importance", params: { ...analyticsCmd.params, type: "feature_importance" } },
+            reason: "Run feature_importance first to select the best features",
+            confidence: 0.8,
+          }],
+        }),
+      };
+    }
+  }
+
+  return null; // all gates passed
+}
+
+// ---------------------------------------------------------------------------
+// Post-processing: enrichment (not recovery) AFTER handler success
+// ---------------------------------------------------------------------------
+
+async function postToolUse(
+  cmd: RunCommand,
+  result: RunResult,
+  ctx: RunContext,
+  repairs?: Repair[],
+): Promise<RunResult> {
+  // 1. Attach repairs from pre-gate column correction
+  if (repairs?.length) {
+    result.repairs = repairs;
+  }
+
+  // 2. Attach cohort fingerprint
+  if (ctx.schemaCache && COHORT_COMMANDS.has(cmd.command) && result.data) {
+    result.data._cohort = getFingerprint(ctx.schemaCache);
+  }
+
+  // 3. Empty result → probe-based recovery (for filtered commands)
+  const cmdRecord = cmd as unknown as Record<string, unknown>;
+  if (result.status === "ok" && isEmptyData(result.data) && hasFilters(cmdRecord)) {
+    const cohortId = getCohortIdFromCmd(cmdRecord, ctx.activeCohortId);
+    if (cohortId) {
+      try {
+        const recovery = await recoverEmptyResult(cohortId, getFilters(cmdRecord), cmd.command);
+        return {
+          ...result,
+          status: "empty",
+          data: {
+            ...result.data,
+            empty: true,
+            reason: recovery.culprit_filter
+              ? `Filter "${describeFilter(recovery.culprit_filter)}" eliminates all results`
+              : "No results match these filters",
+            probe_results: recovery.probe_results,
+          },
+          next_actions: recovery.next_actions,
+        };
+      } catch {
+        // Probe failed — return original result with empty status
+        return { ...result, status: "empty" };
+      }
+    }
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Anti-spam guard: graduated escalation on repeated failures
+// ---------------------------------------------------------------------------
+
+interface FailureTrack {
+  count: number;
+  lastAt: number;
+  lastCode?: string;
+}
+
+const failureTracker = new Map<string, FailureTrack>();
+const FAILURE_WINDOW_MS = 60_000;
+
+function failureKey(cmd: RunCommand): string {
+  const cmdRecord = cmd as unknown as Record<string, unknown>;
+  const parts: string[] = [cmd.command];
+  if (typeof cmdRecord.cohort_id === "string") parts.push(cmdRecord.cohort_id);
+  const cols = extractColumnRefs(cmdRecord).map((c) => c.name).sort();
+  if (cols.length) parts.push(`cols:${cols.join(",")}`);
+  const filters = Array.isArray(cmdRecord.filters)
+    ? (cmdRecord.filters as Array<{ type?: string }>).map((f) => f.type).sort()
+    : [];
+  if (filters.length) parts.push(`flt:${filters.join(",")}`);
+  return parts.join("|");
+}
+
+function escalateOnFailure(
+  cmd: RunCommand,
+  result: RunResult,
+  ctx: RunContext,
+): RunResult {
+  if (result.status !== "error") {
+    failureTracker.delete(failureKey(cmd));
+    return result;
+  }
+
+  const key = failureKey(cmd);
+  const prev = failureTracker.get(key);
+  const now = Date.now();
+
+  if (prev && now - prev.lastAt > FAILURE_WINDOW_MS) {
+    failureTracker.delete(key);
+  }
+
+  const track = failureTracker.get(key) ?? { count: 0, lastAt: 0 };
+  track.count++;
+  track.lastAt = now;
+  track.lastCode = result.error?.code;
+  failureTracker.set(key, track);
+
+  const cohortId = getCohortIdFromCmd(cmd as unknown as Record<string, unknown>, ctx.activeCohortId);
+
+  if (track.count === 2) {
+    result.next_actions = [
+      ...(result.next_actions ?? []),
+      { tool: "Read", args: { path: `cohort/${cohortId}/schema` }, reason: "Check available columns and types", confidence: 0.8 },
+      { tool: "Run", args: { command: "qc_summary" }, reason: "Try qc_summary for an overview first", confidence: 0.6 },
+    ];
+  } else if (track.count >= 3) {
+    result.next_actions = [{
+      tool: "AskUser",
+      args: {
+        question: `This command has failed ${track.count} times (${track.lastCode}). How should I proceed?`,
+        options: ["Show me the schema", "Try different columns", "Skip this step"],
+      },
+      reason: "Repeated failures — need user guidance",
+      confidence: 1.0,
+    }];
+  }
+
+  return result;
+}
 
 // ---------------------------------------------------------------------------
 // Phase 3: Schema-first command validation
@@ -71,6 +341,11 @@ const COMMAND_HINTS: Record<string, string> = {
   viz: "Required: cohort_id, run_id, chart_id. Optional: max_points",
   export: "Optional: cohort_id",
   create_cohort: "Required: references (min 1). Optional: label",
+  top_hits: "Optional: criteria [{column, desc?, weight?}], filters, limit (default 10)",
+  qc_summary: "Optional: cohort_id",
+  gwas_minimal: "Required: p_column. Optional: effect_column, se_column_name",
+  variant_profile: "Required: variants (max 5). Optional: cohort_id",
+  compare_cohorts: "Required: cohort_ids [id1, id2], compare_on [columns]",
   explore: "Required: seeds (1-10). Mode-specific: neighbors(into), compare(edge_type?), enrich(target), similar(top_k?), context(sections?), aggregate(edge_type,metric)",
   traverse: "Chain: seed, steps [{into/enrich}]. Paths: from, to (as 'Type:ID'). Optional: max_hops, limit",
   query: "Required: pattern [{var, type?, edge?, from?, to?}] or description. Optional: seeds, return_vars, filters, limit",
@@ -88,12 +363,63 @@ function formatZodErrors(error: ZodError): string[] {
 }
 
 /**
+ * Pre-fill analytics fields the LLM commonly omits.
+ * `method` and `params.type` carry the same value — derive one from the other.
+ * Also provide sensible defaults for required sub-fields.
+ */
+function normalizeAnalyticsInput(flat: Record<string, unknown>): void {
+  if (flat.command !== "analytics") return;
+
+  const params = flat.params as Record<string, unknown> | undefined;
+
+  // Derive method ↔ params.type
+  if (!flat.method && params?.type) {
+    flat.method = params.type as string;
+  } else if (flat.method && params && !params.type) {
+    params.type = flat.method;
+  }
+
+  // If LLM sends method but no params at all, construct minimal params
+  if (flat.method && !params) {
+    flat.params = { type: flat.method };
+  }
+
+  const p = flat.params as Record<string, unknown> | undefined;
+  if (!p) return;
+
+  // Default features.missing to "median" — prevents backend from dropping all rows
+  // with any null value (listwise deletion), which on sparse cohorts leaves < 10 rows.
+  const features = p.features as Record<string, unknown> | undefined;
+  if (features && !features.missing) {
+    features.missing = "median";
+  }
+
+  // bootstrap_ci: default statistic to { stat: "mean" }
+  if (p.type === "bootstrap_ci" && !p.statistic) {
+    p.statistic = { stat: "mean" };
+  }
+
+  // Regression methods: default validation to holdout 20% if omitted
+  const regressionTypes = new Set(["linear_regression", "logistic_regression", "elastic_net"]);
+  if (regressionTypes.has(p.type as string) && !p.validation) {
+    p.validation = { split: "holdout", test_fraction: 0.2, seed: 42 };
+  }
+
+  // multiple_testing_correction: default method to "bh" if omitted
+  if (p.type === "multiple_testing_correction" && !p.method) {
+    p.method = "bh";
+  }
+}
+
+/**
  * Validate flat LLM input against the typed RunCommand schema.
  * Returns validated RunCommand or a structured error result.
  */
 function validateCommand(
   flat: Record<string, unknown>,
 ): { ok: true; cmd: RunCommand } | { ok: false; error: RunResult } {
+  normalizeAnalyticsInput(flat);
+
   const result = runCommandSchema.safeParse(flat);
   if (result.success) {
     return { ok: true, cmd: result.data };
@@ -116,7 +442,7 @@ function validateCommand(
 
 /**
  * Execute a Run command.
- * Validates flat input against typed schema before dispatching.
+ * Flow: validate → preToolUse → handler → postToolUse → escalateOnFailure
  */
 export async function executeRun(
   command: Record<string, unknown>,
@@ -133,7 +459,22 @@ export async function executeRun(
       code: "unknown_command",
     });
   }
-  return handler(cmd, ctx);
+
+  // --- Pre-gates (preventable errors only) ---
+  const preResult = await preToolUse(cmd, ctx);
+  if (preResult?.result) return preResult.result;
+  const repairs = preResult?.repairs;
+
+  // --- Execute handler ---
+  let result = await handler(cmd, ctx);
+
+  // --- Post-processing (enrichment, not recovery) ---
+  result = await postToolUse(cmd, result, ctx, repairs);
+
+  // --- Anti-spam escalation ---
+  result = escalateOnFailure(cmd, result, ctx);
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -254,6 +595,7 @@ const runInputSchema = z.object({
   command: z.enum([
     "rows", "groupby", "correlation", "derive", "prioritize", "compute",
     "analytics", "analytics.poll", "viz", "export", "create_cohort",
+    "top_hits", "qc_summary", "gwas_minimal", "variant_profile", "compare_cohorts",
     "explore", "traverse", "query",
     "pin", "set_cohort", "remember",
   ]),
@@ -299,6 +641,21 @@ const runInputSchema = z.object({
 
   // --- create_cohort ---
   references: z.array(z.string()).optional().describe("Variant references (rsIDs or chr-pos-ref-alt)"),
+
+  // --- workflow: top_hits ---
+  // criteria (reused from prioritize), filters, limit
+
+  // --- workflow: gwas_minimal ---
+  p_column: z.string().optional().describe("P-value column name (gwas_minimal)"),
+  effect_column: z.string().optional().describe("Effect size column name (gwas_minimal)"),
+  se_column_name: z.string().optional().describe("Standard error column name (gwas_minimal)"),
+
+  // --- workflow: variant_profile ---
+  variants: z.array(z.string()).optional().describe("Variant IDs to profile (max 5, variant_profile)"),
+
+  // --- workflow: compare_cohorts ---
+  cohort_ids: z.array(z.string()).optional().describe("Two cohort IDs to compare (compare_cohorts)"),
+  compare_on: z.array(z.string()).optional().describe("Columns to compare on (compare_cohorts)"),
 
   // --- explore (mode-dispatched) ---
   mode: z.string().optional().describe("Sub-mode: explore(neighbors|compare|enrich|similar|context|aggregate), traverse(chain|paths)"),
@@ -352,7 +709,22 @@ export function createRunTool(getContext: () => RunContext) {
     description: `Execute work: cohort queries, analytics, graph exploration, workspace management.
 
 COHORT COMMANDS (require active cohort or cohort_id):
-  rows, groupby, correlation, derive, prioritize, compute, analytics, analytics.poll, viz, export, create_cohort
+  rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
+
+ANALYTICS (auto-polls + auto-fetches charts — no need for analytics.poll/viz after):
+  analytics { method, params: { type (=method), ...method-specific-fields } }
+  Regression: target={field:"col"}, features={numeric:[...]}, validation?
+  Clustering: features={numeric:[...]}, k or n_clusters
+  PCA: features={numeric:[...]}, n_components?
+  Stats: bootstrap_ci(columns), permutation_test(x_column,y_column), multiple_testing_correction(p_value_column)
+  GWAS: gwas_qc(p_value_column, effect_size_column, se_column)
+
+WORKFLOW COMMANDS (multi-step — one call does the work):
+  top_hits    — { criteria, filters?, limit? } — best variants in one call
+  qc_summary  — { cohort_id? } — cohort quality overview
+  gwas_minimal — { p_column, effect_column?, se_column_name? } — GWAS summary
+  variant_profile — { variants: ["rs123", ...], cohort_id? } — deep dive on variants (max 5)
+  compare_cohorts — { cohort_ids: ["a","b"], compare_on: ["col1"] } — side-by-side comparison
 
 GRAPH COMMANDS (3 mode-dispatched primitives):
   explore (mode: neighbors|compare|enrich|similar|context|aggregate)
@@ -370,6 +742,9 @@ GRAPH COMMANDS (3 mode-dispatched primitives):
 
 WORKSPACE: pin, set_cohort, remember
 
+NOTE: Column names are auto-corrected. If you use "cadd" it maps to "cadd_phred", etc.
+Schema is auto-fetched before cohort commands — no need to read schema first.
+
 SEED FORMATS: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
 IMPORTANT: For fuzzy name seeds, use ONLY {label:"..."} without a type field. The resolver detects the type. Only use {type,id} for exact entity IDs.
 TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains`,
@@ -381,7 +756,8 @@ TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes,
     toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
       const cmd = opts.input as { command: string };
       const result = opts.output as RunResult;
-      if (result.status === "error" || result.status === "need_clarification" || result.data?.error) {
+      // Pass through errors, disambiguation, and empty results uncompacted (LLM needs full context)
+      if (result.status === "error" || result.status === "needs_user" || result.status === "need_clarification" || result.status === "empty" || result.data?.error) {
         return { type: "json" as const, value: result as unknown as null };
       }
       return compactRunForModel(cmd.command, result);

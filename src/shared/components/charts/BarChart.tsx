@@ -133,6 +133,14 @@ export const BarChart = memo(function BarChart({
     return 400;
   }, [layout, chartData.length]);
 
+  // Auto-compute YAxis width for horizontal bars based on longest label
+  const yAxisWidth = useMemo(() => {
+    if (layout !== "horizontal" || chartData.length === 0) return 160;
+    const maxLen = Math.max(...chartData.map((d) => d.label.length));
+    // ~7px per char at fontSize 12, clamped to [100, 240]
+    return Math.min(240, Math.max(100, maxLen * 7 + 16));
+  }, [layout, chartData]);
+
   // Stable tooltip content — avoids inline closure that creates new reference on every render
   const tooltipContent = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -198,7 +206,7 @@ export const BarChart = memo(function BarChart({
               <YAxis
                 type="category"
                 dataKey="label"
-                width={160}
+                width={yAxisWidth}
                 tick={{ fontSize: 12, fill: "#334155" }}
               />
             </>

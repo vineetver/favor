@@ -13,6 +13,7 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const RESOURCES: NavItem[] = [
+  { label: "Docs", href: "/docs" },
   { label: "FAVOR-GPT", href: "/agent" },
   {
     label: "Annotation Description",

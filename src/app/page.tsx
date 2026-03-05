@@ -92,7 +92,7 @@ export default function HomePage() {
                 </div>
                 <div className="relative z-10 pt-8">
                   <Link
-                    href="/about"
+                    href="/docs"
                     className="text-base font-semibold text-slate-900 flex items-center gap-2 hover:gap-3 transition-all"
                   >
                     Read Documentation <ArrowUpRight className="w-5 h-5" />

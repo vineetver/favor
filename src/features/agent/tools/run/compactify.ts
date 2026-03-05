@@ -10,14 +10,19 @@
  *   - trace / warnings / candidates / suggested_next / budgets_remaining pass through
  */
 
-import type { RunResult } from "./types";
+import type { RunResult, NextAction } from "./types";
 
-interface Truncation {
+interface TruncationInfo {
   truncated: true;
   returned: number;
   total: number;
+  reason?: "max_rows" | "max_points" | "token_budget" | "detail_level";
+  how_to_get_more?: NextAction;
   hint?: string;
 }
+
+// Backwards-compatible alias
+type Truncation = TruncationInfo;
 
 /** Cast to satisfy ToolResultOutput's JSONValue constraint */
 type CompactValue = { type: "json"; value: null };
@@ -62,6 +67,8 @@ function buildEnvelope(
   if (result.suggested_next?.length) envelope.suggested_next = result.suggested_next;
   if (result.budgets_remaining) envelope.budgets_remaining = result.budgets_remaining;
   if (result.error) envelope.error = result.error;
+  if (result.repairs?.length) envelope.repairs = result.repairs;
+  if (result.next_actions?.length) envelope.next_actions = result.next_actions;
   if (result.incomplete) {
     envelope.incomplete = true;
     if (result.next_cursor != null) envelope.next_cursor = result.next_cursor;
@@ -84,6 +91,13 @@ const COMPACTORS: Record<string, Compactor> = {
   explore: compactExplore,
   traverse: compactTraverse,
   query: compactQuery,
+  analytics: compactAnalytics,
+  // Workflow compactors
+  top_hits: compactTopHits,
+  qc_summary: passthrough,
+  gwas_minimal: compactGwasMinimal,
+  variant_profile: compactVariantProfile,
+  compare_cohorts: passthrough,
 };
 
 function compactRows(data: Record<string, unknown>): Record<string, unknown> {
@@ -251,6 +265,83 @@ function compactQuery(data: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+function compactAnalytics(data: Record<string, unknown>): Record<string, unknown> {
+  const charts = asArray(data.charts);
+  // Keep chart metadata (type, title, chart_id) but strip raw point arrays
+  // The frontend already has the full data from p.output; model only needs summaries
+  const compactCharts = charts.map((c) => {
+    const chart = c as Record<string, unknown>;
+    const chartData = chart.data as Record<string, unknown> | undefined;
+    const pointCount = chartData
+      ? (asArray(chartData.points).length || asArray(chartData.bars).length || 0)
+      : 0;
+    return {
+      chart_id: chart.chart_id,
+      chart_type: chart.chart_type,
+      title: chart.title,
+      point_count: pointCount,
+    };
+  });
+
+  return {
+    taskType: data.taskType,
+    runId: data.runId,
+    summary: data.summary,
+    metrics: data.metrics,
+    charts: compactCharts,
+    _cohort: data._cohort,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Workflow compactors
+// ---------------------------------------------------------------------------
+
+function passthrough(data: Record<string, unknown>): Record<string, unknown> {
+  return data;
+}
+
+function compactTopHits(data: Record<string, unknown>): Record<string, unknown> {
+  const rows = asArray(data.rows);
+  const totalRanked = asNumber(data.total_ranked, rows.length);
+  const top = rows.slice(0, 10);
+
+  const out: Record<string, unknown> = {
+    criteria: data.criteria,
+    rows: top,
+    total_ranked: totalRanked,
+  };
+  if (data.filtered_count !== undefined) out.filtered_count = data.filtered_count;
+  if (rows.length > 10) {
+    out._truncation = truncation(10, totalRanked, "max_rows", {
+      tool: "Run",
+      args: { command: "rows", sort: "composite_score", desc: true, limit: 50 },
+      reason: "Fetch more ranked variants",
+    });
+  }
+  return out;
+}
+
+function compactGwasMinimal(data: Record<string, unknown>): Record<string, unknown> {
+  const topHits = asArray(data.top_hits).slice(0, 10);
+  return {
+    p_column: data.p_column,
+    correction: data.correction,
+    qc: data.qc,
+    top_hits: topHits,
+    total_variants: data.total_variants,
+  };
+}
+
+function compactVariantProfile(data: Record<string, unknown>): Record<string, unknown> {
+  const profiles = asArray(data.profiles).slice(0, 5);
+  const out: Record<string, unknown> = { profiles };
+  if (data.cohort_rows) {
+    out.cohort_rows = asArray(data.cohort_rows).slice(0, 5);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -267,6 +358,21 @@ function asNumber(v: unknown, fallback: number): number {
   return typeof v === "number" ? v : fallback;
 }
 
-function truncation(returned: number, total: number, hint?: string): Truncation {
-  return { truncated: true, returned, total, ...(hint ? { hint } : {}) };
+function truncation(
+  returned: number,
+  total: number,
+  reason?: TruncationInfo["reason"] | string,
+  how_to_get_more?: NextAction,
+): TruncationInfo {
+  // When called with old 3-arg signature (returned, total, hint_string)
+  if (typeof reason === "string" && !["max_rows", "max_points", "token_budget", "detail_level"].includes(reason)) {
+    return { truncated: true, returned, total, hint: reason };
+  }
+  return {
+    truncated: true,
+    returned,
+    total,
+    ...(reason ? { reason: reason as TruncationInfo["reason"] } : {}),
+    ...(how_to_get_more ? { how_to_get_more } : {}),
+  };
 }

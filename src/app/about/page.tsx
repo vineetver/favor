@@ -7,6 +7,7 @@ import {
 } from "@shared/components/ui/card";
 import { Badge } from "@shared/components/ui/badge";
 import { ExternalLink } from "@shared/components/ui/external-link";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "About | FAVOR",
@@ -60,7 +61,11 @@ export default function AboutPage() {
               restrictions or embargos on these data.
             </p>
             <p>
-              See the Documentation for more info on using FAVOR. Post to the{" "}
+              See the{" "}
+              <Link href="/docs" className="text-primary hover:underline">
+                Documentation
+              </Link>{" "}
+              for more info on using FAVOR. Post to the{" "}
               <ExternalLink iconSize="sm" href="https://discussion.genohub.org/">
                 Discussion Forum
               </ExternalLink>{" "}

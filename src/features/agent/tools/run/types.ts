@@ -123,7 +123,7 @@ const analyticsTaskSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("kmeans"), features: featureSpec, k: z.number().min(1).max(50), max_iterations: z.number().optional(), seed: z.number().optional() }),
   z.object({ type: z.literal("hierarchical_clustering"), features: featureSpec, n_clusters: z.number().min(1).max(50), linkage: z.enum(["ward", "complete", "average", "single"]).optional() }),
   z.object({ type: z.literal("feature_importance"), target: targetSpec, features: featureSpec, method: z.string().optional(), n_repeats: z.number().optional(), seed: z.number().optional() }),
-  z.object({ type: z.literal("bootstrap_ci"), statistic: z.object({ stat: z.string() }), columns: z.array(z.string()), n_bootstrap: z.number().max(10000).optional(), confidence: z.number().optional(), seed: z.number().optional() }),
+  z.object({ type: z.literal("bootstrap_ci"), statistic: z.object({ stat: z.string() }).optional(), columns: z.array(z.string()), n_bootstrap: z.number().max(10000).optional(), confidence: z.number().optional(), seed: z.number().optional() }),
   z.object({ type: z.literal("permutation_test"), x_column: z.string(), y_column: z.string(), statistic: z.string().optional(), n_permutations: z.number().max(10000).optional(), seed: z.number().optional() }),
   z.object({ type: z.literal("multiple_testing_correction"), p_value_column: z.string(), method: z.enum(["bh", "bonferroni", "holm"]).optional() }),
   z.object({ type: z.literal("gwas_qc"), p_value_column: z.string(), effect_size_column: z.string(), se_column: z.string() }),
@@ -209,6 +209,36 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     command: z.literal("create_cohort"),
     references: z.array(z.string()).min(1),
     label: z.string().optional(),
+  }),
+
+  // Workflow commands — multi-step in one call
+  z.object({
+    command: z.literal("top_hits"),
+    cohort_id: z.string().optional(),
+    criteria: z.array(criterionSchema).optional(),
+    filters: z.array(cohortFilterSchema).optional(),
+    limit: z.number().optional(),
+  }),
+  z.object({
+    command: z.literal("qc_summary"),
+    cohort_id: z.string().optional(),
+  }),
+  z.object({
+    command: z.literal("gwas_minimal"),
+    cohort_id: z.string().optional(),
+    p_column: z.string(),
+    effect_column: z.string().optional(),
+    se_column_name: z.string().optional(),
+  }),
+  z.object({
+    command: z.literal("variant_profile"),
+    cohort_id: z.string().optional(),
+    variants: z.array(z.string()).min(1).max(5),
+  }),
+  z.object({
+    command: z.literal("compare_cohorts"),
+    cohort_ids: z.array(z.string()).length(2),
+    compare_on: z.array(z.string()).min(1),
   }),
 
   // Graph commands — 3 mode-dispatched primitives
@@ -315,5 +345,7 @@ export type {
   ResolvedInfo,
   SuggestedNext,
   BudgetsRemaining,
+  NextAction,
+  Repair,
 } from "./run-result";
 export type { ToolErrorCode } from "./error-classify";

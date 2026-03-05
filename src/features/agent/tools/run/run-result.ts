@@ -7,12 +7,16 @@
 
 import { AgentToolError } from "../../lib/api-client";
 import { type ToolErrorCode, classifyApiError } from "./error-classify";
+import type { NextAction, Repair } from "./recovery";
+
+// Re-export for consumers
+export type { NextAction, Repair } from "./recovery";
 
 // ---------------------------------------------------------------------------
 // Core types
 // ---------------------------------------------------------------------------
 
-export type ToolStatus = "ok" | "error" | "need_clarification" | "partial";
+export type ToolStatus = "ok" | "empty" | "needs_user" | "error" | "need_clarification" | "partial";
 
 export interface ToolError {
   code: ToolErrorCode | string;
@@ -157,14 +161,21 @@ export interface RunResultEnvelope {
   };
   next_reads?: Array<{ path: string; reason?: string }>;
 
+  // Pagination
   incomplete?: boolean;
   next_cursor?: string | number;
+
+  // Recovery — column auto-corrections applied
+  repairs?: Repair[];
+  // Tool-shaped recovery/drill-down actions (replaces suggested_next)
+  next_actions?: NextAction[];
 
   error?: ToolError;
   warnings?: ToolWarning[];
   trace?: TraceEntry[];
   candidates?: Candidate[];
   resolved_info?: ResolvedInfo;
+  /** @deprecated Use next_actions instead */
   suggested_next?: SuggestedNext[];
   budgets_remaining?: BudgetsRemaining;
 }
@@ -178,6 +189,8 @@ interface OkOpts {
   tc?: TraceCollector;
   resolved_info?: ResolvedInfo;
   suggested_next?: SuggestedNext[];
+  next_actions?: NextAction[];
+  repairs?: Repair[];
   budgets_remaining?: BudgetsRemaining;
   incomplete?: boolean;
   next_cursor?: string | number;
@@ -192,6 +205,8 @@ export function okResult(opts: OkOpts): RunResultEnvelope {
     ...(opts.artifacts?.length ? { artifacts: opts.artifacts } : {}),
     ...(opts.next_reads?.length ? { next_reads: opts.next_reads } : {}),
     ...(opts.incomplete ? { incomplete: true, next_cursor: opts.next_cursor } : {}),
+    ...(opts.repairs?.length ? { repairs: opts.repairs } : {}),
+    ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
     ...(opts.tc?.candidates.length ? { candidates: opts.tc.candidates } : {}),
@@ -213,6 +228,8 @@ interface ErrorOpts {
   http_status?: number;
   tc?: TraceCollector;
   suggested_next?: SuggestedNext[];
+  next_actions?: NextAction[];
+  repairs?: Repair[];
   candidates?: Candidate[];
 }
 
@@ -229,6 +246,8 @@ export function errorResult(opts: ErrorOpts): RunResultEnvelope {
       ...(opts.details !== undefined ? { details: opts.details } : {}),
       ...(opts.http_status ? { http_status: opts.http_status } : {}),
     },
+    ...(opts.repairs?.length ? { repairs: opts.repairs } : {}),
+    ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length || opts.candidates?.length
       ? { warnings: opts.tc?.warnings }
@@ -243,15 +262,17 @@ export function needClarificationResult(opts: {
   candidates: Candidate[];
   tc?: TraceCollector;
   suggested_next?: SuggestedNext[];
+  next_actions?: NextAction[];
 }): RunResultEnvelope {
   return {
-    status: "need_clarification",
+    status: "needs_user",
     text_summary: opts.message,
-    data: { need_clarification: true, message: opts.message },
+    data: { needs_user: true, message: opts.message },
     state_delta: {},
     candidates: opts.candidates,
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
+    ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
     suggested_next: opts.suggested_next ?? [
       {
         action: "AskUser",
@@ -261,19 +282,24 @@ export function needClarificationResult(opts: {
   };
 }
 
-/** Return a valid "ok" envelope for empty results (not an error). */
+/** Return an "empty" envelope for zero-result queries (not an error). */
 export function emptyResult(opts: {
   reason: string;
+  data?: Record<string, unknown>;
   tc?: TraceCollector;
   suggested_next?: SuggestedNext[];
+  next_actions?: NextAction[];
 }): RunResultEnvelope {
-  return okResult({
+  return {
+    status: "empty",
     text_summary: opts.reason,
-    data: { empty: true, reason: opts.reason },
+    data: { empty: true, reason: opts.reason, ...opts.data },
     state_delta: {},
-    tc: opts.tc,
-    suggested_next: opts.suggested_next,
-  });
+    ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
+    ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
+    ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
+    ...(opts.suggested_next?.length ? { suggested_next: opts.suggested_next } : {}),
+  };
 }
 
 /** Convert an AgentToolError or unknown error into an errorResult */
