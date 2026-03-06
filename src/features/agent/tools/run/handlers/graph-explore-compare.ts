@@ -6,7 +6,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
+import { errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -97,7 +97,7 @@ async function executeCompare(
       data: {
         _method: "Side-by-side Jaccard comparison of same-type entities. Higher Jaccard index = more similar neighborhoods.",
         entities: resolved,
-        edgeType: edgeType ?? "all",
+        relationship: edgeType ? humanEdgeLabel(edgeType) : "all relationships",
         edgeDescription: annotation ?? undefined,
         comparisons: data.data?.comparisons,
         overallSimilarity: similarity,
@@ -169,7 +169,7 @@ async function executeIntersect(
     text_summary: summary,
     data: {
       entities: resolved,
-      edgeType: edgeType ?? undefined,
+      relationship: edgeType ? humanEdgeLabel(edgeType) : undefined,
       edgeDescription: annotation ?? undefined,
       sharedNeighbors,
       counts: data.data?.counts,

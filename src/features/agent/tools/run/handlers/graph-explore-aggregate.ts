@@ -5,7 +5,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, edgeTypeAnnotation } from "./graph";
+import { errorResult, catchError, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -68,16 +68,17 @@ export async function handleExploreAggregate(
 
     const result = data.data;
     const resolvedScoreField = data.meta?.resolved?.scoreField ?? cmd.score_field;
+    const edgeLabel = humanEdgeLabel(cmd.edge_type);
     const summary = result?.textSummary ??
       (result?.buckets
-        ? `${cmd.metric} of ${cmd.edge_type} for ${seed.label}: ${result.buckets.length} groups`
-        : `${cmd.metric} of ${cmd.edge_type} for ${seed.label}: ${result?.value}`);
+        ? `${cmd.metric} of ${edgeLabel} for ${seed.label}: ${result.buckets.length} groups`
+        : `${cmd.metric} of ${edgeLabel} for ${seed.label}: ${result?.value}`);
 
     return okResult({
       text_summary: summary,
       data: {
         seed,
-        edgeType: cmd.edge_type,
+        relationship: edgeLabel,
         edgeDescription: annotation ?? undefined,
         metric: cmd.metric,
         scoreField: resolvedScoreField ?? undefined,

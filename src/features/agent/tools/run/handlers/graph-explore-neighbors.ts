@@ -13,6 +13,7 @@ import {
   INTENT_TO_TYPE,
   findEdgesConnecting,
   getSummaryFields,
+  canonicalizeIntent,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
@@ -74,11 +75,17 @@ export async function handleExploreNeighbors(
     const allPinnedEntities: EntityRef[] = [...resolvedSeeds];
     let apiCalls = 0;
 
-    for (const intent of intents) {
+    for (const rawIntent of intents) {
+      // Canonicalize deprecated intents (e.g. side_effects → adverse_effects)
+      const [intent, repairNote] = canonicalizeIntent(rawIntent);
+      if (repairNote) {
+        tc.warn("intent_repair", repairNote);
+      }
+
       const targetType = INTENT_TO_TYPE[intent];
       if (!targetType) continue;
 
-      const edgeTypes = findEdgesConnecting(schema, seedType, targetType);
+      const edgeTypes = findEdgesConnecting(schema, seedType, targetType, intent);
       if (edgeTypes.length === 0) {
         tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType}` });
         continue;
@@ -290,7 +297,7 @@ export async function handleExploreNeighbors(
                 limit: 100,
               }],
               select: {
-                nodeFields: ["label"].slice(0, 20),
+                nodeFields: getSummaryFields(schema, "ProteinDomain").slice(0, 20),
                 edgeFields: edgeFields.slice(0, 20),
               },
               limits: { maxNodes: 200, maxEdges: 200 },

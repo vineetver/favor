@@ -10,7 +10,7 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { INTENT_TO_TYPE, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
+import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, emptyResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -137,7 +137,7 @@ export async function handleExploreEnrich(
       text_summary: summary,
       data: {
         _method: `${method} — tests whether your ${resolved.length} input ${inputType}s are over-represented in each ${targetType} compared to the background (${data.data?.backgroundSize ?? 0} entities). Low p-values indicate statistically significant enrichment.`,
-        edgeType: expectedEdge,
+        relationship: humanEdgeLabel(expectedEdge),
         edgeDescription: annotation ?? undefined,
         edgeStrategy,
         inputType,

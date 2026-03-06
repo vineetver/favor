@@ -7,12 +7,11 @@ import { tool } from "ai";
 import { z } from "zod";
 
 export const askUserTool = tool({
-  description: `Ask the user a clarifying question when:
-- Multiple columns could be the target for analytics
-- Ambiguous entity names (e.g., "cancer" could be many diseases)
-- User goal is underspecified
-- Multiple analysis paths are equally valid
-The question will be shown to the user and their response included in the next turn.`,
+  description: `Clarify ambiguity with the user:
+- Multiple matching entities (e.g. "cancer" → many diseases)
+- Unclear target column for analytics
+- Multiple valid analysis approaches
+Response appears in the next turn.`,
   inputSchema: z.object({
     question: z.string().describe("The question to ask the user"),
     options: z

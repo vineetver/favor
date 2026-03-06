@@ -11,6 +11,7 @@
  */
 
 import type { RunResult, NextAction } from "./types";
+import { humanEdgeLabel, humanScoreLabel } from "./handlers/graph";
 
 interface TruncationInfo {
   truncated: true;
@@ -174,7 +175,7 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
     const top = asArray(branch.top).slice(0, 5);
     compactResults[key] = {
       count: branch.count,
-      edgeType: branch.edgeType,
+      relationship: humanEdgeLabel(branch.edgeType),
       top,
       ...(branch.top.length > 5 ? { _truncation: truncation(5, branch.top.length, "explore with narrower intent for more") } : {}),
     };
@@ -188,7 +189,8 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
   if (data.enrichment) out.enrichment = data.enrichment;
   // Pass through aggregate data (already small)
   if (data.seed) out.seed = data.seed;
-  if (data.edgeType) out.edgeType = data.edgeType;
+  if (data.relationship) out.relationship = data.relationship;
+  else if (data.edgeType) out.relationship = humanEdgeLabel(data.edgeType as string);
   if (data.metric) out.metric = data.metric;
   if (data.value !== undefined) out.value = data.value;
   if (data.buckets) {
@@ -231,16 +233,52 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
 
 function compactTraverse(data: Record<string, unknown>): Record<string, unknown> {
   // Chain mode
-  const steps = data.steps as Array<{ intent: string; count: number; top: unknown[] }> | undefined;
+  const steps = data.steps as Array<{
+    intent: string;
+    edgeType?: string;
+    count: number;
+    top: unknown[];
+    edgeDescription?: string;
+    scoreField?: string;
+  }> | undefined;
   if (steps) {
+    const TOP_K = 10;
     return {
       seed: data.seed,
-      steps: steps.map((s) => ({
-        intent: s.intent,
-        count: s.count,
-        top: asArray(s.top).slice(0, 5),
-        ...(s.top.length > 5 ? { _truncation: truncation(5, s.top.length) } : {}),
-      })),
+      steps: steps.map((s) => {
+        // Build human-readable relationship from edgeDescription label or edgeType
+        const relationship = s.edgeDescription
+          ? s.edgeDescription.replace(/:.*$/, "").trim()
+          : s.edgeType
+            ? humanEdgeLabel(s.edgeType)
+            : undefined;
+        const scoreContext = s.scoreField
+          ? humanScoreLabel(s.scoreField)
+          : undefined;
+        // Preserve numeric scores on entities so the LLM can rank/report them
+        const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
+          const ent = e as Record<string, unknown>;
+          const out: Record<string, unknown> = {
+            type: ent.type,
+            id: ent.id,
+            label: ent.label,
+            subtitle: ent.subtitle,
+          };
+          if (ent.rank != null) out.rank = ent.rank;
+          if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
+          if (typeof ent.pValue === "number") out.pValue = ent.pValue;
+          if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
+          return out;
+        });
+        return {
+          intent: s.intent,
+          count: s.count,
+          ...(relationship ? { relationship } : {}),
+          ...(scoreContext ? { scoreContext } : {}),
+          top: topEntities,
+          ...(s.top.length > TOP_K ? { _truncation: truncation(TOP_K, s.top.length) } : {}),
+        };
+      }),
     };
   }
 

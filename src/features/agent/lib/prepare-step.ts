@@ -55,7 +55,15 @@ function countToolCalls(steps: StepData[]): number {
 // ---------------------------------------------------------------------------
 
 const SYNTHESIS_INSTRUCTION =
-  "\n\n[SYSTEM] Write a concise answer. Lead with the finding. Use tables for ranked results. Cite scores inline. Under 500 words. ONLY use data from tool results above. NEVER supplement with training knowledge. Do NOT call any more tools.";
+  "\n\n[SYSTEM] Synthesize now. No more tool calls." +
+  "\nLead with findings. Tables for ranked data. Under 500 words. Only data from tool results." +
+  "\n\nVerify before writing:" +
+  "\n1. Every name/score traces to a tool result, not training data." +
+  "\n2. Using relationship labels from results, not raw edge type identifiers." +
+  "\n3. Numeric scores included, not just entity names." +
+  "\n4. Entity subtitles for biological context." +
+  "\n5. Empty steps stated explicitly." +
+  "\n6. No raw JSON — prose and tables only.";
 
 const CONTEXT_HEAVY_HINT =
   "\n\n[SYSTEM] Context is getting large. Be efficient — proceed to synthesis if you have enough data.";
@@ -140,10 +148,26 @@ export function createPrepareStep(
       }
     }
 
-    // --- 7. Context heavy hint ---
+    // --- 7. After Run with text_summary: force synthesis ---
+    // When the last step returned a Run result with text_summary, the data
+    // is ready for the user. Force synthesis to prevent the model from
+    // just echoing tool results or offering follow-up buttons without
+    // actually analyzing the data.  Multi-tool sequences still work via
+    // parallel tool calls in a single step.
+    if (lastStep?.toolResults) {
+      const hasTerminalRun = lastStep.toolResults.some((r) => {
+        const out = r.output as Record<string, unknown> | undefined;
+        return r.toolName === "Run" && out?.text_summary && out?.status !== "error";
+      });
+      if (hasTerminalRun && stepNumber >= 2) {
+        return synthesize();
+      }
+    }
+
+    // --- 8. Context heavy hint ---
     const hint = isContextHeavy(stepsData) ? CONTEXT_HEAVY_HINT : "";
 
-    // --- 8. Otherwise: let model decide ---
+    // --- 9. Otherwise: let model decide ---
     return {
       toolChoice: "auto" as const,
       system: buildSystemPrompt(currentState ?? undefined) + hint,

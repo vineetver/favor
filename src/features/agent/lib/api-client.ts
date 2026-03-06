@@ -82,6 +82,11 @@ export async function agentFetch<T>(
     } catch {
       // Not in a Next.js request context — skip
     }
+
+    // Fallback: use API key when no cookies are available (eval, scripts)
+    if (!headers["Cookie"] && process.env.FAVOR_API_KEY) {
+      headers["Authorization"] = `Bearer ${process.env.FAVOR_API_KEY}`;
+    }
   }
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

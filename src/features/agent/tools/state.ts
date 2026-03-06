@@ -30,7 +30,7 @@ interface MethodMatch {
 
 export function createStateTool(sessionId: string) {
   return tool({
-    description: `Get workspace snapshot: active cohort, schema digest, pinned entities, active jobs, recent artifacts, mode. Call at the start of each turn to orient, or explicitly to re-check state after changes.`,
+    description: `Workspace snapshot: active cohort + schema, pinned entities, jobs, derived cohorts, mode. Call first every turn to orient.`,
     inputSchema: z.object({}),
     execute: async () => {
       try {

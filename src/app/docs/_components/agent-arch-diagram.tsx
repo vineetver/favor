@@ -68,6 +68,7 @@ function ToolNode({ data }: NodeProps<Node<ToolNodeData>>) {
   return (
     <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 shadow-sm min-w-[90px] text-center">
       <Handle type="target" position={Position.Top} style={handleStyle} />
+      <Handle type="target" position={Position.Left} id="left" style={handleStyle} />
       <p className="text-[13px] font-bold text-primary leading-tight">
         {data.title}
       </p>
@@ -77,6 +78,7 @@ function ToolNode({ data }: NodeProps<Node<ToolNodeData>>) {
         </p>
       )}
       <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      <Handle type="source" position={Position.Right} id="right" style={handleStyle} />
     </div>
   );
 }
@@ -536,26 +538,344 @@ function DiagramInner() {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Data-flow diagram — RAG loop & database interactions                       */
+/* -------------------------------------------------------------------------- */
+
+const DLX = 10;
+const DLEFT = 160;
+//              Query  Agent  Resolve       Fetch        Stores       Response
+const DROW = [0,     80,    170,          280,         390,         490];
+
+/* thick data-pipe: solid, heavy, primary */
+const pipeStyle = {
+  stroke: "var(--color-primary)",
+  strokeWidth: 2.5,
+  opacity: 0.65,
+};
+const pipeMarker = {
+  type: MarkerType.ArrowClosed as const,
+  color: "var(--color-primary)",
+  width: 14,
+  height: 14,
+};
+
+/* thin convergence: solid, light, muted */
+const thinStyle = {
+  stroke: "var(--color-border)",
+  strokeWidth: 1.2,
+  opacity: 0.5,
+};
+const thinMarker = {
+  type: MarkerType.ArrowClosed as const,
+  color: "var(--color-border)",
+  width: 12,
+  height: 12,
+};
+
+const dataNodes: Node[] = [
+  /* section labels */
+  {
+    id: "dl-query",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[0] + 12 },
+    data: { label: "Query" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "dl-agent",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[1] + 10 },
+    data: { label: "Agent" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "dl-resolve",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[2] + 10 },
+    data: { label: "Resolve" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "dl-fetch",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[3] + 10 },
+    data: { label: "Fetch" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "dl-stores",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[4] + 10 },
+    data: { label: "Data Stores" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "dl-response",
+    type: "sectionLabel",
+    position: { x: DLX, y: DROW[5] + 10 },
+    data: { label: "Response" },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 0 — Query */
+  {
+    id: "d-query",
+    type: "core",
+    position: { x: DLEFT + 180, y: DROW[0] },
+    data: { title: "Natural Language Query", subtitle: "SSE streaming" },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 1 — Agent */
+  {
+    id: "d-agent",
+    type: "core",
+    position: { x: DLEFT + 150, y: DROW[1] },
+    data: {
+      title: "Agent (Claude)",
+      subtitle: "plan → call → observe → repeat",
+      accent: true,
+    },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 2 — Resolve: Search → Name index (horizontal pair) */
+  {
+    id: "d-search",
+    type: "tool",
+    position: { x: DLEFT + 70, y: DROW[2] },
+    data: { title: "Search", detail: "\"Alzheimer\" → exact IDs" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "d-nameindex",
+    type: "core",
+    position: { x: DLEFT + 310, y: DROW[2] },
+    data: { title: "Name index", subtitle: "Elasticsearch · 14.8M entities" },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 3 — Fetch: Read & Run consume resolved IDs */
+  {
+    id: "d-read",
+    type: "tool",
+    position: { x: DLEFT + 80, y: DROW[3] },
+    data: { title: "Read", detail: "entity profiles" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "d-run",
+    type: "tool",
+    position: { x: DLEFT + 350, y: DROW[3] },
+    data: { title: "Run", detail: "query · analyze · traverse" },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 4 — Data stores */
+  {
+    id: "d-variants",
+    type: "core",
+    position: { x: DLEFT - 10, y: DROW[4] },
+    data: { title: "Variant store", subtitle: "8.9B × 232 annotations" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "d-graph",
+    type: "core",
+    position: { x: DLEFT + 200, y: DROW[4] },
+    data: { title: "Graph store", subtitle: "191M edges · 16 types" },
+    draggable: false,
+    selectable: false,
+  },
+  {
+    id: "d-cohort",
+    type: "core",
+    position: { x: DLEFT + 420, y: DROW[4] },
+    data: { title: "Cohort engine", subtitle: "filter · analytics" },
+    draggable: false,
+    selectable: false,
+  },
+
+  /* Row 5 — Response */
+  {
+    id: "d-response",
+    type: "core",
+    position: { x: DLEFT + 150, y: DROW[5] },
+    data: {
+      title: "Synthesized Response",
+      subtitle: "charts · tables · artifacts · plain English",
+      accent: true,
+    },
+    draggable: false,
+    selectable: false,
+  },
+];
+
+const dataEdges: Edge[] = [
+  /* === Main data pipe (thick solid) === */
+
+  /* Query → Agent */
+  edge("de-q-agent", "d-query", "d-agent", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* Agent → Search (the first step — resolve) */
+  edge("de-a-search", "d-agent", "d-search", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* Search → Name index (horizontal) */
+  edge("de-search-idx", "d-search", "d-nameindex", {
+    sourceHandle: "right",
+    targetHandle: "left",
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* Name index → Read, Run (resolved IDs feed downstream) */
+  edge("de-idx-read", "d-nameindex", "d-read", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+    label: "entity IDs",
+  }),
+  edge("de-idx-run", "d-nameindex", "d-run", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* Read → stores */
+  edge("de-read-var", "d-read", "d-variants", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+  edge("de-read-graph", "d-read", "d-graph", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* Run → stores */
+  edge("de-run-graph", "d-run", "d-graph", {
+    style: { ...pipeStyle, opacity: 0.45 },
+    markerEnd: pipeMarker,
+  }),
+  edge("de-run-cohort", "d-run", "d-cohort", {
+    style: pipeStyle,
+    markerEnd: pipeMarker,
+  }),
+
+  /* === Stores → Response (thin, muted — convergence) === */
+  edge("de-var-resp", "d-variants", "d-response", {
+    style: thinStyle,
+    markerEnd: thinMarker,
+  }),
+  edge("de-graph-resp", "d-graph", "d-response", {
+    style: thinStyle,
+    markerEnd: thinMarker,
+  }),
+  edge("de-cohort-resp", "d-cohort", "d-response", {
+    style: thinStyle,
+    markerEnd: thinMarker,
+  }),
+];
+
+function DataFlowDiagramInner() {
+  const proOptions = useMemo(() => ({ hideAttribution: true }), []);
+  return (
+    <ReactFlow
+      nodes={dataNodes}
+      edges={dataEdges}
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      proOptions={proOptions}
+      fitView
+      fitViewOptions={{ padding: 0.1 }}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      nodesFocusable={false}
+      edgesFocusable={false}
+      elementsSelectable={false}
+      panOnDrag={false}
+      panOnScroll={false}
+      zoomOnScroll={false}
+      zoomOnPinch={false}
+      zoomOnDoubleClick={false}
+      preventScrolling={false}
+      className="!bg-transparent !cursor-default"
+    />
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Exported component with toggle                                             */
+/* -------------------------------------------------------------------------- */
+
 export function AgentArchDiagram() {
   const [mounted, setMounted] = useState(false);
+  const [view, setView] = useState<"arch" | "data">("arch");
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const skeleton = (
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
+        <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="w-full h-[540px] rounded-xl border border-border bg-muted/30 overflow-hidden">
-      {mounted ? (
-        <ReactFlowProvider>
-          <DiagramInner />
-        </ReactFlowProvider>
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
-            <div className="h-3 w-32 rounded bg-muted animate-pulse" />
-          </div>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
+          <button
+            onClick={() => setView("arch")}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+              view === "arch"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Architecture
+          </button>
+          <button
+            onClick={() => setView("data")}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+              view === "data"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Data flow
+          </button>
         </div>
-      )}
+      </div>
+      <div className={`w-full rounded-xl border border-border bg-muted/30 overflow-hidden ${view === "arch" ? "h-[540px]" : "h-[580px]"}`}>
+        {mounted ? (
+          <ReactFlowProvider key={view}>
+            {view === "arch" ? <DiagramInner /> : <DataFlowDiagramInner />}
+          </ReactFlowProvider>
+        ) : (
+          skeleton
+        )}
+      </div>
     </div>
   );
 }

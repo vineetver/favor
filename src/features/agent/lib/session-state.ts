@@ -191,34 +191,40 @@ export function stateToPromptSnippet(state: SessionState): string {
 
   lines.push(`Mode: ${state.mode}`);
 
+  // --- Cohort state + tool availability hints ---
   if (state.active_cohort_id) {
     lines.push(
       `Active cohort: ${state.active_cohort_id} (${state.cohort_status ?? "unknown"}, ${state.cohort_row_count ?? "?"} rows)`,
     );
-  } else {
-    lines.push("Active cohort: none");
-  }
 
-  if (state.schema_digest) {
-    const numericCols = (state.schema_digest.columns ?? [])
-      .filter((c) => c.kind === "numeric")
-      .map((c) => c.name);
-    const categoricalCols = (state.schema_digest.columns ?? [])
-      .filter((c) => c.kind === "categorical")
-      .map((c) => c.name);
-    if (numericCols.length > 0) lines.push(`Numeric columns: ${numericCols.join(", ")}`);
-    if (categoricalCols.length > 0) lines.push(`Categorical columns: ${categoricalCols.join(", ")}`);
-    if (state.schema_digest.available_methods?.length > 0) {
-      lines.push(`Available methods: ${state.schema_digest.available_methods.join(", ")}`);
+    if (state.schema_digest) {
+      const numericCols = (state.schema_digest.columns ?? [])
+        .filter((c) => c.kind === "numeric")
+        .map((c) => c.name);
+      const categoricalCols = (state.schema_digest.columns ?? [])
+        .filter((c) => c.kind === "categorical")
+        .map((c) => c.name);
+      if (numericCols.length > 0) lines.push(`Numeric columns: ${numericCols.join(", ")}`);
+      if (categoricalCols.length > 0) lines.push(`Categorical columns: ${categoricalCols.join(", ")}`);
+      if (state.schema_digest.available_methods?.length > 0) {
+        lines.push(`Available analytics: ${state.schema_digest.available_methods.join(", ")}`);
+      }
+      // Row count hint for analytics feasibility
+      if (state.cohort_row_count != null && state.cohort_row_count < 20) {
+        lines.push(`⚠ Low row count (${state.cohort_row_count}) — analytics may be unreliable. Prefer rows/groupby.`);
+      }
     }
+  } else {
+    lines.push("Active cohort: none — cohort commands (rows, groupby, analytics) are UNAVAILABLE. Use graph commands or ask user to upload/select a cohort.");
   }
 
+  // --- Pinned entities — usable as seeds without re-resolving ---
   if (state.pinned_entities?.length > 0) {
     const pinList = state.pinned_entities
       .slice(0, 10)
       .map((e) => `${e.type}:${e.label ?? e.id ?? e.query}`)
       .join(", ");
-    lines.push(`Pinned entities: ${pinList}`);
+    lines.push(`Pinned entities (use as seeds with {type,id}): ${pinList}`);
   }
 
   if (state.active_job_ids?.length > 0) {
@@ -234,6 +240,7 @@ export function stateToPromptSnippet(state: SessionState): string {
   }
 
   lines.push(`Graph portal: ${state.graph_portal}`);
+  lines.push("Graph commands (explore, traverse, query) are always available.");
 
   if (state.user_goal) {
     lines.push(`User goal: ${state.user_goal}`);

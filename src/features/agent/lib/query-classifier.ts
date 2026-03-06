@@ -18,10 +18,15 @@ const ENTITY_NAME_PATTERNS = /\b(rs\d+|ENSG\d+|chr\d+[:\-]\d+|[A-Z][A-Z0-9]{1,10
 
 export function classifyQuery(
   userMessage: string,
-  state: ConversationContext,
+  state: ConversationContext & { pendingAskUser?: boolean },
 ): QueryRoute {
   // Only consider explanation-only on follow-up turns
   if (state.turnCount === 0) {
+    return { type: "full_agent" };
+  }
+
+  // If the prior turn asked the user a question, this is their answer — always full agent
+  if (state.pendingAskUser) {
     return { type: "full_agent" };
   }
 

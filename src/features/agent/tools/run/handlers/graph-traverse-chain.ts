@@ -13,6 +13,8 @@ import type { RunCommand, RunResult, EntityRef, TraverseStep, TargetIntent } fro
 import {
   INTENT_TO_TYPE,
   findEdgesConnecting,
+  canonicalizeIntent,
+  getSummaryFields,
   type GraphSchemaResponse,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
@@ -22,6 +24,8 @@ import {
   errorResult,
   catchError,
   edgeTypeAnnotation,
+  humanEdgeLabel,
+  humanScoreLabel,
 } from "./graph";
 import { okResult, partialResult, TraceCollector } from "../run-result";
 
@@ -59,6 +63,8 @@ interface AnnotatedIntoStep {
   defaultScoreField?: string;
   sourceDepth: number; // -1 if no edge found
   limit: number;
+  sort?: string; // User-specified sort override (e.g. "-score_field")
+  filters?: Record<string, unknown>; // User-specified edge filters (field__op format)
 }
 
 // ---------------------------------------------------------------------------
@@ -79,31 +85,39 @@ function annotateIntoSteps(
     const step = steps[i];
 
     if ("into" in step) {
-      const targetType = INTENT_TO_TYPE[step.into];
+      // Canonicalize deprecated intents (e.g. side_effects → adverse_effects)
+      const [canonicalIntent, repairNote] = canonicalizeIntent(step.into);
+      if (repairNote) {
+        tc.warn("intent_repair", `Step ${i}: ${repairNote}`);
+      }
+
+      const targetType = INTENT_TO_TYPE[canonicalIntent];
       if (!targetType) {
-        tc.warn("unknown_intent", `Step ${i}: unknown intent "${step.into}"`);
+        tc.warn("unknown_intent", `Step ${i}: unknown intent "${canonicalIntent}"`);
         continue;
       }
 
       let found = false;
       for (let d = typeStack.length - 1; d >= 0; d--) {
-        const edges = findEdgesConnecting(schema, typeStack[d], targetType);
+        const edges = findEdgesConnecting(schema, typeStack[d], targetType, canonicalIntent);
         if (edges.length > 0) {
           const ann: AnnotatedIntoStep = {
             userStepIndex: i,
-            intent: step.into,
+            intent: canonicalIntent,
             targetType,
             edgeType: edges[0].edgeType,
             defaultScoreField: edges[0].defaultScoreField,
             sourceDepth: d,
             limit: Math.min(step.top ?? 20, 100),
+            sort: step.sort,
+            filters: step.filters as Record<string, unknown> | undefined,
           };
           intoSteps.push(ann);
 
           tc.add({
             step: `annotateStep_${i}`,
             kind: "decision",
-            message: `${step.into}: ${typeStack[d]}→${targetType} via ${edges[0].edgeType} (depth=${d})`,
+            message: `${canonicalIntent}: ${typeStack[d]}→${targetType} via ${edges[0].edgeType} (depth=${d})`,
           });
 
           if (d === typeStack.length - 1) {
@@ -118,7 +132,7 @@ function annotateIntoSteps(
         tc.warn("no_edge", `Step ${i}: no edge ${typeStack.at(-1)}→${targetType}`);
         intoSteps.push({
           userStepIndex: i,
-          intent: step.into,
+          intent: canonicalIntent,
           targetType,
           edgeType: "none",
           sourceDepth: -1,
@@ -161,14 +175,16 @@ function buildQuerySteps(
       querySteps.push({
         edgeTypes: [s.edgeType],
         limit: s.limit,
-        sort: s.defaultScoreField ? `-${s.defaultScoreField}` : undefined,
+        sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
+        ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
       });
     } else {
       querySteps.push({
         branch: group.map((s) => ({
           edgeTypes: [s.edgeType],
           limit: s.limit,
-          sort: s.defaultScoreField ? `-${s.defaultScoreField}` : undefined,
+          sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
+          ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
         })),
       });
     }
@@ -184,6 +200,7 @@ function buildQuerySteps(
 async function executeViaQuery(
   seed: EntityRef,
   intoSteps: AnnotatedIntoStep[],
+  schema: GraphSchemaResponse,
   tc: TraceCollector,
 ): Promise<StepResult[] | null> {
   const querySteps = buildQuerySteps(intoSteps);
@@ -191,6 +208,25 @@ async function executeViaQuery(
 
   try {
     tc.add({ step: "batchQuery", kind: "call", message: `POST /graph/query with ${querySteps.length} steps` });
+
+    // Collect node fields from schema for all target types in the chain
+    const targetTypes = [...new Set(intoSteps.map((s) => s.targetType))];
+    const nodeFields = [
+      ...new Set(targetTypes.flatMap((t) => getSummaryFields(schema, t))),
+    ].slice(0, 20);
+
+    // Collect score fields dynamically from each step's annotated edge type
+    const stepScoreFields = intoSteps
+      .map((s) => s.defaultScoreField)
+      .filter((f): f is string => !!f);
+    const edgeFields = [
+      ...new Set([
+        ...stepScoreFields,
+        "evidence_count",
+        "max_clinical_phase",
+        "overall_score",
+      ]),
+    ].slice(0, 20);
 
     const resp = await agentFetch<{
       data: {
@@ -212,12 +248,8 @@ async function executeViaQuery(
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
         select: {
-          nodeFields: ["label", "subtitle"].slice(0, 20),
-          edgeFields: [
-            "score",
-            "overall_score",
-            "combined_score",
-          ].slice(0, 20),
+          nodeFields,
+          edgeFields,
         },
         limits: { maxNodes: 1000, maxEdges: 5000 },
       },
@@ -249,6 +281,9 @@ async function executeViaQuery(
       const targetEntities: ScoredEntity[] = [];
       const seen = new Set<string>();
 
+      // Prefer this step's own default score field, then generic fallbacks
+      const scoreField = ann.defaultScoreField;
+
       for (const edge of stepEdges) {
         const fromColonIdx = edge.from.indexOf(":");
         const fromType = fromColonIdx > 0 ? edge.from.slice(0, fromColonIdx) : edge.from;
@@ -267,9 +302,13 @@ async function executeViaQuery(
         const node = nodes[targetKey];
         if (!node?.entity) continue;
 
-        const score = (edge.fields?.overall_score ??
-          edge.fields?.score ??
-          edge.fields?.combined_score) as number | undefined;
+        const f = edge.fields ?? {};
+        const score = (
+          (scoreField ? f[scoreField] : undefined) ??
+          f.overall_score ??
+          f.score ??
+          f.evidence_count
+        ) as number | undefined;
 
         targetEntities.push({
           ...node.entity,
@@ -577,7 +616,7 @@ export async function handleTraverseChain(
 
     // Phase 2+3: Execute into steps via batch query, fall back to per-step
     const intoResults =
-      (await executeViaQuery(seed, intoSteps, tc)) ??
+      (await executeViaQuery(seed, intoSteps, schema, tc)) ??
       (await executePerStep(seed, intoSteps, tc));
 
     // Phase 4: Execute enrich steps (with auto-fallback to connectivity)
@@ -616,10 +655,14 @@ export async function handleTraverseChain(
       (a, b) => a.step - b.step,
     );
 
-    // Build informative summary with edge context
+    // Build informative summary with human-readable context
     const stepSummaries = allResults.map((r) => {
-      const scoreInfo = r.scoreField ? ` ranked by ${r.scoreField}` : "";
-      return `Step ${r.step + 1} → ${r.entities.length} ${r.intent} via ${r.edgeType}${scoreInfo}`;
+      const n = r.entities.length;
+      const names = r.entities.slice(0, 3).map((e) => e.label).filter(Boolean);
+      const preview = names.length > 0 ? ` (${names.join(", ")}${n > names.length ? ", …" : ""})` : "";
+      const relationship = humanEdgeLabel(r.edgeType);
+      const scoreInfo = r.scoreField ? `, ranked by ${humanScoreLabel(r.scoreField)}` : "";
+      return `Step ${r.step + 1} → ${n} ${r.intent}${preview} — ${relationship}${scoreInfo}`;
     });
 
     // Determine if any steps failed
@@ -628,8 +671,9 @@ export async function handleTraverseChain(
 
     const resultFn = hasPartialFailure ? partialResult : okResult;
 
+    const seedContext = seed.subtitle ? ` (${seed.subtitle})` : "";
     return resultFn({
-      text_summary: `Traversal from ${seed.label}:\n${stepSummaries.join("\n")}`,
+      text_summary: `Traversal from ${seed.label}${seedContext}:\n${stepSummaries.join("\n")}`,
       data: {
         seed,
         steps: allResults.map((r) => ({

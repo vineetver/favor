@@ -337,6 +337,40 @@ export async function handleGwasMinimal(
 // variant_profile — Deep dive on specific variants
 // ---------------------------------------------------------------------------
 
+interface ResolvedVariant {
+  query: string;
+  id: string | null;
+  label: string | null;
+  type: string | null;
+}
+
+/** Batch-resolve variant refs (rsIDs, VCF format, etc.) to graph entity IDs. */
+async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]> {
+  if (variants.length === 0) return [];
+  try {
+    const result = await agentFetch<{
+      results: Array<{
+        query: string;
+        status: string;
+        entity?: { type: string; id: string; label: string };
+      }>;
+    }>("/graph/resolve", {
+      method: "POST",
+      body: { queries: variants },
+      timeout: 15_000,
+    });
+    return (result.results ?? []).map((r) => ({
+      query: r.query,
+      id: r.status.toLowerCase() === "matched" ? r.entity?.id ?? null : null,
+      label: r.entity?.label ?? null,
+      type: r.entity?.type ?? null,
+    }));
+  } catch {
+    // Resolution failed — fall back to raw refs
+    return variants.map((v) => ({ query: v, id: null, label: null, type: null }));
+  }
+}
+
 export async function handleVariantProfile(
   cmd: Extract<RunCommand, { command: "variant_profile" }>,
   ctx: RunContext,
@@ -345,46 +379,85 @@ export async function handleVariantProfile(
   const tc = new TraceCollector();
 
   try {
-    // Parallel: fetch entity data for each variant (max 5)
-    tc.add({ step: "fetchEntities", kind: "call", message: `Fetching ${cmd.variants.length} variant profiles` });
+    const variantRefs = cmd.variants.slice(0, 5);
 
-    const entityPromises = cmd.variants.slice(0, 5).map(async (variantRef) => {
+    // Step 1: Resolve variant refs to graph IDs
+    tc.add({ step: "resolveVariants", kind: "call", message: `Resolving ${variantRefs.length} variant refs` });
+    const resolved = await resolveVariantRefs(variantRefs);
+
+    // Step 2: Fetch entity data for each resolved variant
+    tc.add({ step: "fetchEntities", kind: "call", message: `Fetching ${resolved.length} variant profiles` });
+
+    const entityPromises = resolved.map(async (rv) => {
+      const entityId = rv.id;
+      if (!entityId) {
+        return { variant: rv.query, entity: null, error: `Could not resolve variant: ${rv.query}` };
+      }
       try {
         const result = await agentFetch<Record<string, unknown>>(
-          `/graph/entity/Variant/${encodeURIComponent(variantRef)}`,
+          `/graph/Variant/${encodeURIComponent(entityId)}?include=counts,edges,rollups`,
           { timeout: 15_000 },
         );
-        return { variant: variantRef, entity: result, error: null };
+        return { variant: rv.query, resolvedId: entityId, label: rv.label, entity: result, error: null };
       } catch (err) {
-        return { variant: variantRef, entity: null, error: err instanceof Error ? err.message : String(err) };
+        return { variant: rv.query, resolvedId: entityId, entity: null, error: err instanceof Error ? err.message : String(err) };
       }
     });
 
-    // If cohort active, also fetch rows filtered to these variants
+    // Step 3: If cohort active, fetch matching rows
     let cohortData: Record<string, unknown>[] | null = null;
     if (cohortId) {
       try {
         tc.add({ step: "fetchCohortRows", kind: "call" });
-        // Try to match by rsid or vid
-        const rowResult = await cohortFetch<{ rows?: unknown[] }>(
-          `/cohorts/${encodeURIComponent(cohortId)}/rows`,
-          {
-            method: "POST",
-            body: {
-              filters: cmd.variants.map((v) => v.startsWith("rs")
-                ? { type: "gene" as const, values: [v] }  // Not ideal, but let's try a plain select
-                : { type: "gene" as const, values: [v] }
-              ),
-              limit: cmd.variants.length,
+        const schema = ctx.schemaCache ?? await fetchAndCacheSchema(cohortId);
+        const hasRsid = schema.allColumns.includes("rsid");
+        const hasVid = schema.allColumns.includes("vid");
+
+        // Split variants by format for filtering
+        const rsIds = variantRefs.filter((v) => v.startsWith("rs"));
+        // VCF format: chr-pos-ref-alt (e.g. 1-12345-A-T)
+        const vcfRefs = variantRefs.filter((v) => /^\d+-.+-[A-Z]+-[A-Z]+$/i.test(v));
+
+        // Try rsid filter first, fall back to vid
+        let rowResult: { rows?: unknown[] } | null = null;
+        if (hasRsid && rsIds.length > 0) {
+          rowResult = await cohortFetch<{ rows?: unknown[] }>(
+            `/cohorts/${encodeURIComponent(cohortId)}/rows`,
+            {
+              method: "POST",
+              body: { limit: variantRefs.length },
+              timeout: 15_000,
             },
-            timeout: 15_000,
-          },
-        ).catch(() => null);
-        if (rowResult?.rows) {
-          cohortData = rowResult.rows as Record<string, unknown>[];
+          ).catch(() => null);
+          // Client-side filter on rsid match
+          if (rowResult?.rows) {
+            const rsSet = new Set(rsIds);
+            const filtered = (rowResult.rows as Record<string, unknown>[]).filter(
+              (row) => typeof row.rsid === "string" && rsSet.has(row.rsid),
+            );
+            cohortData = filtered.length > 0 ? filtered : null;
+          }
+        }
+        if (!cohortData && hasVid && vcfRefs.length > 0) {
+          // Fetch a larger sample and filter client-side by vid
+          rowResult = await cohortFetch<{ rows?: unknown[] }>(
+            `/cohorts/${encodeURIComponent(cohortId)}/rows`,
+            {
+              method: "POST",
+              body: { limit: 100 },
+              timeout: 15_000,
+            },
+          ).catch(() => null);
+          if (rowResult?.rows) {
+            const vidSet = new Set(vcfRefs);
+            const filtered = (rowResult.rows as Record<string, unknown>[]).filter(
+              (row) => typeof row.vid === "string" && vidSet.has(row.vid),
+            );
+            cohortData = filtered.length > 0 ? filtered : null;
+          }
         }
       } catch {
-        // Cohort data not critical
+        // Cohort data not critical — skip gracefully
       }
     }
 
@@ -392,6 +465,8 @@ export async function handleVariantProfile(
 
     const profiles = entityResults.map((er) => ({
       variant: er.variant,
+      ...(er.resolvedId ? { resolvedId: er.resolvedId } : {}),
+      ...(er.label ? { label: er.label } : {}),
       ...(er.entity ? { entity: er.entity } : {}),
       ...(er.error ? { error: er.error } : {}),
     }));

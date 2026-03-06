@@ -488,6 +488,7 @@ const targetIntents = z.enum([
   "phenotypes", "tissues", "genes", "proteins", "compounds",
   "protein_domains", "ccres",
   "side_effects", "go_terms", "metabolites", "studies", "signals",
+  "drug_interactions", "adverse_effects", "drug_indications",
 ]);
 
 const flatSeedRef = z.object({
@@ -511,10 +512,10 @@ const flatCohortFilter = z.object({
 const flatTraverseStep = z.object({
   into: targetIntents.optional().describe("Target intent for navigation step"),
   enrich: targetIntents.optional().describe("Target for enrichment step"),
-  top: z.number().optional(),
-  sort: z.string().optional(),
-  filters: z.record(z.unknown()).optional(),
-  p_cutoff: z.number().optional(),
+  top: z.number().optional().describe("Max results for this step (default 20)"),
+  sort: z.string().optional().describe("Sort field, prefix '-' for desc (e.g. '-overall_score'). Default: best score for edge type"),
+  filters: z.record(z.unknown()).optional().describe("Edge property filters (field__op format, e.g. {\"score__gte\": 0.5})"),
+  p_cutoff: z.number().optional().describe("P-value cutoff for enrichment steps (default 0.05)"),
 });
 
 const flatAnalyticsTask = z.object({
@@ -661,7 +662,7 @@ const runInputSchema = z.object({
   mode: z.string().optional().describe("Sub-mode: explore(neighbors|compare|enrich|similar|context|aggregate), traverse(chain|paths)"),
   seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, query)"),
   into: z.array(targetIntents).optional().describe("Target intents (explore neighbors)"),
-  depth: z.number().optional().describe("Traversal depth (explore neighbors)"),
+  depth: z.number().optional().describe("Reserved — not currently used by explore handlers"),
   edge_type: z.string().optional().describe("Edge type (explore compare/aggregate)"),
   direction: z.enum(["in", "out"]).optional().describe("Edge direction (explore compare/aggregate)"),
   target: targetIntents.optional().describe("Target intent (explore enrich)"),
@@ -679,7 +680,7 @@ const runInputSchema = z.object({
   from: z.string().optional().describe("Source entity 'Type:ID' (traverse paths)"),
   to: z.string().optional().describe("Target entity 'Type:ID' (traverse paths)"),
   max_hops: z.number().optional().describe("Max path hops (traverse paths)"),
-  include_edge_detail: z.boolean().optional().describe("Enrich paths with edge details (traverse paths)"),
+  include_edge_detail: z.boolean().optional().describe("Reserved — paths always include edge types"),
 
   // --- query ---
   description: z.string().optional().describe("Natural language pattern description (query)"),
@@ -706,48 +707,60 @@ const runInputSchema = z.object({
  */
 export function createRunTool(getContext: () => RunContext) {
   return tool({
-    description: `Execute work: cohort queries, analytics, graph exploration, workspace management.
+    description: `Execute work against the knowledge graph or cohort data.
 
-COHORT COMMANDS (require active cohort or cohort_id):
-  rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
-
-ANALYTICS (auto-polls + auto-fetches charts — no need for analytics.poll/viz after):
-  analytics { method, params: { type (=method), ...method-specific-fields } }
-  Regression: target={field:"col"}, features={numeric:[...]}, validation?
-  Clustering: features={numeric:[...]}, k or n_clusters
-  PCA: features={numeric:[...]}, n_components?
-  Stats: bootstrap_ci(columns), permutation_test(x_column,y_column), multiple_testing_correction(p_value_column)
-  GWAS: gwas_qc(p_value_column, effect_size_column, se_column)
-
-WORKFLOW COMMANDS (multi-step — one call does the work):
-  top_hits    — { criteria, filters?, limit? } — best variants in one call
-  qc_summary  — { cohort_id? } — cohort quality overview
-  gwas_minimal — { p_column, effect_column?, se_column_name? } — GWAS summary
-  variant_profile — { variants: ["rs123", ...], cohort_id? } — deep dive on variants (max 5)
-  compare_cohorts — { cohort_ids: ["a","b"], compare_on: ["col1"] } — side-by-side comparison
-
-GRAPH COMMANDS (3 mode-dispatched primitives):
-  explore (mode: neighbors|compare|enrich|similar|context|aggregate)
-    neighbors — { seeds, into: ["diseases","drugs"] }  (default mode)
-    compare   — { mode:"compare", seeds:[...2+], edge_type? }
-    enrich    — { mode:"enrich", seeds:[...3+], target:"pathways" }
-    similar   — { mode:"similar", seeds:[{label:"TP53"}], top_k? }
-    context   — { mode:"context", seeds, sections?, context_depth? }
-    aggregate — { mode:"aggregate", seeds, edge_type, metric:"count" }
-  traverse (mode: chain|paths)
-    chain     — { seed, steps:[{into:"diseases"},{enrich:"pathways"}] }  (default mode)
-    paths     — { mode:"paths", from:"Gene:ENSG...", to:"Disease:MONDO_..." }
-  query — structural pattern matching
-    { pattern:[{var:"a",type:"Gene"},{var:"b",type:"Disease"},{var:"e",edge:"GENE_ASSOCIATED_WITH_DISEASE",from:"a",to:"b"}], return_vars:["a","b"] }
-
+COHORT (needs active cohort): rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
+ANALYTICS (auto-polls + auto-fetches charts): analytics { method, params }
+WORKFLOWS (one call): top_hits, qc_summary, gwas_minimal, variant_profile, compare_cohorts
+GRAPH (no cohort needed): explore, traverse, query
 WORKSPACE: pin, set_cohort, remember
 
-NOTE: Column names are auto-corrected. If you use "cadd" it maps to "cadd_phred", etc.
-Schema is auto-fetched before cohort commands — no need to read schema first.
+## Graph Mode Selection
 
-SEED FORMATS: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
-IMPORTANT: For fuzzy name seeds, use ONLY {label:"..."} without a type field. The resolver detects the type. Only use {type,id} for exact entity IDs.
-TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains`,
+explore (default: neighbors):
+  neighbors → seeds, into:["diseases","drugs"]         "What genes does X target?"
+  compare   → seeds (2+), edge_type?                   "What do A and B share?"
+  enrich    → seeds (3+), target:"pathways"             "Enriched pathways for these genes"
+  similar   → seeds, top_k?                             "Genes similar to TP53"
+  context   → seeds, sections?                          "Tell me about BRCA1"
+  aggregate → seeds, edge_type, metric:"count"          "How many disease links?"
+traverse:
+  chain → seed, steps:[{into:"diseases"},{into:"drugs"}]  "Gene→diseases→drugs"
+  paths → from:"Type:ID", to:"Type:ID"                    "Path from X to Y"
+query → pattern:[{var,type?,edge?,from?,to?}], return_vars "Genes connecting Drug X to Disease Y"
+
+⚠ overlap/shared/intersection → compare or query. NEVER two separate explores.
+⚠ "X linked to Y" / "associated with" → traverse chain or query, not separate explores.
+
+## Intent Direction
+Intent = target type. Direction = seed→target:
+  drugs            — acts on gene target (gene→drug)
+  drug_indications — approved for disease (disease→drug). Use for "what treats X?"
+  drug_interactions — drug-drug interactions (drug→drug)
+  adverse_effects  — drug side effects (drug→side_effect). Always use instead of side_effects.
+  diseases         — associated with gene (gene→disease)
+WRONG: "Drugs for Alzheimer" → into:"drugs" (finds gene targets)
+RIGHT: "Drugs for Alzheimer" → into:"drug_indications"
+
+## Traverse
+- {into:...} for connectivity. {enrich:...} only for statistical enrichment (needs 3+ entities).
+- Direction: disease→genes→drugs→adverse_effects→drug_interactions
+- Auto-backtracks when no direct edge between consecutive types.
+- Per-step sort/filters supported: {into:"drugs", sort:"-overall_score", filters:{"score__gte":0.5}}
+- Paths: max_hops capped at 5.
+
+## Seeds
+{label:"BRCA1"} — fuzzy, preferred. Do NOT include type field.
+{type:"Gene", id:"ENSG..."} — exact. Use after Search resolves.
+
+## Analytics
+method must match params.type.
+  features: { numeric: ["col1","col2"] }  — object with numeric array
+  target: { field: "col" }                — object with field string
+  gwas_qc: { p_value_column, effect_size_column, se_column } — no features/target
+Auto-defaults: validation=holdout 20%, missing="median", bootstrap statistic={stat:"mean"}.
+
+Intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_interactions, adverse_effects, drug_indications`,
     inputSchema: runInputSchema,
     execute: async (cmd) => {
       const ctx = getContext();

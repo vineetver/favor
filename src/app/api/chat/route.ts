@@ -54,10 +54,18 @@ export async function POST(req: Request) {
     ?.map((p: { text: string }) => p.text)
     ?.join(" ") ?? lastUserMsg?.content ?? "";
 
+  // Detect if prior assistant turn contained an AskUser tool call
+  const lastAssistantMsg = [...messages].reverse().find((m: { role: string }) => m.role === "assistant");
+  const pendingAskUser = !!(lastAssistantMsg?.parts ?? []).some(
+    (p: { type: string; toolName?: string }) =>
+      p.type === "tool-invocation" && p.toolName === "AskUser",
+  );
+
   // Classify query for fast-path
   const route = classifyQuery(lastUserText, {
     resolvedEntities: {},
     turnCount: messages.filter((m: { role: string }) => m.role === "user").length - 1,
+    pendingAskUser,
   });
 
   const effectiveSessionId = sessionId ?? `ephemeral-${Date.now()}`;

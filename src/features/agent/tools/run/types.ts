@@ -54,6 +54,7 @@ const targetIntentSchema = z.enum([
   "phenotypes", "tissues", "genes", "proteins", "compounds",
   "protein_domains", "ccres",
   "side_effects", "go_terms", "metabolites", "studies", "signals",
+  "drug_interactions", "adverse_effects", "drug_indications",
 ]);
 
 export type TargetIntent = z.infer<typeof targetIntentSchema>;

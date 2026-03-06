@@ -63,6 +63,65 @@ export const TARGET_EDGE_MAP: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Shared: human-readable labels for edge types and score fields
+// ---------------------------------------------------------------------------
+
+/** Map raw edge types → plain-English relationship descriptions */
+export const EDGE_HUMAN_LABEL: Record<string, string> = {
+  VARIANT_IMPLIES_GENE: "variant-to-gene link",
+  GENE_ASSOCIATED_WITH_DISEASE: "gene–disease association",
+  GENE_PARTICIPATES_IN_PATHWAY: "pathway membership",
+  GENE_ANNOTATED_WITH_GO_TERM: "GO annotation",
+  GENE_ASSOCIATED_WITH_PHENOTYPE: "gene–phenotype association",
+  DRUG_ACTS_ON_GENE: "drug–gene target interaction",
+  GENE_AFFECTS_DRUG_RESPONSE: "pharmacogenomic drug response",
+  DRUG_DISPOSITION_BY_GENE: "drug disposition by gene",
+  GENE_EXPRESSED_IN_TISSUE: "tissue expression",
+  GENE_ASSOCIATED_WITH_SIDE_EFFECT: "side-effect association",
+  GENE_HAS_PROTEIN_DOMAIN: "protein domain membership",
+  GENE_INTERACTS_WITH_GENE: "protein–protein interaction",
+  DISEASE_ASSOCIATED_WITH_PHENOTYPE: "disease–phenotype link",
+  DISEASE_HAS_PHENOTYPE: "disease–phenotype association",
+  DISEASE_HAS_DRUG: "disease treatment",
+  DRUG_INDICATED_FOR_DISEASE: "drug indication for disease",
+  DRUG_HAS_ADVERSE_EFFECT: "drug adverse effect",
+  DRUG_INTERACTS_WITH_DRUG: "drug–drug interaction",
+  DRUG_PAIR_CAUSES_SIDE_EFFECT: "drug-pair side effect",
+  VARIANT_IN_CCRE: "cis-regulatory element overlap",
+  CCRE_REGULATES_GENE: "cis-regulatory element–gene regulation",
+  VARIANT_ASSOCIATED_WITH_STUDY: "GWAS study association",
+};
+
+/** Map raw score field names → what they measure */
+export const SCORE_HUMAN_LABEL: Record<string, string> = {
+  l2g_score: "locus-to-gene prediction model",
+  ot_score: "Open Targets association score",
+  evidence_count: "evidence count across sources",
+  max_clinical_phase: "most advanced clinical trial phase",
+  pValue: "statistical significance (p-value)",
+  combined_score: "combined interaction confidence",
+  overall_score: "overall association score",
+  score: "association score",
+  max_score: "maximum regulatory evidence score",
+  affinity_median: "binding affinity (pKi/pIC50, higher = stronger)",
+  faers_llr: "FAERS log-likelihood ratio (adverse effect signal strength)",
+  onsides_pred1: "OnSIDES prediction score (side effect confidence)",
+  prr: "proportional reporting ratio (drug-pair signal)",
+  max_profile_evidence_score: "max pharmacogenomic evidence score",
+  dc_act_value: "DrugCentral activity value (pACT)",
+};
+
+/** Human-readable label for an edge type (fallback: lowercase + de-underscore) */
+export function humanEdgeLabel(edgeType: string): string {
+  return EDGE_HUMAN_LABEL[edgeType] ?? edgeType.toLowerCase().replace(/_/g, " ");
+}
+
+/** Human-readable label for a score field (fallback: lowercase + de-underscore) */
+export function humanScoreLabel(scoreField: string): string {
+  return SCORE_HUMAN_LABEL[scoreField] ?? scoreField.toLowerCase().replace(/_/g, " ");
+}
+
+// ---------------------------------------------------------------------------
 // Shared: error helpers (delegates to run-result.ts)
 // ---------------------------------------------------------------------------
 
@@ -118,7 +177,7 @@ export async function edgeTypeAnnotation(edgeType: string): Promise<string | nul
   const schema = await getCachedGraphSchema();
   const entry = schema.edgeTypes.find((e) => e.edgeType === edgeType);
   if (!entry?.description) return null;
-  return `${edgeType}: ${entry.description}`;
+  return `${humanEdgeLabel(edgeType)}: ${entry.description}`;
 }
 
 /**
@@ -131,10 +190,10 @@ export async function edgeTypeAnnotations(edgeTypes: string[]): Promise<string> 
   for (const et of edgeTypes) {
     const entry = schema.edgeTypes.find((e) => e.edgeType === et);
     if (entry?.description) {
-      lines.push(`${et}: ${entry.description}`);
+      lines.push(`${humanEdgeLabel(et)}: ${entry.description}`);
     }
   }
-  return lines.length > 0 ? `\n\nEdge types:\n${lines.join("\n")}` : "";
+  return lines.length > 0 ? `\n\nRelationship types:\n${lines.join("\n")}` : "";
 }
 
 // ---------------------------------------------------------------------------

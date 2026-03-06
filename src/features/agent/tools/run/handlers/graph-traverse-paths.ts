@@ -5,7 +5,7 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchError, getCachedGraphSchema } from "./graph";
+import { errorResult, catchError, getCachedGraphSchema, humanEdgeLabel } from "./graph";
 import { okResult, emptyResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
@@ -100,25 +100,23 @@ export async function handleTraversePaths(
       });
     }
 
-    // Build edge type annotations from schema and embed into summary
-    const edgeTypeAnnotations: Record<string, { label: string; description: string }> = {};
+    // Build edge type annotations from schema using human-readable labels
+    const edgeAnnotations: Record<string, { description: string }> = {};
     for (const et of usedEdgeTypes) {
       const schemaEntry = schema.edgeTypes.find((e) => e.edgeType === et);
-      if (schemaEntry) {
-        edgeTypeAnnotations[et] = {
-          label: schemaEntry.label ?? et,
-          description: schemaEntry.description ?? "",
-        };
+      const label = humanEdgeLabel(et);
+      if (schemaEntry?.description) {
+        edgeAnnotations[label] = { description: schemaEntry.description };
       }
     }
 
-    // Build enriched summary: base summary + edge type context
+    // Build enriched summary: base summary + edge type context (human-readable)
     const baseSummary = data.data.textSummary ?? `${paths.length} paths found`;
-    const annotationLines = Object.entries(edgeTypeAnnotations).map(
-      ([et, { description }]) => `${et}: ${description}`,
+    const annotationLines = Object.entries(edgeAnnotations).map(
+      ([label, { description }]) => `${label}: ${description}`,
     );
     const textSummary = annotationLines.length > 0
-      ? `${baseSummary}\n\nEdge types in these paths:\n${annotationLines.join("\n")}`
+      ? `${baseSummary}\n\nRelationship types in these paths:\n${annotationLines.join("\n")}`
       : baseSummary;
 
     return okResult({
@@ -127,7 +125,7 @@ export async function handleTraversePaths(
         _method: "Shortest path search through the knowledge graph. Each path shows a chain of entities connected by typed relationships.",
         from: data.data.from,
         to: data.data.to,
-        edgeAnnotations: edgeTypeAnnotations,
+        edgeAnnotations,
         paths,
       },
       state_delta: {},
