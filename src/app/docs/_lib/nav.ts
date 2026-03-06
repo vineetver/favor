@@ -1,39 +1,39 @@
 export interface DocsNavItem {
   title: string;
   href: string;
-  description: string;
 }
 
-export const DOCS_NAV_ITEMS: DocsNavItem[] = [
+export interface DocsNavGroup {
+  label: string;
+  items: DocsNavItem[];
+}
+
+export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
   {
-    title: "Overview",
-    href: "/docs",
-    description: "Documentation hub and recommended learning paths.",
+    label: "Overview",
+    items: [{ title: "Overview", href: "/docs" }],
   },
   {
-    title: "Getting Started",
-    href: "/docs/getting-started",
-    description: "First-session setup and core workflows.",
+    label: "Portal Guide",
+    items: [
+      { title: "Search & Explore", href: "/docs/search" },
+      { title: "Batch Annotation", href: "/docs/batch-annotation" },
+      { title: "AI Agent", href: "/docs/agent" },
+    ],
   },
   {
-    title: "AI Agent",
-    href: "/docs/ai-agent",
-    description: "Complete FAVOR-GPT guide with architecture and data flow.",
-  },
-  {
-    title: "Search & Explore",
-    href: "/docs/search-and-explore",
-    description: "Entity search, interpretation, and exploration patterns.",
-  },
-  {
-    title: "Batch Annotation",
-    href: "/docs/batch-annotation",
-    description: "Upload, process, monitor jobs, and review outputs.",
-  },
-  {
-    title: "Data & Scope",
-    href: "/docs/data-and-scope",
-    description: "Coverage, practical expectations, and validation guidance.",
+    label: "Deep Dives",
+    items: [
+      { title: "Architecture", href: "/docs/architecture" },
+      { title: "Knowledge Graph", href: "/docs/knowledge-graph" },
+      { title: "AI Agent", href: "/docs/agent-system" },
+      { title: "Batch Pipeline", href: "/docs/batch-pipeline" },
+      { title: "Search Engine", href: "/docs/search-engine" },
+    ],
   },
 ];
 
+/** Flat list for mobile pill bar */
+export const DOCS_NAV_ITEMS: DocsNavItem[] = DOCS_NAV_GROUPS.flatMap(
+  (g) => g.items,
+);

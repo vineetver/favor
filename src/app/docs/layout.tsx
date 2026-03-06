@@ -13,7 +13,7 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
                 {item.title}
               </Link>
@@ -21,14 +21,13 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 xl:gap-10">
+        <div className="flex flex-col lg:flex-row gap-10 xl:gap-14">
           <div className="hidden lg:block">
             <DocsSidebar />
           </div>
-          <div className="min-w-0 flex-1">{children}</div>
+          <div className="min-w-0 flex-1 max-w-4xl">{children}</div>
         </div>
       </div>
     </div>
   );
 }
-
