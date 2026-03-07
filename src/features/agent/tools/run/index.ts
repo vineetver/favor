@@ -12,6 +12,7 @@ import { handleAnalytics, handleAnalyticsPoll, handleViz } from "./handlers/anal
 import { handleExplore, handleTraverse, handleQuery } from "./handlers/graph";
 import { handlePin, handleSetCohort, handleRemember, handleExport, handleCreateCohort } from "./handlers/workspace";
 import { handleTopHits, handleQcSummary, handleGwasMinimal, handleVariantProfile, handleCompareCohorts } from "./handlers/workflows";
+import { handlePipeline } from "./handlers/pipeline";
 import { compactRunForModel } from "./compactify";
 import { errorResult, type TraceCollector } from "./run-result";
 import { type CohortSchemaCache, fetchAndCacheSchema, getCachedSchema, getFingerprint } from "./schema-cache";
@@ -26,6 +27,10 @@ export interface RunContext {
   sessionId?: string;
   resolvedEntities?: Record<string, EntityRef>;
   schemaCache?: CohortSchemaCache;
+  /** Per-session failure tracker — prevents cross-session contamination */
+  failureTracker?: Map<string, FailureTrack>;
+  /** Number of empty-result probes already run this turn */
+  probesThisTurn?: number;
 }
 
 type CommandHandler = (
@@ -59,6 +64,13 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   traverse: (cmd, ctx) => handleTraverse(cmd as Extract<RunCommand, { command: "traverse" }>, ctx.resolvedEntities),
   query: (cmd, ctx) => handleQuery(cmd as Extract<RunCommand, { command: "query" }>, ctx.resolvedEntities),
 
+  // Pipeline
+  pipeline: (cmd, ctx) => handlePipeline(
+    cmd as Extract<RunCommand, { command: "pipeline" }>,
+    ctx,
+    executeRun,
+  ),
+
   // Workspace
   pin: (cmd) => handlePin(cmd as Extract<RunCommand, { command: "pin" }>),
   set_cohort: (cmd) => handleSetCohort(cmd as Extract<RunCommand, { command: "set_cohort" }>),
@@ -74,7 +86,7 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
 const COHORT_COMMANDS = new Set([
   "rows", "groupby", "correlation", "derive", "prioritize", "compute",
   "analytics", "analytics.poll", "viz", "export", "create_cohort",
-  "top_hits", "qc_summary", "gwas_minimal", "variant_profile", "compare_cohorts",
+  "top_hits", "qc_summary", "gwas_minimal", "compare_cohorts",
 ]);
 
 const NEEDS_SCHEMA = new Set([
@@ -126,6 +138,7 @@ async function preToolUse(
     }
 
     // Gate 3: Column validation + auto-correction
+    // Always apply auto-fixable corrections first, then report ambiguities.
     if (ctx.schemaCache) {
       const columns = extractColumnRefs(cmdRecord);
       if (columns.length > 0) {
@@ -136,11 +149,29 @@ async function preToolUse(
         const needsUser = recoveries.filter((r) => r.action === "needs_user");
         const autoFixed = recoveries.filter((r) => r.action === "auto_corrected");
 
+        // Always apply auto-fixable corrections — even if some are ambiguous
+        let repairs: Repair[] | undefined;
+        if (autoFixed.length > 0) {
+          applyColumnCorrections(cmdRecord, autoFixed);
+          repairs = autoFixed
+            .filter((r): r is ColumnRecovery & { best_match: NonNullable<ColumnRecovery["best_match"]> } => !!r.best_match)
+            .map((r) => ({
+              field: columns.find((c) => c.name === r.input)?.field_path ?? "unknown",
+              received: r.input,
+              corrected: r.best_match.column,
+            }));
+        }
+
+        // If any columns are still ambiguous, report them (with corrections already applied)
         if (needsUser.length > 0) {
+          const correctionNote = repairs?.length
+            ? ` (auto-corrected: ${repairs.map((r) => `${r.received} → ${r.corrected}`).join(", ")})`
+            : "";
           return {
             result: errorResult({
-              message: `Unknown columns: ${needsUser.map((r) => r.input).join(", ")}`,
+              message: `Unknown columns: ${needsUser.map((r) => r.input).join(", ")}${correctionNote}`,
               code: "validation_error",
+              repairs,
               next_actions: [
                 ...needsUser.map((r): NextAction => ({
                   tool: "AskUser",
@@ -162,15 +193,8 @@ async function preToolUse(
           };
         }
 
-        if (autoFixed.length > 0) {
-          applyColumnCorrections(cmdRecord, autoFixed);
-          const repairs: Repair[] = autoFixed
-            .filter((r): r is ColumnRecovery & { best_match: NonNullable<ColumnRecovery["best_match"]> } => !!r.best_match)
-            .map((r) => ({
-              field: columns.find((c) => c.name === r.input)?.field_path ?? "unknown",
-              received: r.input,
-              corrected: r.best_match.column,
-            }));
+        // All columns resolved — pass repairs forward
+        if (repairs?.length) {
           return { result: null as unknown as RunResult, repairs };
         }
       }
@@ -222,11 +246,23 @@ async function postToolUse(
   }
 
   // 3. Empty result → probe-based recovery (for filtered commands)
+  // Skip probing for exploratory commands or when we've already probed this turn
   const cmdRecord = cmd as unknown as Record<string, unknown>;
-  if (result.status === "ok" && isEmptyData(result.data) && hasFilters(cmdRecord)) {
+  const SKIP_PROBE_COMMANDS = new Set(["explore", "traverse", "query"]);
+  const maxProbesPerTurn = 2;
+  const probesUsed = ctx.probesThisTurn ?? 0;
+
+  if (
+    result.status === "ok" &&
+    isEmptyData(result.data) &&
+    hasFilters(cmdRecord) &&
+    !SKIP_PROBE_COMMANDS.has(cmd.command) &&
+    probesUsed < maxProbesPerTurn
+  ) {
     const cohortId = getCohortIdFromCmd(cmdRecord, ctx.activeCohortId);
     if (cohortId) {
       try {
+        ctx.probesThisTurn = probesUsed + 1;
         const recovery = await recoverEmptyResult(cohortId, getFilters(cmdRecord), cmd.command);
         return {
           ...result,
@@ -248,6 +284,11 @@ async function postToolUse(
     }
   }
 
+  // Mark empty even without probing
+  if (result.status === "ok" && isEmptyData(result.data)) {
+    return { ...result, status: "empty" };
+  }
+
   return result;
 }
 
@@ -261,8 +302,13 @@ interface FailureTrack {
   lastCode?: string;
 }
 
-const failureTracker = new Map<string, FailureTrack>();
 const FAILURE_WINDOW_MS = 60_000;
+
+/** Get or create the session-scoped failure tracker */
+function getFailureTracker(ctx: RunContext): Map<string, FailureTrack> {
+  if (!ctx.failureTracker) ctx.failureTracker = new Map();
+  return ctx.failureTracker;
+}
 
 function failureKey(cmd: RunCommand): string {
   const cmdRecord = cmd as unknown as Record<string, unknown>;
@@ -282,24 +328,26 @@ function escalateOnFailure(
   result: RunResult,
   ctx: RunContext,
 ): RunResult {
+  const tracker = getFailureTracker(ctx);
+
   if (result.status !== "error") {
-    failureTracker.delete(failureKey(cmd));
+    tracker.delete(failureKey(cmd));
     return result;
   }
 
   const key = failureKey(cmd);
-  const prev = failureTracker.get(key);
+  const prev = tracker.get(key);
   const now = Date.now();
 
   if (prev && now - prev.lastAt > FAILURE_WINDOW_MS) {
-    failureTracker.delete(key);
+    tracker.delete(key);
   }
 
-  const track = failureTracker.get(key) ?? { count: 0, lastAt: 0 };
+  const track = tracker.get(key) ?? { count: 0, lastAt: 0 };
   track.count++;
   track.lastAt = now;
   track.lastCode = result.error?.code;
-  failureTracker.set(key, track);
+  tracker.set(key, track);
 
   const cohortId = getCohortIdFromCmd(cmd as unknown as Record<string, unknown>, ctx.activeCohortId);
 
@@ -352,6 +400,7 @@ const COMMAND_HINTS: Record<string, string> = {
   pin: "Required: entities [{type, id, label}]",
   set_cohort: "Required: cohort_id",
   remember: "Required: key, content. Optional: value",
+  pipeline: "Required: goal, plan_steps (min 2, max 8) [{id, command, args, depends_on?, seeds_from?}]. Must have at least one dependency.",
 };
 
 /** Format Zod issues into concise error lines */
@@ -599,6 +648,7 @@ const runInputSchema = z.object({
     "top_hits", "qc_summary", "gwas_minimal", "variant_profile", "compare_cohorts",
     "explore", "traverse", "query",
     "pin", "set_cohort", "remember",
+    "pipeline",
   ]),
 
   // --- Cohort common ---
@@ -700,6 +750,17 @@ const runInputSchema = z.object({
   key: z.string().optional().describe("Memory key (remember)"),
   content: z.string().optional().describe("Memory content (remember)"),
   value: z.record(z.unknown()).optional().describe("Structured value (remember)"),
+
+  // --- pipeline ---
+  goal: z.string().optional().describe("Pipeline goal (pipeline only)"),
+  plan_steps: z.array(z.object({
+    id: z.string(),
+    command: z.string(),
+    args: z.record(z.unknown()),
+    description: z.string().optional(),
+    depends_on: z.array(z.string()).optional(),
+    seeds_from: z.string().optional(),
+  })).optional().describe("Pipeline steps (min 2, max 8, pipeline only)"),
 });
 
 /**
@@ -711,9 +772,13 @@ export function createRunTool(getContext: () => RunContext) {
 
 COHORT (needs active cohort): rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
 ANALYTICS (auto-polls + auto-fetches charts): analytics { method, params }
-WORKFLOWS (one call): top_hits, qc_summary, gwas_minimal, variant_profile, compare_cohorts
+WORKFLOWS (needs active cohort): top_hits, qc_summary, gwas_minimal, compare_cohorts
 GRAPH (no cohort needed): explore, traverse, query
+ENTITY LOOKUP (no cohort needed, optional cohort enrichment): variant_profile
 WORKSPACE: pin, set_cohort, remember
+
+⚠ CRITICAL: "trace/follow variant → genes → diseases → ..." = ALWAYS traverse chain.
+⚠ variant_profile = single-variant entity lookup. For connections, execute its next_actions (pre-built traverse chain).
 
 ## Graph Mode Selection
 
@@ -725,7 +790,11 @@ explore (default: neighbors):
   context   → seeds, sections?                          "Tell me about BRCA1"
   aggregate → seeds, edge_type, metric:"count"          "How many disease links?"
 traverse:
-  chain → seed, steps:[{into:"diseases"},{into:"drugs"}]  "Gene→diseases→drugs"
+  chain → seed, steps:[{into:"diseases"},{into:"drugs"}]
+    "Gene→diseases→drugs"
+    "Variant→genes→diseases→phenotypes"
+    "Variant→ccres→genes→tissues" (cCRE regulation + tissue expression)
+    "Disease→genes→drugs→adverse_effects"
   paths → from:"Type:ID", to:"Type:ID"                    "Path from X to Y"
 query → pattern:[{var,type?,edge?,from?,to?}], return_vars "Genes connecting Drug X to Disease Y"
 
@@ -759,6 +828,18 @@ method must match params.type.
   target: { field: "col" }                — object with field string
   gwas_qc: { p_value_column, effect_size_column, se_column } — no features/target
 Auto-defaults: validation=holdout 20%, missing="median", bootstrap statistic={stat:"mean"}.
+
+PIPELINE: pipeline { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?}] }
+  Multi-step: 2-8 DEPENDENT steps. Independent steps run in parallel.
+  seeds_from: forward entities from a prior graph step as seeds.
+
+  USE pipeline:
+    "explore BRCA1 diseases, then check tissue expression" → 2 dependent steps
+    "compare ALS and Parkinson's drug targets" → 2 parallel explores + 1 compare
+  DO NOT use pipeline:
+    "explore BRCA1" → single command, call explore directly
+    "explore BRCA1 diseases and also explore TP53 diseases" → 2 independent commands, call them separately
+    Any query where steps don't share data via seeds_from or depends_on
 
 Intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_interactions, adverse_effects, drug_indications`,
     inputSchema: runInputSchema,

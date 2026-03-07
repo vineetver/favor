@@ -127,6 +127,10 @@ export function applyStateDelta(
   const next = { ...state };
 
   if (delta.active_cohort_id) {
+    // If cohort changed, invalidate stale schema
+    if (delta.active_cohort_id !== state.active_cohort_id) {
+      next.schema_digest = null;
+    }
     next.active_cohort_id = delta.active_cohort_id;
     next.mode = (next.pinned_entities?.length ?? 0) > 0 ? "mixed" : "cohort";
   }
@@ -197,7 +201,9 @@ export function stateToPromptSnippet(state: SessionState): string {
       `Active cohort: ${state.active_cohort_id} (${state.cohort_status ?? "unknown"}, ${state.cohort_row_count ?? "?"} rows)`,
     );
 
-    if (state.schema_digest) {
+    if (!state.schema_digest) {
+      lines.push("⚠ Schema not loaded for this cohort. Call State to refresh before running cohort commands.");
+    } else if (state.schema_digest) {
       const numericCols = (state.schema_digest.columns ?? [])
         .filter((c) => c.kind === "numeric")
         .map((c) => c.name);

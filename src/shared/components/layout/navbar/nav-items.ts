@@ -9,17 +9,11 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Annotator", href: "/favor-annotator" },
   { label: "Forums", href: "https://discussion.genohub.org", external: true },
   { label: "Team", href: "/team" },
-  { label: "API", href: "https://docs.genohub.org", external: true },
+  { label: "API", href: "http://localhost:8000/docs", external: true },
 ];
 
 export const RESOURCES: NavItem[] = [
-  { label: "Docs", href: "/docs" },
-  { label: "FAVOR-GPT", href: "/agent" },
-  {
-    label: "Annotation Description",
-    href: "https://docs.genohub.org/data",
-    external: true,
-  },
+  { label: "Documentation", href: "/docs" },
   { label: "Newsletter", href: "/newsletter" },
   { label: "Terms", href: "/terms" },
 ];

@@ -45,6 +45,38 @@ export async function getCachedGraphSchema(portal?: string): Promise<GraphSchema
 }
 
 // ---------------------------------------------------------------------------
+// Shared: edge type property metadata cache
+// ---------------------------------------------------------------------------
+
+export interface EdgePropertyMeta {
+  name: string;
+  tooltip?: boolean;
+  displayOrder?: number;
+  hidden?: boolean;
+}
+
+const edgePropCache = new Map<string, { fields: EdgePropertyMeta[]; ts: number }>();
+
+/** Get display-curated fields for an edge type. Cached per TTL. */
+export async function getEdgeDisplayFields(edgeType: string): Promise<string[]> {
+  const cached = edgePropCache.get(edgeType);
+  if (cached && Date.now() - cached.ts < SCHEMA_CACHE_TTL) {
+    return cached.fields.filter((f) => f.tooltip).map((f) => f.name);
+  }
+
+  try {
+    const resp = await agentFetch<{
+      data: { properties: EdgePropertyMeta[] };
+    }>(`/graph/schema/properties/${edgeType}`);
+    const fields = resp.data?.properties ?? [];
+    edgePropCache.set(edgeType, { fields, ts: Date.now() });
+    return fields.filter((f) => f.tooltip && !f.hidden).map((f) => f.name);
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Shared: enrichment edge type mapping
 // ---------------------------------------------------------------------------
 

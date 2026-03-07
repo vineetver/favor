@@ -28,12 +28,25 @@ export const INTENT_TO_TYPE: Record<TargetIntent, string> = {
 };
 
 /**
+ * Intents that silently resolve to a different node type.
+ * Returns a warning string when the user-facing type name differs from the resolved node type.
+ */
+const INTENT_REMAP_WARNINGS: Partial<Record<TargetIntent, string>> = {
+  proteins: "No Protein nodes in the graph — querying Gene targets (which include protein/domain info) instead.",
+  compounds: "No Compound nodes in the graph — querying Drug targets instead.",
+};
+
+/**
  * Auto-remap deprecated / ambiguous intents to their canonical equivalents.
  * Returns [canonicalIntent, repairNote | null].
  */
 export function canonicalizeIntent(intent: TargetIntent): [TargetIntent, string | null] {
   if (intent === "side_effects") {
     return ["adverse_effects", "Remapped side_effects → adverse_effects (canonical intent for drug side effects)"];
+  }
+  const remapWarning = INTENT_REMAP_WARNINGS[intent];
+  if (remapWarning) {
+    return [intent, remapWarning];
   }
   return [intent, null];
 }
@@ -59,6 +72,8 @@ export interface GraphSchemaResponse {
     label?: string;
     description?: string;
     defaultScoreField?: string;
+    scoreFields?: string[];
+    filterFields?: string[];
     propertyCount?: number;
     properties?: string[];
   }>;

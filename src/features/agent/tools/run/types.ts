@@ -87,6 +87,21 @@ const weightSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Pipeline step schema
+// ---------------------------------------------------------------------------
+
+const pipelineStepSchema = z.object({
+  id: z.string(),
+  command: z.string(),
+  args: z.record(z.unknown()),
+  description: z.string().optional(),
+  depends_on: z.array(z.string()).optional(),
+  seeds_from: z.string().optional(),
+});
+
+export type PipelineStep = z.infer<typeof pipelineStepSchema>;
+
+// ---------------------------------------------------------------------------
 // Analytics task schema (reuse from cohort-analytics)
 // ---------------------------------------------------------------------------
 
@@ -300,6 +315,13 @@ export const runCommandSchema = z.discriminatedUnion("command", [
       edgeFields: z.array(z.string()).optional(),
       includeEvidence: z.boolean().optional(),
     }).optional(),
+  }),
+
+  // Pipeline — multi-step execution
+  z.object({
+    command: z.literal("pipeline"),
+    goal: z.string(),
+    plan_steps: z.array(pipelineStepSchema).min(2).max(8),
   }),
 
   // Workspace commands

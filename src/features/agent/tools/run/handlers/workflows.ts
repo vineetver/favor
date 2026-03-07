@@ -474,6 +474,51 @@ export async function handleVariantProfile(
     const succeeded = profiles.filter((p) => !("error" in p) || p.error === null).length;
     const failed = profiles.length - succeeded;
 
+    // Suggest follow-up traverse chain when entity has graph connections
+    const next_actions: NextAction[] = [];
+    for (const profile of profiles) {
+      const entity = (profile.entity as { data?: Record<string, unknown> } | undefined)?.data;
+      if (!entity) continue;
+
+      const label = (profile as { label?: string }).label ?? profile.variant;
+      const hasGene = !!entity.gencode_gene_id;
+      const hasCcre = !!entity.ccre_accessions;
+
+      if (hasGene) {
+        next_actions.push({
+          tool: "Run",
+          args: {
+            command: "traverse",
+            seed: { label },
+            steps: [
+              { into: "genes" },
+              { into: "diseases", top: 5 },
+              { into: "phenotypes", top: 5 },
+            ],
+          },
+          reason: `Trace ${label} through gene connections to diseases and phenotypes`,
+          confidence: 0.7,
+        });
+      }
+
+      if (hasCcre) {
+        next_actions.push({
+          tool: "Run",
+          args: {
+            command: "traverse",
+            seed: { label },
+            steps: [
+              { into: "ccres" },
+              { into: "genes" },
+              { into: "tissues", top: 5 },
+            ],
+          },
+          reason: `Trace ${label} through cCRE regulation to genes and tissue expression`,
+          confidence: 0.7,
+        });
+      }
+    }
+
     return (failed > 0 && succeeded > 0
       ? partialResult
       : okResult)({
@@ -484,6 +529,7 @@ export async function handleVariantProfile(
       },
       state_delta: {},
       tc,
+      ...(next_actions.length > 0 ? { next_actions } : {}),
     });
   } catch (err) {
     return catchToResult(err, tc);

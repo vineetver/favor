@@ -42,7 +42,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         slug: "expected-rate-of-de-novo-mutation",
       },
       // Technical
-      { text: "Proximity Table", slug: "proximity-table" },
       { text: "Mappability", slug: "mappability" },
     ],
     // Grouped structure for desktop sidebar
@@ -110,7 +109,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         name: "Technical",
         defaultExpanded: true,
         items: [
-          { text: "Proximity Table", slug: "proximity-table", icon: "map-pin" },
           { text: "Mappability", slug: "mappability", icon: "microscope" },
         ],
       },

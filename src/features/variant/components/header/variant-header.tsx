@@ -4,8 +4,13 @@ import type { VariantFetchResult } from "@features/variant/api";
 import { setVariantSelectionCookie } from "@features/variant/actions/variant-selection";
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
-import { Download, Share2 } from "lucide-react";
+import { Download, MapPin, Share2 } from "lucide-react";
 import { useOptimistic, useTransition } from "react";
+
+function formatDistance(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  return value.toLocaleString() + " bp";
+}
 
 interface VariantHeaderProps {
   result: VariantFetchResult;
@@ -98,7 +103,7 @@ export function VariantHeader({
             )}
           </div>
 
-          {/* Alleles Row */}
+          {/* Alleles & Proximity Row */}
           <div className="flex items-center gap-4 flex-wrap">
             {showAlleleSelector ? (
               /* Allele selector for ambiguous rsIDs */
@@ -148,6 +153,29 @@ export function VariantHeader({
                   {altAllele}
                 </span>
               </div>
+            )}
+
+            {/* Proximity distances */}
+            {(variant.main?.distance?.min_dist_tss != null ||
+              variant.main?.distance?.min_dist_tse != null) && (
+              <>
+                <span className="hidden sm:block w-px h-5 bg-border" />
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  {formatDistance(variant.main?.distance?.min_dist_tss) && (
+                    <span>
+                      <span className="text-label">TSS</span>{" "}
+                      {formatDistance(variant.main.distance.min_dist_tss)}
+                    </span>
+                  )}
+                  {formatDistance(variant.main?.distance?.min_dist_tse) && (
+                    <span>
+                      <span className="text-label">TSE</span>{" "}
+                      {formatDistance(variant.main.distance.min_dist_tse)}
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

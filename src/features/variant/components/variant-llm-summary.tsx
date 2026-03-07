@@ -58,9 +58,9 @@ export function VariantLLMSummary({
     <div className="space-y-3">
       <Card className="gap-0 py-0">
         {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200/60">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-border">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-subtle font-medium">
+            <span className="text-sm text-muted-foreground font-medium">
               Powered by FAVOR-GPT
             </span>
           </div>
@@ -69,13 +69,13 @@ export function VariantLLMSummary({
               <>
                 <button
                   onClick={handleCopy}
-                  className="text-sm text-subtle hover:text-heading flex items-center gap-1.5 transition-colors"
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
                   title="Copy to clipboard"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   <span>Copy</span>
                 </button>
-                <div className="w-px h-4 bg-slate-200" />
+                <div className="w-px h-4 bg-border" />
               </>
             )}
             <button
@@ -118,10 +118,10 @@ function SummaryContent({ state, retry }: SummaryContentProps) {
             </div>
             <div className="absolute inset-0 rounded-full bg-primary/5 animate-ping" />
           </div>
-          <p className="text-base font-medium text-heading mb-1">
+          <p className="text-base font-medium text-foreground mb-1">
             {state.status === "pending" ? "Queued" : "Generating analysis"}
           </p>
-          <p className="text-sm text-subtle max-w-sm">
+          <p className="text-sm text-muted-foreground max-w-sm">
             {state.status === "generating" && state.estimatedSeconds
               ? `This usually takes about ${state.estimatedSeconds} seconds`
               : "You can navigate away — we'll save your results"}
@@ -147,10 +147,10 @@ function SummaryContent({ state, retry }: SummaryContentProps) {
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
             <AlertCircle className="w-5 h-5 text-destructive" />
           </div>
-          <p className="text-base font-medium text-heading mb-1">
+          <p className="text-base font-medium text-foreground mb-1">
             Unable to generate analysis
           </p>
-          <p className="text-sm text-subtle max-w-sm mb-4">
+          <p className="text-sm text-muted-foreground max-w-sm mb-4">
             {state.error || "Something went wrong. Please try again."}
           </p>
           <Button

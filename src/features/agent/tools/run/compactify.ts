@@ -87,19 +87,99 @@ type Compactor = (data: Record<string, unknown>) => Record<string, unknown>;
 const COMPACTORS: Record<string, Compactor> = {
   rows: compactRows,
   groupby: compactGroupby,
+  correlation: compactCorrelation,
+  derive: compactDerive,
   prioritize: compactPrioritize,
   compute: compactCompute,
   explore: compactExplore,
   traverse: compactTraverse,
   query: compactQuery,
   analytics: compactAnalytics,
+  "analytics.poll": compactAnalyticsPoll,
+  viz: compactViz,
   // Workflow compactors
   top_hits: compactTopHits,
   qc_summary: passthrough,
   gwas_minimal: compactGwasMinimal,
   variant_profile: compactVariantProfile,
   compare_cohorts: passthrough,
+  // Pipeline
+  pipeline: compactPipeline,
+  // Workspace compactors — small results, pass through
+  pin: passthrough,
+  set_cohort: passthrough,
+  remember: passthrough,
+  export: passthrough,
+  create_cohort: passthrough,
 };
+
+function compactCorrelation(data: Record<string, unknown>): Record<string, unknown> {
+  // Correlation can return a large matrix — extract top correlations only
+  const out: Record<string, unknown> = {
+    x: data.x,
+    y: data.y,
+  };
+  if (typeof data.r === "number") out.r = Math.round(data.r * 10000) / 10000;
+  if (typeof data.p_value === "number") out.p_value = data.p_value;
+  if (typeof data.n === "number") out.n = data.n;
+
+  // If there's a full matrix, extract top 10 pairs by |r|
+  const matrix = asArray(data.matrix);
+  if (matrix.length > 0) {
+    const pairs = matrix as Array<Record<string, unknown>>;
+    const sorted = [...pairs]
+      .sort((a, b) => Math.abs(b.r as number ?? 0) - Math.abs(a.r as number ?? 0))
+      .slice(0, 10);
+    out.top_correlations = sorted;
+    if (matrix.length > 10) {
+      out._truncation = truncation(10, matrix.length, "Top correlations by |r|. Use rows to see full data.");
+    }
+  }
+  return out;
+}
+
+function compactDerive(data: Record<string, unknown>): Record<string, unknown> {
+  // Don't send full row data for derived cohorts — just the metadata
+  return {
+    cohort_id: data.cohort_id ?? data.id,
+    label: data.label,
+    row_count: data.row_count ?? data.total,
+    filters_applied: data.filters,
+    parent_id: data.parent_id,
+    // Include a small preview if rows are present
+    ...(data.rows
+      ? {
+          preview: asArray(data.rows).slice(0, 3),
+          _truncation: asArray(data.rows).length > 3
+            ? truncation(3, asArray(data.rows).length, "Use rows command on the new cohort for full data.")
+            : undefined,
+        }
+      : {}),
+  };
+}
+
+function compactAnalyticsPoll(data: Record<string, unknown>): Record<string, unknown> {
+  if (data.status === "running" || data.status === "queued") {
+    return {
+      status: data.status,
+      run_id: data.run_id ?? data.runId,
+      progress: data.progress,
+    };
+  }
+  // Completed — use the analytics compactor
+  return compactAnalytics(data);
+}
+
+function compactViz(data: Record<string, unknown>): Record<string, unknown> {
+  // Viz returns chart data for the frontend — model only needs metadata
+  return {
+    chart_id: data.chart_id,
+    chart_type: data.chart_type,
+    title: data.title,
+    rendered: true,
+    point_count: asArray((data.data as Record<string, unknown>)?.points ?? (data.data as Record<string, unknown>)?.bars ?? []).length,
+  };
+}
 
 function compactRows(data: Record<string, unknown>): Record<string, unknown> {
   const rows = asArray(data.rows);
@@ -210,12 +290,21 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
       out._truncation = truncation(10, shared.length);
     }
   }
-  // Pass through context entities
+  // Pass through context entities — raise limit + add type breakdown
   if (data.entities) {
     const entities = asArray(data.entities);
-    out.entities = entities.slice(0, 3);
-    if (entities.length > 3) {
-      out._truncation = truncation(3, entities.length);
+    out.entities = entities.slice(0, 10);
+    if (entities.length > 10) {
+      // Group by type so model knows what's available
+      const byType: Record<string, number> = {};
+      for (const e of entities) {
+        const t = (e as Record<string, unknown>).type as string ?? "unknown";
+        byType[t] = (byType[t] ?? 0) + 1;
+      }
+      out.entity_type_counts = byType;
+      out._truncation = truncation(10, entities.length,
+        `${entities.length - 10} more entities available. Filter by type for specifics.`,
+      );
     }
   }
   // Pass through similar results
@@ -255,7 +344,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
         const scoreContext = s.scoreField
           ? humanScoreLabel(s.scoreField)
           : undefined;
-        // Preserve numeric scores on entities so the LLM can rank/report them
+        // Pass through all entity fields — backend controls what's returned
         const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
           const ent = e as Record<string, unknown>;
           const out: Record<string, unknown> = {
@@ -268,6 +357,9 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
           if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
           if (typeof ent.pValue === "number") out.pValue = ent.pValue;
           if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
+          if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
+            out.edgeProperties = ent.edgeProperties;
+          }
           return out;
         });
         return {
@@ -378,6 +470,43 @@ function compactVariantProfile(data: Record<string, unknown>): Record<string, un
     out.cohort_rows = asArray(data.cohort_rows).slice(0, 5);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline compactor
+// ---------------------------------------------------------------------------
+
+function compactPipeline(data: Record<string, unknown>): Record<string, unknown> {
+  const stepResults = asArray(data.step_results);
+  const compactSteps = stepResults.map((sr) => {
+    const step = sr as Record<string, unknown>;
+    if (step.status === "error" || step.status === "skipped") {
+      return {
+        id: step.id, command: step.command, status: step.status,
+        summary: step.summary, skip_reason: step.skip_reason,
+      };
+    }
+    const cmd = step.command as string;
+    // Depth guard: never recurse into another pipeline compactor
+    if (cmd === "pipeline") {
+      return { id: step.id, command: cmd, status: "error", summary: "Nested pipeline rejected" };
+    }
+    const compactor: Compactor | undefined = COMPACTORS[cmd];
+    const stepData = step.data as Record<string, unknown> | undefined;
+    const compactData = compactor != null && stepData ? compactor(stepData) : stepData;
+    return {
+      id: step.id, command: cmd, status: step.status,
+      summary: step.summary, data: compactData,
+      ...(step.entities ? { entities: asArray(step.entities).slice(0, 5) } : {}),
+      ...(step.entities_meta ? { entities_meta: step.entities_meta } : {}),
+    };
+  });
+  return {
+    goal: data.goal,
+    steps_ok: stepResults.filter((s) => (s as Record<string, unknown>).status === "ok").length,
+    steps_total: stepResults.length,
+    step_results: compactSteps,
+  };
 }
 
 // ---------------------------------------------------------------------------

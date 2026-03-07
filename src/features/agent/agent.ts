@@ -29,6 +29,7 @@ export function createAgentTools(sessionId: string) {
   // Mutable state for context
   let activeCohortId: string | null = null;
   const resolvedEntities: Record<string, EntityRef> = {};
+  const failureTracker = new Map<string, never>();
 
   // Initialize from session state (fire-and-forget — will be loaded by State tool too)
   fetchSessionState(sessionId)
@@ -46,6 +47,7 @@ export function createAgentTools(sessionId: string) {
       activeCohortId: activeCohortId ?? undefined,
       sessionId,
       resolvedEntities,
+      failureTracker,
     })),
     AskUser: askUserTool,
   };

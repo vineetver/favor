@@ -274,7 +274,7 @@
      AI Summary Content - Beautiful markdown rendering
      ========================================================================== */
   .ai-summary-content {
-    @apply text-[14px] leading-[1.7] text-body;
+    @apply text-[14px] leading-[1.7] text-foreground;
   }
 
   /* First child - remove top margin */
@@ -286,7 +286,7 @@
   .ai-summary-content h1,
   .ai-summary-content h2,
   .ai-summary-content h3 {
-    @apply text-heading font-semibold mt-5 mb-2;
+    @apply text-foreground font-semibold mt-5 mb-2;
   }
 
   .ai-summary-content > h1:first-child,
@@ -322,7 +322,7 @@
 
   /* Strong text */
   .ai-summary-content strong {
-    @apply font-semibold text-heading;
+    @apply font-semibold text-foreground;
   }
 
   /* Ordered lists - clean numbered sections */
@@ -386,12 +386,12 @@
 
   /* Code */
   .ai-summary-content code {
-    @apply font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded text-heading;
+    @apply font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded text-foreground;
   }
 
   /* Blockquotes */
   .ai-summary-content blockquote {
-    @apply border-l-2 border-primary/30 pl-4 my-4 italic text-subtle;
+    @apply border-l-2 border-primary/30 pl-4 my-4 italic text-muted-foreground;
   }
 
   /* Horizontal rules */
@@ -405,7 +405,7 @@
   }
 
   .ai-summary-content th {
-    @apply text-left font-semibold text-heading pb-2 border-b border-border;
+    @apply text-left font-semibold text-foreground pb-2 border-b border-border;
   }
 
   .ai-summary-content td {

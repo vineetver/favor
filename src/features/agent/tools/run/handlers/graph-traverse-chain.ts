@@ -26,6 +26,7 @@ import {
   edgeTypeAnnotation,
   humanEdgeLabel,
   humanScoreLabel,
+  getEdgeDisplayFields,
 } from "./graph";
 import { okResult, partialResult, TraceCollector } from "../run-result";
 
@@ -35,6 +36,7 @@ type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 interface ScoredEntity extends EntityRef {
   rank?: number;
   score?: number;
+  edgeProperties?: Record<string, unknown>;
 }
 
 /** Enriched entity for enrichment steps */
@@ -215,18 +217,26 @@ async function executeViaQuery(
       ...new Set(targetTypes.flatMap((t) => getSummaryFields(schema, t))),
     ].slice(0, 20);
 
-    // Collect score fields dynamically from each step's annotated edge type
-    const stepScoreFields = intoSteps
-      .map((s) => s.defaultScoreField)
-      .filter((f): f is string => !!f);
-    const edgeFields = [
-      ...new Set([
-        ...stepScoreFields,
-        "evidence_count",
-        "max_clinical_phase",
-        "overall_score",
-      ]),
-    ].slice(0, 20);
+    // Collect edge fields using backend-curated display metadata.
+    // tooltip=true fields are the 2-3 most important per edge type (curated in YAML).
+    // Fallback to defaultScoreField if properties endpoint unavailable.
+    const chainEdgeTypes = [...new Set(intoSteps.map((s) => s.edgeType).filter((e) => e !== "none"))];
+    const displayFieldLists = await Promise.all(
+      chainEdgeTypes.map((et) => getEdgeDisplayFields(et)),
+    );
+    const seen = new Set<string>();
+    const edgeFields: string[] = [];
+    const push = (f: string) => {
+      if (!seen.has(f) && edgeFields.length < 30) { seen.add(f); edgeFields.push(f); }
+    };
+    // Pass 1: defaultScoreField per edge type (always useful for ranking)
+    for (const ann of intoSteps) {
+      if (ann.defaultScoreField) push(ann.defaultScoreField);
+    }
+    // Pass 2: tooltip-curated fields from properties endpoint
+    for (const fields of displayFieldLists) {
+      for (const f of fields) push(f);
+    }
 
     const resp = await agentFetch<{
       data: {
@@ -247,10 +257,7 @@ async function executeViaQuery(
       body: {
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
-        select: {
-          nodeFields,
-          edgeFields,
-        },
+        select: { nodeFields, edgeFields },
         limits: { maxNodes: 1000, maxEdges: 5000 },
       },
     });
@@ -310,10 +317,17 @@ async function executeViaQuery(
           f.evidence_count
         ) as number | undefined;
 
+        // Collect all non-null edge properties — let the model see everything
+        const edgeProperties: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(f)) {
+          if (v != null) edgeProperties[k] = v;
+        }
+
         targetEntities.push({
           ...node.entity,
           rank: targetEntities.length + 1,
           score: typeof score === "number" ? score : undefined,
+          ...(Object.keys(edgeProperties).length > 0 ? { edgeProperties } : {}),
         });
       }
 

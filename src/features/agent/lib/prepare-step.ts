@@ -33,13 +33,45 @@ function isAllErrors(steps: StepData[]): boolean {
   );
 }
 
+function stepSignature(step: StepData): string {
+  return (step.toolCalls ?? [])
+    .map((tc) => `${tc.toolName}:${JSON.stringify(tc.input)}`)
+    .join(",");
+}
+
 function isLoop(steps: StepData[]): boolean {
   if (steps.length < 3) return false;
-  const last3 = steps.slice(-3);
-  const sigs = last3.map((s) =>
-    (s.toolCalls ?? []).map((tc) => `${tc.toolName}:${JSON.stringify(tc.input)}`).join(","),
-  );
-  return sigs[0] === sigs[1] && sigs[1] === sigs[2] && sigs[0].length > 0;
+  const sigs = steps.slice(-4).map(stepSignature);
+
+  // Triple repeat: A-A-A
+  if (sigs.length >= 3) {
+    const [a, b, c] = sigs.slice(-3);
+    if (a === b && b === c && a.length > 0) return true;
+  }
+
+  // Alternating: A-B-A-B
+  if (sigs.length >= 4) {
+    const [w, x, y, z] = sigs.slice(-4);
+    if (w === y && x === z && w !== x && w.length > 0) return true;
+  }
+
+  // Same tool, different params 3+ times (model keeps retrying with variations)
+  if (steps.length >= 3) {
+    const last3 = steps.slice(-3);
+    const toolNames = last3.map((s) =>
+      (s.toolCalls ?? []).map((tc) => tc.toolName).join(","),
+    );
+    const allSameTool = toolNames[0] === toolNames[1] && toolNames[1] === toolNames[2] && toolNames[0].length > 0;
+    const allErrors = last3.every((s) =>
+      (s.toolResults ?? []).every((r) => {
+        const out = r.output as Record<string, unknown> | undefined;
+        return out?.error === true;
+      }),
+    );
+    if (allSameTool && allErrors) return true;
+  }
+
+  return false;
 }
 
 function detectStuck(steps: StepData[]): boolean {
@@ -86,6 +118,8 @@ export function createPrepareStep(
 ): PrepareStepFunction<any> {
   let currentState: SessionState | null = null;
   let stateVersion = 0;
+  let systemPromptLength = 0;
+  let stateDirty = false;
 
   const synthesize = (extraSystem?: string) => ({
     activeTools: [] as string[],
@@ -106,14 +140,16 @@ export function createPrepareStep(
         currentState = null;
       }
 
+      const sys = buildSystemPrompt(currentState ?? undefined);
+      systemPromptLength = sys.length;
       return {
         toolChoice: "auto" as const,
-        system: buildSystemPrompt(currentState ?? undefined),
+        system: sys,
       };
     }
 
     // --- 2. Context budget: critical → force synthesis ---
-    if (isContextCritical(stepsData)) {
+    if (isContextCritical(stepsData, systemPromptLength)) {
       return synthesize("\n\n[SYSTEM] Context budget exceeded — synthesize now.");
     }
 
@@ -133,39 +169,87 @@ export function createPrepareStep(
     }
 
     // --- 6. After Run with state_delta: apply and persist ---
+    // If state was dirty from a prior failed patch, reload it first
     const lastStep = stepsData.at(-1);
+    if (stateDirty && currentState) {
+      try {
+        const { state, version } = await fetchSessionState(sessionId);
+        currentState = state;
+        stateVersion = version;
+        stateDirty = false;
+      } catch {
+        // Reload failed — continue with potentially stale state
+      }
+    }
     if (lastStep?.toolResults) {
       for (const r of lastStep.toolResults) {
         const output = r.output as RunResult | Record<string, unknown> | undefined;
         if (output && "state_delta" in output && output.state_delta && currentState) {
           const delta = output.state_delta as RunResult["state_delta"];
           currentState = applyStateDelta(currentState, delta);
-          // Persist asynchronously — update version on success
-          patchSessionState(sessionId, currentState, stateVersion)
-            .then((resp) => { stateVersion = resp.version; })
-            .catch(() => { /* Non-critical — state will refresh next turn */ });
+          // Persist with single retry on version conflict
+          try {
+            const resp = await patchSessionState(sessionId, currentState, stateVersion);
+            stateVersion = resp.version;
+            stateDirty = false;
+          } catch (patchErr) {
+            const err = patchErr as { status?: number };
+            if (err.status === 409) {
+              // Version conflict — reload and re-apply
+              try {
+                const { state: fresh, version: freshVer } = await fetchSessionState(sessionId);
+                currentState = applyStateDelta(fresh, delta);
+                const resp = await patchSessionState(sessionId, currentState, freshVer);
+                stateVersion = resp.version;
+                stateDirty = false;
+              } catch {
+                stateDirty = true;
+              }
+            } else {
+              stateDirty = true;
+            }
+          }
         }
       }
     }
 
-    // --- 7. After Run with text_summary: force synthesis ---
-    // When the last step returned a Run result with text_summary, the data
-    // is ready for the user. Force synthesis to prevent the model from
-    // just echoing tool results or offering follow-up buttons without
-    // actually analyzing the data.  Multi-tool sequences still work via
-    // parallel tool calls in a single step.
-    if (lastStep?.toolResults) {
-      const hasTerminalRun = lastStep.toolResults.some((r) => {
-        const out = r.output as Record<string, unknown> | undefined;
-        return r.toolName === "Run" && out?.text_summary && out?.status !== "error";
-      });
-      if (hasTerminalRun && stepNumber >= 2) {
+    // --- 7. After Run: synthesize only if the result is truly terminal ---
+    // A Run is terminal when: it has a text_summary, no next_actions
+    // suggesting follow-up, and the command is not setup/exploration.
+    // Setup commands (set_cohort, pin, create_cohort, derive) and
+    // exploration commands (explore, traverse) almost always have follow-ups.
+    if (lastStep?.toolResults && stepNumber >= 2) {
+      const CONTINUATION_COMMANDS = new Set([
+        "set_cohort", "pin", "create_cohort", "derive",
+        "explore", "traverse", "query",
+        "variant_profile", "pipeline",
+      ]);
+
+      const runResults = lastStep.toolResults.filter(
+        (r) => r.toolName === "Run",
+      );
+      const hasTerminalRun =
+        runResults.length > 0 &&
+        runResults.every((r) => {
+          const out = r.output as Record<string, unknown> | undefined;
+          if (!out?.text_summary || out?.status === "error") return false;
+          const cmd = (lastStep.toolCalls?.find(
+            (tc) => tc.toolName === "Run",
+          )?.input as Record<string, unknown>)?.command as string | undefined;
+          // Continuation commands are never terminal
+          if (cmd && CONTINUATION_COMMANDS.has(cmd)) return false;
+          // If the result suggests follow-up work, don't synthesize
+          const nextActions = out.next_actions as unknown[] | undefined;
+          if (nextActions?.length) return false;
+          return true;
+        });
+      if (hasTerminalRun) {
         return synthesize();
       }
     }
 
     // --- 8. Context heavy hint ---
-    const hint = isContextHeavy(stepsData) ? CONTEXT_HEAVY_HINT : "";
+    const hint = isContextHeavy(stepsData, systemPromptLength) ? CONTEXT_HEAVY_HINT : "";
 
     // --- 9. Otherwise: let model decide ---
     return {

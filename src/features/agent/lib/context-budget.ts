@@ -1,13 +1,16 @@
 // ---------------------------------------------------------------------------
 // Context budget management
 // ---------------------------------------------------------------------------
-// Rough token estimation and budget tracking for agent tool results.
+// Full context estimation: system prompt + messages + tool results.
 // Prevents context overflow on complex multi-step explorations.
 
 const CHARS_PER_TOKEN = 4;
 const CONTEXT_BUDGET = 80_000; // ~80K tokens total budget
+const OUTPUT_RESERVE = 4_000; // Reserve for model output
+const AVAILABLE_BUDGET = CONTEXT_BUDGET - OUTPUT_RESERVE;
 
 interface StepData {
+  toolCalls?: Array<{ toolName: string; input: unknown }>;
   toolResults?: Array<{ output: unknown }>;
 }
 
@@ -25,21 +28,53 @@ export function sumToolResultTokens(steps: StepData[]): number {
     for (const r of step.toolResults ?? []) {
       total += estimateTokens(r.output);
     }
+    // Also count tool call inputs (they stay in context too)
+    for (const tc of step.toolCalls ?? []) {
+      total += estimateTokens(tc.input);
+    }
   }
   return total;
 }
 
+/** Estimate full context usage including system prompt and overhead */
+export function estimateFullContext(
+  steps: StepData[],
+  systemPromptLength?: number,
+): number {
+  // Tool results + inputs
+  const toolTokens = sumToolResultTokens(steps);
+
+  // System prompt (~4 chars/token)
+  const systemTokens = systemPromptLength
+    ? Math.ceil(systemPromptLength / CHARS_PER_TOKEN)
+    : 250; // ~1K chars default estimate
+
+  // Per-step overhead: role markers, assistant reasoning text (~200 tokens/step)
+  const overheadTokens = steps.length * 200;
+
+  return toolTokens + systemTokens + overheadTokens;
+}
+
 /** 0–1 ratio of context utilization */
-export function contextUtilization(steps: StepData[]): number {
-  return Math.min(1, sumToolResultTokens(steps) / CONTEXT_BUDGET);
+export function contextUtilization(
+  steps: StepData[],
+  systemPromptLength?: number,
+): number {
+  return Math.min(1, estimateFullContext(steps, systemPromptLength) / AVAILABLE_BUDGET);
 }
 
-/** True when tool results exceed 75% of the context budget */
-export function isContextHeavy(steps: StepData[]): boolean {
-  return contextUtilization(steps) > 0.75;
+/** True when context exceeds 75% of the budget */
+export function isContextHeavy(
+  steps: StepData[],
+  systemPromptLength?: number,
+): boolean {
+  return contextUtilization(steps, systemPromptLength) > 0.75;
 }
 
-/** True when tool results exceed 90% of the context budget */
-export function isContextCritical(steps: StepData[]): boolean {
-  return contextUtilization(steps) > 0.9;
+/** True when context exceeds 90% of the budget */
+export function isContextCritical(
+  steps: StepData[],
+  systemPromptLength?: number,
+): boolean {
+  return contextUtilization(steps, systemPromptLength) > 0.9;
 }
