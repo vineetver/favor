@@ -9,7 +9,7 @@ import { tool } from "ai";
 import { type RunCommand, type RunResult, type EntityRef, runCommandSchema } from "./types";
 import { handleRows, handleGroupby, handleCorrelation, handleDerive, handlePrioritize, handleCompute } from "./handlers/cohort";
 import { handleAnalytics, handleAnalyticsPoll, handleViz } from "./handlers/analytics";
-import { handleExplore, handleTraverse, handleQuery } from "./handlers/graph";
+import { handleExplore, handleTraverse } from "./handlers/graph";
 import { handlePin, handleSetCohort, handleRemember, handleExport, handleCreateCohort } from "./handlers/workspace";
 import { handleTopHits, handleQcSummary, handleGwasMinimal, handleVariantProfile, handleCompareCohorts } from "./handlers/workflows";
 import { handlePipeline } from "./handlers/pipeline";
@@ -59,10 +59,9 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
   variant_profile: (cmd, ctx) => handleVariantProfile(cmd as Extract<RunCommand, { command: "variant_profile" }>, ctx),
   compare_cohorts: (cmd, ctx) => handleCompareCohorts(cmd as Extract<RunCommand, { command: "compare_cohorts" }>, ctx),
 
-  // Graph — 3 mode-dispatched primitives
+  // Graph — 2 implicitly-routed primitives
   explore: (cmd, ctx) => handleExplore(cmd as Extract<RunCommand, { command: "explore" }>, ctx.resolvedEntities),
   traverse: (cmd, ctx) => handleTraverse(cmd as Extract<RunCommand, { command: "traverse" }>, ctx.resolvedEntities),
-  query: (cmd, ctx) => handleQuery(cmd as Extract<RunCommand, { command: "query" }>, ctx.resolvedEntities),
 
   // Pipeline
   pipeline: (cmd, ctx) => handlePipeline(
@@ -102,10 +101,15 @@ function getCohortIdFromCmd(cmd: Record<string, unknown>, activeCohortId?: strin
   return (cmd.cohort_id as string) ?? activeCohortId ?? null;
 }
 
+type PreToolResult =
+  | { action: "block"; result: RunResult }
+  | { action: "continue"; repairs?: Repair[] }
+  | null;
+
 async function preToolUse(
   cmd: RunCommand,
   ctx: RunContext,
-): Promise<{ result: RunResult; repairs?: Repair[] } | null> {
+): Promise<PreToolResult> {
   const cmdRecord = cmd as unknown as Record<string, unknown>;
 
   // Gate 1: Cohort required
@@ -113,6 +117,7 @@ async function preToolUse(
     const cohortId = getCohortIdFromCmd(cmdRecord, ctx.activeCohortId);
     if (!cohortId && cmd.command !== "create_cohort") {
       return {
+        action: "block",
         result: errorResult({
           message: "No active cohort.",
           code: "missing_param",
@@ -132,8 +137,8 @@ async function preToolUse(
         } else {
           ctx.schemaCache = cached;
         }
-      } catch {
-        // Schema fetch failed — continue without validation (handler may still work)
+      } catch (err) {
+        console.warn("[Run] Schema fetch failed, continuing without validation:", err instanceof Error ? err.message : err);
       }
     }
 
@@ -168,6 +173,7 @@ async function preToolUse(
             ? ` (auto-corrected: ${repairs.map((r) => `${r.received} → ${r.corrected}`).join(", ")})`
             : "";
           return {
+            action: "block",
             result: errorResult({
               message: `Unknown columns: ${needsUser.map((r) => r.input).join(", ")}${correctionNote}`,
               code: "validation_error",
@@ -195,7 +201,7 @@ async function preToolUse(
 
         // All columns resolved — pass repairs forward
         if (repairs?.length) {
-          return { result: null as unknown as RunResult, repairs };
+          return { action: "continue", repairs };
         }
       }
     }
@@ -208,6 +214,7 @@ async function preToolUse(
     const numericCount = params?.features?.numeric?.length ?? 0;
     if (numericCount > 20) {
       return {
+        action: "block",
         result: errorResult({
           message: `Too many features (${numericCount}, max 20).`,
           code: "validation_error",
@@ -248,7 +255,7 @@ async function postToolUse(
   // 3. Empty result → probe-based recovery (for filtered commands)
   // Skip probing for exploratory commands or when we've already probed this turn
   const cmdRecord = cmd as unknown as Record<string, unknown>;
-  const SKIP_PROBE_COMMANDS = new Set(["explore", "traverse", "query"]);
+  const SKIP_PROBE_COMMANDS = new Set(["explore", "traverse"]);
   const maxProbesPerTurn = 2;
   const probesUsed = ctx.probesThisTurn ?? 0;
 
@@ -394,9 +401,8 @@ const COMMAND_HINTS: Record<string, string> = {
   gwas_minimal: "Required: p_column. Optional: effect_column, se_column_name",
   variant_profile: "Required: variants (max 5). Optional: cohort_id",
   compare_cohorts: "Required: cohort_ids [id1, id2], compare_on [columns]",
-  explore: "Required: seeds (1-10). Mode-specific: neighbors(into), compare(edge_type?), enrich(target), similar(top_k?), context(sections?), aggregate(edge_type,metric)",
-  traverse: "Chain: seed, steps [{into/enrich}]. Paths: from, to (as 'Type:ID'). Optional: max_hops, limit",
-  query: "Required: pattern [{var, type?, edge?, from?, to?}] or description. Optional: seeds, return_vars, filters, limit",
+  explore: "Required: seeds (1-10). Routing is automatic from params: into→neighbors, seeds(2+)+into→compare, target→enrich, top_k→similar, sections→context, metric→aggregate",
+  traverse: "Chain: seed+steps. Paths: from+to. Patterns: pattern/description. Don't combine steps with pattern.",
   pin: "Required: entities [{type, id, label}]",
   set_cohort: "Required: cohort_id",
   remember: "Required: key, content. Optional: value",
@@ -409,6 +415,26 @@ function formatZodErrors(error: ZodError): string[] {
     const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
     return `${path}: ${issue.message}`;
   });
+}
+
+/**
+ * Hoist pipeline step fields the LLM commonly nests inside args.
+ * seeds_from, seeds_filter, depends_on belong at step level, not inside args.
+ */
+function normalizePipelineInput(flat: Record<string, unknown>): void {
+  if (flat.command !== "pipeline") return;
+  const steps = flat.plan_steps as Array<Record<string, unknown>> | undefined;
+  if (!Array.isArray(steps)) return;
+  for (const step of steps) {
+    const args = step.args as Record<string, unknown> | undefined;
+    if (!args || typeof args !== "object") continue;
+    for (const field of ["seeds_from", "seeds_filter", "depends_on"]) {
+      if (step[field] == null && args[field] != null) {
+        step[field] = args[field];
+        delete args[field];
+      }
+    }
+  }
 }
 
 /**
@@ -467,6 +493,7 @@ function normalizeAnalyticsInput(flat: Record<string, unknown>): void {
 function validateCommand(
   flat: Record<string, unknown>,
 ): { ok: true; cmd: RunCommand } | { ok: false; error: RunResult } {
+  normalizePipelineInput(flat);
   normalizeAnalyticsInput(flat);
 
   const result = runCommandSchema.safeParse(flat);
@@ -511,8 +538,8 @@ export async function executeRun(
 
   // --- Pre-gates (preventable errors only) ---
   const preResult = await preToolUse(cmd, ctx);
-  if (preResult?.result) return preResult.result;
-  const repairs = preResult?.repairs;
+  if (preResult?.action === "block") return preResult.result;
+  const repairs = preResult?.action === "continue" ? preResult.repairs : undefined;
 
   // --- Execute handler ---
   let result = await handler(cmd, ctx);
@@ -646,7 +673,7 @@ const runInputSchema = z.object({
     "rows", "groupby", "correlation", "derive", "prioritize", "compute",
     "analytics", "analytics.poll", "viz", "export", "create_cohort",
     "top_hits", "qc_summary", "gwas_minimal", "variant_profile", "compare_cohorts",
-    "explore", "traverse", "query",
+    "explore", "traverse",
     "pin", "set_cohort", "remember",
     "pipeline",
   ]),
@@ -708,9 +735,9 @@ const runInputSchema = z.object({
   cohort_ids: z.array(z.string()).optional().describe("Two cohort IDs to compare (compare_cohorts)"),
   compare_on: z.array(z.string()).optional().describe("Columns to compare on (compare_cohorts)"),
 
-  // --- explore (mode-dispatched) ---
-  mode: z.string().optional().describe("Sub-mode: explore(neighbors|compare|enrich|similar|context|aggregate), traverse(chain|paths)"),
-  seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, query)"),
+  // --- explore (auto-routed from params) ---
+  mode: z.string().optional().describe("Deprecated — routing is automatic from params. Do not set."),
+  seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, traverse patterns)"),
   into: z.array(targetIntents).optional().describe("Target intents (explore neighbors)"),
   depth: z.number().optional().describe("Reserved — not currently used by explore handlers"),
   edge_type: z.string().optional().describe("Edge type (explore compare/aggregate)"),
@@ -724,24 +751,23 @@ const runInputSchema = z.object({
   metric: z.enum(["count", "avg", "sum", "min", "max"]).optional().describe("Aggregation metric (explore aggregate)"),
   score_field: z.string().optional().describe("Score field for aggregation (explore aggregate)"),
 
-  // --- traverse (mode-dispatched) ---
+  // --- traverse (auto-routed: seed+steps→chain, from+to→paths, pattern/description→patterns) ---
   seed: flatSeedRef.optional().describe("Single seed ref (traverse chain)"),
-  steps: z.array(flatTraverseStep).optional().describe("Traversal steps (traverse chain)"),
+  steps: z.array(flatTraverseStep).max(5).optional().describe("Traversal steps (traverse chain, max 5)"),
   from: z.string().optional().describe("Source entity 'Type:ID' (traverse paths)"),
   to: z.string().optional().describe("Target entity 'Type:ID' (traverse paths)"),
   max_hops: z.number().optional().describe("Max path hops (traverse paths)"),
   include_edge_detail: z.boolean().optional().describe("Reserved — paths always include edge types"),
-
-  // --- query ---
-  description: z.string().optional().describe("Natural language pattern description (query)"),
+  // --- traverse patterns (structural pattern matching) ---
+  description: z.string().optional().describe("Natural language pattern description (traverse patterns)"),
   pattern: z.array(z.object({
     var: z.string(),
     type: z.string().optional(),
     edge: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
-  })).optional().describe("Structural pattern (query)"),
-  return_vars: z.array(z.string()).optional().describe("Variables to return (query)"),
+  })).optional().describe("Structural pattern (traverse patterns)"),
+  return_vars: z.array(z.string()).optional().describe("Variables to return (traverse patterns)"),
 
   // --- pin ---
   entities: z.array(flatSeedRef).optional().describe("For pin: [{type, id, label}]"),
@@ -760,6 +786,11 @@ const runInputSchema = z.object({
     description: z.string().optional(),
     depends_on: z.array(z.string()).optional(),
     seeds_from: z.string().optional(),
+    seeds_filter: z.object({
+      type: z.string().optional().describe("Entity type to forward (e.g. 'cCRE', 'Gene', 'Drug')"),
+      relationship: z.string().optional().describe("Relationship type to filter by (e.g. 'overlaps', 'targets')"),
+      min_score: z.number().optional().describe("Minimum score threshold"),
+    }).optional().describe("Filter entities forwarded from seeds_from by type/relationship"),
   })).optional().describe("Pipeline steps (min 2, max 8, pipeline only)"),
 });
 
@@ -773,36 +804,38 @@ export function createRunTool(getContext: () => RunContext) {
 COHORT (needs active cohort): rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
 ANALYTICS (auto-polls + auto-fetches charts): analytics { method, params }
 WORKFLOWS (needs active cohort): top_hits, qc_summary, gwas_minimal, compare_cohorts
-GRAPH (no cohort needed): explore, traverse, query
-ENTITY LOOKUP (no cohort needed, optional cohort enrichment): variant_profile
+GRAPH (no cohort needed): explore, traverse
+ENTITY LOOKUP (no cohort needed, optional cohort enrichment): variant_profile (⚠ uses "variants" field, NOT "references")
 WORKSPACE: pin, set_cohort, remember
 
-⚠ CRITICAL: "trace/follow variant → genes → diseases → ..." = ALWAYS traverse chain.
-⚠ variant_profile = single-variant entity lookup. For connections, execute its next_actions (pre-built traverse chain).
+⚠ CRITICAL: "trace/follow variant → genes → diseases → ..." = ALWAYS traverse chain. One call handles the full multi-hop path.
+⚠ variant_profile = single-variant deep dive (annotations, scores, ClinVar). NOT for tracing — use traverse chain instead.
 
-## Graph Mode Selection
+## explore — start from seeds, params determine routing automatically
+seeds + into:["diseases"]              → neighbors    "What genes does X target?"
+seeds (2+) + into:["diseases"]         → compare      "What diseases do A and B share?"
+seeds (2+)                             → compare      "What do A and B share?"
+seeds (3+) + target:"pathways"         → enrich       "Enriched pathways for these genes"
+seeds + top_k                          → similar      "Genes similar to TP53"
+seeds + sections or context_depth      → context      "Tell me about BRCA1"
+seeds + metric:"count" + edge_type     → aggregate    "How many disease links?"
+seeds (1) alone                        → context      (default entity lookup)
+Don't set mode. Just set the params. Routing is automatic.
 
-explore (default: neighbors):
-  neighbors → seeds, into:["diseases","drugs"]         "What genes does X target?"
-  compare   → seeds (2+), edge_type?                   "What do A and B share?"
-  enrich    → seeds (3+), target:"pathways"             "Enriched pathways for these genes"
-  similar   → seeds, top_k?                             "Genes similar to TP53"
-  context   → seeds, sections?                          "Tell me about BRCA1"
-  aggregate → seeds, edge_type, metric:"count"          "How many disease links?"
-traverse:
-  chain → seed, steps:[{into:"diseases"},{into:"drugs"}]
-    "Gene→diseases→drugs"
-    "Variant→genes→diseases→phenotypes"
-    "Variant→ccres→genes→tissues" (cCRE regulation + tissue expression)
-    "Disease→genes→drugs→adverse_effects"
-  paths → from:"Type:ID", to:"Type:ID"                    "Path from X to Y"
-query → pattern:[{var,type?,edge?,from?,to?}], return_vars "Genes connecting Drug X to Disease Y"
+## traverse — seed+steps for chains, from+to for paths, pattern for matching
+seed + steps:[{into:"diseases"},{into:"drugs"}]  → chain     "Gene→diseases→drugs"
+  "Variant→genes→diseases→phenotypes"
+  "Variant→ccres→genes→tissues" (cCRE regulation + tissue expression)
+  "Disease→genes→drugs→adverse_effects"
+from:"Type:ID" + to:"Type:ID"                    → paths     "Path from X to Y"
+pattern:[{var,type?,edge?,from?,to?}]            → patterns  "Genes connecting Drug X to Disease Y"
+Don't set mode. Don't combine steps with pattern.
 
-⚠ overlap/shared/intersection → compare or query. NEVER two separate explores.
-⚠ "X linked to Y" / "associated with" → traverse chain or query, not separate explores.
+⚠ overlap/shared/intersection → compare or traverse patterns. NEVER two separate explores.
+⚠ "X linked to Y" / "associated with" → traverse chain or patterns, not separate explores.
 
 ## Intent Direction
-Intent = target type. Direction = seed→target:
+Intent = target type. Direction depends on SEED type:
   drugs            — acts on gene target (gene→drug)
   drug_indications — approved for disease (disease→drug). Use for "what treats X?"
   drug_interactions — drug-drug interactions (drug→drug)
@@ -810,6 +843,8 @@ Intent = target type. Direction = seed→target:
   diseases         — associated with gene (gene→disease)
 WRONG: "Drugs for Alzheimer" → into:"drugs" (finds gene targets)
 RIGHT: "Drugs for Alzheimer" → into:"drug_indications"
+In pipelines: seed type determines intent, not user's original words.
+  Seed is disease → drug_indications. Seed is gene → drugs.
 
 ## Traverse
 - {into:...} for connectivity. {enrich:...} only for statistical enrichment (needs 3+ entities).
@@ -829,17 +864,16 @@ method must match params.type.
   gwas_qc: { p_value_column, effect_size_column, se_column } — no features/target
 Auto-defaults: validation=holdout 20%, missing="median", bootstrap statistic={stat:"mean"}.
 
-PIPELINE: pipeline { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?}] }
-  Multi-step: 2-8 DEPENDENT steps. Independent steps run in parallel.
-  seeds_from: forward entities from a prior graph step as seeds.
-
-  USE pipeline:
-    "explore BRCA1 diseases, then check tissue expression" → 2 dependent steps
-    "compare ALS and Parkinson's drug targets" → 2 parallel explores + 1 compare
-  DO NOT use pipeline:
-    "explore BRCA1" → single command, call explore directly
-    "explore BRCA1 diseases and also explore TP53 diseases" → 2 independent commands, call them separately
-    Any query where steps don't share data via seeds_from or depends_on
+## Pipeline Syntax
+pipeline { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}] }
+  Step structure: {id, command, args:{...}, seeds_from?, seeds_filter?, depends_on?}
+  ⚠ seeds_from and seeds_filter go at STEP level, NOT inside args.
+  Example: {id:"s2", command:"explore", args:{into:["genes"]}, seeds_from:"s1", seeds_filter:{type:"cCRE"}}
+  2-8 DEPENDENT steps. Independent steps in same wave run in parallel.
+  seeds_from: forward entities from a prior step as seeds.
+  seeds_filter: {type?, relationship?, min_score?} — filter forwarded entities.
+    Example: seeds_filter:{type:"cCRE"} forwards only cCREs from variant_profile.
+  When to use pipeline: ONLY when mixing different command types (e.g., cohort → graph). Traverse chain already handles multi-hop graph traces — do NOT wrap it in a pipeline.
 
 Intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_interactions, adverse_effects, drug_indications`,
     inputSchema: runInputSchema,

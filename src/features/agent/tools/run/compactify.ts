@@ -93,7 +93,6 @@ const COMPACTORS: Record<string, Compactor> = {
   compute: compactCompute,
   explore: compactExplore,
   traverse: compactTraverse,
-  query: compactQuery,
   analytics: compactAnalytics,
   "analytics.poll": compactAnalyticsPoll,
   viz: compactViz,
@@ -321,6 +320,10 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
 }
 
 function compactTraverse(data: Record<string, unknown>): Record<string, unknown> {
+  // Patterns mode — delegate to compactPatterns if matches present
+  const matches = asArray(data.matches);
+  if (matches.length > 0) return compactPatterns(data);
+
   // Chain mode
   const steps = data.steps as Array<{
     intent: string;
@@ -378,7 +381,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
   return data;
 }
 
-function compactQuery(data: Record<string, unknown>): Record<string, unknown> {
+function compactPatterns(data: Record<string, unknown>): Record<string, unknown> {
   const matches = asArray(data.matches);
   const totalMatches = asNumber(data.totalMatches, matches.length);
   const top = matches.slice(0, 5);
@@ -464,12 +467,150 @@ function compactGwasMinimal(data: Record<string, unknown>): Record<string, unkno
 }
 
 function compactVariantProfile(data: Record<string, unknown>): Record<string, unknown> {
-  const profiles = asArray(data.profiles).slice(0, 5);
+  const profiles = asArray(data.profiles).slice(0, 5).map(compactOneProfile);
   const out: Record<string, unknown> = { profiles };
   if (data.cohort_rows) {
     out.cohort_rows = asArray(data.cohort_rows).slice(0, 5);
   }
   return out;
+}
+
+/** Extract a structured, LLM-friendly summary from a single variant profile. */
+function compactOneProfile(raw: unknown): Record<string, unknown> {
+  const p = raw as Record<string, unknown>;
+  const out: Record<string, unknown> = {
+    variant: p.variant,
+    ...(p.resolvedId ? { resolvedId: p.resolvedId } : {}),
+    ...(p.label ? { label: p.label } : {}),
+    ...(p.error ? { error: p.error } : {}),
+  };
+
+  const entity = p.entity as Record<string, unknown> | undefined;
+  if (!entity) return out;
+
+  const d = (entity.data ?? {}) as Record<string, unknown>;
+  const included = (entity.included ?? {}) as Record<string, unknown>;
+  const counts = (included.counts ?? {}) as Record<string, number>;
+  // API returns relations (with rows[].neighbor + rows[].link), not edges
+  const relations = (included.relations ?? {}) as Record<string, { rows?: unknown[] }>;
+
+  // — Identity
+  if (d.chromosome) out.chromosome = d.chromosome;
+  if (d.position) out.position = d.position;
+  if (d.ref) out.ref = d.ref;
+  if (d.alt) out.alt = d.alt;
+
+  // — Gene context
+  if (d.gencode_gene_id) out.gene = d.gencode_gene_id;
+
+  // — Key scores
+  const scores = stripNulls({
+    gnomad_af: d.gnomad_af,
+    cadd_phred: d.cadd_phred,
+    linsight: d.linsight,
+    fathmm_xf: d.fathmm_xf,
+    phylop_mammals: d.phylop_mammals,
+    phylop_vertebrates: d.phylop_vertebrates,
+  });
+  if (Object.keys(scores).length) out.scores = scores;
+
+  // — cCRE
+  if (d.ccre_accessions) {
+    out.ccre = stripNulls({
+      accession: d.ccre_accessions,
+      annotation: d.ccre_annotations,
+    });
+  }
+
+  // — ClinVar
+  const clinvar = stripNulls({
+    significance: d.clinvar_significance ?? d.clinvar_clnsig,
+    review_status: d.clinvar_review_status,
+  });
+  if (Object.keys(clinvar).length) out.clinvar = clinvar;
+
+  // — Relation counts (compact: type → count)
+  const relationCounts: Array<{ type: string; count: number }> = [];
+  for (const [k, v] of Object.entries(counts)) {
+    if (v > 0) relationCounts.push({ type: k, count: v });
+  }
+  relationCounts.sort((a, b) => b.count - a.count);
+  if (relationCounts.length) out.relationCounts = relationCounts;
+
+  // — Top relations per edge type (from included.relations)
+  // Skip noisy edge types that waste context budget
+  const SKIP_EDGE_TYPES = new Set(["SIGNAL_HAS_VARIANT", "VARIANT_ASSOCIATED_WITH_STUDY"]);
+  const topRelations: Record<string, unknown[]> = {};
+  for (const [edgeType, group] of Object.entries(relations)) {
+    if (SKIP_EDGE_TYPES.has(edgeType)) continue;
+    const rows = asArray(group?.rows);
+    if (!rows.length) continue;
+
+    const seen = new Set<string>();
+    const compact: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      const r = row as Record<string, unknown>;
+      const neighbor = r.neighbor as Record<string, unknown> | undefined;
+      const link = r.link as Record<string, unknown> | undefined;
+      if (!neighbor) continue;
+
+      const nId = String(neighbor.id ?? "");
+      if (!nId || seen.has(nId)) continue;
+      seen.add(nId);
+
+      const item: Record<string, unknown> = {
+        name: neighbor.label ?? neighbor.name ?? nId,
+        type: neighbor.type,
+        id: nId,
+      };
+
+      // Extract curated edge props from link.props
+      const props = ((link?.props ?? {}) as Record<string, unknown>);
+      const edgeProps = compactEdgeProps(edgeType, props);
+      if (edgeProps) item.evidence = edgeProps;
+
+      compact.push(item);
+      if (compact.length >= 3) break;
+    }
+
+    if (compact.length) {
+      topRelations[edgeType] = compact;
+    }
+  }
+  if (Object.keys(topRelations).length) out.topRelations = topRelations;
+  out.totalNeighborTypes = Object.keys(counts).filter((k) => counts[k] > 0).length;
+
+  return out;
+}
+
+/** Pick only informative edge props per edge type. */
+function compactEdgeProps(edgeType: string, props: Record<string, unknown>): Record<string, unknown> | null {
+  // Per-edge-type field selection
+  const FIELDS_BY_TYPE: Record<string, string[]> = {
+    VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center", "ccre_size"],
+    VARIANT_IMPLIES_GENE: ["implication_mode", "l2g_score", "confidence_class", "n_loci", "gene_symbol"],
+    VARIANT_AFFECTS_GENE: ["variant_consequence", "region_type", "gene_symbol"],
+    VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance"],
+    VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "clinical_significance", "review_status"],
+    VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele"],
+    VARIANT_ASSOCIATED_WITH_DRUG: ["clinical_significance", "evidence_count", "direction_of_effect", "drug_name"],
+    VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele", "trait_name"],
+    VARIANT_LINKED_TO_SIDE_EFFECT: ["side_effect_name", "drug_name", "gene_symbol", "confidence_class"],
+    CCRE_REGULATES_GENE: ["max_score", "n_tissues", "method"],
+  };
+
+  const keepFields = FIELDS_BY_TYPE[edgeType];
+  if (!keepFields) return null;
+
+  const out: Record<string, unknown> = {};
+  for (const field of keepFields) {
+    if (props[field] != null) out[field] = props[field];
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+function stripNulls(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null));
 }
 
 // ---------------------------------------------------------------------------

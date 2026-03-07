@@ -75,6 +75,7 @@ async function executeCompare(
         entities: resolved.map((e) => ({ type: e.type, id: e.id })),
         ...(edgeType ? { edgeTypes: [edgeType] } : {}),
         limit: 20,
+        mode: "compact",
       },
     });
 
@@ -151,6 +152,7 @@ async function executeIntersect(
       edgeType,
       direction,
       limit: Math.min(limit ?? 20, 100),
+      mode: "compact",
     },
   });
 

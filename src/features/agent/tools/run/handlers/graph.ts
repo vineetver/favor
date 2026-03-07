@@ -5,7 +5,8 @@
 
 import { agentFetch, AgentToolError } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
-import type { GraphSchemaResponse } from "../intent-aliases";
+import type { GraphSchemaResponse, SortStrategy, KeyFilter } from "../intent-aliases";
+import { mergeSchemaAliases } from "../intent-aliases";
 import {
   errorResult as makeErrorResult,
   catchToResult,
@@ -23,8 +24,8 @@ import { handleExploreAggregate } from "./graph-explore-aggregate";
 // Mode handlers — traverse
 import { handleTraverseChain } from "./graph-traverse-chain";
 import { handleTraversePaths } from "./graph-traverse-paths";
-// Query handler
-import { handleQuery } from "./graph-query";
+// Query handler (now routed via traverse patterns)
+import { handleQuery, type QueryCmd } from "./graph-query";
 
 // ---------------------------------------------------------------------------
 // Shared: schema cache
@@ -41,7 +42,38 @@ export async function getCachedGraphSchema(portal?: string): Promise<GraphSchema
   const resp = await agentFetch<{ data: GraphSchemaResponse }>("/graph/schema");
   const schema = resp.data;
   schemaCache.set(key, { schema, ts: Date.now() });
+
+  // Enrich runtime maps from schema metadata
+  mergeSchemaAliases(schema);
+  enrichHumanLabels(schema);
+
   return schema;
+}
+
+// ---------------------------------------------------------------------------
+// Shared: agent view cache (~500-token compact schema for system prompt)
+// ---------------------------------------------------------------------------
+
+export interface AgentViewSchema {
+  nodes: Record<string, unknown>;
+  edges: Record<string, unknown>;
+}
+
+const agentViewCache: { data: AgentViewSchema | null; ts: number } = { data: null, ts: 0 };
+
+/** Fetch compact agent_view schema. Non-fatal — returns null on failure. */
+export async function getCachedAgentView(): Promise<AgentViewSchema | null> {
+  if (agentViewCache.data && Date.now() - agentViewCache.ts < SCHEMA_CACHE_TTL) {
+    return agentViewCache.data;
+  }
+  try {
+    const resp = await agentFetch<{ data: AgentViewSchema }>("/graph/schema?agent_view=true");
+    agentViewCache.data = resp.data;
+    agentViewCache.ts = Date.now();
+    return resp.data;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +151,7 @@ export const EDGE_HUMAN_LABEL: Record<string, string> = {
   DRUG_HAS_ADVERSE_EFFECT: "drug adverse effect",
   DRUG_INTERACTS_WITH_DRUG: "drug–drug interaction",
   DRUG_PAIR_CAUSES_SIDE_EFFECT: "drug-pair side effect",
-  VARIANT_IN_CCRE: "cis-regulatory element overlap",
+  VARIANT_OVERLAPS_CCRE: "cis-regulatory element overlap",
   CCRE_REGULATES_GENE: "cis-regulatory element–gene regulation",
   VARIANT_ASSOCIATED_WITH_STUDY: "GWAS study association",
 };
@@ -138,9 +170,13 @@ export const SCORE_HUMAN_LABEL: Record<string, string> = {
   affinity_median: "binding affinity (pKi/pIC50, higher = stronger)",
   faers_llr: "FAERS log-likelihood ratio (adverse effect signal strength)",
   onsides_pred1: "OnSIDES prediction score (side effect confidence)",
+  offsides_prr: "off-label proportional reporting ratio (FAERS signal)",
   prr: "proportional reporting ratio (drug-pair signal)",
   max_profile_evidence_score: "max pharmacogenomic evidence score",
   dc_act_value: "DrugCentral activity value (pACT)",
+  tpm_median: "median gene expression (TPM)",
+  alphamissense_pathogenicity: "AlphaMissense pathogenicity prediction",
+  mean_plddt: "AlphaFold structural confidence (pLDDT)",
 };
 
 /** Human-readable label for an edge type (fallback: lowercase + de-underscore) */
@@ -151,6 +187,119 @@ export function humanEdgeLabel(edgeType: string): string {
 /** Human-readable label for a score field (fallback: lowercase + de-underscore) */
 export function humanScoreLabel(scoreField: string): string {
   return SCORE_HUMAN_LABEL[scoreField] ?? scoreField.toLowerCase().replace(/_/g, " ");
+}
+
+// ---------------------------------------------------------------------------
+// Shared: schema-driven helpers (sort, keyFilters, labels, recovery)
+// ---------------------------------------------------------------------------
+
+/** Overwrite EDGE_HUMAN_LABEL entries from agentBriefing when available. */
+function enrichHumanLabels(schema: GraphSchemaResponse): void {
+  for (const et of schema.edgeTypes) {
+    if (et.agentBriefing) {
+      EDGE_HUMAN_LABEL[et.edgeType] = et.agentBriefing;
+    }
+  }
+}
+
+/**
+ * Pick the best sort field for an edge type.
+ * Priority: user-specified > first sortStrategy > defaultScoreField fallback.
+ */
+export function pickSortField(
+  schema: GraphSchemaResponse,
+  edgeType: string,
+  userSort?: string,
+): string | undefined {
+  if (userSort) return userSort;
+  const et = schema.edgeTypes.find((e) => e.edgeType === edgeType);
+  if (!et) return undefined;
+  const strategy = et.sortStrategies?.[0];
+  if (strategy) {
+    const dir = strategy.direction === "asc" ? "" : "-";
+    return `${dir}${strategy.field}`;
+  }
+  return et.defaultScoreField ? `-${et.defaultScoreField}` : undefined;
+}
+
+/**
+ * Merge priority-1 keyFilters into the agent's existing filters.
+ * Agent filters always win — if the agent already filters on a field (any __op suffix), skip.
+ * Returns merged filters and list of defaults that were applied (for trace metadata).
+ */
+export function applyDefaultKeyFilters(
+  schema: GraphSchemaResponse,
+  edgeType: string,
+  agentFilters?: Record<string, unknown>,
+): { filters: Record<string, unknown>; applied: string[] } {
+  const et = schema.edgeTypes.find((e) => e.edgeType === edgeType);
+  const defaults = et?.keyFilters?.filter((kf) => kf.priority === 1) ?? [];
+  if (defaults.length === 0) return { filters: agentFilters ?? {}, applied: [] };
+
+  const merged = { ...(agentFilters ?? {}) };
+  const applied: string[] = [];
+
+  for (const kf of defaults) {
+    // Check if agent already filters on this field (any __op suffix)
+    const hasAgentFilter = Object.keys(merged).some(
+      (k) => k === kf.field || k.startsWith(`${kf.field}__`),
+    );
+    if (hasAgentFilter) continue;
+
+    const key = `${kf.field}__${kf.op}`;
+    merged[key] = kf.value;
+    applied.push(kf.label ?? `${kf.field} ${kf.op} ${String(kf.value)}`);
+  }
+
+  return { filters: merged, applied };
+}
+
+/**
+ * Schema-guided error recovery: parse 400 errors and suggest valid options.
+ * Returns an error result with next_actions, or null for non-correctable errors.
+ */
+export function schemaGuidedRecovery(
+  err: unknown,
+  schema: GraphSchemaResponse,
+  tc?: TraceCollector,
+): RunResultEnvelope | null {
+  if (!(err instanceof AgentToolError) || err.status !== 400) return null;
+
+  const msg = err.detail.toLowerCase();
+
+  // Unknown edge type → list valid edge types
+  if (msg.includes("edge type") || msg.includes("edgetype") || msg.includes("unknown edge")) {
+    const validEdges = schema.edgeTypes.map((e) => e.edgeType);
+    return makeErrorResult({
+      message: err.detail,
+      code: "invalid_edge_type",
+      hint: `Valid edge types: ${validEdges.slice(0, 15).join(", ")}`,
+      http_status: 400,
+      tc,
+      next_actions: [{
+        tool: "Run",
+        args: {},
+        reason: `Retry with a valid edge type. Available: ${validEdges.slice(0, 10).join(", ")}`,
+        reason_code: "schema_correction",
+      }],
+    });
+  }
+
+  // Unknown field → list valid fields for the mentioned edge type
+  if (msg.includes("field") || msg.includes("property") || msg.includes("sort")) {
+    const edgeType = schema.edgeTypes.find((e) => msg.includes(e.edgeType.toLowerCase()));
+    if (edgeType?.properties?.length) {
+      return makeErrorResult({
+        message: err.detail,
+        code: "invalid_field",
+        hint: `Valid fields for ${edgeType.edgeType}: ${edgeType.properties.slice(0, 15).join(", ")}`,
+        http_status: 400,
+        tc,
+      });
+    }
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,16 +378,14 @@ export async function edgeTypeAnnotations(edgeTypes: string[]): Promise<string> 
 }
 
 // ---------------------------------------------------------------------------
-// Explore dispatch
+// Explore dispatch — implicit routing from params
 // ---------------------------------------------------------------------------
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
-type ExploreMode = ExploreCmd["mode"];
 
-const EXPLORE_DISPATCH: Record<
-  NonNullable<ExploreMode>,
-  (cmd: ExploreCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>
-> = {
+type ExploreHandler = (cmd: ExploreCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>;
+
+const EXPLORE_DISPATCH: Record<string, ExploreHandler> = {
   neighbors: handleExploreNeighbors,
   compare: handleExploreCompare,
   enrich: handleExploreEnrich,
@@ -247,11 +394,27 @@ const EXPLORE_DISPATCH: Record<
   aggregate: handleExploreAggregate,
 };
 
+/** Infer explore mode from params — priority order, most specific signal first. */
+function routeExplore(cmd: ExploreCmd): string {
+  if (cmd.mode) {
+    console.warn("[Run] deprecated mode= field used, will be removed");
+    return cmd.mode;
+  }
+  if (cmd.metric) return "aggregate";
+  if (cmd.target) return "enrich";
+  if (cmd.seeds.length >= 2 && cmd.into?.length) return "compare";
+  if (cmd.into?.length) return "neighbors";
+  if (cmd.sections || cmd.context_depth) return "context";
+  if (cmd.top_k || (cmd.edge_types && !cmd.into?.length)) return "similar";
+  if (cmd.seeds.length >= 2) return "compare";
+  return "context";
+}
+
 export async function handleExplore(
   cmd: ExploreCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
-  const mode = cmd.mode ?? "neighbors";
+  const mode = routeExplore(cmd);
   const handler = EXPLORE_DISPATCH[mode];
   if (!handler) {
     return errorResult(`Unknown explore mode: ${mode}`);
@@ -260,34 +423,63 @@ export async function handleExplore(
 }
 
 // ---------------------------------------------------------------------------
-// Traverse dispatch
+// Traverse dispatch — implicit routing from params
 // ---------------------------------------------------------------------------
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
-type TraverseMode = TraverseCmd["mode"];
 
-const TRAVERSE_DISPATCH: Record<
-  NonNullable<TraverseMode>,
-  (cmd: TraverseCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>
-> = {
+type TraverseHandler = (cmd: TraverseCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>;
+
+/** Adapter: route traverse patterns mode to the query handler */
+async function handleTraversePatterns(
+  cmd: TraverseCmd,
+  cache?: Record<string, EntityRef>,
+): Promise<RunResult> {
+  return handleQuery(
+    {
+      description: cmd.description,
+      seeds: cmd.seeds,
+      pattern: cmd.pattern,
+      return_vars: cmd.return_vars,
+      filters: cmd.filters as Record<string, unknown> | undefined,
+      limit: cmd.limit,
+      select: cmd.select,
+    } satisfies QueryCmd,
+    cache,
+  );
+}
+
+const TRAVERSE_DISPATCH: Record<string, TraverseHandler> = {
   chain: handleTraverseChain,
   paths: handleTraversePaths,
+  patterns: handleTraversePatterns,
 };
+
+/** Infer traverse mode from params — with conflict validation. */
+function routeTraverse(cmd: TraverseCmd): string | { error: string } {
+  if (cmd.mode) {
+    console.warn("[Run] deprecated mode= field used, will be removed");
+    return cmd.mode;
+  }
+  if ((cmd.pattern || cmd.description) && cmd.steps) {
+    return { error: "Cannot combine pattern/description with steps. Use pattern OR steps, not both." };
+  }
+  if (cmd.pattern || cmd.description) return "patterns";
+  if (cmd.from && cmd.to) return "paths";
+  return "chain";
+}
 
 export async function handleTraverse(
   cmd: TraverseCmd,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<RunResult> {
-  const mode = cmd.mode ?? "chain";
+  const mode = routeTraverse(cmd);
+  if (typeof mode === "object") {
+    return errorResult(mode.error);
+  }
   const handler = TRAVERSE_DISPATCH[mode];
   if (!handler) {
     return errorResult(`Unknown traverse mode: ${mode}`);
   }
   return handler(cmd, resolvedCache);
 }
-
-// ---------------------------------------------------------------------------
-// Query (single handler, no dispatch needed)
-// ---------------------------------------------------------------------------
-
-export { handleQuery };

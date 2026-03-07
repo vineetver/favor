@@ -8,9 +8,8 @@
  * Agent commands:
  *   cohort     → rows, groupby, derive, prioritize, compute
  *   analyze    → correlation, analytics
- *   explore    → explore (pass-through)
- *   traverse   → traverse (pass-through)
- *   query      → query (pass-through)
+ *   explore    → explore (pass-through, auto-routed)
+ *   traverse   → traverse (pass-through, auto-routed: chain/paths/patterns)
  *   workspace  → set_cohort, remember, export, pin
  */
 
@@ -74,7 +73,7 @@ const weight = z.object({
 // ---------------------------------------------------------------------------
 
 export const agentInputSchema = z.object({
-  command: z.enum(["cohort", "analyze", "explore", "traverse", "query", "workspace"]),
+  command: z.enum(["cohort", "analyze", "explore", "traverse", "workspace"]),
   op: z.string().optional().describe(
     "Sub-operation: cohort(rows|groupby|derive|rank|score), " +
     "analyze(correlation|regression|feature_importance|multiple_testing|bootstrap_ci|permutation_test|pca|cluster|prs_association), " +
@@ -159,8 +158,8 @@ export const agentInputSchema = z.object({
   p_value_column: z.string().optional().describe("P-value column (multiple testing)"),
   max_iterations: z.number().optional(),
 
-  // --- explore ---
-  mode: z.string().optional().describe("Sub-mode: explore(neighbors|compare|enrich|similar|context|aggregate), traverse(chain|paths)"),
+  // --- explore (auto-routed from params) ---
+  mode: z.string().optional().describe("Deprecated — routing is automatic. Do not set."),
   seeds: z.array(flatSeedRef).optional().describe("Seed entities (explore, query)"),
   into: z.array(targetIntents).optional().describe("Target intents (explore neighbors)"),
   depth: z.number().optional().describe("Traversal depth"),
@@ -174,24 +173,23 @@ export const agentInputSchema = z.object({
   metric: z.enum(["count", "avg", "sum", "min", "max"]).optional(),
   score_field: z.string().optional(),
 
-  // --- traverse ---
+  // --- traverse (auto-routed: seed+steps→chain, from+to→paths, pattern/description→patterns) ---
   seed: flatSeedRef.optional().describe("Single seed (traverse chain)"),
   steps: z.array(flatTraverseStep).optional().describe("Traversal steps"),
   from: z.string().optional().describe("Source 'Type:ID' (traverse paths)"),
   to: z.string().optional().describe("Target 'Type:ID' (traverse paths)"),
   max_hops: z.number().optional(),
   include_edge_detail: z.boolean().optional(),
-
-  // --- query ---
-  description: z.string().optional().describe("Natural language pattern description"),
+  // --- traverse patterns (structural pattern matching) ---
+  description: z.string().optional().describe("Natural language pattern description (traverse patterns)"),
   pattern: z.array(z.object({
     var: z.string(),
     type: z.string().optional(),
     edge: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
-  })).optional().describe("Structural pattern"),
-  return_vars: z.array(z.string()).optional(),
+  })).optional().describe("Structural pattern (traverse patterns)"),
+  return_vars: z.array(z.string()).optional().describe("Variables to return (traverse patterns)"),
 
   // --- workspace ---
   entities: z.array(flatSeedRef).optional().describe("Entities to bookmark [{type, id, label}]"),
@@ -300,7 +298,6 @@ export function transformAgentInputToRunInput(
 
     case "explore":
     case "traverse":
-    case "query":
       return stripUndefined({ command, ...fields });
 
     case "workspace": {
@@ -333,6 +330,8 @@ function resolveInternalCommand(command: string, op?: string): string {
       return COHORT_OP_MAP[op ?? "rows"] ?? "rows";
     case "analyze":
       return op === "correlation" ? "correlation" : "analytics";
+    case "query":
+      return "traverse"; // query folded into traverse patterns
     case "workspace": {
       const WORKSPACE_CMD: Record<string, string> = {
         select_cohort: "set_cohort", memo: "remember",
@@ -369,10 +368,10 @@ ANALYZE (command:"analyze", op:...)
   cluster            — k-means or hierarchical clustering
   prs_association    — PRS to phenotype association (uses regression internally)
 
-GRAPH — explore, traverse, query (same modes as before)
-  explore (mode: neighbors|compare|enrich|similar|context|aggregate)
-  traverse (mode: chain|paths)
-  query — structural pattern matching
+GRAPH (command:"explore" or "traverse") — routing is automatic from params
+  explore: seeds + into→neighbors, seeds(2+)+into→compare, target→enrich, top_k→similar, sections→context, metric→aggregate
+  traverse: seed+steps→chain, from+to→paths, pattern/description→patterns
+  Don't set mode. Just set the params.
 
 WORKSPACE (command:"workspace", op:...)
   select_cohort      — set active cohort

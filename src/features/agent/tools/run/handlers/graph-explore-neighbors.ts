@@ -10,13 +10,22 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import type { TargetIntent } from "../types";
 import {
-  INTENT_TO_TYPE,
+  resolveIntentType,
   findEdgesConnecting,
   getSummaryFields,
   canonicalizeIntent,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation } from "./graph";
+import {
+  getCachedGraphSchema,
+  errorResult,
+  catchError,
+  trimEntitySubtitles,
+  edgeTypeAnnotation,
+  pickSortField,
+  applyDefaultKeyFilters,
+  schemaGuidedRecovery,
+} from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -82,7 +91,7 @@ export async function handleExploreNeighbors(
         tc.warn("intent_repair", repairNote);
       }
 
-      const targetType = INTENT_TO_TYPE[intent];
+      const targetType = resolveIntentType(intent);
       if (!targetType) continue;
 
       const edgeTypes = findEdgesConnecting(schema, seedType, targetType, intent);
@@ -148,6 +157,13 @@ export async function handleExploreNeighbors(
 
           const nodeFields = getSummaryFields(schema, targetType).slice(0, 5);
           const edgeFields = bestEdge.defaultScoreField ? [bestEdge.defaultScoreField] : [];
+          const sortField = pickSortField(schema, bestEdge.edgeType);
+          const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
+            schema, bestEdge.edgeType, cmd.filters as Record<string, unknown> | undefined,
+          );
+          if (appliedDefaults.length > 0) {
+            tc.add({ step: `intent_${intent}`, kind: "decision", message: `Default filters: ${appliedDefaults.join(", ")}` });
+          }
 
           const queryResult = await agentFetch<{
             data: {
@@ -167,13 +183,15 @@ export async function handleExploreNeighbors(
               steps: [{
                 edgeTypes: [bestEdge.edgeType],
                 limit: Math.min(cmd.limit ?? 20, 100),
-                sort: bestEdge.defaultScoreField ? `-${bestEdge.defaultScoreField}` : undefined,
+                sort: sortField,
+                ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
               }],
               select: {
                 nodeFields: nodeFields.slice(0, 20),
                 edgeFields: edgeFields.slice(0, 20),
               },
               limits: { maxNodes: 500, maxEdges: 2000 },
+              mode: "compact",
             },
           });
 
@@ -221,6 +239,8 @@ export async function handleExploreNeighbors(
           };
         }
       } catch (err) {
+        const recovered = schemaGuidedRecovery(err, schema, tc);
+        if (recovered) return recovered;
         const msg = err instanceof Error ? err.message : String(err);
         tc.warn("intent_failed", `${intent}: ${msg}`);
         branchResults[intent] = { count: 0, top: [], edgeType: bestEdge.edgeType };

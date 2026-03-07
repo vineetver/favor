@@ -90,6 +90,12 @@ const weightSchema = z.object({
 // Pipeline step schema
 // ---------------------------------------------------------------------------
 
+const seedsFilterSchema = z.object({
+  type: z.string().optional(),
+  relationship: z.string().optional(),
+  min_score: z.number().optional(),
+}).optional();
+
 const pipelineStepSchema = z.object({
   id: z.string(),
   command: z.string(),
@@ -97,6 +103,7 @@ const pipelineStepSchema = z.object({
   description: z.string().optional(),
   depends_on: z.array(z.string()).optional(),
   seeds_from: z.string().optional(),
+  seeds_filter: seedsFilterSchema,
 });
 
 export type PipelineStep = z.infer<typeof pipelineStepSchema>;
@@ -260,12 +267,11 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   // Graph commands — 3 mode-dispatched primitives
   z.object({
     command: z.literal("explore"),
-    mode: z.enum(["neighbors", "compare", "enrich", "similar", "context", "aggregate"]).default("neighbors"),
+    mode: z.string().optional(),
     seeds: z.array(seedRefSchema).min(1).max(10),
     // neighbors
     into: z.array(targetIntentSchema).optional(),
     limit: z.number().optional(),
-    depth: z.number().optional(),
     // compare (intersect)
     edge_type: z.string().optional(),
     direction: z.enum(["in", "out"]).optional(),
@@ -286,19 +292,16 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   }),
   z.object({
     command: z.literal("traverse"),
-    mode: z.enum(["chain", "paths"]).default("chain"),
+    mode: z.string().optional(),
     // chain
     seed: seedRefSchema.optional(),
-    steps: z.array(traverseStepSchema).optional(),
+    steps: z.array(traverseStepSchema).max(5).optional(),
     // paths
     from: z.string().optional().describe("Entity ref: 'Type:ID'"),
     to: z.string().optional().describe("Entity ref: 'Type:ID'"),
     max_hops: z.number().optional(),
     limit: z.number().optional(),
-    include_edge_detail: z.boolean().optional(),
-  }),
-  z.object({
-    command: z.literal("query"),
+    // patterns (merged from query)
     description: z.string().optional().describe("Natural language description of the pattern"),
     seeds: z.array(seedRefSchema).optional(),
     pattern: z.array(z.object({
@@ -310,7 +313,6 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     })).optional(),
     return_vars: z.array(z.string()).optional(),
     filters: z.record(z.unknown()).optional(),
-    limit: z.number().optional(),
     select: z.object({
       edgeFields: z.array(z.string()).optional(),
       includeEvidence: z.boolean().optional(),

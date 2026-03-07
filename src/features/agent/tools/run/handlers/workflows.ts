@@ -371,6 +371,85 @@ async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]
   }
 }
 
+// ---------------------------------------------------------------------------
+// Variant entity trimmer — strip bloat before storing in tool output
+// ---------------------------------------------------------------------------
+
+/** Essential edge props per type for LLM + frontend rendering. */
+const TRIM_EDGE_PROPS: Record<string, string[] | null> = {
+  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center", "ccre_size", "source"],
+  VARIANT_IMPLIES_GENE: ["implication_mode", "l2g_score", "confidence_class", "n_loci", "gene_symbol"],
+  VARIANT_AFFECTS_GENE: ["variant_consequence", "region_type", "gene_symbol", "gene_full_name", "sources"],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance", "trait_name"],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance", "trait_name"],
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele", "trait_name"],
+  VARIANT_ASSOCIATED_WITH_DRUG: ["clinical_significance", "evidence_count", "direction_of_effect", "drug_name"],
+  VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele", "study_title", "study_trait"],
+  VARIANT_LINKED_TO_SIDE_EFFECT: ["side_effect_name", "drug_name", "gene_symbol", "confidence_class"],
+  CCRE_REGULATES_GENE: ["max_score", "n_tissues", "method"],
+  SIGNAL_HAS_VARIANT: null, // skip entirely — huge count, never useful
+};
+
+/** Strip source_versions, trim edge props to essentials, skip noisy edge types. */
+function trimVariantEntity(raw: Record<string, unknown>): Record<string, unknown> {
+  const data = { ...(raw.data as Record<string, unknown>) };
+  delete data.source_versions;
+
+  const included = raw.included as Record<string, unknown> | undefined;
+  if (!included) return { data };
+
+  const counts = included.counts;
+  const relations = included.relations as
+    | Record<string, { direction?: string; neighbor_mode?: string; rows?: unknown[]; hasMore?: boolean }>
+    | undefined;
+  if (!relations) return { data, included: { counts } };
+
+  const trimmed: Record<string, unknown> = {};
+  for (const [edgeType, group] of Object.entries(relations)) {
+    const spec = TRIM_EDGE_PROPS[edgeType];
+    if (spec === null) continue; // explicitly skipped
+
+    const rows = group.rows;
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+
+    const cleanRows = rows.map((row) => {
+      const r = row as Record<string, unknown>;
+      const link = r.link as Record<string, unknown> | undefined;
+      if (!link) return r;
+
+      const props = (link.props ?? {}) as Record<string, unknown>;
+
+      if (spec) {
+        // Keep only listed fields
+        const clean: Record<string, unknown> = {};
+        for (const f of spec) {
+          if (props[f] != null) clean[f] = props[f];
+        }
+        return {
+          neighbor: r.neighbor,
+          link: { type: link.type, direction: link.direction, from: link.from, to: link.to, props: clean },
+        };
+      }
+
+      // Unknown edge type — strip nulls from props
+      const stripped: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(props)) {
+        if (v != null) stripped[k] = v;
+      }
+      return { neighbor: r.neighbor, link: { ...link, props: stripped } };
+    });
+
+    trimmed[edgeType] = {
+      direction: group.direction,
+      neighbor_mode: group.neighbor_mode,
+      rows: cleanRows,
+      hasMore: group.hasMore,
+    };
+  }
+
+  return { data, included: { counts, relations: trimmed } };
+}
+
 export async function handleVariantProfile(
   cmd: Extract<RunCommand, { command: "variant_profile" }>,
   ctx: RunContext,
@@ -395,10 +474,10 @@ export async function handleVariantProfile(
       }
       try {
         const result = await agentFetch<Record<string, unknown>>(
-          `/graph/Variant/${encodeURIComponent(entityId)}?include=counts,edges,rollups`,
+          `/graph/Variant/${encodeURIComponent(entityId)}?include=counts,edges&limitPerEdgeType=5`,
           { timeout: 15_000 },
         );
-        return { variant: rv.query, resolvedId: entityId, label: rv.label, entity: result, error: null };
+        return { variant: rv.query, resolvedId: entityId, label: rv.label, entity: trimVariantEntity(result), error: null };
       } catch (err) {
         return { variant: rv.query, resolvedId: entityId, entity: null, error: err instanceof Error ? err.message : String(err) };
       }

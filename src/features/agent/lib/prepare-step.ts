@@ -7,6 +7,7 @@ import type { PrepareStepFunction } from "ai";
 import { isContextHeavy, isContextCritical } from "./context-budget";
 import { fetchSessionState, applyStateDelta, patchSessionState, type SessionState } from "./session-state";
 import { buildSystemPrompt } from "./prompts/system";
+import { getCachedAgentView, type AgentViewSchema } from "../tools/run/handlers/graph";
 import type { RunResult } from "../tools/run/types";
 
 // Matches SharedV3ProviderOptions from ai SDK
@@ -120,6 +121,7 @@ export function createPrepareStep(
   let stateVersion = 0;
   let systemPromptLength = 0;
   let stateDirty = false;
+  let agentView: AgentViewSchema | null = null;
 
   const synthesize = (extraSystem?: string) => ({
     activeTools: [] as string[],
@@ -130,7 +132,7 @@ export function createPrepareStep(
   return async ({ stepNumber, steps }) => {
     const stepsData = steps as StepData[];
 
-    // --- 1. First step: load state, inject into system prompt ---
+    // --- 1. First step: load state + agent view, inject into system prompt ---
     if (stepNumber === 0) {
       try {
         const { state, version } = await fetchSessionState(sessionId);
@@ -140,7 +142,10 @@ export function createPrepareStep(
         currentState = null;
       }
 
-      const sys = buildSystemPrompt(currentState ?? undefined);
+      // Fetch compact graph schema for prompt injection (non-fatal)
+      try { agentView = await getCachedAgentView(); } catch { /* ignore */ }
+
+      const sys = buildSystemPrompt(currentState ?? undefined, agentView);
       systemPromptLength = sys.length;
       return {
         toolChoice: "auto" as const,
@@ -221,7 +226,7 @@ export function createPrepareStep(
     if (lastStep?.toolResults && stepNumber >= 2) {
       const CONTINUATION_COMMANDS = new Set([
         "set_cohort", "pin", "create_cohort", "derive",
-        "explore", "traverse", "query",
+        "explore", "traverse",
         "variant_profile", "pipeline",
       ]);
 
@@ -254,7 +259,7 @@ export function createPrepareStep(
     // --- 9. Otherwise: let model decide ---
     return {
       toolChoice: "auto" as const,
-      system: buildSystemPrompt(currentState ?? undefined) + hint,
+      system: buildSystemPrompt(currentState ?? undefined, agentView) + hint,
     };
   };
 }

@@ -59,11 +59,27 @@ export interface EdgeTypeInfo {
   propertyCount: number;
 }
 
+export interface SortStrategy {
+  field: string;
+  direction?: "asc" | "desc";
+  label?: string;
+}
+
+export interface KeyFilter {
+  field: string;
+  op: string;
+  value: unknown;
+  priority: number;
+  label?: string;
+}
+
 export interface GraphSchemaResponse {
   nodeTypes: Array<{
     nodeType: string;
     propertyCount?: number;
     summaryFields?: string[];
+    searchAliases?: string[];
+    agentBriefing?: string;
   }>;
   edgeTypes: Array<{
     edgeType: string;
@@ -76,6 +92,9 @@ export interface GraphSchemaResponse {
     filterFields?: string[];
     propertyCount?: number;
     properties?: string[];
+    sortStrategies?: SortStrategy[];
+    keyFilters?: KeyFilter[];
+    agentBriefing?: string;
   }>;
 }
 
@@ -92,6 +111,10 @@ const EDGE_PREFERENCE: Record<string, string[]> = {
   "intent:adverse_effects": ["DRUG_HAS_ADVERSE_EFFECT"],
 
   // Type-pair preferences (checked when no intent override)
+  "cCRE→Gene": ["CCRE_REGULATES_GENE"],
+  "Gene→cCRE": ["CCRE_REGULATES_GENE"],
+  "Variant→cCRE": ["VARIANT_OVERLAPS_CCRE"],
+  "cCRE→Variant": ["VARIANT_OVERLAPS_CCRE"],
   "Gene→Drug": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
   "Drug→Gene": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
   "Drug→SideEffect": ["DRUG_HAS_ADVERSE_EFFECT"],
@@ -189,4 +212,33 @@ export function inferEdgeType(
 ): string | null {
   const edges = findEdgesConnecting(schema, fromType, toType);
   return edges[0]?.edgeType ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Runtime intent map — merges static INTENT_TO_TYPE with schema searchAliases
+// ---------------------------------------------------------------------------
+
+const runtimeIntentMap = new Map<string, string>(
+  Object.entries(INTENT_TO_TYPE),
+);
+
+/** Resolve an intent string to a node type using the runtime map (schema-enriched). */
+export function resolveIntentType(intent: string): string | undefined {
+  return runtimeIntentMap.get(intent) ?? INTENT_TO_TYPE[intent as TargetIntent];
+}
+
+/**
+ * Walk nodeTypes[].searchAliases and register them in the runtime intent map.
+ * Static INTENT_TO_TYPE entries are never overwritten — schema aliases only fill gaps.
+ */
+export function mergeSchemaAliases(schema: GraphSchemaResponse): void {
+  for (const nt of schema.nodeTypes) {
+    if (!nt.searchAliases?.length) continue;
+    for (const alias of nt.searchAliases) {
+      const key = alias.toLowerCase().replace(/\s+/g, "_");
+      if (!runtimeIntentMap.has(key)) {
+        runtimeIntentMap.set(key, nt.nodeType);
+      }
+    }
+  }
 }

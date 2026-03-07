@@ -30,7 +30,7 @@ interface MethodMatch {
 
 export function createStateTool(sessionId: string) {
   return tool({
-    description: `Workspace snapshot: active cohort + schema, pinned entities, jobs, derived cohorts, mode. Call first every turn to orient.`,
+    description: `Workspace snapshot: active cohort + schema, pinned entities, jobs, derived cohorts, mode. Call at start of session or when context may have changed. Skip on follow-up turns where context hasn't changed.`,
     inputSchema: z.object({}),
     execute: async () => {
       try {
@@ -74,8 +74,8 @@ export function createStateTool(sessionId: string) {
             // Update state with fresh data
             state.cohort_row_count = resp.row_count ?? state.cohort_row_count;
             state.cohort_status = "ready";
-          } catch {
-            // Schema fetch failed — use cached data from state
+          } catch (err) {
+            console.warn("[State] Schema fetch failed, using cached data:", err instanceof Error ? err.message : err);
           }
         }
 

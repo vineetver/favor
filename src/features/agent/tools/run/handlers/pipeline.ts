@@ -120,7 +120,7 @@ function extractEntities(
       break;
     }
     case "traverse": {
-      // From last non-empty steps[].top[]
+      // Chain mode: from last non-empty steps[].top[]
       const steps = data.steps as Array<{ top?: unknown[] }> | undefined;
       if (steps) {
         for (let i = steps.length - 1; i >= 0; i--) {
@@ -136,10 +136,7 @@ function extractEntities(
           }
         }
       }
-      break;
-    }
-    case "query": {
-      // From matches[].vars (all bound entities)
+      // Patterns mode: from matches[].vars (all bound entities)
       const matches = data.matches as Array<{ vars?: Record<string, unknown> }> | undefined;
       if (matches) {
         for (const m of matches) {
@@ -156,12 +153,52 @@ function extractEntities(
       break;
     }
     case "variant_profile": {
-      // From profiles[] (resolved variant refs)
+      // From profiles[] — extract both the variant AND its related entities
       const profiles = data.profiles as Array<Record<string, unknown>> | undefined;
       if (profiles) {
         for (const p of profiles) {
-          if (p.type && p.id && p.label) {
-            raw.push({ type: String(p.type), id: String(p.id), label: String(p.label) });
+          // Extract the variant itself
+          const resolvedId = p.resolvedId as string | undefined;
+          const label = (p.label as string) ?? (p.variant as string);
+          if (resolvedId && label) {
+            raw.push({ type: "Variant", id: resolvedId, label });
+          }
+
+          const entity = p.entity as Record<string, unknown> | undefined;
+          if (!entity) continue;
+
+          // Entity detail response: { data: {...}, included: { counts, relations } }
+          const included = entity.included as Record<string, unknown> | undefined;
+          const entityData = (entity.data ?? {}) as Record<string, unknown>;
+
+          // Extract neighbors from included.relations[EDGE_TYPE].rows[].neighbor
+          const relations = (included?.relations ?? {}) as Record<string, { rows?: unknown[] }>;
+          for (const [, group] of Object.entries(relations)) {
+            const rows = group?.rows;
+            if (!Array.isArray(rows)) continue;
+            for (const row of rows) {
+              const r = row as Record<string, unknown>;
+              const neighbor = r.neighbor as Record<string, unknown> | undefined;
+              if (!neighbor) continue;
+              const nType = neighbor.type as string | undefined;
+              const nId = neighbor.id as string | undefined;
+              // Relations use name/symbol (not label) — use id as fallback for id-mode neighbors
+              const nLabel = (neighbor.symbol as string) ?? (neighbor.name as string) ?? (neighbor.label as string) ?? nId;
+              if (nType && nId && nLabel) {
+                raw.push({ type: nType, id: nId, label: nLabel });
+              }
+            }
+          }
+
+          // Fallback: if cCRE accessions exist in flat data but no cCRE entity was extracted
+          const ccreAccessions = entityData.ccre_accessions as string | undefined;
+          if (ccreAccessions && !raw.some((e) => e.type === "cCRE")) {
+            for (const acc of ccreAccessions.split(",")) {
+              const trimmed = acc.trim();
+              if (trimmed) {
+                raw.push({ type: "cCRE", id: trimmed, label: trimmed });
+              }
+            }
           }
         }
       }
@@ -210,11 +247,14 @@ function buildStepCommand(
 
   if (seedEntities?.length) {
     const seedRefs = seedEntities.map((e) => ({ type: e.type, id: e.id, label: e.label }));
-    if (step.command === "traverse") {
+    if (step.command === "traverse" && !cmd.pattern && !cmd.description) {
       // traverse chain uses singular `seed`
       cmd.seed = seedRefs[0];
+    } else if (step.command === "traverse") {
+      // traverse patterns uses `seeds` array
+      cmd.seeds = seedRefs;
     } else {
-      // explore, query use `seeds` array
+      // explore uses `seeds` array
       cmd.seeds = seedRefs;
     }
   }
@@ -368,6 +408,19 @@ export async function handlePipeline(
       let seedEntities: EntityRef[] | undefined;
       if (step.seeds_from) {
         seedEntities = stepEntities.get(step.seeds_from);
+
+        // Apply seeds_filter if specified — filter by entity type/relationship
+        if (seedEntities && step.seeds_filter) {
+          const filter = step.seeds_filter;
+          if (filter.type) {
+            const filterType = filter.type.toLowerCase();
+            seedEntities = seedEntities.filter(
+              (e) => e.type.toLowerCase() === filterType,
+            );
+          }
+          // min_score would require score metadata — skip for now
+        }
+
         if (!seedEntities || seedEntities.length === 0) {
           // Check if the source step was partial — might still have some entities
           const sourceResult = stepRawResults.get(step.seeds_from);
@@ -376,8 +429,8 @@ export async function handlePipeline(
               id: step.id,
               command: step.command,
               status: "skipped",
-              summary: `Skipped: no entities from "${step.seeds_from}"`,
-              skip_reason: `seeds_from "${step.seeds_from}" produced no entities`,
+              summary: `Skipped: no entities from "${step.seeds_from}"${step.seeds_filter?.type ? ` (filtered for type "${step.seeds_filter.type}")` : ""}`,
+              skip_reason: `seeds_from "${step.seeds_from}" produced no entities${step.seeds_filter?.type ? ` of type "${step.seeds_filter.type}"` : ""}`,
               ms: Date.now() - stepStart,
             });
             return;

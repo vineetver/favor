@@ -17,7 +17,7 @@ import { readTool } from "./tools/read";
 import { createSearchTool } from "./tools/search";
 import { createRunTool, type RunResult, type EntityRef } from "./tools/run";
 import { askUserTool } from "./tools/ask-user";
-import { fetchSessionState } from "./lib/session-state";
+
 import type { VizSpec } from "./types";
 import { generateVizSpecs } from "./viz";
 
@@ -31,13 +31,7 @@ export function createAgentTools(sessionId: string) {
   const resolvedEntities: Record<string, EntityRef> = {};
   const failureTracker = new Map<string, never>();
 
-  // Initialize from session state (fire-and-forget — will be loaded by State tool too)
-  fetchSessionState(sessionId)
-    .then(({ state }) => {
-      activeCohortId = state.active_cohort_id;
-      Object.assign(resolvedEntities, state.resolved_entities);
-    })
-    .catch(() => {});
+  // State is loaded by prepareStep on step 0 — no need for fire-and-forget init
 
   const tools = {
     State: createStateTool(sessionId),
@@ -140,6 +134,7 @@ export function createFavorAgent(
   return { agent, getVizSpecs: () => vizCollector };
 }
 
-// Type export
-const { agent: _typeAgent } = createFavorAgent("__type_only__");
-export type AgentUIMessage = InferAgentUIMessage<typeof _typeAgent>;
+// Type export — inferred from factory return type without instantiation
+export type AgentUIMessage = InferAgentUIMessage<
+  ReturnType<typeof createFavorAgent>["agent"]
+>;

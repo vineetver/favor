@@ -131,9 +131,9 @@ function parseSchemaResponse(
   const identity: string[] = [];
   const allWithKind: Array<{ name: string; kind: ColumnKind }> = [];
 
-  // Parse columns from auto_config or columns
+  // Parse columns — prefer raw.columns (already filtered by backend), fall back to auto_config
   const autoConfig = raw.auto_config as Record<string, unknown> | undefined;
-  const columns = (autoConfig?.columns ?? raw.columns) as
+  const columns = (raw.columns ?? autoConfig?.columns) as
     | Array<{ name: string; kind?: string; type?: string }>
     | undefined;
 
@@ -161,9 +161,13 @@ function parseSchemaResponse(
   const allColumns = allWithKind.map((c) => c.name);
   const schemaHash = fnv1a(allColumns.slice().sort().join(","));
 
-  // Extract available methods
-  const methods = (autoConfig?.available_methods ?? raw.available_methods) as string[] | undefined;
-  const availableMethods = Array.isArray(methods) ? methods : [];
+  // Extract available methods — may be string[] or {method, available}[]
+  const rawMethods = (raw.available_methods ?? autoConfig?.available_methods) as
+    | Array<string | { method: string; available: boolean }>
+    | undefined;
+  const availableMethods = Array.isArray(rawMethods)
+    ? rawMethods.map((m) => (typeof m === "string" ? m : m.method)).filter(Boolean)
+    : [];
 
   // Extract metadata
   const dataType =

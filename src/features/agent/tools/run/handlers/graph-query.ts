@@ -7,13 +7,21 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
+import type { RunResult, EntityRef, SeedRef } from "../types";
 import { inferEdgeType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { getCachedGraphSchema, errorResult, catchError } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 
-type QueryCmd = Extract<RunCommand, { command: "query" }>;
+export interface QueryCmd {
+  description?: string;
+  seeds?: SeedRef[];
+  pattern?: Array<{ var: string; type?: string; edge?: string; from?: string; to?: string }>;
+  return_vars?: string[];
+  filters?: Record<string, unknown>;
+  limit?: number;
+  select?: { edgeFields?: string[]; includeEvidence?: boolean };
+}
 
 export async function handleQuery(
   cmd: QueryCmd,

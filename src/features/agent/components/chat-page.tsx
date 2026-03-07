@@ -90,18 +90,24 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
       case "Run": {
         const command = args?.command as string | undefined;
         const mode = args?.mode as string | undefined;
-        if (command === "explore" && mode === "neighbors")
-          return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
-        if (command === "explore" && mode === "compare")
-          return ["Run enrichment on the shared genes", "Show unique associations for each"];
-        if (command === "explore" && mode === "enrich")
-          return ["Which genes drive the top enriched term?", "Explore the most significant pathway"];
-        if (command === "traverse" && mode === "chain")
+        if (command === "explore") {
+          const inp = args as Record<string, unknown> | undefined;
+          if (inp?.metric) return ["Break down by group", "Explore the top entity"];
+          if (inp?.target) return ["Which genes drive the top enriched term?", "Explore the most significant pathway"];
+          if (inp?.into && Array.isArray(inp.seeds) && inp.seeds.length >= 2)
+            return ["Run enrichment on the shared genes", "Show unique associations for each"];
+          if (inp?.into) return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
+          if (inp?.top_k) return ["Tell me about the most similar one", "Compare these entities"];
+          return ["Explore connections", "Tell me about the top-ranked result"];
+        }
+        if (command === "traverse") {
+          const inp = args as Record<string, unknown> | undefined;
+          if (inp?.pattern || inp?.description)
+            return ["Refine this pattern", "Show details for the top matches"];
+          if (inp?.from && inp?.to)
+            return ["What diseases do they share?", "Are there alternative connections?"];
           return ["Explore the next hop", "Summarize the chain"];
-        if (command === "traverse" && mode === "paths")
-          return ["What diseases do they share?", "Are there alternative connections?"];
-        if (command === "query")
-          return ["Refine this pattern", "Show details for the top matches"];
+        }
         if (command === "rows")
           return ["Filter to pathogenic variants only", "Group by clinical significance"];
         if (command === "groupby")

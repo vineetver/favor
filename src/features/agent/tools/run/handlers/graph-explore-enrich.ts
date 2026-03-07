@@ -8,7 +8,7 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
-import { INTENT_TO_TYPE, findEdgesConnecting } from "../intent-aliases";
+import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, emptyResult, TraceCollector } from "../run-result";
@@ -31,7 +31,7 @@ export async function handleExploreEnrich(
       return errorResult("Enrichment requires at least 3 resolved entities.", tc);
     }
 
-    const targetType = INTENT_TO_TYPE[cmd.target];
+    const targetType = resolveIntentType(cmd.target);
     if (!targetType) {
       return errorResult(`Unknown target intent: ${cmd.target}`, tc);
     }

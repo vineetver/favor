@@ -444,6 +444,235 @@ function PatternsRenderer({ data }: { data: PatternsResult }) {
 }
 
 // ---------------------------------------------------------------------------
+// Variant Profile
+// ---------------------------------------------------------------------------
+
+/** cCRE annotation → human label + color */
+const CCRE_ANNOTATION: Record<string, { label: string; color: string }> = {
+  PLS: { label: "Promoter-Like", color: "#dc2626" },
+  pELS: { label: "Proximal Enhancer-Like", color: "#ea580c" },
+  dELS: { label: "Distal Enhancer-Like", color: "#fddc69" },
+  "CA-CTCF": { label: "CTCF-bound", color: "#0053DB" },
+  "CA-H3K4me3": { label: "H3K4me3 Candidate", color: "#ea580c" },
+  "CA-TF": { label: "TF Candidate", color: "#9333ea" },
+  CA: { label: "Chromatin Accessible", color: "#62DF7D" },
+  TF: { label: "TF-bound", color: "#ec4899" },
+};
+
+function CcreOverlayDetail({
+  accession,
+  annotation,
+  info,
+  row,
+}: {
+  accession: string;
+  annotation?: string;
+  info?: { label: string; color: string };
+  row?: Record<string, unknown>;
+}) {
+  const link = (row?.link ?? {}) as Record<string, unknown>;
+  const props = (link.props ?? {}) as Record<string, unknown>;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        {info && (
+          <span
+            className="inline-block size-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: info.color }}
+          />
+        )}
+        <span className="text-xs font-medium text-foreground font-mono">{accession}</span>
+      </div>
+      {info && annotation && (
+        <span className="text-[10px] text-muted-foreground">{annotation}: {info.label} Signature</span>
+      )}
+      {props.distance_to_center != null && (
+        <StatRow label="Dist to center" value={`${props.distance_to_center} bp`} />
+      )}
+      {props.ccre_size != null && (
+        <StatRow label="cCRE size" value={`${props.ccre_size} bp`} />
+      )}
+    </div>
+  );
+}
+
+/** Extract neighbor objects from a relation group's rows[].neighbor, with link props merged in */
+function extractNeighbors(group: { rows?: unknown[] } | undefined): Array<Record<string, unknown>> {
+  if (!group?.rows) return [];
+  const out: Array<Record<string, unknown>> = [];
+  for (const row of group.rows as Array<Record<string, unknown>>) {
+    const neighbor = (row.neighbor ?? {}) as Record<string, unknown>;
+    if (neighbor.id == null) continue;
+    const linkProps = ((row.link as Record<string, unknown>)?.props ?? {}) as Record<string, unknown>;
+    out.push({ ...neighbor, _linkProps: linkProps });
+  }
+  return out;
+}
+
+/** Extract raw row objects from a relation group (neighbor + link intact) */
+function extractRelationRows(group: { rows?: unknown[] } | undefined): Array<Record<string, unknown>> {
+  if (!group?.rows) return [];
+  return (group.rows as Array<Record<string, unknown>>).filter((r) => r.neighbor != null);
+}
+
+interface VariantProfileData {
+  profiles: Array<{
+    variant: string;
+    resolvedId?: string;
+    label?: string;
+    entity?: Record<string, unknown>;
+    error?: string;
+  }>;
+  cohort_rows?: unknown[];
+}
+
+function VariantProfileRenderer({ data }: { data: VariantProfileData }) {
+  const { profiles } = data;
+  if (!profiles?.length) return <p className="text-xs text-muted-foreground">No variant profiles.</p>;
+
+  return (
+    <div className="space-y-3">
+      {profiles.map((profile) => (
+        <VariantProfileCard key={profile.resolvedId ?? profile.variant} profile={profile} />
+      ))}
+    </div>
+  );
+}
+
+function VariantProfileCard({ profile }: { profile: VariantProfileData["profiles"][number] }) {
+  if (profile.error) {
+    return (
+      <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+        <span className="text-sm font-medium text-foreground">{profile.variant}</span>
+        <p className="text-xs text-destructive mt-1">{profile.error}</p>
+      </div>
+    );
+  }
+
+  const entity = profile.entity;
+  if (!entity) return null;
+
+  const d = (entity.data ?? entity) as Record<string, unknown>;
+  const included = (entity.included ?? {}) as Record<string, unknown>;
+  const relations = (included.relations ?? {}) as Record<string, { rows?: unknown[] }>;
+  const counts = (included.counts ?? {}) as Record<string, number>;
+
+  const ccreAccession = d.ccre_accessions as string | undefined;
+  const ccreAnnotation = d.ccre_annotations as string | undefined;
+  const ccreInfo = ccreAnnotation ? CCRE_ANNOTATION[ccreAnnotation] : undefined;
+
+  // Extract top gene connections from relations rows
+  const impliedGenes = extractNeighbors(relations.VARIANT_IMPLIES_GENE);
+  const affectsGenes = extractNeighbors(relations.VARIANT_AFFECTS_GENE);
+
+  // Extract cCRE edge detail
+  const ccreEdges = extractRelationRows(relations.VARIANT_OVERLAPS_CCRE);
+
+  // Key scores
+  const cadd = d.cadd_phred as number | null | undefined;
+  const linsight = d.linsight as number | null | undefined;
+
+  return (
+    <div className="space-y-2">
+      {/* Header */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-semibold text-sm text-foreground">
+          {profile.label ?? profile.variant}
+        </span>
+        {profile.resolvedId && (
+          <span className="text-[10px] font-mono text-muted-foreground">{profile.resolvedId}</span>
+        )}
+        {d.gencode_consequence != null && (
+          <Badge variant="secondary" className="text-[10px]">
+            {String(d.gencode_consequence)}
+          </Badge>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {/* Scores */}
+        <StatCard label="Scores">
+          {cadd != null && <StatRow label="CADD Phred" value={fmt(cadd)} />}
+          {linsight != null && <StatRow label="LINSIGHT" value={fmt(linsight)} />}
+          {d.fathmm_xf != null && <StatRow label="FATHMM-XF" value={fmt(d.fathmm_xf as number)} />}
+          {d.gnomad_genome_af != null && <StatRow label="gnomAD AF" value={fmt(d.gnomad_genome_af as number, 4)} />}
+          {cadd == null && linsight == null && d.fathmm_xf == null && d.gnomad_genome_af == null && (
+            <span className="text-[10px] text-muted-foreground">No scores available</span>
+          )}
+        </StatCard>
+
+        {/* cCRE Overlap */}
+        <StatCard label="cCRE Overlap">
+          {ccreAccession ? (
+            <CcreOverlayDetail
+              accession={ccreAccession}
+              annotation={ccreAnnotation}
+              info={ccreInfo}
+              row={ccreEdges[0]}
+            />
+          ) : (
+            <span className="text-[10px] text-muted-foreground">No cCRE overlap</span>
+          )}
+        </StatCard>
+
+        {/* Gene Links */}
+        {(impliedGenes.length > 0 || affectsGenes.length > 0) && (
+          <StatCard label="Gene Links">
+            {impliedGenes.slice(0, 3).map((g) => {
+              const lp = (g._linkProps ?? {}) as Record<string, unknown>;
+              return (
+                <div key={String(g.id)} className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">{String(g.symbol ?? g.name ?? g.id)}</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    {lp.l2g_score != null ? `L2G ${fmt(lp.l2g_score as number)}` : ""}
+                    {lp.implication_mode ? ` · ${String(lp.implication_mode)}` : ""}
+                  </span>
+                </div>
+              );
+            })}
+            {affectsGenes.slice(0, 3).map((g) => {
+              const lp = (g._linkProps ?? {}) as Record<string, unknown>;
+              return (
+                <div key={String(g.id)} className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">{String(g.symbol ?? g.name ?? g.id)}</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    {lp.variant_consequence ? String(lp.variant_consequence) : "affects"}
+                  </span>
+                </div>
+              );
+            })}
+          </StatCard>
+        )}
+
+        {/* ClinVar */}
+        {d.clinvar_clnsig != null && (
+          <StatCard label="ClinVar">
+            <StatRow label="Significance" value={String(d.clinvar_clnsig)} />
+            {d.clinvar_clndn != null && <StatRow label="Condition" value={String(d.clinvar_clndn)} />}
+            {d.clinvar_gene != null && <StatRow label="Gene" value={String(d.clinvar_gene)} />}
+          </StatCard>
+        )}
+      </div>
+
+      {/* Edge counts summary */}
+      {Object.keys(counts).length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {Object.entries(counts)
+            .filter(([, v]) => v > 0)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 8)
+            .map(([type, count]) => (
+              <Badge key={type} variant="secondary" className="text-[10px] px-1.5 py-0">
+                {type.replace(/^VARIANT_/, "").replace(/_/g, " ").toLowerCase()}: {count}
+              </Badge>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Cohort
 // ---------------------------------------------------------------------------
 
@@ -1442,6 +1671,11 @@ export function renderToolOutput(
     case "createCohort": {
       const d = output as CompressedCohort;
       if (d.cohortId) return <CohortRenderer data={d} />;
+      return null;
+    }
+    case "variant_profile": {
+      const d = output as VariantProfileData;
+      if (d.profiles?.length) return <VariantProfileRenderer data={d} />;
       return null;
     }
     case "planQuery":

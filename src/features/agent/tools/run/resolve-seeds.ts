@@ -364,35 +364,48 @@ async function extractEntitiesFromArtifact(
   }
 }
 
+/** Column candidates for entity extraction — tried in order */
+const COHORT_ENTITY_COLUMNS = ["gene", "gene_symbol", "gene_name", "rsid", "variant_id"];
+
 async function extractEntitiesFromCohort(
   cohortId: string,
   top?: number,
 ): Promise<EntityRef[]> {
   try {
-    const result = await agentFetch<{
-      buckets?: Array<{ key: string; count: number }>;
-    }>(`/cohorts/${encodeURIComponent(cohortId)}/groupby`, {
-      method: "POST",
-      body: { group_by: "gene", limit: top ?? 5 },
-    });
+    for (const column of COHORT_ENTITY_COLUMNS) {
+      try {
+        const result = await agentFetch<{
+          buckets?: Array<{ key: string; count: number }>;
+        }>(`/cohorts/${encodeURIComponent(cohortId)}/groupby`, {
+          method: "POST",
+          body: { group_by: column, limit: top ?? 5 },
+        });
 
-    if (!result.buckets) return [];
+        if (!result.buckets?.length) continue;
 
-    const geneNames = result.buckets.map((b) => b.key).filter(Boolean);
-    if (geneNames.length === 0) return [];
+        const names = result.buckets.map((b) => b.key).filter(Boolean);
+        if (names.length === 0) continue;
 
-    const resolved = await agentFetch<ResolveResult>("/graph/resolve", {
-      method: "POST",
-      body: { queries: geneNames },
-    });
+        const resolved = await agentFetch<ResolveResult>("/graph/resolve", {
+          method: "POST",
+          body: { queries: names },
+        });
 
-    return resolved.results
-      .filter((r) => r.status.toLowerCase() === "matched" && r.entity)
-      .map((r) => ({
-        type: r.entity!.type,
-        id: r.entity!.id,
-        label: r.entity!.label,
-      }));
+        const entities = resolved.results
+          .filter((r) => r.status.toLowerCase() === "matched" && r.entity)
+          .map((r) => ({
+            type: r.entity!.type,
+            id: r.entity!.id,
+            label: r.entity!.label,
+          }));
+
+        if (entities.length > 0) return entities;
+      } catch {
+        // This column doesn't exist — try next
+        continue;
+      }
+    }
+    return [];
   } catch {
     return [];
   }

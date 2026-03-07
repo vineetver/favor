@@ -11,7 +11,7 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef, TraverseStep, TargetIntent } from "../types";
 import {
-  INTENT_TO_TYPE,
+  resolveIntentType,
   findEdgesConnecting,
   canonicalizeIntent,
   getSummaryFields,
@@ -27,10 +27,28 @@ import {
   humanEdgeLabel,
   humanScoreLabel,
   getEdgeDisplayFields,
+  pickSortField,
+  applyDefaultKeyFilters,
+  schemaGuidedRecovery,
 } from "./graph";
 import { okResult, partialResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
+
+/** Biologically important edge fields that must always be requested, independent of backend tooltip metadata. */
+const CORE_EDGE_FIELDS: Record<string, string[]> = {
+  CCRE_REGULATES_GENE: ["evidence_method", "max_score", "min_p_value"],
+  VARIANT_IMPLIES_GENE: ["l2g_score", "implication_mode", "confidence_class"],
+  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center"],
+  VARIANT_AFFECTS_GENE: ["variant_consequence", "alphamissense_pathogenicity", "hgvsp"],
+  GENE_ASSOCIATED_WITH_DISEASE: ["ot_score", "causality_level", "evidence_count"],
+  DRUG_ACTS_ON_GENE: ["max_clinical_phase", "mechanism_of_action", "affinity_median"],
+  DRUG_INDICATED_FOR_DISEASE: ["max_clinical_phase", "evidence_count"],
+  DRUG_HAS_ADVERSE_EFFECT: ["offsides_prr", "onsides_pred1", "nctr_severity_class"],
+  GENE_EXPRESSED_IN_TISSUE: ["tpm_median", "num_sources"],
+  GENE_HAS_PROTEIN_DOMAIN: ["mean_plddt", "start_residue", "end_residue"],
+  GENE_PARTICIPATES_IN_PATHWAY: ["pathway_category", "evidence_count"],
+};
 
 /** Scored entity for chain results */
 interface ScoredEntity extends EntityRef {
@@ -93,7 +111,7 @@ function annotateIntoSteps(
         tc.warn("intent_repair", `Step ${i}: ${repairNote}`);
       }
 
-      const targetType = INTENT_TO_TYPE[canonicalIntent];
+      const targetType = resolveIntentType(canonicalIntent);
       if (!targetType) {
         tc.warn("unknown_intent", `Step ${i}: unknown intent "${canonicalIntent}"`);
         continue;
@@ -103,23 +121,31 @@ function annotateIntoSteps(
       for (let d = typeStack.length - 1; d >= 0; d--) {
         const edges = findEdgesConnecting(schema, typeStack[d], targetType, canonicalIntent);
         if (edges.length > 0) {
+          const edgeType = edges[0].edgeType;
+          const sort = pickSortField(schema, edgeType, step.sort);
+          const userFilters = step.filters as Record<string, unknown> | undefined;
+          const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
+            schema, edgeType, userFilters,
+          );
+
           const ann: AnnotatedIntoStep = {
             userStepIndex: i,
             intent: canonicalIntent,
             targetType,
-            edgeType: edges[0].edgeType,
+            edgeType,
             defaultScoreField: edges[0].defaultScoreField,
             sourceDepth: d,
             limit: Math.min(step.top ?? 20, 100),
-            sort: step.sort,
-            filters: step.filters as Record<string, unknown> | undefined,
+            sort,
+            filters: Object.keys(mergedFilters).length > 0 ? mergedFilters : undefined,
           };
           intoSteps.push(ann);
 
+          const defaultsNote = appliedDefaults.length > 0 ? ` [defaults: ${appliedDefaults.join(", ")}]` : "";
           tc.add({
             step: `annotateStep_${i}`,
             kind: "decision",
-            message: `${canonicalIntent}: ${typeStack[d]}→${targetType} via ${edges[0].edgeType} (depth=${d})`,
+            message: `${canonicalIntent}: ${typeStack[d]}→${targetType} via ${edgeType} (depth=${d})${defaultsNote}`,
           });
 
           if (d === typeStack.length - 1) {
@@ -227,8 +253,12 @@ async function executeViaQuery(
     const seen = new Set<string>();
     const edgeFields: string[] = [];
     const push = (f: string) => {
-      if (!seen.has(f) && edgeFields.length < 30) { seen.add(f); edgeFields.push(f); }
+      if (!seen.has(f) && edgeFields.length < 20) { seen.add(f); edgeFields.push(f); }
     };
+    // Pass 0: core biologically important fields (always requested)
+    for (const et of chainEdgeTypes) {
+      for (const f of CORE_EDGE_FIELDS[et] ?? []) push(f);
+    }
     // Pass 1: defaultScoreField per edge type (always useful for ranking)
     for (const ann of intoSteps) {
       if (ann.defaultScoreField) push(ann.defaultScoreField);
@@ -259,6 +289,7 @@ async function executeViaQuery(
         steps: querySteps,
         select: { nodeFields, edgeFields },
         limits: { maxNodes: 1000, maxEdges: 5000 },
+        mode: "compact",
       },
     });
 
@@ -344,6 +375,12 @@ async function executeViaQuery(
 
     return results;
   } catch (err) {
+    // Try schema-guided recovery for 400 errors before falling back
+    const recovered = schemaGuidedRecovery(err, schema, tc);
+    if (recovered) {
+      tc.add({ step: "batchQueryRecovery", kind: "fallback", message: "Schema-guided recovery applied" });
+      // Return null to trigger per-step fallback with corrective info logged
+    }
     const msg = err instanceof Error ? err.message : String(err);
     tc.add({ step: "batchQueryFailed", kind: "fallback", message: `Query failed: ${msg}` });
     tc.warn("batch_query_failed", `Batch query failed, falling back to per-step: ${msg}`);
@@ -358,6 +395,7 @@ async function executeViaQuery(
 async function executePerStep(
   seed: EntityRef,
   intoSteps: AnnotatedIntoStep[],
+  schema: GraphSchemaResponse,
   tc: TraceCollector,
 ): Promise<StepResult[]> {
   tc.add({ step: "perStepFallback", kind: "fallback", message: `Executing ${intoSteps.length} steps individually` });
@@ -450,7 +488,7 @@ async function executeEnrichStep(
   inputEntities: EntityRef[],
   tc: TraceCollector,
 ): Promise<StepResult | null> {
-  const targetType = INTENT_TO_TYPE[step.enrich];
+  const targetType = resolveIntentType(step.enrich);
   if (!targetType) return null;
 
   if (inputEntities.length < 3) {
@@ -536,7 +574,7 @@ async function executeFallbackInto(
   limit: number,
   tc: TraceCollector,
 ): Promise<StepResult | null> {
-  const targetType = INTENT_TO_TYPE[intent];
+  const targetType = resolveIntentType(intent);
   if (!targetType) return null;
 
   const inputType = inputEntities[0].type;
@@ -631,7 +669,7 @@ export async function handleTraverseChain(
     // Phase 2+3: Execute into steps via batch query, fall back to per-step
     const intoResults =
       (await executeViaQuery(seed, intoSteps, schema, tc)) ??
-      (await executePerStep(seed, intoSteps, tc));
+      (await executePerStep(seed, intoSteps, schema, tc));
 
     // Phase 4: Execute enrich steps (with auto-fallback to connectivity)
     const enrichResults: StepResult[] = [];

@@ -154,7 +154,7 @@ export function applyStateDelta(
         [entity.label]: entity,
       };
     }
-    next.pinned_entities = updated;
+    next.pinned_entities = updated.slice(-50);
     if (!next.active_cohort_id) {
       next.mode = "graph";
     } else {

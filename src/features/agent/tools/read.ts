@@ -531,7 +531,13 @@ async function readVariant(query: string) {
     return { error: true, message: `Variant not found: ${query}`, hint: "Check variant ID format (rs123, 1-12345-A-T, vid:123)." };
   }
 
-  return { variant: match.entity };
+  // Fetch full entity profile for the resolved variant
+  try {
+    return await readEntityProfile(match.entity.type, match.entity.id);
+  } catch {
+    // Fall back to minimal resolve data if profile fetch fails
+    return { variant: match.entity };
+  }
 }
 
 async function readGraphSchema() {

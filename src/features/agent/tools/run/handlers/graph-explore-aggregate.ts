@@ -4,8 +4,9 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
+import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
+import { errorResult, catchError, getCachedGraphSchema, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -17,9 +18,6 @@ export async function handleExploreAggregate(
   const tc = new TraceCollector();
 
   try {
-    if (!cmd.edge_type) {
-      return errorResult("aggregate mode requires 'edge_type'.", tc);
-    }
     if (!cmd.metric) {
       return errorResult("aggregate mode requires 'metric' (count, avg, sum, min, max).", tc);
     }
@@ -30,7 +28,22 @@ export async function handleExploreAggregate(
     }
 
     const seed = resolved[0];
-    const annotation = await edgeTypeAnnotation(cmd.edge_type);
+
+    // Resolve edge_type: explicit > into fallback > error
+    let edgeType = cmd.edge_type;
+    if (!edgeType && cmd.into?.length) {
+      const targetType = resolveIntentType(cmd.into[0]);
+      if (targetType) {
+        const schema = await getCachedGraphSchema();
+        const edges = findEdgesConnecting(schema, seed.type, targetType, cmd.into[0]);
+        edgeType = edges[0]?.edgeType;
+      }
+    }
+    if (!edgeType) {
+      return errorResult("aggregate mode requires 'edge_type' or 'into' to resolve one.", tc);
+    }
+
+    const annotation = await edgeTypeAnnotation(edgeType);
 
     tc.add({ step: "fetchAggregate", kind: "call", message: `POST /graph/edges/aggregate` });
 
@@ -53,7 +66,7 @@ export async function handleExploreAggregate(
       method: "POST",
       body: {
         seed: { type: seed.type, id: seed.id },
-        edgeType: cmd.edge_type,
+        edgeType,
         direction: cmd.direction,
         filters: cmd.filters,
         groupBy: cmd.group_by,
@@ -68,7 +81,7 @@ export async function handleExploreAggregate(
 
     const result = data.data;
     const resolvedScoreField = data.meta?.resolved?.scoreField ?? cmd.score_field;
-    const edgeLabel = humanEdgeLabel(cmd.edge_type);
+    const edgeLabel = humanEdgeLabel(edgeType);
     const summary = result?.textSummary ??
       (result?.buckets
         ? `${cmd.metric} of ${edgeLabel} for ${seed.label}: ${result.buckets.length} groups`
