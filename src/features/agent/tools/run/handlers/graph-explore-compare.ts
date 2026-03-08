@@ -5,10 +5,10 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
-import { resolveSeeds } from "../resolve-seeds";
+import { resolveSeedsWithMeta, resolveSeedsWithTypeHint } from "../resolve-seeds";
 import { errorResult, catchError, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
-import { canonicalizeIntent, resolveIntentType, findEdgesConnecting } from "../intent-aliases";
+import { canonicalizeIntent, resolveIntentType, findEdgesConnecting, type GraphSchemaResponse } from "../intent-aliases";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -19,9 +19,29 @@ export async function handleExploreCompare(
   const tc = new TraceCollector();
 
   try {
-    const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
+    const resolutions = await resolveSeedsWithMeta(cmd.seeds, resolvedCache);
+    let resolved = resolutions.map((r) => r.entity);
     if (resolved.length < 2) {
       return errorResult("compare mode requires at least 2 resolved entities.", tc);
+    }
+
+    let allSameType = resolved.every((e) => e.type === resolved[0].type);
+
+    // Type correction: if seeds resolved to different types but we have
+    // intent info, infer the expected seed type and re-resolve mismatches.
+    if (!allSameType && cmd.into?.length) {
+      const schema = await getCachedGraphSchema();
+      const expectedSeedType = inferExpectedSeedType(schema, cmd.into, resolved);
+      if (expectedSeedType) {
+        tc.add({ step: "type_correction", kind: "decision", message: `Re-resolving seeds as ${expectedSeedType} (inferred from intents)` });
+        const reResolved = await resolveSeedsWithTypeHint(cmd.seeds, expectedSeedType, resolvedCache);
+        const reEntities = reResolved.map((r) => r.entity);
+        const nowSameType = reEntities.every((e) => e.type === reEntities[0].type);
+        if (nowSameType) {
+          resolved = reEntities;
+          allSameType = true;
+        }
+      }
     }
 
     // Resolve edge types: explicit edge_type > into intents > unfiltered
@@ -49,9 +69,6 @@ export async function handleExploreCompare(
 
     const edgeType = edgeTypes?.[0];
     const annotation = edgeType ? await edgeTypeAnnotation(edgeType) : null;
-
-    // Route to /graph/compare for same-type seeds (Jaccard similarity)
-    const allSameType = resolved.every((e) => e.type === resolved[0].type);
 
     if (allSameType) {
       return await executeCompare(resolved, edgeTypes, annotation, tc);
@@ -205,4 +222,54 @@ async function executeIntersect(
     tc,
     resolved_info: resolvedInfo,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Infer expected seed type from intents + schema
+// ---------------------------------------------------------------------------
+
+/**
+ * Given the target intents and the resolved seeds, figure out what type
+ * the seeds SHOULD be. Strategy: for each intent, find the target type,
+ * then find edges connecting to it. The "other side" of those edges
+ * (not the target) is a candidate seed type. Return the most-common
+ * candidate that appears among the resolved seeds.
+ */
+function inferExpectedSeedType(
+  schema: GraphSchemaResponse,
+  intents: string[],
+  resolved: EntityRef[],
+): string | null {
+  const candidateCounts = new Map<string, number>();
+
+  for (const rawIntent of intents) {
+    const [intent] = canonicalizeIntent(rawIntent as import("../types").TargetIntent);
+    const targetType = resolveIntentType(intent);
+    if (!targetType) continue;
+
+    // Find all edges that touch the target type
+    for (const edge of schema.edgeTypes) {
+      let otherSide: string | null = null;
+      if (edge.fromType === targetType) otherSide = edge.toType;
+      else if (edge.toType === targetType) otherSide = edge.fromType;
+      if (!otherSide || otherSide === targetType) continue;
+      candidateCounts.set(otherSide, (candidateCounts.get(otherSide) ?? 0) + 1);
+    }
+  }
+
+  if (candidateCounts.size === 0) return null;
+
+  // Among resolved seed types, pick the one that has the most edge connections
+  // to our target types — prefer types that actually appear in the resolved set
+  const seedTypes = new Set(resolved.map((e) => e.type));
+  let best: string | null = null;
+  let bestScore = -1;
+  for (const [type, count] of candidateCounts) {
+    const bonus = seedTypes.has(type) ? 100 : 0;
+    if (count + bonus > bestScore) {
+      bestScore = count + bonus;
+      best = type;
+    }
+  }
+  return best;
 }

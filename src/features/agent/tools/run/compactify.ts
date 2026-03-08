@@ -104,8 +104,9 @@ const COMPACTORS: Record<string, Compactor> = {
   compare_cohorts: passthrough,
   // Pipeline
   pipeline: compactPipeline,
-  // Virtual pipeline step — small result, pass through
+  // Virtual pipeline steps — small results, pass through
   intersect: passthrough,
+  union: passthrough,
   // Workspace compactors — small results, pass through
   pin: passthrough,
   set_cohort: passthrough,

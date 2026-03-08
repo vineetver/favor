@@ -139,6 +139,51 @@ function executeIntersect(
 }
 
 // ---------------------------------------------------------------------------
+// Union: virtual step — no API call
+// ---------------------------------------------------------------------------
+
+function executeUnion(
+  step: PipelineStep,
+  stepEntities: Map<string, EntityRef[]>,
+): { envelope: RunResultEnvelope; entities: EntityRef[] } {
+  const sourceIds = step.depends_on ?? [];
+  if (sourceIds.length < 2) {
+    return {
+      envelope: errorResult({ message: "union requires depends_on with 2+ step IDs", code: "validation_error" }),
+      entities: [],
+    };
+  }
+
+  // Union: keep entities whose ID appears in ANY source set (deduplicated)
+  const seen = new Set<string>();
+  const combined: EntityRef[] = [];
+  for (const id of sourceIds) {
+    for (const entity of stepEntities.get(id) ?? []) {
+      if (!seen.has(entity.id)) {
+        seen.add(entity.id);
+        combined.push(entity);
+      }
+    }
+  }
+
+  const sourceCounts = sourceIds.map((id) => `${id}: ${(stepEntities.get(id) ?? []).length}`).join(", ");
+  const summary = combined.length > 0
+    ? `Union merged ${combined.length} unique entities (${sourceCounts})`
+    : `No entities in any source step (${sourceCounts})`;
+
+  const data: Record<string, unknown> = {
+    combined: combined.map((e) => ({ type: e.type, id: e.id, label: e.label })),
+    combined_count: combined.length,
+    source_counts: Object.fromEntries(sourceIds.map((id) => [id, (stepEntities.get(id) ?? []).length])),
+  };
+
+  const envelope = okResult({ text_summary: summary, data, state_delta: {} });
+  if (combined.length === 0) envelope.status = "empty";
+
+  return { envelope, entities: combined };
+}
+
+// ---------------------------------------------------------------------------
 // Entity extraction from step results
 // ---------------------------------------------------------------------------
 
@@ -487,14 +532,16 @@ export async function handlePipeline(
         }
       }
 
-      // --- Intersect: virtual command, no API call ---
-      if (step.command === "intersect") {
-        const result = executeIntersect(step, stepEntities);
+      // --- Intersect / Union: virtual commands, no API call ---
+      if (step.command === "intersect" || step.command === "union") {
+        const result = step.command === "intersect"
+          ? executeIntersect(step, stepEntities)
+          : executeUnion(step, stepEntities);
         stepRawResults.set(step.id, result.envelope);
         stepEntities.set(step.id, result.entities);
         stepResults.set(step.id, {
           id: step.id,
-          command: "intersect",
+          command: step.command,
           status: result.entities.length > 0 ? "ok" : "empty",
           summary: result.envelope.text_summary ?? "",
           data: result.envelope.data,

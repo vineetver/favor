@@ -331,6 +331,60 @@ async function improveLowConfidenceMatches(
   }
 }
 
+/**
+ * Search with an explicit type constraint via /graph/search?q=...&types=...
+ */
+async function searchWithType(label: string, type: string): Promise<SeedResolution | null> {
+  try {
+    const normalized = normalizeLabel(label);
+    const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
+      `/graph/search?q=${encodeURIComponent(normalized)}&types=${encodeURIComponent(type)}&limit=3`,
+    );
+    const top = resp.data?.results?.[0];
+    if (!top?.entity) return null;
+    const confidence = top.match?.confidence ?? 0.8;
+    return {
+      entity: {
+        type: top.entity.type,
+        id: top.entity.id,
+        label: top.entity.label,
+        subtitle: trimSubtitle(top.entity.subtitle),
+      },
+      confidence,
+      strategy: "search_fallback",
+      low_confidence: confidence < MIN_CONFIDENCE,
+      fallback_used: true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Re-resolve seeds with a type hint. Seeds whose type doesn't match
+ * expectedType are re-searched with a type constraint.
+ * Falls back to original resolution if type-constrained search returns nothing.
+ */
+export async function resolveSeedsWithTypeHint(
+  refs: SeedRef[],
+  expectedType?: string,
+  resolvedCache?: Record<string, EntityRef>,
+): Promise<SeedResolution[]> {
+  const resolutions = await resolveSeedsWithMeta(refs, resolvedCache);
+  if (!expectedType) return resolutions;
+
+  const corrected: SeedResolution[] = [];
+  for (const res of resolutions) {
+    if (res.entity.type === expectedType) {
+      corrected.push(res);
+    } else {
+      const reResolved = await searchWithType(res.entity.label, expectedType);
+      corrected.push(reResolved ?? res);
+    }
+  }
+  return corrected;
+}
+
 async function extractEntitiesFromArtifact(
   artifactId: number,
   field?: string,

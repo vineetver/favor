@@ -405,15 +405,12 @@ const DESCRIPTION = `Execute cohort analyses and explore the biomedical knowledg
 COMMANDS:
   cohort    → op: rows | groupby | derive | rank | score | top_hits | qc_summary | gwas_minimal | variant_profile | compare_cohorts
   analyze   → op: correlation | regression | feature_importance | multiple_testing | bootstrap_ci | permutation_test | pca | cluster
-  explore   → auto-routed: seeds+into → neighbors, 2 seeds+into → compare, target → enrich, top_k → similar, sections → context, metric → aggregate
-  traverse  → auto-routed: seed+steps → chain, from+to → paths, pattern/description → patterns
-  pipeline  → {goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}]}. intersect step: virtual set math.
+  explore   → neighbors, compare, enrich, similar, context, aggregate (auto-routed from params)
+  traverse  → chain, paths, patterns (auto-routed from params)
+  pipeline  → multi-step with data dependencies between commands
   workspace → op: select_cohort | memo | export | bookmark_entities
 
-SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact.
-  ❌ {type:"Gene",id:"...",label:"BRCA1"} — never combine label with type/id.
-
-See system prompt for: intent selection by seed type, drug intent decision tree, pattern examples, recovery rules.`;
+SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id.`;
 
 export function createAgentRunTool(getContext: () => RunContext) {
   return tool({
