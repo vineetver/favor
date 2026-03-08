@@ -152,7 +152,7 @@ const PROMPT_CARDS: PromptCardDef[] = [
       "cCRE annotations, regulated genes with evidence modality, disease associations.",
     tier: "simple",
     seeds: [
-      { key: "variant", defaultValue: "rs1421085", category: "variant" },
+      { key: "variant", defaultValue: "rs7412", category: "variant" },
     ],
     steps: [
       { key: "s1", defaultValue: "cCREs" },

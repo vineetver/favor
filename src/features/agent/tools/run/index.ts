@@ -523,6 +523,7 @@ const targetIntents = z.enum([
   "protein_domains", "ccres",
   "side_effects", "go_terms", "metabolites", "studies", "signals",
   "drug_interactions", "adverse_effects", "drug_indications",
+  "drug_targets", "drug_metabolism", "drug_response",
 ]);
 
 const flatSeedRef = z.object({
@@ -549,6 +550,7 @@ const flatTraverseStep = z.object({
   top: z.number().optional().describe("Max results for this step (default 20)"),
   sort: z.string().optional().describe("Sort field, prefix '-' for desc (e.g. '-overall_score'). Default: best score for edge type"),
   filters: z.record(z.unknown()).optional().describe("Edge property filters (field__op format, e.g. {\"score__gte\": 0.5})"),
+  overlay: z.boolean().optional().describe("If true, only return edges between existing nodes — no new nodes added. For self-referential queries."),
   p_cutoff: z.number().optional().describe("P-value cutoff for enrichment steps (default 0.05)"),
 });
 
@@ -759,81 +761,42 @@ export function createRunTool(getContext: () => RunContext) {
   return tool({
     description: `Execute work against the knowledge graph or cohort data.
 
-COHORT (needs active cohort): rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
-ANALYTICS (auto-polls + auto-fetches charts): analytics { method, params }
-WORKFLOWS (needs active cohort): top_hits, qc_summary, gwas_minimal, compare_cohorts
-GRAPH (no cohort needed): explore, traverse
-ENTITY LOOKUP (no cohort needed, optional cohort enrichment): variant_profile (⚠ uses "variants" field, NOT "references")
-WORKSPACE: pin, set_cohort, remember
+COMMANDS:
+  COHORT (needs active cohort): rows, groupby, correlation, derive, prioritize, compute, export, create_cohort
+  ANALYTICS: analytics { method, params }
+  WORKFLOWS (needs active cohort): top_hits, qc_summary, gwas_minimal, compare_cohorts
+  GRAPH (no cohort needed): explore, traverse
+  ENTITY LOOKUP: variant_profile (uses "variants" field, NOT "references")
+  WORKSPACE: pin, set_cohort, remember
 
-⚠ CRITICAL: "trace/follow variant → genes → diseases → ..." = ALWAYS traverse chain. One call handles the full multi-hop path.
-⚠ variant_profile = single-variant deep dive (annotations, scores, ClinVar). NOT for tracing — use traverse chain instead.
+EXPLORE — auto-routed from params:
+  seeds+into → neighbors, 2 seeds+into → compare, target → enrich,
+  top_k → similar, sections/context_depth → context, metric+edge_type → aggregate
 
-## explore — start from seeds, params determine routing automatically
-seeds + into:["diseases"]              → neighbors    "What genes does X target?"
-seeds (2+) + into:["diseases"]         → compare      "What diseases do A and B share?"
-seeds (2+)                             → compare      "What do A and B share?"
-seeds (3+) + target:"pathways"         → enrich       "Enriched pathways for these genes"
-seeds + top_k                          → similar      "Genes similar to TP53"
-seeds + sections or context_depth      → context      "Tell me about BRCA1"
-seeds + metric:"count" + edge_type     → aggregate    "How many disease links?"
-seeds (1) alone                        → context      (default entity lookup)
-Don't set mode. Just set the params. Routing is automatic.
+TRAVERSE — auto-routed from params:
+  seed+steps → chain, from+to → paths, pattern/description → patterns
+  Step fields: into, top, sort, filters (EDGE properties only: {field__op: value}), overlay (boolean), enrich, p_cutoff
 
-## traverse — seed+steps for chains, from+to for paths, pattern for matching
-seed + steps:[{into:"diseases"},{into:"drugs"}]  → chain     "Gene→diseases→drugs"
-  "Variant→genes→diseases→phenotypes"
-  "Variant→ccres→genes→tissues" (cCRE regulation + tissue expression)
-  "Disease→genes→drugs→adverse_effects"
-from:"Type:ID" + to:"Type:ID"                    → paths     "Path from X to Y"
-pattern:[{var,type?,edge?,from?,to?}]            → patterns  "Genes connecting Drug X to Disease Y"
-Don't set mode. Don't combine steps with pattern.
+SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id.
 
-⚠ overlap/shared/intersection → compare or traverse patterns. NEVER two separate explores.
-⚠ "X linked to Y" / "associated with" → traverse chain or patterns, not separate explores.
+DRUG INTENTS: Pharmacogenes (CYP*, UGT*, ABC*) → drug_metabolism. Drug targets (EGFR, BRAF) → drug_targets. Unsure → drugs (cascades all three).
 
-## Intent Direction
-Intent = target type. Direction depends on SEED type:
-  drugs            — acts on gene target (gene→drug)
-  drug_indications — approved for disease (disease→drug). Use for "what treats X?"
-  drug_interactions — drug-drug interactions (drug→drug)
-  adverse_effects  — drug side effects (drug→side_effect). Always use instead of side_effects.
-  diseases         — associated with gene (gene→disease)
-WRONG: "Drugs for Alzheimer" → into:"drugs" (finds gene targets)
-RIGHT: "Drugs for Alzheimer" → into:"drug_indications"
-In pipelines: seed type determines intent, not user's original words.
-  Seed is disease → drug_indications. Seed is gene → drugs.
+ANALYTICS: method must match params.type.
+  features: { numeric: [...] } (object). target: { field: "..." } (object).
+  gwas_qc: { p_value_column, effect_size_column, se_column } — no features/target.
 
-## Traverse
-- {into:...} for connectivity. {enrich:...} only for statistical enrichment (needs 3+ entities).
-- Direction: disease→genes→drugs→adverse_effects→drug_interactions
-- Auto-backtracks when no direct edge between consecutive types.
-- Per-step sort/filters supported: {into:"drugs", sort:"-overall_score", filters:{"score__gte":0.5}}
-- Paths: max_hops capped at 5.
+PIPELINE: { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}] }
+  seeds_from and seeds_filter go at STEP level, NOT inside args.
+  seeds_filter: {type?, relationship?, min_score?}.
 
-## Seeds
-{label:"BRCA1"} — fuzzy, preferred. Do NOT include type field.
-{type:"Gene", id:"ENSG..."} — exact. Use after Search resolves.
+INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds,
+  protein_domains, ccres, go_terms, metabolites, studies, signals,
+  drug_targets, drug_metabolism, drug_response, adverse_effects, drug_indications, drug_interactions
 
-## Analytics
-method must match params.type.
-  features: { numeric: ["col1","col2"] }  — object with numeric array
-  target: { field: "col" }                — object with field string
-  gwas_qc: { p_value_column, effect_size_column, se_column } — no features/target
-Auto-defaults: validation=holdout 20%, missing="median", bootstrap statistic={stat:"mean"}.
+EXAMPLE — trace gene through diseases to drugs:
+{"command":"traverse","seed":{"label":"BRCA1"},"steps":[{"into":"diseases","top":10},{"into":"drug_indications"}]}
 
-## Pipeline Syntax
-pipeline { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}] }
-  Step structure: {id, command, args:{...}, seeds_from?, seeds_filter?, depends_on?}
-  ⚠ seeds_from and seeds_filter go at STEP level, NOT inside args.
-  Example: {id:"s2", command:"explore", args:{into:["genes"]}, seeds_from:"s1", seeds_filter:{type:"cCRE"}}
-  2-8 DEPENDENT steps. Independent steps in same wave run in parallel.
-  seeds_from: forward entities from a prior step as seeds.
-  seeds_filter: {type?, relationship?, min_score?} — filter forwarded entities.
-    Example: seeds_filter:{type:"cCRE"} forwards only cCREs from variant_profile.
-  When to use pipeline: ONLY when mixing different command types (e.g., cohort → graph). Traverse chain already handles multi-hop graph traces — do NOT wrap it in a pipeline.
-
-Intents: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_interactions, adverse_effects, drug_indications`,
+See system prompt for: intent selection by seed type, drug intent decision tree, pattern examples, recovery rules.`,
     inputSchema: runInputSchema,
     execute: async (cmd) => {
       const ctx = getContext();

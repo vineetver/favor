@@ -353,41 +353,28 @@ function resolveInternalCommand(command: string, op?: string): string {
 
 const DESCRIPTION = `Execute cohort analyses and explore the biomedical knowledge graph.
 
-COHORT (command:"cohort", op:...)
-  rows — read rows with filters/sort/select
-  groupby — aggregate by column
-  derive — create filtered sub-cohort
-  rank — multi-criteria prioritization
-  score — weighted composite score
+COMMANDS & VALID VALUES:
+  cohort  → op: rows | groupby | derive | rank | score
+  analyze → op: correlation | regression | feature_importance | multiple_testing | bootstrap_ci | permutation_test | pca | cluster
+  explore → auto-routed from params:
+            seeds+into → neighbors, 2 seeds+into → compare, target → enrich,
+            top_k → similar, sections → context, metric → aggregate
+  traverse → auto-routed from params:
+             seed+steps → chain, from+to → paths, pattern/description → patterns
+  workspace → op: select_cohort | memo | export | bookmark_entities
 
-ANALYZE (command:"analyze", op:...)
-  correlation — bivariate (x, y)
-  regression — linear/logistic/elastic_net
-  feature_importance — variable importance
-  multiple_testing — p-value correction
-  bootstrap_ci — confidence intervals
-  permutation_test — hypothesis test
-  pca — principal components
-  cluster — k-means/hierarchical
-  prs_association — PRS to phenotype
+SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id in one seed.
 
-GRAPH (command:"explore"|"traverse") — routing is automatic from params
-  explore: seeds+into→neighbors, 2+seeds+into→compare, target→enrich, top_k→similar, sections→context
-  traverse: seed+steps→chain, from+to→paths, pattern/description→patterns
+INTENTS (valid values for into/target/enrich):
+  diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds,
+  protein_domains, ccres, go_terms, metabolites, studies, signals,
+  drug_targets, drug_metabolism, drug_response, adverse_effects, drug_indications, drug_interactions
 
-WORKSPACE (command:"workspace", op:...)
-  select_cohort | memo | export | bookmark_entities
+DRUG INTENTS: Pharmacogenes (CYP*, UGT*, ABC*) → drug_metabolism. Drug targets (EGFR, BRAF) → drug_targets. Unsure → drugs (cascades all three).
 
-SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id.
-INTENTS (into): diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_targets, drug_metabolism, drug_response, adverse_effects, drug_indications, drug_interactions
+TRAVERSE STEP FIELDS: into (intent), top (limit), sort, filters (EDGE properties only: {field__op: value}), overlay (boolean — edges between existing nodes only), enrich (intent), p_cutoff
 
-DRUG INTENT GUIDE:
-  Pharmacogenes (CYP2D6, CYP2C19, CYP3A4...): drug_metabolism or drug_response. NOT drug_targets.
-  Drug targets (EGFR, BRAF, HER2...): drug_targets.
-  "drugs" cascades all three edges automatically.
-  Disease→drugs: use drug_indications intent.
-  Drug side effects: use adverse_effects intent.
-  Drug-drug interactions: use drug_interactions intent.`;
+See system prompt for: intent selection by seed type, drug intent decision tree, pattern examples, recovery rules.`;
 
 export function createAgentRunTool(getContext: () => RunContext) {
   return tool({

@@ -354,7 +354,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
             type: ent.type,
             id: ent.id,
             label: ent.label,
-            subtitle: ent.subtitle,
+            subtitle: truncateStr(ent.subtitle as string | undefined, 80),
           };
           if (ent.rank != null) out.rank = ent.rank;
           if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
@@ -362,7 +362,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
           if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
           if (typeof ent.supportCount === "number") out.supportCount = ent.supportCount;
           if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
-            out.edgeProperties = ent.edgeProperties;
+            out.edgeProperties = capEdgeProperties(ent.edgeProperties as Record<string, unknown>);
           }
           return out;
         });
@@ -665,6 +665,35 @@ function asArray(v: unknown): unknown[] {
 
 function asNumber(v: unknown, fallback: number): number {
   return typeof v === "number" ? v : fallback;
+}
+
+function truncateStr(s: string | undefined, max: number): string | undefined {
+  if (!s || s.length <= max) return s;
+  return s.slice(0, max - 1) + "…";
+}
+
+/** Keep at most 5 edge properties, prioritising score/evidence fields. */
+const PRIORITY_EDGE_PATTERNS = [
+  /score/i, /evidence/i, /p_value/i, /confidence/i, /phase/i, /mechanism/i,
+];
+
+function capEdgeProperties(props: Record<string, unknown>): Record<string, unknown> {
+  const MAX = 5;
+  const entries = Object.entries(props);
+  if (entries.length <= MAX) return props;
+
+  // Partition into priority vs rest
+  const priority: [string, unknown][] = [];
+  const rest: [string, unknown][] = [];
+  for (const entry of entries) {
+    if (PRIORITY_EDGE_PATTERNS.some((p) => p.test(entry[0]))) {
+      priority.push(entry);
+    } else {
+      rest.push(entry);
+    }
+  }
+  const kept = [...priority, ...rest].slice(0, MAX);
+  return Object.fromEntries(kept);
 }
 
 function truncation(

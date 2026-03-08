@@ -297,7 +297,10 @@ async function executeViaQuery(
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
         select: { nodeFields, edgeFields },
-        limits: { maxNodes: 1000, maxEdges: 5000 },
+        limits: {
+          maxNodes: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 2 + 10, 1000),
+          maxEdges: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 3, 5000),
+        },
         mode: "compact",
       },
     });
