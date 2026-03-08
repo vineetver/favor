@@ -343,16 +343,35 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
   }
   // Pass through method description
   if (data._method) out._method = data._method;
+  // Pass through protein domain architecture data (computed by neighbors handler)
+  if (data._proteinDomains) out._proteinDomains = data._proteinDomains;
   return out;
 }
 
-/** Minimal entity shape — drop fields already covered by rendered table. */
+/** Passthrough entity — keep all fields, just trim long strings and round numbers. */
 function minimalEntity(e: Ent): Ent {
-  const out: Ent = { type: e.type, id: e.id, label: e.label };
-  if (typeof e.score === "number") out.score = Math.round((e.score as number) * 10000) / 10000;
-  if (typeof e.supportCount === "number") out.supportCount = e.supportCount;
+  const out: Ent = {};
+  for (const [k, v] of Object.entries(e)) {
+    if (v == null) continue;
+    // Drop text-heavy display fields (rendered table already covers these)
+    if (TEXT_HEAVY_KEYS.has(k)) continue;
+    if (typeof v === "number") {
+      out[k] = Number.isInteger(v) ? v : Math.round(v * 10000) / 10000;
+    } else if (typeof v === "object" && !Array.isArray(v)) {
+      // edgeProperties — pass through, just cap field count
+      out[k] = capEdgeProperties(v as Record<string, unknown>);
+    } else {
+      out[k] = v;
+    }
+  }
   return out;
 }
+
+/** Keys whose values are long display strings — already in rendered tables. */
+const TEXT_HEAVY_KEYS = new Set([
+  "subtitle", "description", "summary", "definition",
+  "edgeDescription", "function", "abstract",
+]);
 
 function compactTraverse(data: Record<string, unknown>): Record<string, unknown> {
   // Patterns mode — delegate to compactPatterns if matches present
@@ -382,21 +401,22 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
         ? humanScoreLabel(s.scoreField)
         : undefined;
 
+      // Passthrough all fields — just truncate long strings and cap edge props
       const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
         const ent = e as Ent;
-        const out: Ent = {
-          type: ent.type,
-          id: ent.id,
-          label: ent.label,
-          subtitle: truncateStr(ent.subtitle as string | undefined, 80),
-        };
-        if (ent.rank != null) out.rank = ent.rank;
-        if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
-        if (typeof ent.pValue === "number") out.pValue = ent.pValue;
-        if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
-        if (typeof ent.supportCount === "number") out.supportCount = ent.supportCount;
-        if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
-          out.edgeProperties = capEdgeProperties(ent.edgeProperties as Record<string, unknown>);
+        const out: Ent = {};
+        for (const [k, v] of Object.entries(ent)) {
+          if (v == null) continue;
+          if (typeof v === "string") {
+            // Truncate long display strings for table rendering, drop from slim JSON later
+            out[k] = TEXT_HEAVY_KEYS.has(k) ? truncateStr(v, 80) : v;
+          } else if (typeof v === "number") {
+            out[k] = Number.isInteger(v) ? v : Math.round(v * 10000) / 10000;
+          } else if (k === "edgeProperties" && typeof v === "object" && !Array.isArray(v)) {
+            out[k] = capEdgeProperties(v as Record<string, unknown>);
+          } else {
+            out[k] = v;
+          }
         }
         return out;
       });
@@ -417,7 +437,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
         });
       }
 
-      // Slim JSON: drop subtitle + edgeProperties (covered by rendered table)
+      // Slim JSON: drop text-heavy display fields (covered by rendered table)
       const slimEntities = topEntities.map(minimalEntity);
 
       return {
@@ -731,15 +751,18 @@ function truncateStr(s: string | undefined, max: number): string | undefined {
   return s.slice(0, max - 1) + "…";
 }
 
-/** Keep at most 5 edge properties, prioritising score/evidence fields. */
+/** Keep at most 12 edge properties, prioritising score/evidence fields. */
 const PRIORITY_EDGE_PATTERNS = [
   /score/i, /evidence/i, /p_value/i, /confidence/i, /phase/i, /mechanism/i,
+  /causality/i, /level/i, /source/i, /affinity/i,
 ];
 
 function capEdgeProperties(props: Record<string, unknown>): Record<string, unknown> {
-  const MAX = 5;
-  const entries = Object.entries(props);
-  if (entries.length <= MAX) return props;
+  const MAX = 12;
+  const entries = Object.entries(props).filter(
+    ([k, v]) => v != null && !TEXT_HEAVY_KEYS.has(k),
+  );
+  if (entries.length <= MAX) return Object.fromEntries(entries);
 
   // Partition into priority vs rest
   const priority: [string, unknown][] = [];
@@ -843,6 +866,16 @@ const SCORE_THRESHOLDS: Record<string, ScoreThreshold[]> = {
     { min: 0.5, label: "strong" },
     { min: 0.3, label: "moderate" },
     { min: 0, label: "weak" },
+  ],
+  gnomad_af: [
+    { min: 0.01, label: "common" },
+    { min: 0.0001, label: "rare" },
+    { min: 0, label: "ultra-rare" },
+  ],
+  gwas_p_mlog: [
+    { min: 7.3, label: "genome-wide significant" },
+    { min: 5, label: "suggestive" },
+    { min: 0, label: "not significant" },
   ],
 };
 

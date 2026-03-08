@@ -173,8 +173,8 @@ const PROMPT_CARDS: PromptCardDef[] = [
       "Shared diseases between phenotypes, candidate genes with causality.",
     tier: "simple",
     seeds: [
-      { key: "pheno1", defaultValue: "Seizures", category: "phenotype" },
-      { key: "pheno2", defaultValue: "Microcephaly", category: "phenotype" },
+      { key: "pheno1", defaultValue: "Seizure", category: "phenotype" },
+      { key: "pheno2", defaultValue: "Ataxia", category: "phenotype" },
     ],
     steps: [
       { key: "s1", defaultValue: "diseases" },

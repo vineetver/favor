@@ -94,8 +94,6 @@ const weightSchema = z.object({
 
 const seedsFilterSchema = z.object({
   type: z.string().optional(),
-  relationship: z.string().optional(),
-  min_score: z.number().optional(),
 }).optional();
 
 const pipelineStepSchema = z.object({

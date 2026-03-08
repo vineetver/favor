@@ -748,9 +748,7 @@ const runInputSchema = z.object({
     seeds_from: z.string().optional(),
     seeds_filter: z.object({
       type: z.string().optional().describe("Entity type to forward (e.g. 'cCRE', 'Gene', 'Drug')"),
-      relationship: z.string().optional().describe("Relationship type to filter by (e.g. 'overlaps', 'targets')"),
-      min_score: z.number().optional().describe("Minimum score threshold"),
-    }).optional().describe("Filter entities forwarded from seeds_from by type/relationship"),
+    }).optional().describe("Filter entities forwarded from seeds_from by type"),
   })).optional().describe("Pipeline steps (min 2, max 8, pipeline only)"),
 });
 
@@ -787,7 +785,7 @@ ANALYTICS: method must match params.type.
 
 PIPELINE: { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}] }
   seeds_from and seeds_filter go at STEP level, NOT inside args.
-  seeds_filter: {type?, relationship?, min_score?}.
+  seeds_filter: {type?} — filter piped entities by entity type.
   INTERSECT step: {"id":"overlap","command":"intersect","args":{},"depends_on":["step1","step2"]}
     Virtual step — zero API calls. Computes entity ID intersection across depends_on steps.
     Downstream steps use seeds_from:"overlap" to continue from shared entities.

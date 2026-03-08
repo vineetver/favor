@@ -86,8 +86,6 @@ const pipelineStep = z.object({
   seeds_from: z.string().optional(),
   seeds_filter: z.object({
     type: z.string().optional(),
-    relationship: z.string().optional(),
-    min_score: z.number().optional(),
   }).optional(),
 });
 

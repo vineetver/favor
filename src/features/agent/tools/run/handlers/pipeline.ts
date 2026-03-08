@@ -199,7 +199,7 @@ function extractEntities(
 
   switch (command) {
     case "explore": {
-      // From results[key].top[] (neighbor entities)
+      // Neighbors/enrich format: results[key].top[]
       const results = data.results as Record<string, { top?: unknown[] }> | undefined;
       if (results) {
         for (const branch of Object.values(results)) {
@@ -208,6 +208,29 @@ function extractEntities(
             if (ent.type && ent.id && ent.label) {
               raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
             }
+          }
+        }
+      }
+      // Compare format: comparisons[edgeType].shared[].entity
+      const comparisons = data.comparisons as Record<string, { shared?: unknown[] }> | undefined;
+      if (comparisons) {
+        for (const comp of Object.values(comparisons)) {
+          for (const s of comp.shared ?? []) {
+            const item = s as { entity?: Record<string, unknown> };
+            const ent = item.entity;
+            if (ent?.type && ent.id && ent.label) {
+              raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+            }
+          }
+        }
+      }
+      // Intersect format: sharedNeighbors[].neighbor
+      const sharedNeighbors = data.sharedNeighbors as Array<{ neighbor?: Record<string, unknown> }> | undefined;
+      if (sharedNeighbors) {
+        for (const s of sharedNeighbors) {
+          const ent = s.neighbor;
+          if (ent?.type && ent.id && ent.label) {
+            raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
           }
         }
       }
@@ -336,14 +359,18 @@ function extractEntities(
 function buildStepCommand(
   step: PipelineStep,
   seedEntities?: EntityRef[],
+  tc?: TraceCollector,
 ): Record<string, unknown> {
   const cmd: Record<string, unknown> = { command: step.command, ...step.args };
 
   if (seedEntities?.length) {
     const seedRefs = seedEntities.map((e) => ({ type: e.type, id: e.id, label: e.label }));
     if (step.command === "traverse" && !cmd.pattern && !cmd.description) {
-      // traverse chain uses singular `seed`
+      // traverse chain uses singular `seed` — only first entity is used
       cmd.seed = seedRefs[0];
+      if (seedRefs.length > 1) {
+        tc?.warn("traverse_single_seed", `Traverse chain uses only first of ${seedRefs.length} piped entities (${seedRefs[0].label}). Use explore for multi-seed.`);
+      }
     } else if (step.command === "traverse") {
       // traverse patterns uses `seeds` array
       cmd.seeds = seedRefs;
@@ -503,16 +530,12 @@ export async function handlePipeline(
       if (step.seeds_from) {
         seedEntities = stepEntities.get(step.seeds_from);
 
-        // Apply seeds_filter if specified — filter by entity type/relationship
-        if (seedEntities && step.seeds_filter) {
-          const filter = step.seeds_filter;
-          if (filter.type) {
-            const filterType = filter.type.toLowerCase();
-            seedEntities = seedEntities.filter(
-              (e) => e.type.toLowerCase() === filterType,
-            );
-          }
-          // min_score would require score metadata — skip for now
+        // Apply seeds_filter if specified — filter piped entities by type
+        if (seedEntities && step.seeds_filter?.type) {
+          const filterType = step.seeds_filter.type.toLowerCase();
+          seedEntities = seedEntities.filter(
+            (e) => e.type.toLowerCase() === filterType,
+          );
         }
 
         if (!seedEntities || seedEntities.length === 0) {
@@ -553,7 +576,7 @@ export async function handlePipeline(
 
       // Build and execute — reset probe budget so each step gets its own
       pipeCtx.probesThisTurn = 0;
-      const flatCmd = buildStepCommand(step, seedEntities);
+      const flatCmd = buildStepCommand(step, seedEntities, tc);
       const result = await execFn(flatCmd, pipeCtx);
 
       stepRawResults.set(step.id, result);

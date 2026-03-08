@@ -17,7 +17,7 @@ import {
   type GraphSchemaResponse,
   type EdgeTypeInfo,
 } from "../intent-aliases";
-import { resolveSeeds } from "../resolve-seeds";
+import { resolveSeeds, warnPartialResolution } from "../resolve-seeds";
 import {
   getCachedGraphSchema,
   TARGET_EDGE_MAP,
@@ -248,7 +248,6 @@ async function executeViaQuery(
       body: {
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
-        select: { includeEvidence: true },
         limits: {
           maxNodes: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 2 + 10, 1000),
           maxEdges: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 3, 5000),
@@ -657,6 +656,7 @@ export async function handleTraverseChain(
       return errorResult("chain mode requires at least one step.", tc);
 
     const resolvedSeeds = await resolveSeeds([cmd.seed], resolvedCache);
+    warnPartialResolution(1, resolvedSeeds.length, tc);
     if (!resolvedSeeds.length)
       return errorResult("Could not resolve seed entity.", tc);
 

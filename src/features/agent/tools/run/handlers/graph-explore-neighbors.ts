@@ -16,7 +16,7 @@ import {
   type EdgeTypeInfo,
   type GraphSchemaResponse,
 } from "../intent-aliases";
-import { resolveSeeds } from "../resolve-seeds";
+import { resolveSeeds, warnPartialResolution } from "../resolve-seeds";
 import {
   getCachedGraphSchema,
   errorResult,
@@ -81,7 +81,7 @@ async function fetchForEdge(
           score?: number;
         }>;
       };
-      meta?: { resolved?: { scoreField?: string; direction?: string }; warnings?: unknown[] };
+      meta?: { resolved?: { scoreField?: string; sort?: string; direction?: string }; warnings?: unknown[] };
     }>("/graph/ranked-neighbors", {
       method: "POST",
       body: {
@@ -106,7 +106,7 @@ async function fetchForEdge(
         rank: n.rank,
         score: n.score,
       })),
-      scoreField: data.meta?.resolved?.scoreField ?? edge.defaultScoreField ?? undefined,
+      scoreField: data.meta?.resolved?.scoreField ?? data.meta?.resolved?.sort ?? edge.defaultScoreField ?? undefined,
     };
   }
 
@@ -126,7 +126,7 @@ async function fetchForEdge(
       nodes: Record<string, unknown>;
       edges: Array<{ from: string; to: string; fields?: Record<string, unknown> }>;
     };
-    meta: { nodeCount: number; edgeCount: number; warnings?: unknown[] };
+    meta: { warnings?: unknown[] };
   }>("/graph/query", {
     method: "POST",
     body: {
@@ -137,7 +137,6 @@ async function fetchForEdge(
         sort: sortField,
         ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
       }],
-      select: { includeEvidence: true },
       limits: { maxNodes: 500, maxEdges: 2000 },
       mode: "compact",
     },
@@ -195,8 +194,9 @@ export async function handleExploreNeighbors(
     }
 
     const resolvedSeeds = await resolveSeeds(cmd.seeds, resolvedCache);
+    warnPartialResolution(cmd.seeds.length, resolvedSeeds.length, tc);
     if (resolvedSeeds.length === 0) {
-      return errorResult("Could not resolve any seeds. Check entity names.", tc);
+      return errorResult("Could not resolve any seeds. Check entity names or use exact {type, id}.", tc);
     }
 
     const schema = await getCachedGraphSchema();

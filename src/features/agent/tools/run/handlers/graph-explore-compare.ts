@@ -5,7 +5,7 @@
 
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
-import { resolveSeedsWithMeta, resolveSeedsWithTypeHint } from "../resolve-seeds";
+import { resolveSeedsWithMeta, resolveSeedsWithTypeHint, warnPartialResolution } from "../resolve-seeds";
 import { errorResult, catchError, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
 import { canonicalizeIntent, resolveIntentType, findEdgesConnecting, type GraphSchemaResponse } from "../intent-aliases";
@@ -21,6 +21,7 @@ export async function handleExploreCompare(
   try {
     const resolutions = await resolveSeedsWithMeta(cmd.seeds, resolvedCache);
     let resolved = resolutions.map((r) => r.entity);
+    warnPartialResolution(cmd.seeds.length, resolved.length, tc);
     if (resolved.length < 2) {
       return errorResult("compare mode requires at least 2 resolved entities.", tc);
     }
@@ -40,7 +41,11 @@ export async function handleExploreCompare(
         if (nowSameType) {
           resolved = reEntities;
           allSameType = true;
+        } else {
+          tc.warn("type_correction_failed", `Re-resolution produced mixed types: ${reEntities.map((e) => `${e.label}(${e.type})`).join(", ")}`);
         }
+      } else {
+        tc.warn("type_correction_skipped", `Could not infer expected seed type from intents: ${cmd.into.join(", ")}`);
       }
     }
 
@@ -105,7 +110,7 @@ async function executeCompare(
           label?: string;
           shared: Array<{ entity: { type: string; id: string; label: string }; score?: number }>;
           unique: Record<string, Array<{ entity: { type: string; id: string; label: string } }>>;
-          counts: { shared: number; total: number };
+          counts: { shared: number; unique: Record<string, number> };
         }>;
         overallSimilarity: {
           sharedNeighborCount: number;
@@ -180,11 +185,11 @@ async function executeIntersect(
       neighborType?: string;
       sharedNeighbors: Array<{
         neighbor: { type: string; id: string; label: string };
-        support: string[];
+        support: Array<{ from: { type: string; id: string; label: string }; edge: { type: string } }>;
       }>;
       counts: {
-        sharedCount?: number;
-        inputCount?: number;
+        shared?: number;
+        limit?: number;
       };
     };
     meta?: { requestId?: string; resolved?: unknown; warnings?: unknown[] };

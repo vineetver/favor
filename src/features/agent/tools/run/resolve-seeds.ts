@@ -176,14 +176,18 @@ export async function resolveSeedsWithMeta(
             fallback_used: false,
           });
         } else {
-          // Not found — attempt search fallback
+          // Not found — attempt search fallback for fuzzy; warn for exact
           const meta = queryMeta[i];
           if (meta?.type === "fuzzy") {
             const label = meta.originalLabel ?? r.query;
             const searchRes = await searchFallback(label);
             if (searchRes) {
               resolutions.push(searchRes);
+            } else {
+              console.warn(`[resolve-seeds] Fuzzy label "${label}" unresolved — dropped from seeds`);
             }
+          } else if (meta?.type === "exact") {
+            console.warn(`[resolve-seeds] Exact ref "${r.query}" not found in graph — dropped from seeds`);
           }
         }
       }
@@ -195,6 +199,8 @@ export async function resolveSeedsWithMeta(
     } catch (err) {
       const detail = err instanceof AgentToolError ? err.detail : (err instanceof Error ? err.message : String(err));
       console.error("[resolve-seeds] Batch resolve failed:", detail);
+      // Surface the failure — don't silently return 0 resolutions
+      throw new AgentToolError(502, `Seed resolution failed: ${detail}`, "Try again or use exact {type, id} seeds.");
     }
   }
 
@@ -211,6 +217,23 @@ export async function resolveSeeds(
 ): Promise<EntityRef[]> {
   const resolutions = await resolveSeedsWithMeta(refs, resolvedCache);
   return resolutions.map((r) => r.entity);
+}
+
+/**
+ * Log a warning when some (but not all) seeds were dropped during resolution.
+ * Call after resolveSeeds to surface partial failures to the LLM via trace.
+ */
+export function warnPartialResolution(
+  inputCount: number,
+  resolvedCount: number,
+  tc: { warn: (code: string, message: string) => void },
+): void {
+  if (resolvedCount < inputCount && resolvedCount > 0) {
+    tc.warn(
+      "partial_resolution",
+      `Only ${resolvedCount} of ${inputCount} seeds resolved — ${inputCount - resolvedCount} dropped. Verify entity names or use exact {type, id}.`,
+    );
+  }
 }
 
 /** Get resolution candidates for the first seed (for disambiguation). */
@@ -337,25 +360,36 @@ async function improveLowConfidenceMatches(
 async function searchWithType(label: string, type: string): Promise<SeedResolution | null> {
   try {
     const normalized = normalizeLabel(label);
-    const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
-      `/graph/search?q=${encodeURIComponent(normalized)}&types=${encodeURIComponent(type)}&limit=3`,
-    );
-    const top = resp.data?.results?.[0];
-    if (!top?.entity) return null;
-    const confidence = top.match?.confidence ?? 0.8;
-    return {
-      entity: {
-        type: top.entity.type,
-        id: top.entity.id,
-        label: top.entity.label,
-        subtitle: trimSubtitle(top.entity.subtitle),
-      },
-      confidence,
-      strategy: "search_fallback",
-      low_confidence: confidence < MIN_CONFIDENCE,
-      fallback_used: true,
-    };
-  } catch {
+    // Try both the exact node type name and lowercase plural for compatibility
+    const typeVariants = [type, type.toLowerCase() + "s"];
+    for (const typeParam of typeVariants) {
+      try {
+        const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
+          `/graph/search?q=${encodeURIComponent(normalized)}&types=${encodeURIComponent(typeParam)}&limit=3`,
+        );
+        const top = resp.data?.results?.[0];
+        if (!top?.entity) continue;
+        const confidence = top.match?.confidence ?? 0.8;
+        return {
+          entity: {
+            type: top.entity.type,
+            id: top.entity.id,
+            label: top.entity.label,
+            subtitle: trimSubtitle(top.entity.subtitle),
+          },
+          confidence,
+          strategy: "search_fallback",
+          low_confidence: confidence < MIN_CONFIDENCE,
+          fallback_used: true,
+        };
+      } catch {
+        // Try next variant
+      }
+    }
+    console.warn(`[resolve-seeds] searchWithType("${label}", "${type}") found no results`);
+    return null;
+  } catch (err) {
+    console.warn(`[resolve-seeds] searchWithType("${label}", "${type}") failed:`, err instanceof Error ? err.message : err);
     return null;
   }
 }
