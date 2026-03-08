@@ -63,19 +63,22 @@ const INTENT_GUIDE = `## EDGE TABLE & COMPOSABILITY
 
 **Gene →** diseases (→Disease), pathways (→Pathway), tissues (→Tissue), phenotypes (→Phenotype), go_terms (→GO_Term), protein_domains (→ProteinDomain), drug_targets (→Drug), drug_metabolism (→Drug), drug_response (→Drug), drugs (→Drug, cascade), genes (→Gene, PPI — use overlay for self-referential), variants (→Variant)
 
-**Disease →** genes (→Gene), drug_indications (→Drug), phenotypes (→Phenotype), variants (→Variant), signals (→Signal), diseases (→Disease, hierarchy/subtypes)
+**Disease →** genes (→Gene), drug_indications (→Drug), phenotypes (→Phenotype), variants (→Variant), signals (→Signal)
 
 **Variant →** genes (→Gene), diseases (→Disease), ccres (→cCRE), drugs (→Drug), studies (→Study), signals (→Signal)
 
-**Drug →** drug_targets (→Gene), drug_indications (→Disease), adverse_effects (→AdverseEffect), drug_interactions (→Drug)
+**Drug →** drug_targets (→Gene), drug_indications (→Disease), adverse_effects (→AdverseEffect), drug_interactions (→Drug or SideEffect — cascade tries Drug-producing edge first)
 
 **Phenotype →** diseases (→Disease), genes (→Gene)
 
 **Pathway →** genes (→Gene)
 
-**Signal →** genes (→Gene)
+**Signal →** genes (→Gene) _(terminal — no outbound edges)_
 
-**cCRE →** genes (→Gene)
+**cCRE →** genes (→Gene) _(terminal — no outbound edges)_
+
+⚠ **Terminal types**: ProteinDomain, GOTerm, Study, Signal, cCRE, Metabolite, AdverseEffect are leaf types — they have inbound edges only. Do NOT chain FROM these types.
+⚠ **Disease hierarchy**: subtypes/parent diseases are NOT available via explore/traverse. Use Read entity/{type}/{id} with ontology endpoints for hierarchy.
 
 ### Composing chains
 
@@ -140,7 +143,7 @@ Target-to-safety:
 \`{"command":"traverse","seed":{"label":"LRRK2"},"steps":[{"into":"diseases"},{"into":"drug_indications"},{"into":"adverse_effects"}]}\`
 
 Filtered chain (causal genes only → drugs):
-\`{"command":"traverse","seed":{"label":"Alzheimer disease"},"steps":[{"into":"genes","top":20,"filters":{"causality_level__in":["causal","implicated"]}},{"into":"drugs"}]}\`
+\`{"command":"traverse","seed":{"label":"Alzheimer disease"},"steps":[{"into":"genes","filters":{"causality_level__in":["causal","implicated"]}},{"into":"drugs"}]}\`
 
 ### Branching (auto-detected — same-source-depth steps branch automatically)
 
@@ -169,17 +172,17 @@ Use \`target\` (not \`into\`) when you have 3+ gene seeds and want Fisher's exac
 \`{"command":"explore","seeds":[{"label":"BRCA1"},{"label":"TP53"},{"label":"ATM"}],"target":"pathways"}\`
 
 ### Follow-up patterns
-- **Seed extraction**: After any graph call, entities in \`results[intent].top[]\` (explore) or \`steps[].top[]\` (traverse) have \`{type, id, label}\`. Use \`{type, id}\` (NOT label) as seed for follow-up calls — avoids re-search and disambiguation.
+- **Seed extraction**: After any graph call, entities in \`results[intent].top[]\` (explore) or \`steps[].top[]\` (traverse) have \`{type, id, label}\`. Use \`{type, id}\` (NOT label) as seed for follow-up calls — avoids re-search and disambiguation. If you include all three, type/id takes priority and label is ignored.
 - **Compare → trace**: explore compare two entities, then traverse from a shared result using its exact {type, id}.
 - **Read → trace**: Read entity/{type}/{id} for properties first, then traverse for connections.
 - **supportCount**: fan-out→fan-in chains rank results by convergence. Present: "supported by N source genes."
 - **Node-property filtering**: edge filters work mid-chain. Node property filters need: traverse → Read entity to check → explore from filtered set.
 - **Multi-edge**: response may include "availableRelationships" listing alternative edge types. Follow up for thorough queries.
 - **top vs limit**: traverse steps use \`top\` to cap per-step fan-out. explore uses \`limit\` for total results. Don't mix them up.
-- **Default limit**: 10. Only increase when user asks for comprehensive results or you need a larger set for enrichment/intersection.
+- **You see top 10**: regardless of limit/top, you receive at most 10 entities per step. The system fetches and ranks the full set internally. Omit limit/top to use defaults — only specify when you need a narrow filter (e.g. \`top:5\`) or pipeline enrichment needs breadth.
 - **edge_type filtering**: When results mix distinct relationship types (e.g. genetic vs somatic for cancer genes), check \`availableRelationships\` in the response and re-query with explicit \`edge_type\` to separate them.
 - **Enrichment vs explore**: 3+ seeds with \`target\` runs Fisher's exact test — gives p-values and fold enrichment for statistical over-representation. This is NOT the same as exploring each seed's neighbors. Use enrichment when you want "what's shared and statistically surprising" across a gene set.
-- **Pipeline traverse limitation**: When a pipeline step uses \`seeds_from\` to feed a traverse chain, only the FIRST entity is used as the chain seed. If you need to traverse from multiple entities, use explore (which accepts multiple seeds) or run separate traverse calls.
+- **Pipeline traverse limitation**: When a pipeline step uses \`seeds_from\` to feed a traverse chain, only the FIRST entity is used as the chain seed (a warning is logged). For multi-seed from pipeline, prefer explore.
 - **Per-step fallback**: If the batch graph query fails internally, the chain falls back to per-step execution capped at 10 seeds per step. supportCount is only available in batch mode — it silently disappears on fallback.`;
 
 /* ------------------------------------------------------------------ */
@@ -239,8 +242,8 @@ Combines entities from all depends_on steps (deduplicated by ID). Result entitie
 
 Example — combined PD + AD genes → pathway enrichment:
 \`{"command":"pipeline","goal":"Combined PD+AD gene pathways","plan_steps":[
-  {"id":"pd","command":"explore","args":{"seeds":[{"label":"Parkinson disease"}],"into":["genes"],"limit":50}},
-  {"id":"ad","command":"explore","args":{"seeds":[{"label":"Alzheimer disease"}],"into":["genes"],"limit":50}},
+  {"id":"pd","command":"explore","args":{"seeds":[{"label":"Parkinson disease"}],"into":["genes"]}},
+  {"id":"ad","command":"explore","args":{"seeds":[{"label":"Alzheimer disease"}],"into":["genes"]}},
   {"id":"merged","command":"union","args":{},"depends_on":["pd","ad"]},
   {"id":"paths","command":"explore","seeds_from":"merged","args":{"target":"pathways"}}
 ]}\`
@@ -255,8 +258,8 @@ Cohort top hits → graph exploration:
 
 Cross-list intersection (which LRRK2 interactors are Parkinson genes?):
 \`{"command":"pipeline","goal":"LRRK2 PPI × Parkinson gene overlap","plan_steps":[
-  {"id":"ppi","command":"explore","args":{"seeds":[{"label":"LRRK2"}],"into":["genes"],"limit":100}},
-  {"id":"pd","command":"explore","args":{"seeds":[{"label":"Parkinson disease"}],"into":["genes"],"limit":100}},
+  {"id":"ppi","command":"explore","args":{"seeds":[{"label":"LRRK2"}],"into":["genes"]}},
+  {"id":"pd","command":"explore","args":{"seeds":[{"label":"Parkinson disease"}],"into":["genes"]}},
   {"id":"overlap","command":"intersect","args":{},"depends_on":["ppi","pd"]},
   {"id":"pathways","command":"explore","seeds_from":"overlap","args":{"target":"pathways"}}
 ]}\`
@@ -330,6 +333,7 @@ Flag outliers and explain distribution.
 const RESULT_FIELDS = `## KEY FIELDS IN RESULTS
 
 Every result has: status, text_summary, data, state_delta.
+state_delta is applied AFTER the current turn. Newly pinned entities are available as exact {type,id} seeds in the NEXT tool call, not the current one.
 Optional: repairs, next_actions, warnings, trace. May include _truncation: { truncated, returned, total, hint?, reason?, how_to_get_more? }.
 
 ### Pre-rendered tables (explore neighbors + traverse chain)
@@ -364,7 +368,7 @@ profiles → [{ variant, resolvedId?, chromosome, position, ref, alt, gene, scor
 goal, steps_ok, steps_total, step_results → [{ id, command, status, summary, data, entities?(top 5), entities_meta? }]`;
 
 /* ------------------------------------------------------------------ */
-/* §10 OUTPUT — colleague voice, no framework leakage        ~160 tok */
+/* §10 OUTPUT — colleague voice, no framework leakage        ~340 tok */
 /* ------------------------------------------------------------------ */
 
 const OUTPUT_FORMAT = `## OUTPUT
@@ -372,22 +376,29 @@ const OUTPUT_FORMAT = `## OUTPUT
 Write like a domain-expert colleague — not an AI filling out a template.
 Never expose reasoning scaffolding, mnemonics, labeled categories, or meta-commentary.
 
-### Structure
-1. **Headline** — your conclusion, not just "found N results."
-2. **Paste rendered.tables markdown as-is.** Don't rebuild from JSON.
-3. **Observations** — 1-2 insights. Convergence, strength gaps, surprises.
-4. **Next step** — offer if genuinely useful. Direct, not hedging.
+### Core rules
+1. **Start from text_summary** — use it as the backbone sentence of your response.
+2. **Rendered tables**: when \`rendered.tables\` exist, paste the markdown as-is. Do not rebuild.
+3. **Label every table**: describe what it shows with relationship context and count — "**Genes associated with pyruvate dehydrogenase E3 deficiency** (showing 5 of 47):" — never an unlabeled table.
+4. **Truncation**: always state "showing N of M <type>". If \`_truncation.hint\` or \`how_to_get_more\` exists, mention what the user can do.
+5. **Entity context**: use the Subtitle column in tables for identity context. Do NOT expand entity names from training data.
+6. **Cross-step observations**: when multiple steps or pipeline results exist, note convergences or gaps across them. Stay grounded — only reference entities and scores present in results.
 
-### Result-type hints
-- **traverse chain**: per-step tables → cross-step observations
-- **explore compare**: lead with Jaccard similarity → shared table → unique to each
-- **explore enrich**: state method (Fisher's exact) → table → flag unexpected terms
-- **cohort/top_hits**: table → distribution notes, outliers
-- **analytics**: key metric → interpretation → describe charts
+### Enrichment (no pre-rendered table — you must format)
+Build a markdown table: | <TargetType> | Overlap | p-value | Fold | Overlapping entities |
+Include \`_method\` description. Flag terms with unusually high fold enrichment.
 
-Scale depth to query complexity. 0 results → state explicitly with possible reason + what you tried.
-If a traverse chain has 0 results at a mid-step, say so — don't silently present earlier steps as the complete answer.
-Always note: row count, filters applied, auto-corrections (repairs).`;
+### Variant profile
+Lead with identity (position, gene, ref/alt). Then: key scores with labels, ClinVar significance, cCRE annotation if present, relation counts as "N diseases, M genes, ...". Mention top relations with evidence.
+
+### Pipeline
+One-line conclusion → per-step sections (heading with step role + table + "showing N of M") → cross-step synthesis → caveats (truncation, entity caps).
+
+### Depth
+Simple lookup: headline + table + 1 observation. Trace/chain: per-step tables + observations. Pipeline/dossier: full structured synthesis.
+
+### Empty results
+State explicitly: what you tried, why it may be empty. If a mid-chain step returned 0, say so — don't present earlier steps as the complete answer. Mention repairs/auto-corrections if any.`;
 
 /* ------------------------------------------------------------------ */
 /* §11 ANTI-PATTERNS (tool calls + output)                    ~150 tok */
@@ -399,13 +410,16 @@ const ANTI_PATTERNS = `## ANTI-PATTERNS
 ❌ Search for edge type names → ✅ Read graph/schema
 ❌ Mixed-type compare seeds (Gene+Disease) → ✅ Let auto-correction handle it, or pipeline intersect
 ❌ Present results from a different query when asked query failed → ✅ Say "no data found" + explain what you tried
-❌ \`limit\` in traverse steps / \`top\` in explore → ✅ traverse uses \`top\`, explore uses \`limit\`
+❌ \`limit\` in traverse steps / \`top\` in explore → ✅ traverse uses \`top\` (per-step cap), explore uses \`limit\` (total cap). Using \`limit\` on traverse is silently ignored. Using \`top\` on explore is stripped by validation.
+❌ \`top:0\` or \`top:-1\` → ✅ Always use positive integers for top/limit (minimum 1)
 ❌ Guessing entity IDs or type/id format → ✅ Use {label:"X"} for fuzzy lookup, or extract exact {type, id} from a prior result
+❌ Chaining FROM terminal types (ProteinDomain, GOTerm, Study, etc.) → ✅ These are leaf types with no outbound edges
 
 ### Output
 ❌ Labeled sections: "Convergence:", "Strength gaps:" → ✅ Direct observations without labels
 ❌ Framework references: "(C-S-S-C-M)" → ✅ State insight without framework names
-❌ Hedging: "If you want, I can..." → ✅ Direct offer: "I can narrow this to..."`;
+❌ Hedging: "If you want, I can..." → ✅ Direct offer: "I can narrow this to..."
+❌ Expanding entity names from memory: "DLD (dihydrolipoamide dehydrogenase, the E3 subunit...)" → ✅ Use Subtitle from table data only`;
 
 /* ------------------------------------------------------------------ */
 /* Builder                                                            */
