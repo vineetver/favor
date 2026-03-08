@@ -16,21 +16,17 @@ function trimSubtitle(s?: string): string | undefined {
   return s.length <= MAX_SUBTITLE_LENGTH ? s : `${s.slice(0, MAX_SUBTITLE_LENGTH).trimEnd()}…`;
 }
 
-interface ResolveResult {
-  results: Array<{
-    query: string;
-    status: string;
-    entity?: { type: string; id: string; label: string; subtitle?: string };
-    confidence?: number;
-    matchTier?: string;
-  }>;
+interface ResolveResultItem {
+  query: string;
+  status: string;
+  entity?: { type: string; id: string; label: string; subtitle?: string };
+  confidence?: number;
+  matchTier?: string;
 }
 
-interface SearchResult {
-  results: Array<{
-    entity: { type: string; id: string; label: string; subtitle?: string };
-    match?: { confidence: number; matchTier?: string };
-  }>;
+interface SearchResultItem {
+  entity: { type: string; id: string; label: string; subtitle?: string };
+  match?: { confidence: number; matchTier?: string };
 }
 
 /** Confidence threshold — below this we fall back to search */
@@ -145,15 +141,16 @@ export async function resolveSeedsWithMeta(
 
   if (queries.length > 0) {
     try {
-      const result = await agentFetch<ResolveResult>("/graph/resolve", {
+      const resp = await agentFetch<{ data: { results: ResolveResultItem[] } }>("/graph/resolve", {
         method: "POST",
         body: { queries },
       });
+      const resolveResults = resp.data?.results ?? [];
 
       const lowConfidenceLabels: Array<{ label: string; resolvedIndex: number }> = [];
 
-      for (let i = 0; i < result.results.length; i++) {
-        const r = result.results[i];
+      for (let i = 0; i < resolveResults.length; i++) {
+        const r = resolveResults[i];
         if (r.status.toLowerCase() === "matched" && r.entity) {
           const confidence = r.confidence ?? 1.0;
           const meta = queryMeta[i];
@@ -243,15 +240,16 @@ export function getResolutionCandidates(resolutions: SeedResolution[]): Candidat
 async function searchFallback(label: string): Promise<SeedResolution | null> {
   try {
     const normalized = normalizeLabel(label);
-    const searchResult = await agentFetch<SearchResult>(
+    const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
       `/graph/search?q=${encodeURIComponent(normalized)}&limit=3`,
     );
+    const searchResults = resp.data?.results ?? [];
 
-    const top = searchResult.results?.[0];
+    const top = searchResults[0];
     if (!top?.entity) return null;
 
     const confidence = top.match?.confidence ?? 0;
-    const candidates: Candidate[] = searchResult.results.slice(1, 3).map((r) => ({
+    const candidates: Candidate[] = searchResults.slice(1, 3).map((r) => ({
       type: r.entity.type,
       id: r.entity.id,
       label: r.entity.label,
@@ -288,17 +286,18 @@ async function improveLowConfidenceMatches(
   for (const { label, resolvedIndex } of lowConfidence) {
     try {
       const normalized = normalizeLabel(label);
-      const searchResult = await agentFetch<SearchResult>(
+      const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
         `/graph/search?q=${encodeURIComponent(normalized)}&limit=3`,
       );
+      const searchResults = resp.data?.results ?? [];
 
-      const top = searchResult.results?.[0];
+      const top = searchResults[0];
       if (!top?.entity) continue;
 
       const searchConf = top.match?.confidence ?? 0;
 
       // Collect candidates
-      const candidates: Candidate[] = searchResult.results.slice(0, 3).map((r) => ({
+      const candidates: Candidate[] = searchResults.slice(0, 3).map((r) => ({
         type: r.entity.type,
         id: r.entity.id,
         label: r.entity.label,
@@ -386,12 +385,12 @@ async function extractEntitiesFromCohort(
         const names = result.buckets.map((b) => b.key).filter(Boolean);
         if (names.length === 0) continue;
 
-        const resolved = await agentFetch<ResolveResult>("/graph/resolve", {
+        const resolveResp = await agentFetch<{ data: { results: ResolveResultItem[] } }>("/graph/resolve", {
           method: "POST",
           body: { queries: names },
         });
 
-        const entities = resolved.results
+        const entities = (resolveResp.data?.results ?? [])
           .filter((r) => r.status.toLowerCase() === "matched" && r.entity)
           .map((r) => ({
             type: r.entity!.type,

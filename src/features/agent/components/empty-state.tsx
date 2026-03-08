@@ -76,13 +76,7 @@ const CATEGORY_TO_ENTITY_TYPES: Record<SeedCategory, EntityType[] | null> = {
 const STEP_GROUPS = [
   {
     label: "Genomics",
-    options: [
-      "variants",
-      "genes",
-      "genes (L2G)",
-      "proteins",
-      "protein domains",
-    ],
+    options: ["variants", "genes", "proteins", "protein domains"],
   },
   {
     label: "Regulatory",
@@ -93,12 +87,15 @@ const STEP_GROUPS = [
     options: ["diseases", "phenotypes", "pathways", "GO terms", "metabolites"],
   },
   {
-    label: "Therapy",
+    label: "Pharmacology",
     options: [
       "drugs",
+      "drug targets",
+      "drug metabolism",
+      "drug response",
+      "drug indications",
       "adverse effects",
-      "interacting drugs",
-      "side effects",
+      "drug interactions",
     ],
   },
 ];
@@ -108,175 +105,122 @@ const STEP_GROUPS = [
 // ---------------------------------------------------------------------------
 
 const PROMPT_CARDS: PromptCardDef[] = [
-  // ── Pharma / Target Assessment ──
-  // Chain: Gene →(GENE_ASSOCIATED_WITH_DISEASE)→ Disease →(DRUG_INDICATED_FOR_DISEASE)→ Drug →(DRUG_HAS_ADVERSE_EFFECT)→ SideEffect
-  // Key fields: ot_score+causality_level, max_clinical_phase, offsides_prr
+  // ── Target Safety Pipeline ──
+  // Gene → diseases → drug indications → adverse effects (linear traverse chain)
   {
-    id: "target-dossier",
-    label: "Target assessment dossier",
-    subtitle:
-      "Tractability, disease links, pipeline drugs, and safety signals",
+    id: "target-safety",
+    label: "Target safety pipeline",
+    subtitle: "Disease links, approved drugs, and safety signals",
     outputPromise:
-      "Disease associations with causality tiers, drugs with mechanism and phase, adverse effects with reporting ratio, tractability flags.",
+      "Disease associations, indicated drugs with clinical phase, adverse effects with signal strength.",
     tier: "simple",
     seeds: [{ key: "gene", defaultValue: "LRRK2", category: "gene" }],
     steps: [
-      {
-        key: "s1",
-        defaultValue: "diseases",
-        evidence: "OT score + causality",
-      },
-      { key: "s2", defaultValue: "drugs", evidence: "phase + mechanism" },
-      {
-        key: "s3",
-        defaultValue: "adverse effects",
-        evidence: "PRR + frequency",
-      },
+      { key: "s1", defaultValue: "diseases" },
+      { key: "s2", defaultValue: "drug indications" },
+      { key: "s3", defaultValue: "adverse effects" },
     ],
     assemble: (v, steps) =>
-      `Build a target assessment dossier for ${v.gene}. Trace through ${steps.join(" → ")}. Include the gene's tractability flags (pocket, ligand) and constraint scores. For diseases, show causality level and overall evidence score — flag causal or implicated tiers. For drugs, show mechanism of action and max clinical phase. For adverse effects, show proportional reporting ratio. Present as tables with evidence scores visible.`,
+      `Trace ${v.gene} through ${steps.join(" → ")}.`,
   },
 
-  // ── Clinical PGx ──
-  // Chain: Gene →(GENE_AFFECTS_DRUG_RESPONSE+DRUG_DISPOSITION_BY_GENE)→ Drug →(DRUG_HAS_ADVERSE_EFFECT)→ SideEffect
-  // Key fields: disposition_type, pharmgkb_evidence, offsides_prr
+  // ── PGx Drug Metabolism ──
+  // Pharmacogene → drug metabolism → adverse effects (linear traverse chain, pharmacogene intent)
   {
-    id: "pgx-cascade",
-    label: "Pharmacogenomics cascade",
-    subtitle:
-      "Drug metabolism, disposition, dosing implications, and PGx variants",
+    id: "pgx-metabolism",
+    label: "PGx drug metabolism",
+    subtitle: "Drugs metabolized by a pharmacogene and their side effects",
     outputPromise:
-      "Drugs metabolized/transported by gene with PharmGKB evidence, adverse effects with PRR, PGx variant associations.",
+      "Drugs metabolized/transported by the gene, adverse effects with probability.",
     tier: "simple",
     seeds: [{ key: "gene", defaultValue: "CYP2C19", category: "gene" }],
     steps: [
-      {
-        key: "s1",
-        defaultValue: "drugs",
-        evidence: "disposition + PharmGKB",
-      },
-      {
-        key: "s2",
-        defaultValue: "adverse effects",
-        evidence: "PRR + frequency",
-      },
+      { key: "s1", defaultValue: "drug metabolism" },
+      { key: "s2", defaultValue: "adverse effects" },
     ],
     assemble: (v, steps) =>
-      `For pharmacogene ${v.gene}, trace through ${steps.join(" → ")}. Show disposition type (metabolizer/transporter), PharmGKB evidence level, and dosing implications. For adverse effects, include the proportional reporting ratio. Also note any PGx variants in ${v.gene} with known drug associations (e.g. poor/rapid metabolizer alleles). Present as tables.`,
+      `Trace pharmacogene ${v.gene} through ${steps.join(" → ")}.`,
   },
 
-  // ── Regulatory / IGVF ──
-  // Chain: Variant →(VARIANT_OVERLAPS_CCRE)→ cCRE →(CCRE_REGULATES_GENE)→ Gene →(GENE_ASSOCIATED_WITH_DISEASE)→ Disease
-  // Key fields: annotation, evidence_modality+max_score+top_tissue, ot_score+causality_level
+  // ── Regulatory Variant Mapping ──
+  // Variant → cCREs → genes → diseases (linear traverse chain, variant seed)
   {
-    id: "noncoding-deep-dive",
-    label: "Non-coding variant deep dive",
-    subtitle:
-      "Enhancer overlap, regulatory evidence modalities, and disease link",
+    id: "regulatory-variant",
+    label: "Regulatory variant mapping",
+    subtitle: "Enhancer overlap, target genes, and disease connections",
     outputPromise:
-      "cCRE annotation and class, gene link with evidence modality (ABC/eQTL/CRISPR) and tissue, disease associations with causality.",
+      "cCRE annotations, regulated genes with evidence modality, disease associations.",
     tier: "simple",
     seeds: [
       { key: "variant", defaultValue: "rs1421085", category: "variant" },
     ],
     steps: [
-      { key: "s1", defaultValue: "cCREs", evidence: "ENCODE annotation" },
-      {
-        key: "s2",
-        defaultValue: "genes",
-        evidence: "ABC / eQTL / CRISPR",
-      },
-      {
-        key: "s3",
-        defaultValue: "diseases",
-        evidence: "OT score + causality",
-      },
+      { key: "s1", defaultValue: "cCREs" },
+      { key: "s2", defaultValue: "genes" },
+      { key: "s3", defaultValue: "diseases" },
     ],
     assemble: (v, steps) =>
-      `Does noncoding variant ${v.variant} fall in a regulatory element? Trace through ${steps.join(" → ")}. Show the cCRE annotation type (promoter-like vs enhancer) and evidence signals. For the cCRE-to-gene link, show all evidence modalities (ABC, eQTL, CRISPR), the max score, and top tissue. Then show diseases the gene is associated with, including causality level and overall evidence score. Present as tables.`,
+      `Trace variant ${v.variant} through ${steps.join(" → ")}.`,
   },
 
-  // ── Rare Disease / Clinical Genetics ──
-  // Chain: Phenotype →(DISEASE_HAS_PHENOTYPE, inbound)→ Disease →(GENE_ASSOCIATED_WITH_DISEASE, inbound)→ Gene
-  // Key fields: clinGen/genCC classification, mode_of_inheritance, causality_level
+  // ── Phenotype Overlap ──
+  // Two phenotypes → shared diseases → candidate genes (multi-seed compare)
   {
-    id: "rare-disease-prioritize",
-    label: "Rare disease gene prioritization",
-    subtitle:
-      "Phenotype overlap to candidate diseases and high-confidence genes",
+    id: "phenotype-overlap",
+    label: "Phenotype overlap",
+    subtitle: "Shared diseases across phenotypes and candidate genes",
     outputPromise:
-      "Diseases matching phenotype set, genes with ClinGen classification, mode of inheritance, and causality filtering.",
+      "Shared diseases between phenotypes, candidate genes with causality.",
     tier: "simple",
     seeds: [
       { key: "pheno1", defaultValue: "Seizures", category: "phenotype" },
       { key: "pheno2", defaultValue: "Microcephaly", category: "phenotype" },
     ],
     steps: [
-      {
-        key: "s1",
-        defaultValue: "diseases",
-        evidence: "phenotype overlap",
-      },
-      { key: "s2", defaultValue: "genes", evidence: "ClinGen + causality" },
+      { key: "s1", defaultValue: "diseases" },
+      { key: "s2", defaultValue: "genes" },
     ],
     assemble: (v, steps) =>
-      `A patient presents with ${v.pheno1} and ${v.pheno2}. Trace through ${steps.join(" → ")}. Find diseases that have both phenotypes, then identify genes associated with those diseases. Filter to genes with strong/definitive ClinGen or GenCC classification. Show mode of inheritance and causality level. Present as tables with classification and confidence visible.`,
+      `Compare ${v.pheno1} and ${v.pheno2}: find shared ${steps[0]}, then trace to ${steps.slice(1).join(" → ")}.`,
   },
 
-  // ── Oncology ──
-  // Chain: Gene →(GENE_ALTERED_IN_DISEASE)→ Disease →(DRUG_INDICATED_FOR_DISEASE+GENE_AFFECTS_DRUG_RESPONSE)→ Drug
-  // Key fields: alteration_frequency (TCGA/COSMIC), evidence_level (CIViC/AMP), max_clinical_phase
+  // ── Drug Repurposing ──
+  // Disease → genes → drugs (linear traverse chain, disease seed)
   {
-    id: "oncology-actionability",
-    label: "Oncology actionability report",
-    subtitle:
-      "Somatic alterations, cancer drivers, and actionable therapies",
+    id: "drug-repurposing",
+    label: "Drug repurposing candidates",
+    subtitle: "Disease-associated genes and their druggable targets",
     outputPromise:
-      "Cancers with alteration frequencies, driver flags, actionable therapies with evidence level and clinical phase.",
+      "Disease-gene associations, drugs targeting those genes with clinical phase.",
     tier: "simple",
-    seeds: [{ key: "gene", defaultValue: "BRAF", category: "gene" }],
+    seeds: [{ key: "disease", defaultValue: "Parkinson disease", category: "disease" }],
     steps: [
-      {
-        key: "s1",
-        defaultValue: "diseases",
-        evidence: "TCGA + COSMIC freq",
-      },
-      { key: "s2", defaultValue: "drugs", evidence: "CIViC + phase" },
+      { key: "s1", defaultValue: "genes" },
+      { key: "s2", defaultValue: "drug targets" },
     ],
     assemble: (v, steps) =>
-      `Build an oncology actionability report for ${v.gene}. Trace through ${steps.join(" → ")}. Show cancers where the gene is somatically altered with alteration frequency (TCGA, COSMIC) and flag cancer driver status. For drugs, show evidence level (CIViC, AMP tier), mechanism of action, and max clinical phase. Highlight FDA-approved therapies. Present as tables.`,
+      `Trace ${v.disease} through ${steps.join(" → ")}.`,
   },
 
-  // ── Drug Safety / Polypharmacy ──
-  // Chain: Drug →(DRUG_INTERACTS_WITH_DRUG)→ Drug →(DRUG_HAS_ADVERSE_EFFECT)→ SideEffect
-  // + DRUG_PAIR_CAUSES_SIDE_EFFECT, VARIANT_ASSOCIATED_WITH_DRUG
+  // ── Drug Safety Comparison ──
+  // Two drugs → shared adverse effects + drug interactions (multi-seed compare)
   {
-    id: "drug-safety-polypharmacy",
-    label: "Drug safety & polypharmacy",
-    subtitle:
-      "Drug-drug interactions, shared ADRs, and pharmacogenomic variants",
+    id: "drug-safety",
+    label: "Drug safety comparison",
+    subtitle: "Shared adverse effects and drug-drug interactions",
     outputPromise:
-      "DDI severity, shared/unique adverse effects with PRR, polypharmacy side effects, PGx variants.",
+      "Shared adverse effects between drugs, drug-drug interaction severity.",
     tier: "simple",
     seeds: [
       { key: "drug1", defaultValue: "Clopidogrel", category: "drug" },
       { key: "drug2", defaultValue: "Omeprazole", category: "drug" },
     ],
     steps: [
-      {
-        key: "s1",
-        defaultValue: "interacting drugs",
-        evidence: "DDI severity",
-      },
-      {
-        key: "s2",
-        defaultValue: "adverse effects",
-        evidence: "PRR comparison",
-      },
-      { key: "s3", defaultValue: "side effects", evidence: "pair PRR" },
+      { key: "s1", defaultValue: "adverse effects" },
+      { key: "s2", defaultValue: "drug interactions" },
     ],
     assemble: (v, steps) =>
-      `Evaluate the safety profile of taking ${v.drug1} and ${v.drug2} together. Trace through ${steps.join(" → ")}. Check for direct drug-drug interactions and show severity. Compare adverse effect profiles — which ADRs are shared vs unique to each drug, with proportional reporting ratios. Check for polypharmacy side effects specific to this combination. Also note any PGx variants that affect response to either drug. Present as tables.`,
+      `Compare ${v.drug1} and ${v.drug2}: find shared ${steps[0]} and check ${steps[1]}.`,
   },
 ];
 
@@ -286,19 +230,19 @@ const PROMPT_CARDS: PromptCardDef[] = [
 
 const QUICK_PROMPTS = [
   {
-    label: "Compare JAK inhibitors: targets, indications, and safety",
+    label: "Trace TP53 through pathways and diseases",
     prompt:
-      "Compare JAK inhibitors (Tofacitinib, Baricitinib, Upadacitinib): which gene targets does each act on, what diseases are they indicated for, and how do their adverse effect profiles compare? Show mechanism of action, clinical phase, and proportional reporting ratios.",
+      "Trace TP53 through pathways → diseases.",
   },
   {
-    label: "Map the Wnt signaling cascade: genes, sub-pathways, and metabolites",
+    label: "Compare Tofacitinib and Baricitinib: shared targets and adverse effects",
     prompt:
-      "Map the Wnt signaling pathway: what genes participate, which sub-pathways branch off, and what metabolites are involved? Show pathway sources (Reactome/KEGG) and highlight any genes with known disease associations.",
+      "Compare Tofacitinib and Baricitinib: find shared drug targets and shared adverse effects.",
   },
   {
-    label: "Non-coding GWAS hits for T2D with enhancer evidence",
+    label: "Trace Alzheimer disease through genes → drugs",
     prompt:
-      "Find non-coding GWAS variants for Type 2 diabetes that overlap enhancer cCREs. For each, show the cCRE annotation type, the regulatory evidence modality (ABC, eQTL, CRISPR) linking to a target gene, and the gene's disease association score. Focus on variants with strong enhancer evidence.",
+      "Trace Alzheimer disease through genes → drug targets.",
   },
 ];
 

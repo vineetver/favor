@@ -16,6 +16,7 @@ import {
   canonicalizeIntent,
   getSummaryFields,
   type GraphSchemaResponse,
+  type EdgeTypeInfo,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import {
@@ -55,6 +56,7 @@ interface ScoredEntity extends EntityRef {
   rank?: number;
   score?: number;
   edgeProperties?: Record<string, unknown>;
+  supportCount?: number;
 }
 
 /** Enriched entity for enrichment steps */
@@ -85,6 +87,9 @@ interface AnnotatedIntoStep {
   limit: number;
   sort?: string; // User-specified sort override (e.g. "-score_field")
   filters?: Record<string, unknown>; // User-specified edge filters (field__op format)
+  overlayOnly?: boolean; // edges only to existing nodes, no new nodes
+  /** All candidate edges for this step — used for cascade fallback in executePerStep */
+  allCandidates?: EdgeTypeInfo[];
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +143,8 @@ function annotateIntoSteps(
             limit: Math.min(step.top ?? 20, 100),
             sort,
             filters: Object.keys(mergedFilters).length > 0 ? mergedFilters : undefined,
+            overlayOnly: step.overlay ?? undefined,
+            allCandidates: edges.length > 1 ? edges : undefined,
           };
           intoSteps.push(ann);
 
@@ -205,6 +212,7 @@ function buildQuerySteps(
         limit: s.limit,
         sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
         ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
+        ...(s.overlayOnly ? { overlayOnly: true } : {}),
       });
     } else {
       querySteps.push({
@@ -213,6 +221,7 @@ function buildQuerySteps(
           limit: s.limit,
           sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
           ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
+          ...(s.overlayOnly ? { overlayOnly: true } : {}),
         })),
       });
     }
@@ -318,6 +327,8 @@ async function executeViaQuery(
       const stepEdges = edges.filter((e) => e.type === ann.edgeType);
       const targetEntities: ScoredEntity[] = [];
       const seen = new Set<string>();
+      // Track which source nodes connect to each target (for support count)
+      const supportMap = new Map<string, Set<string>>();
 
       // Prefer this step's own default score field, then generic fallbacks
       const scoreField = ann.defaultScoreField;
@@ -334,7 +345,15 @@ async function executeViaQuery(
               ? edge.from
               : null;
 
-        if (!targetKey || seen.has(targetKey)) continue;
+        if (!targetKey) continue;
+
+        // Track source for support count before dedup
+        const sourceKey = targetKey === edge.to ? edge.from : edge.to;
+        let sources = supportMap.get(targetKey);
+        if (!sources) { sources = new Set(); supportMap.set(targetKey, sources); }
+        sources.add(sourceKey);
+
+        if (seen.has(targetKey)) continue;
         seen.add(targetKey);
 
         const node = nodes[targetKey];
@@ -360,6 +379,27 @@ async function executeViaQuery(
           score: typeof score === "number" ? score : undefined,
           ...(Object.keys(edgeProperties).length > 0 ? { edgeProperties } : {}),
         });
+      }
+
+      // Annotate support count and re-sort if any target has > 1 source
+      const hasMultiSupport = [...supportMap.values()].some((s) => s.size > 1);
+      if (hasMultiSupport) {
+        for (const ent of targetEntities) {
+          const key = `${ent.type}:${ent.id}`;
+          const count = supportMap.get(key)?.size ?? 1;
+          if (count > 1) ent.supportCount = count;
+        }
+        // Re-sort: support count desc, then score desc
+        targetEntities.sort((a, b) => {
+          const sa = a.supportCount ?? 1;
+          const sb = b.supportCount ?? 1;
+          if (sb !== sa) return sb - sa;
+          return (b.score ?? 0) - (a.score ?? 0);
+        });
+        // Re-assign ranks
+        for (let r = 0; r < targetEntities.length; r++) {
+          targetEntities[r].rank = r + 1;
+        }
       }
 
       const annotation = await edgeTypeAnnotation(ann.edgeType);
@@ -416,63 +456,74 @@ async function executePerStep(
     }
 
     const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(0, 10);
-    const annotation = await edgeTypeAnnotation(ann.edgeType);
 
-    try {
-      tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "call", message: `ranked-neighbors: ${ann.edgeType}` });
+    // Edge cascade: try candidates in preference order, stop at first with results
+    const edgesToTry = ann.allCandidates?.slice(0, 3) ?? [{ edgeType: ann.edgeType, fromType: "", toType: "", propertyCount: 0, defaultScoreField: ann.defaultScoreField }];
+    let stepResult: StepResult | null = null;
 
-      const data = await agentFetch<{
-        data: {
-          neighbors: Array<{
-            entity: EntityRef;
-            rank: number;
-            score?: number;
-          }>;
-        };
-        meta?: { resolved?: { scoreField?: string }; warnings?: unknown[] };
-      }>("/graph/ranked-neighbors", {
-        method: "POST",
-        body: {
-          seed: { type: stepSeeds[0].type, id: stepSeeds[0].id },
-          edgeType: ann.edgeType,
-          limit: ann.limit,
-        },
-      });
+    for (const edge of edgesToTry) {
+      try {
+        tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "call", message: `ranked-neighbors: ${edge.edgeType}` });
 
-      tc.mergeApiWarnings(data.meta?.warnings);
+        const data = await agentFetch<{
+          data: {
+            neighbors: Array<{
+              entity: EntityRef;
+              rank: number;
+              score?: number;
+            }>;
+          };
+          meta?: { resolved?: { scoreField?: string }; warnings?: unknown[] };
+        }>("/graph/ranked-neighbors", {
+          method: "POST",
+          body: {
+            seed: { type: stepSeeds[0].type, id: stepSeeds[0].id },
+            edgeType: edge.edgeType,
+            limit: ann.limit,
+          },
+        });
 
-      const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
-        (n) => ({
-          ...n.entity,
-          rank: n.rank,
-          score: n.score,
-        }),
-      );
+        tc.mergeApiWarnings(data.meta?.warnings);
 
-      const resultDepth = ann.sourceDepth + 1;
-      if (!entitiesAtDepth.has(resultDepth)) {
-        entitiesAtDepth.set(resultDepth, entities);
+        const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
+          (n) => ({
+            ...n.entity,
+            rank: n.rank,
+            score: n.score,
+          }),
+        );
+
+        if (entities.length > 0 || edgesToTry.indexOf(edge) === edgesToTry.length - 1) {
+          const annotation = await edgeTypeAnnotation(edge.edgeType);
+          stepResult = {
+            step: ann.userStepIndex,
+            intent: ann.intent,
+            edgeType: edge.edgeType,
+            edgeDescription: annotation ?? undefined,
+            scoreField: data.meta?.resolved?.scoreField ?? edge.defaultScoreField,
+            entities,
+          };
+
+          const resultDepth = ann.sourceDepth + 1;
+          if (entities.length > 0 && !entitiesAtDepth.has(resultDepth)) {
+            entitiesAtDepth.set(resultDepth, entities);
+          }
+          break;
+        }
+
+        tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "fallback", message: `0 via ${edge.edgeType}, trying next` });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        tc.warn("step_failed", `Step ${ann.userStepIndex} (${ann.intent}/${edge.edgeType}): ${msg}`);
       }
-
-      results.push({
-        step: ann.userStepIndex,
-        intent: ann.intent,
-        edgeType: ann.edgeType,
-        edgeDescription: annotation ?? undefined,
-        scoreField: data.meta?.resolved?.scoreField ?? ann.defaultScoreField,
-        entities,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      tc.warn("step_failed", `Step ${ann.userStepIndex} (${ann.intent}): ${msg}`);
-      results.push({
-        step: ann.userStepIndex,
-        intent: ann.intent,
-        edgeType: ann.edgeType,
-        edgeDescription: annotation ?? undefined,
-        entities: [],
-      });
     }
+
+    results.push(stepResult ?? {
+      step: ann.userStepIndex,
+      intent: ann.intent,
+      edgeType: ann.edgeType,
+      entities: [],
+    });
   }
 
   return results;
@@ -534,7 +585,7 @@ async function executeEnrichStep(
     method: "POST",
     body: {
       inputSet: inputEntities
-        .slice(0, 50)
+        .slice(0, 200)
         .map((e) => ({ type: e.type, id: e.id })),
       targetType,
       edgeType: expectedEdge,
@@ -666,10 +717,20 @@ export async function handleTraverseChain(
       tc,
     );
 
-    // Phase 2+3: Execute into steps via batch query, fall back to per-step
-    const intoResults =
-      (await executeViaQuery(seed, intoSteps, schema, tc)) ??
-      (await executePerStep(seed, intoSteps, schema, tc));
+    // Phase 2+3: Execute into steps via batch query, fall back to per-step.
+    // If the batch has empty steps with alternative edge candidates, the batch
+    // picked the wrong edge and downstream steps have a stale frontier —
+    // fall back to per-step which handles cascade + depth chaining correctly.
+    let intoResults = await executeViaQuery(seed, intoSteps, schema, tc);
+    const needsCascade = intoResults && intoSteps.some(
+      (ann, i) => intoResults![i].entities.length === 0 && ann.allCandidates && ann.allCandidates.length > 1,
+    );
+    if (!intoResults || needsCascade) {
+      if (needsCascade) {
+        tc.add({ step: "cascadeFallback", kind: "fallback", message: "Batch has empty steps with alternatives — falling back to per-step cascade" });
+      }
+      intoResults = await executePerStep(seed, intoSteps, schema, tc);
+    }
 
     // Phase 4: Execute enrich steps (with auto-fallback to connectivity)
     const enrichResults: StepResult[] = [];

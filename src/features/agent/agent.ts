@@ -15,8 +15,9 @@ import { getSynthesisModel, getSynthesisProviderOptions } from "./lib/models";
 import { createStateTool } from "./tools/state";
 import { readTool } from "./tools/read";
 import { createSearchTool } from "./tools/search";
-import { createRunTool, type RunResult, type EntityRef } from "./tools/run";
+import { createRunTool } from "./tools/run";
 import { askUserTool } from "./tools/ask-user";
+import type { RunContext } from "./tools/run";
 
 import type { VizSpec } from "./types";
 import { generateVizSpecs } from "./viz";
@@ -26,40 +27,21 @@ import { generateVizSpecs } from "./viz";
 // ---------------------------------------------------------------------------
 
 export function createAgentTools(sessionId: string) {
-  // Mutable state for context
-  let activeCohortId: string | null = null;
-  const resolvedEntities: Record<string, EntityRef> = {};
-  const failureTracker = new Map<string, never>();
-
-  // State is loaded by prepareStep on step 0 — no need for fire-and-forget init
+  // State is owned by prepareStep — tools get context via getRunContext
+  let getContext: () => RunContext = () => ({ sessionId });
 
   const tools = {
     State: createStateTool(sessionId),
     Read: readTool,
-    Search: createSearchTool(sessionId, () => activeCohortId),
-    Run: createRunTool(() => ({
-      activeCohortId: activeCohortId ?? undefined,
-      sessionId,
-      resolvedEntities,
-      failureTracker,
-    })),
+    Search: createSearchTool(sessionId, () => getContext().activeCohortId ?? null),
+    Run: createRunTool(() => getContext()),
     AskUser: askUserTool,
   };
 
-  // Hooks to update mutable state from Run results
-  const onRunResult = (result: RunResult) => {
-    if (result.state_delta.active_cohort_id) {
-      activeCohortId = result.state_delta.active_cohort_id;
-    }
-    if (result.state_delta.pinned_entities) {
-      for (const entity of result.state_delta.pinned_entities) {
-        resolvedEntities[`${entity.type}:${entity.id}`] = entity;
-        resolvedEntities[entity.label] = entity;
-      }
-    }
+  return {
+    tools,
+    setContextProvider: (fn: () => RunContext) => { getContext = fn; },
   };
-
-  return { tools, onRunResult };
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +59,12 @@ export function createFavorAgent(
       ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
       : baseModel;
 
-  const { tools, onRunResult } = createAgentTools(sessionId);
+  const { tools, setContextProvider } = createAgentTools(sessionId);
+  const { prepareStep, getRunContext } = createPrepareStep(
+    sessionId,
+    getSynthesisProviderOptions(synthesisModelId),
+  );
+  setContextProvider(getRunContext);
 
   // VizSpec collector — exposed via getVizSpecs for persistence
   const vizCollector: VizSpec[] = [];
@@ -87,24 +74,16 @@ export function createFavorAgent(
     instructions: buildSystemPrompt(),
     maxOutputTokens: 8000,
     stopWhen: stepCountIs(8),
-    prepareStep: createPrepareStep(
-      sessionId,
-      getSynthesisProviderOptions(synthesisModelId),
-    ),
+    prepareStep,
     tools,
     onStepFinish({ toolCalls, toolResults, usage, finishReason }) {
+      // Generate VizSpecs from Run results
       for (let i = 0; i < toolResults.length; i++) {
         const tc = toolCalls[i];
         const tr = toolResults[i];
         const output = tr.output as Record<string, unknown> | undefined;
         if (!output || output.error) continue;
 
-        // Update mutable state from Run results
-        if (tc.toolName === "Run" && output.state_delta) {
-          onRunResult(output as unknown as RunResult);
-        }
-
-        // Generate VizSpecs from Run results
         if (tc.toolName === "Run") {
           const cmd = (tc.input as Record<string, unknown>)?.command as string;
           const vizResults = generateVizSpecs(

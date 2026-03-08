@@ -44,14 +44,16 @@ SCOPES:
             params.set("limit", "10");
 
             const data = await agentFetch<{
-              results: Array<{
-                entity: { type: string; id: string; label: string; subtitle?: string };
-                match: { confidence: number; matchTier?: string };
-              }>;
+              data: {
+                results: Array<{
+                  entity: { type: string; id: string; label: string; subtitle?: string };
+                  match: { confidence: number; matchTier?: string };
+                }>;
+              };
             }>(`/graph/search?${params.toString()}`);
 
             const MAX_SUB = 150;
-            results.entities = (data.results ?? []).slice(0, 5).map((r) => ({
+            results.entities = (data.data?.results ?? []).slice(0, 5).map((r) => ({
               type: r.entity.type,
               id: r.entity.id,
               label: r.entity.label,

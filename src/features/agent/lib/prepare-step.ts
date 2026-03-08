@@ -7,8 +7,10 @@ import type { PrepareStepFunction } from "ai";
 import { isContextHeavy, isContextCritical } from "./context-budget";
 import { fetchSessionState, applyStateDelta, patchSessionState, type SessionState } from "./session-state";
 import { buildSystemPrompt } from "./prompts/system";
-import { getCachedAgentView, type AgentViewSchema } from "../tools/run/handlers/graph";
-import type { RunResult } from "../tools/run/types";
+import { schemaStore } from "../tools/run/handlers/graph-schema-store";
+import type { AgentViewSchema } from "../tools/run/handlers/graph-schema-store";
+import type { RunResult, EntityRef } from "../tools/run/types";
+import type { RunContext } from "../tools/run/index";
 
 // Matches SharedV3ProviderOptions from ai SDK
 type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue | undefined };
@@ -116,12 +118,23 @@ const MAX_STEPS = 8;
 export function createPrepareStep(
   sessionId: string,
   synthesisProviderOptions?: ProviderOptions,
-): PrepareStepFunction<any> {
+) {
   let currentState: SessionState | null = null;
   let stateVersion = 0;
   let systemPromptLength = 0;
   let stateDirty = false;
   let agentView: AgentViewSchema | null = null;
+
+  // Mutable agent state — single source of truth
+  const failureTracker = new Map<string, number>();
+  const resolvedEntities: Record<string, EntityRef> = {};
+
+  const getRunContext = (): RunContext => ({
+    activeCohortId: currentState?.active_cohort_id ?? undefined,
+    sessionId,
+    resolvedEntities,
+    failureTracker,
+  });
 
   const synthesize = (extraSystem?: string) => ({
     activeTools: [] as string[],
@@ -129,7 +142,8 @@ export function createPrepareStep(
     ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
   });
 
-  return async ({ stepNumber, steps }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prepareStep: PrepareStepFunction<any> = async ({ stepNumber, steps }) => {
     const stepsData = steps as StepData[];
 
     // --- 1. First step: load state + agent view, inject into system prompt ---
@@ -143,7 +157,7 @@ export function createPrepareStep(
       }
 
       // Fetch compact graph schema for prompt injection (non-fatal)
-      try { agentView = await getCachedAgentView(); } catch { /* ignore */ }
+      try { agentView = await schemaStore.getAgentView(); } catch { /* ignore */ }
 
       const sys = buildSystemPrompt(currentState ?? undefined, agentView);
       systemPromptLength = sys.length;
@@ -189,8 +203,18 @@ export function createPrepareStep(
     if (lastStep?.toolResults) {
       for (const r of lastStep.toolResults) {
         const output = r.output as RunResult | Record<string, unknown> | undefined;
-        if (output && "state_delta" in output && output.state_delta && currentState) {
+        if (output && "state_delta" in output && output.state_delta) {
           const delta = output.state_delta as RunResult["state_delta"];
+
+          // Update resolved entities cache
+          if (delta.pinned_entities) {
+            for (const entity of delta.pinned_entities) {
+              resolvedEntities[`${entity.type}:${entity.id}`] = entity;
+              resolvedEntities[entity.label] = entity;
+            }
+          }
+
+          if (!currentState) continue;
           currentState = applyStateDelta(currentState, delta);
           // Persist with single retry on version conflict
           try {
@@ -262,4 +286,6 @@ export function createPrepareStep(
       system: buildSystemPrompt(currentState ?? undefined, agentView) + hint,
     };
   };
+
+  return { prepareStep, getRunContext };
 }

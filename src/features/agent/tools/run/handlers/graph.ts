@@ -3,16 +3,17 @@
  * Shared exports (schema cache, error helpers, edge maps) + mode dispatch.
  */
 
-import { agentFetch, AgentToolError } from "../../../lib/api-client";
+import { AgentToolError } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import type { GraphSchemaResponse, SortStrategy, KeyFilter } from "../intent-aliases";
-import { mergeSchemaAliases } from "../intent-aliases";
 import {
   errorResult as makeErrorResult,
   catchToResult,
   TraceCollector,
   type RunResultEnvelope,
 } from "../run-result";
+import { schemaStore } from "./graph-schema-store";
+export type { AgentViewSchema, EdgePropertyMeta } from "./graph-schema-store";
 
 // Mode handlers — explore
 import { handleExploreNeighbors } from "./graph-explore-neighbors";
@@ -28,84 +29,19 @@ import { handleTraversePaths } from "./graph-traverse-paths";
 import { handleQuery, type QueryCmd } from "./graph-query";
 
 // ---------------------------------------------------------------------------
-// Shared: schema cache
+// Shared: schema cache delegates (backed by SchemaStore)
 // ---------------------------------------------------------------------------
-
-const schemaCache = new Map<string, { schema: GraphSchemaResponse; ts: number }>();
-const SCHEMA_CACHE_TTL = 10 * 60 * 1000; // 10 min
 
 export async function getCachedGraphSchema(portal?: string): Promise<GraphSchemaResponse> {
-  const key = portal ?? "default";
-  const cached = schemaCache.get(key);
-  if (cached && Date.now() - cached.ts < SCHEMA_CACHE_TTL) return cached.schema;
-
-  const resp = await agentFetch<{ data: GraphSchemaResponse }>("/graph/schema");
-  const schema = resp.data;
-  schemaCache.set(key, { schema, ts: Date.now() });
-
-  // Enrich runtime maps from schema metadata
-  mergeSchemaAliases(schema);
-  enrichHumanLabels(schema);
-
-  return schema;
+  return schemaStore.getFull(portal);
 }
 
-// ---------------------------------------------------------------------------
-// Shared: agent view cache (~500-token compact schema for system prompt)
-// ---------------------------------------------------------------------------
-
-export interface AgentViewSchema {
-  nodes: Record<string, unknown>;
-  edges: Record<string, unknown>;
+export async function getCachedAgentView() {
+  return schemaStore.getAgentView();
 }
 
-const agentViewCache: { data: AgentViewSchema | null; ts: number } = { data: null, ts: 0 };
-
-/** Fetch compact agent_view schema. Non-fatal — returns null on failure. */
-export async function getCachedAgentView(): Promise<AgentViewSchema | null> {
-  if (agentViewCache.data && Date.now() - agentViewCache.ts < SCHEMA_CACHE_TTL) {
-    return agentViewCache.data;
-  }
-  try {
-    const resp = await agentFetch<{ data: AgentViewSchema }>("/graph/schema?agent_view=true");
-    agentViewCache.data = resp.data;
-    agentViewCache.ts = Date.now();
-    return resp.data;
-  } catch {
-    return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared: edge type property metadata cache
-// ---------------------------------------------------------------------------
-
-export interface EdgePropertyMeta {
-  name: string;
-  tooltip?: boolean;
-  displayOrder?: number;
-  hidden?: boolean;
-}
-
-const edgePropCache = new Map<string, { fields: EdgePropertyMeta[]; ts: number }>();
-
-/** Get display-curated fields for an edge type. Cached per TTL. */
 export async function getEdgeDisplayFields(edgeType: string): Promise<string[]> {
-  const cached = edgePropCache.get(edgeType);
-  if (cached && Date.now() - cached.ts < SCHEMA_CACHE_TTL) {
-    return cached.fields.filter((f) => f.tooltip).map((f) => f.name);
-  }
-
-  try {
-    const resp = await agentFetch<{
-      data: { properties: EdgePropertyMeta[] };
-    }>(`/graph/schema/properties/${edgeType}`);
-    const fields = resp.data?.properties ?? [];
-    edgePropCache.set(edgeType, { fields, ts: Date.now() });
-    return fields.filter((f) => f.tooltip && !f.hidden).map((f) => f.name);
-  } catch {
-    return [];
-  }
+  return schemaStore.getEdgeDisplayFields(edgeType);
 }
 
 // ---------------------------------------------------------------------------
@@ -201,6 +137,9 @@ function enrichHumanLabels(schema: GraphSchemaResponse): void {
     }
   }
 }
+
+// Wire enrichHumanLabels into the store so it runs on every fresh schema fetch
+schemaStore.setEnrichFn(enrichHumanLabels);
 
 /**
  * Pick the best sort field for an edge type.
@@ -402,7 +341,8 @@ function routeExplore(cmd: ExploreCmd): string {
   }
   if (cmd.metric) return "aggregate";
   if (cmd.target) return "enrich";
-  if (cmd.seeds.length >= 2 && cmd.into?.length) return "compare";
+  if (cmd.seeds.length === 2 && cmd.into?.length) return "compare";
+  if (cmd.seeds.length >= 3 && cmd.into?.length) return "neighbors";
   if (cmd.into?.length) return "neighbors";
   if (cmd.sections || cmd.context_depth) return "context";
   if (cmd.top_k || (cmd.edge_types && !cmd.into?.length)) return "similar";

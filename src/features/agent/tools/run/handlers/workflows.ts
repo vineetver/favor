@@ -348,18 +348,18 @@ interface ResolvedVariant {
 async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]> {
   if (variants.length === 0) return [];
   try {
-    const result = await agentFetch<{
-      results: Array<{
+    const resp = await agentFetch<{
+      data: { results: Array<{
         query: string;
         status: string;
         entity?: { type: string; id: string; label: string };
-      }>;
+      }> };
     }>("/graph/resolve", {
       method: "POST",
       body: { queries: variants },
       timeout: 15_000,
     });
-    return (result.results ?? []).map((r) => ({
+    return (resp.data?.results ?? []).map((r) => ({
       query: r.query,
       id: r.status.toLowerCase() === "matched" ? r.entity?.id ?? null : null,
       label: r.entity?.label ?? null,

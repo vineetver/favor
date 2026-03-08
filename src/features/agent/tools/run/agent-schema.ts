@@ -28,6 +28,8 @@ const targetIntents = z.enum([
   "phenotypes", "tissues", "genes", "proteins", "compounds",
   "protein_domains", "ccres",
   "side_effects", "go_terms", "metabolites", "studies", "signals",
+  "drug_interactions", "adverse_effects", "drug_indications",
+  "drug_targets", "drug_metabolism", "drug_response",
 ]);
 
 const flatSeedRef = z.object({
@@ -55,6 +57,7 @@ const flatTraverseStep = z.object({
   sort: z.string().optional(),
   filters: z.record(z.unknown()).optional(),
   p_cutoff: z.number().optional(),
+  overlay: z.boolean().optional(),
 });
 
 const criterion = z.object({
@@ -348,41 +351,43 @@ function resolveInternalCommand(command: string, op?: string): string {
 // Tool factory
 // ---------------------------------------------------------------------------
 
-const DESCRIPTION = `Execute post-annotation analyses on cohort data and explore the biomedical knowledge graph.
+const DESCRIPTION = `Execute cohort analyses and explore the biomedical knowledge graph.
 
 COHORT (command:"cohort", op:...)
-  rows     — read rows with optional filters/sort/select
-  groupby  — aggregate by column
-  derive   — create filtered sub-cohort
-  rank     — multi-criteria prioritization
-  score    — weighted composite score
+  rows — read rows with filters/sort/select
+  groupby — aggregate by column
+  derive — create filtered sub-cohort
+  rank — multi-criteria prioritization
+  score — weighted composite score
 
 ANALYZE (command:"analyze", op:...)
-  correlation        — bivariate correlation (x, y)
-  regression         — linear/logistic/elastic_net (method, features, target)
-  feature_importance — variable importance ranking
-  multiple_testing   — p-value correction (BH/Bonferroni/Holm)
-  bootstrap_ci       — bootstrap confidence intervals
-  permutation_test   — permutation-based hypothesis test
-  pca                — principal component analysis
-  cluster            — k-means or hierarchical clustering
-  prs_association    — PRS to phenotype association (uses regression internally)
+  correlation — bivariate (x, y)
+  regression — linear/logistic/elastic_net
+  feature_importance — variable importance
+  multiple_testing — p-value correction
+  bootstrap_ci — confidence intervals
+  permutation_test — hypothesis test
+  pca — principal components
+  cluster — k-means/hierarchical
+  prs_association — PRS to phenotype
 
-GRAPH (command:"explore" or "traverse") — routing is automatic from params
-  explore: seeds + into→neighbors, seeds(2+)+into→compare, target→enrich, top_k→similar, sections→context, metric→aggregate
+GRAPH (command:"explore"|"traverse") — routing is automatic from params
+  explore: seeds+into→neighbors, 2+seeds+into→compare, target→enrich, top_k→similar, sections→context
   traverse: seed+steps→chain, from+to→paths, pattern/description→patterns
-  Don't set mode. Just set the params.
 
 WORKSPACE (command:"workspace", op:...)
-  select_cohort      — set active cohort
-  memo               — store analysis notes
-  export             — export cohort data
-  bookmark_entities  — pin entities for later reference
+  select_cohort | memo | export | bookmark_entities
 
-Column names are auto-corrected. Schema is auto-fetched before cohort commands.
-SEED FORMATS: {type,id}, {label}, {from_artifact,field}, {from_cohort,top}
-IMPORTANT: For fuzzy name seeds, use ONLY {label:"..."} without a type field.
-TARGET INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains`;
+SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id.
+INTENTS (into): diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds, protein_domains, ccres, go_terms, metabolites, studies, signals, drug_targets, drug_metabolism, drug_response, adverse_effects, drug_indications, drug_interactions
+
+DRUG INTENT GUIDE:
+  Pharmacogenes (CYP2D6, CYP2C19, CYP3A4...): drug_metabolism or drug_response. NOT drug_targets.
+  Drug targets (EGFR, BRAF, HER2...): drug_targets.
+  "drugs" cascades all three edges automatically.
+  Disease→drugs: use drug_indications intent.
+  Drug side effects: use adverse_effects intent.
+  Drug-drug interactions: use drug_interactions intent.`;
 
 export function createAgentRunTool(getContext: () => RunContext) {
   return tool({

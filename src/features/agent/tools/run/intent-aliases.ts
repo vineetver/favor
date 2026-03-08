@@ -5,35 +5,43 @@
 
 import type { TargetIntent } from "./types";
 
-export const INTENT_TO_TYPE: Record<TargetIntent, string> = {
-  diseases: "Disease",
-  drugs: "Drug",
-  pathways: "Pathway",
-  variants: "Variant",
-  phenotypes: "Phenotype",
-  tissues: "Tissue",
-  genes: "Gene",
-  proteins: "Gene", // no Protein node — resolve to Gene (has protein/domain info)
-  compounds: "Drug", // no Compound node — resolve to Drug
-  protein_domains: "ProteinDomain",
-  ccres: "cCRE",
-  side_effects: "SideEffect", // deprecated — prefer adverse_effects
-  go_terms: "GOTerm",
-  metabolites: "Metabolite",
-  studies: "Study",
-  signals: "Signal",
-  drug_interactions: "Drug", // DDI — resolves to Drug node type
-  adverse_effects: "SideEffect", // canonical intent for drug side effects
-  drug_indications: "Disease", // drugs indicated for which diseases
-};
+// ---------------------------------------------------------------------------
+// Unified intent configuration
+// ---------------------------------------------------------------------------
 
-/**
- * Intents that silently resolve to a different node type.
- * Returns a warning string when the user-facing type name differs from the resolved node type.
- */
-const INTENT_REMAP_WARNINGS: Partial<Record<TargetIntent, string>> = {
-  proteins: "No Protein nodes in the graph — querying Gene targets (which include protein/domain info) instead.",
-  compounds: "No Compound nodes in the graph — querying Drug targets instead.",
+interface IntentConfig {
+  nodeType: string;
+  /** When set, findEdgesConnecting restricts candidates to these edges for this intent */
+  preferredEdges?: string[];
+  /** Remap warning shown to agent */
+  remapWarning?: string;
+  /** Canonical intent this maps to (e.g. side_effects → adverse_effects) */
+  canonicalIntent?: TargetIntent;
+}
+
+export const INTENT_CONFIG: Record<TargetIntent, IntentConfig> = {
+  diseases:          { nodeType: "Disease" },
+  drugs:             { nodeType: "Drug" },
+  pathways:          { nodeType: "Pathway" },
+  variants:          { nodeType: "Variant" },
+  phenotypes:        { nodeType: "Phenotype" },
+  tissues:           { nodeType: "Tissue" },
+  genes:             { nodeType: "Gene" },
+  proteins:          { nodeType: "Gene", remapWarning: "No Protein nodes — querying Gene targets instead." },
+  compounds:         { nodeType: "Drug", remapWarning: "No Compound nodes — querying Drug targets instead." },
+  protein_domains:   { nodeType: "ProteinDomain" },
+  ccres:             { nodeType: "cCRE" },
+  side_effects:      { nodeType: "SideEffect", canonicalIntent: "adverse_effects" },
+  go_terms:          { nodeType: "GOTerm" },
+  metabolites:       { nodeType: "Metabolite" },
+  studies:           { nodeType: "Study" },
+  signals:           { nodeType: "Signal" },
+  drug_interactions: { nodeType: "Drug", preferredEdges: ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"] },
+  adverse_effects:   { nodeType: "SideEffect", preferredEdges: ["DRUG_HAS_ADVERSE_EFFECT"] },
+  drug_indications:  { nodeType: "Disease", preferredEdges: ["DRUG_INDICATED_FOR_DISEASE"] },
+  drug_targets:      { nodeType: "Drug", preferredEdges: ["DRUG_ACTS_ON_GENE"] },
+  drug_metabolism:   { nodeType: "Drug", preferredEdges: ["DRUG_DISPOSITION_BY_GENE"] },
+  drug_response:     { nodeType: "Drug", preferredEdges: ["GENE_AFFECTS_DRUG_RESPONSE"] },
 };
 
 /**
@@ -41,12 +49,12 @@ const INTENT_REMAP_WARNINGS: Partial<Record<TargetIntent, string>> = {
  * Returns [canonicalIntent, repairNote | null].
  */
 export function canonicalizeIntent(intent: TargetIntent): [TargetIntent, string | null] {
-  if (intent === "side_effects") {
-    return ["adverse_effects", "Remapped side_effects → adverse_effects (canonical intent for drug side effects)"];
+  const config = INTENT_CONFIG[intent];
+  if (config?.canonicalIntent) {
+    return [config.canonicalIntent, `Remapped ${intent} → ${config.canonicalIntent} (canonical intent)`];
   }
-  const remapWarning = INTENT_REMAP_WARNINGS[intent];
-  if (remapWarning) {
-    return [intent, remapWarning];
+  if (config?.remapWarning) {
+    return [intent, config.remapWarning];
   }
   return [intent, null];
 }
@@ -105,23 +113,44 @@ export interface GraphSchemaResponse {
  * "FromType→ToType" pair. First match wins.
  */
 const EDGE_PREFERENCE: Record<string, string[]> = {
-  // Intent-specific overrides (checked first)
-  "intent:drug_interactions": ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
-  "intent:drug_indications": ["DRUG_INDICATED_FOR_DISEASE"],
-  "intent:adverse_effects": ["DRUG_HAS_ADVERSE_EFFECT"],
-
-  // Type-pair preferences (checked when no intent override)
+  // Type-pair preferences — every multi-edge pair must have a preference.
+  // (Intent-specific edge preferences are in INTENT_CONFIG.preferredEdges.)
+  "Gene→Disease": ["GENE_ASSOCIATED_WITH_DISEASE", "GENE_ALTERED_IN_DISEASE"],
+  "Disease→Gene": ["GENE_ASSOCIATED_WITH_DISEASE", "GENE_ALTERED_IN_DISEASE"],
+  "Variant→Gene": ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"],
+  "Gene→Variant": ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"],
+  "Gene→Drug": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
+  "Drug→Gene": ["DRUG_ACTS_ON_GENE", "DRUG_DISPOSITION_BY_GENE", "GENE_AFFECTS_DRUG_RESPONSE"],
+  "Gene→Gene": ["GENE_INTERACTS_WITH_GENE", "GENE_PARALOG_OF_GENE"],
+  "Drug→SideEffect": ["DRUG_HAS_ADVERSE_EFFECT", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
+  "SideEffect→Drug": ["DRUG_HAS_ADVERSE_EFFECT", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
+  "Drug→Drug": ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
+  "Drug→Disease": ["DRUG_INDICATED_FOR_DISEASE"],
+  "Disease→Drug": ["DRUG_INDICATED_FOR_DISEASE"],
   "cCRE→Gene": ["CCRE_REGULATES_GENE"],
   "Gene→cCRE": ["CCRE_REGULATES_GENE"],
   "Variant→cCRE": ["VARIANT_OVERLAPS_CCRE"],
   "cCRE→Variant": ["VARIANT_OVERLAPS_CCRE"],
-  "Gene→Drug": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
-  "Drug→Gene": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
-  "Drug→SideEffect": ["DRUG_HAS_ADVERSE_EFFECT"],
-  "SideEffect→Drug": ["DRUG_HAS_ADVERSE_EFFECT"],
-  "Drug→Drug": ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
-  "Drug→Disease": ["DRUG_INDICATED_FOR_DISEASE"],
-  "Disease→Drug": ["DRUG_INDICATED_FOR_DISEASE"],
+  // Variant→Drug (PGx): direct edge exists, prefer it for Variant seeds
+  "Variant→Drug": ["VARIANT_ASSOCIATED_WITH_DRUG"],
+  "Drug→Variant": ["VARIANT_ASSOCIATED_WITH_DRUG"],
+  // Variant→Disease/Phenotype GWAS trait associations
+  "Variant→Disease": ["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"],
+  "Disease→Variant": ["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"],
+  "Variant→Phenotype": ["VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype"],
+  "Phenotype→Variant": ["VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype"],
+  // Variant→SideEffect PGx link
+  "Variant→SideEffect": ["VARIANT_LINKED_TO_SIDE_EFFECT"],
+  "SideEffect→Variant": ["VARIANT_LINKED_TO_SIDE_EFFECT"],
+  // Gene→Entity GWAS trait associations (biomarkers, measurements)
+  "Gene→Entity": ["GENE_ASSOCIATED_WITH_ENTITY"],
+  "Entity→Gene": ["GENE_ASSOCIATED_WITH_ENTITY"],
+  // Variant→Entity GWAS trait associations
+  "Variant→Entity": ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
+  "Entity→Variant": ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
+  // Pathway→Metabolite containment
+  "Pathway→Metabolite": ["PATHWAY_CONTAINS_METABOLITE"],
+  "Metabolite→Pathway": ["PATHWAY_CONTAINS_METABOLITE"],
 };
 
 /**
@@ -150,8 +179,7 @@ export function findEdgesConnecting(
     }));
 
   // Look up curated preference: intent-specific first, then type-pair
-  const prefKey = intent ? `intent:${intent}` : undefined;
-  const intentPref = prefKey ? EDGE_PREFERENCE[prefKey] : undefined;
+  const intentPref = intent ? INTENT_CONFIG[intent as TargetIntent]?.preferredEdges : undefined;
   const typePairPref =
     EDGE_PREFERENCE[`${fromType}→${toType}`] ||
     EDGE_PREFERENCE[`${toType}→${fromType}`];
@@ -215,21 +243,21 @@ export function inferEdgeType(
 }
 
 // ---------------------------------------------------------------------------
-// Runtime intent map — merges static INTENT_TO_TYPE with schema searchAliases
+// Runtime intent map — merges static INTENT_CONFIG with schema searchAliases
 // ---------------------------------------------------------------------------
 
 const runtimeIntentMap = new Map<string, string>(
-  Object.entries(INTENT_TO_TYPE),
+  Object.entries(INTENT_CONFIG).map(([k, v]) => [k, v.nodeType]),
 );
 
 /** Resolve an intent string to a node type using the runtime map (schema-enriched). */
 export function resolveIntentType(intent: string): string | undefined {
-  return runtimeIntentMap.get(intent) ?? INTENT_TO_TYPE[intent as TargetIntent];
+  return runtimeIntentMap.get(intent) ?? INTENT_CONFIG[intent as TargetIntent]?.nodeType;
 }
 
 /**
  * Walk nodeTypes[].searchAliases and register them in the runtime intent map.
- * Static INTENT_TO_TYPE entries are never overwritten — schema aliases only fill gaps.
+ * Static INTENT_CONFIG entries are never overwritten — schema aliases only fill gaps.
  */
 export function mergeSchemaAliases(schema: GraphSchemaResponse): void {
   for (const nt of schema.nodeTypes) {

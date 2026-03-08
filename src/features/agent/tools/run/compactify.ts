@@ -360,6 +360,7 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
           if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
           if (typeof ent.pValue === "number") out.pValue = ent.pValue;
           if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
+          if (typeof ent.supportCount === "number") out.supportCount = ent.supportCount;
           if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
             out.edgeProperties = ent.edgeProperties;
           }

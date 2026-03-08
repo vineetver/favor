@@ -222,7 +222,7 @@ function extractEntities(
     nextStep?.command === "explore" &&
     ((nextStep.args as Record<string, unknown>).mode === "enrich" ||
       JSON.stringify(nextStep.args).includes("enrich"));
-  const cap = isEnrichment ? 50 : 10;
+  const cap = isEnrichment ? 200 : 10;
 
   const totalAvailable = raw.length;
   const capped = raw.length > cap;
@@ -438,7 +438,8 @@ export async function handlePipeline(
         }
       }
 
-      // Build and execute
+      // Build and execute — reset probe budget so each step gets its own
+      pipeCtx.probesThisTurn = 0;
       const flatCmd = buildStepCommand(step, seedEntities);
       const result = await execFn(flatCmd, pipeCtx);
 

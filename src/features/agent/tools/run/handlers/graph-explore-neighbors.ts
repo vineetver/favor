@@ -14,6 +14,8 @@ import {
   findEdgesConnecting,
   getSummaryFields,
   canonicalizeIntent,
+  type EdgeTypeInfo,
+  type GraphSchemaResponse,
 } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
 import {
@@ -22,6 +24,7 @@ import {
   catchError,
   trimEntitySubtitles,
   edgeTypeAnnotation,
+  humanEdgeLabel,
   pickSortField,
   applyDefaultKeyFilters,
   schemaGuidedRecovery,
@@ -42,6 +45,149 @@ interface ScoredEntity {
 
 /** Max intents to process per call to bound fan-out */
 const MAX_INTENTS_PER_CALL = 5;
+
+/** Max edge candidates to try per intent before giving up */
+const MAX_CASCADE = 3;
+
+interface AvailableRelationship {
+  edgeType: string;
+  label: string;
+  used: boolean;
+}
+
+/** Fetch neighbors for a specific edge type. Handles single-seed (ranked-neighbors)
+ *  and multi-seed (graph/query). Returns raw count + entities — caller adds annotations. */
+async function fetchForEdge(
+  seeds: EntityRef[],
+  edge: EdgeTypeInfo,
+  targetType: string,
+  limit: number,
+  opts: {
+    isDiseaseQuery: boolean;
+    schema: GraphSchemaResponse;
+    filters?: Record<string, unknown>;
+    tc: TraceCollector;
+  },
+): Promise<{ count: number; top: ScoredEntity[]; scoreField?: string }> {
+  const { isDiseaseQuery, schema, filters, tc } = opts;
+
+  if (seeds.length === 1) {
+    tc.add({ step: `edge_${edge.edgeType}`, kind: "call", message: `ranked-neighbors: ${edge.edgeType}` });
+
+    const data = await agentFetch<{
+      data: {
+        neighbors: Array<{
+          entity: { type: string; id: string; label: string; subtitle?: string };
+          rank: number;
+          score?: number;
+        }>;
+      };
+      meta?: { resolved?: { scoreField?: string; direction?: string }; warnings?: unknown[] };
+    }>("/graph/ranked-neighbors", {
+      method: "POST",
+      body: {
+        seed: { type: seeds[0].type, id: seeds[0].id },
+        edgeType: edge.edgeType,
+        limit: Math.min(limit, 100),
+        ...(isDiseaseQuery ? { expandDescendants: true, expandLimit: 500 } : {}),
+      },
+    });
+
+    tc.mergeApiWarnings(data.meta?.warnings);
+    const neighbors = (data.data?.neighbors ?? []).slice(0, limit);
+    trimEntitySubtitles(neighbors);
+
+    return {
+      count: neighbors.length,
+      top: neighbors.map((n) => ({
+        type: n.entity.type,
+        id: n.entity.id,
+        label: n.entity.label,
+        subtitle: n.entity.subtitle,
+        rank: n.rank,
+        score: n.score,
+      })),
+      scoreField: data.meta?.resolved?.scoreField ?? edge.defaultScoreField ?? undefined,
+    };
+  }
+
+  // Multi-seed → graph/query
+  tc.add({ step: `edge_${edge.edgeType}`, kind: "call", message: `graph/query multi-seed: ${edge.edgeType}` });
+
+  const nodeFields = getSummaryFields(schema, targetType).slice(0, 5);
+  const edgeFields = edge.defaultScoreField ? [edge.defaultScoreField] : [];
+  const sortField = pickSortField(schema, edge.edgeType);
+  const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
+    schema, edge.edgeType, filters,
+  );
+  if (appliedDefaults.length > 0) {
+    tc.add({ step: `edge_${edge.edgeType}`, kind: "decision", message: `Default filters: ${appliedDefaults.join(", ")}` });
+  }
+
+  const queryResult = await agentFetch<{
+    data: {
+      nodes: Record<string, unknown>;
+      edges: Array<{ from: string; to: string; fields?: Record<string, unknown> }>;
+    };
+    meta: { nodeCount: number; edgeCount: number; warnings?: unknown[] };
+  }>("/graph/query", {
+    method: "POST",
+    body: {
+      seeds: seeds.map((s) => ({ type: s.type, id: s.id })),
+      steps: [{
+        edgeTypes: [edge.edgeType],
+        limit: Math.min(limit, 100),
+        sort: sortField,
+        ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
+      }],
+      select: {
+        nodeFields: nodeFields.slice(0, 20),
+        edgeFields: edgeFields.slice(0, 20),
+      },
+      limits: { maxNodes: 500, maxEdges: 2000 },
+      mode: "compact",
+    },
+  });
+
+  tc.mergeApiWarnings(queryResult.meta?.warnings);
+
+  const scoreMap = new Map<string, number>();
+  if (edge.defaultScoreField && Array.isArray(queryResult.data?.edges)) {
+    for (const e of queryResult.data.edges) {
+      const score = e.fields?.[edge.defaultScoreField];
+      if (typeof score === "number") {
+        const key = e.to ?? e.from;
+        scoreMap.set(key, Math.max(scoreMap.get(key) ?? 0, score));
+      }
+    }
+  }
+
+  const nodeMap = queryResult.data?.nodes ?? {};
+  const neighborEntities: ScoredEntity[] = [];
+  for (const [key, value] of Object.entries(nodeMap)) {
+    const node = value as { entity?: { type: string; id: string; label: string } };
+    const entity = node.entity;
+    if (!entity) continue;
+    if (entity.type === targetType) {
+      neighborEntities.push({
+        type: entity.type,
+        id: entity.id,
+        label: entity.label ?? key,
+        score: scoreMap.get(key),
+      });
+    }
+  }
+
+  if (scoreMap.size > 0) {
+    neighborEntities.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  }
+
+  return {
+    count: neighborEntities.length,
+    top: neighborEntities.slice(0, limit),
+    scoreField: edge.defaultScoreField ?? undefined,
+  };
+}
 
 export async function handleExploreNeighbors(
   cmd: ExploreCmd,
@@ -80,170 +226,65 @@ export async function handleExploreNeighbors(
       edgeType: string;
       scoreField?: string;
       description?: string;
+      availableRelationships?: AvailableRelationship[];
     }> = {};
     const allPinnedEntities: EntityRef[] = [...resolvedSeeds];
     let apiCalls = 0;
 
     for (const rawIntent of intents) {
-      // Canonicalize deprecated intents (e.g. side_effects → adverse_effects)
       const [intent, repairNote] = canonicalizeIntent(rawIntent);
-      if (repairNote) {
-        tc.warn("intent_repair", repairNote);
-      }
+      if (repairNote) tc.warn("intent_repair", repairNote);
 
       const targetType = resolveIntentType(intent);
       if (!targetType) continue;
 
-      const edgeTypes = findEdgesConnecting(schema, seedType, targetType, intent);
-      if (edgeTypes.length === 0) {
+      const edgeCandidates = findEdgesConnecting(schema, seedType, targetType, intent);
+      if (edgeCandidates.length === 0) {
         tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType}` });
         continue;
       }
 
-      const bestEdge = edgeTypes[0];
-      const annotation = await edgeTypeAnnotation(bestEdge.edgeType);
+      // Edge cascade: try candidates in preference order, stop at first with results.
+      // General pattern — works for any seed→target pair with multiple edge types.
+      let hit: { count: number; top: ScoredEntity[]; edgeType: string; scoreField?: string; description?: string } | null = null;
 
-      try {
-        if (resolvedSeeds.length === 1) {
-          tc.add({ step: `intent_${intent}`, kind: "call", message: `ranked-neighbors: ${bestEdge.edgeType}` });
+      for (const edge of edgeCandidates.slice(0, MAX_CASCADE)) {
+        try {
+          const result = await fetchForEdge(resolvedSeeds, edge, targetType, cmd.limit ?? 20, {
+            isDiseaseQuery,
+            schema,
+            filters: cmd.filters as Record<string, unknown> | undefined,
+            tc,
+          });
           apiCalls++;
 
-          const data = await agentFetch<{
-            data: {
-              textSummary?: string;
-              seed?: unknown;
-              expandedSeeds?: unknown[];
-              aggregation?: string;
-              neighbors: Array<{
-                entity: { type: string; id: string; label: string; subtitle?: string };
-                rank: number;
-                score?: number;
-              }>;
-            };
-            meta?: { requestId?: string; resolved?: { scoreField?: string; direction?: string }; warnings?: unknown[] };
-          }>("/graph/ranked-neighbors", {
-            method: "POST",
-            body: {
-              seed: { type: resolvedSeeds[0].type, id: resolvedSeeds[0].id },
-              edgeType: bestEdge.edgeType,
-              limit: Math.min(cmd.limit ?? 20, 100),
-              // M9: expandDescendants for disease queries
-              ...(isDiseaseQuery ? { expandDescendants: true, expandLimit: 500 } : {}),
-            },
-          });
-
-          tc.mergeApiWarnings(data.meta?.warnings);
-          const neighbors = (data.data?.neighbors ?? []).slice(0, cmd.limit ?? 20);
-          trimEntitySubtitles(neighbors);
-          const scoreField = data.meta?.resolved?.scoreField ?? bestEdge.defaultScoreField;
-
-          branchResults[intent] = {
-            count: neighbors.length,
-            top: neighbors.map((n) => ({
-              type: n.entity.type,
-              id: n.entity.id,
-              label: n.entity.label,
-              subtitle: n.entity.subtitle,
-              rank: n.rank,
-              score: n.score,
-            })),
-            edgeType: bestEdge.edgeType,
-            scoreField: scoreField ?? undefined,
-            description: annotation ?? undefined,
-          };
-        } else {
-          tc.add({ step: `intent_${intent}`, kind: "call", message: `graph/query multi-seed: ${bestEdge.edgeType}` });
-          apiCalls++;
-
-          const nodeFields = getSummaryFields(schema, targetType).slice(0, 5);
-          const edgeFields = bestEdge.defaultScoreField ? [bestEdge.defaultScoreField] : [];
-          const sortField = pickSortField(schema, bestEdge.edgeType);
-          const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
-            schema, bestEdge.edgeType, cmd.filters as Record<string, unknown> | undefined,
-          );
-          if (appliedDefaults.length > 0) {
-            tc.add({ step: `intent_${intent}`, kind: "decision", message: `Default filters: ${appliedDefaults.join(", ")}` });
+          if (result.count > 0) {
+            const annotation = await edgeTypeAnnotation(edge.edgeType);
+            hit = { ...result, edgeType: edge.edgeType, description: annotation ?? undefined };
+            break;
           }
 
-          const queryResult = await agentFetch<{
-            data: {
-              textSummary?: string;
-              nodes: Record<string, unknown>;
-              edges: Array<{
-                from: string;
-                to: string;
-                fields?: Record<string, unknown>;
-              }>;
-            };
-            meta: { nodeCount: number; edgeCount: number; warnings?: unknown[] };
-          }>("/graph/query", {
-            method: "POST",
-            body: {
-              seeds: resolvedSeeds.map((s) => ({ type: s.type, id: s.id })),
-              steps: [{
-                edgeTypes: [bestEdge.edgeType],
-                limit: Math.min(cmd.limit ?? 20, 100),
-                sort: sortField,
-                ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
-              }],
-              select: {
-                nodeFields: nodeFields.slice(0, 20),
-                edgeFields: edgeFields.slice(0, 20),
-              },
-              limits: { maxNodes: 500, maxEdges: 2000 },
-              mode: "compact",
-            },
-          });
-
-          tc.mergeApiWarnings(queryResult.meta?.warnings);
-
-          // Build score map from edges
-          const scoreMap = new Map<string, number>();
-          if (bestEdge.defaultScoreField && Array.isArray(queryResult.data?.edges)) {
-            for (const edge of queryResult.data.edges) {
-              const score = edge.fields?.[bestEdge.defaultScoreField];
-              if (typeof score === "number") {
-                const key = edge.to ?? edge.from;
-                scoreMap.set(key, Math.max(scoreMap.get(key) ?? 0, score));
-              }
-            }
+          // Log cascade only when there are more candidates to try
+          if (edgeCandidates.indexOf(edge) < edgeCandidates.length - 1) {
+            tc.add({ step: `intent_${intent}`, kind: "fallback", message: `0 via ${humanEdgeLabel(edge.edgeType)}, trying next` });
           }
-
-          const nodeMap = queryResult.data?.nodes ?? {};
-          const neighborEntities: ScoredEntity[] = [];
-          for (const [key, value] of Object.entries(nodeMap)) {
-            const node = value as { entity?: { type: string; id: string; label: string } };
-            const entity = node.entity;
-            if (!entity) continue;
-            if (entity.type === targetType) {
-              neighborEntities.push({
-                type: entity.type,
-                id: entity.id,
-                label: entity.label ?? key,
-                score: scoreMap.get(key),
-              });
-            }
-          }
-
-          // Sort by score descending if available
-          if (scoreMap.size > 0) {
-            neighborEntities.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-          }
-
-          branchResults[intent] = {
-            count: neighborEntities.length,
-            top: neighborEntities.slice(0, cmd.limit ?? 20),
-            edgeType: bestEdge.edgeType,
-            scoreField: bestEdge.defaultScoreField ?? undefined,
-            description: annotation ?? undefined,
-          };
+        } catch (err) {
+          const recovered = schemaGuidedRecovery(err, schema, tc);
+          if (recovered) return recovered;
+          const msg = err instanceof Error ? err.message : String(err);
+          tc.warn("edge_failed", `${intent}/${edge.edgeType}: ${msg}`);
         }
-      } catch (err) {
-        const recovered = schemaGuidedRecovery(err, schema, tc);
-        if (recovered) return recovered;
-        const msg = err instanceof Error ? err.message : String(err);
-        tc.warn("intent_failed", `${intent}: ${msg}`);
-        branchResults[intent] = { count: 0, top: [], edgeType: bestEdge.edgeType };
+      }
+
+      branchResults[intent] = hit ?? { count: 0, top: [], edgeType: edgeCandidates[0].edgeType };
+
+      // Annotate available relationships — zero extra API calls, just reads from candidates
+      if (edgeCandidates.length > 1) {
+        branchResults[intent].availableRelationships = edgeCandidates.map((e) => ({
+          edgeType: e.edgeType,
+          label: humanEdgeLabel(e.edgeType),
+          used: e.edgeType === branchResults[intent].edgeType,
+        }));
       }
     }
 
@@ -379,7 +420,9 @@ export async function handleExploreNeighbors(
       .filter(([, v]) => v.count > 0)
       .map(([intent, v]) => {
         const scoreInfo = v.scoreField ? ` (ranked by ${v.scoreField})` : "";
-        return `${v.count} ${intent}${scoreInfo}`;
+        const unused = v.availableRelationships?.filter((r) => !r.used);
+        const alsoInfo = unused?.length ? ` [also: ${unused.map((r) => r.label).join(", ")}]` : "";
+        return `${v.count} ${intent}${scoreInfo}${alsoInfo}`;
       });
     const seedNames = resolvedSeeds.map((s) => s.label).join(", ");
     const summary = parts.length > 0

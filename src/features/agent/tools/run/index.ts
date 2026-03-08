@@ -28,7 +28,7 @@ export interface RunContext {
   resolvedEntities?: Record<string, EntityRef>;
   schemaCache?: CohortSchemaCache;
   /** Per-session failure tracker — prevents cross-session contamination */
-  failureTracker?: Map<string, FailureTrack>;
+  failureTracker?: Map<string, number>;
   /** Number of empty-result probes already run this turn */
   probesThisTurn?: number;
 }
@@ -303,79 +303,37 @@ async function postToolUse(
 // Anti-spam guard: graduated escalation on repeated failures
 // ---------------------------------------------------------------------------
 
-interface FailureTrack {
-  count: number;
-  lastAt: number;
-  lastCode?: string;
-}
-
-const FAILURE_WINDOW_MS = 60_000;
-
-/** Get or create the session-scoped failure tracker */
-function getFailureTracker(ctx: RunContext): Map<string, FailureTrack> {
-  if (!ctx.failureTracker) ctx.failureTracker = new Map();
-  return ctx.failureTracker;
-}
-
-function failureKey(cmd: RunCommand): string {
-  const cmdRecord = cmd as unknown as Record<string, unknown>;
-  const parts: string[] = [cmd.command];
-  if (typeof cmdRecord.cohort_id === "string") parts.push(cmdRecord.cohort_id);
-  const cols = extractColumnRefs(cmdRecord).map((c) => c.name).sort();
-  if (cols.length) parts.push(`cols:${cols.join(",")}`);
-  const filters = Array.isArray(cmdRecord.filters)
-    ? (cmdRecord.filters as Array<{ type?: string }>).map((f) => f.type).sort()
-    : [];
-  if (filters.length) parts.push(`flt:${filters.join(",")}`);
-  return parts.join("|");
-}
-
 function escalateOnFailure(
   cmd: RunCommand,
   result: RunResult,
   ctx: RunContext,
 ): RunResult {
-  const tracker = getFailureTracker(ctx);
+  if (result.status !== "error") return result;
 
-  if (result.status !== "error") {
-    tracker.delete(failureKey(cmd));
-    return result;
-  }
+  const tracker = (ctx.failureTracker ??= new Map());
+  const key = cmd.command;
+  const prev = tracker.get(key) ?? 0;
+  const count = prev + 1;
+  tracker.set(key, count);
 
-  const key = failureKey(cmd);
-  const prev = tracker.get(key);
-  const now = Date.now();
+  const cohortId = getCohortIdFromCmd(
+    cmd as unknown as Record<string, unknown>,
+    ctx.activeCohortId,
+  );
 
-  if (prev && now - prev.lastAt > FAILURE_WINDOW_MS) {
-    tracker.delete(key);
-  }
-
-  const track = tracker.get(key) ?? { count: 0, lastAt: 0 };
-  track.count++;
-  track.lastAt = now;
-  track.lastCode = result.error?.code;
-  tracker.set(key, track);
-
-  const cohortId = getCohortIdFromCmd(cmd as unknown as Record<string, unknown>, ctx.activeCohortId);
-
-  if (track.count === 2) {
+  if (count === 2) {
     result.next_actions = [
       ...(result.next_actions ?? []),
-      { tool: "Read", args: { path: `cohort/${cohortId}/schema` }, reason: "Check available columns and types", confidence: 0.8 },
-      { tool: "Run", args: { command: "qc_summary" }, reason: "Try qc_summary for an overview first", confidence: 0.6 },
+      { tool: "Read", args: { path: `cohort/${cohortId}/schema` }, reason: "Check available columns", confidence: 0.8 },
     ];
-  } else if (track.count >= 3) {
+  } else if (count >= 3) {
     result.next_actions = [{
       tool: "AskUser",
-      args: {
-        question: `This command has failed ${track.count} times (${track.lastCode}). How should I proceed?`,
-        options: ["Show me the schema", "Try different columns", "Skip this step"],
-      },
-      reason: "Repeated failures — need user guidance",
+      args: { question: `Command "${cmd.command}" failed ${count}× — how to proceed?` },
+      reason: "Repeated failures",
       confidence: 1.0,
     }];
   }
-
   return result;
 }
 

@@ -271,7 +271,7 @@ PATHS:
   entity/{type}/{id}            — Entity profile with edge counts
   entity/{type}/{id}/context    — LLM-ready entity context
   variant/{query}               — Variant lookup (rsID, VCF, or vid)
-  graph/schema                  — Full graph schema
+  graph/schema                  — Graph schema (compact agent view)
   graph/schema/{type}           — Properties for a specific node/edge type`,
   inputSchema: z.object({
     path: z.string().describe("Resource path (e.g., 'cohort/abc-123/schema', 'entity/Gene/ENSG00000012048')"),
@@ -541,8 +541,8 @@ async function readVariant(query: string) {
 }
 
 async function readGraphSchema() {
-  const resp = await agentFetch<{ data: Record<string, unknown> }>("/graph/schema");
-  return resp.data;
+  const resp = await agentFetch<Record<string, unknown>>("/graph/schema?agent_view=true");
+  return resp;
 }
 
 async function readGraphSchemaType(type: string) {

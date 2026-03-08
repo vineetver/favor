@@ -55,6 +55,7 @@ const targetIntentSchema = z.enum([
   "protein_domains", "ccres",
   "side_effects", "go_terms", "metabolites", "studies", "signals",
   "drug_interactions", "adverse_effects", "drug_indications",
+  "drug_targets", "drug_metabolism", "drug_response",
 ]);
 
 export type TargetIntent = z.infer<typeof targetIntentSchema>;
@@ -65,6 +66,7 @@ const traverseStepSchema = z.union([
     top: z.number().optional(),
     sort: z.string().optional(),
     filters: z.record(z.unknown()).optional(),
+    overlay: z.boolean().optional(),
   }),
   z.object({
     enrich: targetIntentSchema,
