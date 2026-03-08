@@ -12,7 +12,6 @@ import type { TargetIntent } from "../types";
 import {
   resolveIntentType,
   findEdgesConnecting,
-  getSummaryFields,
   canonicalizeIntent,
   type EdgeTypeInfo,
   type GraphSchemaResponse,
@@ -114,8 +113,6 @@ async function fetchForEdge(
   // Multi-seed → graph/query
   tc.add({ step: `edge_${edge.edgeType}`, kind: "call", message: `graph/query multi-seed: ${edge.edgeType}` });
 
-  const nodeFields = getSummaryFields(schema, targetType).slice(0, 5);
-  const edgeFields = edge.defaultScoreField ? [edge.defaultScoreField] : [];
   const sortField = pickSortField(schema, edge.edgeType);
   const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
     schema, edge.edgeType, filters,
@@ -140,10 +137,7 @@ async function fetchForEdge(
         sort: sortField,
         ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
       }],
-      select: {
-        nodeFields: nodeFields.slice(0, 20),
-        edgeFields: edgeFields.slice(0, 20),
-      },
+      select: { includeEvidence: true },
       limits: { maxNodes: 500, maxEdges: 2000 },
       mode: "compact",
     },
@@ -335,11 +329,6 @@ export async function handleExploreNeighbors(
           tc.add({ step: "proteinDomains", kind: "call", message: "Fetching protein domain positions" });
           apiCalls++;
 
-          const edgeFields = [
-            "start_residue", "end_residue", "domain_name", "domain_type",
-            "mean_plddt", "alphafold_id", "protein_length", "interpro_id",
-            "pfam_id", "description",
-          ];
           const domainQuery = await agentFetch<{
             data: {
               nodes: Record<string, unknown>;
@@ -357,11 +346,8 @@ export async function handleExploreNeighbors(
                 edgeTypes: ["GENE_HAS_PROTEIN_DOMAIN"],
                 limit: 100,
               }],
-              select: {
-                nodeFields: getSummaryFields(schema, "ProteinDomain").slice(0, 20),
-                edgeFields: edgeFields.slice(0, 20),
-              },
               limits: { maxNodes: 200, maxEdges: 200 },
+              mode: "compact",
             },
           });
 

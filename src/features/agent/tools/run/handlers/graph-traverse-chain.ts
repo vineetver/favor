@@ -14,7 +14,6 @@ import {
   resolveIntentType,
   findEdgesConnecting,
   canonicalizeIntent,
-  getSummaryFields,
   type GraphSchemaResponse,
   type EdgeTypeInfo,
 } from "../intent-aliases";
@@ -27,7 +26,6 @@ import {
   edgeTypeAnnotation,
   humanEdgeLabel,
   humanScoreLabel,
-  getEdgeDisplayFields,
   pickSortField,
   applyDefaultKeyFilters,
   schemaGuidedRecovery,
@@ -35,21 +33,6 @@ import {
 import { okResult, partialResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
-
-/** Biologically important edge fields that must always be requested, independent of backend tooltip metadata. */
-const CORE_EDGE_FIELDS: Record<string, string[]> = {
-  CCRE_REGULATES_GENE: ["evidence_method", "max_score", "min_p_value"],
-  VARIANT_IMPLIES_GENE: ["l2g_score", "implication_mode", "confidence_class"],
-  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center"],
-  VARIANT_AFFECTS_GENE: ["variant_consequence", "alphamissense_pathogenicity", "hgvsp"],
-  GENE_ASSOCIATED_WITH_DISEASE: ["ot_score", "causality_level", "evidence_count"],
-  DRUG_ACTS_ON_GENE: ["max_clinical_phase", "mechanism_of_action", "affinity_median"],
-  DRUG_INDICATED_FOR_DISEASE: ["max_clinical_phase", "evidence_count"],
-  DRUG_HAS_ADVERSE_EFFECT: ["offsides_prr", "onsides_pred1", "nctr_severity_class"],
-  GENE_EXPRESSED_IN_TISSUE: ["tpm_median", "num_sources"],
-  GENE_HAS_PROTEIN_DOMAIN: ["mean_plddt", "start_residue", "end_residue"],
-  GENE_PARTICIPATES_IN_PATHWAY: ["pathway_category", "evidence_count"],
-};
 
 /** Scored entity for chain results */
 interface ScoredEntity extends EntityRef {
@@ -246,37 +229,6 @@ async function executeViaQuery(
   try {
     tc.add({ step: "batchQuery", kind: "call", message: `POST /graph/query with ${querySteps.length} steps` });
 
-    // Collect node fields from schema for all target types in the chain
-    const targetTypes = [...new Set(intoSteps.map((s) => s.targetType))];
-    const nodeFields = [
-      ...new Set(targetTypes.flatMap((t) => getSummaryFields(schema, t))),
-    ].slice(0, 20);
-
-    // Collect edge fields using backend-curated display metadata.
-    // tooltip=true fields are the 2-3 most important per edge type (curated in YAML).
-    // Fallback to defaultScoreField if properties endpoint unavailable.
-    const chainEdgeTypes = [...new Set(intoSteps.map((s) => s.edgeType).filter((e) => e !== "none"))];
-    const displayFieldLists = await Promise.all(
-      chainEdgeTypes.map((et) => getEdgeDisplayFields(et)),
-    );
-    const seen = new Set<string>();
-    const edgeFields: string[] = [];
-    const push = (f: string) => {
-      if (!seen.has(f) && edgeFields.length < 20) { seen.add(f); edgeFields.push(f); }
-    };
-    // Pass 0: core biologically important fields (always requested)
-    for (const et of chainEdgeTypes) {
-      for (const f of CORE_EDGE_FIELDS[et] ?? []) push(f);
-    }
-    // Pass 1: defaultScoreField per edge type (always useful for ranking)
-    for (const ann of intoSteps) {
-      if (ann.defaultScoreField) push(ann.defaultScoreField);
-    }
-    // Pass 2: tooltip-curated fields from properties endpoint
-    for (const fields of displayFieldLists) {
-      for (const f of fields) push(f);
-    }
-
     const resp = await agentFetch<{
       data: {
         nodes: Record<
@@ -296,7 +248,7 @@ async function executeViaQuery(
       body: {
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
-        select: { nodeFields, edgeFields },
+        select: { includeEvidence: true },
         limits: {
           maxNodes: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 2 + 10, 1000),
           maxEdges: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 3, 5000),

@@ -6,8 +6,9 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
+import { errorResult, catchError, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
 import { okResult, TraceCollector } from "../run-result";
+import { canonicalizeIntent, resolveIntentType, findEdgesConnecting } from "../intent-aliases";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -23,14 +24,37 @@ export async function handleExploreCompare(
       return errorResult("compare mode requires at least 2 resolved entities.", tc);
     }
 
-    const edgeType = cmd.edge_type;
+    // Resolve edge types: explicit edge_type > into intents > unfiltered
+    let edgeTypes: string[] | undefined;
+    if (cmd.edge_type) {
+      edgeTypes = [cmd.edge_type];
+    } else if (cmd.into?.length) {
+      const seedType = resolved[0].type;
+      const schema = await getCachedGraphSchema();
+      const resolved_edges: string[] = [];
+      for (const rawIntent of cmd.into) {
+        const [intent, repairNote] = canonicalizeIntent(rawIntent);
+        if (repairNote) tc.warn("intent_repair", repairNote);
+        const targetType = resolveIntentType(intent);
+        if (!targetType) continue;
+        const candidates = findEdgesConnecting(schema, seedType, targetType, intent);
+        if (candidates.length > 0) {
+          resolved_edges.push(candidates[0].edgeType);
+        } else {
+          tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType} for compare` });
+        }
+      }
+      if (resolved_edges.length > 0) edgeTypes = resolved_edges;
+    }
+
+    const edgeType = edgeTypes?.[0];
     const annotation = edgeType ? await edgeTypeAnnotation(edgeType) : null;
 
     // Route to /graph/compare for same-type seeds (Jaccard similarity)
     const allSameType = resolved.every((e) => e.type === resolved[0].type);
 
     if (allSameType) {
-      return await executeCompare(resolved, edgeType, annotation, tc);
+      return await executeCompare(resolved, edgeTypes, annotation, tc);
     }
 
     // Different types → fall back to /graph/intersect
@@ -46,11 +70,14 @@ export async function handleExploreCompare(
 
 async function executeCompare(
   resolved: EntityRef[],
-  edgeType: string | undefined,
+  edgeTypes: string[] | undefined,
   annotation: string | null,
   tc: TraceCollector,
 ): Promise<RunResult> {
-  tc.add({ step: "routeCompare", kind: "decision", message: "Same-type seeds → /graph/compare (Jaccard)" });
+  const filterLabel = edgeTypes?.length
+    ? `filtered to ${edgeTypes.map(humanEdgeLabel).join(", ")}`
+    : "all relationships";
+  tc.add({ step: "routeCompare", kind: "decision", message: `Same-type seeds → /graph/compare (Jaccard), ${filterLabel}` });
 
   try {
     const data = await agentFetch<{
@@ -73,9 +100,8 @@ async function executeCompare(
       method: "POST",
       body: {
         entities: resolved.map((e) => ({ type: e.type, id: e.id })),
-        ...(edgeType ? { edgeTypes: [edgeType] } : {}),
+        ...(edgeTypes?.length ? { edgeTypes } : {}),
         limit: 20,
-        mode: "compact",
       },
     });
 
@@ -98,7 +124,7 @@ async function executeCompare(
       data: {
         _method: "Side-by-side Jaccard comparison of same-type entities. Higher Jaccard index = more similar neighborhoods.",
         entities: resolved,
-        relationship: edgeType ? humanEdgeLabel(edgeType) : "all relationships",
+        relationship: edgeTypes?.length ? edgeTypes.map(humanEdgeLabel).join(", ") : "all relationships",
         edgeDescription: annotation ?? undefined,
         comparisons: data.data?.comparisons,
         overallSimilarity: similarity,
@@ -111,7 +137,7 @@ async function executeCompare(
     // Fallback to intersect if compare fails
     tc.add({ step: "compareFallback", kind: "fallback", message: "compare failed, falling back to intersect" });
     tc.warn("compare_fallback", "compare endpoint failed, using intersect instead");
-    return executeIntersect(resolved, edgeType, undefined, 20, annotation, tc);
+    return executeIntersect(resolved, edgeTypes?.[0], undefined, 20, annotation, tc);
   }
 }
 
@@ -152,7 +178,6 @@ async function executeIntersect(
       edgeType,
       direction,
       limit: Math.min(limit ?? 20, 100),
-      mode: "compact",
     },
   });
 

@@ -316,7 +316,6 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     return_vars: z.array(z.string()).optional(),
     filters: z.record(z.unknown()).optional(),
     select: z.object({
-      edgeFields: z.array(z.string()).optional(),
       includeEvidence: z.boolean().optional(),
     }).optional(),
   }),

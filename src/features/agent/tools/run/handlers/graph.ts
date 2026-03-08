@@ -129,10 +129,10 @@ export function humanScoreLabel(scoreField: string): string {
 // Shared: schema-driven helpers (sort, keyFilters, labels, recovery)
 // ---------------------------------------------------------------------------
 
-/** Overwrite EDGE_HUMAN_LABEL entries from agentBriefing when available. */
+/** Fill in EDGE_HUMAN_LABEL for edge types that lack a curated entry. */
 function enrichHumanLabels(schema: GraphSchemaResponse): void {
   for (const et of schema.edgeTypes) {
-    if (et.agentBriefing) {
+    if (et.agentBriefing && !EDGE_HUMAN_LABEL[et.edgeType]) {
       EDGE_HUMAN_LABEL[et.edgeType] = et.agentBriefing;
     }
   }

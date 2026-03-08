@@ -788,6 +788,9 @@ ANALYTICS: method must match params.type.
 PIPELINE: { goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}] }
   seeds_from and seeds_filter go at STEP level, NOT inside args.
   seeds_filter: {type?, relationship?, min_score?}.
+  INTERSECT step: {"id":"overlap","command":"intersect","args":{},"depends_on":["step1","step2"]}
+    Virtual step — zero API calls. Computes entity ID intersection across depends_on steps.
+    Downstream steps use seeds_from:"overlap" to continue from shared entities.
 
 INTENTS: diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds,
   protein_domains, ccres, go_terms, metabolites, studies, signals,

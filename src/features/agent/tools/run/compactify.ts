@@ -104,6 +104,8 @@ const COMPACTORS: Record<string, Compactor> = {
   compare_cohorts: passthrough,
   // Pipeline
   pipeline: compactPipeline,
+  // Virtual pipeline step — small result, pass through
+  intersect: passthrough,
   // Workspace compactors — small results, pass through
   pin: passthrough,
   set_cohort: passthrough,
@@ -246,24 +248,47 @@ function compactCompute(data: Record<string, unknown>): Record<string, unknown> 
 }
 
 function compactExplore(data: Record<string, unknown>): Record<string, unknown> {
-  const results = data.results as Record<string, { count: number; edgeType: string; top: unknown[] }> | undefined;
+  const results = data.results as Record<string, { count: number; edgeType: string; scoreField?: string; top: unknown[] }> | undefined;
   if (!results) return data;
 
   const compactResults: Record<string, unknown> = {};
+  const renderedTables: { intent: string; relationship: string; markdown: string; shown: number; total: number }[] = [];
+
+  const TABLE_K = 5;  // rendered table: top 5 (for display)
+  const LIST_K = 20;  // slim JSON: up to 20 (for intersection / follow-up)
+
   for (const [key, branch] of Object.entries(results)) {
-    const top = asArray(branch.top).slice(0, 5);
-    compactResults[key] = {
+    const allTop = asArray(branch.top);
+    const tableTop = allTop.slice(0, TABLE_K) as Ent[];
+    const listTop = allTop.slice(0, LIST_K) as Ent[];
+    const relationship = humanEdgeLabel(branch.edgeType);
+
+    // Pre-render markdown table (top 5 only — keeps output concise)
+    const table = renderEntityTable(tableTop, { scoreField: branch.scoreField, showProvenance: true });
+    if (table) {
+      renderedTables.push({ intent: key, relationship, markdown: table, shown: tableTop.length, total: branch.count });
+    }
+
+    // Slim JSON: up to 20 entities for cross-list intersection / follow-up seeds
+    const branchObj: Record<string, unknown> = {
       count: branch.count,
-      relationship: humanEdgeLabel(branch.edgeType),
-      top,
-      ...(branch.top.length > 5 ? { _truncation: truncation(5, branch.top.length, "explore with narrower intent for more") } : {}),
+      relationship,
+      top: listTop.map(minimalEntity),
+      ...(allTop.length > LIST_K ? { _truncation: truncation(LIST_K, allTop.length, "explore with narrower intent for more") } : {}),
     };
+    // Preserve availableRelationships so the model can retry with alternative edge types
+    const avail = (branch as Record<string, unknown>).availableRelationships;
+    if (Array.isArray(avail) && avail.length > 0) {
+      branchObj.availableRelationships = avail;
+    }
+    compactResults[key] = branchObj;
   }
 
   const out: Record<string, unknown> = {
     results: compactResults,
     resolved_seeds: data.resolved_seeds,
   };
+  if (renderedTables.length) out.rendered = { tables: renderedTables };
   // Pass through enrichment if present (already reasonably sized)
   if (data.enrichment) out.enrichment = data.enrichment;
   // Pass through aggregate data (already small)
@@ -279,25 +304,26 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
       out._truncation = truncation(10, buckets.length);
     }
   }
-  // Pass through compare results
+  // Pass through compare results — render shared neighbors table
   if (data.comparisons) out.comparisons = data.comparisons;
   if (data.overallSimilarity) out.overallSimilarity = data.overallSimilarity;
   if (data.sharedNeighbors) {
-    const shared = asArray(data.sharedNeighbors);
-    out.sharedNeighbors = shared.slice(0, 10);
-    if (shared.length > 10) {
-      out._truncation = truncation(10, shared.length);
+    const shared = asArray(data.sharedNeighbors).slice(0, 10) as Ent[];
+    out.sharedNeighbors = shared.map(minimalEntity);
+    const table = renderEntityTable(shared, { scoreField: undefined, showProvenance: false });
+    if (table && !out.rendered) out.rendered = { tables: [{ intent: "shared", relationship: "shared neighbors", markdown: table, shown: shared.length, total: asArray(data.sharedNeighbors).length }] };
+    if (asArray(data.sharedNeighbors).length > 10) {
+      out._truncation = truncation(10, asArray(data.sharedNeighbors).length);
     }
   }
   // Pass through context entities — raise limit + add type breakdown
   if (data.entities) {
     const entities = asArray(data.entities);
-    out.entities = entities.slice(0, 10);
+    out.entities = (entities.slice(0, 10) as Ent[]).map(minimalEntity);
     if (entities.length > 10) {
-      // Group by type so model knows what's available
       const byType: Record<string, number> = {};
       for (const e of entities) {
-        const t = (e as Record<string, unknown>).type as string ?? "unknown";
+        const t = (e as Ent).type as string ?? "unknown";
         byType[t] = (byType[t] ?? 0) + 1;
       }
       out.entity_type_counts = byType;
@@ -309,13 +335,21 @@ function compactExplore(data: Record<string, unknown>): Record<string, unknown> 
   // Pass through similar results
   if (data.similar) {
     const similar = asArray(data.similar);
-    out.similar = similar.slice(0, 5);
+    out.similar = (similar.slice(0, 5) as Ent[]).map(minimalEntity);
     if (similar.length > 5) {
       out._truncation = truncation(5, similar.length);
     }
   }
   // Pass through method description
   if (data._method) out._method = data._method;
+  return out;
+}
+
+/** Minimal entity shape — drop fields already covered by rendered table. */
+function minimalEntity(e: Ent): Ent {
+  const out: Ent = { type: e.type, id: e.id, label: e.label };
+  if (typeof e.score === "number") out.score = Math.round((e.score as number) * 10000) / 10000;
+  if (typeof e.supportCount === "number") out.supportCount = e.supportCount;
   return out;
 }
 
@@ -335,46 +369,70 @@ function compactTraverse(data: Record<string, unknown>): Record<string, unknown>
   }> | undefined;
   if (steps) {
     const TOP_K = 10;
+    const renderedTables: { step: string; relationship: string; markdown: string; shown: number; total: number }[] = [];
+
+    const compactSteps = steps.map((s, i) => {
+      const relationship = s.edgeDescription
+        ? s.edgeDescription.replace(/:.*$/, "").trim()
+        : s.edgeType
+          ? humanEdgeLabel(s.edgeType)
+          : undefined;
+      const scoreContext = s.scoreField
+        ? humanScoreLabel(s.scoreField)
+        : undefined;
+
+      const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
+        const ent = e as Ent;
+        const out: Ent = {
+          type: ent.type,
+          id: ent.id,
+          label: ent.label,
+          subtitle: truncateStr(ent.subtitle as string | undefined, 80),
+        };
+        if (ent.rank != null) out.rank = ent.rank;
+        if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
+        if (typeof ent.pValue === "number") out.pValue = ent.pValue;
+        if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
+        if (typeof ent.supportCount === "number") out.supportCount = ent.supportCount;
+        if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
+          out.edgeProperties = capEdgeProperties(ent.edgeProperties as Record<string, unknown>);
+        }
+        return out;
+      });
+
+      // Pre-render markdown table for this step
+      const table = renderEntityTable(topEntities, {
+        scoreField: s.scoreField,
+        showProvenance: true,
+        showSupport: true,
+      });
+      if (table) {
+        renderedTables.push({
+          step: `Step ${i + 1}: ${s.intent} (via ${relationship ?? s.edgeType ?? "?"})`,
+          relationship: relationship ?? s.intent,
+          markdown: table,
+          shown: topEntities.length,
+          total: s.count,
+        });
+      }
+
+      // Slim JSON: drop subtitle + edgeProperties (covered by rendered table)
+      const slimEntities = topEntities.map(minimalEntity);
+
+      return {
+        intent: s.intent,
+        count: s.count,
+        ...(relationship ? { relationship } : {}),
+        ...(scoreContext ? { scoreContext } : {}),
+        top: slimEntities,
+        ...(s.top.length > TOP_K ? { _truncation: truncation(TOP_K, s.top.length) } : {}),
+      };
+    });
+
     return {
       seed: data.seed,
-      steps: steps.map((s) => {
-        // Build human-readable relationship from edgeDescription label or edgeType
-        const relationship = s.edgeDescription
-          ? s.edgeDescription.replace(/:.*$/, "").trim()
-          : s.edgeType
-            ? humanEdgeLabel(s.edgeType)
-            : undefined;
-        const scoreContext = s.scoreField
-          ? humanScoreLabel(s.scoreField)
-          : undefined;
-        // Pass through all entity fields — backend controls what's returned
-        const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
-          const ent = e as Record<string, unknown>;
-          const out: Record<string, unknown> = {
-            type: ent.type,
-            id: ent.id,
-            label: ent.label,
-            subtitle: truncateStr(ent.subtitle as string | undefined, 80),
-          };
-          if (ent.rank != null) out.rank = ent.rank;
-          if (typeof ent.score === "number") out.score = Math.round(ent.score * 10000) / 10000;
-          if (typeof ent.pValue === "number") out.pValue = ent.pValue;
-          if (typeof ent.foldEnrichment === "number") out.foldEnrichment = ent.foldEnrichment;
-          if (typeof ent.supportCount === "number") out.supportCount = ent.supportCount;
-          if (ent.edgeProperties && typeof ent.edgeProperties === "object") {
-            out.edgeProperties = capEdgeProperties(ent.edgeProperties as Record<string, unknown>);
-          }
-          return out;
-        });
-        return {
-          intent: s.intent,
-          count: s.count,
-          ...(relationship ? { relationship } : {}),
-          ...(scoreContext ? { scoreContext } : {}),
-          top: topEntities,
-          ...(s.top.length > TOP_K ? { _truncation: truncation(TOP_K, s.top.length) } : {}),
-        };
-      }),
+      steps: compactSteps,
+      ...(renderedTables.length ? { rendered: { tables: renderedTables } } : {}),
     };
   }
 
@@ -713,4 +771,154 @@ function truncation(
     ...(reason ? { reason: reason as TruncationInfo["reason"] } : {}),
     ...(how_to_get_more ? { how_to_get_more } : {}),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Pre-rendering: score interpretation + markdown tables
+// ---------------------------------------------------------------------------
+
+interface ScoreThreshold {
+  min: number;
+  label: string;
+}
+
+/** Score field → ordered thresholds (highest first). */
+const SCORE_THRESHOLDS: Record<string, ScoreThreshold[]> = {
+  ot_score: [
+    { min: 0.8, label: "very strong" },
+    { min: 0.5, label: "strong" },
+    { min: 0.3, label: "moderate" },
+    { min: 0, label: "weak" },
+  ],
+  l2g_score: [
+    { min: 0.5, label: "high confidence" },
+    { min: 0.2, label: "moderate" },
+    { min: 0, label: "low confidence" },
+  ],
+  cadd_phred: [
+    { min: 30, label: "top 0.1% deleterious" },
+    { min: 20, label: "top 1% deleterious" },
+    { min: 10, label: "top 10%" },
+    { min: 0, label: "benign-range" },
+  ],
+  alphamissense_pathogenicity: [
+    { min: 0.564, label: "pathogenic" },
+    { min: 0.34, label: "ambiguous" },
+    { min: 0, label: "benign" },
+  ],
+  max_clinical_phase: [
+    { min: 4, label: "approved" },
+    { min: 3, label: "phase III" },
+    { min: 2, label: "phase II" },
+    { min: 1, label: "phase I" },
+    { min: 0, label: "preclinical" },
+  ],
+  affinity_median: [
+    { min: 9, label: "sub-nM" },
+    { min: 7, label: "nM-range" },
+    { min: 5, label: "µM-range" },
+    { min: 0, label: "weak" },
+  ],
+  combined_score: [
+    { min: 0.9, label: "highest confidence" },
+    { min: 0.7, label: "high confidence" },
+    { min: 0.4, label: "medium confidence" },
+    { min: 0, label: "low confidence" },
+  ],
+  overall_score: [
+    { min: 0.8, label: "very strong" },
+    { min: 0.5, label: "strong" },
+    { min: 0.3, label: "moderate" },
+    { min: 0, label: "weak" },
+  ],
+  score: [
+    { min: 0.8, label: "very strong" },
+    { min: 0.5, label: "strong" },
+    { min: 0.3, label: "moderate" },
+    { min: 0, label: "weak" },
+  ],
+  max_score: [
+    { min: 0.8, label: "very strong" },
+    { min: 0.5, label: "strong" },
+    { min: 0.3, label: "moderate" },
+    { min: 0, label: "weak" },
+  ],
+};
+
+/** Render a numeric score with its human-readable meaning. */
+function renderScore(score: number, scoreField?: string): string {
+  const rounded = Math.round(score * 10000) / 10000;
+  if (!scoreField) return `${rounded}`;
+  const thresholds = SCORE_THRESHOLDS[scoreField];
+  if (!thresholds) return `${rounded}`;
+  for (const t of thresholds) {
+    if (score >= t.min) return `${rounded} (${t.label})`;
+  }
+  return `${rounded}`;
+}
+
+/** Extract a short provenance string from edge properties. */
+function extractProvenance(edgeProps: Record<string, unknown> | undefined): string {
+  if (!edgeProps) return "";
+  const parts: string[] = [];
+  if (edgeProps.causality_level) parts.push(String(edgeProps.causality_level));
+  if (edgeProps.mechanism_of_action) parts.push(String(edgeProps.mechanism_of_action));
+  if (edgeProps.implication_mode) parts.push(String(edgeProps.implication_mode));
+  if (edgeProps.variant_consequence) parts.push(String(edgeProps.variant_consequence));
+  if (typeof edgeProps.evidence_count === "number" && edgeProps.evidence_count > 1) {
+    parts.push(`${edgeProps.evidence_count} sources`);
+  }
+  if (typeof edgeProps.max_clinical_phase === "number") {
+    parts.push(renderScore(edgeProps.max_clinical_phase, "max_clinical_phase"));
+  }
+  if (typeof edgeProps.l2g_score === "number") {
+    parts.push(`L2G ${renderScore(edgeProps.l2g_score, "l2g_score")}`);
+  }
+  if (Array.isArray(edgeProps.sources) && edgeProps.sources.length > 0) {
+    const names = edgeProps.sources as string[];
+    parts.push(names.length <= 3 ? names.join(", ") : `${names.slice(0, 3).join(", ")} +${names.length - 3}`);
+  }
+  return parts.join(" — ");
+}
+
+type Ent = Record<string, unknown>;
+
+/** Build a markdown table from entities. Columns adapt to what data is present. */
+function renderEntityTable(
+  entities: Ent[],
+  opts: { scoreField?: string; showProvenance?: boolean; showSupport?: boolean },
+): string {
+  if (entities.length === 0) return "";
+
+  // Determine which optional columns have data
+  const hasScore = entities.some((e) => typeof e.score === "number");
+  const hasPValue = entities.some((e) => typeof e.pValue === "number");
+  const hasFold = entities.some((e) => typeof e.foldEnrichment === "number");
+  const hasSupport = opts.showSupport && entities.some((e) => typeof e.supportCount === "number");
+  const hasProvenance = opts.showProvenance && entities.some((e) => e.edgeProperties);
+
+  // Build header
+  const cols: string[] = ["Name"];
+  if (hasScore) cols.push("Score");
+  if (hasPValue) cols.push("p-value");
+  if (hasFold) cols.push("Fold");
+  if (hasSupport) cols.push("Support");
+  if (hasProvenance) cols.push("Evidence");
+  cols.push("Subtitle");
+
+  const header = `| ${cols.join(" | ")} |`;
+  const sep = `|${cols.map(() => "---").join("|")}|`;
+
+  const rows = entities.map((e) => {
+    const cells: string[] = [String(e.label ?? e.id ?? "?")];
+    if (hasScore) cells.push(typeof e.score === "number" ? renderScore(e.score, opts.scoreField) : "–");
+    if (hasPValue) cells.push(typeof e.pValue === "number" ? e.pValue.toExponential(1) : "–");
+    if (hasFold) cells.push(typeof e.foldEnrichment === "number" ? `${Math.round(e.foldEnrichment * 10) / 10}×` : "–");
+    if (hasSupport) cells.push(typeof e.supportCount === "number" ? `${e.supportCount}` : "–");
+    if (hasProvenance) cells.push(extractProvenance(e.edgeProperties as Record<string, unknown> | undefined));
+    cells.push(truncateStr(String(e.subtitle ?? ""), 60) ?? "");
+    return `| ${cells.join(" | ")} |`;
+  });
+
+  return [header, sep, ...rows].join("\n");
 }

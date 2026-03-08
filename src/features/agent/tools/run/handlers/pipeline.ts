@@ -90,6 +90,55 @@ export function topoSort(steps: PipelineStep[]): PipelineStep[][] {
 }
 
 // ---------------------------------------------------------------------------
+// Intersect: virtual step — no API call
+// ---------------------------------------------------------------------------
+
+function executeIntersect(
+  step: PipelineStep,
+  stepEntities: Map<string, EntityRef[]>,
+): { envelope: RunResultEnvelope; entities: EntityRef[] } {
+  // Sources are the depends_on steps
+  const sourceIds = step.depends_on ?? [];
+  if (sourceIds.length < 2) {
+    return {
+      envelope: errorResult({ message: "intersect requires depends_on with 2+ step IDs", code: "validation_error" }),
+      entities: [],
+    };
+  }
+
+  // Collect entity sets from each source
+  const sets = sourceIds.map((id) => {
+    const ents = stepEntities.get(id) ?? [];
+    return new Map(ents.map((e) => [e.id, e]));
+  });
+
+  // Intersect: keep entities whose ID appears in ALL source sets
+  const [first, ...rest] = sets;
+  const overlap: EntityRef[] = [];
+  for (const [id, entity] of first) {
+    if (rest.every((s) => s.has(id))) {
+      overlap.push(entity);
+    }
+  }
+
+  const sourceCounts = sourceIds.map((id, i) => `${id}: ${sets[i].size}`).join(", ");
+  const summary = overlap.length > 0
+    ? `Intersect found ${overlap.length} shared entities (${sourceCounts})`
+    : `No overlap between source steps (${sourceCounts})`;
+
+  const data: Record<string, unknown> = {
+    overlap: overlap.map((e) => ({ type: e.type, id: e.id, label: e.label })),
+    overlap_count: overlap.length,
+    source_counts: Object.fromEntries(sourceIds.map((id, i) => [id, sets[i].size])),
+  };
+
+  const envelope = okResult({ text_summary: summary, data, state_delta: {} });
+  if (overlap.length === 0) envelope.status = "empty";
+
+  return { envelope, entities: overlap };
+}
+
+// ---------------------------------------------------------------------------
 // Entity extraction from step results
 // ---------------------------------------------------------------------------
 
@@ -436,6 +485,23 @@ export async function handlePipeline(
             return;
           }
         }
+      }
+
+      // --- Intersect: virtual command, no API call ---
+      if (step.command === "intersect") {
+        const result = executeIntersect(step, stepEntities);
+        stepRawResults.set(step.id, result.envelope);
+        stepEntities.set(step.id, result.entities);
+        stepResults.set(step.id, {
+          id: step.id,
+          command: "intersect",
+          status: result.entities.length > 0 ? "ok" : "empty",
+          summary: result.envelope.text_summary ?? "",
+          data: result.envelope.data,
+          entities: result.entities.length > 0 ? result.entities : undefined,
+          ms: Date.now() - stepStart,
+        });
+        return;
       }
 
       // Build and execute — reset probe budget so each step gets its own

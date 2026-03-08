@@ -20,7 +20,7 @@ export interface QueryCmd {
   return_vars?: string[];
   filters?: Record<string, unknown>;
   limit?: number;
-  select?: { edgeFields?: string[]; includeEvidence?: boolean };
+  select?: { includeEvidence?: boolean };
 }
 
 export async function handleQuery(
@@ -112,8 +112,7 @@ export async function handleQuery(
         return: cmd.return_vars,
         filters: Object.keys(filters).length > 0 ? filters : undefined,
         limit: Math.min(cmd.limit ?? 20, 100),
-        select: cmd.select ? {
-          edgeFields: cmd.select.edgeFields?.slice(0, 20),
+        select: cmd.select?.includeEvidence != null ? {
           includeEvidence: cmd.select.includeEvidence,
         } : undefined,
       },

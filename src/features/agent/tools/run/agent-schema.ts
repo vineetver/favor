@@ -1,15 +1,17 @@
 /**
- * Agent-facing Run schema — 7 commands funneled through executeRun().
+ * Agent-facing Run schema — 6 commands funneled through executeRun().
  *
  * Thin transform layer that maps a smaller, stable agent command palette
  * into the full internal command set. The proven gate→handler→enrich
  * pipeline (executeRun) is unchanged.
  *
  * Agent commands:
- *   cohort     → rows, groupby, derive, prioritize, compute
+ *   cohort     → rows, groupby, derive, prioritize, compute,
+ *                top_hits, qc_summary, gwas_minimal, variant_profile, compare_cohorts
  *   analyze    → correlation, analytics
  *   explore    → explore (pass-through, auto-routed)
  *   traverse   → traverse (pass-through, auto-routed: chain/paths/patterns)
+ *   pipeline   → pipeline (pass-through)
  *   workspace  → set_cohort, remember, export, pin
  */
 
@@ -72,13 +74,31 @@ const weight = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Agent input schema — 7 commands, flat structure
+// Pipeline step schema
+// ---------------------------------------------------------------------------
+
+const pipelineStep = z.object({
+  id: z.string(),
+  command: z.string(),
+  args: z.record(z.unknown()),
+  description: z.string().optional(),
+  depends_on: z.array(z.string()).optional(),
+  seeds_from: z.string().optional(),
+  seeds_filter: z.object({
+    type: z.string().optional(),
+    relationship: z.string().optional(),
+    min_score: z.number().optional(),
+  }).optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Agent input schema — 6 commands, flat structure
 // ---------------------------------------------------------------------------
 
 export const agentInputSchema = z.object({
-  command: z.enum(["cohort", "analyze", "explore", "traverse", "workspace"]),
+  command: z.enum(["cohort", "analyze", "explore", "traverse", "pipeline", "workspace"]),
   op: z.string().optional().describe(
-    "Sub-operation: cohort(rows|groupby|derive|rank|score), " +
+    "Sub-operation: cohort(rows|groupby|derive|rank|score|top_hits|qc_summary|gwas_minimal|variant_profile|compare_cohorts), " +
     "analyze(correlation|regression|feature_importance|multiple_testing|bootstrap_ci|permutation_test|pca|cluster|prs_association), " +
     "workspace(select_cohort|memo|export|bookmark_entities)",
   ),
@@ -194,6 +214,22 @@ export const agentInputSchema = z.object({
   })).optional().describe("Structural pattern (traverse patterns)"),
   return_vars: z.array(z.string()).optional().describe("Variables to return (traverse patterns)"),
 
+  // --- workflow: variant_profile ---
+  variants: z.array(z.string()).optional().describe("Variant IDs to profile (max 5)"),
+
+  // --- workflow: gwas_minimal ---
+  p_column: z.string().optional().describe("P-value column name"),
+  effect_column: z.string().optional().describe("Effect size column name"),
+  se_column_name: z.string().optional().describe("Standard error column name"),
+
+  // --- workflow: compare_cohorts ---
+  cohort_ids: z.array(z.string()).optional().describe("Two cohort IDs to compare"),
+  compare_on: z.array(z.string()).optional().describe("Columns to compare on"),
+
+  // --- pipeline ---
+  goal: z.string().optional().describe("Pipeline goal description"),
+  plan_steps: z.array(pipelineStep).optional().describe("Pipeline steps (min 2, max 8). seeds_from/seeds_filter/depends_on at step level, NOT inside args"),
+
   // --- workspace ---
   entities: z.array(flatSeedRef).optional().describe("Entities to bookmark [{type, id, label}]"),
   key: z.string().optional().describe("Memo key"),
@@ -265,6 +301,12 @@ const COHORT_OP_MAP: Record<string, string> = {
   derive: "derive",
   rank: "prioritize",
   score: "compute",
+  // Workflow ops — map to internal workflow commands
+  top_hits: "top_hits",
+  qc_summary: "qc_summary",
+  gwas_minimal: "gwas_minimal",
+  variant_profile: "variant_profile",
+  compare_cohorts: "compare_cohorts",
 };
 
 export function transformAgentInputToRunInput(
@@ -303,6 +345,9 @@ export function transformAgentInputToRunInput(
     case "traverse":
       return stripUndefined({ command, ...fields });
 
+    case "pipeline":
+      return stripUndefined({ command, goal: fields.goal, plan_steps: fields.plan_steps });
+
     case "workspace": {
       switch (op) {
         case "select_cohort":
@@ -329,10 +374,14 @@ export function transformAgentInputToRunInput(
 
 function resolveInternalCommand(command: string, op?: string): string {
   switch (command) {
-    case "cohort":
-      return COHORT_OP_MAP[op ?? "rows"] ?? "rows";
+    case "cohort": {
+      const resolved = COHORT_OP_MAP[op ?? "rows"] ?? "rows";
+      return resolved;
+    }
     case "analyze":
       return op === "correlation" ? "correlation" : "analytics";
+    case "pipeline":
+      return "pipeline";
     case "query":
       return "traverse"; // query folded into traverse patterns
     case "workspace": {
@@ -353,26 +402,16 @@ function resolveInternalCommand(command: string, op?: string): string {
 
 const DESCRIPTION = `Execute cohort analyses and explore the biomedical knowledge graph.
 
-COMMANDS & VALID VALUES:
-  cohort  → op: rows | groupby | derive | rank | score
-  analyze → op: correlation | regression | feature_importance | multiple_testing | bootstrap_ci | permutation_test | pca | cluster
-  explore → auto-routed from params:
-            seeds+into → neighbors, 2 seeds+into → compare, target → enrich,
-            top_k → similar, sections → context, metric → aggregate
-  traverse → auto-routed from params:
-             seed+steps → chain, from+to → paths, pattern/description → patterns
+COMMANDS:
+  cohort    → op: rows | groupby | derive | rank | score | top_hits | qc_summary | gwas_minimal | variant_profile | compare_cohorts
+  analyze   → op: correlation | regression | feature_importance | multiple_testing | bootstrap_ci | permutation_test | pca | cluster
+  explore   → auto-routed: seeds+into → neighbors, 2 seeds+into → compare, target → enrich, top_k → similar, sections → context, metric → aggregate
+  traverse  → auto-routed: seed+steps → chain, from+to → paths, pattern/description → patterns
+  pipeline  → {goal, plan_steps: [{id, command, args, depends_on?, seeds_from?, seeds_filter?}]}. intersect step: virtual set math.
   workspace → op: select_cohort | memo | export | bookmark_entities
 
-SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact. Never combine label with type/id in one seed.
-
-INTENTS (valid values for into/target/enrich):
-  diseases, drugs, pathways, variants, phenotypes, tissues, genes, proteins, compounds,
-  protein_domains, ccres, go_terms, metabolites, studies, signals,
-  drug_targets, drug_metabolism, drug_response, adverse_effects, drug_indications, drug_interactions
-
-DRUG INTENTS: Pharmacogenes (CYP*, UGT*, ABC*) → drug_metabolism. Drug targets (EGFR, BRAF) → drug_targets. Unsure → drugs (cascades all three).
-
-TRAVERSE STEP FIELDS: into (intent), top (limit), sort, filters (EDGE properties only: {field__op: value}), overlay (boolean — edges between existing nodes only), enrich (intent), p_cutoff
+SEEDS: {label:"BRCA1"} for fuzzy lookup. {type:"Gene",id:"ENSG..."} for exact.
+  ❌ {type:"Gene",id:"...",label:"BRCA1"} — never combine label with type/id.
 
 See system prompt for: intent selection by seed type, drug intent decision tree, pattern examples, recovery rules.`;
 
