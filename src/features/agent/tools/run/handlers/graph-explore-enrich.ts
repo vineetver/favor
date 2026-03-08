@@ -10,8 +10,8 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, catchError, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, emptyResult, TraceCollector } from "../run-result";
+import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
+import { okResult, emptyResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -120,10 +120,11 @@ export async function handleExploreEnrich(
     if (enriched.length === 0) {
       return emptyResult({
         reason: `No significant enrichment found (p < ${cmd.p_cutoff ?? 0.05})`,
+        data: { _mode: "enrich" as const },
         tc,
-        suggested_next: [
-          { action: "Run", params: { command: "explore", mode: "enrich", p_cutoff: Math.min((cmd.p_cutoff ?? 0.05) * 10, 1) }, reason: "Relax p-value cutoff to find weaker signals" },
-          { action: "Run", params: { command: "explore", mode: "neighbors", into: [cmd.target] }, reason: "Try direct neighbor exploration instead" },
+        next_actions: [
+          { tool: "Run", args: { command: "explore", target: cmd.target, p_cutoff: Math.min((cmd.p_cutoff ?? 0.05) * 10, 1) }, reason: "Relax p-value cutoff to find weaker signals" },
+          { tool: "Run", args: { command: "explore", into: [cmd.target] }, reason: "Try direct neighbor exploration instead" },
         ],
       });
     }
@@ -136,6 +137,7 @@ export async function handleExploreEnrich(
     return okResult({
       text_summary: summary,
       data: {
+        _mode: "enrich" as const,
         _method: `${method} — tests whether your ${resolved.length} input ${inputType}s are over-represented in each ${targetType} compared to the background (${data.data?.backgroundSize ?? 0} entities). Low p-values indicate statistically significant enrichment.`,
         relationship: humanEdgeLabel(expectedEdge),
         edgeDescription: annotation ?? undefined,
@@ -150,6 +152,20 @@ export async function handleExploreEnrich(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from enrich result data for pipeline forwarding. */
+export function extractEnrichEntities(data: Record<string, unknown>): EntityRef[] {
+  const enriched = data.enriched as Array<{ entity?: Record<string, unknown> }> | undefined;
+  if (!enriched) return [];
+  const out: EntityRef[] = [];
+  for (const e of enriched) {
+    const ent = e.entity;
+    if (ent?.type && ent.id && ent.label) {
+      out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+    }
+  }
+  return out;
 }

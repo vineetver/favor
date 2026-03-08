@@ -36,14 +36,6 @@ export async function getCachedGraphSchema(portal?: string): Promise<GraphSchema
   return schemaStore.getFull(portal);
 }
 
-export async function getCachedAgentView() {
-  return schemaStore.getAgentView();
-}
-
-export async function getEdgeDisplayFields(edgeType: string): Promise<string[]> {
-  return schemaStore.getEdgeDisplayFields(edgeType);
-}
-
 // ---------------------------------------------------------------------------
 // Shared: enrichment edge type mapping
 // ---------------------------------------------------------------------------
@@ -250,11 +242,6 @@ export function errorResult(message: string, tc?: TraceCollector): RunResultEnve
   return makeErrorResult({ message, tc });
 }
 
-/** Convert caught error to RunResult */
-export function catchError(err: unknown, tc?: TraceCollector): RunResultEnvelope {
-  return catchToResult(err, tc);
-}
-
 // ---------------------------------------------------------------------------
 // Shared: edge type annotation helper
 // ---------------------------------------------------------------------------
@@ -300,22 +287,6 @@ export async function edgeTypeAnnotation(edgeType: string): Promise<string | nul
   return `${humanEdgeLabel(edgeType)}: ${entry.description}`;
 }
 
-/**
- * Build annotation lines for multiple edge types.
- * Returns empty string if no annotations found.
- */
-export async function edgeTypeAnnotations(edgeTypes: string[]): Promise<string> {
-  const schema = await getCachedGraphSchema();
-  const lines: string[] = [];
-  for (const et of edgeTypes) {
-    const entry = schema.edgeTypes.find((e) => e.edgeType === et);
-    if (entry?.description) {
-      lines.push(`${humanEdgeLabel(et)}: ${entry.description}`);
-    }
-  }
-  return lines.length > 0 ? `\n\nRelationship types:\n${lines.join("\n")}` : "";
-}
-
 // ---------------------------------------------------------------------------
 // Explore dispatch — implicit routing from params
 // ---------------------------------------------------------------------------
@@ -335,10 +306,6 @@ const EXPLORE_DISPATCH: Record<string, ExploreHandler> = {
 
 /** Infer explore mode from params — priority order, most specific signal first. */
 function routeExplore(cmd: ExploreCmd): string {
-  if (cmd.mode) {
-    console.warn("[Run] deprecated mode= field used, will be removed");
-    return cmd.mode;
-  }
   if (cmd.metric) return "aggregate";
   if (cmd.target) return "enrich";
   if (cmd.seeds.length === 2 && cmd.into?.length) return "compare";
@@ -397,10 +364,6 @@ const TRAVERSE_DISPATCH: Record<string, TraverseHandler> = {
 
 /** Infer traverse mode from params — with conflict validation. */
 function routeTraverse(cmd: TraverseCmd): string | { error: string } {
-  if (cmd.mode) {
-    console.warn("[Run] deprecated mode= field used, will be removed");
-    return cmd.mode;
-  }
   if ((cmd.pattern || cmd.description) && cmd.steps) {
     return { error: "Cannot combine pattern/description with steps. Use pattern OR steps, not both." };
   }

@@ -100,13 +100,6 @@ export async function fetchAndCacheSchema(cohortId: string): Promise<CohortSchem
 }
 
 /**
- * Invalidate cache for a specific cohort (e.g., after derive).
- */
-export function invalidateSchemaCache(cohortId: string): void {
-  cache.delete(cohortId);
-}
-
-/**
  * Get fingerprint from cached schema (for result enrichment).
  */
 export function getFingerprint(schema: CohortSchemaCache): CohortFingerprint {

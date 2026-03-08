@@ -63,7 +63,7 @@ export type TargetIntent = z.infer<typeof targetIntentSchema>;
 const traverseStepSchema = z.union([
   z.object({
     into: targetIntentSchema,
-    top: z.number().optional(),
+    top: z.number().min(1).optional(),
     sort: z.string().optional(),
     filters: z.record(z.unknown()).optional(),
     overlay: z.boolean().optional(),
@@ -71,7 +71,7 @@ const traverseStepSchema = z.union([
   z.object({
     enrich: targetIntentSchema,
     p_cutoff: z.number().optional(),
-    top: z.number().optional(),
+    top: z.number().min(1).optional(),
   }),
 ]);
 
@@ -267,11 +267,10 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   // Graph commands — 3 mode-dispatched primitives
   z.object({
     command: z.literal("explore"),
-    mode: z.string().optional(),
     seeds: z.array(seedRefSchema).min(1).max(10),
     // neighbors
     into: z.array(targetIntentSchema).optional(),
-    limit: z.number().optional(),
+    limit: z.number().min(1).optional(),
     // compare (intersect)
     edge_type: z.string().optional(),
     direction: z.enum(["in", "out"]).optional(),
@@ -280,7 +279,7 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     p_cutoff: z.number().optional(),
     // similar
     edge_types: z.array(z.string()).optional(),
-    top_k: z.number().optional(),
+    top_k: z.number().min(1).optional(),
     // context
     sections: z.array(z.enum(["summary", "neighbors", "evidence", "ontology"])).optional(),
     context_depth: z.enum(["minimal", "standard", "detailed"]).optional(),
@@ -292,15 +291,14 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   }),
   z.object({
     command: z.literal("traverse"),
-    mode: z.string().optional(),
     // chain
     seed: seedRefSchema.optional(),
     steps: z.array(traverseStepSchema).max(5).optional(),
     // paths
     from: z.string().optional().describe("Entity ref: 'Type:ID'"),
     to: z.string().optional().describe("Entity ref: 'Type:ID'"),
-    max_hops: z.number().optional(),
-    limit: z.number().optional(),
+    max_hops: z.number().min(1).optional(),
+    limit: z.number().min(1).optional(),
     // patterns (merged from query)
     description: z.string().optional().describe("Natural language description of the pattern"),
     seeds: z.array(seedRefSchema).optional(),
@@ -367,9 +365,9 @@ export type {
   TraceEntry,
   Candidate,
   ResolvedInfo,
-  SuggestedNext,
   BudgetsRemaining,
   NextAction,
   Repair,
 } from "./run-result";
 export type { ToolErrorCode } from "./error-classify";
+export type { GraphResultData } from "./result-data-types";

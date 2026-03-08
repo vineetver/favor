@@ -47,7 +47,7 @@ export interface ClassifiedError {
 // ---------------------------------------------------------------------------
 
 /** Strip HTML, extract JSON detail, and truncate to a readable length. */
-export function sanitizeErrorBody(raw: string): string {
+function sanitizeErrorBody(raw: string): string {
   if (!raw) return "No error details";
 
   // Try to extract JSON `.detail` or `.message`

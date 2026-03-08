@@ -6,8 +6,8 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, getCachedGraphSchema, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { errorResult, getCachedGraphSchema, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -90,6 +90,7 @@ export async function handleExploreAggregate(
     return okResult({
       text_summary: summary,
       data: {
+        _mode: "aggregate" as const,
         seed,
         relationship: edgeLabel,
         edgeDescription: annotation ?? undefined,
@@ -105,6 +106,6 @@ export async function handleExploreAggregate(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
 }

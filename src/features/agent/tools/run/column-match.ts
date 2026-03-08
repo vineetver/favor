@@ -45,7 +45,7 @@ export interface ColumnRef {
 // Normalization
 // ---------------------------------------------------------------------------
 
-export function normalizeColumnName(name: string): string {
+function normalizeColumnName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "_")
@@ -98,7 +98,7 @@ const ROLE_GROUPS: Record<string, string[]> = {
   conservation: ["phylop_primates", "phylop_mammals", "phylop_vertebrates", "phastcons"],
 };
 
-export function isRoleMismatch(input: string, candidate: string): boolean {
+function isRoleMismatch(input: string, candidate: string): boolean {
   const normInput = normalizeColumnName(input);
   const normCandidate = normalizeColumnName(candidate);
 
@@ -145,7 +145,7 @@ function levenshtein(a: string, b: string): number {
 // Multi-signal scoring
 // ---------------------------------------------------------------------------
 
-export function scoreColumnMatch(
+function scoreColumnMatch(
   input: string,
   candidate: string,
   candidateKind: ColumnKind,

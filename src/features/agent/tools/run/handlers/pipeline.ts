@@ -11,6 +11,14 @@ import type { RunCommand, PipelineStep, EntityRef } from "../types";
 import type { RunContext } from "../index";
 import type { RunResultEnvelope } from "../run-result";
 import { errorResult, okResult, partialResult, TraceCollector } from "../run-result";
+import { extractNeighborEntities } from "./graph-explore-neighbors";
+import { extractCompareEntities } from "./graph-explore-compare";
+import { extractSimilarEntities } from "./graph-explore-similar";
+import { extractContextEntities } from "./graph-explore-context";
+import { extractEnrichEntities } from "./graph-explore-enrich";
+import { extractChainEntities } from "./graph-traverse-chain";
+import { extractPathEntities } from "./graph-traverse-paths";
+import { extractPatternEntities } from "./graph-query";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,7 +42,7 @@ interface StepResult {
 // Topological sort (Kahn's algorithm)
 // ---------------------------------------------------------------------------
 
-export function topoSort(steps: PipelineStep[]): PipelineStep[][] {
+function topoSort(steps: PipelineStep[]): PipelineStep[][] {
   const idToStep = new Map(steps.map((s) => [s.id, s]));
 
   // Build adjacency: edges from dependency → dependent
@@ -184,8 +192,68 @@ function executeUnion(
 }
 
 // ---------------------------------------------------------------------------
-// Entity extraction from step results
+// Entity extraction from step results — dispatches to per-handler extractors
 // ---------------------------------------------------------------------------
+
+/** Per-mode entity extractors from handler modules. */
+const MODE_EXTRACTORS: Record<string, (data: Record<string, unknown>) => EntityRef[]> = {
+  neighbors: extractNeighborEntities,
+  compare: extractCompareEntities,
+  similar: extractSimilarEntities,
+  context: extractContextEntities,
+  enrich: extractEnrichEntities,
+  chain: extractChainEntities,
+  paths: extractPathEntities,
+  patterns: extractPatternEntities,
+};
+
+/** Extract variant entities from variant_profile results. */
+function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef[] {
+  const profiles = data.profiles as Array<Record<string, unknown>> | undefined;
+  if (!profiles) return [];
+  const out: EntityRef[] = [];
+  for (const p of profiles) {
+    const resolvedId = p.resolvedId as string | undefined;
+    const label = (p.label as string) ?? (p.variant as string);
+    if (resolvedId && label) {
+      out.push({ type: "Variant", id: resolvedId, label });
+    }
+
+    const entity = p.entity as Record<string, unknown> | undefined;
+    if (!entity) continue;
+
+    const included = entity.included as Record<string, unknown> | undefined;
+    const entityData = (entity.data ?? {}) as Record<string, unknown>;
+
+    const relations = (included?.relations ?? {}) as Record<string, { rows?: unknown[] }>;
+    for (const [, group] of Object.entries(relations)) {
+      const rows = group?.rows;
+      if (!Array.isArray(rows)) continue;
+      for (const row of rows) {
+        const r = row as Record<string, unknown>;
+        const neighbor = r.neighbor as Record<string, unknown> | undefined;
+        if (!neighbor) continue;
+        const nType = neighbor.type as string | undefined;
+        const nId = neighbor.id as string | undefined;
+        const nLabel = (neighbor.symbol as string) ?? (neighbor.name as string) ?? (neighbor.label as string) ?? nId;
+        if (nType && nId && nLabel) {
+          out.push({ type: nType, id: nId, label: nLabel });
+        }
+      }
+    }
+
+    const ccreAccessions = entityData.ccre_accessions as string | undefined;
+    if (ccreAccessions && !out.some((e) => e.type === "cCRE")) {
+      for (const acc of ccreAccessions.split(",")) {
+        const trimmed = acc.trim();
+        if (trimmed) {
+          out.push({ type: "cCRE", id: trimmed, label: trimmed });
+        }
+      }
+    }
+  }
+  return out;
+}
 
 function extractEntities(
   result: RunResultEnvelope,
@@ -195,136 +263,17 @@ function extractEntities(
   const data = result.data;
   if (!data) return { entities: [] };
 
-  let raw: EntityRef[] = [];
+  // Dispatch by _mode (graph handlers) or command (variant_profile)
+  const mode = data._mode as string | undefined;
+  const extractor = mode
+    ? MODE_EXTRACTORS[mode]
+    : command === "variant_profile"
+      ? extractVariantProfileEntities
+      : undefined;
 
-  switch (command) {
-    case "explore": {
-      // Neighbors/enrich format: results[key].top[]
-      const results = data.results as Record<string, { top?: unknown[] }> | undefined;
-      if (results) {
-        for (const branch of Object.values(results)) {
-          for (const e of branch.top ?? []) {
-            const ent = e as Record<string, unknown>;
-            if (ent.type && ent.id && ent.label) {
-              raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
-            }
-          }
-        }
-      }
-      // Compare format: comparisons[edgeType].shared[].entity
-      const comparisons = data.comparisons as Record<string, { shared?: unknown[] }> | undefined;
-      if (comparisons) {
-        for (const comp of Object.values(comparisons)) {
-          for (const s of comp.shared ?? []) {
-            const item = s as { entity?: Record<string, unknown> };
-            const ent = item.entity;
-            if (ent?.type && ent.id && ent.label) {
-              raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
-            }
-          }
-        }
-      }
-      // Intersect format: sharedNeighbors[].neighbor
-      const sharedNeighbors = data.sharedNeighbors as Array<{ neighbor?: Record<string, unknown> }> | undefined;
-      if (sharedNeighbors) {
-        for (const s of sharedNeighbors) {
-          const ent = s.neighbor;
-          if (ent?.type && ent.id && ent.label) {
-            raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
-          }
-        }
-      }
-      break;
-    }
-    case "traverse": {
-      // Chain mode: from last non-empty steps[].top[]
-      const steps = data.steps as Array<{ top?: unknown[] }> | undefined;
-      if (steps) {
-        for (let i = steps.length - 1; i >= 0; i--) {
-          const top = steps[i].top;
-          if (top && top.length > 0) {
-            for (const e of top) {
-              const ent = e as Record<string, unknown>;
-              if (ent.type && ent.id && ent.label) {
-                raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
-              }
-            }
-            break;
-          }
-        }
-      }
-      // Patterns mode: from matches[].vars (all bound entities)
-      const matches = data.matches as Array<{ vars?: Record<string, unknown> }> | undefined;
-      if (matches) {
-        for (const m of matches) {
-          if (m.vars) {
-            for (const v of Object.values(m.vars)) {
-              const ent = v as Record<string, unknown>;
-              if (ent.type && ent.id && ent.label) {
-                raw.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
-              }
-            }
-          }
-        }
-      }
-      break;
-    }
-    case "variant_profile": {
-      // From profiles[] — extract both the variant AND its related entities
-      const profiles = data.profiles as Array<Record<string, unknown>> | undefined;
-      if (profiles) {
-        for (const p of profiles) {
-          // Extract the variant itself
-          const resolvedId = p.resolvedId as string | undefined;
-          const label = (p.label as string) ?? (p.variant as string);
-          if (resolvedId && label) {
-            raw.push({ type: "Variant", id: resolvedId, label });
-          }
+  if (!extractor) return { entities: [] };
 
-          const entity = p.entity as Record<string, unknown> | undefined;
-          if (!entity) continue;
-
-          // Entity detail response: { data: {...}, included: { counts, relations } }
-          const included = entity.included as Record<string, unknown> | undefined;
-          const entityData = (entity.data ?? {}) as Record<string, unknown>;
-
-          // Extract neighbors from included.relations[EDGE_TYPE].rows[].neighbor
-          const relations = (included?.relations ?? {}) as Record<string, { rows?: unknown[] }>;
-          for (const [, group] of Object.entries(relations)) {
-            const rows = group?.rows;
-            if (!Array.isArray(rows)) continue;
-            for (const row of rows) {
-              const r = row as Record<string, unknown>;
-              const neighbor = r.neighbor as Record<string, unknown> | undefined;
-              if (!neighbor) continue;
-              const nType = neighbor.type as string | undefined;
-              const nId = neighbor.id as string | undefined;
-              // Relations use name/symbol (not label) — use id as fallback for id-mode neighbors
-              const nLabel = (neighbor.symbol as string) ?? (neighbor.name as string) ?? (neighbor.label as string) ?? nId;
-              if (nType && nId && nLabel) {
-                raw.push({ type: nType, id: nId, label: nLabel });
-              }
-            }
-          }
-
-          // Fallback: if cCRE accessions exist in flat data but no cCRE entity was extracted
-          const ccreAccessions = entityData.ccre_accessions as string | undefined;
-          if (ccreAccessions && !raw.some((e) => e.type === "cCRE")) {
-            for (const acc of ccreAccessions.split(",")) {
-              const trimmed = acc.trim();
-              if (trimmed) {
-                raw.push({ type: "cCRE", id: trimmed, label: trimmed });
-              }
-            }
-          }
-        }
-      }
-      break;
-    }
-    default:
-      // Cohort commands: no graph entities (v1 is graph-to-graph only)
-      return { entities: [] };
-  }
+  let raw = extractor(data);
 
   // Deduplicate by id
   const seen = new Set<string>();
@@ -334,12 +283,15 @@ function extractEntities(
     return true;
   });
 
-  // Adaptive limit based on next step's mode
+  // Adaptive limit: pipeline-internal entities never reach the LLM,
+  // so we can pass more through. Set operations (intersect/union) need
+  // complete inputs; enrichment and other downstream steps get a generous cap.
+  const isSetOp = nextStep?.command === "intersect" || nextStep?.command === "union";
   const isEnrichment =
     nextStep?.command === "explore" &&
-    ((nextStep.args as Record<string, unknown>).mode === "enrich" ||
+    ((nextStep.args as Record<string, unknown>).target != null ||
       JSON.stringify(nextStep.args).includes("enrich"));
-  const cap = isEnrichment ? 200 : 10;
+  const cap = isSetOp ? 500 : isEnrichment ? 200 : 50;
 
   const totalAvailable = raw.length;
   const capped = raw.length > cap;

@@ -236,27 +236,6 @@ export function warnPartialResolution(
   }
 }
 
-/** Get resolution candidates for the first seed (for disambiguation). */
-export function getResolutionCandidates(resolutions: SeedResolution[]): Candidate[] {
-  const candidates: Candidate[] = [];
-  for (const res of resolutions) {
-    if (res.low_confidence || res.candidates?.length) {
-      candidates.push({
-        type: res.entity.type,
-        id: res.entity.id,
-        label: res.entity.label,
-        score: res.confidence,
-        source: res.strategy === "search_fallback" ? "search" : "resolve",
-        reason: res.low_confidence ? "Low confidence match" : undefined,
-      });
-      if (res.candidates) {
-        candidates.push(...res.candidates);
-      }
-    }
-  }
-  return candidates;
-}
-
 /**
  * Search fallback for unresolved labels.
  */

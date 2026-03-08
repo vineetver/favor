@@ -11,8 +11,8 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, trimEntitySubtitles } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { errorResult, trimEntitySubtitles } from "./graph";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -137,6 +137,7 @@ export async function handleExploreContext(
     return okResult({
       text_summary: textSummary,
       data: {
+        _mode: "context" as const,
         entities: entities.map((ent) => ({
           entity: ent.entity,
           ...(ent.summary ? { summary: ent.summary } : {}),
@@ -150,6 +151,35 @@ export async function handleExploreContext(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from context result data for pipeline forwarding. */
+export function extractContextEntities(data: Record<string, unknown>): EntityRef[] {
+  const entities = data.entities as Array<{
+    entity?: Record<string, unknown>;
+    neighbors?: Record<string, { top?: Array<{ entity?: Record<string, unknown> }> }>;
+  }> | undefined;
+  if (!entities) return [];
+  const out: EntityRef[] = [];
+  for (const item of entities) {
+    // The context entity itself
+    const ent = item.entity;
+    if (ent?.type && ent.id && ent.label) {
+      out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+    }
+    // Top neighbors per type
+    if (item.neighbors) {
+      for (const group of Object.values(item.neighbors)) {
+        for (const n of group.top ?? []) {
+          const ne = n.entity;
+          if (ne?.type && ne.id && ne.label) {
+            out.push({ type: String(ne.type), id: String(ne.id), label: String(ne.label) });
+          }
+        }
+      }
+    }
+  }
+  return out;
 }

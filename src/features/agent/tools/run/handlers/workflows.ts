@@ -12,6 +12,7 @@ import { cohortFetch, agentFetch } from "../../../lib/api-client";
 import type { RunCommand } from "../types";
 import type { RunResultEnvelope } from "../run-result";
 import { okResult, partialResult, errorResult, catchToResult, TraceCollector } from "../run-result";
+import { HANDLER_EDGE_FIELDS } from "../edge-field-constants";
 import type { RunContext } from "../index";
 import { fetchAndCacheSchema, getCachedSchema, getFingerprint } from "../schema-cache";
 import type { NextAction } from "../recovery";
@@ -375,20 +376,8 @@ async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]
 // Variant entity trimmer — strip bloat before storing in tool output
 // ---------------------------------------------------------------------------
 
-/** Essential edge props per type for LLM + frontend rendering. */
-const TRIM_EDGE_PROPS: Record<string, string[] | null> = {
-  VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center", "ccre_size", "source"],
-  VARIANT_IMPLIES_GENE: ["implication_mode", "l2g_score", "confidence_class", "n_loci", "gene_symbol"],
-  VARIANT_AFFECTS_GENE: ["variant_consequence", "region_type", "gene_symbol", "gene_full_name", "sources"],
-  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance", "trait_name"],
-  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance", "trait_name"],
-  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele", "trait_name"],
-  VARIANT_ASSOCIATED_WITH_DRUG: ["clinical_significance", "evidence_count", "direction_of_effect", "drug_name"],
-  VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele", "study_title", "study_trait"],
-  VARIANT_LINKED_TO_SIDE_EFFECT: ["side_effect_name", "drug_name", "gene_symbol", "confidence_class"],
-  CCRE_REGULATES_GENE: ["max_score", "n_tissues", "method"],
-  SIGNAL_HAS_VARIANT: null, // skip entirely — huge count, never useful
-};
+/** Essential edge props per type — shared source of truth. */
+const TRIM_EDGE_PROPS = HANDLER_EDGE_FIELDS;
 
 /** Strip source_versions, trim edge props to essentials, skip noisy edge types. */
 function trimVariantEntity(raw: Record<string, unknown>): Record<string, unknown> {

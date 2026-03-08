@@ -20,7 +20,6 @@ import { resolveSeeds, warnPartialResolution } from "../resolve-seeds";
 import {
   getCachedGraphSchema,
   errorResult,
-  catchError,
   trimEntitySubtitles,
   edgeTypeAnnotation,
   humanEdgeLabel,
@@ -28,7 +27,7 @@ import {
   applyDefaultKeyFilters,
   schemaGuidedRecovery,
 } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -422,6 +421,7 @@ export async function handleExploreNeighbors(
     const result = okResult({
       text_summary: summary,
       data: {
+        _mode: "neighbors" as const,
         results: branchResults,
         resolved_seeds: resolvedSeeds,
         ...(enrichmentResult ? { enrichment: enrichmentResult } : {}),
@@ -438,6 +438,22 @@ export async function handleExploreNeighbors(
 
     return result;
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from neighbors result data for pipeline forwarding. */
+export function extractNeighborEntities(data: Record<string, unknown>): EntityRef[] {
+  const results = data.results as Record<string, { top?: unknown[] }> | undefined;
+  if (!results) return [];
+  const out: EntityRef[] = [];
+  for (const branch of Object.values(results)) {
+    for (const e of branch.top ?? []) {
+      const ent = e as Record<string, unknown>;
+      if (ent.type && ent.id && ent.label) {
+        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+      }
+    }
+  }
+  return out;
 }

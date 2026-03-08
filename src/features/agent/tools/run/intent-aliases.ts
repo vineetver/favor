@@ -218,18 +218,6 @@ export function findEdgesConnecting(
 }
 
 /**
- * Get summary fields for a node type from the schema.
- */
-export function getSummaryFields(
-  schema: GraphSchemaResponse,
-  nodeType: string,
-): string[] {
-  return (
-    schema.nodeTypes.find((n) => n.nodeType === nodeType)?.summaryFields ?? []
-  );
-}
-
-/**
  * Infer the best edge type connecting two node types.
  * Returns null if no edge connects them.
  */

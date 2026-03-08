@@ -16,7 +16,7 @@ export type { NextAction, Repair } from "./recovery";
 // Core types
 // ---------------------------------------------------------------------------
 
-export type ToolStatus = "ok" | "empty" | "needs_user" | "error" | "need_clarification" | "partial";
+export type ToolStatus = "ok" | "empty" | "needs_user" | "error" | "partial";
 
 export interface ToolError {
   code: ToolErrorCode | string;
@@ -56,12 +56,6 @@ export interface ResolvedInfo {
   request_id?: string;
   resolved?: unknown;
   cache?: Array<{ key: string; hit: boolean; age_ms?: number }>;
-}
-
-export interface SuggestedNext {
-  action: string;
-  params?: unknown;
-  reason?: string;
 }
 
 export interface BudgetsRemaining {
@@ -167,7 +161,7 @@ export interface RunResultEnvelope {
 
   // Recovery — column auto-corrections applied
   repairs?: Repair[];
-  // Tool-shaped recovery/drill-down actions (replaces suggested_next)
+  // Tool-shaped recovery/drill-down actions
   next_actions?: NextAction[];
 
   error?: ToolError;
@@ -175,8 +169,6 @@ export interface RunResultEnvelope {
   trace?: TraceEntry[];
   candidates?: Candidate[];
   resolved_info?: ResolvedInfo;
-  /** @deprecated Use next_actions instead */
-  suggested_next?: SuggestedNext[];
   budgets_remaining?: BudgetsRemaining;
 }
 
@@ -188,7 +180,6 @@ interface OkOpts {
   next_reads?: RunResultEnvelope["next_reads"];
   tc?: TraceCollector;
   resolved_info?: ResolvedInfo;
-  suggested_next?: SuggestedNext[];
   next_actions?: NextAction[];
   repairs?: Repair[];
   budgets_remaining?: BudgetsRemaining;
@@ -211,7 +202,6 @@ export function okResult(opts: OkOpts): RunResultEnvelope {
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
     ...(opts.tc?.candidates.length ? { candidates: opts.tc.candidates } : {}),
     ...(opts.resolved_info ? { resolved_info: opts.resolved_info } : {}),
-    ...(opts.suggested_next?.length ? { suggested_next: opts.suggested_next } : {}),
     ...(opts.budgets_remaining ? { budgets_remaining: opts.budgets_remaining } : {}),
   };
 }
@@ -227,7 +217,6 @@ interface ErrorOpts {
   details?: unknown;
   http_status?: number;
   tc?: TraceCollector;
-  suggested_next?: SuggestedNext[];
   next_actions?: NextAction[];
   repairs?: Repair[];
   candidates?: Candidate[];
@@ -252,33 +241,7 @@ export function errorResult(opts: ErrorOpts): RunResultEnvelope {
     ...(opts.tc?.warnings.length || opts.candidates?.length
       ? { warnings: opts.tc?.warnings }
       : {}),
-    ...(opts.suggested_next?.length ? { suggested_next: opts.suggested_next } : {}),
     ...(opts.candidates?.length ? { candidates: opts.candidates } : {}),
-  };
-}
-
-export function needClarificationResult(opts: {
-  message: string;
-  candidates: Candidate[];
-  tc?: TraceCollector;
-  suggested_next?: SuggestedNext[];
-  next_actions?: NextAction[];
-}): RunResultEnvelope {
-  return {
-    status: "needs_user",
-    text_summary: opts.message,
-    data: { needs_user: true, message: opts.message },
-    state_delta: {},
-    candidates: opts.candidates,
-    ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
-    ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
-    ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
-    suggested_next: opts.suggested_next ?? [
-      {
-        action: "AskUser",
-        reason: "Multiple possible matches — let the user pick.",
-      },
-    ],
   };
 }
 
@@ -287,7 +250,6 @@ export function emptyResult(opts: {
   reason: string;
   data?: Record<string, unknown>;
   tc?: TraceCollector;
-  suggested_next?: SuggestedNext[];
   next_actions?: NextAction[];
 }): RunResultEnvelope {
   return {
@@ -298,7 +260,6 @@ export function emptyResult(opts: {
     ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
-    ...(opts.suggested_next?.length ? { suggested_next: opts.suggested_next } : {}),
   };
 }
 

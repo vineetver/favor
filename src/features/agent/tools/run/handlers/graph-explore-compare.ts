@@ -6,8 +6,8 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeedsWithMeta, resolveSeedsWithTypeHint, warnPartialResolution } from "../resolve-seeds";
-import { errorResult, catchError, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { errorResult, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 import { canonicalizeIntent, resolveIntentType, findEdgesConnecting, type GraphSchemaResponse } from "../intent-aliases";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
@@ -82,7 +82,7 @@ export async function handleExploreCompare(
     // Different types → fall back to /graph/intersect
     return await executeIntersect(resolved, edgeType, cmd.direction, cmd.limit, annotation, tc);
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
 }
 
@@ -144,6 +144,7 @@ async function executeCompare(
     return okResult({
       text_summary: summary,
       data: {
+        _mode: "compare" as const,
         _method: "Side-by-side Jaccard comparison of same-type entities. Higher Jaccard index = more similar neighborhoods.",
         entities: resolved,
         relationship: edgeTypes?.length ? edgeTypes.map(humanEdgeLabel).join(", ") : "all relationships",
@@ -217,6 +218,7 @@ async function executeIntersect(
   return okResult({
     text_summary: summary,
     data: {
+      _mode: "compare" as const,
       entities: resolved,
       relationship: edgeType ? humanEdgeLabel(edgeType) : undefined,
       edgeDescription: annotation ?? undefined,
@@ -277,4 +279,33 @@ function inferExpectedSeedType(
     }
   }
   return best;
+}
+
+/** Extract entities from compare result data for pipeline forwarding. */
+export function extractCompareEntities(data: Record<string, unknown>): EntityRef[] {
+  const out: EntityRef[] = [];
+  // Same-type compare: comparisons[edgeType].shared[].entity
+  const comparisons = data.comparisons as Record<string, { shared?: unknown[] }> | undefined;
+  if (comparisons) {
+    for (const comp of Object.values(comparisons)) {
+      for (const s of comp.shared ?? []) {
+        const item = s as { entity?: Record<string, unknown> };
+        const ent = item.entity;
+        if (ent?.type && ent.id && ent.label) {
+          out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+        }
+      }
+    }
+  }
+  // Mixed-type compare: sharedNeighbors[].neighbor
+  const sharedNeighbors = data.sharedNeighbors as Array<{ neighbor?: Record<string, unknown> }> | undefined;
+  if (sharedNeighbors) {
+    for (const s of sharedNeighbors) {
+      const ent = s.neighbor;
+      if (ent?.type && ent.id && ent.label) {
+        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+      }
+    }
+  }
+  return out;
 }

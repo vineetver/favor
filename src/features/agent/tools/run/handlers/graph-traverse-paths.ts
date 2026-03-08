@@ -4,9 +4,9 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchError, getCachedGraphSchema, humanEdgeLabel } from "./graph";
-import { okResult, emptyResult, TraceCollector } from "../run-result";
+import type { RunCommand, RunResult, EntityRef } from "../types";
+import { errorResult, getCachedGraphSchema, humanEdgeLabel } from "./graph";
+import { okResult, emptyResult, catchToResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -92,10 +92,11 @@ export async function handleTraversePaths(
     if (paths.length === 0) {
       return emptyResult({
         reason: `No paths found between ${cmd.from} and ${cmd.to}`,
+        data: { _mode: "paths" as const },
         tc,
-        suggested_next: [
-          { action: "Run", params: { command: "traverse", mode: "paths", max_hops: Math.min((cmd.max_hops ?? 3) + 1, 5) }, reason: "Increase max_hops to search deeper" },
-          { action: "Run", params: { command: "explore", mode: "context" }, reason: "Check entity context to verify both entities exist" },
+        next_actions: [
+          { tool: "Run", args: { command: "traverse", from: cmd.from, to: cmd.to, max_hops: Math.min((cmd.max_hops ?? 3) + 1, 5) }, reason: "Increase max_hops to search deeper" },
+          { tool: "Run", args: { command: "explore", seeds: [{ label: cmd.from?.split(":")[1] ?? cmd.from }] }, reason: "Check entity context to verify both entities exist" },
         ],
       });
     }
@@ -122,6 +123,7 @@ export async function handleTraversePaths(
     return okResult({
       text_summary: textSummary,
       data: {
+        _mode: "paths" as const,
         _method: "Shortest path search through the knowledge graph. Each path shows a chain of entities connected by typed relationships.",
         from: data.data.from,
         to: data.data.to,
@@ -133,6 +135,21 @@ export async function handleTraversePaths(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from paths result data for pipeline forwarding. */
+export function extractPathEntities(data: Record<string, unknown>): EntityRef[] {
+  const paths = data.paths as Array<{ nodes?: Array<Record<string, unknown>> }> | undefined;
+  if (!paths) return [];
+  const out: EntityRef[] = [];
+  for (const p of paths) {
+    for (const node of p.nodes ?? []) {
+      if (node.type && node.id && node.label) {
+        out.push({ type: String(node.type), id: String(node.id), label: String(node.label) });
+      }
+    }
+  }
+  return out;
 }

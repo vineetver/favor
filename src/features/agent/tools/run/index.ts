@@ -696,10 +696,8 @@ const runInputSchema = z.object({
   compare_on: z.array(z.string()).optional().describe("Columns to compare on (compare_cohorts)"),
 
   // --- explore (auto-routed from params) ---
-  mode: z.string().optional().describe("Deprecated — routing is automatic from params. Do not set."),
   seeds: z.array(flatSeedRef).optional().describe("Seed entity refs (explore, traverse patterns)"),
   into: z.array(targetIntents).optional().describe("Target intents (explore neighbors)"),
-  depth: z.number().optional().describe("Reserved — not currently used by explore handlers"),
   edge_type: z.string().optional().describe("Edge type (explore compare/aggregate)"),
   direction: z.enum(["in", "out"]).optional().describe("Edge direction (explore compare/aggregate)"),
   target: targetIntents.optional().describe("Target intent (explore enrich)"),
@@ -717,7 +715,6 @@ const runInputSchema = z.object({
   from: z.string().optional().describe("Source entity 'Type:ID' (traverse paths)"),
   to: z.string().optional().describe("Target entity 'Type:ID' (traverse paths)"),
   max_hops: z.number().optional().describe("Max path hops (traverse paths)"),
-  include_edge_detail: z.boolean().optional().describe("Reserved — paths always include edge types"),
   // --- traverse patterns (structural pattern matching) ---
   description: z.string().optional().describe("Natural language pattern description (traverse patterns)"),
   pattern: z.array(z.object({
@@ -809,7 +806,7 @@ See system prompt for: intent selection by seed type, drug intent decision tree,
       const cmd = opts.input as { command: string };
       const result = opts.output as RunResult;
       // Pass through errors, disambiguation, and empty results uncompacted (LLM needs full context)
-      if (result.status === "error" || result.status === "needs_user" || result.status === "need_clarification" || result.status === "empty" || result.data?.error) {
+      if (result.status === "error" || result.status === "needs_user" || result.status === "empty" || result.data?.error) {
         return { type: "json" as const, value: result as unknown as null };
       }
       return compactRunForModel(cmd.command, result);

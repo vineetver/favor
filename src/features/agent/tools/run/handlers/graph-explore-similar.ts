@@ -9,8 +9,8 @@
 import { agentFetch } from "../../../lib/api-client";
 import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, catchError, trimEntitySubtitles } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { errorResult, trimEntitySubtitles } from "./graph";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -71,6 +71,7 @@ export async function handleExploreSimilar(
       text_summary: data.data?.textSummary ??
         `Found ${similar.length} entities similar to ${seed.label}${edgeContext}`,
       data: {
+        _mode: "similar" as const,
         _method: `Similarity is computed using ${method} method by comparing shared neighbors in the graph. Higher scores indicate more overlapping connections${cmd.edge_types?.length ? ` via ${cmd.edge_types.join(", ")}` : ""}.`,
         seed: data.data?.query ?? seed,
         method,
@@ -86,6 +87,20 @@ export async function handleExploreSimilar(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from similar result data for pipeline forwarding. */
+export function extractSimilarEntities(data: Record<string, unknown>): EntityRef[] {
+  const similar = data.similar as Array<{ entity?: Record<string, unknown> }> | undefined;
+  if (!similar) return [];
+  const out: EntityRef[] = [];
+  for (const s of similar) {
+    const ent = s.entity;
+    if (ent?.type && ent.id && ent.label) {
+      out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+    }
+  }
+  return out;
 }

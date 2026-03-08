@@ -7,11 +7,21 @@
  *   - top-K preview of large arrays
  *   - _truncation metadata when data was trimmed
  *   - state_delta / artifacts / next_reads pass through
- *   - trace / warnings / candidates / suggested_next / budgets_remaining pass through
+ *   - trace / warnings / candidates / budgets_remaining pass through
  */
 
 import type { RunResult, NextAction } from "./types";
 import { humanEdgeLabel, humanScoreLabel } from "./handlers/graph";
+import { COMPACT_EDGE_FIELDS } from "./edge-field-constants";
+import type {
+  NeighborsResultData,
+  CompareResultData,
+  SimilarResultData,
+  ContextResultData,
+  AggregateResultData,
+  ChainResultData,
+  PatternsResultData,
+} from "./result-data-types";
 
 interface TruncationInfo {
   truncated: true;
@@ -21,9 +31,6 @@ interface TruncationInfo {
   how_to_get_more?: NextAction;
   hint?: string;
 }
-
-// Backwards-compatible alias
-type Truncation = TruncationInfo;
 
 /** Cast to satisfy ToolResultOutput's JSONValue constraint */
 type CompactValue = { type: "json"; value: null };
@@ -65,7 +72,6 @@ function buildEnvelope(
   if (result.trace?.length) envelope.trace = result.trace;
   if (result.candidates?.length) envelope.candidates = result.candidates;
   if (result.resolved_info) envelope.resolved_info = result.resolved_info;
-  if (result.suggested_next?.length) envelope.suggested_next = result.suggested_next;
   if (result.budgets_remaining) envelope.budgets_remaining = result.budgets_remaining;
   if (result.error) envelope.error = result.error;
   if (result.repairs?.length) envelope.repairs = result.repairs;
@@ -249,102 +255,138 @@ function compactCompute(data: Record<string, unknown>): Record<string, unknown> 
 }
 
 function compactExplore(data: Record<string, unknown>): Record<string, unknown> {
-  const results = data.results as Record<string, { count: number; edgeType: string; scoreField?: string; top: unknown[] }> | undefined;
+  // Dispatch on _mode discriminator (handlers always set this)
+  switch (data._mode) {
+    case "neighbors":  return compactExploreNeighbors(data);
+    case "compare":    return compactExploreCompare(data);
+    case "enrich":     return data; // already compact from handler
+    case "similar":    return compactExploreSimilar(data);
+    case "context":    return compactExploreContext(data);
+    case "aggregate":  return compactExploreAggregate(data);
+    default:           return data;
+  }
+}
+
+function compactExploreNeighbors(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as NeighborsResultData;
+  const results = d.results;
   if (!results) return data;
 
   const compactResults: Record<string, unknown> = {};
   const renderedTables: { intent: string; relationship: string; markdown: string; shown: number; total: number }[] = [];
 
-  const TABLE_K = 5;  // rendered table: top 5 (for display)
-  const LIST_K = 20;  // slim JSON: up to 20 (for intersection / follow-up)
+  const TABLE_K = 5;
+  const LIST_K = 10;
 
   for (const [key, branch] of Object.entries(results)) {
-    const allTop = asArray(branch.top);
-    const tableTop = allTop.slice(0, TABLE_K) as Ent[];
-    const listTop = allTop.slice(0, LIST_K) as Ent[];
+    const allTop = branch.top as unknown as Ent[];
+    const tableTop = allTop.slice(0, TABLE_K);
+    const listTop = allTop.slice(0, LIST_K);
     const relationship = humanEdgeLabel(branch.edgeType);
 
-    // Pre-render markdown table (top 5 only — keeps output concise)
     const table = renderEntityTable(tableTop, { scoreField: branch.scoreField, showProvenance: true });
     if (table) {
       renderedTables.push({ intent: key, relationship, markdown: table, shown: tableTop.length, total: branch.count });
     }
 
-    // Slim JSON: up to 20 entities for cross-list intersection / follow-up seeds
     const branchObj: Record<string, unknown> = {
       count: branch.count,
       relationship,
       top: listTop.map(minimalEntity),
       ...(allTop.length > LIST_K ? { _truncation: truncation(LIST_K, allTop.length, "explore with narrower intent for more") } : {}),
     };
-    // Preserve availableRelationships so the model can retry with alternative edge types
-    const avail = (branch as Record<string, unknown>).availableRelationships;
-    if (Array.isArray(avail) && avail.length > 0) {
-      branchObj.availableRelationships = avail;
+    if (branch.availableRelationships?.length) {
+      branchObj.availableRelationships = branch.availableRelationships;
     }
     compactResults[key] = branchObj;
   }
 
   const out: Record<string, unknown> = {
     results: compactResults,
-    resolved_seeds: data.resolved_seeds,
+    resolved_seeds: d.resolved_seeds,
   };
   if (renderedTables.length) out.rendered = { tables: renderedTables };
-  // Pass through enrichment if present (already reasonably sized)
-  if (data.enrichment) out.enrichment = data.enrichment;
-  // Pass through aggregate data (already small)
-  if (data.seed) out.seed = data.seed;
-  if (data.relationship) out.relationship = data.relationship;
-  else if (data.edgeType) out.relationship = humanEdgeLabel(data.edgeType as string);
-  if (data.metric) out.metric = data.metric;
-  if (data.value !== undefined) out.value = data.value;
-  if (data.buckets) {
-    const buckets = asArray(data.buckets);
+  if (d.enrichment) out.enrichment = d.enrichment;
+  if (d._method) out._method = d._method;
+  if (d._proteinDomains) out._proteinDomains = d._proteinDomains;
+  return out;
+}
+
+function compactExploreCompare(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as CompareResultData;
+  const out: Record<string, unknown> = {};
+  if (d._method) out._method = d._method;
+  if (d.entities) out.entities = d.entities;
+  if (d.relationship) out.relationship = d.relationship;
+
+  // Same-type compare: comparisons + overallSimilarity
+  if (d.comparisons) out.comparisons = d.comparisons;
+  if (d.overallSimilarity) out.overallSimilarity = d.overallSimilarity;
+
+  // Mixed-type compare: sharedNeighbors
+  if (d.sharedNeighbors) {
+    const shared = d.sharedNeighbors.slice(0, 10) as Ent[];
+    out.sharedNeighbors = shared.map(minimalEntity);
+    const table = renderEntityTable(shared, { scoreField: undefined, showProvenance: false });
+    if (table) out.rendered = { tables: [{ intent: "shared", relationship: "shared neighbors", markdown: table, shown: shared.length, total: d.sharedNeighbors.length }] };
+    if (d.sharedNeighbors.length > 10) {
+      out._truncation = truncation(10, d.sharedNeighbors.length);
+    }
+  }
+  if (d.counts) out.counts = d.counts;
+  return out;
+}
+
+function compactExploreSimilar(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as SimilarResultData;
+  const out: Record<string, unknown> = {};
+  if (d._method) out._method = d._method;
+  if (d.seed) out.seed = d.seed;
+  if (d.method) out.method = d.method;
+
+  const similar = d.similar ?? [];
+  out.similar = (similar.slice(0, 5) as Ent[]).map(minimalEntity);
+  if (similar.length > 5) {
+    out._truncation = truncation(5, similar.length);
+  }
+  return out;
+}
+
+function compactExploreContext(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as ContextResultData;
+  const entities = d.entities ?? [];
+  const out: Record<string, unknown> = {
+    entities: (entities.slice(0, 10) as Ent[]).map(minimalEntity),
+  };
+  if (entities.length > 10) {
+    const byType: Record<string, number> = {};
+    for (const e of entities) {
+      const t = (e as Ent).type as string ?? "unknown";
+      byType[t] = (byType[t] ?? 0) + 1;
+    }
+    out.entity_type_counts = byType;
+    out._truncation = truncation(10, entities.length,
+      `${entities.length - 10} more entities available. Filter by type for specifics.`,
+    );
+  }
+  return out;
+}
+
+function compactExploreAggregate(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as AggregateResultData;
+  const out: Record<string, unknown> = {};
+  if (d.seed) out.seed = d.seed;
+  if (d.relationship) out.relationship = d.relationship;
+  else if (d.edgeType) out.relationship = humanEdgeLabel(d.edgeType);
+  if (d.metric) out.metric = d.metric;
+  if (d.value !== undefined) out.value = d.value;
+  if (d.buckets) {
+    const buckets = d.buckets;
     out.buckets = buckets.slice(0, 10);
     if (buckets.length > 10) {
       out._truncation = truncation(10, buckets.length);
     }
   }
-  // Pass through compare results — render shared neighbors table
-  if (data.comparisons) out.comparisons = data.comparisons;
-  if (data.overallSimilarity) out.overallSimilarity = data.overallSimilarity;
-  if (data.sharedNeighbors) {
-    const shared = asArray(data.sharedNeighbors).slice(0, 10) as Ent[];
-    out.sharedNeighbors = shared.map(minimalEntity);
-    const table = renderEntityTable(shared, { scoreField: undefined, showProvenance: false });
-    if (table && !out.rendered) out.rendered = { tables: [{ intent: "shared", relationship: "shared neighbors", markdown: table, shown: shared.length, total: asArray(data.sharedNeighbors).length }] };
-    if (asArray(data.sharedNeighbors).length > 10) {
-      out._truncation = truncation(10, asArray(data.sharedNeighbors).length);
-    }
-  }
-  // Pass through context entities — raise limit + add type breakdown
-  if (data.entities) {
-    const entities = asArray(data.entities);
-    out.entities = (entities.slice(0, 10) as Ent[]).map(minimalEntity);
-    if (entities.length > 10) {
-      const byType: Record<string, number> = {};
-      for (const e of entities) {
-        const t = (e as Ent).type as string ?? "unknown";
-        byType[t] = (byType[t] ?? 0) + 1;
-      }
-      out.entity_type_counts = byType;
-      out._truncation = truncation(10, entities.length,
-        `${entities.length - 10} more entities available. Filter by type for specifics.`,
-      );
-    }
-  }
-  // Pass through similar results
-  if (data.similar) {
-    const similar = asArray(data.similar);
-    out.similar = (similar.slice(0, 5) as Ent[]).map(minimalEntity);
-    if (similar.length > 5) {
-      out._truncation = truncation(5, similar.length);
-    }
-  }
-  // Pass through method description
-  if (data._method) out._method = data._method;
-  // Pass through protein domain architecture data (computed by neighbors handler)
-  if (data._proteinDomains) out._proteinDomains = data._proteinDomains;
   return out;
 }
 
@@ -374,100 +416,98 @@ const TEXT_HEAVY_KEYS = new Set([
 ]);
 
 function compactTraverse(data: Record<string, unknown>): Record<string, unknown> {
-  // Patterns mode — delegate to compactPatterns if matches present
-  const matches = asArray(data.matches);
-  if (matches.length > 0) return compactPatterns(data);
-
-  // Chain mode
-  const steps = data.steps as Array<{
-    intent: string;
-    edgeType?: string;
-    count: number;
-    top: unknown[];
-    edgeDescription?: string;
-    scoreField?: string;
-  }> | undefined;
-  if (steps) {
-    const TOP_K = 10;
-    const renderedTables: { step: string; relationship: string; markdown: string; shown: number; total: number }[] = [];
-
-    const compactSteps = steps.map((s, i) => {
-      const relationship = s.edgeDescription
-        ? s.edgeDescription.replace(/:.*$/, "").trim()
-        : s.edgeType
-          ? humanEdgeLabel(s.edgeType)
-          : undefined;
-      const scoreContext = s.scoreField
-        ? humanScoreLabel(s.scoreField)
-        : undefined;
-
-      // Passthrough all fields — just truncate long strings and cap edge props
-      const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
-        const ent = e as Ent;
-        const out: Ent = {};
-        for (const [k, v] of Object.entries(ent)) {
-          if (v == null) continue;
-          if (typeof v === "string") {
-            // Truncate long display strings for table rendering, drop from slim JSON later
-            out[k] = TEXT_HEAVY_KEYS.has(k) ? truncateStr(v, 80) : v;
-          } else if (typeof v === "number") {
-            out[k] = Number.isInteger(v) ? v : Math.round(v * 10000) / 10000;
-          } else if (k === "edgeProperties" && typeof v === "object" && !Array.isArray(v)) {
-            out[k] = capEdgeProperties(v as Record<string, unknown>);
-          } else {
-            out[k] = v;
-          }
-        }
-        return out;
-      });
-
-      // Pre-render markdown table for this step
-      const table = renderEntityTable(topEntities, {
-        scoreField: s.scoreField,
-        showProvenance: true,
-        showSupport: true,
-      });
-      if (table) {
-        renderedTables.push({
-          step: `Step ${i + 1}: ${s.intent} (via ${relationship ?? s.edgeType ?? "?"})`,
-          relationship: relationship ?? s.intent,
-          markdown: table,
-          shown: topEntities.length,
-          total: s.count,
-        });
-      }
-
-      // Slim JSON: drop text-heavy display fields (covered by rendered table)
-      const slimEntities = topEntities.map(minimalEntity);
-
-      return {
-        intent: s.intent,
-        count: s.count,
-        ...(relationship ? { relationship } : {}),
-        ...(scoreContext ? { scoreContext } : {}),
-        top: slimEntities,
-        ...(s.top.length > TOP_K ? { _truncation: truncation(TOP_K, s.top.length) } : {}),
-      };
-    });
-
-    return {
-      seed: data.seed,
-      steps: compactSteps,
-      ...(renderedTables.length ? { rendered: { tables: renderedTables } } : {}),
-    };
+  // Dispatch on _mode discriminator
+  switch (data._mode) {
+    case "patterns": return compactPatterns(data);
+    case "paths":    return data; // paths are already compact (path nodes are essential)
+    case "chain":    return compactTraverseChain(data);
+    default:         break; // fall through for legacy (no _mode)
   }
 
-  // Paths mode — already compact (path nodes are essential)
+  // Legacy fallback: field-sniffing for results without _mode
+  if (asArray(data.matches).length > 0) return compactPatterns(data);
+  if (data.steps) return compactTraverseChain(data);
   return data;
 }
 
+function compactTraverseChain(data: Record<string, unknown>): Record<string, unknown> {
+  const d = data as unknown as ChainResultData;
+  const steps = d.steps;
+  if (!steps) return data;
+
+  const TOP_K = 10;
+  const renderedTables: { step: string; relationship: string; markdown: string; shown: number; total: number }[] = [];
+
+  const compactSteps = steps.map((s, i) => {
+    const relationship = s.edgeDescription
+      ? s.edgeDescription.replace(/:.*$/, "").trim()
+      : s.edgeType
+        ? humanEdgeLabel(s.edgeType)
+        : undefined;
+    const scoreContext = s.scoreField
+      ? humanScoreLabel(s.scoreField)
+      : undefined;
+
+    const topEntities = asArray(s.top).slice(0, TOP_K).map((e) => {
+      const ent = e as Ent;
+      const out: Ent = {};
+      for (const [k, v] of Object.entries(ent)) {
+        if (v == null) continue;
+        if (typeof v === "string") {
+          out[k] = TEXT_HEAVY_KEYS.has(k) ? truncateStr(v, 80) : v;
+        } else if (typeof v === "number") {
+          out[k] = Number.isInteger(v) ? v : Math.round(v * 10000) / 10000;
+        } else if (k === "edgeProperties" && typeof v === "object" && !Array.isArray(v)) {
+          out[k] = capEdgeProperties(v as Record<string, unknown>);
+        } else {
+          out[k] = v;
+        }
+      }
+      return out;
+    });
+
+    const table = renderEntityTable(topEntities, {
+      scoreField: s.scoreField,
+      showProvenance: true,
+      showSupport: true,
+    });
+    if (table) {
+      renderedTables.push({
+        step: `Step ${i + 1}: ${s.intent} (via ${relationship ?? s.edgeType ?? "?"})`,
+        relationship: relationship ?? s.intent,
+        markdown: table,
+        shown: topEntities.length,
+        total: s.count,
+      });
+    }
+
+    const slimEntities = topEntities.map(minimalEntity);
+
+    return {
+      intent: s.intent,
+      count: s.count,
+      ...(relationship ? { relationship } : {}),
+      ...(scoreContext ? { scoreContext } : {}),
+      top: slimEntities,
+      ...(s.top.length > TOP_K ? { _truncation: truncation(TOP_K, s.top.length) } : {}),
+    };
+  });
+
+  return {
+    seed: d.seed,
+    steps: compactSteps,
+    ...(renderedTables.length ? { rendered: { tables: renderedTables } } : {}),
+  };
+}
+
 function compactPatterns(data: Record<string, unknown>): Record<string, unknown> {
-  const matches = asArray(data.matches);
-  const totalMatches = asNumber(data.totalMatches, matches.length);
+  const d = data as unknown as PatternsResultData;
+  const matches = d.matches ?? [];
+  const totalMatches = d.totalMatches ?? matches.length;
   const top = matches.slice(0, 5);
 
   const out: Record<string, unknown> = {
-    pattern: data.pattern,
+    pattern: d.pattern,
     matches: top,
     totalMatches,
   };
@@ -665,21 +705,7 @@ function compactOneProfile(raw: unknown): Record<string, unknown> {
 
 /** Pick only informative edge props per edge type. */
 function compactEdgeProps(edgeType: string, props: Record<string, unknown>): Record<string, unknown> | null {
-  // Per-edge-type field selection
-  const FIELDS_BY_TYPE: Record<string, string[]> = {
-    VARIANT_OVERLAPS_CCRE: ["annotation", "annotation_label", "distance_to_center", "ccre_size"],
-    VARIANT_IMPLIES_GENE: ["implication_mode", "l2g_score", "confidence_class", "n_loci", "gene_symbol"],
-    VARIANT_AFFECTS_GENE: ["variant_consequence", "region_type", "gene_symbol"],
-    VARIANT_ASSOCIATED_WITH_TRAIT__Entity: ["p_value_mlog", "or_beta", "risk_allele", "clinical_significance"],
-    VARIANT_ASSOCIATED_WITH_TRAIT__Disease: ["p_value_mlog", "clinical_significance", "review_status"],
-    VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: ["p_value_mlog", "or_beta", "risk_allele"],
-    VARIANT_ASSOCIATED_WITH_DRUG: ["clinical_significance", "evidence_count", "direction_of_effect", "drug_name"],
-    VARIANT_ASSOCIATED_WITH_STUDY: ["p_value_mlog", "or_beta", "risk_allele", "trait_name"],
-    VARIANT_LINKED_TO_SIDE_EFFECT: ["side_effect_name", "drug_name", "gene_symbol", "confidence_class"],
-    CCRE_REGULATES_GENE: ["max_score", "n_tissues", "method"],
-  };
-
-  const keepFields = FIELDS_BY_TYPE[edgeType];
+  const keepFields = COMPACT_EDGE_FIELDS[edgeType];
   if (!keepFields) return null;
 
   const out: Record<string, unknown> = {};
@@ -931,8 +957,9 @@ function renderEntityTable(
   const hasSupport = opts.showSupport && entities.some((e) => typeof e.supportCount === "number");
   const hasProvenance = opts.showProvenance && entities.some((e) => e.edgeProperties);
 
-  // Build header
-  const cols: string[] = ["Name"];
+  // Build header — use entity type instead of generic "Name"
+  const entityType = entities[0]?.type;
+  const cols: string[] = [entityType ? String(entityType) : "Name"];
   if (hasScore) cols.push("Score");
   if (hasPValue) cols.push("p-value");
   if (hasFold) cols.push("Fold");

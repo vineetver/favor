@@ -22,7 +22,6 @@ import {
   getCachedGraphSchema,
   TARGET_EDGE_MAP,
   errorResult,
-  catchError,
   edgeTypeAnnotation,
   humanEdgeLabel,
   humanScoreLabel,
@@ -30,7 +29,7 @@ import {
   applyDefaultKeyFilters,
   schemaGuidedRecovery,
 } from "./graph";
-import { okResult, partialResult, TraceCollector } from "../run-result";
+import { okResult, partialResult, catchToResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -743,6 +742,7 @@ export async function handleTraverseChain(
     return resultFn({
       text_summary: `Traversal from ${seed.label}${seedContext}:\n${stepSummaries.join("\n")}`,
       data: {
+        _mode: "chain" as const,
         seed,
         steps: allResults.map((r) => ({
           intent: r.intent,
@@ -750,13 +750,33 @@ export async function handleTraverseChain(
           edgeDescription: r.edgeDescription,
           scoreField: r.scoreField,
           count: r.entities.length,
-          top: r.entities.slice(0, 10),
+          top: r.entities,
         })),
       },
       state_delta: { pinned_entities: [seed] },
       tc,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from chain result data for pipeline forwarding. */
+export function extractChainEntities(data: Record<string, unknown>): EntityRef[] {
+  const steps = data.steps as Array<{ top?: unknown[] }> | undefined;
+  if (!steps) return [];
+  // Take entities from last non-empty step
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const top = steps[i].top;
+    if (!top || top.length === 0) continue;
+    const out: EntityRef[] = [];
+    for (const e of top) {
+      const ent = e as Record<string, unknown>;
+      if (ent.type && ent.id && ent.label) {
+        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+      }
+    }
+    return out;
+  }
+  return [];
 }

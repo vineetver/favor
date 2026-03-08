@@ -10,8 +10,8 @@ import { agentFetch } from "../../../lib/api-client";
 import type { RunResult, EntityRef, SeedRef } from "../types";
 import { inferEdgeType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { getCachedGraphSchema, errorResult, catchError } from "./graph";
-import { okResult, TraceCollector } from "../run-result";
+import { getCachedGraphSchema, errorResult } from "./graph";
+import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 export interface QueryCmd {
   description?: string;
@@ -128,6 +128,7 @@ export async function handleQuery(
       text_summary: data.data?.textSummary ??
         `Pattern matched ${matches.length} results (${total} total)`,
       data: {
+        _mode: "patterns" as const,
         pattern,
         matches: matches.slice(0, cmd.limit ?? 20),
         totalMatches: total,
@@ -141,6 +142,48 @@ export async function handleQuery(
       resolved_info: resolvedInfo,
     });
   } catch (err) {
-    return catchError(err, tc);
+    return catchToResult(err, tc);
   }
+}
+
+/** Extract entities from patterns result data for pipeline forwarding. */
+export function extractPatternEntities(data: Record<string, unknown>): EntityRef[] {
+  const nodeColumns = data.nodeColumns as string[] | undefined;
+  const nodesMap = data.nodes as Record<string, unknown[]> | undefined;
+  const matches = data.matches as Array<{ vars?: Record<string, string> }> | undefined;
+  if (!matches) return [];
+
+  const typeIdx = nodeColumns?.indexOf("type") ?? -1;
+  const idIdx = nodeColumns?.indexOf("id") ?? -1;
+  const labelIdx = nodeColumns?.indexOf("label") ?? -1;
+
+  const out: EntityRef[] = [];
+  for (const m of matches) {
+    if (!m.vars) continue;
+    for (const nodeKey of Object.values(m.vars)) {
+      // Resolve via nodes map if available
+      if (nodesMap && nodeColumns && typeIdx >= 0) {
+        const row = nodesMap[nodeKey];
+        if (row) {
+          const type = row[typeIdx] as string | undefined;
+          const id = row[idIdx] as string | undefined;
+          const label = row[labelIdx] as string | undefined;
+          if (type && id && label) {
+            out.push({ type, id, label });
+            continue;
+          }
+        }
+      }
+      // Fallback: parse "Type:ID" key
+      const colonIdx = nodeKey.indexOf(":");
+      if (colonIdx > 0) {
+        out.push({
+          type: nodeKey.slice(0, colonIdx),
+          id: nodeKey.slice(colonIdx + 1),
+          label: nodeKey,
+        });
+      }
+    }
+  }
+  return out;
 }
