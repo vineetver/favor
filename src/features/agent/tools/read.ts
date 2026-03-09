@@ -394,18 +394,52 @@ async function readCohortSchema(cohortId: string) {
   const numeric = columns.filter((c) => c.kind === "numeric").map((c) => c.name);
   const categorical = columns.filter((c) => c.kind === "categorical").map((c) => c.name);
   const identity = columns.filter((c) => c.kind === "identity").map((c) => c.name);
+  const array = columns.filter((c) => c.kind === "array").map((c) => c.name);
 
-  // Clean available methods
+  // Clean available methods — trim feature/candidate lists to prevent token bloat
+  const MAX_AUTO_CONFIG_FEATURES = 20;
+  const MAX_SUGGESTED_CANDIDATES = 10;
   const methods = Array.isArray(resp.available_methods)
-    ? (resp.available_methods as Array<{ method: string; available: boolean; auto_config?: unknown }>)
+    ? (resp.available_methods as Array<{
+        method: string;
+        available: boolean;
+        auto_config?: Record<string, unknown>;
+        suggested_columns?: Array<{ param_name: string; candidates: string[]; reason: string }>;
+        [k: string]: unknown;
+      }>)
         .filter((m) => m.available)
+        .map((m) => {
+          const trimmed: Record<string, unknown> = {
+            method: m.method,
+            category: m.category,
+            description: m.description,
+            available: true,
+            viz_charts: m.viz_charts,
+          };
+          // Cap auto_config feature lists
+          if (m.auto_config) {
+            const ac = { ...m.auto_config };
+            if (Array.isArray(ac.features) && ac.features.length > MAX_AUTO_CONFIG_FEATURES) {
+              ac.features = (ac.features as string[]).slice(0, MAX_AUTO_CONFIG_FEATURES);
+            }
+            trimmed.auto_config = ac;
+          }
+          // Cap suggested_columns candidates
+          if (Array.isArray(m.suggested_columns)) {
+            trimmed.suggested_columns = m.suggested_columns.map((sc) => ({
+              ...sc,
+              candidates: sc.candidates?.slice(0, MAX_SUGGESTED_CANDIDATES),
+            }));
+          }
+          return trimmed;
+        })
     : [];
 
   return {
     cohortId,
     rowCount: resp.row_count,
     dataType: resp.data_type ?? "variant_list",
-    columns: { numeric, categorical, identity },
+    columns: { numeric, categorical, identity, array },
     capabilities: resp.capabilities,
     availableMethods: methods,
     summary: resp.text_summary,

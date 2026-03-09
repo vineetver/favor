@@ -194,8 +194,8 @@ const COHORT_PATTERNS = `## COHORT PATTERNS (exact tool calls)
 Filter + sort:
 \`{"command":"cohort","op":"rows","filters":[{"type":"gene","values":["BRCA1"]},{"type":"score_above","field":"cadd_phred","threshold":20}],"sort":"cadd_phred","desc":true,"limit":10}\`
 
-Group by:
-\`{"command":"cohort","op":"groupby","group_by":"variant_consequence","metrics":["count","mean:cadd_phred"]}\`
+Group by (count is automatic; metrics = numeric columns for per-group stats):
+\`{"command":"cohort","op":"groupby","group_by":"variant_consequence","metrics":["cadd_phred"]}\`
 
 Weighted composite score:
 \`{"command":"cohort","op":"score","weights":[{"column":"cadd_phred","weight":0.4},{"column":"linsight","weight":0.3},{"column":"gnomad_af","weight":-0.3}],"normalize":true}\`

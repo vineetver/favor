@@ -75,7 +75,14 @@ export async function handleGroupby(
 
   try {
     const body: Record<string, unknown> = { group_by: cmd.group_by };
-    if (cmd.metrics?.length) body.metrics = cmd.metrics;
+    // Normalize metrics: strip "count" (backend always includes it) and aggregate prefixes
+    if (cmd.metrics?.length) {
+      const cleaned = cmd.metrics
+        .filter((m) => m !== "count")
+        .map((m) => (m.includes(":") ? m.split(":").slice(1).join(":") : m))
+        .filter(Boolean);
+      if (cleaned.length) body.metrics = cleaned;
+    }
     if (cmd.limit) body.limit = cmd.limit;
     if (cmd.filters?.length) body.filters = cmd.filters;
     if (cmd.bin_width) body.bin_width = cmd.bin_width;

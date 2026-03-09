@@ -11,7 +11,7 @@ import type { CohortSchemaCache } from "./schema-cache";
 // Types
 // ---------------------------------------------------------------------------
 
-export type ColumnKind = "numeric" | "categorical" | "identity";
+export type ColumnKind = "numeric" | "categorical" | "identity" | "array";
 
 export interface ColumnMatch {
   column: string;
@@ -291,7 +291,12 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
   }
   if (Array.isArray(cmd.metrics)) {
     for (const m of cmd.metrics) {
-      if (typeof m === "string") refs.push({ name: m, expectedKind: "numeric", field_path: "metrics" });
+      if (typeof m !== "string") continue;
+      // "count" is a built-in aggregate — skip column validation
+      if (m === "count") continue;
+      // Strip aggregate prefix ("mean:cadd_phred" → "cadd_phred")
+      const col = m.includes(":") ? m.split(":").slice(1).join(":") : m;
+      if (col) refs.push({ name: col, expectedKind: "numeric", field_path: "metrics" });
     }
   }
 

@@ -23,6 +23,7 @@ export interface CohortSchemaCache {
   numericColumns: string[];
   categoricalColumns: string[];
   identityColumns: string[];
+  arrayColumns: string[];
   availableMethods: string[];
 }
 
@@ -122,6 +123,7 @@ function parseSchemaResponse(
   const numeric: string[] = [];
   const categorical: string[] = [];
   const identity: string[] = [];
+  const array: string[] = [];
   const allWithKind: Array<{ name: string; kind: ColumnKind }> = [];
 
   // Parse columns — prefer raw.columns (already filtered by backend), fall back to auto_config
@@ -146,6 +148,9 @@ function parseSchemaResponse(
           break;
         case "identity":
           identity.push(col.name);
+          break;
+        case "array":
+          array.push(col.name);
           break;
       }
     }
@@ -188,6 +193,7 @@ function parseSchemaResponse(
     numericColumns: numeric,
     categoricalColumns: categorical,
     identityColumns: identity,
+    arrayColumns: array,
     availableMethods,
   };
 }
@@ -198,7 +204,7 @@ function parseSchemaResponse(
 
 function classifyColumn(col: { name: string; kind?: string; type?: string }): ColumnKind {
   // Use explicit kind if provided
-  if (col.kind === "numeric" || col.kind === "categorical" || col.kind === "identity") {
+  if (col.kind === "numeric" || col.kind === "categorical" || col.kind === "identity" || col.kind === "array") {
     return col.kind;
   }
 

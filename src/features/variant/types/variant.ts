@@ -26,6 +26,7 @@ export interface Variant {
   alphamissense?: AlphaMissense | null;
   ccre?: Ccre | null;
   apc?: Apc | null;
+  epigenetic_phred?: EpigeneticPhred | null;
   cosmic?: Cosmic | null;
   pgboost?: PgBoost[] | null;
   linsight?: number | null;
@@ -253,6 +254,24 @@ export interface Encode {
   h3k9me3?: EncodeValue | null;
   h4k20me1?: EncodeValue | null;
   total_rna?: EncodeValue | null;
+}
+
+export interface EpigeneticPhred {
+  dnase?: number | null;
+  h2afz?: number | null;
+  h3k27ac?: number | null;
+  h3k27me3?: number | null;
+  h3k36me3?: number | null;
+  h3k4me1?: number | null;
+  h3k4me2?: number | null;
+  h3k4me3?: number | null;
+  h3k79me2?: number | null;
+  h3k9ac?: number | null;
+  h3k9me3?: number | null;
+  h4k20me1?: number | null;
+  total_rna?: number | null;
+  gc?: number | null;
+  cpg?: number | null;
 }
 
 export interface Gerp {

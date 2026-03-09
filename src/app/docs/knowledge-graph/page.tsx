@@ -9,6 +9,7 @@ import {
   FlowNode,
   FlowConnector,
 } from "../_components/flow-diagram";
+import { SchemaNetworkGraph } from "../_components/schema-network-graph";
 
 export const metadata: Metadata = {
   title: "Knowledge Graph | FAVOR Docs",
@@ -98,6 +99,21 @@ export default function KnowledgeGraphDocsPage() {
           />
         </div>
       </div>
+
+      {/* Schema network graph */}
+      <section>
+        <Prose>
+          <h2>Entity network</h2>
+          <p>
+            16 entity types connected by 52 relationship types across 6 domains.
+            Hover any node to see its data sources. Hover an edge to see the
+            specific databases behind that relationship.
+          </p>
+        </Prose>
+        <div className="mt-4">
+          <SchemaNetworkGraph />
+        </div>
+      </section>
 
       {/* Platform backbone */}
       <section>
