@@ -30,17 +30,19 @@ export function updateClientUrl(newUrl: string, usePush = false) {
  * This allows updating URL with window.history without server navigation.
  */
 export function useClientSearchParams(): URLSearchParams {
-  const [searchParams, setSearchParams] = useState<URLSearchParams>(() => {
-    if (typeof window === "undefined") {
-      return new URLSearchParams();
-    }
-    return new URLSearchParams(window.location.search);
-  });
+  // Always initialize empty to avoid SSR/client mismatch.
+  // The useEffect below syncs the real URL params after hydration.
+  const [searchParams, setSearchParams] = useState<URLSearchParams>(
+    () => new URLSearchParams(),
+  );
 
   useEffect(() => {
     const updateParams = () => {
       setSearchParams(new URLSearchParams(window.location.search));
     };
+
+    // Sync on mount (picks up URL params after hydration)
+    updateParams();
 
     // Listen to our custom URL change events
     window.addEventListener(URL_CHANGE_EVENT, updateParams);

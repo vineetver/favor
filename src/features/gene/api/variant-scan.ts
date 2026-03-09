@@ -11,7 +11,6 @@ const API_BASE =
 export interface VariantScanFilterOptions {
   limit?: number;
   cursor?: string;
-  full?: boolean;
   sort_by?: string;
   sort_direction?: string;
   // Frequency filters
@@ -99,7 +98,6 @@ function buildVariantScanUrl(
   const params = new URLSearchParams();
   params.set("gene", gene);
   params.set("limit", String(options.limit ?? 20));
-  params.set("full", String(options.full ?? true));
 
   if (options.cursor) params.set("cursor", options.cursor);
   if (options.sort_by) params.set("sort_by", options.sort_by);
@@ -147,7 +145,7 @@ function buildVariantScanUrl(
 
 /**
  * Fetch paginated variants for a gene.
- * Uses GET /variants?gene=...&full=true
+ * Uses GET /variants?gene=...
  */
 export async function fetchVariantScan(
   gene: string,

@@ -13,10 +13,10 @@ import {
   tooltip,
 } from "@infra/table/column-builder";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@shared/components/ui/collapsible";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@shared/components/ui/popover";
 import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
@@ -182,47 +182,57 @@ function GeneHancerCell({ value }: { value: GeneHancer | null | undefined }) {
         score: target?.score?.toFixed(3) ?? "-",
       })) ?? [];
 
-  if (!entries.length) return <span>-</span>;
+  if (!entries.length) return <span className="text-muted-foreground">—</span>;
 
-  const limit = 3;
-  const visible = entries.slice(0, limit);
-  const hidden = entries.slice(limit);
-
-  const Entry = ({ gene, score }: { gene: string; score: string }) => (
-    <div className="flex items-center gap-2 py-0.5">
-      <span className="font-semibold">{gene}</span>
-      <span className="text-muted-foreground">Score: {score}</span>
-    </div>
-  );
-
-  if (hidden.length === 0) {
-    return (
-      <div className="space-y-1">
-        {visible.map((e, i) => (
-          <Entry key={i} {...e} />
-        ))}
-      </div>
-    );
-  }
+  const top = entries[0];
+  const rest = entries.length - 1;
 
   return (
-    <Collapsible>
-      <div className="space-y-1">
-        {visible.map((e, i) => (
-          <Entry key={i} {...e} />
-        ))}
-      </div>
-      <CollapsibleContent>
-        <div className="space-y-1 mt-1">
-          {hidden.map((e, i) => (
-            <Entry key={i + limit} {...e} />
-          ))}
-        </div>
-      </CollapsibleContent>
-      <CollapsibleTrigger className="mt-2 text-blue-600 hover:text-blue-800 underline">
-        Show {hidden.length} more
-      </CollapsibleTrigger>
-    </Collapsible>
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs font-medium text-foreground">{top.gene}</span>
+      <span className="text-[10px] text-muted-foreground">{top.score}</span>
+      {rest > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="text-[10px] text-primary font-medium hover:underline cursor-pointer"
+            >
+              +{rest}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="bottom"
+            align="start"
+            className="w-56 p-0"
+          >
+            <div className="px-3 py-2 border-b border-border">
+              <p className="text-xs font-semibold text-foreground">
+                GeneHancer targets
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {entries.length} targets
+              </p>
+            </div>
+            <div className="max-h-48 overflow-y-auto py-1">
+              {entries.map((e, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-3 py-1"
+                >
+                  <span className="text-xs font-medium text-foreground">
+                    {e.gene}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {e.score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
   );
 }
 

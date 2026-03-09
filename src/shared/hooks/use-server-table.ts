@@ -118,17 +118,13 @@ export function useServerTable({
     [filters],
   );
 
-  // Initialize local state from URL (single source of truth)
+  // Initialize local state from serverFilters (SSR-safe, no window access)
   const [localTextFilters, setLocalTextFilters] = useState<
     Record<string, string>
   >(() => {
     const state: Record<string, string> = {};
-    // Read initial values from URL, fallback to serverFilters for SSR compatibility
     for (const filterId of textFilterIds) {
-      const urlValue = typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get(filterId)
-        : null;
-      state[filterId] = urlValue ?? serverFilters[filterId] ?? "";
+      state[filterId] = serverFilters[filterId] ?? "";
     }
     return state;
   });
