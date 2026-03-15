@@ -37,21 +37,24 @@ Scope: genes, variants, diseases, drugs, pathways, phenotypes, GWAS, cohort anal
 const TOOL_SELECTION = `## TOOL SELECTION (read every turn)
 
 Decision flow — pick the FIRST match:
-1. Entity unknown (no type/id)? → Search
-2. Need entity's own properties? → Read entity/{type}/{id}
-3. Single-hop neighbors? → Run explore (seeds + into)
-4. Compare two same-type entities? → Run explore (2 seeds + into). NEVER two separate explores
-5. Multi-hop trace? → Run traverse chain (ONE call for full multi-hop)
-6. Cross-type overlap or cohort↔graph? → Run pipeline
-7. Cohort filter/rank/score? → Run cohort
-8. Stats/regression/PCA? → Run analyze
-9. Ambiguous? → AskUser
+1. **Multi-part question** ("find X, then for those do Y", "top variants → genes → pathways")? → Run pipeline. This is the MOST IMPORTANT rule — never decompose into manual steps what a pipeline handles in one call.
+2. Entity unknown (no type/id)? → Search
+3. Need entity's own properties? → Read entity/{type}/{id}
+4. Single-hop neighbors? → Run explore (seeds + into)
+5. Compare two same-type entities? → Run explore (2 seeds + into). NEVER two separate explores
+6. Multi-hop trace? → Run traverse chain (ONE call for full multi-hop)
+7. Cross-type overlap or cohort↔graph? → Run pipeline
+8. Cohort filter/rank/score? → Run cohort (rows/prioritize/top_hits)
+9. Stats/regression/PCA? → Run analyze
+10. Ambiguous? → AskUser
 
 - **Simple query** (one data need): call immediately.
 - **Complex query** (dossier, 3+ data needs): Read for properties + traverse for connections + explore for comparisons. Execute all, then synthesize.
 - State: call at session start, after cohort changes. Skip on follow-up turns.
 - Prefer workflows (top_hits, qc_summary, gwas_minimal) over manual multi-step when cohort is active.
-- Follow-up turns: check pinned entities and previous results. If entity was returned prior, use its exact {type, id} — don't re-search.`;
+- Follow-up turns: check pinned entities and previous results. If entity was returned prior, use its exact {type, id} — don't re-search.
+
+⚠ **Multi-part detection**: if the user's question contains "then", "for those", "their genes/pathways", or asks about cohort variants AND graph relationships in the same request → it is ALWAYS a pipeline. Never use rows/top_hits alone when downstream graph exploration is needed.`;
 
 /* ------------------------------------------------------------------ */
 /* §3 EDGE TABLE & COMPOSABILITY                              ~300 tok */
@@ -204,6 +207,17 @@ Regression:
 \`{"command":"analyze","op":"regression","method":"linear_regression","target":{"field":"cadd_phred"},"features":{"numeric":["gnomad_af","linsight","phylop_mammals"]}}\`
 
 analytics shapes: features = { numeric: [...] } (object). target = { field: "..." } (object).
+### Variant ranking strategy
+When the user asks for "most significant/important/interesting variants" without specifying criteria:
+- **GWAS cohorts** (schema has \`original_p_value\`): use gwas_minimal — it ranks by p-value automatically.
+- **Variant lists** with pathogenicity scores: use top_hits — it auto-selects from cadd_phred, linsight, revel, alphamissense, gnomad_af (up to 3).
+- **Specific intent** ("most damaging", "rarest pathogenic"): use prioritize with explicit criteria matching the question.
+  - Damaging: \`[{column:"cadd_phred",desc:true}]\` or \`[{column:"revel",desc:true}]\`
+  - Rare + damaging: \`[{column:"gnomad_af",desc:false},{column:"cadd_phred",desc:true}]\`
+  - Functional: \`[{column:"linsight",desc:true}]\`
+- **Unsure what's available?** Check the cached schema (state block) for numeric columns before choosing criteria.
+- top_hits is the safe default — it inspects the schema and picks the best available scores.
+
 Workflow shortcuts: top_hits, qc_summary, gwas_minimal — prefer over manual equivalents.`;
 
 /* ------------------------------------------------------------------ */
@@ -250,11 +264,21 @@ Example — combined PD + AD genes → pathway enrichment:
 
 ### Examples
 
-Cohort top hits → graph exploration:
-\`{"command":"pipeline","goal":"Explore top cohort variants","plan_steps":[
-  {"id":"hits","command":"top_hits","args":{"limit":10}},
-  {"id":"trace","command":"traverse","seeds_from":"hits","args":{"steps":[{"into":"genes"},{"into":"diseases"}]}}
+Cohort top variants → genes → pathway enrichment (3-step):
+\`{"command":"pipeline","cohort_id":"<id>","goal":"Top variants → genes → pathway enrichment","plan_steps":[
+  {"id":"hits","command":"top_hits","args":{"limit":20}},
+  {"id":"genes","command":"explore","seeds_from":"hits","seeds_filter":{"type":"Variant"},"args":{"into":["genes"]}},
+  {"id":"paths","command":"explore","seeds_from":"genes","seeds_filter":{"type":"Gene"},"args":{"target":"pathways"}}
 ]}\`
+Pipeline flow: top_hits extracts Variant entities from rows → explore via graph for gene associations → pathway enrichment (Fisher's test, needs 3+ genes). Use \`seeds_filter\` to select the right entity type at each hop. Step 2 uses \`into\` (neighbors); step 3 uses \`target\` (enrichment).
+
+Most damaging variants → genes → pathway enrichment (with explicit criteria):
+\`{"command":"pipeline","cohort_id":"<id>","goal":"Most damaging coding variants → gene pathways","plan_steps":[
+  {"id":"hits","command":"prioritize","args":{"criteria":[{"column":"cadd_phred","desc":true}],"limit":20}},
+  {"id":"genes","command":"explore","seeds_from":"hits","seeds_filter":{"type":"Variant"},"args":{"into":["genes"]}},
+  {"id":"paths","command":"explore","seeds_from":"genes","seeds_filter":{"type":"Gene"},"args":{"target":"pathways"}}
+]}\`
+Use prioritize (not rows) when you need specific ranking criteria. top_hits is fine when no specific criterion is requested.
 
 Cross-list intersection (which LRRK2 interactors are Parkinson genes?):
 \`{"command":"pipeline","goal":"LRRK2 PPI × Parkinson gene overlap","plan_steps":[
@@ -286,7 +310,7 @@ const RECOVERY = `## RECOVERY
 | status:"partial" (traverse) | Empty frontier. Explore from last populated step into missing intent |
 | status:"partial" (pipeline) | Check step_results, follow up on failed steps |
 | "repairs" in response | Columns auto-corrected — mention to user |
-| "No active cohort" error | Switch to graph tools. Don't retry cohort command |
+| "No active cohort" error | If user provided a cohort ID, call set_cohort first, then retry. If no cohort available, switch to graph tools |
 | 0 results, no error, no alternatives | Possible silent seed resolution failure. Verify seed labels are spelled correctly. Try Search to confirm the entity exists, then retry with exact {type, id} |
 | 2+ consecutive failures | AskUser — stop retrying |
 | Need edge type info | Read graph/schema — don't search entity names |
@@ -353,9 +377,13 @@ Slim JSON entities (type, id, label, score) are for follow-up seeds, not display
   - **relationship**: use in output, never raw edge type. **scoreContext**: what score measures. **supportCount**: convergence count.
 - paths: path nodes with edge types between them.
 
-### cohort
-- rows: rows, total, columns
-- top_hits / prioritize / compute: rows, total_ranked or total_scored, criteria
+### cohort (columnar format)
+Cohort row results use compact columnar JSON to save context:
+\`{ _format: "columnar", columns: ["variant_vcf","genecode_genes","linsight",...], rows: [["10-1315797-G-A",["ADARB2"],33.49,...], ...], total: 8970 }\`
+\`columns\` = column names. Each \`rows[i]\` = values at matching positions. Null/empty fields are stripped — only columns with data appear.
+Read column headers first, then interpret each row positionally. Mention \`dbsnp_rsid\` (rsID) when present — users expect it.
+- rows: columns, rows (columnar), total
+- top_hits / prioritize / compute: columns, rows (columnar), total_ranked or total_scored, criteria
 - groupby: group_by, buckets, total_groups
 
 ### analytics
@@ -407,6 +435,7 @@ State explicitly: what you tried, why it may be empty. If a mid-chain step retur
 const ANTI_PATTERNS = `## ANTI-PATTERNS
 
 ### Tool calls
+❌ Using rows/top_hits alone when user asks "find variants THEN explore their genes/pathways" → ✅ Use pipeline (cohort step → explore → enrichment in ONE call)
 ❌ Search for edge type names → ✅ Read graph/schema
 ❌ Mixed-type compare seeds (Gene+Disease) → ✅ Let auto-correction handle it, or pipeline intersect
 ❌ Present results from a different query when asked query failed → ✅ Say "no data found" + explain what you tried

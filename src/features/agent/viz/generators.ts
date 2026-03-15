@@ -84,14 +84,7 @@ function genEnrichment(
   const out = output as Record<string, unknown>;
 
   // Handle both new { enriched: [...] } and legacy array format
-  let enriched: Array<{
-    entity: { type: string; id: string; label: string };
-    overlap: number;
-    pValue: number;
-    adjustedPValue: number;
-    foldEnrichment: number;
-    overlappingGenes: string[];
-  }>;
+  let enriched: Array<Record<string, unknown>>;
 
   if (Array.isArray(output)) {
     enriched = output;
@@ -107,15 +100,23 @@ function genEnrichment(
     type: "enrichment_plot",
     toolCallIndex,
     title: "Pathway & term enrichment",
-    data: enriched.slice(0, 20).map((e) => ({
-      id: e.entity.id,
-      label: e.entity.label,
-      // Floor at 1e-300 to avoid -log10(0)=Infinity while keeping extreme values ranked highest
-      negLogAdjP: -Math.log10(Math.max(e.adjustedPValue, 1e-300)),
-      foldEnrichment: e.foldEnrichment,
-      overlap: e.overlap,
-      overlappingGenes: e.overlappingGenes?.slice(0, 10) ?? [],
-    })),
+    data: enriched.slice(0, 20).map((e) => {
+      const entity = e.entity as { id: string; label: string } | undefined;
+      // Handle both overlappingGenes (legacy) and overlappingEntities (current)
+      const rawOverlap = (e.overlappingEntities ?? e.overlappingGenes ?? []) as Array<string | { label?: string }>;
+      const genes = rawOverlap.slice(0, 10).map((g) =>
+        typeof g === "string" ? g : (g.label ?? "?"),
+      );
+      return {
+        id: entity?.id ?? "?",
+        label: entity?.label ?? "?",
+        // Floor at 1e-300 to avoid -log10(0)=Infinity while keeping extreme values ranked highest
+        negLogAdjP: -Math.log10(Math.max(e.adjustedPValue as number ?? 1, 1e-300)),
+        foldEnrichment: (e.foldEnrichment as number) ?? 0,
+        overlap: (e.overlap as number) ?? 0,
+        overlappingGenes: genes,
+      };
+    }),
   };
 }
 
@@ -1096,14 +1097,17 @@ function genRunExploreEnrich(
   const data = runData(output);
   if (!data) return null;
 
-  const enriched = data.enriched as Array<{
-    entity: { type: string; id: string; label: string };
-    overlap: number;
-    pValue: number;
-    adjustedPValue: number;
-    foldEnrichment: number;
-    overlappingGenes: string[];
-  }> | undefined;
+  // Handle both standalone enrich (_mode: "enrich" → data.enriched)
+  // and auto-enrichment embedded in neighbors (_mode: "neighbors" → data.enrichment.enriched)
+  let enriched: Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(data.enriched)) {
+    enriched = data.enriched;
+  } else {
+    const nested = data.enrichment as { enriched?: unknown[] } | undefined;
+    if (Array.isArray(nested?.enriched)) {
+      enriched = nested.enriched as Array<Record<string, unknown>>;
+    }
+  }
 
   if (!enriched || enriched.length < 2) return null;
 
@@ -1111,14 +1115,22 @@ function genRunExploreEnrich(
     type: "enrichment_plot",
     toolCallIndex,
     title: "Pathway & term enrichment",
-    data: enriched.slice(0, 20).map((e) => ({
-      id: e.entity.id,
-      label: e.entity.label,
-      negLogAdjP: -Math.log10(Math.max(e.adjustedPValue, 1e-300)),
-      foldEnrichment: e.foldEnrichment,
-      overlap: e.overlap,
-      overlappingGenes: e.overlappingGenes?.slice(0, 10) ?? [],
-    })),
+    data: enriched.slice(0, 20).map((e) => {
+      const entity = e.entity as { id: string; label: string } | undefined;
+      // overlappingEntities can be string[] (standalone enrich) or object[] (auto-enrichment)
+      const rawOverlap = (e.overlappingEntities ?? e.overlappingGenes ?? []) as Array<string | { label?: string }>;
+      const genes = rawOverlap.slice(0, 10).map((g) =>
+        typeof g === "string" ? g : (g.label ?? "?"),
+      );
+      return {
+        id: entity?.id ?? "?",
+        label: entity?.label ?? "?",
+        negLogAdjP: -Math.log10(Math.max(e.adjustedPValue as number ?? 1, 1e-300)),
+        foldEnrichment: (e.foldEnrichment as number) ?? 0,
+        overlap: (e.overlap as number) ?? 0,
+        overlappingGenes: genes,
+      };
+    }),
   };
 }
 

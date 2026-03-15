@@ -396,9 +396,12 @@ async function readCohortSchema(cohortId: string) {
   const identity = columns.filter((c) => c.kind === "identity").map((c) => c.name);
   const array = columns.filter((c) => c.kind === "array").map((c) => c.name);
 
-  // Clean available methods — trim feature/candidate lists to prevent token bloat
-  const MAX_AUTO_CONFIG_FEATURES = 20;
-  const MAX_SUGGESTED_CANDIDATES = 10;
+  // Clean available methods — compact for LLM context.
+  // auto_config.features lists are redundant (LLM has the column listing).
+  // suggested_columns: keep short candidate lists for role-specific hints,
+  // drop candidates when hint is generic ("all numeric columns" etc).
+  const MAX_ROLE_CANDIDATES = 5;
+  const GENERIC_HINT_RE = /^all\s+(numeric|categorical|identity|array)\b/i;
   const methods = Array.isArray(resp.available_methods)
     ? (resp.available_methods as Array<{
         method: string;
@@ -413,23 +416,29 @@ async function readCohortSchema(cohortId: string) {
             method: m.method,
             category: m.category,
             description: m.description,
-            available: true,
-            viz_charts: m.viz_charts,
           };
-          // Cap auto_config feature lists
+          // auto_config: keep only scalar hints (target, time_column, etc) — drop feature lists
           if (m.auto_config) {
-            const ac = { ...m.auto_config };
-            if (Array.isArray(ac.features) && ac.features.length > MAX_AUTO_CONFIG_FEATURES) {
-              ac.features = (ac.features as string[]).slice(0, MAX_AUTO_CONFIG_FEATURES);
+            const ac: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(m.auto_config)) {
+              if (!Array.isArray(v)) ac[k] = v; // keep scalars only
             }
-            trimmed.auto_config = ac;
+            if (Object.keys(ac).length > 0) trimmed.auto_config = ac;
           }
-          // Cap suggested_columns candidates
+          // suggested_columns: keep candidates only for role-specific hints
           if (Array.isArray(m.suggested_columns)) {
-            trimmed.suggested_columns = m.suggested_columns.map((sc) => ({
-              ...sc,
-              candidates: sc.candidates?.slice(0, MAX_SUGGESTED_CANDIDATES),
-            }));
+            trimmed.params = m.suggested_columns.map((sc) => {
+              const isGeneric = GENERIC_HINT_RE.test(sc.reason ?? "");
+              const entry: Record<string, unknown> = {
+                param: sc.param_name,
+                hint: sc.reason,
+              };
+              // Include short candidate list for specific hints (role-based)
+              if (!isGeneric && sc.candidates?.length) {
+                entry.candidates = sc.candidates.slice(0, MAX_ROLE_CANDIDATES);
+              }
+              return entry;
+            });
           }
           return trimmed;
         })

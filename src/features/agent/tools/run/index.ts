@@ -98,7 +98,10 @@ const NEEDS_SCHEMA = new Set([
 // ---------------------------------------------------------------------------
 
 function getCohortIdFromCmd(cmd: Record<string, unknown>, activeCohortId?: string): string | null {
-  return (cmd.cohort_id as string) ?? activeCohortId ?? null;
+  const raw = (cmd.cohort_id as string) ?? activeCohortId ?? null;
+  if (!raw) return null;
+  // Strip common prefixes the LLM may echo from user input (e.g. "cohort/UUID")
+  return raw.replace(/^cohort\//, "");
 }
 
 type PreToolResult =

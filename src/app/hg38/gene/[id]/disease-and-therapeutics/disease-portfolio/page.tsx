@@ -15,11 +15,11 @@ export default async function DiseasePortfolioPage({
 
   const geneResponse = await fetchGene(id, {
     include: "counts,edges",
-    edgeTypes: "ASSOCIATED_WITH_DISEASE",
+    edgeTypes: "GENE_ASSOCIATED_WITH_DISEASE",
     direction: "out",
     limitPerEdgeType: 500,
-    sort: JSON.stringify({ ASSOCIATED_WITH_DISEASE: "-overall_score" }),
-    neighborMode: "ASSOCIATED_WITH_DISEASE=full",
+    sort: JSON.stringify({ GENE_ASSOCIATED_WITH_DISEASE: "-ot_score" }),
+    neighborMode: "GENE_ASSOCIATED_WITH_DISEASE=full",
   });
 
   const gene = geneResponse?.data;

@@ -154,14 +154,18 @@ function compactDerive(data: Record<string, unknown>): Record<string, unknown> {
     row_count: data.row_count ?? data.total,
     filters_applied: data.filters,
     parent_id: data.parent_id,
-    // Include a small preview if rows are present
+    // Include a small columnar preview if rows are present
     ...(data.rows
-      ? {
-          preview: asArray(data.rows).slice(0, 3),
-          _truncation: asArray(data.rows).length > 3
-            ? truncation(3, asArray(data.rows).length, "Use rows command on the new cohort for full data.")
-            : undefined,
-        }
+      ? (() => {
+          const { columns: previewCols, rows: previewRows } = compactCohortRows(asArray(data.rows).slice(0, 3));
+          return {
+            preview_columns: previewCols,
+            preview_rows: previewRows,
+            _truncation: asArray(data.rows).length > 3
+              ? truncation(3, asArray(data.rows).length, "Use rows command on the new cohort for full data.")
+              : undefined,
+          };
+        })()
       : {}),
   };
 }
@@ -192,18 +196,18 @@ function compactViz(data: Record<string, unknown>): Record<string, unknown> {
 function compactRows(data: Record<string, unknown>): Record<string, unknown> {
   const rows = asArray(data.rows);
   const total = asNumber(data.total, rows.length);
-  const columns = rows.length > 0 ? Object.keys(rows[0] as Record<string, unknown>) : [];
+  const { columns, rows: compactData } = compactCohortRows(rows);
 
-  // Respect user-requested limits: only truncate if > 10 rows
-  if (rows.length <= 10) {
-    return { rows, total, columns };
-  }
-  return {
-    rows,
-    total,
+  const out: Record<string, unknown> = {
+    _format: "columnar",
     columns,
-    _truncation: truncation(rows.length, total),
+    rows: compactData,
+    total,
   };
+  if (rows.length > 10) {
+    out._truncation = truncation(rows.length, total);
+  }
+  return out;
 }
 
 function compactGroupby(data: Record<string, unknown>): Record<string, unknown> {
@@ -226,11 +230,13 @@ function compactGroupby(data: Record<string, unknown>): Record<string, unknown> 
 function compactPrioritize(data: Record<string, unknown>): Record<string, unknown> {
   const rows = asArray(data.rows);
   const totalRanked = asNumber(data.total_ranked, rows.length);
-  const top = rows.slice(0, 5);
+  const { columns, rows: compactData } = compactCohortRows(rows.slice(0, 5));
 
   const out: Record<string, unknown> = {
+    _format: "columnar",
     criteria: data.criteria,
-    rows: top,
+    columns,
+    rows: compactData,
     total_ranked: totalRanked,
   };
   if (rows.length > 5) {
@@ -242,10 +248,12 @@ function compactPrioritize(data: Record<string, unknown>): Record<string, unknow
 function compactCompute(data: Record<string, unknown>): Record<string, unknown> {
   const rows = asArray(data.rows);
   const totalScored = asNumber(data.total_scored, rows.length);
-  const top = rows.slice(0, 5);
+  const { columns, rows: compactData } = compactCohortRows(rows.slice(0, 5));
 
   const out: Record<string, unknown> = {
-    rows: top,
+    _format: "columnar",
+    columns,
+    rows: compactData,
     total_scored: totalScored,
   };
   if (rows.length > 5) {
@@ -306,10 +314,35 @@ function compactExploreNeighbors(data: Record<string, unknown>): Record<string, 
     resolved_seeds: d.resolved_seeds,
   };
   if (renderedTables.length) out.rendered = { tables: renderedTables };
-  if (d.enrichment) out.enrichment = d.enrichment;
+  if (d.enrichment) out.enrichment = compactEnrichmentBlock(d.enrichment as Record<string, unknown>);
   if (d._method) out._method = d._method;
   if (d._proteinDomains) out._proteinDomains = d._proteinDomains;
   return out;
+}
+
+/** Compact auto-enrichment block: strip subtitles, map overlapping entities to labels. */
+function compactEnrichmentBlock(block: Record<string, unknown>): Record<string, unknown> {
+  const items = asArray(block.enriched);
+  if (items.length === 0) return block;
+
+  const compact = items.slice(0, 20).map((raw) => {
+    const e = raw as Record<string, unknown>;
+    const entity = e.entity as Record<string, unknown> | undefined;
+    // Map overlappingEntities (objects or strings) → label strings
+    const overlap = asArray(e.overlappingEntities).map((o) =>
+      typeof o === "string" ? o : ((o as Record<string, unknown>).label as string ?? "?"),
+    );
+    return {
+      entity: entity ? { type: entity.type, id: entity.id, label: entity.label } : e.entity,
+      overlap: e.overlap,
+      pValue: e.pValue,
+      adjustedPValue: e.adjustedPValue,
+      foldEnrichment: e.foldEnrichment,
+      overlappingEntities: overlap.slice(0, 5),
+    };
+  });
+
+  return { enriched: compact };
 }
 
 function compactExploreCompare(data: Record<string, unknown>): Record<string, unknown> {
@@ -557,11 +590,13 @@ function passthrough(data: Record<string, unknown>): Record<string, unknown> {
 function compactTopHits(data: Record<string, unknown>): Record<string, unknown> {
   const rows = asArray(data.rows);
   const totalRanked = asNumber(data.total_ranked, rows.length);
-  const top = rows.slice(0, 10);
+  const { columns, rows: compactData } = compactCohortRows(rows.slice(0, 10));
 
   const out: Record<string, unknown> = {
+    _format: "columnar",
     criteria: data.criteria,
-    rows: top,
+    columns,
+    rows: compactData,
     total_ranked: totalRanked,
   };
   if (data.filtered_count !== undefined) out.filtered_count = data.filtered_count;
@@ -576,12 +611,14 @@ function compactTopHits(data: Record<string, unknown>): Record<string, unknown> 
 }
 
 function compactGwasMinimal(data: Record<string, unknown>): Record<string, unknown> {
-  const topHits = asArray(data.top_hits).slice(0, 10);
+  const { columns, rows: compactData } = compactCohortRows(asArray(data.top_hits).slice(0, 10));
   return {
+    _format: "columnar",
     p_column: data.p_column,
     correction: data.correction,
     qc: data.qc,
-    top_hits: topHits,
+    top_hits_columns: columns,
+    top_hits: compactData,
     total_variants: data.total_variants,
   };
 }
@@ -590,7 +627,9 @@ function compactVariantProfile(data: Record<string, unknown>): Record<string, un
   const profiles = asArray(data.profiles).slice(0, 5).map(compactOneProfile);
   const out: Record<string, unknown> = { profiles };
   if (data.cohort_rows) {
-    out.cohort_rows = asArray(data.cohort_rows).slice(0, 5);
+    const { columns, rows } = compactCohortRows(asArray(data.cohort_rows).slice(0, 5));
+    out.cohort_rows_columns = columns;
+    out.cohort_rows = rows;
   }
   return out;
 }
@@ -759,6 +798,79 @@ function compactPipeline(data: Record<string, unknown>): Record<string, unknown>
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Cohort row compaction — columnar format, strip nulls/empties/internals
+// ---------------------------------------------------------------------------
+
+/** Fields the model never needs (internal IDs, redundant positional/annotation data). */
+const COHORT_ROW_DROP_KEYS = new Set([
+  // Internal IDs & positional
+  "row_id", "raw_ref", "ref_type", "status", "error",
+  "vid", "chrom_id", "position0", "is_hashed", "hash30", "pos_bin_1m",
+  // Redundant with rsid / genecode
+  "dbsnp_rsid_all",
+  "ucsc_region_type", "ucsc_transcripts", "ucsc_consequence", "ucsc_exonic_details",
+  "refseq_region_type", "refseq_transcripts", "refseq_consequence", "refseq_exonic_details",
+]);
+
+/** Returns true if a value is "empty" (null, "", [], {}). */
+function isEmpty(v: unknown): boolean {
+  if (v == null) return true;
+  if (typeof v === "string" && v === "") return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  if (typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0) return true;
+  return false;
+}
+
+/** Round floats to 4 decimal places. */
+function compactValue(v: unknown): unknown {
+  if (typeof v === "number" && !Number.isInteger(v)) {
+    return Math.round(v * 10000) / 10000;
+  }
+  return v;
+}
+
+interface ColumnarRows {
+  /** Column names — key for each positional value in rows */
+  columns: string[];
+  /** Array of value-tuples, one per row, positionally matching columns */
+  rows: unknown[][];
+}
+
+/**
+ * Convert an array of cohort row objects into columnar format.
+ * Strips null/empty values, internal keys, and rounds floats.
+ *
+ * { columns: ["variant_vcf","chromosome","linsight"], rows: [["10-1315797-G-A","10",33.49], ...] }
+ *
+ * ~6-8x more token-efficient than repeating keys per row.
+ */
+function compactCohortRows(rawRows: unknown[]): ColumnarRows {
+  // Pass 1: strip each row, collect union of surviving keys (preserving order)
+  const cleaned: Record<string, unknown>[] = [];
+  const columnSet = new Map<string, number>(); // key → insertion order
+  for (const raw of rawRows) {
+    const row = raw as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(row)) {
+      if (COHORT_ROW_DROP_KEYS.has(k)) continue;
+      if (isEmpty(v)) continue;
+      out[k] = compactValue(v);
+      if (!columnSet.has(k)) columnSet.set(k, columnSet.size);
+    }
+    cleaned.push(out);
+  }
+
+  const columns = [...columnSet.keys()];
+
+  // Pass 2: build positional value arrays
+  const rows = cleaned.map(row =>
+    columns.map(col => row[col] ?? null),
+  );
+
+  return { columns, rows };
+}
 
 function json(value: unknown): CompactValue {
   return { type: "json", value: value as null };

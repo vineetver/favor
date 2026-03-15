@@ -319,6 +319,7 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   // Pipeline — multi-step execution
   z.object({
     command: z.literal("pipeline"),
+    cohort_id: z.string().optional(),
     goal: z.string(),
     plan_steps: z.array(pipelineStepSchema).min(2).max(8),
   }),

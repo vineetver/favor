@@ -18,25 +18,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Loader2, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-/** Maps graph edge types to their data source and a brief explanation */
-const EVIDENCE_SOURCE_INFO: Record<string, { label: string; tip: string }> = {
-  ASSOCIATED_WITH_DISEASE: { label: "OpenTargets", tip: "Integrated association score from the Open Targets Platform combining genetic, somatic, drug, and literature evidence" },
-  CURATED_FOR: { label: "ClinGen", tip: "Expert-curated gene–disease validity classification from ClinGen" },
-  CAUSES: { label: "DDG2P", tip: "Developmental disorder gene-to-phenotype mapping from DECIPHER" },
-  CIVIC_EVIDENCED_FOR: { label: "CIViC", tip: "Clinical interpretation of variants relevant to this disease from CIViC" },
-  PGX_ASSOCIATED: { label: "PharmGKB", tip: "Pharmacogenomic gene–disease relationship from PharmGKB" },
-  THERAPEUTIC_TARGET_IN: { label: "TTD", tip: "Therapeutic target information from the Therapeutic Target Database" },
-  SCORED_FOR_DISEASE: { label: "AbbVie", tip: "Genetic evidence score for this gene–disease pair from AbbVie" },
-  BIOMARKER_FOR: { label: "TTD Biomarker", tip: "Gene product is a biomarker for this disease (Therapeutic Target Database)" },
-  INHERITED_CAUSE_OF: { label: "Orphanet", tip: "Inherited gene–disease relationship from the Orphanet rare-disease database" },
-  ASSERTED_FOR_DISEASE: { label: "CIViC Assertion", tip: "Clinically reviewed assertion about this gene–disease link from CIViC" },
-};
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface DiseasePortfolioOverviewProps {
   relations?: unknown;
@@ -46,67 +33,207 @@ interface DiseasePortfolioOverviewProps {
   className?: string;
 }
 
+type EvidenceScores = {
+  genetic_association: number | null;
+  somatic_mutation: number | null;
+  known_drug: number | null;
+  affected_pathway: number | null;
+  literature: number | null;
+  rna_expression: number | null;
+  animal_model: number | null;
+};
+
 type DiseaseEdge = {
   id: string;
   label: string;
-  score: number | null;
-  source: string;
-  evidence: string[];
-  evidenceCount?: number | null;
-  evidenceBreakdown?: Array<{ label: string; count: number }>;
-  tags?: string[];
-  description?: string | null;
-  parents?: string[];
-  ancestors?: string[];
-  synonyms?: string[];
-  therapeuticAreas?: string[];
+  description: string | null;
+  otScore: number | null;
+  evidenceCount: number | null;
+  causalityLevel: string | null;
+  confidenceClass: string | null;
+  sources: string[];
+  evidenceScores: EvidenceScores;
+  modeOfInheritance: string | null;
+  clingenClassification: string | null;
+  genccClassification: string | null;
+  civicEvidenceType: string | null;
+  pubmedIds: string[];
+  isCancer: boolean;
+  isRare: boolean;
+  primaryAnatomicalSystems: string[];
+  causalGeneCount: number | null;
+  associatedGeneCount: number | null;
+  drugCount: number | null;
+  maxTrialPhase: number | null;
+  synonyms: string[];
 };
 
-const SCORE_THRESHOLDS = [
-  { value: "all", label: "All", min: null },
-  { value: "0.2", label: ">= 0.2", min: 0.2 },
-  { value: "0.4", label: ">= 0.4", min: 0.4 },
-  { value: "0.6", label: ">= 0.6", min: 0.6 },
-  { value: "0.8", label: ">= 0.8", min: 0.8 },
-];
+// ---------------------------------------------------------------------------
+// Human-readable lookups
+// ---------------------------------------------------------------------------
 
-const THERAPEUTIC_AREA_LABELS: Record<string, string> = {
-  OTAR_0000017: "Immunology",
-  OTAR_0000018: "Infection",
-  OTAR_0000019: "Metabolic",
-  OTAR_0000020: "Oncology",
-  OTAR_0000021: "Cardiovascular",
-  OTAR_0000022: "Endocrine",
-  OTAR_0000023: "Gastroenterology",
-  OTAR_0000024: "Rare Disease",
-  OTAR_0000025: "Hematology",
-  OTAR_0000026: "Inflammation",
-  OTAR_0000027: "Musculoskeletal",
-  OTAR_0000028: "Neurology",
-  OTAR_0000029: "Ophthalmology",
-  OTAR_0000030: "Psychiatry",
-  OTAR_0000031: "Renal",
-  OTAR_0000032: "Respiratory",
-  OTAR_0000033: "Dermatology",
-  OTAR_0000034: "Other",
+const LINK_STRENGTH: Record<string, { label: string; tip: string; dot: string }> = {
+  causal: {
+    label: "Known cause",
+    tip: "This gene is an established cause of this disease, confirmed by expert review (e.g. ClinGen, OMIM).",
+    dot: "bg-emerald-500",
+  },
+  implicated: {
+    label: "Strong evidence",
+    tip: "Functional or clinical evidence links this gene to this disease (e.g. Orphanet, CIViC, PharmGKB), but not yet classified as a confirmed cause.",
+    dot: "bg-amber-500",
+  },
+  associated: {
+    label: "Statistical link",
+    tip: "A statistical association was found in large-scale studies (e.g. GWAS), but no direct causal mechanism has been confirmed.",
+    dot: "bg-blue-500",
+  },
 };
+
+const CONFIDENCE: Record<string, { label: string; tip: string; dots: number }> = {
+  high: {
+    label: "Strong evidence",
+    tip: "Multiple independent sources confirm this link with high confidence.",
+    dots: 3,
+  },
+  medium: {
+    label: "Moderate evidence",
+    tip: "Supported by some evidence, but not yet confirmed by multiple high-quality sources.",
+    dots: 2,
+  },
+  low: {
+    label: "Preliminary",
+    tip: "Based on limited evidence. Requires further validation.",
+    dots: 1,
+  },
+};
+
+const VALIDITY_LABELS: Record<string, string> = {
+  Definitive: "Confirmed cause",
+  Strong: "Strong evidence for causality",
+  Moderate: "Moderate evidence for causality",
+  Limited: "Limited evidence",
+  Disputed: "Disputed",
+  Refuted: "Refuted",
+  "No Known Disease Relationship": "No known relationship",
+};
+
+const INHERITANCE_LABELS: Record<string, string> = {
+  AD: "Autosomal dominant",
+  AR: "Autosomal recessive",
+  XL: "X-linked",
+  XLR: "X-linked recessive",
+  XLD: "X-linked dominant",
+  Mi: "Mitochondrial",
+  Mu: "Multigenic / multifactorial",
+  DD: "Digenic",
+  So: "Somatic",
+  SP: "Somatic + germline mosaicism",
+  IC: "Isolated cases",
+};
+
+const EVIDENCE_TYPE_LABELS: Record<keyof EvidenceScores, { label: string; tip: string }> = {
+  genetic_association: {
+    label: "Genetic studies",
+    tip: "Evidence from GWAS and other genetic association studies linking variants in this gene to the disease.",
+  },
+  somatic_mutation: {
+    label: "Somatic mutations",
+    tip: "Evidence from cancer genomics showing this gene is somatically mutated in this disease.",
+  },
+  known_drug: {
+    label: "Drug evidence",
+    tip: "Drugs targeting this gene are used or tested for this disease, supporting a functional link.",
+  },
+  affected_pathway: {
+    label: "Pathway involvement",
+    tip: "This gene participates in biological pathways known to be disrupted in this disease.",
+  },
+  literature: {
+    label: "Literature",
+    tip: "How frequently this gene and disease are mentioned together in published research.",
+  },
+  rna_expression: {
+    label: "Expression",
+    tip: "This gene shows altered expression levels in tissues or samples affected by this disease.",
+  },
+  animal_model: {
+    label: "Animal models",
+    tip: "Experiments in animal models support a role for this gene in this disease.",
+  },
+};
+
+const SYSTEM_LABELS: Record<string, string> = {
+  integumentary: "Skin & Tissue",
+  oncology: "Oncology",
+  reproductive_breast: "Breast / Reproductive",
+  reproductive_female: "Female Reproductive",
+  reproductive_male: "Male Reproductive",
+  nervous: "Neurology",
+  cardiovascular: "Heart & Circulation",
+  respiratory: "Respiratory",
+  digestive: "Digestive",
+  endocrine: "Endocrine",
+  hematologic: "Blood",
+  immune: "Immune System",
+  musculoskeletal: "Muscle & Bone",
+  renal_urinary: "Kidney & Urinary",
+  ophthalmic: "Eye",
+  psychiatric: "Mental Health",
+  dermatologic: "Skin",
+  metabolic: "Metabolic",
+  infectious: "Infectious",
+  rare: "Rare Disease",
+};
+
+function systemLabel(raw: string): string {
+  return SYSTEM_LABELS[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function inheritanceLabel(raw: string): string {
+  return INHERITANCE_LABELS[raw] ?? raw;
+}
+
+function validityLabel(raw: string): string {
+  return VALIDITY_LABELS[raw] ?? raw;
+}
+
+function trialPhaseLabel(phase: number): string {
+  if (phase >= 4) return "Approved";
+  if (phase >= 3) return "Phase III";
+  if (phase >= 2) return "Phase II";
+  if (phase >= 1) return "Phase I";
+  return "Preclinical";
+}
+
+// ---------------------------------------------------------------------------
+// Progressive rendering
+// ---------------------------------------------------------------------------
+
+const PAGE_SIZE = 100;
+
+// ---------------------------------------------------------------------------
+// Small UI pieces
+// ---------------------------------------------------------------------------
 
 function formatScore(value: number | null) {
-  if (value === null || Number.isNaN(value)) return "N/A";
+  if (value === null || Number.isNaN(value)) return "—";
   return value.toFixed(2);
 }
 
+/** Compact inline bar for the list. Single color, thin, quiet. */
 function ScoreBar({ value }: { value: number | null }) {
-  const numeric = typeof value === "number" ? value : 0;
-  const clamped = Math.max(0, Math.min(1, numeric));
-  const percent = Math.round(clamped * 100);
+  const n = typeof value === "number" ? value : 0;
+  const percent = Math.round(Math.max(0, Math.min(1, n)) * 100);
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-foreground w-8">{formatScore(value)}</span>
-      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+    <div className="flex items-center gap-1.5 shrink-0">
+      <span className="text-[11px] font-medium tabular-nums text-muted-foreground w-7 text-right">
+        {formatScore(value)}
+      </span>
+      <div className="h-1 w-12 rounded-full bg-border overflow-hidden">
         <div
-          className="h-full bg-primary/60"
+          className="h-full rounded-full bg-foreground/25"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -114,349 +241,159 @@ function ScoreBar({ value }: { value: number | null }) {
   );
 }
 
-function EvidenceBars({
-  breakdown,
-}: {
-  breakdown: Array<{ label: string; count: number }>;
-}) {
-  if (!breakdown.length) return null;
-  const max = Math.max(...breakdown.map((item) => item.count), 1);
+function ConfidenceDots({ count }: { count: number }) {
+  return (
+    <span className="inline-flex gap-px">
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "h-[5px] w-[5px] rounded-full",
+            i <= count ? "bg-foreground/50" : "bg-border",
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+function Tip({ children, content }: { children: React.ReactNode; content: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-default border-b border-dotted border-muted-foreground/30">
+          {children}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-72">
+        <p className="text-xs leading-relaxed">{content}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Evidence score bars — thin, muted, proportional. */
+function EvidenceBreakdown({ scores }: { scores: EvidenceScores }) {
+  const entries = (Object.entries(scores) as [keyof EvidenceScores, number | null][])
+    .filter(([, v]) => v !== null && v > 0)
+    .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+
+  if (entries.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      {breakdown.map((item) => {
-        const percent = Math.round((item.count / max) * 100);
+    <div className="space-y-1.5">
+      {entries.map(([key, value]) => {
+        const percent = Math.round((value ?? 0) * 100);
+        const meta = EVIDENCE_TYPE_LABELS[key];
         return (
-          <div key={item.label} className="flex items-center gap-3">
-            <div className="w-28 text-xs text-muted-foreground">{item.label}</div>
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary/70"
-                  style={{ width: `${percent}%` }}
-                />
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-default group">
+                <span className="w-24 text-[11px] text-muted-foreground truncate">
+                  {meta.label}
+                </span>
+                <div className="flex-1 h-1 rounded-full bg-border overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-foreground/20 group-hover:bg-foreground/30 transition-colors"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <span className="w-7 text-right text-[11px] text-muted-foreground tabular-nums">
+                  {(value ?? 0).toFixed(2)}
+                </span>
               </div>
-            </div>
-            <div className="w-20 text-right text-xs text-muted-foreground tabular-nums">
-              {item.count.toLocaleString()}
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-64">
+              <p className="text-xs leading-relaxed">{meta.tip}</p>
+            </TooltipContent>
+          </Tooltip>
         );
       })}
     </div>
   );
 }
 
-
-function getEdgeList(value: unknown): any[] {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  if (typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    const candidate = (record.edges ?? record.items ?? record.data) as unknown;
-    if (Array.isArray(candidate)) return candidate;
-  }
-  return [];
-}
-
-function toStringList(value: unknown): string[] {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (typeof item === "object" && item) {
-          const record = item as Record<string, unknown>;
-          return (
-            (record.type as string) ||
-            (record.label as string) ||
-            (record.name as string) ||
-            (record.datasource as string) ||
-            (record.source as string)
-          );
-        }
-        return null;
-      })
-      .filter((item): item is string => Boolean(item));
-  }
-  if (typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    return toStringList(record.types ?? record.datasources ?? record.sources);
-  }
-  return [];
-}
-
-function toBreakdownList(value: unknown): Array<{ label: string; count: number }> {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value
-      .map((entry) => {
-        if (!entry || typeof entry !== "object") return null;
-        const record = entry as Record<string, unknown>;
-        const label =
-          (record.label as string) ||
-          (record.type as string) ||
-          (record.name as string);
-        const count =
-          (record.count as number) ||
-          (record.value as number) ||
-          (record.total as number);
-        if (!label || typeof count !== "number") return null;
-        return { label, count };
-      })
-      .filter((item): item is { label: string; count: number } => Boolean(item));
-  }
-  if (typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>)
-      .map(([label, count]) =>
-        typeof count === "number" ? { label, count } : null,
-      )
-      .filter((item): item is { label: string; count: number } => Boolean(item));
-  }
-  return [];
-}
-
-function toAreaLabel(areaId: string | undefined, labelMap: Record<string, string>) {
-  if (!areaId) return "Uncategorized";
-  return labelMap[areaId] ?? areaId;
-}
-
-function pickAreaId(therapeuticAreas: string[] | undefined, labelMap: Record<string, string>): string | undefined {
-  if (!therapeuticAreas?.length) return undefined;
-  return therapeuticAreas.find((id) => labelMap[id]) ?? therapeuticAreas[0];
-}
-
-function normalizeLabel(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\b(disease|syndrome|disorder|neoplasm|carcinoma|cancer|tumor|tumour)\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function tokenSet(value: string) {
-  return new Set(
-    normalizeLabel(value)
-      .split(" ")
-      .map((token) => token.trim())
-      .filter(Boolean),
-  );
-}
-
-function jaccard(a: Set<string>, b: Set<string>) {
-  if (a.size === 0 || b.size === 0) return 0;
-  let intersection = 0;
-  a.forEach((token) => {
-    if (b.has(token)) intersection += 1;
-  });
-  const union = a.size + b.size - intersection;
-  return union === 0 ? 0 : intersection / union;
-}
-
-function sharesOntology(a: DiseaseEdge, b: DiseaseEdge) {
-  const aSet = new Set([...(a.parents ?? []), ...(a.ancestors ?? [])]);
-  return (b.parents ?? []).some((id) => aSet.has(id)) ||
-    (b.ancestors ?? []).some((id) => aSet.has(id));
-}
-
-function isSimilarDisease(a: DiseaseEdge, b: DiseaseEdge) {
-  const similarity = jaccard(tokenSet(a.label), tokenSet(b.label));
-  if (similarity >= 0.85) return true;
-  if (similarity >= 0.5 && sharesOntology(a, b)) return true;
-  return false;
-}
-
-type DiseaseCluster = {
-  id: string;
-  label: string;
-  representative: DiseaseEdge;
-  items: DiseaseEdge[];
-  area: string;
-};
-
-function clusterDiseases(diseases: DiseaseEdge[], labelMap: Record<string, string>): DiseaseCluster[] {
-  const clusters: DiseaseCluster[] = [];
-
-  diseases.forEach((disease) => {
-    const match = clusters.find((cluster) =>
-      isSimilarDisease(cluster.representative, disease),
-    );
-
-    if (match) {
-      match.items.push(disease);
-      if ((disease.score ?? -1) > (match.representative.score ?? -1)) {
-        match.representative = disease;
-        match.label = disease.label;
-      }
-      return;
-    }
-
-    const areaId = pickAreaId(disease.therapeuticAreas, labelMap);
-    const area = toAreaLabel(areaId, labelMap);
-
-    clusters.push({
-      id: disease.id,
-      label: disease.label,
-      representative: disease,
-      items: [disease],
-      area,
-    });
-  });
-
-  return clusters;
-}
+// ---------------------------------------------------------------------------
+// Data extraction
+// ---------------------------------------------------------------------------
 
 function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[] {
   const source = relations ?? edges;
-  if (!source) return [];
+  if (!source || typeof source !== "object") return [];
 
-  let list: any[] = [];
+  let rows: any[] = [];
+  const record = source as Record<string, unknown>;
+  const byType =
+    record.GENE_ASSOCIATED_WITH_DISEASE ??
+    record.ASSOCIATED_WITH_DISEASE ??
+    record.gene_associated_with_disease;
 
-  if (Array.isArray(source)) {
-    const direct = source.filter(
-      (edge) =>
-        edge?.type === "ASSOCIATED_WITH_DISEASE" || edge?.edge_type === "ASSOCIATED_WITH_DISEASE",
-    );
-    if (direct.length > 0 && (direct[0]?.neighbor || direct[0]?.score)) {
-      list = direct;
-    } else {
-      direct.forEach((entry) => {
-        list = list.concat(getEdgeList(entry));
-      });
-    }
-  } else if (typeof source === "object") {
-    const record = source as Record<string, unknown>;
-    const byType =
-      record.ASSOCIATED_WITH_DISEASE ||
-      record.associated_with_disease ||
-      record.Associated_with_disease;
-    if (byType && typeof byType === "object") {
-      const byTypeRecord = byType as Record<string, unknown>;
-      if (Array.isArray(byTypeRecord.rows)) {
-        list = byTypeRecord.rows as any[];
-      } else {
-        list = getEdgeList(byType);
-      }
-    } else {
-      list = getEdgeList(byType);
-    }
-    if (list.length === 0) {
-      list = getEdgeList(record.edges);
-    }
-    if (list.length === 0) {
-      list = getEdgeList(record.relations);
-    }
+  if (byType && typeof byType === "object") {
+    const typed = byType as Record<string, unknown>;
+    if (Array.isArray(typed.rows)) rows = typed.rows;
+    else if (Array.isArray(byType)) rows = byType as any[];
   }
 
-  return list
-    .map((edge, index) => {
-      const neighbor = edge?.neighbor ?? edge?.target ?? edge?.node ?? {};
-      const link = edge?.link ?? edge?.edge ?? edge?.relation ?? edge?.props ?? {};
-      const linkProps = link?.props ?? link ?? {};
-      const therapeuticAreas = toStringList(
-        neighbor?.therapeutic_areas ??
-          neighbor?.therapeuticAreas,
-      );
-      const id =
-        neighbor?.id ||
-        edge?.neighbor_id ||
-        edge?.target_id ||
-        edge?.node_id ||
-        edge?.id ||
-        `edge-${index}`;
-      const label =
-        neighbor?.disease_name ||
-        neighbor?.name ||
-        neighbor?.label ||
-        edge?.neighbor_label ||
-        edge?.neighbor_name ||
-        edge?.name ||
-        edge?.label ||
-        "Unknown disease";
-      const score =
-        linkProps?.overall_score ??
-        linkProps?.score ??
-        link?.overall_score ??
-        link?.score ??
-        edge?.overall_score ??
-        edge?.score ??
-        edge?.properties?.overall_score ??
-        edge?.properties?.score ??
-        edge?.attributes?.overall_score ??
-        edge?.attributes?.score ??
-        edge?.meta?.score ??
-        null;
-      const evidenceCount =
-        linkProps?.evidence_count ??
-        linkProps?.evidenceCount ??
-        link?.evidence_count ??
-        link?.evidenceCount ??
-        edge?.evidence_count ??
-        edge?.evidenceCount ??
-        null;
-      const evidenceBreakdownRaw = toBreakdownList(
-        linkProps?.evidenceBreakdown ??
-          linkProps?.evidence_breakdown ??
-          linkProps?.evidenceCounts ??
-          linkProps?.evidence_counts ??
-          edge?.evidenceBreakdown ??
-          edge?.evidence_breakdown ??
-          edge?.evidenceCounts ??
-          edge?.evidence_counts,
-      );
-      const evidenceBreakdown = evidenceBreakdownRaw
-        .slice()
-        .sort((a, b) => b.count - a.count);
-      const source =
-        neighbor?.source ||
-        link?.source ||
-        edge?.source ||
-        edge?.datasource ||
-        edge?.edge_source ||
-        edge?.properties?.source ||
-        edge?.attributes?.source ||
-        "Open Targets";
-      const evidence = Array.from(
-        new Set(
-          toStringList(linkProps?.evidenceTypes ?? link?.evidenceTypes)
-            .concat(toStringList(edge?.evidence_types ?? edge?.evidenceTypes))
-            .concat(toStringList(edge?.evidence))
-            .concat(toStringList(edge?.evidence_summary)),
-        ),
-      );
-      const tags = Array.from(new Set(toStringList(neighbor?.tags)));
-      const description =
-        typeof neighbor?.description === "string"
-          ? neighbor.description
-          : null;
-      const parents = toStringList(neighbor?.parents);
-      const ancestors = toStringList(neighbor?.ancestors);
-      const synonyms = toStringList(neighbor?.synonyms);
+  if (rows.length === 0 && Array.isArray(source)) rows = source;
+
+  return rows
+    .map((row: any): DiseaseEdge | null => {
+      const neighbor = row?.neighbor ?? row?.target ?? {};
+      const link = row?.link ?? row?.edge ?? {};
+      const props = link?.props ?? link ?? {};
+      const id = neighbor?.id ?? row?.neighbor_id ?? row?.id;
+      if (!id) return null;
 
       return {
         id: String(id),
-        label: String(label),
-        score: typeof score === "number" ? score : null,
-        source: String(source),
-        evidence,
-        evidenceCount: typeof evidenceCount === "number" ? evidenceCount : null,
-        evidenceBreakdown,
-        tags,
-        description,
-        parents,
-        ancestors,
-        synonyms,
-        therapeuticAreas,
-      } satisfies DiseaseEdge;
+        label: String(neighbor?.disease_name ?? neighbor?.name ?? neighbor?.label ?? "Unknown disease"),
+        description: typeof neighbor?.description === "string" ? neighbor.description : null,
+        otScore: typeof props.ot_score === "number" ? props.ot_score : null,
+        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : null,
+        causalityLevel: props.causality_level ?? null,
+        confidenceClass: props.confidence_class ?? null,
+        sources: Array.isArray(props.sources) ? props.sources : [],
+        evidenceScores: {
+          genetic_association: props.ot_genetic_association_score ?? null,
+          somatic_mutation: props.ot_somatic_mutation_score ?? null,
+          known_drug: props.ot_known_drug_score ?? null,
+          affected_pathway: props.ot_affected_pathway_score ?? null,
+          literature: props.ot_literature_score ?? null,
+          rna_expression: props.ot_rna_expression_score ?? null,
+          animal_model: props.ot_animal_model_score ?? null,
+        },
+        modeOfInheritance: props.mode_of_inheritance ?? null,
+        clingenClassification: props.clingen_classification ?? null,
+        genccClassification: props.gencc_best_classification ?? null,
+        civicEvidenceType: props.civic_evidence_type ?? null,
+        pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
+        isCancer: neighbor?.is_cancer === true,
+        isRare: neighbor?.is_rare_disease === true,
+        primaryAnatomicalSystems: Array.isArray(neighbor?.primary_anatomical_systems)
+          ? neighbor.primary_anatomical_systems : [],
+        causalGeneCount: typeof neighbor?.causal_gene_count === "number" ? neighbor.causal_gene_count : null,
+        associatedGeneCount: typeof neighbor?.associated_gene_count === "number" ? neighbor.associated_gene_count : null,
+        drugCount: typeof neighbor?.drug_count === "number" ? neighbor.drug_count : null,
+        maxTrialPhase: typeof neighbor?.max_trial_phase === "number" ? neighbor.max_trial_phase : null,
+        synonyms: Array.isArray(neighbor?.synonyms) ? neighbor.synonyms : [],
+      };
     })
+    .filter((d): d is DiseaseEdge => d !== null)
     .sort((a, b) => {
-      const as = a.score ?? -1;
-      const bs = b.score ?? -1;
-      if (bs !== as) return bs - as;
-      return a.label.localeCompare(b.label);
+      const diff = (b.otScore ?? -1) - (a.otScore ?? -1);
+      return diff !== 0 ? diff : a.label.localeCompare(b.label);
     });
 }
+
+function pickArea(systems: string[]): string {
+  if (!systems.length) return "Other";
+  if (systems.includes("oncology")) return "Oncology";
+  return systemLabel(systems[0]);
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function DiseasePortfolioOverview({
   relations,
@@ -466,122 +403,47 @@ export function DiseasePortfolioOverview({
   className,
 }: DiseasePortfolioOverviewProps) {
   const [scoreFilter, setScoreFilter] = useState("all");
+  const [linkFilter, setLinkFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [sortMode, setSortMode] = useState("score-desc");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [resolvedAreaLabels, setResolvedAreaLabels] = useState<Record<string, string>>({});
-  const [connections, setConnections] = useState<Array<{
-    edgeType: string;
-    label: string;
-    count: number;
-    edges: Array<{ fields?: Record<string, unknown> }>;
-  }> | null>(null);
-  const [connectionsLoading, setConnectionsLoading] = useState(false);
-  const connectionsAbort = useRef<AbortController | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const diseases = useMemo(
     () => extractDiseaseEdges(relations, edges),
     [relations, edges],
   );
 
-  // Merge static + dynamically resolved therapeutic area labels
-  const areaLabelMap = useMemo(() => ({
-    ...THERAPEUTIC_AREA_LABELS,
-    ...resolvedAreaLabels,
-  }), [resolvedAreaLabels]);
-
-  // Resolve unknown therapeutic area IDs to human-readable names
-  useEffect(() => {
-    const unknownIds = new Set<string>();
-    diseases.forEach((d) => {
-      d.therapeuticAreas?.forEach((id) => {
-        if (id && !THERAPEUTIC_AREA_LABELS[id]) unknownIds.add(id);
-      });
-    });
-    if (unknownIds.size === 0) return;
-
-    const ids = Array.from(unknownIds).slice(0, 100).map((id) => ({ type: "Disease", id }));
-    fetch(`${API_BASE}/entities/preview`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ids }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const map: Record<string, string> = {};
-        for (const item of data?.data?.items ?? []) {
-          if (item.entity?.id && item.entity?.label) {
-            map[item.entity.id] = item.entity.label;
-          }
-        }
-        if (Object.keys(map).length > 0) {
-          setResolvedAreaLabels((prev) => ({ ...prev, ...map }));
-        }
-      })
-      .catch(() => {});
+  const areaOptions = useMemo(() => {
+    const areas = new Set<string>();
+    diseases.forEach((d) => areas.add(pickArea(d.primaryAnatomicalSystems)));
+    return [{ value: "all", label: "All" }].concat(
+      Array.from(areas).sort().map((a) => ({ value: a, label: a })),
+    );
   }, [diseases]);
 
-  // Fetch connections between gene and selected disease
-  useEffect(() => {
-    if (!selectedId || !geneId) {
-      setConnections(null);
-      return;
-    }
-
-    connectionsAbort.current?.abort();
-    const controller = new AbortController();
-    connectionsAbort.current = controller;
-    setConnectionsLoading(true);
-
-    fetch(`${API_BASE}/graph/connections`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        from: { type: "Gene", id: geneId },
-        to: { type: "Disease", id: selectedId },
-        limitPerType: 5,
-        includeReverse: false,
-      }),
-      signal: controller.signal,
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!controller.signal.aborted) {
-          setConnections(data?.data?.connections ?? null);
-          setConnectionsLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          setConnections(null);
-          setConnectionsLoading(false);
-        }
-      });
-
-    return () => controller.abort();
-  }, [selectedId, geneId]);
-
-  const areaOptions = useMemo(() => {
-    const areas = Array.from(
-      new Set(
-        diseases.map((disease) => {
-          const areaId = pickAreaId(disease.therapeuticAreas, areaLabelMap);
-          return toAreaLabel(areaId, areaLabelMap);
-        }),
-      ),
-    ).filter(Boolean);
+  const linkOptions = useMemo(() => {
+    const levels = new Set<string>();
+    diseases.forEach((d) => { if (d.causalityLevel) levels.add(d.causalityLevel); });
     return [{ value: "all", label: "All" }].concat(
-      areas.map((area) => ({ value: area, label: area })),
+      Array.from(levels).sort().map((l) => ({
+        value: l,
+        label: LINK_STRENGTH[l]?.label ?? l,
+      })),
     );
-  }, [diseases, areaLabelMap]);
+  }, [diseases]);
 
   const dimensions = useMemo<DimensionConfig[]>(
     () => [
       {
-        label: "Area",
+        label: "Link type",
+        value: linkFilter,
+        onChange: setLinkFilter,
+        options: linkOptions,
+      },
+      {
+        label: "Body system",
         value: areaFilter,
         onChange: setAreaFilter,
         options: areaOptions,
@@ -599,7 +461,7 @@ export function DiseasePortfolioOverview({
         ],
       },
       {
-        label: "Sort by",
+        label: "Sort",
         value: sortMode,
         onChange: setSortMode,
         options: [
@@ -610,100 +472,77 @@ export function DiseasePortfolioOverview({
         presentation: "segmented",
       },
     ],
-    [areaFilter, areaOptions, scoreFilter, sortMode],
+    [linkFilter, linkOptions, areaFilter, areaOptions, scoreFilter, sortMode],
   );
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, scoreFilter, linkFilter, areaFilter, sortMode]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return diseases.filter((disease) => {
-      const min = SCORE_THRESHOLDS.find((opt) => opt.value === scoreFilter)?.min ?? null;
-      const matchesScore = min === null || (disease.score ?? -1) >= min;
-      const areaId = pickAreaId(disease.therapeuticAreas, areaLabelMap);
-      const areaLabel = toAreaLabel(areaId, areaLabelMap);
-      const matchesArea = areaFilter === "all" || areaLabel === areaFilter;
-      const matchesSearch =
-        query.length === 0 ||
-        disease.label.toLowerCase().includes(query) ||
-        disease.synonyms?.some((syn) => syn.toLowerCase().includes(query)) ||
-        disease.description?.toLowerCase().includes(query);
+    const minScore = scoreFilter === "all" ? null : parseFloat(scoreFilter);
 
-      return matchesScore && matchesArea && matchesSearch;
+    return diseases.filter((d) => {
+      if (minScore !== null && (d.otScore ?? -1) < minScore) return false;
+      if (linkFilter !== "all" && d.causalityLevel !== linkFilter) return false;
+      if (areaFilter !== "all" && pickArea(d.primaryAnatomicalSystems) !== areaFilter) return false;
+      if (query.length > 0) {
+        const matches =
+          d.label.toLowerCase().includes(query) ||
+          d.synonyms.some((s) => s.toLowerCase().includes(query)) ||
+          d.description?.toLowerCase().includes(query);
+        if (!matches) return false;
+      }
+      return true;
     });
-  }, [areaFilter, areaLabelMap, diseases, scoreFilter, search]);
+  }, [diseases, search, scoreFilter, linkFilter, areaFilter]);
 
-  const clusters = useMemo(() => clusterDiseases(filtered, areaLabelMap), [filtered, areaLabelMap]);
-
-  const sortedClusters = useMemo(() => {
-    const items = [...clusters];
-    if (sortMode === "alpha") {
-      return items.sort((a, b) => a.label.localeCompare(b.label));
-    }
+  const sorted = useMemo(() => {
+    const items = [...filtered];
+    if (sortMode === "alpha") return items.sort((a, b) => a.label.localeCompare(b.label));
     if (sortMode === "evidence-desc") {
       return items.sort((a, b) => {
-        const av = a.representative.evidenceCount ?? -1;
-        const bv = b.representative.evidenceCount ?? -1;
-        if (bv !== av) return bv - av;
-        return a.label.localeCompare(b.label);
+        const diff = (b.evidenceCount ?? -1) - (a.evidenceCount ?? -1);
+        return diff !== 0 ? diff : a.label.localeCompare(b.label);
       });
     }
     return items.sort((a, b) => {
-      const av = a.representative.score ?? -1;
-      const bv = b.representative.score ?? -1;
-      if (bv !== av) return bv - av;
-      return a.label.localeCompare(b.label);
+      const diff = (b.otScore ?? -1) - (a.otScore ?? -1);
+      return diff !== 0 ? diff : a.label.localeCompare(b.label);
     });
-  }, [clusters, sortMode]);
+  }, [filtered, sortMode]);
 
-  const groupedClusters = useMemo(() => {
-    const map = new Map<string, DiseaseCluster[]>();
-    sortedClusters.forEach((cluster) => {
-      const area = cluster.area || "Uncategorized";
-      if (!map.has(area)) {
-        map.set(area, []);
-      }
-      map.get(area)?.push(cluster);
+  // Slice for progressive rendering
+  const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const hasMore = sorted.length > visibleCount;
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, DiseaseEdge[]>();
+    visible.forEach((d) => {
+      const area = pickArea(d.primaryAnatomicalSystems);
+      if (!map.has(area)) map.set(area, []);
+      map.get(area)!.push(d);
     });
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [sortedClusters]);
-
-  const rankedGroups = useMemo(() => {
-    let rank = 1;
-    return groupedClusters.map(([area, clusters]) => ({
-      area,
-      clusters: clusters.map((cluster) => ({
-        cluster,
-        rank: rank++,
-      })),
-    }));
-  }, [groupedClusters]);
+  }, [visible]);
 
   useEffect(() => {
-    if (sortedClusters.length === 0) {
-      setSelectedId(null);
-      return;
+    if (sorted.length === 0) { setSelectedId(null); return; }
+    if (!selectedId || !sorted.some((d) => d.id === selectedId)) {
+      setSelectedId(sorted[0].id);
     }
-    const stillExists = sortedClusters.some((cluster) =>
-      cluster.items.some((item) => item.id === selectedId),
-    );
-    if (!selectedId || !stillExists) {
-      setSelectedId(sortedClusters[0]?.representative.id ?? null);
-    }
-  }, [sortedClusters, selectedId]);
+  }, [sorted, selectedId]);
 
-  const selectedCluster = useMemo(() => {
-    if (!selectedId) return sortedClusters[0] ?? null;
-    return (
-      sortedClusters.find((cluster) =>
-        cluster.items.some((item) => item.id === selectedId),
-      ) ?? sortedClusters[0] ?? null
-    );
-  }, [sortedClusters, selectedId]);
+  const selected = useMemo(
+    () => sorted.find((d) => d.id === selectedId) ?? sorted[0] ?? null,
+    [sorted, selectedId],
+  );
 
-  const selected = selectedCluster?.representative ?? null;
-  const inspectorTag =
-    selectedCluster?.area && selectedCluster.area !== "Uncategorized"
-      ? selectedCluster.area
-      : selected?.tags?.[0];
+  const showMore = useCallback(() => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }, []);
 
   if (!diseases.length) {
     return (
@@ -715,209 +554,344 @@ export function DiseasePortfolioOverview({
   }
 
   return (
-    <Card className={cn("border border-border py-0 gap-0", className)}>
-      <CardHeader className="border-b border-border px-6 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Disease Portfolio
-            </CardTitle>
-            <div className="text-sm text-muted-foreground">
-              {diseases.length} disease associations from Open Targets
+    <TooltipProvider delayDuration={200}>
+      <Card className={cn("border border-border py-0 gap-0", className)}>
+        <CardHeader className="border-b border-border px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Disease Portfolio
+              </CardTitle>
+              <div className="text-xs text-muted-foreground">
+                {filtered.length === diseases.length
+                  ? `${diseases.length} associations`
+                  : `${filtered.length} of ${diseases.length} associations`
+                } for {geneSymbol ?? geneId}
+              </div>
+            </div>
+            <div className="relative w-56">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground z-10" />
+              <Input
+                type="text"
+                placeholder="Search diseases..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
             </div>
           </div>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-            <Input
-              type="text"
-              placeholder="Search diseases..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="pl-9"
-            />
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="border-b border-border bg-muted/40">
+            <ScopeBar dimensions={dimensions} />
           </div>
-        </div>
-      </CardHeader>
 
-      <CardContent className="p-0">
-        {/* Filters */}
-        <div className="border-b border-border bg-muted/50">
-          <ScopeBar dimensions={dimensions} />
-        </div>
-
-        {/* Master-Detail Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
-          {/* Disease List */}
-          <div className="border-b border-border lg:border-b-0 lg:border-r">
-            <div className="max-h-[520px] overflow-y-auto">
-              {rankedGroups.length === 0 && (
-                <div className="px-6 py-8 text-xs text-muted-foreground">
-                  No diseases match your filters.
-                </div>
-              )}
-              {rankedGroups.map((group) => (
-                <div key={group.area}>
-                  <div className="px-6 py-2.5 border-b border-border bg-muted sticky top-0 z-10">
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {group.area} ({group.clusters.length})
-                    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
+            {/* ── Disease List ── */}
+            <div className="border-b border-border lg:border-b-0 lg:border-r border-r-border">
+              <div className="max-h-[600px] overflow-y-auto">
+                {grouped.length === 0 && (
+                  <div className="px-5 py-8 text-xs text-muted-foreground text-center">
+                    No diseases match your filters.
                   </div>
-                  {group.clusters.map(({ cluster }) => {
-                    const representative = cluster.representative;
-                    const isSelected = selectedId
-                      ? cluster.items.some((item) => item.id === selectedId)
-                      : false;
-                    const relatedCount = cluster.items.length - 1;
+                )}
+                {grouped.map(([area, items]) => (
+                  <div key={area}>
+                    <div className="px-5 py-1.5 border-b border-border bg-muted sticky top-0 z-10">
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {area}
+                        <span className="ml-1 text-muted-foreground/60">{items.length}</span>
+                      </span>
+                    </div>
+                    {items.map((d) => {
+                      const isSelected = d.id === selectedId;
+                      const link = LINK_STRENGTH[d.causalityLevel ?? ""];
 
-                    return (
-                      <button
-                        key={cluster.id}
-                        type="button"
-                        onClick={() => setSelectedId(representative.id)}
-                        className={cn(
-                          "w-full px-6 py-3 text-left transition-colors border-b border-border",
-                          "hover:bg-muted",
-                          isSelected && "bg-primary/5 border-l-2 border-l-primary",
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-foreground truncate">
-                              {cluster.label}
-                              {relatedCount > 0 && (
-                                <span className="ml-1 text-muted-foreground font-normal">+{relatedCount}</span>
-                              )}
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => setSelectedId(d.id)}
+                          className={cn(
+                            "w-full px-5 py-2.5 text-left transition-colors",
+                            "border-b border-border/60",
+                            "hover:bg-accent/50",
+                            isSelected && "bg-accent/70",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">
+                                {d.label}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                {link && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", link.dot)} />
+                                    {link.label}
+                                  </span>
+                                )}
+                                {d.isCancer && (
+                                  <span className="text-[10px] text-red-500/80">Cancer</span>
+                                )}
+                                {d.isRare && (
+                                  <span className="text-[10px] text-violet-500/80">Rare</span>
+                                )}
+                              </div>
                             </div>
+                            <ScoreBar value={d.otScore} />
                           </div>
-                          <ScoreBar value={representative.score} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={showMore}
+                    className="w-full px-5 py-3 text-center text-xs text-primary hover:bg-accent/50 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                    Show more ({sorted.length - visibleCount} remaining)
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── Detail Panel ── */}
+            <div>
+              <div className="px-5 py-1.5 border-b border-border bg-muted/60">
+                <span className="text-[11px] font-medium text-muted-foreground">Details</span>
+              </div>
+              <div className="px-5 py-5 max-h-[600px] overflow-y-auto">
+                {!selected && (
+                  <div className="text-xs text-muted-foreground">
+                    Select a disease to view details.
+                  </div>
+                )}
+
+                {selected && (
+                  <div className="space-y-5">
+                    {/* ─ Title ─ */}
+                    <div className="space-y-2">
+                      <h3 className="text-[15px] font-semibold text-foreground leading-snug">
+                        {selected.label}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {selected.causalityLevel && LINK_STRENGTH[selected.causalityLevel] && (
+                          <Tip content={LINK_STRENGTH[selected.causalityLevel].tip}>
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span className={cn("h-2 w-2 rounded-full shrink-0", LINK_STRENGTH[selected.causalityLevel].dot)} />
+                              {LINK_STRENGTH[selected.causalityLevel].label}
+                            </span>
+                          </Tip>
+                        )}
+                        {selected.confidenceClass && CONFIDENCE[selected.confidenceClass] && (
+                          <Tip content={CONFIDENCE[selected.confidenceClass].tip}>
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <ConfidenceDots count={CONFIDENCE[selected.confidenceClass].dots} />
+                              {CONFIDENCE[selected.confidenceClass].label}
+                            </span>
+                          </Tip>
+                        )}
+                        {selected.isCancer && (
+                          <span className="text-xs text-red-500/80">Cancer</span>
+                        )}
+                        {selected.isRare && (
+                          <span className="text-xs text-violet-500/80">Rare disease</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ─ Stats row ─ */}
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                      <div>
+                        <Tip content="Overall association score from Open Targets (0–1). Higher means more and stronger evidence across all data types.">
+                          <span className="text-[11px] text-muted-foreground">Score</span>
+                        </Tip>
+                        <div className="text-sm font-semibold text-foreground tabular-nums">{formatScore(selected.otScore)}</div>
+                      </div>
+                      <div>
+                        <Tip content="Total number of individual evidence items supporting this gene–disease link across all databases.">
+                          <span className="text-[11px] text-muted-foreground">Evidence</span>
+                        </Tip>
+                        <div className="text-sm font-semibold text-foreground tabular-nums">
+                          {selected.evidenceCount?.toLocaleString() ?? "—"}
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Inspector Panel */}
-          <div>
-            <div className="px-6 py-2.5 border-b border-border bg-muted">
-              <div className="text-xs font-medium text-muted-foreground">Details</div>
-            </div>
-            <div className="px-6 py-6 space-y-6">
-              {!selected && (
-                <div className="text-xs text-muted-foreground">
-                  Select a disease to view details.
-                </div>
-              )}
-
-              {selected && (
-                <>
-                  {/* Disease Header */}
-                  <div className="space-y-3">
-                    <h3 className="text-base font-semibold text-foreground">
-                      {selected.label}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Score</span>
-                        <span className="text-sm font-semibold text-foreground">{formatScore(selected.score)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Evidence</span>
-                        <span className="text-sm font-semibold text-foreground">
-                          {selected.evidenceCount?.toLocaleString() ?? "N/A"}
-                        </span>
-                      </div>
-                      {inspectorTag && (
-                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          {inspectorTag}
-                        </span>
+                      {selected.drugCount !== null && selected.drugCount > 0 && (
+                        <div>
+                          <Tip content="Number of drugs that target this gene and are used or tested for this disease.">
+                            <span className="text-[11px] text-muted-foreground">Drugs</span>
+                          </Tip>
+                          <div className="text-sm font-semibold text-foreground tabular-nums">
+                            {selected.drugCount.toLocaleString()}
+                            {selected.maxTrialPhase !== null && (
+                              <span className="text-[11px] text-muted-foreground font-normal ml-1">
+                                {trialPhaseLabel(selected.maxTrialPhase)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {selected.causalGeneCount !== null && selected.causalGeneCount > 0 && (
+                        <div>
+                          <Tip content="Number of genes with confirmed causal links to this disease.">
+                            <span className="text-[11px] text-muted-foreground">Causal genes</span>
+                          </Tip>
+                          <div className="text-sm font-semibold text-foreground tabular-nums">
+                            {selected.causalGeneCount.toLocaleString()}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Summary */}
-                  {selected.description && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Summary</div>
-                      <div className="text-sm text-muted-foreground leading-relaxed">
+                    {/* ─ Description ─ */}
+                    {selected.description && (
+                      <p className="text-[13px] text-muted-foreground leading-relaxed">
                         {selected.description}
-                      </div>
-                    </div>
-                  )}
+                      </p>
+                    )}
 
-                  {/* Evidence Sources (from connections query) */}
-                  {connectionsLoading && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    </div>
-                  )}
-                  {!connectionsLoading && connections && connections.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Evidence Sources
-                      </div>
-                      <TooltipProvider delayDuration={200}>
-                        <div className="flex flex-wrap gap-1.5">
-                          {connections.map((conn) => {
-                            const info = EVIDENCE_SOURCE_INFO[conn.edgeType];
-                            const label = info?.label ?? conn.edgeType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-                            return (
-                              <Tooltip key={conn.edgeType}>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground cursor-default">
-                                    {label}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-64">
-                                  <p className="text-xs">{info?.tip ?? conn.label}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          })}
+                    {/* ─ Gene–disease validity ─ */}
+                    {(selected.clingenClassification || selected.genccClassification || selected.modeOfInheritance || selected.civicEvidenceType) && (
+                      <div className="space-y-2">
+                        <Tip content="Expert classifications of how strongly this gene is linked to this disease and how the disease is inherited.">
+                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Gene–disease validity
+                          </span>
+                        </Tip>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                          {selected.clingenClassification && (
+                            <div>
+                              <Tip content="ClinGen is an NIH-funded expert panel that curates gene–disease relationships. Their classifications range from Confirmed cause to Refuted.">
+                                <span className="text-[11px] text-muted-foreground">ClinGen panel</span>
+                              </Tip>
+                              <div className="text-[13px] text-foreground">{validityLabel(selected.clingenClassification)}</div>
+                            </div>
+                          )}
+                          {selected.genccClassification && (
+                            <div>
+                              <Tip content="GenCC aggregates gene–disease classifications from multiple international curation efforts.">
+                                <span className="text-[11px] text-muted-foreground">GenCC consensus</span>
+                              </Tip>
+                              <div className="text-[13px] text-foreground">{validityLabel(selected.genccClassification)}</div>
+                            </div>
+                          )}
+                          {selected.modeOfInheritance && (
+                            <div>
+                              <Tip content="How this disease is passed from parents to children. For example, autosomal dominant means one copy of the altered gene is sufficient to cause disease.">
+                                <span className="text-[11px] text-muted-foreground">Inheritance</span>
+                              </Tip>
+                              <div className="text-[13px] text-foreground">{inheritanceLabel(selected.modeOfInheritance)}</div>
+                            </div>
+                          )}
+                          {selected.civicEvidenceType && (
+                            <div>
+                              <Tip content="CIViC provides community-curated clinical relevance annotations for this gene–disease link.">
+                                <span className="text-[11px] text-muted-foreground">Clinical relevance</span>
+                              </Tip>
+                              <div className="text-[13px] text-foreground">{selected.civicEvidenceType}</div>
+                            </div>
+                          )}
                         </div>
-                      </TooltipProvider>
-                    </div>
-                  )}
-
-                  {/* Evidence Breakdown */}
-                  {selected.evidenceBreakdown && selected.evidenceBreakdown.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Evidence by Type
                       </div>
-                      <EvidenceBars breakdown={selected.evidenceBreakdown} />
-                    </div>
-                  )}
+                    )}
 
-                  {/* Synonyms */}
-                  {selected.synonyms && selected.synonyms.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Also known as
+                    {/* ─ Evidence breakdown ─ */}
+                    {Object.values(selected.evidenceScores).some((v) => v !== null && v > 0) && (
+                      <div className="space-y-2">
+                        <Tip content="Breakdown of the overall association score by evidence type. Each bar shows how strong the evidence is from that data source (0–1 scale).">
+                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Evidence breakdown
+                          </span>
+                        </Tip>
+                        <EvidenceBreakdown scores={selected.evidenceScores} />
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {selected.synonyms.slice(0, 5).join(", ")}
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Actions */}
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
-                    <ExternalLink
-                      href={`https://platform.opentargets.org/disease/${encodeURIComponent(selected.id)}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      View on Open Targets
-                    </ExternalLink>
+                    {/* ─ Data sources ─ */}
+                    {selected.sources.length > 0 && (
+                      <div className="space-y-1.5">
+                        <Tip content="Databases that contributed evidence for this gene–disease association.">
+                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Data sources
+                          </span>
+                        </Tip>
+                        <div className="flex flex-wrap gap-1">
+                          {selected.sources.map((src) => (
+                            <span
+                              key={src}
+                              className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                            >
+                              {src}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ─ Body systems ─ */}
+                    {selected.primaryAnatomicalSystems.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          Affected body systems
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {selected.primaryAnatomicalSystems.map((sys) => (
+                            <span
+                              key={sys}
+                              className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                            >
+                              {systemLabel(sys)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ─ Synonyms ─ */}
+                    {selected.synonyms.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          Also known as
+                        </span>
+                        <p className="text-[13px] text-muted-foreground leading-relaxed">
+                          {selected.synonyms.slice(0, 6).join(", ")}
+                          {selected.synonyms.length > 6 && (
+                            <span className="text-[11px]"> +{selected.synonyms.length - 6} more</span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ─ Links ─ */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/60">
+                      <ExternalLink
+                        href={`https://platform.opentargets.org/disease/${encodeURIComponent(selected.id)}`}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Open Targets
+                      </ExternalLink>
+                      {selected.pubmedIds.slice(0, 3).map((pmid) => (
+                        <ExternalLink
+                          key={pmid}
+                          href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          PubMed {pmid}
+                        </ExternalLink>
+                      ))}
+                    </div>
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

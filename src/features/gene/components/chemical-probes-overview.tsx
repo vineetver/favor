@@ -32,8 +32,8 @@ type QualityLevel = "high" | "calculated" | "standard";
 // ============================================================================
 
 const QUALITY_CONFIG: Record<QualityLevel, { label: string; dotClass: string }> = {
-  high: { label: "High quality", dotClass: "bg-success" },
-  calculated: { label: "Calculated", dotClass: "bg-warning" },
+  high: { label: "High quality", dotClass: "bg-emerald-500" },
+  calculated: { label: "Calculated", dotClass: "bg-amber-500" },
   standard: { label: "Standard", dotClass: "bg-muted-foreground" },
 };
 
@@ -66,10 +66,10 @@ function ScoreBar({ value, max = 100 }: { value: number | null | undefined; max?
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-semibold text-heading w-8 tabular-nums">{formatScore(value)}</span>
-      <div className="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
+      <span className="text-sm font-semibold text-foreground w-8 tabular-nums">{formatScore(value)}</span>
+      <div className="h-1 w-12 rounded-full bg-border overflow-hidden">
         <div
-          className="h-full bg-primary/60"
+          className="h-full rounded-full bg-foreground/25"
           style={{ width: `${Math.min(100, percent)}%` }}
         />
       </div>
@@ -79,7 +79,7 @@ function ScoreBar({ value, max = 100 }: { value: number | null | undefined; max?
 
 function QualityDot({ level }: { level: QualityLevel }) {
   return (
-    <span className={cn("w-2 h-2 rounded-full shrink-0", QUALITY_CONFIG[level].dotClass)} />
+    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", QUALITY_CONFIG[level].dotClass)} />
   );
 }
 
@@ -172,20 +172,20 @@ export function ChemicalProbesOverview({
   return (
     <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
       {/* Header */}
-      <CardHeader className="border-b border-border px-6 py-5">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <CardTitle className="text-sm font-semibold text-foreground">
               Chemical Probes
             </CardTitle>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-[13px] text-muted-foreground">
               Small molecules for studying this target in cells and organisms
             </div>
           </div>
-          <div className="text-right text-sm text-muted-foreground">
+          <div className="text-right text-[13px] text-muted-foreground">
             <div>{sortedProbes.length} probes available</div>
             {qualityCounts.high > 0 && (
-              <div className="text-success font-medium">
+              <div className="text-emerald-600 font-medium">
                 {qualityCounts.high} recommended
               </div>
             )}
@@ -200,12 +200,12 @@ export function ChemicalProbesOverview({
         </div>
 
         {/* Master-Detail Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
           {/* Probe List */}
           <div className="border-b border-border lg:border-b-0 lg:border-r">
-            <div className="max-h-[480px] overflow-y-auto">
+            <div className="max-h-[600px] overflow-y-auto">
               {filteredProbes.length === 0 ? (
-                <div className="px-6 py-8 text-body-sm text-subtle">
+                <div className="px-5 py-8 text-[13px] text-muted-foreground">
                   No probes match your filters.
                 </div>
               ) : (
@@ -220,15 +220,15 @@ export function ChemicalProbesOverview({
                       type="button"
                       onClick={() => setSelectedKey(key)}
                       className={cn(
-                        "w-full px-6 py-3 text-left border-b border-border transition-colors",
-                        "hover:bg-muted",
-                        isSelected && "bg-primary/5 border-l-2 border-l-primary"
+                        "w-full px-5 py-2.5 text-left border-b border-border/60 transition-colors",
+                        "hover:bg-accent/50",
+                        isSelected && "bg-accent/70"
                       )}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <QualityDot level={quality} />
-                          <span className="text-sm font-medium text-heading truncate">
+                          <span className="text-sm font-medium text-foreground truncate">
                             {probe.id || "Unknown"}
                           </span>
                         </div>
@@ -243,12 +243,12 @@ export function ChemicalProbesOverview({
 
           {/* Detail Panel */}
           <div>
-            <div className="px-6 py-2.5 border-b border-border bg-muted">
-              <div className="text-body-sm font-medium text-subtle">Details</div>
+            <div className="px-5 py-1.5 border-b border-border bg-muted/60">
+              <div className="text-[11px] font-medium text-muted-foreground">Details</div>
             </div>
-            <div className="px-6 py-6 space-y-6">
+            <div className="px-5 py-5 space-y-5">
               {!selected ? (
-                <div className="text-body-sm text-subtle">
+                <div className="text-[13px] text-muted-foreground">
                   Select a probe to view details.
                 </div>
               ) : (
@@ -256,22 +256,22 @@ export function ChemicalProbesOverview({
                   {/* Probe Header */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-heading">
+                      <h3 className="text-[15px] font-semibold text-foreground">
                         {selected.id || "Unknown"}
                       </h3>
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-body-sm font-medium",
-                        getQualityLevel(selected) === "high" && "bg-success/10 text-success",
-                        getQualityLevel(selected) === "calculated" && "bg-warning/10 text-warning",
-                        getQualityLevel(selected) === "standard" && "bg-muted text-muted-foreground",
+                        "inline-flex items-center gap-1.5 text-[11px] font-medium",
+                        getQualityLevel(selected) === "high" && "text-emerald-600",
+                        getQualityLevel(selected) === "calculated" && "text-amber-600",
+                        getQualityLevel(selected) === "standard" && "text-muted-foreground",
                       )}>
                         <QualityDot level={getQualityLevel(selected)} />
                         {getQualityLevel(selected) === "high" ? "Recommended" : QUALITY_CONFIG[getQualityLevel(selected)].label}
                       </span>
                     </div>
                     {selected.mechanismOfAction && selected.mechanismOfAction.length > 0 && (
-                      <div className="text-sm text-body">
-                        <span className="text-subtle">Mechanism: </span>
+                      <div className="text-[13px] text-muted-foreground">
+                        <span className="text-muted-foreground">Mechanism: </span>
                         {selected.mechanismOfAction.join(", ")}
                       </div>
                     )}
@@ -280,22 +280,22 @@ export function ChemicalProbesOverview({
                   {/* Scores - with explanation */}
                   <div className="space-y-3">
                     <div>
-                      <div className="text-body-sm font-medium text-subtle">Quality Scores</div>
-                      <div className="text-caption text-subtle">Higher scores indicate better selectivity and potency (0-100)</div>
+                      <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Quality Scores</div>
+                      <div className="text-[11px] text-muted-foreground">Higher scores indicate better selectivity and potency (0-100)</div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <ScoreItem label="Overall" value={selected.probesDrugsScore} description="Combined quality score" />
-                      <ScoreItem label="ProbeMiner" value={selected.probeMinerScore} description="Database quality rating" />
-                      <ScoreItem label="In Cells" value={selected.scoreInCells} description="Cell assay performance" />
-                      <ScoreItem label="In Organisms" value={selected.scoreInOrganisms} description="In vivo performance" />
+                      <ScoreItem label="Overall" value={selected.probesDrugsScore} />
+                      <ScoreItem label="ProbeMiner" value={selected.probeMinerScore} />
+                      <ScoreItem label="In Cells" value={selected.scoreInCells} />
+                      <ScoreItem label="In Organisms" value={selected.scoreInOrganisms} />
                     </div>
                   </div>
 
                   {/* Control compound - important for experiments */}
                   {selected.control && (
                     <div className="space-y-2">
-                      <div className="text-body-sm font-medium text-subtle">Negative Control</div>
-                      <div className="text-sm text-body">
+                      <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Negative Control</div>
+                      <div className="text-[13px] text-muted-foreground">
                         Use <span className="font-medium">{selected.control}</span> as inactive control in experiments
                       </div>
                     </div>
@@ -304,15 +304,15 @@ export function ChemicalProbesOverview({
                   {/* IDs for lookup */}
                   {(selected.targetFromSourceId || selected.drugId) && (
                     <div className="space-y-2">
-                      <div className="text-body-sm font-medium text-subtle">Identifiers</div>
+                      <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Identifiers</div>
                       <div className="flex flex-wrap gap-2">
                         {selected.drugId && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted text-body-sm font-mono">
+                          <span className="bg-muted px-2 py-0.5 text-[11px] text-muted-foreground rounded font-mono">
                             {selected.drugId}
                           </span>
                         )}
                         {selected.targetFromSourceId && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted text-body-sm font-mono">
+                          <span className="bg-muted px-2 py-0.5 text-[11px] text-muted-foreground rounded font-mono">
                             {selected.targetFromSourceId}
                           </span>
                         )}
@@ -327,7 +327,7 @@ export function ChemicalProbesOverview({
                         <ExternalLink
                           key={`${urlObj.url}-${index}`}
                           href={urlObj.url}
-                          className="text-sm text-primary hover:underline"
+                          className="text-xs text-primary hover:underline"
                         >
                           {urlObj.niceName || "Source"}
                         </ExternalLink>
@@ -335,7 +335,7 @@ export function ChemicalProbesOverview({
                     ))}
                     <ExternalLink
                       href="https://www.probes-drugs.org"
-                      className="text-sm text-primary hover:underline"
+                      className="text-xs text-primary hover:underline"
                     >
                       Probes & Drugs
                     </ExternalLink>
@@ -354,7 +354,7 @@ export function ChemicalProbesOverview({
 // Score Item
 // ============================================================================
 
-function ScoreItem({ label, value, description }: { label: string; value: number | null | undefined; description?: string }) {
+function ScoreItem({ label, value }: { label: string; value: number | null | undefined }) {
   const formatted = formatScore(value);
   const hasValue = formatted !== "—";
   const percent = hasValue ? Math.min(100, value ?? 0) : 0;
@@ -362,17 +362,17 @@ function ScoreItem({ label, value, description }: { label: string; value: number
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-body-sm text-subtle">{label}</span>
+        <span className="text-[11px] text-muted-foreground">{label}</span>
         <span className={cn(
           "text-sm font-semibold tabular-nums",
-          hasValue ? "text-heading" : "text-subtle"
+          hasValue ? "text-foreground" : "text-muted-foreground"
         )}>
           {formatted}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+      <div className="h-1 rounded-full bg-border overflow-hidden">
         <div
-          className={cn("h-full", hasValue ? "bg-primary/60" : "bg-slate-200")}
+          className={cn("h-full rounded-full", hasValue ? "bg-foreground/25" : "bg-border")}
           style={{ width: `${percent}%` }}
         />
       </div>

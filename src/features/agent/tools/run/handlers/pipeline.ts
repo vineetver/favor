@@ -255,6 +255,48 @@ function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef
   return out;
 }
 
+/** Commands that return cohort rows with gene annotations. */
+const ROW_COMMANDS = new Set(["top_hits", "rows", "prioritize", "compute", "gwas_minimal"]);
+
+/** Gene columns found in cohort rows (ordered by preference). */
+const GENE_COLUMNS = ["genecode_genes", "genes", "gene", "gene_symbol"];
+
+/**
+ * Extract Gene entities from cohort row data.
+ * Looks for gene name arrays/strings in known columns.
+ */
+function extractRowEntities(data: Record<string, unknown>): EntityRef[] {
+  const rows = (data.rows ?? data.top_hits) as Array<Record<string, unknown>> | undefined;
+  if (!rows?.length) return [];
+
+  const out: EntityRef[] = [];
+  for (const row of rows) {
+    for (const col of GENE_COLUMNS) {
+      const val = row[col];
+      if (!val) continue;
+      const names: string[] = Array.isArray(val) ? val : [String(val)];
+      for (const name of names) {
+        const trimmed = name.trim();
+        if (trimmed && trimmed.length > 0) {
+          out.push({ type: "Gene", id: trimmed, label: trimmed });
+        }
+      }
+      break; // use first matching column
+    }
+
+    // Also extract variant entities if variant_vcf or rsid present
+    const vcf = row.variant_vcf as string | undefined;
+    const rsid = row.rsid as string | undefined;
+    const vid = row.vid as string | undefined;
+    if (vcf && vid) {
+      out.push({ type: "Variant", id: String(vid), label: vcf });
+    } else if (rsid) {
+      out.push({ type: "Variant", id: rsid, label: rsid });
+    }
+  }
+  return out;
+}
+
 function extractEntities(
   result: RunResultEnvelope,
   command: string,
@@ -263,13 +305,15 @@ function extractEntities(
   const data = result.data;
   if (!data) return { entities: [] };
 
-  // Dispatch by _mode (graph handlers) or command (variant_profile)
+  // Dispatch by _mode (graph handlers), command name, or row-based cohort commands
   const mode = data._mode as string | undefined;
   const extractor = mode
     ? MODE_EXTRACTORS[mode]
     : command === "variant_profile"
       ? extractVariantProfileEntities
-      : undefined;
+      : ROW_COMMANDS.has(command)
+        ? extractRowEntities
+        : undefined;
 
   if (!extractor) return { entities: [] };
 
@@ -327,8 +371,14 @@ function buildStepCommand(
       // traverse patterns uses `seeds` array
       cmd.seeds = seedRefs;
     } else {
-      // explore uses `seeds` array
-      cmd.seeds = seedRefs;
+      // explore: cap at 10 for neighbors (graph/query limit), uncapped for enrichment
+      const isNeighbors = cmd.into != null;
+      if (isNeighbors && seedRefs.length > 10) {
+        tc?.warn("seeds_capped", `Capped from ${seedRefs.length} to 10 seeds for explore neighbors (API limit)`);
+        cmd.seeds = seedRefs.slice(0, 10);
+      } else {
+        cmd.seeds = seedRefs;
+      }
     }
   }
 
@@ -443,8 +493,12 @@ export async function handlePipeline(
   const stepResults = new Map<string, StepResult>();
   const stepRawResults = new Map<string, RunResultEnvelope>();
   const stepEntities = new Map<string, EntityRef[]>();
-  // Mutable copy of context so cohort ID changes propagate
+  // Mutable copy of context so cohort ID changes propagate.
+  // Forward cohort_id from pipeline-level args (strip common prefixes).
   const pipeCtx: RunContext = { ...ctx };
+  if (cmd.cohort_id) {
+    pipeCtx.activeCohortId = String(cmd.cohort_id).replace(/^cohort\//, "");
+  }
 
   for (const wave of waves) {
     const waveStart = Date.now();

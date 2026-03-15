@@ -20,6 +20,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       // Pathogenicity & Scores
       { text: "Pathogenicity", slug: "variant-effects" },
       { text: "Protein Function", slug: "protein-function" },
+      { text: "Protein Structure", slug: "protein-structure" },
       { text: "Conservation", slug: "conservation" },
       { text: "SpliceAI", slug: "splice-ai" },
       { text: "Consequences (VEP)", slug: "consequences" },
@@ -73,6 +74,7 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         items: [
           { text: "Pathogenicity", slug: "variant-effects", icon: "alert-triangle" },
           { text: "Protein Function", slug: "protein-function", icon: "activity" },
+          { text: "Protein Structure", slug: "protein-structure", icon: "box" },
           { text: "Conservation", slug: "conservation", icon: "history" },
           { text: "SpliceAI", slug: "splice-ai", icon: "scissors" },
           { text: "Consequences (VEP)", slug: "consequences", icon: "git-branch" },

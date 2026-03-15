@@ -10,6 +10,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
 
     { text: "Function", slug: "function" },
     { text: "Expression", slug: "expression" },
+    { text: "Protein Structure", slug: "protein-structure" },
     { text: "Protein-Protein Interactions", slug: "protein-protein-interactions" },
     { text: "Pathways", slug: "pathways" },
 
@@ -35,6 +36,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       items: [
         { text: "Function", slug: "function", icon: "dna" },
         { text: "Expression", slug: "expression", icon: "activity" },
+        { text: "Protein Structure", slug: "protein-structure", icon: "box" },
         { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo", icon: "shield-alert" },
       ],
     },
@@ -99,11 +101,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     slug: "variants",
     subCategories: [
       { text: "Summary Statistics", slug: "summary-statistics" },
-      { text: "Allele Distribution", slug: "allele-distribution" },
-      { text: "Functional Consequences", slug: "functional-consequences" },
-      { text: "Gencode Categories", slug: "gencode-categories" },
-      { text: "ClinVar Significance", slug: "clinvar-significance" },
-      { text: "High Integrative Score", slug: "high-integrative-score" },
       { text: "Variant Explorer", slug: "variant-explorer" },
     ],
     groups: [
@@ -111,21 +108,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         name: "Overview",
         items: [
           { text: "Summary Statistics", slug: "summary-statistics", icon: "bar-chart-2" },
-        ],
-      },
-      {
-        name: "Distribution & Annotation",
-        items: [
-          { text: "Allele Distribution", slug: "allele-distribution", icon: "pie-chart" },
-          { text: "Gencode Categories", slug: "gencode-categories", icon: "layers" },
-          { text: "Functional Consequences", slug: "functional-consequences", icon: "git-branch" },
-        ],
-      },
-      {
-        name: "Clinical & Prioritization",
-        items: [
-          { text: "ClinVar Significance", slug: "clinvar-significance", icon: "heart-pulse" },
-          { text: "High Integrative Score", slug: "high-integrative-score", icon: "brain" },
         ],
       },
       {

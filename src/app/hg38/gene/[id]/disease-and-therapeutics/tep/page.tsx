@@ -37,13 +37,13 @@ export default async function TepPage({ params }: TepPageProps) {
 
   return (
     <Card className="border border-border py-0 gap-0">
-      <CardHeader className="border-b border-border px-6 py-5">
+      <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-0.5">
             <CardTitle className="text-sm font-semibold text-foreground">
-              Target Enabling Package (TEP)
+              Target Enabling Package
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Open-access reagents and data for target validation from the
               Structural Genomics Consortium
             </p>
@@ -51,43 +51,43 @@ export default async function TepPage({ params }: TepPageProps) {
           {tep.url && (
             <ExternalLink
               href={tep.url}
-              className="text-sm text-muted-foreground hover:text-primary"
+              className="text-xs text-primary hover:underline"
               iconSize="sm"
             >
-              View Full TEP
+              View full TEP
             </ExternalLink>
           )}
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 py-5">
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+      <CardContent className="px-5 py-5">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           {tep.targetFromSourceId && (
             <div>
-              <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <dt className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                 Target ID
               </dt>
-              <dd className="text-sm font-mono text-foreground">
+              <dd className="text-[13px] font-mono text-foreground">
                 {tep.targetFromSourceId}
               </dd>
             </div>
           )}
           {tep.therapeuticArea && (
             <div>
-              <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Therapeutic Area
+              <dt className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                Therapeutic area
               </dt>
-              <dd className="text-sm text-foreground">
+              <dd className="text-[13px] text-foreground">
                 {tep.therapeuticArea}
               </dd>
             </div>
           )}
           {tep.description && (
             <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <dt className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                 Description
               </dt>
-              <dd className="text-sm text-foreground leading-relaxed">
+              <dd className="text-[13px] text-muted-foreground leading-relaxed">
                 {tep.description}
               </dd>
             </div>

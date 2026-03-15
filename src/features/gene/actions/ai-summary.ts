@@ -32,8 +32,10 @@ export async function getGeneSummary(
 
   const response = await fetch(`${API_BASE}/ai-text?${searchParams}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.FAVOR_API_KEY}`,
+    },
     cache: "no-store",
   });
 
@@ -58,8 +60,10 @@ export async function generateGeneSummary(params: {
 }): Promise<GenerateResponse> {
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.FAVOR_API_KEY}`,
+    },
     body: JSON.stringify({
       entity_type: "gene",
       entity_id: params.geneId,

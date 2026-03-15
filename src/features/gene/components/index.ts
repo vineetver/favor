@@ -8,3 +8,4 @@ export { DiseasePortfolioOverview } from "./disease-portfolio-overview";
 export { PPINetworkView } from "./ppi-network";
 export { PathwayLeverageView } from "./pathway-map";
 export { ConstraintsOverview } from "./constraints-overview";
+export { ProteinStructureView } from "./protein-structure";
