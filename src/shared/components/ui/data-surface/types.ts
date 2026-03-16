@@ -158,6 +158,8 @@ export interface DataSurfaceProps<TData, TValue> {
   derivedColumn?: DerivedColumn;
   /** Default sort for transposed tables */
   defaultSort?: DefaultSort;
+  /** Render expanded content below a row. When provided, clicking a row toggles its expansion. */
+  renderExpandedRow?: (row: TData) => React.ReactNode;
 }
 
 export interface ContextHeaderProps {

@@ -50,6 +50,92 @@ export async function fetchRegionSummary(
 }
 
 // ---------------------------------------------------------------------------
+// Tissue-level aggregation (group_by=tissue_group for cross-table consistency)
+// ---------------------------------------------------------------------------
+
+export interface TissueGroupRow {
+  tissue_name: string;
+  max_value: number;
+  count: number;
+  significant?: number;
+  top_item?: string;
+}
+
+export async function fetchSignalsByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/signals?group_by=tissue_group`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+export async function fetchEnhancersByTissueGroup(
+  loc: string,
+  opts: { method?: string; target_gene?: string } = {},
+): Promise<TissueGroupRow[]> {
+  const params = new URLSearchParams({ group_by: "tissue_group" });
+  if (opts.method) params.set("method", opts.method);
+  if (opts.target_gene) params.set("target_gene", opts.target_gene);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+export async function fetchAseByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/ase?group_by=tissue_group`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+export async function fetchChromatinByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?group_by=tissue_group`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+export async function fetchAccessibilityByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility?group_by=tissue_group`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+export async function fetchLoopsByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/loops?group_by=tissue_group`;
+  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
+  return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// Region Variants (variant-regulatory connections)
+// ---------------------------------------------------------------------------
+
+export interface RegionVariantRow {
+  vid: number;
+  chrom_id: number;
+  position: number;
+  variant_vcf: string;
+  region_table: string;
+  region_id: string;
+}
+
+export async function fetchRegionVariants(
+  loc: string,
+  params: { region_table?: string; cursor?: string; limit?: number } = {},
+): Promise<PaginatedResponse<RegionVariantRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/variants${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<RegionVariantRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
 // Tissue Signals
 // ---------------------------------------------------------------------------
 

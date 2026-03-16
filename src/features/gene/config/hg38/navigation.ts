@@ -123,6 +123,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     name: "Cell/Tissue",
     slug: "tissue-specific",
     subCategories: [
+      { text: "Overview", slug: "overview" },
       { text: "Tissue Signals", slug: "tissue-signals" },
       { text: "Chromatin States", slug: "chromatin-states" },
       { text: "Enhancer-Genes", slug: "enhancer-genes" },
@@ -134,6 +135,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     ],
     showIcons: false,
     groups: [
+      {
+        name: "Overview",
+        items: [
+          { text: "Evidence Summary", slug: "overview" },
+        ],
+      },
       {
         name: "Epigenomic Signals",
         items: [

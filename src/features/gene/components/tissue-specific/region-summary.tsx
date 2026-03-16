@@ -29,7 +29,9 @@ const NAV_ITEMS: {
   slug: string;
   label: string;
   hint: string;
+  isOverview?: boolean;
 }[] = [
+  { key: null, slug: "overview", label: "Overview", hint: "Tissue evidence ranked by convergence across all data types", isOverview: true },
   { key: "signals", slug: "tissue-signals", label: "Tissue Signals", hint: "cCRE epigenomic signal values across tissues" },
   { key: "chromatin_states", slug: "chromatin-states", label: "Chromatin States", hint: "Roadmap 25-state chromatin annotations" },
   { key: "enhancer_genes", slug: "enhancer-genes", label: "Enhancer-Genes", hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)" },
@@ -51,11 +53,11 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {NAV_ITEMS.map(({ key, slug, label, hint }) => {
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+          {NAV_ITEMS.map(({ key, slug, label, hint, isOverview }) => {
             const count = key ? summary.counts[key] : null;
             const isActive = activeSlug === slug;
-            const isEmpty = count === 0;
+            const isEmpty = !isOverview && count === 0;
 
             return (
               <Link
@@ -89,14 +91,23 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <span
-                  className={cn(
-                    "text-2xl font-semibold tabular-nums tracking-tight",
-                    isActive ? "text-foreground" : "text-foreground",
-                  )}
-                >
-                  {count != null ? formatCount(count) : "\u2014"}
-                </span>
+                {isOverview ? (
+                  <span className={cn(
+                    "text-sm font-medium",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}>
+                    Evidence
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "text-2xl font-semibold tabular-nums tracking-tight",
+                      isActive ? "text-foreground" : "text-foreground",
+                    )}
+                  >
+                    {count != null ? formatCount(count) : "\u2014"}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -78,6 +78,7 @@ export function DataSurface<TData, TValue>({
   sourceObject,
   derivedColumn,
   defaultSort,
+  renderExpandedRow,
 }: DataSurfaceProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>(() => {
     if (serverSort?.sortBy) {
@@ -103,6 +104,7 @@ export function DataSurface<TData, TValue>({
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [viewMode, setViewMode] = React.useState<ViewMode>(defaultViewMode);
   const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
+  const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
 
   // ============================================================================
   // Transposed Mode Logic
@@ -488,9 +490,24 @@ export function DataSurface<TData, TValue>({
             table={table}
             rows={table.getRowModel().rows}
             sorting={sorting}
-            onRowClick={onRowClick}
+            onRowClick={
+              renderExpandedRow
+                ? (row) => {
+                    setExpandedRowId((prev) =>
+                      prev === row.id ? null : row.id,
+                    );
+                    onRowClick?.(row);
+                  }
+                : onRowClick
+            }
             emptyMessage={emptyMessage}
             loading={false}
+            expandedRowId={renderExpandedRow ? expandedRowId : undefined}
+            renderExpandedRow={
+              renderExpandedRow
+                ? (row) => renderExpandedRow(row.original)
+                : undefined
+            }
           />
         </div>
       )}

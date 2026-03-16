@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { cn } from "@infra/utils";
 import {
   Tooltip,
@@ -25,6 +26,10 @@ interface TableContentProps<TData> {
   loading?: boolean;
   /** Sorting state - used to determine sort icons */
   sorting: SortingState;
+  /** ID of the currently expanded row */
+  expandedRowId?: string | null;
+  /** Render expanded content below the row */
+  renderExpandedRow?: (row: Row<TData>) => React.ReactNode;
 }
 
 function SortIcon({
@@ -51,6 +56,8 @@ export function TableContent<TData>({
   emptyMessage = "No data found",
   loading = false,
   sorting,
+  expandedRowId,
+  renderExpandedRow,
 }: TableContentProps<TData>) {
   return (
     <div className="overflow-x-auto relative">
@@ -138,44 +145,63 @@ export function TableContent<TData>({
           {rows.length > 0 ? (
             rows.map((row, index) => {
               const isEven = index % 2 === 0;
+              const isExpanded = expandedRowId === row.id;
               return (
-                <tr
-                  key={row.id}
-                  onClick={() => onRowClick?.(row)}
-                  className={cn(
-                    "group relative transition-colors border-b border-border/50",
-                    isEven ? "bg-background" : "bg-muted/30",
-                    onRowClick ? "cursor-pointer" : "",
-                    "hover:bg-primary/[0.03]",
-                  )}
-                >
-                  {row.getVisibleCells().map((cell, cellIndex) => {
-                    const meta = cell.column.columnDef.meta as
-                      | ColumnMeta
-                      | undefined;
-                    const align = meta?.align ?? "left";
+                <React.Fragment key={row.id}>
+                  <tr
+                    onClick={() => onRowClick?.(row)}
+                    className={cn(
+                      "group relative transition-colors border-b border-border/50",
+                      isExpanded
+                        ? "bg-primary/5"
+                        : isEven
+                          ? "bg-background"
+                          : "bg-muted/30",
+                      onRowClick ? "cursor-pointer" : "",
+                      "hover:bg-primary/[0.03]",
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell, cellIndex) => {
+                      const meta = cell.column.columnDef.meta as
+                        | ColumnMeta
+                        | undefined;
+                      const align = meta?.align ?? "left";
 
-                    return (
+                      return (
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            "px-6 py-3.5 text-sm text-foreground",
+                            align === "center" && "text-center",
+                            align === "right" && "text-right",
+                            cellIndex === 0 && "relative",
+                          )}
+                        >
+                          {cellIndex === 0 && (
+                            <div className={cn(
+                              "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r transition-all duration-150",
+                              isExpanded ? "h-6 bg-primary" : "h-0 bg-primary/60 group-hover:h-6",
+                            )} />
+                          )}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {isExpanded && renderExpandedRow && (
+                    <tr>
                       <td
-                        key={cell.id}
-                        className={cn(
-                          "px-6 py-3.5 text-sm text-foreground",
-                          align === "center" && "text-center",
-                          align === "right" && "text-right",
-                          cellIndex === 0 && "relative",
-                        )}
+                        colSpan={row.getVisibleCells().length}
+                        className="bg-muted/30 border-b border-border/50 px-6 py-0"
                       >
-                        {cellIndex === 0 && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/60 rounded-r transition-all duration-150 group-hover:h-6" />
-                        )}
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+                        {renderExpandedRow(row)}
                       </td>
-                    );
-                  })}
-                </tr>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })
           ) : !loading ? (
