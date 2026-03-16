@@ -2,8 +2,8 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchAccessibility,
   fetchRegionSummary,
-} from "@features/gene/api/region";
-import { AccessibilityView } from "@features/gene/components/tissue-specific/accessibility-view";
+} from "@features/enrichment/api/region";
+import { AccessibilityView } from "@features/enrichment/components/accessibility-view";
 import { notFound } from "next/navigation";
 
 interface AccessibilityPageProps {

@@ -1,6 +1,6 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchCcreLinks, fetchRegionSummary } from "@features/gene/api/region";
-import { CcreLinksView } from "@features/gene/components/tissue-specific/ccre-links-view";
+import { fetchCcreLinks, fetchRegionSummary } from "@features/enrichment/api/region";
+import { CcreLinksView } from "@features/enrichment/components/ccre-links-view";
 import { notFound } from "next/navigation";
 
 interface CcreLinksPageProps {

@@ -63,9 +63,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     subCategories: [
       { text: "Disease Portfolio", slug: "disease-portfolio" },
       { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
+      { text: "Drug Landscape", slug: "drug-landscape" },
+      { text: "Pharmacogenomics", slug: "pharmacogenomics" },
       { text: "Chemical Probes", slug: "chemical-probes" },
       { text: "Safety Liabilities", slug: "safety-liabilities" },
       { text: "Cancer Hallmarks", slug: "cancer-hallmarks" },
+      { text: "Somatic Alterations", slug: "somatic-alterations" },
     ],
     groups: [
       {
@@ -79,6 +82,8 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         name: "Therapeutic Readiness",
         items: [
           { text: "Tractability & Target Class", slug: "tractability-and-target-class", icon: "radar" },
+          { text: "Drug Landscape", slug: "drug-landscape", icon: "pill" },
+          { text: "Pharmacogenomics", slug: "pharmacogenomics", icon: "test-tubes" },
           { text: "Chemical Probes", slug: "chemical-probes", icon: "flask-conical" },
           { text: "Target Enabling Package (TEP)", slug: "tep", icon: "package" },
         ],
@@ -91,6 +96,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         name: "Oncology Context",
         items: [
           { text: "Cancer Hallmarks", slug: "cancer-hallmarks", icon: "flame" },
+          { text: "Somatic Alterations", slug: "somatic-alterations", icon: "git-compare" },
         ],
       },
     ],

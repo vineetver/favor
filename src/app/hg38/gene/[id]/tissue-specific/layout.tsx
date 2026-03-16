@@ -1,7 +1,7 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchRegionSummary } from "@features/gene/api/region";
+import { fetchRegionSummary } from "@features/enrichment/api/region";
 import { GeneHeader } from "@features/gene/components/header/gene-header";
-import { RegionNavBar } from "@features/gene/components/tissue-specific/region-nav-bar";
+import { RegionNavBar } from "@features/enrichment/components/region-nav-bar";
 import { geneDataChecks } from "@features/gene/config/hg38/data-availability";
 import { GENE_NAVIGATION_CONFIG } from "@features/gene/config/hg38/navigation";
 import { getDisabledSlugs } from "@shared/utils/data-availability";

@@ -11,13 +11,13 @@ import {
   fetchSignalsByTissueGroup,
   fetchVariantAllelicImbalanceByTissueGroup,
   fetchVariantEvidenceSummary,
-} from "@features/gene/api/region";
-import { VariantEvidenceView } from "@features/gene/components/tissue-specific/variant-evidence-view";
+} from "@features/enrichment/api/region";
+import { VariantEvidenceView } from "@features/enrichment/components/variant-evidence-view";
 import {
   TissueEvidenceSummary,
   type TissueEvidenceData,
-} from "@features/gene/components/tissue-specific/tissue-evidence-summary";
-import { OverviewHeatmap } from "@features/gene/components/tissue-specific/overview-heatmap";
+} from "@features/enrichment/components/tissue-evidence-summary";
+import { OverviewHeatmap } from "@features/enrichment/components/overview-heatmap";
 import { notFound } from "next/navigation";
 
 interface OverviewPageProps {

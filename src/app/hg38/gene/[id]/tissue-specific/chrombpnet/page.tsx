@@ -1,6 +1,6 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchChromBpnet } from "@features/gene/api/region";
-import { ChromBpnetView } from "@features/gene/components/tissue-specific/chrombpnet-view";
+import { fetchChromBpnet } from "@features/enrichment/api/region";
+import { ChromBpnetView } from "@features/enrichment/components/chrombpnet-view";
 import { notFound } from "next/navigation";
 
 interface ChromBpnetPageProps {

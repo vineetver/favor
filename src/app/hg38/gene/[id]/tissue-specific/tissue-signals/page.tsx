@@ -3,9 +3,9 @@ import {
   fetchRegionSummary,
   fetchSignalFacets,
   fetchSignals,
-} from "@features/gene/api/region";
-import { SignalHeatmap } from "@features/gene/components/tissue-specific/signal-heatmap";
-import { TissueSignalsView } from "@features/gene/components/tissue-specific/tissue-signals-view";
+} from "@features/enrichment/api/region";
+import { SignalHeatmap } from "@features/enrichment/components/signal-heatmap";
+import { TissueSignalsView } from "@features/enrichment/components/tissue-signals-view";
 import { notFound } from "next/navigation";
 
 interface TissueSignalsPageProps {

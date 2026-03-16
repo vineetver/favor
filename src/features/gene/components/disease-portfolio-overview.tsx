@@ -18,6 +18,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { Tip } from "@shared/components/ui/tip";
+import { ConfidenceDots } from "@shared/components/ui/confidence-dots";
+import { ScoreBar } from "@shared/components/ui/score-bar";
 import { Search, ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 
@@ -219,57 +222,6 @@ const PAGE_SIZE = 100;
 function formatScore(value: number | null) {
   if (value === null || Number.isNaN(value)) return "—";
   return value.toFixed(2);
-}
-
-/** Compact inline bar for the list. Single color, thin, quiet. */
-function ScoreBar({ value }: { value: number | null }) {
-  const n = typeof value === "number" ? value : 0;
-  const percent = Math.round(Math.max(0, Math.min(1, n)) * 100);
-
-  return (
-    <div className="flex items-center gap-1.5 shrink-0">
-      <span className="text-[11px] font-medium tabular-nums text-muted-foreground w-7 text-right">
-        {formatScore(value)}
-      </span>
-      <div className="h-1 w-12 rounded-full bg-border overflow-hidden">
-        <div
-          className="h-full rounded-full bg-foreground/25"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function ConfidenceDots({ count }: { count: number }) {
-  return (
-    <span className="inline-flex gap-px">
-      {[1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-[5px] w-[5px] rounded-full",
-            i <= count ? "bg-foreground/50" : "bg-border",
-          )}
-        />
-      ))}
-    </span>
-  );
-}
-
-function Tip({ children, content }: { children: React.ReactNode; content: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="cursor-default border-b border-dotted border-muted-foreground/30">
-          {children}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-72">
-        <p className="text-xs leading-relaxed">{content}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
 }
 
 /** Evidence score bars — thin, muted, proportional. */

@@ -2,8 +2,8 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchRegionSummary,
   fetchValidatedEnhancers,
-} from "@features/gene/api/region";
-import { ValidatedEnhancersView } from "@features/gene/components/tissue-specific/validated-enhancers-view";
+} from "@features/enrichment/api/region";
+import { ValidatedEnhancersView } from "@features/enrichment/components/validated-enhancers-view";
 import { notFound } from "next/navigation";
 
 interface ValidatedEnhancersPageProps {

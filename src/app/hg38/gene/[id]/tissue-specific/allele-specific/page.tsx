@@ -2,8 +2,8 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchAse,
   fetchRegionSummary,
-} from "@features/gene/api/region";
-import { AseView } from "@features/gene/components/tissue-specific/ase-view";
+} from "@features/enrichment/api/region";
+import { AseView } from "@features/enrichment/components/ase-view";
 import { notFound } from "next/navigation";
 
 interface AsePageProps {

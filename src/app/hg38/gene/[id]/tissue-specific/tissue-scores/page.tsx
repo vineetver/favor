@@ -1,6 +1,6 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchTissueScores } from "@features/gene/api/region";
-import { TissueScoresView } from "@features/gene/components/tissue-specific/tissue-scores-view";
+import { fetchTissueScores } from "@features/enrichment/api/region";
+import { TissueScoresView } from "@features/enrichment/components/tissue-scores-view";
 import { notFound } from "next/navigation";
 
 interface TissueScoresPageProps {

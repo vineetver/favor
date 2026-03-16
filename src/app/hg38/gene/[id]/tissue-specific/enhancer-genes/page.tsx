@@ -3,8 +3,8 @@ import {
   fetchEnhancerGeneFacets,
   fetchEnhancerGenes,
   fetchRegionSummary,
-} from "@features/gene/api/region";
-import { EnhancerGenesView } from "@features/gene/components/tissue-specific/enhancer-genes-view";
+} from "@features/enrichment/api/region";
+import { EnhancerGenesView } from "@features/enrichment/components/enhancer-genes-view";
 import { notFound } from "next/navigation";
 
 interface EnhancerGenesPageProps {

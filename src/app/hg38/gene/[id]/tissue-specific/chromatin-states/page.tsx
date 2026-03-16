@@ -3,8 +3,8 @@ import {
   fetchChromatinStateFacets,
   fetchChromatinStates,
   fetchRegionSummary,
-} from "@features/gene/api/region";
-import { ChromatinStatesView } from "@features/gene/components/tissue-specific/chromatin-states-view";
+} from "@features/enrichment/api/region";
+import { ChromatinStatesView } from "@features/enrichment/components/chromatin-states-view";
 import { notFound } from "next/navigation";
 
 interface ChromatinStatesPageProps {

@@ -2,8 +2,8 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchLoops,
   fetchRegionSummary,
-} from "@features/gene/api/region";
-import { LoopsView } from "@features/gene/components/tissue-specific/loops-view";
+} from "@features/enrichment/api/region";
+import { LoopsView } from "@features/enrichment/components/loops-view";
 import { notFound } from "next/navigation";
 
 interface LoopsPageProps {

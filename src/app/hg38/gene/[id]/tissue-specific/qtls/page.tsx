@@ -1,6 +1,6 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchQtls } from "@features/gene/api/region";
-import { QtlsView } from "@features/gene/components/tissue-specific/qtls-view";
+import { fetchQtls } from "@features/enrichment/api/region";
+import { QtlsView } from "@features/enrichment/components/qtls-view";
 import { notFound } from "next/navigation";
 
 interface QtlsPageProps {
