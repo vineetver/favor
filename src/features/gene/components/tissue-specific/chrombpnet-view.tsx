@@ -2,7 +2,7 @@
 
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
-import { formatTissueName } from "@shared/utils/tissue-format";
+import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
@@ -21,7 +21,10 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     accessorKey: "tissue_name",
     header: "Biosample",
     enableSorting: false,
-    meta: { description: "Cell type or tissue where ChromBPNet prediction was made" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Cell type or tissue where ChromBPNet predicted the variant effect on chromatin accessibility",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
         {formatTissueName(getValue() as string)}
@@ -36,7 +39,8 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     meta: { description: "Tissue group" } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as string | undefined;
-      if (!v) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (!v)
+        return <span className="text-muted-foreground/40">&mdash;</span>;
       return <span className="text-xs text-muted-foreground">{v}</span>;
     },
   },
@@ -45,7 +49,10 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     accessorKey: "combined_score",
     header: "Score",
     enableSorting: false,
-    meta: { description: "ChromBPNet combined score — higher = stronger predicted variant effect on chromatin accessibility" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "ChromBPNet combined score. Higher = stronger predicted variant effect on chromatin accessibility. Based on deep learning model trained on ENCODE data.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-xs tabular-nums text-foreground font-medium">
         {(getValue() as number).toExponential(2)}
@@ -57,11 +64,20 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     accessorKey: "combined_pval",
     header: "p-value",
     enableSorting: false,
-    meta: { description: "Combined p-value for the predicted effect" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Combined p-value for the predicted chromatin effect. <0.05 = statistically significant prediction.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
+      const sig = v < 0.05;
       return (
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span
+          className={cn(
+            "text-xs tabular-nums",
+            sig ? "text-foreground font-medium" : "text-muted-foreground"
+          )}
+        >
           {v < 0.001 ? v.toExponential(1) : v.toFixed(3)}
         </span>
       );
@@ -72,15 +88,25 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     accessorKey: "logfc_mean",
     header: "Log FC",
     enableSorting: false,
-    meta: { description: "Mean log fold-change — direction and magnitude of predicted chromatin effect" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Mean log fold-change. Positive = variant increases chromatin accessibility, negative = decreases. Magnitude indicates effect strength.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
       return (
-        <span className={cn(
-          "text-xs tabular-nums",
-          v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground",
-        )}>
-          {v > 0 ? "+" : ""}{v.toFixed(3)}
+        <span
+          className={cn(
+            "text-xs tabular-nums",
+            v > 0
+              ? "text-emerald-600"
+              : v < 0
+                ? "text-destructive"
+                : "text-muted-foreground"
+          )}
+        >
+          {v > 0 ? "+" : ""}
+          {v.toFixed(3)}
         </span>
       );
     },
@@ -97,7 +123,11 @@ interface ChromBpnetViewProps {
   initialData?: PaginatedResponse<ChromBpnetRow>;
 }
 
-export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewProps) {
+export function ChromBpnetView({
+  loc,
+  totalCount,
+  initialData,
+}: ChromBpnetViewProps) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useChromBpnetQuery({
@@ -105,26 +135,22 @@ export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewP
     initialData,
   });
 
-  const tissueGroups = useMemo(() => {
-    const groups = new Set<string>();
-    for (const row of data) {
-      if (row.tissue_group) groups.add(row.tissue_group);
-    }
-    return [...groups].sort();
-  }, [data]);
-
-  const filters = useMemo((): ServerFilterConfig[] => [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: tissueGroups.map((g) => ({ value: g, label: g })),
-    },
-  ], [tissueGroups]);
+  const filterConfigs = useMemo(
+    (): ServerFilterConfig[] => [
+      {
+        id: "tissue_group",
+        label: "Tissue Group",
+        type: "select",
+        placeholder: "All groups",
+        options: TISSUE_GROUPS.map((g) => ({ value: g, label: g })),
+      },
+    ],
+    []
+  );
 
   const hasActiveFilters = Boolean(searchParams.get("tissue_group"));
-  const liveTotal = pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+  const liveTotal =
+    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,
@@ -134,14 +160,15 @@ export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewP
   };
 
   const tableState = useServerTable({
-    filters,
+    filters: filterConfigs,
     serverPagination: true,
     paginationInfo,
   });
 
-  const subtitle = liveTotal != null
-    ? `${liveTotal.toLocaleString()} ChromBPNet variant effect predictions`
-    : "ChromBPNet variant effect predictions";
+  const subtitle =
+    liveTotal != null
+      ? `${liveTotal.toLocaleString()} ChromBPNet variant effect predictions`
+      : "ChromBPNet deep learning variant effect predictions";
 
   return (
     <DataSurface
@@ -153,7 +180,7 @@ export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewP
       exportable
       exportFilename={`chrombpnet-${loc}`}
       filterable
-      filters={filters}
+      filters={filterConfigs}
       filterValues={tableState.filterValues}
       onFilterChange={tableState.onFilterChange}
       filterChips={tableState.filterChips}

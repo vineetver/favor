@@ -10,9 +10,11 @@ import {
   fetchRegionSummary,
   fetchSignalsByTissueGroup,
   fetchVariantAllelicImbalanceByTissue,
-  fetchVariantScan,
 } from "@features/gene/api/region";
-import { GeneVariantsView } from "@features/gene/components/tissue-specific/gene-variants-view";
+import { RegionVariantsView } from "@features/gene/components/tissue-specific/region-variants-view";
+import {
+  fetchRegionVariants,
+} from "@features/gene/api/region";
 import {
   TissueEvidenceSummary,
   type TissueEvidenceData,
@@ -46,7 +48,7 @@ export default async function TissueOverviewPage({
     chrombpnet,
     variantAllelicImbalance,
     summary,
-    variantScan,
+    variants,
   ] = await Promise.all([
     fetchSignalsByTissueGroup(loc).catch(() => []),
     fetchChromatinByTissueGroup(loc).catch(() => []),
@@ -58,7 +60,7 @@ export default async function TissueOverviewPage({
     fetchChromBpnetByTissue(loc).catch(() => []),
     fetchVariantAllelicImbalanceByTissue(loc).catch(() => []),
     fetchRegionSummary(loc).catch(() => null),
-    fetchVariantScan({ gene: loc, limit: 25 }).catch(() => null),
+    fetchRegionVariants(loc, { limit: 100 }).catch(() => null),
   ]);
 
   const evidence: TissueEvidenceData = {
@@ -89,12 +91,9 @@ export default async function TissueOverviewPage({
         <OverviewHeatmap loc={loc} />
       </section>
 
-      {/* Gene Region Variants */}
+      {/* Regulatory Variants */}
       <section>
-        <GeneVariantsView
-          gene={loc}
-          initialData={variantScan}
-        />
+        <RegionVariantsView initialData={variants} loc={loc} />
       </section>
     </div>
   );

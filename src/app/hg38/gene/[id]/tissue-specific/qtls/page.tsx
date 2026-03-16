@@ -18,10 +18,16 @@ export default async function QtlsPage({ params }: QtlsPageProps) {
 
   const initialData = await fetchQtls(loc, { limit: 25 }).catch(() => null);
 
+  // Extract unique genes from initial data for filter dropdown
+  const genes = initialData
+    ? [...new Set(initialData.data.map((r) => r.gene_symbol).filter(Boolean) as string[])].sort()
+    : [];
+
   return (
     <QtlsView
       loc={loc}
       totalCount={initialData?.page_info?.total_count ?? 0}
+      genes={genes}
       initialData={initialData ?? undefined}
     />
   );
