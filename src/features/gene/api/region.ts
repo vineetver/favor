@@ -476,6 +476,167 @@ export interface CcreDetail {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Variant-level endpoints (accept gene symbol as {ref} for region queries)
+// ---------------------------------------------------------------------------
+
+// --- QTLs ---
+
+export interface QtlRow {
+  source: string;
+  gene_symbol: string | null;
+  gene_id: string | null;
+  tissue_name: string;
+  tissue_group?: string;
+  effect_size?: number | null;
+  p_value?: number | null;
+  neglog_pvalue?: number | null;
+  is_significant: boolean;
+  source_fields?: Record<string, unknown> | null;
+}
+
+export interface FetchQtlsParams {
+  tissue?: string;
+  tissue_group?: string;
+  source?: string;
+  gene?: string;
+  significant_only?: boolean;
+  min_neglog_p?: number;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchQtls(
+  ref: string,
+  params: FetchQtlsParams = {},
+): Promise<PaginatedResponse<QtlRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/qtls${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<QtlRow>>(url);
+}
+
+// --- ChromBPNet ---
+
+export interface ChromBpnetRow {
+  tissue_name: string;
+  tissue_group?: string;
+  combined_score: number;
+  combined_pval: number;
+  logfc_mean: number;
+}
+
+export interface FetchChromBpnetParams {
+  tissue?: string;
+  tissue_group?: string;
+  min_score?: number;
+  significant_only?: boolean;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchChromBpnet(
+  ref: string,
+  params: FetchChromBpnetParams = {},
+): Promise<PaginatedResponse<ChromBpnetRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/chrombpnet${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<ChromBpnetRow>>(url);
+}
+
+// --- Tissue Scores (cV2F / TLand) ---
+
+export interface TissueScoreRow {
+  tissue_name: string;
+  tissue_group?: string;
+  score: number;
+  score_type: string;
+}
+
+export interface FetchTissueScoresParams {
+  tissue?: string;
+  score_type?: string;
+  min_score?: number;
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchTissueScores(
+  ref: string,
+  params: FetchTissueScoresParams = {},
+): Promise<PaginatedResponse<TissueScoreRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/tissue-scores${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<TissueScoreRow>>(url);
+}
+
+// --- Variant Allelic Imbalance (ENTEx histone) ---
+
+export interface VariantAllelicImbalanceRow {
+  tissue_name: string;
+  tissue_group?: string;
+  mark: string;
+  assay_name: string;
+  neglog_pvalue: number;
+  imbalance_magnitude: number;
+  is_significant: boolean;
+}
+
+export interface FetchVariantAllelicImbalanceParams {
+  tissue?: string;
+  tissue_group?: string;
+  mark?: string;
+  assay?: string;
+  significant_only?: boolean;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchVariantAllelicImbalance(
+  ref: string,
+  params: FetchVariantAllelicImbalanceParams = {},
+): Promise<PaginatedResponse<VariantAllelicImbalanceRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/allelic-imbalance${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<VariantAllelicImbalanceRow>>(url);
+}
+
+// --- Methylation ---
+
+export interface MethylationRow {
+  tissue_name: string;
+  tissue_group?: string;
+  mark?: string;
+  neglog_pvalue: number;
+  methylation_diff: number;
+  is_significant: boolean;
+}
+
+export interface FetchMethylationParams {
+  tissue?: string;
+  significant_only?: boolean;
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchMethylation(
+  ref: string,
+  params: FetchMethylationParams = {},
+): Promise<PaginatedResponse<MethylationRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/methylation${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<MethylationRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
+// cCRE Detail (for slide-over panel)
+// ---------------------------------------------------------------------------
+
 export async function fetchCcreDetail(
   ccreId: string,
   params?: { tissue?: string; signal_limit?: number; gene_limit?: number },

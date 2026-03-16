@@ -132,6 +132,9 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Allele-Specific", slug: "allele-specific" },
       { text: "Validated Enhancers", slug: "validated-enhancers" },
       { text: "cCRE Links", slug: "ccre-links" },
+      { text: "QTLs", slug: "qtls" },
+      { text: "ChromBPNet", slug: "chrombpnet" },
+      { text: "Tissue Scores", slug: "tissue-scores" },
     ],
     showIcons: false,
     groups: [
@@ -161,6 +164,14 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         items: [
           { text: "Loops", slug: "loops" },
           { text: "Allele-Specific", slug: "allele-specific" },
+        ],
+      },
+      {
+        name: "Variant Effects",
+        items: [
+          { text: "QTLs", slug: "qtls" },
+          { text: "ChromBPNet", slug: "chrombpnet" },
+          { text: "Tissue Scores", slug: "tissue-scores" },
         ],
       },
       {
