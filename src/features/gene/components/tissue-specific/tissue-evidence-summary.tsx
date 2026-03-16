@@ -29,16 +29,6 @@ const STATE_COLORS: Record<string, string> = {
   bivalent: "#a855f7",
 };
 
-const EVIDENCE_COLORS: Record<string, string> = {
-  signals: "#8b5cf6",
-  enhancers: "#10b981",
-  accessibility: "#3b82f6",
-  ase: "#f43f5e",
-  qtls: "#f59e0b",
-  chrombpnet: "#06b6d4",
-  variantAI: "#ec4899",
-};
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -169,39 +159,17 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
 // Cell renderers
 // ---------------------------------------------------------------------------
 
-function MiniBar({
-  value,
-  max,
-  color,
-  label,
-  detail,
-}: {
-  value: number;
-  max: number;
-  color: string;
-  /** Short value label, e.g. "7.0 Z" */
-  label: string;
-  /** Tooltip detail */
-  detail: string;
-}) {
-  const pct = max > 0 ? Math.min(value / max, 1) : 0;
+/** Simple value cell with tooltip explanation */
+function Val({ children, detail }: { children: React.ReactNode; detail: string }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="cursor-default flex items-center gap-1.5">
-            <div className="w-8 h-1.5 rounded-full bg-border overflow-hidden shrink-0">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${Math.max(pct * 100, 8)}%`, backgroundColor: color }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {label}
-            </span>
-          </div>
+          <span className="text-xs tabular-nums text-muted-foreground cursor-default">
+            {children}
+          </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
+        <TooltipContent side="top" className="text-xs max-w-xs">
           {detail}
         </TooltipContent>
       </Tooltip>
@@ -265,15 +233,7 @@ const nullsLast: ColumnDef<TissueEvidence>["sortingFn"] = (
   return a - b;
 };
 
-function buildColumns(maxes: {
-  s: number;
-  e: number;
-  a: number;
-  x: number;
-  q: number;
-  cb: number;
-  vai: number;
-}): ColumnDef<TissueEvidence>[] {
+function buildColumns(): ColumnDef<TissueEvidence>[] {
   return [
     {
       id: "tissue_name",
@@ -317,15 +277,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const s = row.original.signals;
         if (!s) return <Dash />;
-        return (
-          <MiniBar
-            value={s.max_value}
-            max={maxes.s}
-            color={EVIDENCE_COLORS.signals}
-            label={`max ${s.max_value.toFixed(1)} Z`}
-            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs`}
-          />
-        );
+        return <Val detail={`${fmtK(s.count)} cCREs, max Z-score ${s.max_value.toFixed(2)}`}>{s.max_value.toFixed(1)}</Val>;
       },
     },
     {
@@ -342,17 +294,14 @@ function buildColumns(maxes: {
         const c = row.original.chromatin;
         if (!c) return <Dash />;
         const state = c.top_item ?? "unknown";
-        const color = STATE_COLORS[state] ?? "#9ca3af";
+        const sc = STATE_COLORS[state] ?? "#9ca3af";
         return (
-          <span className="inline-flex items-center gap-1">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: color }}
-            />
-            <span className="text-xs text-muted-foreground capitalize">
-              {state}
+          <Val detail={`${fmtK(c.count)} segments, dominant: ${state}`}>
+            <span className="inline-flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: sc }} />
+              <span className="capitalize">{state}</span>
             </span>
-          </span>
+          </Val>
         );
       },
     },
@@ -369,15 +318,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const e = row.original.enhancers;
         if (!e) return <Dash />;
-        return (
-          <MiniBar
-            value={e.max_value}
-            max={maxes.e}
-            color={EVIDENCE_COLORS.enhancers}
-            label={`best ${fmtScore(e.max_value)}`}
-            detail={`Best enhancer score: ${fmtScore(e.max_value)} across ${e.count} predictions`}
-          />
-        );
+        return <Val detail={`${e.count} predictions, best score ${fmtScore(e.max_value)}`}>{fmtScore(e.max_value)}</Val>;
       },
     },
     {
@@ -393,15 +334,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const a = row.original.accessibility;
         if (!a) return <Dash />;
-        return (
-          <MiniBar
-            value={a.max_value}
-            max={maxes.a}
-            color={EVIDENCE_COLORS.accessibility}
-            label={`${a.max_value.toFixed(1)}\u00d7 enr.`}
-            detail={`${a.max_value.toFixed(1)}\u00d7 fold enrichment, ${a.count} peaks`}
-          />
-        );
+        return <Val detail={`${a.count} peaks, ${a.max_value.toFixed(1)}\u00d7 enrichment`}>{a.max_value.toFixed(1)}\u00d7</Val>;
       },
     },
     {
@@ -417,9 +350,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const l = row.original.loops;
         if (!l) return <Dash />;
-        return (
-          <span className="text-xs tabular-nums text-muted-foreground">{l.count}</span>
-        );
+        return <Val detail={`${l.count} chromatin loops`}>{l.count}</Val>;
       },
     },
     {
@@ -435,15 +366,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const a = row.original.ase;
         if (!a) return <Dash />;
-        return (
-          <MiniBar
-            value={a.max_value}
-            max={maxes.x}
-            color={EVIDENCE_COLORS.ase}
-            label={`p=${a.max_value.toFixed(1)}`}
-            detail={`Best \u2212log\u2081\u2080(p): ${a.max_value.toFixed(1)}, ${a.count} observations`}
-          />
-        );
+        return <Val detail={`${a.count} observations, best \u2212log\u2081\u2080(p) = ${a.max_value.toFixed(1)}`}>{a.max_value.toFixed(1)}</Val>;
       },
     },
     {
@@ -459,15 +382,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const q = row.original.qtls;
         if (!q) return <Dash />;
-        return (
-          <MiniBar
-            value={q.max_value}
-            max={maxes.q}
-            color={EVIDENCE_COLORS.qtls}
-            label={`${fmtK(q.count)}`}
-            detail={`${q.count} QTL associations, best \u2212log\u2081\u2080(p): ${q.max_value.toFixed(1)}${q.significant ? `, ${q.significant} significant` : ""}`}
-          />
-        );
+        return <Val detail={`${q.count} associations${q.significant ? `, ${q.significant} significant` : ""}`}>{fmtK(q.count)}</Val>;
       },
     },
     {
@@ -483,9 +398,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const c = row.original.chrombpnet;
         if (!c) return <Dash />;
-        return (
-          <span className="text-xs tabular-nums text-muted-foreground">{c.count} pred.</span>
-        );
+        return <Val detail={`${c.count} ChromBPNet predictions`}>{c.count}</Val>;
       },
     },
     {
@@ -501,15 +414,7 @@ function buildColumns(maxes: {
       cell: ({ row }) => {
         const v = row.original.variantAllelicImbalance;
         if (!v) return <Dash />;
-        return (
-          <MiniBar
-            value={v.max_value}
-            max={maxes.vai}
-            color={EVIDENCE_COLORS.variantAI}
-            label={`p=${v.max_value.toFixed(1)}`}
-            detail={`Best \u2212log\u2081\u2080(p): ${v.max_value.toFixed(1)}, ${v.count} observations${v.significant ? `, ${v.significant} significant` : ""}`}
-          />
-        );
+        return <Val detail={`${v.count} observations${v.significant ? `, ${v.significant} significant` : ""}`}>{v.max_value.toFixed(1)}</Val>;
       },
     },
   ];
@@ -672,21 +577,7 @@ export function TissueEvidenceSummary({
 }: Props) {
   const all = useMemo(() => buildTissueEvidence(evidence), [evidence]);
 
-  const maxes = useMemo(() => {
-    let s = 0, e = 0, a = 0, x = 0, q = 0, cb = 0, vai = 0;
-    for (const t of all) {
-      if (t.signals && t.signals.max_value > s) s = t.signals.max_value;
-      if (t.enhancers && t.enhancers.max_value > e) e = t.enhancers.max_value;
-      if (t.accessibility && t.accessibility.max_value > a) a = t.accessibility.max_value;
-      if (t.ase && t.ase.max_value > x) x = t.ase.max_value;
-      if (t.qtls && t.qtls.max_value > q) q = t.qtls.max_value;
-      if (t.chrombpnet && t.chrombpnet.max_value > cb) cb = t.chrombpnet.max_value;
-      if (t.variantAllelicImbalance && t.variantAllelicImbalance.max_value > vai) vai = t.variantAllelicImbalance.max_value;
-    }
-    return { s, e, a, x, q, cb, vai };
-  }, [all]);
-
-  const columns = useMemo(() => buildColumns(maxes), [maxes]);
+  const columns = useMemo(() => buildColumns(), []);
 
   const totalRecords = summary
     ? Object.values(summary.counts).reduce((a, b) => a + b, 0)
