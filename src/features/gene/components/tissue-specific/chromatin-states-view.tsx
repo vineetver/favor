@@ -14,6 +14,7 @@ import type {
   ServerPaginationInfo,
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
+import { tissueGroupFilter, tissueFilter } from "./filter-helpers";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
@@ -180,7 +181,7 @@ function ChromatinTrackViz({
         <div className="px-4 py-3">
           {/* Coordinate ruler */}
           <div
-            className="flex justify-between text-[9px] tabular-nums text-muted-foreground mb-2"
+            className="flex justify-between text-xs tabular-nums text-muted-foreground mb-2"
             style={{ marginLeft: 150 }}
           >
             <span>{regionStart.toLocaleString()}</span>
@@ -244,7 +245,7 @@ function ChromatinTrackViz({
             {legend.map(({ code, name, color }) => (
               <div
                 key={code}
-                className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground"
               >
                 <div
                   className="w-3 h-3 rounded-sm shrink-0"
@@ -363,20 +364,8 @@ function buildFilters(
   tissueGroups: string[],
 ): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: tissueGroups.map((g) => ({ value: g, label: g })),
-    },
-    {
-      id: "tissue",
-      label: "Biosample",
-      type: "select",
-      placeholder: "All biosamples",
-      options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
-    },
+    tissueGroupFilter(tissueGroups),
+    tissueFilter(tissues),
     {
       id: "state_category",
       label: "Category",

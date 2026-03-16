@@ -6,6 +6,7 @@ import type {
   ServerPaginationInfo,
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
+import { tissueGroupFilter, tissueFilter, significantOnlyFilter } from "./filter-helpers";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useMemo, useState } from "react";
 import type {
@@ -20,14 +21,7 @@ import { CcreDetailSheet } from "./ccre-detail-sheet";
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { formatTissueName } from "@shared/utils/tissue-format";
-
-function formatPvalue(neglogp: number): string {
-  if (neglogp <= 0) return "1";
-  const p = Math.pow(10, -neglogp);
-  if (p < 0.001) return p.toExponential(1);
-  return p.toFixed(3);
-}
+import { formatTissueName, formatPvalue } from "@shared/utils/tissue-format";
 
 // Clean assay names: "HM-ChIP-seq_H3K27ac" → "H3K27ac"
 function shortAssayLabel(raw: string): string {
@@ -151,20 +145,8 @@ function buildFilters(
   tissueGroups: string[],
 ): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: tissueGroups.map((g) => ({ value: g, label: g })),
-    },
-    {
-      id: "tissue",
-      label: "Biosample",
-      type: "select",
-      placeholder: "All biosamples",
-      options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
-    },
+    tissueGroupFilter(tissueGroups),
+    tissueFilter(tissues),
     {
       id: "assay",
       label: "Assay",
@@ -172,15 +154,7 @@ function buildFilters(
       placeholder: "All assays",
       options: assays.map((a) => ({ value: a, label: shortAssayLabel(a) })),
     },
-    {
-      id: "significant_only",
-      label: "Significant",
-      type: "select",
-      placeholder: "All",
-      options: [
-        { value: "true", label: "Significant only" },
-      ],
-    },
+    significantOnlyFilter(),
   ];
 }
 

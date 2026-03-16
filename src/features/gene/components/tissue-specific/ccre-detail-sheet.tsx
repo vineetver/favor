@@ -113,7 +113,7 @@ function CcreDetailContent({ detail }: { detail: CcreDetail }) {
         {detail.classifications.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-1">
             {detail.classifications.map((c) => (
-              <Badge key={c} variant="secondary" className="text-[10px]">
+              <Badge key={c} variant="secondary" className="text-xs">
                 {c}
               </Badge>
             ))}
@@ -127,7 +127,7 @@ function CcreDetailContent({ detail }: { detail: CcreDetail }) {
           <h4 className="text-sm font-medium text-foreground">
             Top Tissue Signals
           </h4>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {detail.signals.total_tissues} tissues total
           </span>
         </div>
@@ -183,7 +183,7 @@ function CcreDetailContent({ detail }: { detail: CcreDetail }) {
       <div className="mt-6">
         <div className="flex items-baseline justify-between mb-2">
           <h4 className="text-sm font-medium text-foreground">Linked Genes</h4>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {detail.genes.total} total
           </span>
         </div>
@@ -200,14 +200,14 @@ function CcreDetailContent({ detail }: { detail: CcreDetail }) {
               >
                 {link.gene_symbol}
               </Link>
-              <span className="text-[10px] text-muted-foreground truncate">
+              <span className="text-xs text-muted-foreground truncate">
                 {link.method ?? link.source}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate flex-1">
+              <span className="text-xs text-muted-foreground truncate flex-1">
                 {formatTissueName(link.tissue_name)}
               </span>
               {link.score != null && (
-                <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
+                <span className="text-xs tabular-nums text-muted-foreground shrink-0">
                   {link.score.toFixed(3)}
                 </span>
               )}

@@ -73,10 +73,9 @@ export function useQtlsQuery({ ref, initialData }: UseQtlsQueryOptions) {
   const query = useQuery({
     queryKey: ["qtls", ref, filters],
     queryFn: () => fetchQtlsClient(ref, filters),
-    placeholderData: isFirstMount.current && initialData
-      ? initialData
-      : (prev: PaginatedResponse<QtlRow> | undefined) => prev,
+    placeholderData: (prev: PaginatedResponse<QtlRow> | undefined) => prev,
     staleTime: 30 * 1000,
+    ...(isFirstMount.current && initialData ? { initialData } : {}),
   });
 
   useEffect(() => {

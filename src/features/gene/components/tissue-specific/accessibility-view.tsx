@@ -14,6 +14,7 @@ import type {
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
+import { tissueGroupFilter, tissueFilter } from "./filter-helpers";
 import type {
   AccessibilityRow,
   PaginatedResponse,
@@ -106,7 +107,7 @@ function TissueSummaryChart({ rows }: { rows: AccessibilityRow[] }) {
                     <span className="text-[11px] tabular-nums text-muted-foreground w-12 text-right shrink-0">
                       {bestSignal.toFixed(2)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/60 w-16 shrink-0">
+                    <span className="text-xs text-muted-foreground/60 w-16 shrink-0">
                       {peakCount} peak{peakCount !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -206,20 +207,8 @@ const columns: ColumnDef<AccessibilityRow, unknown>[] = [
 
 function buildFilters(tissues: string[], tissueGroups: string[]): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: tissueGroups.map((g) => ({ value: g, label: g })),
-    },
-    {
-      id: "tissue",
-      label: "Biosample",
-      type: "select",
-      placeholder: "All biosamples",
-      options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
-    },
+    tissueGroupFilter(tissueGroups),
+    tissueFilter(tissues),
   ];
 }
 

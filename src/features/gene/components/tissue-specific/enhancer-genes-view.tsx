@@ -24,6 +24,8 @@ import type {
   RegionSummary,
 } from "@features/gene/api/region";
 import { useEnhancerGenesQuery } from "@features/gene/hooks/use-enhancer-genes-query";
+import { formatDist } from "@shared/utils/tissue-format";
+import { tissueFilter } from "./filter-helpers";
 
 // ============================================================================
 // Method config
@@ -83,19 +85,11 @@ function formatScoreValue(
     return (
       <span>
         {mantissa.toFixed(1)}&times;10
-        <sup className="text-[9px]">{exp}</sup>
+        <sup className="text-xs">{exp}</sup>
       </span>
     );
   }
   return score.toFixed(3);
-}
-
-function formatDist(d: number | null): string {
-  if (d == null) return "\u2014";
-  const abs = Math.abs(d);
-  if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(1)} Mb`;
-  if (abs >= 1_000) return `${(abs / 1_000).toFixed(1)} kb`;
-  return `${abs} bp`;
 }
 
 // ============================================================================
@@ -141,7 +135,7 @@ function BoolBadge({ value, label }: { value: unknown; label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium",
+        "inline-flex px-1.5 py-0.5 rounded text-xs font-medium",
         yes
           ? "bg-emerald-500/10 text-emerald-700"
           : "bg-muted text-muted-foreground",
@@ -555,7 +549,7 @@ function TissueSummaryChart({
                     </div>
 
                     {/* Gene name */}
-                    <span className="text-[10px] font-mono text-muted-foreground w-20 truncate shrink-0 pl-1.5">
+                    <span className="text-xs font-mono text-muted-foreground w-20 truncate shrink-0 pl-1.5">
                       {top_item ?? "\u2014"}
                     </span>
                   </div>
@@ -595,7 +589,7 @@ function TissueSummaryChart({
                   >
                     <div className="border-l border-border" style={{ height: 4 }} />
                     <span
-                      className="text-[9px] tabular-nums text-muted-foreground absolute"
+                      className="text-xs tabular-nums text-muted-foreground absolute"
                       style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
                     >
                       {v < 0.001
@@ -614,7 +608,7 @@ function TissueSummaryChart({
           {/* Axis label */}
           <div className="flex items-center" style={{ paddingTop: 2 }}>
             <div style={{ width: 130 }} className="shrink-0" />
-            <div className="flex-1 text-center text-[10px] text-muted-foreground">
+            <div className="flex-1 text-center text-xs text-muted-foreground">
               {axisLabel}
             </div>
             <div className="w-20 shrink-0" />
@@ -637,7 +631,7 @@ function TissueSummaryChart({
                     opacity: 0.6,
                   }}
                 />
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {label} predictions
                 </span>
               </div>
@@ -665,13 +659,7 @@ function buildFilters(
       placeholder: "All genes",
       options: genes.map((g) => ({ value: g, label: g })),
     },
-    {
-      id: "tissue",
-      label: "Tissue",
-      type: "select",
-      placeholder: "All tissues",
-      options: tissues.map((t) => ({ value: t, label: t })),
-    },
+    tissueFilter(tissues, { label: "Tissue", format: false }),
   ];
 }
 

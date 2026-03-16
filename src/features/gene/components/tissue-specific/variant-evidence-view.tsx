@@ -64,7 +64,7 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
         >
           {row.original.variant_vcf}
         </Link>
-        <span className="block text-[10px] tabular-nums text-muted-foreground">
+        <span className="block text-xs tabular-nums text-muted-foreground">
           pos {row.original.position.toLocaleString()}
         </span>
       </div>
@@ -99,7 +99,7 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
       return (
         <div className="flex flex-wrap gap-1">
           {tables.map((t) => (
-            <span key={t} className="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">
+            <span key={t} className="inline-flex px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground">
               {regionLabel(t)}
             </span>
           ))}

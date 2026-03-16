@@ -153,48 +153,6 @@ export async function fetchVariantAllelicImbalanceByTissue(
 }
 
 // ---------------------------------------------------------------------------
-// Variant Scan (rich annotations per variant in a gene region)
-// ---------------------------------------------------------------------------
-
-export interface VariantSummaryRow {
-  vid: string;
-  chromosome: string;
-  position: number;
-  variant_vcf: string;
-  dbsnp?: { rsid: string | null };
-  genecode?: { genes: string[] | null; region_type: string | null; consequence: string | null };
-  clinvar?: { clnsig: string[] | null; clndn: string[] | null };
-  bravo?: { bravo_af: number | null };
-  gnomad_genome?: { af: number | null };
-  gnomad_exome?: { af: number | null };
-  main?: {
-    cadd_phred?: number | null;
-    protein_predictions?: { sift_cat: string | null; polyphen_cat: string | null };
-  };
-}
-
-export interface FetchVariantScanParams {
-  gene?: string;
-  region?: string;
-  cursor?: string;
-  limit?: number;
-  sort_by?: string;
-  sort_direction?: "asc" | "desc";
-  cadd_phred_min?: number;
-  gnomad_genome_af_max?: number;
-  clinvar_clnsig?: string;
-  gencode_consequence?: string;
-}
-
-export async function fetchVariantScan(
-  params: FetchVariantScanParams,
-): Promise<PaginatedResponse<VariantSummaryRow>> {
-  const qs = buildParams(params as unknown as Record<string, unknown>);
-  const url = `${API_BASE}/variants${qs ? `?${qs}` : ""}`;
-  return fetchJson<PaginatedResponse<VariantSummaryRow>>(url);
-}
-
-// ---------------------------------------------------------------------------
 // Region Variants (variant-regulatory connections)
 // ---------------------------------------------------------------------------
 

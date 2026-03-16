@@ -138,7 +138,7 @@ function EnhancerCard({ row }: { row: ValidatedEnhancerRow }) {
             <Badge
               variant={row.is_positive ? "default" : "secondary"}
               className={cn(
-                "text-[10px]",
+                "text-xs",
                 row.is_positive && "bg-emerald-600 hover:bg-emerald-600",
               )}
             >
@@ -161,7 +161,7 @@ function EnhancerCard({ row }: { row: ValidatedEnhancerRow }) {
                 {tissues.map((t) => (
                   <span
                     key={t}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                    className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
                   >
                     {t}
                   </span>

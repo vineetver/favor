@@ -14,91 +14,118 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
 // ---------------------------------------------------------------------------
-// Nav items config
+// Nav items config — grouped semantically
 // ---------------------------------------------------------------------------
 
-const NAV_ITEMS: {
+interface NavItem {
   key: keyof RegionSummary["counts"] | null;
   slug: string;
   label: string;
   hint: string;
-}[] = [
+}
+
+interface NavGroup {
+  label: string | null;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    key: null,
-    slug: "overview",
-    label: "Overview",
-    hint: "Tissue evidence ranked by convergence across all data types",
+    label: null,
+    items: [
+      {
+        key: null,
+        slug: "overview",
+        label: "Overview",
+        hint: "Tissue evidence ranked by convergence across all data types",
+      },
+    ],
   },
   {
-    key: "signals",
-    slug: "tissue-signals",
-    label: "Signals",
-    hint: "cCRE epigenomic signal values across tissues",
+    label: "Epigenome",
+    items: [
+      {
+        key: "signals",
+        slug: "tissue-signals",
+        label: "Signals",
+        hint: "cCRE epigenomic signal values across tissues",
+      },
+      {
+        key: "chromatin_states",
+        slug: "chromatin-states",
+        label: "Chromatin",
+        hint: "Roadmap 25-state chromatin annotations",
+      },
+      {
+        key: "accessibility_peaks",
+        slug: "accessibility",
+        label: "Peaks",
+        hint: "ATAC-seq / DNase accessibility peaks",
+      },
+    ],
   },
   {
-    key: "chromatin_states",
-    slug: "chromatin-states",
-    label: "Chromatin",
-    hint: "Roadmap 25-state chromatin annotations",
+    label: "Regulation",
+    items: [
+      {
+        key: "enhancer_genes",
+        slug: "enhancer-genes",
+        label: "Enhancers",
+        hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)",
+      },
+      {
+        key: "loops",
+        slug: "loops",
+        label: "Loops",
+        hint: "Chromatin loops from Hi-C / ChIA-PET",
+      },
+      {
+        key: "ase",
+        slug: "allele-specific",
+        label: "Allelic Imbal.",
+        hint: "Allele-specific epigenomic activity at cCREs",
+      },
+      {
+        key: "validated_enhancers",
+        slug: "validated-enhancers",
+        label: "VISTA",
+        hint: "In vivo validated enhancers from VISTA",
+      },
+      {
+        key: null,
+        slug: "ccre-links",
+        label: "cCRE Links",
+        hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN",
+      },
+    ],
   },
   {
-    key: "enhancer_genes",
-    slug: "enhancer-genes",
-    label: "Enhancers",
-    hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)",
-  },
-  {
-    key: "accessibility_peaks",
-    slug: "accessibility",
-    label: "Peaks",
-    hint: "ATAC-seq / DNase accessibility peaks",
-  },
-  {
-    key: "loops",
-    slug: "loops",
-    label: "Loops",
-    hint: "Chromatin loops from Hi-C / ChIA-PET",
-  },
-  {
-    key: "ase",
-    slug: "allele-specific",
-    label: "Allelic Imbal.",
-    hint: "Allele-specific epigenomic activity at cCREs",
-  },
-  {
-    key: "validated_enhancers",
-    slug: "validated-enhancers",
-    label: "VISTA",
-    hint: "In vivo validated enhancers from VISTA",
-  },
-  {
-    key: null,
-    slug: "ccre-links",
-    label: "cCRE Links",
-    hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN",
-  },
-  {
-    key: "qtls",
-    slug: "qtls",
-    label: "QTLs",
-    hint: "eQTL/sQTL associations for variants in this region (GTEx, eQTL Catalogue, single-cell)",
-  },
-  {
-    key: "chrombpnet",
-    slug: "chrombpnet",
-    label: "ChromBPNet",
-    hint: "Deep learning predictions of variant effects on chromatin accessibility",
-  },
-  {
-    key: "tissue_scores",
-    slug: "tissue-scores",
-    label: "V2F Scores",
-    hint: "Tissue-specific variant functional scores: TLand (regulatory effect) and cV2F (variant-to-function probability)",
+    label: "Variants",
+    items: [
+      {
+        key: "qtls",
+        slug: "qtls",
+        label: "QTLs",
+        hint: "eQTL/sQTL associations for variants in this region (GTEx, eQTL Catalogue, single-cell)",
+      },
+      {
+        key: "chrombpnet",
+        slug: "chrombpnet",
+        label: "ChromBPNet",
+        hint: "Deep learning predictions of variant effects on chromatin accessibility",
+      },
+      {
+        key: "tissue_scores",
+        slug: "tissue-scores",
+        label: "V2F Scores",
+        hint: "Tissue-specific variant functional scores: TLand (regulatory effect) and cV2F (variant-to-function probability)",
+      },
+    ],
   },
 ];
 
 // ---------------------------------------------------------------------------
-// Component — card-header tab bar
+// Component — grouped tab bar with semantic separators
 // ---------------------------------------------------------------------------
 
 interface RegionNavBarProps {
@@ -118,57 +145,67 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
     <TooltipProvider delayDuration={200}>
       <nav className="mb-6">
         <div className="flex items-center gap-0 overflow-x-auto border-b border-border">
-          {NAV_ITEMS.map(({ key, slug, label, hint }) => {
-            const count = key ? summary.counts[key] : null;
-            const isActive = activeSlug === slug;
-            const isEmpty = key != null && count === 0;
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className="flex items-center">
+              {/* Thin divider between groups */}
+              {gi > 0 && (
+                <span className="w-px h-4 bg-border mx-1 shrink-0" />
+              )}
 
-            return (
-              <Tooltip key={slug}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={`${basePath}/${slug}`}
-                    className={cn(
-                      "relative inline-flex items-center gap-1 px-3 py-3 text-xs whitespace-nowrap transition-colors",
-                      isActive
-                        ? "text-foreground font-medium"
-                        : isEmpty
-                          ? "text-muted-foreground/30 cursor-default"
-                          : "text-muted-foreground hover:text-foreground",
-                    )}
-                    {...(isEmpty
-                      ? {
-                          tabIndex: -1,
-                          "aria-disabled": true,
-                          onClick: (e: React.MouseEvent) => e.preventDefault(),
-                        }
-                      : {})}
-                  >
-                    <span>{label}</span>
-                    {count != null && count > 0 && (
-                      <span
+              {/* Tab items */}
+              {group.items.map(({ key, slug, label, hint }) => {
+                const count = key ? summary.counts[key] : null;
+                const isActive = activeSlug === slug;
+                const isEmpty = key != null && count === 0;
+
+                return (
+                  <Tooltip key={slug}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={`${basePath}/${slug}`}
                         className={cn(
-                          "tabular-nums",
+                          "relative inline-flex items-center gap-1 px-2 py-2.5 text-xs whitespace-nowrap transition-colors",
                           isActive
-                            ? "text-primary font-semibold"
-                            : "text-muted-foreground/50",
+                            ? "text-foreground font-medium"
+                            : isEmpty
+                              ? "text-muted-foreground/30 cursor-default"
+                              : "text-muted-foreground hover:text-foreground",
                         )}
+                        {...(isEmpty
+                          ? {
+                              tabIndex: -1,
+                              "aria-disabled": true,
+                              onClick: (e: React.MouseEvent) => e.preventDefault(),
+                            }
+                          : {})}
                       >
-                        {formatCount(count)}
-                      </span>
-                    )}
-                    {/* Active indicator */}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
-                    )}
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs max-w-xs">
-                  {hint}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+                        <span>{label}</span>
+                        {count != null && count > 0 && (
+                          <span
+                            className={cn(
+                              "tabular-nums",
+                              isActive
+                                ? "text-primary font-semibold"
+                                : "text-muted-foreground/50",
+                            )}
+                          >
+                            {formatCount(count)}
+                          </span>
+                        )}
+                        {/* Active indicator */}
+                        {isActive && (
+                          <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs max-w-xs">
+                      {hint}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </nav>
     </TooltipProvider>

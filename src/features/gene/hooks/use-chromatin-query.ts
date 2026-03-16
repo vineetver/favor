@@ -97,10 +97,9 @@ export function useChromatinQuery({
   const query = useQuery({
     queryKey: ["chromatin-states", loc, filters],
     queryFn: () => fetchChromatinClient(loc, filters),
-    placeholderData: isFirstMount.current && initialData
-      ? initialData
-      : (prev) => prev,
+    placeholderData: (prev) => prev,
     staleTime: 30 * 1000,
+    ...(isFirstMount.current && initialData ? { initialData } : {}),
   });
 
   useEffect(() => {

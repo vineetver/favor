@@ -13,6 +13,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SignalRow, PaginatedResponse } from "@features/gene/api/region";
 import { useSignalsQuery } from "@features/gene/hooks/use-signals-query";
+import { tissueFilter } from "./filter-helpers";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
 
 // ---------------------------------------------------------------------------
@@ -39,13 +40,7 @@ function buildFilters(
   classifications: string[],
 ): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue",
-      label: "Tissue",
-      type: "select",
-      placeholder: "All tissues",
-      options: tissues.map((t) => ({ value: t, label: t })),
-    },
+    tissueFilter(tissues, { label: "Tissue", format: false }),
     {
       id: "ccre_class",
       label: "Classification",

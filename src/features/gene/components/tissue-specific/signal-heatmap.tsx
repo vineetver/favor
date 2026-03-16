@@ -300,7 +300,7 @@ export function SignalHeatmap({ loc }: SignalHeatmapProps) {
                     style={{ width: 32 }}
                   >
                     <span
-                      className="absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono font-normal text-muted-foreground whitespace-nowrap"
+                      className="absolute bottom-1 left-1/2 origin-bottom-left text-xs font-mono font-normal text-muted-foreground whitespace-nowrap"
                       style={{ transform: "rotate(-55deg)" }}
                     >
                       {ccreId}
@@ -381,7 +381,7 @@ export function SignalHeatmap({ loc }: SignalHeatmapProps) {
         </div>
 
         {/* Legend */}
-        <div className="px-4 py-2 border-t border-border flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="px-4 py-2 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
           <span className="tabular-nums">0</span>
           <div className="flex items-center h-3">
             {[0.05, 0.15, 0.25, 0.4, 0.55, 0.75, 0.9].map((op, i) => (

@@ -1,16 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
+import { Dash } from "@shared/components/ui/dash";
+import { VariantCell } from "@shared/components/ui/variant-cell";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams, updateClientUrl } from "@shared/hooks";
+import { tissueGroupFilter, significantOnlyFilter } from "./filter-helpers";
 import type { ColumnMeta, DimensionConfig } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useMemo } from "react";
 import type { QtlRow, PaginatedResponse } from "@features/gene/api/region";
 import { useQtlsQuery } from "@features/gene/hooks/use-qtls-query";
-import { TISSUE_GROUPS } from "@shared/utils/tissue-format";
 
 // ---------------------------------------------------------------------------
 // Source config
@@ -35,10 +36,6 @@ function sourceLabel(raw: string): string {
 // Columns
 // ---------------------------------------------------------------------------
 
-function Dash() {
-  return <span className="text-muted-foreground/40">&mdash;</span>;
-}
-
 const columns: ColumnDef<QtlRow, unknown>[] = [
   {
     id: "variant_vcf",
@@ -46,26 +43,7 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     header: "Variant",
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const vcf = row.original.variant_vcf;
-      if (!vcf) return <Dash />;
-      return (
-        <div>
-          <Link
-            href={`/hg38/variant/${encodeURIComponent(vcf)}`}
-            className="font-mono text-xs text-primary hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {vcf}
-          </Link>
-          {row.original.position != null && (
-            <span className="block text-[10px] tabular-nums text-muted-foreground">
-              pos {row.original.position.toLocaleString()}
-            </span>
-          )}
-        </div>
-      );
-    },
+    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
   },
   {
     id: "gene_symbol",
@@ -160,13 +138,7 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
 
 function buildFilters(genes: string[]): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: TISSUE_GROUPS.map((g) => ({ value: g, label: g })),
-    },
+    tissueGroupFilter(),
     {
       id: "gene",
       label: "Gene",
@@ -174,13 +146,7 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
       placeholder: "All genes",
       options: genes.map((g) => ({ value: g, label: g })),
     },
-    {
-      id: "significant_only",
-      label: "Significant",
-      type: "select",
-      placeholder: "All",
-      options: [{ value: "true", label: "Significant only" }],
-    },
+    significantOnlyFilter(),
   ];
 }
 

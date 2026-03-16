@@ -111,11 +111,9 @@ export function useEnhancerGenesQuery({
   const query = useQuery({
     queryKey,
     queryFn: () => fetchEnhancerGenesClient(loc, filters),
-    // Show server data immediately but always re-fetch to ensure freshness
-    placeholderData: isFirstMount.current && initialData
-      ? initialData
-      : (prev) => prev,
+    placeholderData: (prev) => prev,
     staleTime: 30 * 1000,
+    ...(isFirstMount.current && initialData ? { initialData } : {}),
   });
 
   useEffect(() => {

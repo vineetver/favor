@@ -1,15 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { DataSurface } from "@shared/components/ui/data-surface";
+import { Dash } from "@shared/components/ui/dash";
+import { VariantCell } from "@shared/components/ui/variant-cell";
 import { formatTissueName } from "@shared/utils/tissue-format";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import type { ColumnMeta, DimensionConfig } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { updateClientUrl } from "@shared/hooks";
 import type { TissueScoreRow, PaginatedResponse } from "@features/gene/api/region";
 
@@ -61,10 +61,6 @@ function parseFilters(sp: URLSearchParams): TissueScoreFilters {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function Dash() {
-  return <span className="text-muted-foreground/40">&mdash;</span>;
-}
-
 const SCORE_TYPE_LABELS: Record<string, string> = {
   tland: "TLand",
   tland_light: "TLand-light",
@@ -86,27 +82,6 @@ const SCORE_TYPE_DESCRIPTIONS: Record<string, string> = {
 // Scores range [0.025, 1.0]. Higher = more likely functional in tissue.
 // ---------------------------------------------------------------------------
 
-function VariantCell({ row }: { row: TissueScoreRow }) {
-  const vcf = row.variant_vcf;
-  if (!vcf) return <Dash />;
-  return (
-    <div>
-      <Link
-        href={`/hg38/variant/${encodeURIComponent(vcf)}`}
-        className="font-mono text-xs text-primary hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {vcf}
-      </Link>
-      {row.position != null && (
-        <span className="block text-[10px] tabular-nums text-muted-foreground">
-          pos {row.position.toLocaleString()}
-        </span>
-      )}
-    </div>
-  );
-}
-
 const columns: ColumnDef<TissueScoreRow, unknown>[] = [
   {
     id: "variant_vcf",
@@ -114,7 +89,7 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     header: "Variant",
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => <VariantCell row={row.original} />,
+    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
   },
   {
     id: "tissue_name",

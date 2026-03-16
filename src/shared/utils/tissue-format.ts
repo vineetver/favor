@@ -53,3 +53,25 @@ export function formatCount(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toLocaleString();
 }
+
+/** Format enhancer/link scores: exponential below 0.01, 2 decimals above */
+export function fmtScore(v: number): string {
+  return v < 0.01 ? v.toExponential(0) : v.toFixed(2);
+}
+
+/** Convert −log₁₀(p) back to p-value string */
+export function formatPvalue(neglogp: number): string {
+  if (neglogp <= 0) return "1";
+  const p = Math.pow(10, -neglogp);
+  if (p < 0.001) return p.toExponential(1);
+  return p.toFixed(3);
+}
+
+/** Format genomic distance: bp / kb / Mb */
+export function formatDist(d: number | null): string {
+  if (d == null) return "\u2014";
+  const abs = Math.abs(d);
+  if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(1)} Mb`;
+  if (abs >= 1_000) return `${(abs / 1_000).toFixed(1)} kb`;
+  return `${abs} bp`;
+}

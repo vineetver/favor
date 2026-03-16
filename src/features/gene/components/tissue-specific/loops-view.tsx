@@ -13,6 +13,7 @@ import type {
   ServerPaginationInfo,
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
+import { tissueGroupFilter, tissueFilter } from "./filter-helpers";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import type {
@@ -252,7 +253,7 @@ function LoopArcDiagram({
               {tissues.map((t) => (
                 <div
                   key={t}
-                  className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
                 >
                   <div
                     className="w-3 h-3 rounded-sm shrink-0"
@@ -325,7 +326,7 @@ const columns: ColumnDef<LoopRow, unknown>[] = [
           {assays.map((a) => (
             <span
               key={a}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+              className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
             >
               {a.trim()}
             </span>
@@ -357,20 +358,8 @@ function buildFilters(
   tissueGroups: string[],
 ): ServerFilterConfig[] {
   return [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: tissueGroups.map((g) => ({ value: g, label: g })),
-    },
-    {
-      id: "tissue",
-      label: "Biosample",
-      type: "select",
-      placeholder: "All biosamples",
-      options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
-    },
+    tissueGroupFilter(tissueGroups),
+    tissueFilter(tissues),
     {
       id: "assay",
       label: "Assay",

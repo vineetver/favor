@@ -1,9 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
-import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
+import { Dash } from "@shared/components/ui/dash";
+import { VariantCell } from "@shared/components/ui/variant-cell";
+import { formatTissueName } from "@shared/utils/tissue-format";
+import { tissueGroupFilter } from "./filter-helpers";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
@@ -17,31 +19,6 @@ import { useChromBpnetQuery } from "@features/gene/hooks/use-chrombpnet-query";
 // base-resolution chromatin accessibility (Kundaje lab, ENCODE).
 // ---------------------------------------------------------------------------
 
-function Dash() {
-  return <span className="text-muted-foreground/40">&mdash;</span>;
-}
-
-function VariantCell({ row }: { row: ChromBpnetRow }) {
-  const vcf = row.variant_vcf;
-  if (!vcf) return <Dash />;
-  return (
-    <div>
-      <Link
-        href={`/hg38/variant/${encodeURIComponent(vcf)}`}
-        className="font-mono text-xs text-primary hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {vcf}
-      </Link>
-      {row.position != null && (
-        <span className="block text-[10px] tabular-nums text-muted-foreground">
-          pos {row.position.toLocaleString()}
-        </span>
-      )}
-    </div>
-  );
-}
-
 const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
   {
     id: "variant_vcf",
@@ -49,7 +26,7 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     header: "Variant",
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => <VariantCell row={row.original} />,
+    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
   },
   {
     id: "tissue_name",
@@ -178,13 +155,7 @@ export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewP
   const { data, pageInfo, isLoading, isFetching } = useChromBpnetQuery({ ref: loc, initialData });
 
   const filterConfigs = useMemo((): ServerFilterConfig[] => [
-    {
-      id: "tissue_group",
-      label: "Tissue Group",
-      type: "select",
-      placeholder: "All groups",
-      options: TISSUE_GROUPS.map((g) => ({ value: g, label: g })),
-    },
+    tissueGroupFilter(),
   ], []);
 
   const hasActiveFilters = Boolean(searchParams.get("tissue_group"));
