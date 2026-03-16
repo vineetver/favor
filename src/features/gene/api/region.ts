@@ -441,7 +441,7 @@ export interface FetchAseParams {
   tissue_group?: string;
   significant_only?: boolean;
   assay?: string;
-  sort_by?: "position" | "tissue_name" | "neglog_pvalue";
+  sort_by?: "position" | "tissue_name";
   sort_dir?: "asc" | "desc";
   cursor?: string;
   limit?: number;

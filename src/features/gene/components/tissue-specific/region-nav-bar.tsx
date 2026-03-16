@@ -2,6 +2,7 @@
 
 import { cn } from "@infra/utils";
 import type { RegionSummary } from "@features/gene/api/region";
+import { formatCount } from "@shared/utils/tissue-format";
 import {
   Tooltip,
   TooltipContent,
@@ -144,6 +145,18 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
                       : {})}
                   >
                     <span>{label}</span>
+                    {count != null && count > 0 && (
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          isActive
+                            ? "text-primary font-semibold"
+                            : "text-muted-foreground/50",
+                        )}
+                      >
+                        {formatCount(count)}
+                      </span>
+                    )}
                     {/* Active indicator */}
                     {isActive && (
                       <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
