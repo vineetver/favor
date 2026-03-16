@@ -3,6 +3,12 @@
 import { cn } from "@infra/utils";
 import type { VariantEvidenceSummaryRow } from "@features/gene/api/region";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
@@ -26,7 +32,7 @@ function regionLabel(table: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Evidence dot indicator
+// Evidence types
 // ---------------------------------------------------------------------------
 
 const EVIDENCE_TYPES = [
@@ -38,11 +44,125 @@ const EVIDENCE_TYPES = [
   { key: "pgs_count" as const, label: "PGS" },
 ] as const;
 
+const TOTAL_VARIANT_EVIDENCE = 7; // 6 above + tissue_score_max
+
 function countEvidence(row: VariantEvidenceSummaryRow): number {
   let n = 0;
   for (const t of EVIDENCE_TYPES) if (row[t.key] > 0) n++;
   if (row.tissue_score_max > 0) n++;
   return n;
+}
+
+// ---------------------------------------------------------------------------
+// Strength system — shared with tissue evidence table
+// ---------------------------------------------------------------------------
+
+type Strength = "strong" | "moderate" | "low";
+
+function classifyCount(
+  count: number,
+  strongThreshold: number,
+  moderateThreshold: number,
+): Strength {
+  if (count >= strongThreshold) return "strong";
+  if (count >= moderateThreshold) return "moderate";
+  return "low";
+}
+
+/** Fixed bar width per tier so bar and label always agree visually. */
+const TIER_FILL: Record<Strength, number> = { strong: 85, moderate: 50, low: 18 };
+
+function StrengthCell({
+  strength,
+  label,
+  detail,
+}: {
+  strength: Strength;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-2 text-xs cursor-default">
+            <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
+              <span
+                className={cn(
+                  "block h-full rounded-full bg-primary",
+                  strength === "strong" && "opacity-80",
+                  strength === "moderate" && "opacity-45",
+                  strength === "low" && "opacity-20",
+                )}
+                style={{ width: `${TIER_FILL[strength]}%` }}
+              />
+            </span>
+            <span
+              className={cn(
+                "whitespace-nowrap",
+                strength === "strong" && "text-foreground",
+                strength === "moderate" && "text-muted-foreground",
+                strength === "low" && "text-muted-foreground/50",
+              )}
+            >
+              {label}
+            </span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-xs">
+          {detail}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function Dash() {
+  return <span className="text-xs text-muted-foreground/30">&mdash;</span>;
+}
+
+// ---------------------------------------------------------------------------
+// Convergence dots
+// ---------------------------------------------------------------------------
+
+function EvidenceDots({ count }: { count: number }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1">
+            <div className="flex gap-[3px]">
+              {Array.from({ length: TOTAL_VARIANT_EVIDENCE }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    i < count ? "bg-primary" : "bg-border"
+                  )}
+                />
+              ))}
+            </div>
+            <span className="text-xs tabular-nums text-muted-foreground ml-0.5">
+              {count}/{TOTAL_VARIANT_EVIDENCE}
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-xs">
+          Evidence from {count} of {TOTAL_VARIANT_EVIDENCE} data types: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function fmtK(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
 // ---------------------------------------------------------------------------
@@ -57,17 +177,12 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
     cell: ({ row }) => (
-      <div>
-        <Link
-          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
-          className="font-mono text-xs text-primary hover:underline"
-        >
-          {row.original.variant_vcf}
-        </Link>
-        <span className="block text-xs tabular-nums text-muted-foreground">
-          pos {row.original.position.toLocaleString()}
-        </span>
-      </div>
+      <Link
+        href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
+        className="font-mono text-xs text-primary hover:underline whitespace-nowrap"
+      >
+        {row.original.variant_vcf}
+      </Link>
     ),
   },
   {
@@ -77,133 +192,172 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     enableSorting: true,
     sortDescFirst: true,
     meta: { description: "Number of distinct evidence categories with data (out of 7: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS)" } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const n = countEvidence(row.original);
-      return (
-        <span className={cn("text-xs tabular-nums font-medium", n >= 5 ? "text-foreground" : "text-muted-foreground")}>
-          {n}/7
-        </span>
-      );
-    },
+    cell: ({ row }) => <EvidenceDots count={countEvidence(row.original)} />,
   },
   {
     id: "region_overlaps",
     accessorKey: "region_overlap_count",
-    header: "Reg. Overlaps",
+    header: "Reg. Elements",
     enableSorting: true,
     sortDescFirst: true,
     meta: { description: "Regulatory element types this variant overlaps (enhancers, loops, peaks, ASE cCREs)" } satisfies ColumnMeta,
     cell: ({ row }) => {
       const tables = row.original.region_tables;
-      if (!tables.length) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (!tables.length) return <Dash />;
       return (
-        <div className="flex flex-wrap gap-1">
-          {tables.map((t) => (
-            <span key={t} className="inline-flex px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground">
-              {regionLabel(t)}
-            </span>
-          ))}
-        </div>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-wrap gap-1">
+                {tables.map((t) => (
+                  <span key={t} className="inline-flex px-1.5 py-0.5 rounded text-[11px] bg-muted text-muted-foreground">
+                    {regionLabel(t)}
+                  </span>
+                ))}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs max-w-xs">
+              Overlaps {tables.length} regulatory element type{tables.length !== 1 ? "s" : ""}: {tables.map(regionLabel).join(", ")}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
   },
   {
     id: "qtl_count",
     accessorKey: "qtl_count",
-    header: "QTLs",
+    header: "Expression QTLs",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Total QTL associations across all sources. Significant = passed study-specific threshold." } satisfies ColumnMeta,
+    meta: { description: "eQTL/sQTL associations across GTEx, eQTL Catalogue, and single-cell studies. Higher = more tissues/genes affected." } satisfies ColumnMeta,
     cell: ({ row }) => {
       const { qtl_count, qtl_significant } = row.original;
-      if (qtl_count === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (qtl_count === 0) return <Dash />;
+      const strength = classifyCount(qtl_count, 500, 50);
+      const label = `${fmtK(qtl_count)} hits`;
+      const sigNote = qtl_significant > 0 ? `, ${qtl_significant} genome-wide significant` : "";
       return (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {qtl_count}
-          {qtl_significant > 0 && (
-            <span className="text-emerald-600 font-medium"> ({qtl_significant} sig)</span>
-          )}
-        </span>
+        <StrengthCell
+          strength={strength}
+          label={label}
+
+          detail={`${qtl_count.toLocaleString()} QTL associations${sigNote}`}
+        />
       );
     },
   },
   {
     id: "imbalance_count",
     accessorKey: "imbalance_count",
-    header: "Imbalance",
+    header: "Histone Imbal.",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "ENTEx histone allelic imbalance observations. Significant = FDR < 0.05." } satisfies ColumnMeta,
+    meta: { description: "ENTEx histone allelic imbalance — tests whether histone marks (H3K27ac, H3K4me1, etc.) differ between alleles at this variant." } satisfies ColumnMeta,
     cell: ({ row }) => {
       const { imbalance_count, imbalance_significant } = row.original;
-      if (imbalance_count === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (imbalance_count === 0) return <Dash />;
+      const strength = classifyCount(imbalance_count, 50, 10);
+      const sigNote = imbalance_significant > 0 ? `, ${imbalance_significant} significant` : "";
+      const label = imbalance_significant > 0
+        ? `${imbalance_significant} sig.`
+        : `${imbalance_count} obs.`;
       return (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {imbalance_count}
-          {imbalance_significant > 0 && (
-            <span className="text-emerald-600 font-medium"> ({imbalance_significant} sig)</span>
-          )}
-        </span>
+        <StrengthCell
+          strength={imbalance_significant > 5 ? "strong" : imbalance_significant > 0 ? "moderate" : "low"}
+          label={label}
+
+          detail={`${imbalance_count} histone imbalance observations${sigNote} (FDR < 0.05)`}
+        />
       );
     },
   },
   {
     id: "tissue_score_max",
     accessorKey: "tissue_score_max",
-    header: "V2F Max",
+    header: "Func. Score",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Max tissue-specific functional score (cV2F / TLand). 0\u20131, higher = more likely functional." } satisfies ColumnMeta,
+    meta: { description: "Max tissue-specific variant-to-function score (cV2F / TLand). 0–1, higher = more likely functional in at least one tissue." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
-      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (v === 0) return <Dash />;
+      const strength: Strength = v >= 0.5 ? "strong" : v >= 0.1 ? "moderate" : "low";
+      const label = strength === "strong" ? "High" : strength === "moderate" ? "Moderate" : "Low";
       return (
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-1.5 bg-muted rounded-full overflow-hidden">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${v * 100}%`, opacity: Math.max(0.4, v) }} />
-          </div>
-          <span className="text-xs tabular-nums text-foreground font-medium">{v.toFixed(2)}</span>
-        </div>
+        <StrengthCell
+          strength={strength}
+          label={label}
+
+          detail={`Max tissue score: ${v.toFixed(3)} (0–1 scale, higher = more likely functional)`}
+        />
       );
     },
   },
   {
     id: "chrombpnet_count",
     accessorKey: "chrombpnet_count",
-    header: "ChromBP",
+    header: "Deep Learning",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "ChromBPNet deep learning variant effect predictions" } satisfies ColumnMeta,
+    meta: { description: "ChromBPNet deep learning predictions — how this variant affects chromatin accessibility across tissues/experiments." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
-      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
-      return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
+      if (v === 0) return <Dash />;
+      const strength = classifyCount(v, 3, 1);
+      const label = `${v} pred.`;
+      return (
+        <StrengthCell
+          strength={strength}
+          label={label}
+
+          detail={`${v} ChromBPNet prediction${v !== 1 ? "s" : ""} of variant effect on chromatin accessibility`}
+        />
+      );
     },
   },
   {
     id: "pgs_count",
     accessorKey: "pgs_count",
-    header: "PGS",
+    header: "Polygenic",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Polygenic score memberships — how many PGS scores include this variant" } satisfies ColumnMeta,
+    meta: { description: "Polygenic score memberships — how many published PGS include this variant as a contributing weight." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
-      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
-      return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
+      if (v === 0) return <Dash />;
+      const strength = classifyCount(v, 50, 10);
+      const label = `${fmtK(v)} scores`;
+      return (
+        <StrengthCell
+          strength={strength}
+          label={label}
+
+          detail={`Included in ${v.toLocaleString()} polygenic score${v !== 1 ? "s" : ""} from the PGS Catalog`}
+        />
+      );
     },
   },
   {
     id: "methylation_count",
     accessorKey: "methylation_count",
-    header: "Methyl.",
+    header: "Methylation",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "ENTEx allelic methylation observations" } satisfies ColumnMeta,
+    meta: { description: "ENTEx allelic methylation — tests whether CpG methylation differs between alleles at this variant across tissues." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
-      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
-      return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
+      if (v === 0) return <Dash />;
+      const strength = classifyCount(v, 10, 3);
+      const label = `${v} obs.`;
+      return (
+        <StrengthCell
+          strength={strength}
+          label={label}
+
+          detail={`${v} allelic methylation observation${v !== 1 ? "s" : ""} across ENTEx tissues`}
+        />
+      );
     },
   },
 ];
