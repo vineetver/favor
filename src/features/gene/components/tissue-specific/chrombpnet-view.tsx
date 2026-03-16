@@ -80,7 +80,7 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     id: "combined_score",
     accessorKey: "combined_score",
     header: "Combined",
-    enableSorting: false,
+    enableSorting: true,
     meta: {
       description: "|log\u2082FC| \u00d7 JSD integrated variant effect score. Captures both magnitude and profile-shape changes. Higher = stronger predicted disruption of chromatin accessibility.",
     } satisfies ColumnMeta,
@@ -98,7 +98,7 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     id: "combined_pval",
     accessorKey: "combined_pval",
     header: "p-value",
-    enableSorting: false,
+    enableSorting: true,
     meta: {
       description: "Empirical p-value for combined score vs null (shuffled) variants. <0.05 = statistically significant predicted effect.",
     } satisfies ColumnMeta,
@@ -117,7 +117,7 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
     id: "logfc_mean",
     accessorKey: "logfc_mean",
     header: "log\u2082FC",
-    enableSorting: false,
+    enableSorting: true,
     meta: {
       description: "Predicted log\u2082 fold-change in chromatin accessibility (ref\u2192alt). Positive = variant opens chromatin, negative = closes. Quantifies relative change at the variant site.",
     } satisfies ColumnMeta,

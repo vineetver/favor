@@ -4,35 +4,40 @@ import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { useServerTable, useClientSearchParams, updateClientUrl } from "@shared/hooks";
+import type { ColumnMeta, DimensionConfig } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { QtlRow, PaginatedResponse } from "@features/gene/api/region";
 import { useQtlsQuery } from "@features/gene/hooks/use-qtls-query";
 import { TISSUE_GROUPS } from "@shared/utils/tissue-format";
 
 // ---------------------------------------------------------------------------
-// Source labels
+// Source config
 // ---------------------------------------------------------------------------
 
-const SOURCE_LABELS: Record<string, string> = {
-  gtex: "GTEx eQTL",
-  gtex_susie: "GTEx fine-mapped",
-  sqtl: "GTEx sQTL",
-  apaqtl: "APA QTL",
-  eqtl_catalogue: "eQTL Catalogue",
-  sc_eqtl: "Single-cell eQTL",
-  eqtl_ccre: "eQTL-cCRE",
-};
+const QTL_SOURCES = [
+  { id: "all", label: "All Sources" },
+  { id: "gtex", label: "GTEx eQTL" },
+  { id: "gtex_susie", label: "GTEx Fine-mapped" },
+  { id: "sqtl", label: "sQTL" },
+  { id: "apaqtl", label: "APA QTL" },
+  { id: "eqtl_catalogue", label: "eQTL Catalogue" },
+  { id: "sc_eqtl", label: "Single-cell" },
+  { id: "eqtl_ccre", label: "eQTL-cCRE" },
+] as const;
 
 function sourceLabel(raw: string): string {
-  return SOURCE_LABELS[raw] ?? raw;
+  return QTL_SOURCES.find((s) => s.id === raw)?.label ?? raw;
 }
 
 // ---------------------------------------------------------------------------
 // Columns
 // ---------------------------------------------------------------------------
+
+function Dash() {
+  return <span className="text-muted-foreground/40">&mdash;</span>;
+}
 
 const columns: ColumnDef<QtlRow, unknown>[] = [
   {
@@ -41,53 +46,37 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     header: "Variant",
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => (
-      <div>
-        <Link
-          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
-          className="font-mono text-xs text-primary hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {row.original.variant_vcf}
-        </Link>
-        {row.original.position != null && (
-          <span className="block text-[10px] tabular-nums text-muted-foreground">
-            pos {row.original.position.toLocaleString()}
-          </span>
-        )}
-      </div>
-    ),
-  },
-  {
-    id: "source",
-    accessorKey: "source",
-    header: "Source",
-    enableSorting: false,
-    meta: {
-      description:
-        "QTL study source. GTEx = bulk tissue eQTLs, sQTL = splice QTLs, eQTL Catalogue = meta-analysis, sc_eqtl = single-cell",
-    } satisfies ColumnMeta,
-    cell: ({ getValue }) => (
-      <span className="text-xs text-muted-foreground">
-        {sourceLabel(getValue() as string)}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const vcf = row.original.variant_vcf;
+      if (!vcf) return <Dash />;
+      return (
+        <div>
+          <Link
+            href={`/hg38/variant/${encodeURIComponent(vcf)}`}
+            className="font-mono text-xs text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {vcf}
+          </Link>
+          {row.original.position != null && (
+            <span className="block text-[10px] tabular-nums text-muted-foreground">
+              pos {row.original.position.toLocaleString()}
+            </span>
+          )}
+        </div>
+      );
+    },
   },
   {
     id: "gene_symbol",
     accessorKey: "gene_symbol",
     header: "Gene",
     enableSorting: false,
-    meta: {
-      description: "Target gene whose expression is affected by this QTL",
-    } satisfies ColumnMeta,
+    meta: { description: "Target gene whose expression is affected by this QTL" } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const gene = getValue() as string | null;
-      if (!gene)
-        return <span className="text-muted-foreground/40">&mdash;</span>;
-      return (
-        <span className="text-sm font-medium text-foreground">{gene}</span>
-      );
+      if (!gene) return <Dash />;
+      return <span className="text-sm font-medium text-foreground">{gene}</span>;
     },
   },
   {
@@ -95,9 +84,7 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "tissue_name",
     header: "Tissue",
     enableSorting: false,
-    meta: {
-      description: "Tissue where this QTL association was detected",
-    } satisfies ColumnMeta,
+    meta: { description: "Tissue where this QTL association was detected" } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
         {getValue() as string}
@@ -112,7 +99,7 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     meta: { description: "Distance from variant to the transcription start site of the target gene" } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
-      if (v == null) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (v == null) return <Dash />;
       const abs = Math.abs(v);
       const label = abs >= 1_000_000 ? `${(abs / 1_000_000).toFixed(1)} Mb` : abs >= 1_000 ? `${(abs / 1_000).toFixed(1)} kb` : `${abs} bp`;
       return <span className="text-xs tabular-nums text-muted-foreground">{label}</span>;
@@ -122,29 +109,17 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     id: "neglog_pvalue",
     accessorKey: "neglog_pvalue",
     header: "\u2212log\u2081\u2080(p)",
-    enableSorting: false,
-    meta: {
-      description:
-        "Statistical significance. Higher = stronger evidence. >5 is genome-wide significant for most QTL studies.",
-    } satisfies ColumnMeta,
+    enableSorting: true,
+    meta: { description: "Statistical significance. Higher = stronger evidence. >5 is genome-wide significant." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
-      if (v == null)
-        return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (v == null) return <Dash />;
       return (
         <div className="flex items-center gap-2 min-w-[100px]">
           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[60px]">
-            <div
-              className="h-full rounded-full bg-amber-500"
-              style={{
-                width: `${Math.min((v / 20) * 100, 100)}%`,
-                opacity: Math.max(0.4, Math.min(v / 20, 1)),
-              }}
-            />
+            <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min((v / 20) * 100, 100)}%`, opacity: Math.max(0.4, Math.min(v / 20, 1)) }} />
           </div>
-          <span className="text-xs tabular-nums text-foreground">
-            {v.toFixed(1)}
-          </span>
+          <span className="text-xs tabular-nums text-foreground">{v.toFixed(1)}</span>
         </div>
       );
     },
@@ -152,29 +127,15 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
   {
     id: "effect_size",
     accessorKey: "effect_size",
-    header: "Effect",
-    enableSorting: false,
-    meta: {
-      description:
-        "Effect size (beta). Positive = variant increases expression, negative = decreases. Magnitude indicates strength.",
-    } satisfies ColumnMeta,
+    header: "Effect (\u03b2)",
+    enableSorting: true,
+    meta: { description: "Regression slope: normalized expression change per ALT allele copy. Positive = upregulation, negative = downregulation." } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
-      if (v == null)
-        return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (v == null) return <Dash />;
       return (
-        <span
-          className={cn(
-            "text-xs tabular-nums",
-            v > 0
-              ? "text-emerald-600"
-              : v < 0
-                ? "text-destructive"
-                : "text-muted-foreground"
-          )}
-        >
-          {v > 0 ? "+" : ""}
-          {v.toFixed(3)}
+        <span className={cn("text-xs tabular-nums", v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground")}>
+          {v > 0 ? "+" : ""}{v.toFixed(3)}
         </span>
       );
     },
@@ -184,18 +145,9 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "is_significant",
     header: "Sig.",
     enableSorting: false,
-    meta: {
-      description:
-        "Passes significance threshold for this source (varies by study)",
-    } satisfies ColumnMeta,
+    meta: { description: "Passed gene-level permutation threshold (GTEx: Bonferroni-corrected qval<0.05)" } satisfies ColumnMeta,
     cell: ({ getValue }) => (
-      <span
-        className={
-          getValue()
-            ? "text-emerald-600 text-xs font-medium"
-            : "text-muted-foreground/40 text-xs"
-        }
-      >
+      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
         {getValue() ? "Yes" : "No"}
       </span>
     ),
@@ -203,18 +155,8 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Filter config
+// Filter config (without source — that's now a dimension/tab)
 // ---------------------------------------------------------------------------
-
-const QTL_SOURCES = [
-  "gtex",
-  "gtex_susie",
-  "sqtl",
-  "apaqtl",
-  "eqtl_catalogue",
-  "sc_eqtl",
-  "eqtl_ccre",
-];
 
 function buildFilters(genes: string[]): ServerFilterConfig[] {
   return [
@@ -224,13 +166,6 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
       type: "select",
       placeholder: "All groups",
       options: TISSUE_GROUPS.map((g) => ({ value: g, label: g })),
-    },
-    {
-      id: "source",
-      label: "Source",
-      type: "select",
-      placeholder: "All sources",
-      options: QTL_SOURCES.map((s) => ({ value: s, label: sourceLabel(s) })),
     },
     {
       id: "gene",
@@ -260,28 +195,57 @@ interface QtlsViewProps {
   initialData?: PaginatedResponse<QtlRow>;
 }
 
-export function QtlsView({
-  loc,
-  totalCount,
-  genes,
-  initialData,
-}: QtlsViewProps) {
+export function QtlsView({ loc, totalCount, genes, initialData }: QtlsViewProps) {
   const searchParams = useClientSearchParams();
+  const activeSource = searchParams.get("source") || "all";
+
   const filters = useMemo(() => buildFilters(genes), [genes]);
 
-  const { data, pageInfo, isLoading, isFetching } = useQtlsQuery({
-    ref: loc,
-    initialData,
-  });
+  // Show Source column only on "All Sources" tab
+  const activeColumns = useMemo(() => {
+    if (activeSource === "all") {
+      const sourceCol: ColumnDef<QtlRow, unknown> = {
+        id: "source",
+        accessorKey: "source",
+        header: "Source",
+        enableSorting: false,
+        meta: { description: "QTL study source" } satisfies ColumnMeta,
+        cell: ({ getValue }) => (
+          <span className="text-xs text-muted-foreground">{sourceLabel(getValue() as string)}</span>
+        ),
+      };
+      // Insert after variant_vcf (index 0)
+      return [columns[0], sourceCol, ...columns.slice(1)];
+    }
+    return columns;
+  }, [activeSource]);
+
+  const { data, pageInfo, isLoading, isFetching } = useQtlsQuery({ ref: loc, initialData });
+
+  const handleSourceChange = useCallback((source: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (source === "all") {
+      params.delete("source");
+    } else {
+      params.set("source", source);
+    }
+    params.delete("cursor");
+    updateClientUrl(`${window.location.pathname}?${params}`, false);
+  }, []);
+
+  const sourceDimension: DimensionConfig = useMemo(() => ({
+    label: "Source",
+    options: QTL_SOURCES.map((s) => ({ value: s.id, label: s.label })),
+    value: activeSource,
+    onChange: handleSourceChange,
+    presentation: "segmented",
+  }), [activeSource, handleSourceChange]);
 
   const hasActiveFilters = Boolean(
-    searchParams.get("source") ||
-      searchParams.get("gene") ||
-      searchParams.get("tissue_group") ||
-      searchParams.get("significant_only")
+    searchParams.get("source") || searchParams.get("gene") ||
+    searchParams.get("tissue_group") || searchParams.get("significant_only")
   );
-  const liveTotal =
-    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+  const liveTotal = pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,
@@ -290,26 +254,23 @@ export function QtlsView({
     currentCursor: pageInfo.nextCursor,
   };
 
-  const tableState = useServerTable({
-    filters,
-    serverPagination: true,
-    paginationInfo,
-  });
+  const tableState = useServerTable({ filters, serverPagination: true, paginationInfo });
 
-  const subtitle =
-    liveTotal != null
-      ? `${liveTotal.toLocaleString()} QTL associations from 7 sources`
-      : "QTL associations from 7 sources (GTEx, eQTL Catalogue, single-cell, etc.)";
+  const sourceInfo = QTL_SOURCES.find((s) => s.id === activeSource);
+  const subtitle = liveTotal != null
+    ? `${liveTotal.toLocaleString()} ${sourceInfo?.label ?? "QTL"} associations`
+    : `${sourceInfo?.label ?? "QTL"} associations for variants in this region`;
 
   return (
     <DataSurface
       data={data}
-      columns={columns}
+      columns={activeColumns}
       subtitle={subtitle}
+      dimensions={[sourceDimension]}
       searchPlaceholder="Search genes, tissues..."
       searchColumn="gene_symbol"
       exportable
-      exportFilename={`qtls-${loc}`}
+      exportFilename={`qtls-${activeSource}-${loc}`}
       filterable
       filters={filters}
       filterValues={tableState.filterValues}

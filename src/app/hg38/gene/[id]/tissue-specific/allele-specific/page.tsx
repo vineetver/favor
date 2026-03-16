@@ -26,7 +26,7 @@ export default async function AsePage({ params }: AsePageProps) {
   const [summary, initialData] = await Promise.all([
     fetchRegionSummary(loc).catch(() => null),
     fetchAse(loc, {
-      sort_by: "position",
+      sort_by: "tissue_name",
       sort_dir: "asc",
       limit: 100,
     }).catch(() => null),

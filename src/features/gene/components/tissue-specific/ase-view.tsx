@@ -83,7 +83,7 @@ const columns: ColumnDef<AseRow, unknown>[] = [
     id: "neglog_pvalue",
     accessorKey: "neglog_pvalue",
     header: "-log\u2081\u2080(p)",
-    enableSorting: false,
+    enableSorting: true,
     cell: ({ row }) => {
       const val = row.original.neglog_pvalue;
       const maxBar = 10;

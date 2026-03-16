@@ -300,7 +300,7 @@ const columns: ColumnDef<LoopRow, unknown>[] = [
     id: "loop_span",
     accessorKey: "loop_span",
     header: "Span",
-    enableSorting: false,
+    enableSorting: true,
     cell: ({ getValue }) => (
       <span className="text-xs tabular-nums text-muted-foreground">
         {(getValue() as number).toLocaleString()} bp

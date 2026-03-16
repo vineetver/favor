@@ -10,6 +10,8 @@ interface ChromBpnetFilterOptions {
   tissue_group?: string;
   min_score?: number;
   significant_only?: boolean;
+  sort_by?: string;
+  sort_dir?: string;
   cursor?: string;
   limit?: number;
 }
@@ -23,6 +25,8 @@ async function fetchChromBpnetClient(
   if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.min_score != null) params.set("min_score", String(filters.min_score));
   if (filters.significant_only) params.set("significant_only", "true");
+  if (filters.sort_by) params.set("sort_by", filters.sort_by);
+  if (filters.sort_dir) params.set("sort_dir", filters.sort_dir);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
 
@@ -39,6 +43,8 @@ function parseFilters(sp: URLSearchParams): ChromBpnetFilterOptions {
   if (tissue) f.tissue = tissue;
   const tissueGroup = sp.get("tissue_group");
   if (tissueGroup) f.tissue_group = tissueGroup;
+  f.sort_by = sp.get("sort_by") || "combined_score";
+  f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");

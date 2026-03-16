@@ -7,8 +7,10 @@ import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { updateClientUrl } from "@shared/hooks";
 import type { TissueScoreRow, PaginatedResponse } from "@features/gene/api/region";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +20,8 @@ import type { TissueScoreRow, PaginatedResponse } from "@features/gene/api/regio
 interface TissueScoreFilters {
   score_type?: string;
   tissue?: string;
+  sort_by?: string;
+  sort_dir?: string;
   cursor?: string;
   limit?: number;
 }
@@ -29,6 +33,8 @@ async function fetchClient(
   const params = new URLSearchParams();
   if (filters.score_type) params.set("score_type", filters.score_type);
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.sort_by) params.set("sort_by", filters.sort_by);
+  if (filters.sort_dir) params.set("sort_dir", filters.sort_dir);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
   const res = await fetch(`/api/v1/variants/${encodeURIComponent(ref)}/tissue-scores?${params}`);
@@ -39,9 +45,11 @@ async function fetchClient(
 function parseFilters(sp: URLSearchParams): TissueScoreFilters {
   const f: TissueScoreFilters = {};
   const scoreType = sp.get("score_type");
-  if (scoreType) f.score_type = scoreType;
+  if (scoreType && scoreType !== "all") f.score_type = scoreType;
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  f.sort_by = sp.get("sort_by") || "score";
+  f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");
@@ -138,7 +146,7 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     id: "score",
     accessorKey: "score",
     header: "Score",
-    enableSorting: false,
+    enableSorting: true,
     meta: {
       description: "Tissue-specific functional impact score (0\u20131). Higher = more likely the variant is functional in this tissue. Range: 0.025\u20131.0.",
     } satisfies ColumnMeta,
@@ -170,9 +178,15 @@ interface TissueScoresViewProps {
   initialData?: PaginatedResponse<TissueScoreRow>;
 }
 
+const SCORE_TYPE_OPTIONS = [
+  { value: "all", label: "All Types" },
+  ...Object.entries(SCORE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+];
+
 export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresViewProps) {
   const searchParams = useClientSearchParams();
   const isFirstMount = useRef(true);
+  const activeScoreType = searchParams.get("score_type") || "all";
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
 
   const query = useQuery({
@@ -188,6 +202,25 @@ export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresV
   const data = query.data?.data ?? [];
   const pageInfo = query.data?.page_info;
 
+  const handleScoreTypeChange = useCallback((type: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (type === "all") {
+      params.delete("score_type");
+    } else {
+      params.set("score_type", type);
+    }
+    params.delete("cursor");
+    updateClientUrl(`${window.location.pathname}?${params}`, false);
+  }, []);
+
+  const scoreTypeDimension: DimensionConfig = useMemo(() => ({
+    label: "Model",
+    options: SCORE_TYPE_OPTIONS,
+    value: activeScoreType,
+    onChange: handleScoreTypeChange,
+    presentation: "segmented",
+  }), [activeScoreType, handleScoreTypeChange]);
+
   const hasActiveFilters = Boolean(searchParams.get("score_type") || searchParams.get("tissue"));
   const liveTotal = pageInfo?.total_count ?? (hasActiveFilters ? undefined : totalCount);
 
@@ -198,17 +231,7 @@ export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresV
     currentCursor: pageInfo?.next_cursor ?? null,
   };
 
-  const filterConfigs = useMemo((): ServerFilterConfig[] => [
-    {
-      id: "score_type",
-      label: "Score Type",
-      type: "select",
-      placeholder: "All types",
-      options: Object.entries(SCORE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
-    },
-  ], []);
-
-  const tableState = useServerTable({ filters: filterConfigs, serverPagination: true, paginationInfo });
+  const tableState = useServerTable({ filters: [], serverPagination: true, paginationInfo });
 
   const subtitle = liveTotal != null
     ? `${liveTotal.toLocaleString()} tissue-specific variant functional scores across 51 tissues`
@@ -219,17 +242,11 @@ export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresV
       data={data}
       columns={columns}
       subtitle={subtitle}
+      dimensions={[scoreTypeDimension]}
       searchPlaceholder="Search tissues..."
       searchColumn="tissue_name"
       exportable
-      exportFilename={`tissue-scores-${loc}`}
-      filterable
-      filters={filterConfigs}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
+      exportFilename={`tissue-scores-${activeScoreType}-${loc}`}
       loading={query.isLoading && data.length === 0}
       transitioning={query.isFetching && data.length > 0}
       serverPagination={tableState.pagination}

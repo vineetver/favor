@@ -50,8 +50,8 @@ function parseFilters(sp: URLSearchParams): QtlFilterOptions {
   const gene = sp.get("gene");
   if (gene) f.gene = gene;
   if (sp.get("significant_only") === "true") f.significant_only = true;
-  f.sort_by = sp.get("sort_by") || undefined;
-  f.sort_dir = sp.get("sort_dir") || undefined;
+  f.sort_by = sp.get("sort_by") || "neglog_pvalue";
+  f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");
