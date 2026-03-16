@@ -34,10 +34,20 @@ export interface RegionSummary {
     signals: number;
     chromatin_states: number;
     enhancer_genes: number;
+    epiraction: number;
+    epimap: number;
+    encode_re2g: number;
     accessibility_peaks: number;
     loops: number;
     ase: number;
     validated_enhancers: number;
+    qtls: number;
+    tissue_scores: number;
+    chrombpnet: number;
+    allelic_imbalance: number;
+    methylation: number;
+    pgs: number;
+    genotypes: number;
   };
 }
 
@@ -222,6 +232,8 @@ export interface VariantEvidenceSummaryRow {
   tissue_score_max: number;
   imbalance_count: number;
   imbalance_significant: number;
+  methylation_count: number;
+  pgs_count: number;
 }
 
 export async function fetchVariantEvidenceSummary(

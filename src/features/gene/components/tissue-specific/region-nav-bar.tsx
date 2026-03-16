@@ -78,19 +78,19 @@ const NAV_ITEMS: {
     hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN",
   },
   {
-    key: null,
+    key: "qtls",
     slug: "qtls",
     label: "QTLs",
     hint: "eQTL/sQTL associations for variants in this region (GTEx, eQTL Catalogue, single-cell)",
   },
   {
-    key: null,
+    key: "chrombpnet",
     slug: "chrombpnet",
     label: "ChromBPNet",
     hint: "Deep learning predictions of variant effects on chromatin accessibility",
   },
   {
-    key: null,
+    key: "tissue_scores",
     slug: "tissue-scores",
     label: "V2F Scores",
     hint: "Tissue-specific variant functional scores: TLand (regulatory effect) and cV2F (variant-to-function probability)",

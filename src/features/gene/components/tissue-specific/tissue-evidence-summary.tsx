@@ -179,9 +179,9 @@ function MiniBar({
   value: number;
   max: number;
   color: string;
-  /** Inline label: the actual value, e.g. "7.0 Z" */
+  /** Short value label, e.g. "7.0 Z" */
   label: string;
-  /** Tooltip detail, e.g. "Max Z-score 7.0 across 39.5K cCREs" */
+  /** Tooltip detail */
   detail: string;
 }) {
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
@@ -189,14 +189,11 @@ function MiniBar({
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-1.5 cursor-default">
-            <div className="w-10 h-1.5 rounded-full bg-border overflow-hidden shrink-0">
+          <div className="cursor-default flex items-center gap-1.5">
+            <div className="w-8 h-1.5 rounded-full bg-border overflow-hidden shrink-0">
               <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.max(pct * 100, 8)}%`,
-                  backgroundColor: color,
-                }}
+                className="h-full rounded-full"
+                style={{ width: `${Math.max(pct * 100, 8)}%`, backgroundColor: color }}
               />
             </div>
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
@@ -310,7 +307,7 @@ function buildColumns(maxes: {
     {
       id: "signals",
       accessorFn: (r) => r.signals?.max_value ?? null,
-      header: "cCRE Activity",
+      header: "cCRE",
       meta: {
         description:
           "Epigenomic signal strength at candidate regulatory elements (cCREs) from ENCODE. Max Z-score across biosamples in this tissue group.",
@@ -325,8 +322,8 @@ function buildColumns(maxes: {
             value={s.max_value}
             max={maxes.s}
             color={EVIDENCE_COLORS.signals}
-            label={`${s.max_value.toFixed(1)} Z \u00b7 ${fmtK(s.count)}`}
-            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs in this tissue group`}
+            label={`max ${s.max_value.toFixed(1)} Z`}
+            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs`}
           />
         );
       },
@@ -347,16 +344,13 @@ function buildColumns(maxes: {
         const state = c.top_item ?? "unknown";
         const color = STATE_COLORS[state] ?? "#9ca3af";
         return (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1">
             <span
-              className="w-2 h-2 rounded-full shrink-0"
+              className="w-1.5 h-1.5 rounded-full shrink-0"
               style={{ backgroundColor: color }}
             />
             <span className="text-xs text-muted-foreground capitalize">
               {state}
-            </span>
-            <span className="text-xs tabular-nums text-muted-foreground/60">
-              ({fmtK(c.count)})
             </span>
           </span>
         );
@@ -365,7 +359,7 @@ function buildColumns(maxes: {
     {
       id: "enhancers",
       accessorFn: (r) => r.enhancers?.max_value ?? null,
-      header: "Enhancer Links",
+      header: "Enhancers",
       meta: {
         description:
           "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G). Score indicates confidence that a nearby enhancer regulates this gene. >0.015 is likely functional.",
@@ -380,8 +374,8 @@ function buildColumns(maxes: {
             value={e.max_value}
             max={maxes.e}
             color={EVIDENCE_COLORS.enhancers}
-            label={`${fmtScore(e.max_value)} \u00b7 ${e.count}`}
-            detail={`Best enhancer score: ${fmtScore(e.max_value)} across ${e.count} predictions. >0.015 = likely functional.`}
+            label={`best ${fmtScore(e.max_value)}`}
+            detail={`Best enhancer score: ${fmtScore(e.max_value)} across ${e.count} predictions`}
           />
         );
       },
@@ -389,7 +383,7 @@ function buildColumns(maxes: {
     {
       id: "accessibility",
       accessorFn: (r) => r.accessibility?.max_value ?? null,
-      header: "Open Chromatin",
+      header: "Peaks",
       meta: {
         description:
           "ATAC-seq/DNase accessibility peaks. Open chromatin means DNA is accessible to transcription factors. Value is fold enrichment over background.",
@@ -404,8 +398,8 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.a}
             color={EVIDENCE_COLORS.accessibility}
-            label={`${a.max_value.toFixed(1)}\u00d7 \u00b7 ${a.count}`}
-            detail={`${a.max_value.toFixed(1)}\u00d7 fold enrichment across ${a.count} peaks`}
+            label={`${a.max_value.toFixed(1)}\u00d7 enr.`}
+            detail={`${a.max_value.toFixed(1)}\u00d7 fold enrichment, ${a.count} peaks`}
           />
         );
       },
@@ -413,7 +407,7 @@ function buildColumns(maxes: {
     {
       id: "loops",
       accessorFn: (r) => r.loops?.count ?? null,
-      header: "3D Contacts",
+      header: "Loops",
       meta: {
         description:
           "Chromatin loops detected by Hi-C or ChIA-PET. Physical 3D contacts connecting this gene region to distant regulatory elements.",
@@ -424,19 +418,17 @@ function buildColumns(maxes: {
         const l = row.original.loops;
         if (!l) return <Dash />;
         return (
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {l.count} {l.top_item ? `(${l.top_item})` : ""}
-          </span>
+          <span className="text-xs tabular-nums text-muted-foreground">{l.count}</span>
         );
       },
     },
     {
       id: "ase",
       accessorFn: (r) => r.ase?.max_value ?? null,
-      header: "Allelic Imbal.",
+      header: "ASE",
       meta: {
         description:
-          "Allele-specific epigenomic activity. Whether the two alleles show different regulatory activity at cCREs. High -log10(p) indicates strong imbalance, suggesting a functional variant.",
+          "Allele-specific epigenomic activity at cCREs. High -log10(p) = strong imbalance.",
       },
       enableSorting: true,
       sortingFn: nullsLast,
@@ -448,8 +440,8 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.x}
             color={EVIDENCE_COLORS.ase}
-            label={`${a.max_value.toFixed(1)} \u00b7 ${a.count}`}
-            detail={`Best \u2212log\u2081\u2080(p): ${a.max_value.toFixed(1)} across ${a.count} observations`}
+            label={`p=${a.max_value.toFixed(1)}`}
+            detail={`Best \u2212log\u2081\u2080(p): ${a.max_value.toFixed(1)}, ${a.count} observations`}
           />
         );
       },
@@ -472,8 +464,8 @@ function buildColumns(maxes: {
             value={q.max_value}
             max={maxes.q}
             color={EVIDENCE_COLORS.qtls}
-            label={`${q.max_value.toFixed(0)} \u00b7 ${q.count}`}
-            detail={`Best \u2212log\u2081\u2080(p): ${q.max_value.toFixed(1)}, ${q.count} QTL associations${q.significant ? `, ${q.significant} significant` : ""}`}
+            label={`${fmtK(q.count)}`}
+            detail={`${q.count} QTL associations, best \u2212log\u2081\u2080(p): ${q.max_value.toFixed(1)}${q.significant ? `, ${q.significant} significant` : ""}`}
           />
         );
       },
@@ -481,7 +473,7 @@ function buildColumns(maxes: {
     {
       id: "chrombpnet",
       accessorFn: (r) => r.chrombpnet?.count ?? null,
-      header: "ChromBPNet",
+      header: "ChromBP",
       meta: {
         description:
           "Deep learning (ChromBPNet) predictions of how variants in this region affect chromatin accessibility in each tissue.",
@@ -492,17 +484,17 @@ function buildColumns(maxes: {
         const c = row.original.chrombpnet;
         if (!c) return <Dash />;
         return (
-          <span className="text-xs tabular-nums text-muted-foreground">{c.count}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">{c.count} pred.</span>
         );
       },
     },
     {
       id: "variantAllelicImbalance",
       accessorFn: (r) => r.variantAllelicImbalance?.max_value ?? null,
-      header: "Histone Imbal.",
+      header: "Histone AI",
       meta: {
         description:
-          "ENTEx histone allelic imbalance — whether variant alleles show different histone modification levels. High \u2212log\u2081\u2080(p) = strong imbalance suggesting a functional variant.",
+          "ENTEx histone allelic imbalance. High \u2212log\u2081\u2080(p) = strong imbalance.",
       },
       enableSorting: true,
       sortingFn: nullsLast,
@@ -514,7 +506,7 @@ function buildColumns(maxes: {
             value={v.max_value}
             max={maxes.vai}
             color={EVIDENCE_COLORS.variantAI}
-            label={`${v.max_value.toFixed(1)} \u00b7 ${v.count}`}
+            label={`p=${v.max_value.toFixed(1)}`}
             detail={`Best \u2212log\u2081\u2080(p): ${v.max_value.toFixed(1)}, ${v.count} observations${v.significant ? `, ${v.significant} significant` : ""}`}
           />
         );
@@ -545,6 +537,7 @@ function TissueDetail({
       lines: [
         `${fmtK(tissue.signals.count)} regulatory elements`,
         `Max Z-score: ${tissue.signals.max_value.toFixed(1)}`,
+        tissue.signals.top_item ? `Top cCRE: ${tissue.signals.top_item}` : "",
       ],
     });
   if (tissue.chromatin)
@@ -599,6 +592,7 @@ function TissueDetail({
       lines: [
         `${tissue.qtls.count} associations${tissue.qtls.significant ? `, ${tissue.qtls.significant} significant` : ""}`,
         `Best \u2212log\u2081\u2080(p): ${tissue.qtls.max_value.toFixed(1)}`,
+        tissue.qtls.top_item ? `Top gene: ${tissue.qtls.top_item}` : "",
       ],
     });
   if (tissue.chrombpnet)
@@ -612,7 +606,7 @@ function TissueDetail({
   if (tissue.variantAllelicImbalance)
     cards.push({
       label: "Histone Imbalance",
-      slug: "qtls", // links to QTLs tab for now
+      slug: "allele-specific",
       lines: [
         `${tissue.variantAllelicImbalance.count} observations${tissue.variantAllelicImbalance.significant ? `, ${tissue.variantAllelicImbalance.significant} significant` : ""}`,
         `Best \u2212log\u2081\u2080(p): ${tissue.variantAllelicImbalance.max_value.toFixed(1)}`,
@@ -626,7 +620,7 @@ function TissueDetail({
           {tissue.tissue_name}
         </span>
         <span className="text-xs text-muted-foreground">
-          {tissue.convergence}/6 evidence types
+          {tissue.convergence}/{TOTAL_EVIDENCE_TYPES} evidence types
         </span>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
@@ -635,7 +629,7 @@ function TissueDetail({
 
           return (
             <div
-              key={c.slug}
+              key={c.label}
               className="rounded-lg border border-border bg-card px-3 py-2.5"
             >
               <span className="text-xs font-medium text-foreground">

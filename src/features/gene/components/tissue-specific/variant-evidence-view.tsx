@@ -3,12 +3,6 @@
 import { cn } from "@infra/utils";
 import type { VariantEvidenceSummaryRow } from "@features/gene/api/region";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
@@ -35,43 +29,20 @@ function regionLabel(table: string): string {
 // Evidence dot indicator
 // ---------------------------------------------------------------------------
 
-function EvidenceDots({ row }: { row: VariantEvidenceSummaryRow }) {
-  const types = [
-    { has: row.region_overlap_count > 0, label: "Region overlaps", color: "bg-primary" },
-    { has: row.qtl_count > 0, label: "QTL associations", color: "bg-amber-500" },
-    { has: row.chrombpnet_count > 0, label: "ChromBPNet", color: "bg-cyan-500" },
-    { has: row.tissue_score_max > 0, label: "V2F scores", color: "bg-violet-500" },
-    { has: row.imbalance_count > 0, label: "Allelic imbalance", color: "bg-rose-500" },
-  ];
-  const activeCount = types.filter((t) => t.has).length;
+const EVIDENCE_TYPES = [
+  { key: "region_overlap_count" as const, label: "Region overlaps" },
+  { key: "qtl_count" as const, label: "QTLs" },
+  { key: "chrombpnet_count" as const, label: "ChromBPNet" },
+  { key: "imbalance_count" as const, label: "Allelic imbalance" },
+  { key: "methylation_count" as const, label: "Methylation" },
+  { key: "pgs_count" as const, label: "PGS" },
+] as const;
 
-  return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1">
-            <div className="flex gap-[3px]">
-              {types.map((t, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    t.has ? t.color : "bg-border"
-                  )}
-                />
-              ))}
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground ml-0.5">
-              {activeCount}/5
-            </span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          {types.filter((t) => t.has).map((t) => t.label).join(", ") || "No evidence"}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+function countEvidence(row: VariantEvidenceSummaryRow): number {
+  let n = 0;
+  for (const t of EVIDENCE_TYPES) if (row[t.key] > 0) n++;
+  if (row.tissue_score_max > 0) n++;
+  return n;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,20 +72,19 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
   },
   {
     id: "evidence",
-    accessorFn: (r) => {
-      let n = 0;
-      if (r.region_overlap_count > 0) n++;
-      if (r.qtl_count > 0) n++;
-      if (r.chrombpnet_count > 0) n++;
-      if (r.tissue_score_max > 0) n++;
-      if (r.imbalance_count > 0) n++;
-      return n;
-    },
+    accessorFn: (r) => countEvidence(r),
     header: "Evidence",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Number of distinct evidence categories with data (out of 5: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance)" } satisfies ColumnMeta,
-    cell: ({ row }) => <EvidenceDots row={row.original} />,
+    meta: { description: "Number of distinct evidence categories with data (out of 7: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS)" } satisfies ColumnMeta,
+    cell: ({ row }) => {
+      const n = countEvidence(row.original);
+      return (
+        <span className={cn("text-xs tabular-nums font-medium", n >= 5 ? "text-foreground" : "text-muted-foreground")}>
+          {n}/7
+        </span>
+      );
+    },
   },
   {
     id: "region_overlaps",
@@ -210,6 +180,32 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
       return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
     },
   },
+  {
+    id: "pgs_count",
+    accessorKey: "pgs_count",
+    header: "PGS",
+    enableSorting: true,
+    sortDescFirst: true,
+    meta: { description: "Polygenic score memberships — how many PGS scores include this variant" } satisfies ColumnMeta,
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
+      return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
+    },
+  },
+  {
+    id: "methylation_count",
+    accessorKey: "methylation_count",
+    header: "Methyl.",
+    enableSorting: true,
+    sortDescFirst: true,
+    meta: { description: "ENTEx allelic methylation observations" } satisfies ColumnMeta,
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      if (v === 0) return <span className="text-muted-foreground/40">&mdash;</span>;
+      return <span className="text-xs tabular-nums text-muted-foreground">{v}</span>;
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -227,12 +223,14 @@ export function VariantEvidenceView({ data, loc }: VariantEvidenceViewProps) {
   return (
     <DataSurface
       title="Regulatory Variants"
-      subtitle={`Top ${data.length} variants ranked by total evidence across all data types`}
+      subtitle={`${data.length} variants ranked by total evidence across all data types`}
       data={data}
       columns={columns}
-      searchable={false}
-      defaultPageSize={data.length}
-      pageSizeOptions={[data.length]}
+      searchable
+      searchPlaceholder="Search variants..."
+      searchColumn="variant_vcf"
+      defaultPageSize={25}
+      pageSizeOptions={[25, 50, 100]}
       exportable
       exportFilename={`variant-evidence-${loc}`}
       emptyMessage="No variants with regulatory evidence found in this region"
