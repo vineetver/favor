@@ -1,12 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { DataSurface } from "@shared/components/ui/data-surface";
-import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
+import { formatTissueName } from "@shared/utils/tissue-format";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { TissueScoreRow, PaginatedResponse } from "@features/gene/api/region";
@@ -31,9 +31,7 @@ async function fetchClient(
   if (filters.tissue) params.set("tissue", filters.tissue);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
-  const res = await fetch(
-    `/api/v1/variants/${encodeURIComponent(ref)}/tissue-scores?${params}`
-  );
+  const res = await fetch(`/api/v1/variants/${encodeURIComponent(ref)}/tissue-scores?${params}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
@@ -52,8 +50,54 @@ function parseFilters(sp: URLSearchParams): TissueScoreFilters {
 }
 
 // ---------------------------------------------------------------------------
-// Columns
+// Helpers
 // ---------------------------------------------------------------------------
+
+function Dash() {
+  return <span className="text-muted-foreground/40">&mdash;</span>;
+}
+
+const SCORE_TYPE_LABELS: Record<string, string> = {
+  tland: "TLand",
+  tland_light: "TLand-light",
+  tland_lightest: "TLand-lightest",
+  caqtl: "caQTL",
+  cv2f: "cV2F",
+};
+
+const SCORE_TYPE_DESCRIPTIONS: Record<string, string> = {
+  tland: "Tissue-Landscape: regulatory effect score integrating multiple epigenomic features",
+  tland_light: "TLand lightweight model variant",
+  tland_lightest: "TLand lightest model variant",
+  caqtl: "Chromatin accessibility QTL-based score",
+  cv2f: "Cell-type Variant-to-Function: probability of variant being functional in this tissue",
+};
+
+// ---------------------------------------------------------------------------
+// Columns — variant_tissue_scores (27.0M rows)
+// Scores range [0.025, 1.0]. Higher = more likely functional in tissue.
+// ---------------------------------------------------------------------------
+
+function VariantCell({ row }: { row: TissueScoreRow }) {
+  const vcf = row.variant_vcf;
+  if (!vcf) return <Dash />;
+  return (
+    <div>
+      <Link
+        href={`/hg38/variant/${encodeURIComponent(vcf)}`}
+        className="font-mono text-xs text-primary hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {vcf}
+      </Link>
+      {row.position != null && (
+        <span className="block text-[10px] tabular-nums text-muted-foreground">
+          pos {row.position.toLocaleString()}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const columns: ColumnDef<TissueScoreRow, unknown>[] = [
   {
@@ -62,31 +106,14 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     header: "Variant",
     enableSorting: false,
     meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => (
-      <div>
-        <Link
-          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
-          className="font-mono text-xs text-primary hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {row.original.variant_vcf}
-        </Link>
-        {row.original.position != null && (
-          <span className="block text-[10px] tabular-nums text-muted-foreground">
-            pos {row.original.position.toLocaleString()}
-          </span>
-        )}
-      </div>
-    ),
+    cell: ({ row }) => <VariantCell row={row.original} />,
   },
   {
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Tissue",
     enableSorting: false,
-    meta: {
-      description: "Tissue where the variant functional score was computed",
-    } satisfies ColumnMeta,
+    meta: { description: "Tissue where the variant functional score was computed (51 tissues)" } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
         {formatTissueName(getValue() as string)}
@@ -98,11 +125,9 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     accessorKey: "tissue_group",
     header: "Group",
     enableSorting: false,
-    meta: { description: "Tissue group" } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as string | undefined;
-      if (!v)
-        return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (!v) return <Dash />;
       return <span className="text-xs text-muted-foreground">{v}</span>;
     },
   },
@@ -112,14 +137,13 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     header: "Type",
     enableSorting: false,
     meta: {
-      description:
-        "cV2F = context-dependent Variant-to-Function score (how likely this variant is functional in this tissue). TLand = Tissue Landscape score (tissue-specific regulatory potential).",
+      description: "Score model: TLand (Tissue-Landscape regulatory effect), cV2F (cell-type Variant-to-Function probability), caQTL (chromatin accessibility QTL-based), or TLand lightweight variants.",
     } satisfies ColumnMeta,
-    cell: ({ getValue }) => (
-      <span className="text-xs font-medium text-foreground uppercase">
-        {getValue() as string}
-      </span>
-    ),
+    cell: ({ getValue }) => {
+      const raw = getValue() as string;
+      const label = SCORE_TYPE_LABELS[raw] ?? raw;
+      return <span className="text-xs font-medium text-foreground">{label}</span>;
+    },
   },
   {
     id: "score",
@@ -127,25 +151,20 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     header: "Score",
     enableSorting: false,
     meta: {
-      description:
-        "Tissue-specific functional impact score (0\u20131). Higher = more likely the variant is functional in this tissue. >0.5 is generally considered high evidence.",
+      description: "Tissue-specific functional impact score (0\u20131). Higher = more likely the variant is functional in this tissue. Range: 0.025\u20131.0.",
     } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
+      if (v == null) return <Dash />;
       return (
         <div className="flex items-center gap-2 min-w-[120px]">
           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[80px]">
             <div
               className="h-full rounded-full bg-primary"
-              style={{
-                width: `${Math.max(v * 100, 1)}%`,
-                opacity: Math.max(0.4, v),
-              }}
+              style={{ width: `${Math.max(v * 100, 1)}%`, opacity: Math.max(0.4, v) }}
             />
           </div>
-          <span className="text-xs tabular-nums text-foreground font-medium">
-            {v.toFixed(3)}
-          </span>
+          <span className="text-xs tabular-nums text-foreground font-medium">{v.toFixed(3)}</span>
         </div>
       );
     },
@@ -162,11 +181,7 @@ interface TissueScoresViewProps {
   initialData?: PaginatedResponse<TissueScoreRow>;
 }
 
-export function TissueScoresView({
-  loc,
-  totalCount,
-  initialData,
-}: TissueScoresViewProps) {
+export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresViewProps) {
   const searchParams = useClientSearchParams();
   const isFirstMount = useRef(true);
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
@@ -174,24 +189,18 @@ export function TissueScoresView({
   const query = useQuery({
     queryKey: ["tissue-scores", loc, filters],
     queryFn: () => fetchClient(loc, filters),
-    placeholderData: (prev: PaginatedResponse<TissueScoreRow> | undefined) =>
-      prev,
+    placeholderData: (prev: PaginatedResponse<TissueScoreRow> | undefined) => prev,
     staleTime: 5 * 60 * 1000,
     ...(isFirstMount.current && initialData ? { initialData } : {}),
   });
 
-  useEffect(() => {
-    isFirstMount.current = false;
-  }, []);
+  useEffect(() => { isFirstMount.current = false; }, []);
 
   const data = query.data?.data ?? [];
   const pageInfo = query.data?.page_info;
 
-  const hasActiveFilters = Boolean(
-    searchParams.get("score_type") || searchParams.get("tissue")
-  );
-  const liveTotal =
-    pageInfo?.total_count ?? (hasActiveFilters ? undefined : totalCount);
+  const hasActiveFilters = Boolean(searchParams.get("score_type") || searchParams.get("tissue"));
+  const liveTotal = pageInfo?.total_count ?? (hasActiveFilters ? undefined : totalCount);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal ?? undefined,
@@ -200,32 +209,21 @@ export function TissueScoresView({
     currentCursor: pageInfo?.next_cursor ?? null,
   };
 
-  const filterConfigs = useMemo(
-    (): ServerFilterConfig[] => [
-      {
-        id: "score_type",
-        label: "Score Type",
-        type: "select",
-        placeholder: "All types",
-        options: [
-          { value: "cv2f", label: "cV2F (Variant-to-Function)" },
-          { value: "tland", label: "TLand (Tissue Landscape)" },
-        ],
-      },
-    ],
-    []
-  );
+  const filterConfigs = useMemo((): ServerFilterConfig[] => [
+    {
+      id: "score_type",
+      label: "Score Type",
+      type: "select",
+      placeholder: "All types",
+      options: Object.entries(SCORE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+    },
+  ], []);
 
-  const tableState = useServerTable({
-    filters: filterConfigs,
-    serverPagination: true,
-    paginationInfo,
-  });
+  const tableState = useServerTable({ filters: filterConfigs, serverPagination: true, paginationInfo });
 
-  const subtitle =
-    liveTotal != null
-      ? `${liveTotal.toLocaleString()} tissue-specific variant functional scores`
-      : "Tissue-specific variant functional scores (cV2F + TLand)";
+  const subtitle = liveTotal != null
+    ? `${liveTotal.toLocaleString()} tissue-specific variant functional scores across 51 tissues`
+    : "Tissue-specific variant functional scores (TLand, cV2F, caQTL)";
 
   return (
     <DataSurface
