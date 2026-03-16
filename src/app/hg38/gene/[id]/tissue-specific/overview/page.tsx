@@ -2,14 +2,17 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchAccessibilityByTissueGroup,
   fetchAseByTissueGroup,
+  fetchChromBpnetByTissue,
   fetchChromatinByTissueGroup,
   fetchEnhancersByTissueGroup,
   fetchLoopsByTissueGroup,
+  fetchQtlsByTissue,
   fetchRegionSummary,
-  fetchRegionVariants,
   fetchSignalsByTissueGroup,
+  fetchVariantAllelicImbalanceByTissue,
+  fetchVariantScan,
 } from "@features/gene/api/region";
-import { RegionVariantsView } from "@features/gene/components/tissue-specific/region-variants-view";
+import { GeneVariantsView } from "@features/gene/components/tissue-specific/gene-variants-view";
 import {
   TissueEvidenceSummary,
   type TissueEvidenceData,
@@ -39,8 +42,11 @@ export default async function TissueOverviewPage({
     accessibility,
     loops,
     ase,
+    qtls,
+    chrombpnet,
+    variantAllelicImbalance,
     summary,
-    variants,
+    variantScan,
   ] = await Promise.all([
     fetchSignalsByTissueGroup(loc).catch(() => []),
     fetchChromatinByTissueGroup(loc).catch(() => []),
@@ -48,8 +54,11 @@ export default async function TissueOverviewPage({
     fetchAccessibilityByTissueGroup(loc).catch(() => []),
     fetchLoopsByTissueGroup(loc).catch(() => []),
     fetchAseByTissueGroup(loc).catch(() => []),
+    fetchQtlsByTissue(loc).catch(() => []),
+    fetchChromBpnetByTissue(loc).catch(() => []),
+    fetchVariantAllelicImbalanceByTissue(loc).catch(() => []),
     fetchRegionSummary(loc).catch(() => null),
-    fetchRegionVariants(loc, { limit: 100 }).catch(() => null),
+    fetchVariantScan({ gene: loc, limit: 25 }).catch(() => null),
   ]);
 
   const evidence: TissueEvidenceData = {
@@ -59,6 +68,9 @@ export default async function TissueOverviewPage({
     accessibility,
     loops,
     ase,
+    qtls,
+    chrombpnet,
+    variantAllelicImbalance,
   };
 
   return (
@@ -77,9 +89,12 @@ export default async function TissueOverviewPage({
         <OverviewHeatmap loc={loc} />
       </section>
 
-      {/* Regulatory Variants */}
+      {/* Gene Region Variants */}
       <section>
-        <RegionVariantsView initialData={variants} loc={loc} />
+        <GeneVariantsView
+          gene={loc}
+          initialData={variantScan}
+        />
       </section>
     </div>
   );

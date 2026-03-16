@@ -18,6 +18,35 @@ export const TISSUE_GROUPS = [
   "Skin", "Eye", "Connective", "Cell Line", "Stem Cell", "Other",
 ] as const;
 
+/**
+ * Map a fine-grained tissue name to one of the 18 standard tissue groups.
+ * Uses prefix matching for GTEx-style names ("Brain Amygdala" → "Brain")
+ * and exact matching for known names.
+ */
+const TISSUE_GROUP_PREFIXES: [string, string][] = [
+  ["Brain", "Brain"], ["Nerve", "Nerve"],
+  ["Heart", "Cardiovascular"], ["Artery", "Cardiovascular"], ["Coronary", "Cardiovascular"],
+  ["Liver", "Liver"], ["Lung", "Lung"],
+  ["Kidney", "Kidney"], ["Pancreas", "Pancreas"],
+  ["Stomach", "Digestive"], ["Colon", "Digestive"], ["Esophagus", "Digestive"],
+  ["Small Intestine", "Digestive"],
+  ["Muscle", "Muscle"], ["Skeletal", "Muscle"],
+  ["Skin", "Skin"], ["Adipose", "Connective"], ["Fibroblast", "Connective"],
+  ["Breast", "Reproductive"], ["Ovary", "Reproductive"], ["Uterus", "Reproductive"],
+  ["Prostate", "Reproductive"], ["Testis", "Reproductive"], ["Vagina", "Reproductive"],
+  ["Thyroid", "Endocrine"], ["Adrenal", "Endocrine"], ["Pituitary", "Endocrine"],
+  ["Spleen", "Immune"], ["Whole Blood", "Immune"], ["EBV", "Immune"],
+  ["Cells", "Cell Line"],
+];
+
+export function inferTissueGroup(tissueName: string): string {
+  // If the row already has tissue_group, prefer that
+  for (const [prefix, group] of TISSUE_GROUP_PREFIXES) {
+    if (tissueName.startsWith(prefix)) return group;
+  }
+  return "Other";
+}
+
 /** Format large numbers: 1234 → "1.2K", 1234567 → "1.2M" */
 export function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
