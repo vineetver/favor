@@ -15,7 +15,6 @@ import type {
 } from "@features/gene/api/region";
 import { useAseQuery } from "@features/gene/hooks/use-ase-query";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -271,16 +270,6 @@ export function AseView({
 
   return (
     <>
-      {summary && basePath && (
-        <div className="mb-4">
-          <RegionContextBar
-            summary={summary}
-            basePath={basePath}
-            currentSlug="allele-specific"
-          />
-        </div>
-      )}
-
       <DataSurface
         data={data}
         columns={columnsWithSheet}

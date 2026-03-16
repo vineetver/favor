@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SignalRow, PaginatedResponse } from "@features/gene/api/region";
 import { useSignalsQuery } from "@features/gene/hooks/use-signals-query";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -303,16 +302,6 @@ export function TissueSignalsView({
 
   return (
     <>
-      {summary && basePath && (
-        <div className="mb-4">
-          <RegionContextBar
-            summary={summary}
-            basePath={basePath}
-            currentSlug="tissue-signals"
-          />
-        </div>
-      )}
-
       <DataSurface
         data={data}
         columns={columnsWithSheet}

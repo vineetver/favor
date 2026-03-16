@@ -1,7 +1,7 @@
 import { fetchGene } from "@features/gene/api";
 import { fetchRegionSummary } from "@features/gene/api/region";
 import { GeneHeader } from "@features/gene/components/header/gene-header";
-import { RegionSummaryNav } from "@features/gene/components/tissue-specific/region-summary";
+import { RegionNavBar } from "@features/gene/components/tissue-specific/region-nav-bar";
 import { geneDataChecks } from "@features/gene/config/hg38/data-availability";
 import { GENE_NAVIGATION_CONFIG } from "@features/gene/config/hg38/navigation";
 import { getDisabledSlugs } from "@shared/utils/data-availability";
@@ -67,10 +67,10 @@ export default async function TissueSpecificLayout({
             />
           </div>
 
-          {/* Stat cards = subcategory navigation */}
+          {/* Compact subcategory navigation with counts */}
           {summary && (
             <div className="hidden lg:block">
-              <RegionSummaryNav
+              <RegionNavBar
                 summary={summary}
                 basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
               />

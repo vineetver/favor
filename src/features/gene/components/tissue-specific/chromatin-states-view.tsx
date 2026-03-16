@@ -23,7 +23,6 @@ import type {
   RegionSummary,
 } from "@features/gene/api/region";
 import { useChromatinQuery } from "@features/gene/hooks/use-chromatin-query";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -448,14 +447,6 @@ export function ChromatinStatesView({
 
   return (
     <div className="space-y-6">
-      {summary && basePath && (
-        <RegionContextBar
-          summary={summary}
-          basePath={basePath}
-          currentSlug="chromatin-states"
-        />
-      )}
-
       <ChromatinTrackViz
         loc={loc}
         regionStart={regionStart}

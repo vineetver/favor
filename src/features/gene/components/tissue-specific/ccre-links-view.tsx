@@ -8,7 +8,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState, useCallback } from "react";
 import type { CcreLinkRow, RegionSummary } from "@features/gene/api/region";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -219,16 +218,6 @@ export function CcreLinksView({
 
   return (
     <>
-      {summary && basePath && (
-        <div className="mb-4">
-          <RegionContextBar
-            summary={summary}
-            basePath={basePath}
-            currentSlug="ccre-links"
-          />
-        </div>
-      )}
-
       <DataSurface
         data={data}
         columns={columns}

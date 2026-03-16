@@ -21,7 +21,6 @@ import type {
   RegionSummary,
 } from "@features/gene/api/region";
 import { useLoopsQuery } from "@features/gene/hooks/use-loops-query";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -445,14 +444,6 @@ export function LoopsView({
 
   return (
     <div className="space-y-6">
-      {summary && basePath && (
-        <RegionContextBar
-          summary={summary}
-          basePath={basePath}
-          currentSlug="loops"
-        />
-      )}
-
       {regionStart > 0 && (
         <LoopArcDiagram
           rows={arcRows}

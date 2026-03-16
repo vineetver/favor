@@ -24,7 +24,6 @@ import type {
   RegionSummary,
 } from "@features/gene/api/region";
 import { useEnhancerGenesQuery } from "@features/gene/hooks/use-enhancer-genes-query";
-import { RegionContextBar } from "./region-context-bar";
 
 // ============================================================================
 // Method config
@@ -754,14 +753,6 @@ export function EnhancerGenesView({
 
   return (
     <div className="space-y-4">
-      {summary && basePath && (
-        <RegionContextBar
-          summary={summary}
-          basePath={basePath}
-          currentSlug="enhancer-genes"
-        />
-      )}
-
       <MethodTabBar
         activeMethod={activeMethod}
         onMethodChange={handleMethodChange}

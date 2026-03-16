@@ -20,7 +20,6 @@ import type {
   RegionSummary,
 } from "@features/gene/api/region";
 import { useAccessibilityQuery } from "@features/gene/hooks/use-accessibility-query";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -278,14 +277,6 @@ export function AccessibilityView({
 
   return (
     <div className="space-y-6">
-      {summary && basePath && (
-        <RegionContextBar
-          summary={summary}
-          basePath={basePath}
-          currentSlug="accessibility"
-        />
-      )}
-
       <TissueSummaryChart rows={chartRows} />
 
       <DataSurface

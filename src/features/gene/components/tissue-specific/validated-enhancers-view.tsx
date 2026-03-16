@@ -7,7 +7,6 @@ import { Switch } from "@shared/components/ui/switch";
 import { Label } from "@shared/components/ui/label";
 import { useState, useMemo } from "react";
 import type { ValidatedEnhancerRow, RegionSummary } from "@features/gene/api/region";
-import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -52,14 +51,6 @@ export function ValidatedEnhancersView({
 
   return (
     <div className="space-y-4">
-      {summary && basePath && (
-        <RegionContextBar
-          summary={summary}
-          basePath={basePath}
-          currentSlug="validated-enhancers"
-        />
-      )}
-
       {/* Header + filter */}
       <div className="flex items-center justify-between">
         <div>
