@@ -32,9 +32,11 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
         >
           {row.original.variant_vcf}
         </Link>
-        <span className="block text-[10px] tabular-nums text-muted-foreground">
-          pos {row.original.position.toLocaleString()}
-        </span>
+        {row.original.position != null && (
+          <span className="block text-[10px] tabular-nums text-muted-foreground">
+            pos {row.original.position.toLocaleString()}
+          </span>
+        )}
       </div>
     ),
   },
