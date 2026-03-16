@@ -80,7 +80,7 @@ const NAV_ITEMS: {
 ];
 
 // ---------------------------------------------------------------------------
-// Component — underline-style text nav, visually subordinate to primary tabs
+// Component — card-header tab bar
 // ---------------------------------------------------------------------------
 
 interface RegionNavBarProps {
@@ -98,8 +98,8 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <nav className="mb-4 border-b border-border">
-        <div className="flex items-center gap-0 -mb-px overflow-x-auto">
+      <nav className="mb-6">
+        <div className="flex items-center gap-0 overflow-x-auto border-b border-border">
           {NAV_ITEMS.map(({ key, slug, label, hint }) => {
             const count = key ? summary.counts[key] : null;
             const isActive = activeSlug === slug;
@@ -111,12 +111,12 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
                   <Link
                     href={`${basePath}/${slug}`}
                     className={cn(
-                      "inline-flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap border-b-2 transition-colors",
+                      "relative inline-flex items-center gap-1 px-3 py-3 text-xs whitespace-nowrap transition-colors",
                       isActive
-                        ? "border-primary text-foreground font-medium"
+                        ? "text-foreground font-medium"
                         : isEmpty
-                          ? "border-transparent text-muted-foreground/30 cursor-default"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+                          ? "text-muted-foreground/30 cursor-default"
+                          : "text-muted-foreground hover:text-foreground",
                     )}
                     {...(isEmpty
                       ? {
@@ -138,6 +138,10 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
                       >
                         {formatCount(count)}
                       </span>
+                    )}
+                    {/* Active indicator */}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
                     )}
                   </Link>
                 </TooltipTrigger>

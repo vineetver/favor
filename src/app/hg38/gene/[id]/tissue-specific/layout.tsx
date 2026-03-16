@@ -50,7 +50,7 @@ export default async function TissueSpecificLayout({
         <div className="max-w-page mx-auto px-6 lg:px-12">
           <GeneHeader gene={gene} />
 
-          <div className="hidden lg:block mb-4">
+          <div className="hidden lg:block mb-6">
             <NavigationTabs
               items={GENE_NAVIGATION_CONFIG.map((cat) => ({
                 name: cat.name,
@@ -67,16 +67,6 @@ export default async function TissueSpecificLayout({
             />
           </div>
 
-          {/* Compact subcategory navigation with counts */}
-          {summary && (
-            <div className="hidden lg:block">
-              <RegionNavBar
-                summary={summary}
-                basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
-              />
-            </div>
-          )}
-
           {/* Mobile fallback */}
           {currentCategory.subCategories.length > 0 && (
             <div className="mb-6 lg:hidden">
@@ -88,6 +78,18 @@ export default async function TissueSpecificLayout({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Sub-nav: sits between primary nav and content, visually attached to content */}
+      <div className="max-w-page mx-auto px-6 lg:px-12">
+        {summary && (
+          <div className="hidden lg:block">
+            <RegionNavBar
+              summary={summary}
+              basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Content */}
