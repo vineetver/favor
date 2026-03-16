@@ -23,36 +23,37 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
     { text: "Pathway Leverage Map", slug: "pathway-leverage-map" },
   ],
+  showIcons: false,
   groups: [
     {
       name: "Overview",
       items: [
-        { text: "LLM Summary", slug: "llm-summary", icon: "sparkles" },
-        { text: "Info and IDs", slug: "info-and-ids", icon: "file-text" },
+        { text: "LLM Summary", slug: "llm-summary" },
+        { text: "Info and IDs", slug: "info-and-ids" },
       ],
     },
     {
       name: "Biology",
       items: [
-        { text: "Function", slug: "function", icon: "dna" },
-        { text: "Expression", slug: "expression", icon: "activity" },
-        { text: "Protein Structure", slug: "protein-structure", icon: "box" },
-        { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo", icon: "shield-alert" },
+        { text: "Function", slug: "function" },
+        { text: "Expression", slug: "expression" },
+        { text: "Protein Structure", slug: "protein-structure" },
+        { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo" },
       ],
     },
     {
       name: "Phenotypes",
       items: [
-        { text: "Human Phenotype", slug: "human-phenotype", icon: "users" },
-        { text: "Animal Phenotype", slug: "animal-phenotype", icon: "bug" },
+        { text: "Human Phenotype", slug: "human-phenotype" },
+        { text: "Animal Phenotype", slug: "animal-phenotype" },
       ],
     },
     {
       name: "Graph Tools",
       items: [
-        { text: "Graph Explorer", slug: "graph-explorer", icon: "network" },
-        { text: "Interaction Neighborhood", slug: "interaction-neighborhood", icon: "share-2" },
-        { text: "Pathways", slug: "pathway-leverage-map", icon: "git-branch" },
+        { text: "Graph Explorer", slug: "graph-explorer" },
+        { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
+        { text: "Pathways", slug: "pathway-leverage-map" },
       ],
     },
   ],
@@ -62,6 +63,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     slug: "disease-and-therapeutics",
     subCategories: [
       { text: "Disease Portfolio", slug: "disease-portfolio" },
+      { text: "Phenotype Signature", slug: "phenotype-signature" },
       { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
       { text: "Drug Landscape", slug: "drug-landscape" },
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
@@ -70,33 +72,34 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Cancer Hallmarks", slug: "cancer-hallmarks" },
       { text: "Somatic Alterations", slug: "somatic-alterations" },
     ],
+    showIcons: false,
     groups: [
       {
         name: "Evidence",
         items: [
-          { text: "Disease Portfolio", slug: "disease-portfolio", icon: "layers" },
-          { text: "Phenotype Signature", slug: "phenotype-signature", icon: "layout-grid" },
+          { text: "Disease Portfolio", slug: "disease-portfolio" },
+          { text: "Phenotype Signature", slug: "phenotype-signature" },
         ],
       },
       {
         name: "Therapeutic Readiness",
         items: [
-          { text: "Tractability & Target Class", slug: "tractability-and-target-class", icon: "radar" },
-          { text: "Drug Landscape", slug: "drug-landscape", icon: "pill" },
-          { text: "Pharmacogenomics", slug: "pharmacogenomics", icon: "test-tubes" },
-          { text: "Chemical Probes", slug: "chemical-probes", icon: "flask-conical" },
-          { text: "Target Enabling Package (TEP)", slug: "tep", icon: "package" },
+          { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
+          { text: "Drug Landscape", slug: "drug-landscape" },
+          { text: "Pharmacogenomics", slug: "pharmacogenomics" },
+          { text: "Chemical Probes", slug: "chemical-probes" },
+          { text: "Target Enabling Package (TEP)", slug: "tep" },
         ],
       },
       {
         name: "Safety & Risk",
-        items: [{ text: "Safety Liabilities", slug: "safety-liabilities", icon: "alert-triangle" }],
+        items: [{ text: "Safety Liabilities", slug: "safety-liabilities" }],
       },
       {
         name: "Oncology Context",
         items: [
-          { text: "Cancer Hallmarks", slug: "cancer-hallmarks", icon: "flame" },
-          { text: "Somatic Alterations", slug: "somatic-alterations", icon: "git-compare" },
+          { text: "Cancer Hallmarks", slug: "cancer-hallmarks" },
+          { text: "Somatic Alterations", slug: "somatic-alterations" },
         ],
       },
     ],
@@ -109,17 +112,18 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Summary Statistics", slug: "summary-statistics" },
       { text: "Variant Explorer", slug: "variant-explorer" },
     ],
+    showIcons: false,
     groups: [
       {
         name: "Overview",
         items: [
-          { text: "Summary Statistics", slug: "summary-statistics", icon: "bar-chart-2" },
+          { text: "Summary Statistics", slug: "summary-statistics" },
         ],
       },
       {
         name: "Explore",
         items: [
-          { text: "Variant Explorer", slug: "variant-explorer", icon: "table-2" },
+          { text: "Variant Explorer", slug: "variant-explorer" },
         ],
       },
     ],

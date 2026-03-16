@@ -346,7 +346,7 @@ export function DrugLandscapeOverview({
     return (
       <NoDataState
         categoryName="Drug Landscape"
-        description={`No drug interactions are available for ${geneSymbol ?? "this gene"}.`}
+        description={`No drugs directly target ${geneSymbol ?? "this gene"}. Check Pharmacogenomics for drug-response associations driven by genetic variants.`}
       />
     );
   }

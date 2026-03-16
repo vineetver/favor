@@ -31,14 +31,16 @@ export default async function DiseaseTherapeuticsLayout({
     notFound();
   }
 
-  const geneResponse = await fetchGene(id);
+  const geneResponse = await fetchGene(id, { include: "counts" });
   const gene = geneResponse?.data;
 
   if (!gene) {
     notFound();
   }
 
-  const disabledSlugs = getDisabledSlugs(gene, geneDataChecks);
+  const edgeCounts = (geneResponse?.included?.counts ??
+    geneResponse?.counts ?? {}) as Record<string, number>;
+  const disabledSlugs = getDisabledSlugs(gene, geneDataChecks, edgeCounts);
 
   return (
     <div className="min-h-screen bg-background">

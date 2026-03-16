@@ -6,6 +6,7 @@ export { ChemicalProbesOverview } from "./chemical-probes-overview";
 export { CancerHallmarksOverview } from "./cancer-hallmarks-overview";
 export { DiseasePortfolioOverview } from "./disease-portfolio-overview";
 export { DrugLandscapeOverview } from "./drug-landscape-overview";
+export { PhenotypeSignatureOverview } from "./phenotype-signature-overview";
 export { PharmacogenomicsOverview } from "./pharmacogenomics-overview";
 export { SomaticAlterationsOverview } from "./somatic-alterations-overview";
 export { PPINetworkView } from "./ppi-network";
