@@ -73,12 +73,13 @@ function readableStateName(code: string, fallback: string): string {
 // ChromatinTrackViz — multi-tissue segment track
 // ---------------------------------------------------------------------------
 
-async function fetchTrackData(loc: string): Promise<ChromatinStateRow[]> {
+async function fetchTrackData(loc: string, tissueGroup?: string): Promise<ChromatinStateRow[]> {
   const params = new URLSearchParams({
     limit: "100",
     sort_by: "position",
     sort_dir: "asc",
   });
+  if (tissueGroup) params.set("tissue_group", tissueGroup);
   const res = await fetch(
     `/api/v1/regions/${encodeURIComponent(loc)}/chromatin-states?${params}`,
   );
@@ -91,14 +92,16 @@ function ChromatinTrackViz({
   loc,
   regionStart,
   regionEnd,
+  tissueGroup,
 }: {
   loc: string;
   regionStart: number;
   regionEnd: number;
+  tissueGroup?: string;
 }) {
   const { data: rows, isLoading } = useQuery({
-    queryKey: ["chromatin-track-viz", loc],
-    queryFn: () => fetchTrackData(loc),
+    queryKey: ["chromatin-track-viz", loc, tissueGroup],
+    queryFn: () => fetchTrackData(loc, tissueGroup),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -467,6 +470,7 @@ export function ChromatinStatesView({
         loc={loc}
         regionStart={regionStart}
         regionEnd={regionEnd}
+        tissueGroup={searchParams.get("tissue_group") || undefined}
       />
 
       <DataSurface

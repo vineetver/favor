@@ -282,8 +282,8 @@ export function AccessibilityView({
     paginationInfo,
   });
 
-  // Use all available rows for the summary chart (initialData has up to 100)
-  const chartRows = initialData?.data ?? data;
+  // When filters active, show filtered data in chart; otherwise use initialData (more rows)
+  const chartRows = hasActiveFilters ? data : (initialData?.data ?? data);
 
   const subtitle =
     liveTotal != null

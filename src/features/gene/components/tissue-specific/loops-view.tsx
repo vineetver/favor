@@ -450,8 +450,8 @@ export function LoopsView({
     [regionCoords],
   );
 
-  // Use all available data for arc diagram (initialData up to 100 rows)
-  const arcRows = initialData?.data ?? data;
+  // When filters active, show filtered data in arc diagram; otherwise use initialData (more rows)
+  const arcRows = hasActiveFilters ? data : (initialData?.data ?? data);
 
   const subtitle =
     liveTotal != null

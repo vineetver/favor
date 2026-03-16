@@ -130,16 +130,18 @@ function MiniBar({
   value,
   max,
   color,
+  label,
   detail,
 }: {
   value: number;
   max: number;
   color: string;
-  /** Raw detail for tooltip, e.g. "Z-score: 4.5, 1.2K cCREs" */
+  /** Inline label: the actual value, e.g. "7.0 Z" */
+  label: string;
+  /** Tooltip detail, e.g. "Max Z-score 7.0 across 39.5K cCREs" */
   detail: string;
 }) {
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
-  const pctLabel = `${Math.round(pct * 100)}%`;
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -155,7 +157,7 @@ function MiniBar({
               />
             </div>
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {pctLabel}
+              {label}
             </span>
           </div>
         </TooltipTrigger>
@@ -277,7 +279,8 @@ function buildColumns(maxes: {
             value={s.max_value}
             max={maxes.s}
             color={EVIDENCE_COLORS.signals}
-            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs`}
+            label={`${s.max_value.toFixed(1)} Z \u00b7 ${fmtK(s.count)}`}
+            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs in this tissue group`}
           />
         );
       },
@@ -331,7 +334,8 @@ function buildColumns(maxes: {
             value={e.max_value}
             max={maxes.e}
             color={EVIDENCE_COLORS.enhancers}
-            detail={`Best score: ${fmtScore(e.max_value)} across ${e.count} predictions`}
+            label={`${fmtScore(e.max_value)} \u00b7 ${e.count}`}
+            detail={`Best enhancer score: ${fmtScore(e.max_value)} across ${e.count} predictions. >0.015 = likely functional.`}
           />
         );
       },
@@ -354,6 +358,7 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.a}
             color={EVIDENCE_COLORS.accessibility}
+            label={`${a.max_value.toFixed(1)}\u00d7 \u00b7 ${a.count}`}
             detail={`${a.max_value.toFixed(1)}\u00d7 fold enrichment across ${a.count} peaks`}
           />
         );
@@ -397,6 +402,7 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.x}
             color={EVIDENCE_COLORS.ase}
+            label={`${a.max_value.toFixed(1)} \u00b7 ${a.count}`}
             detail={`Best \u2212log\u2081\u2080(p): ${a.max_value.toFixed(1)} across ${a.count} observations`}
           />
         );

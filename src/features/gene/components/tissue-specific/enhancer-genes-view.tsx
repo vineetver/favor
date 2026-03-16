@@ -411,11 +411,13 @@ interface TissueAggRow {
 async function fetchTissueAgg(
   loc: string,
   method: string,
+  tissueGroup?: string,
 ): Promise<TissueAggRow[]> {
   const params = new URLSearchParams({
     method,
     group_by: "tissue_name",
   });
+  if (tissueGroup) params.set("tissue_group", tissueGroup);
   const res = await fetch(
     `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
   );
@@ -433,13 +435,15 @@ function dotRadius(count: number): number {
 function TissueSummaryChart({
   loc,
   activeMethod,
+  tissueGroup,
 }: {
   loc: string;
   activeMethod: string;
+  tissueGroup?: string;
 }) {
   const { data: rows, isLoading } = useQuery({
-    queryKey: ["enhancer-tissue-agg", loc, activeMethod],
-    queryFn: () => fetchTissueAgg(loc, activeMethod),
+    queryKey: ["enhancer-tissue-agg", loc, activeMethod, tissueGroup],
+    queryFn: () => fetchTissueAgg(loc, activeMethod, tissueGroup),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -758,7 +762,11 @@ export function EnhancerGenesView({
         onMethodChange={handleMethodChange}
       />
 
-      <TissueSummaryChart loc={loc} activeMethod={activeMethod} />
+      <TissueSummaryChart
+        loc={loc}
+        activeMethod={activeMethod}
+        tissueGroup={searchParams.get("tissue_group") || undefined}
+      />
 
       <DataSurface
         data={data}
