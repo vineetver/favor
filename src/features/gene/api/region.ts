@@ -207,6 +207,33 @@ export async function fetchRegionVariants(
 }
 
 // ---------------------------------------------------------------------------
+// Variant Evidence Summary (ranked by total evidence across all data types)
+// ---------------------------------------------------------------------------
+
+export interface VariantEvidenceSummaryRow {
+  vid: number;
+  variant_vcf: string;
+  position: number;
+  region_tables: string[];
+  region_overlap_count: number;
+  qtl_count: number;
+  qtl_significant: number;
+  chrombpnet_count: number;
+  tissue_score_max: number;
+  imbalance_count: number;
+  imbalance_significant: number;
+}
+
+export async function fetchVariantEvidenceSummary(
+  loc: string,
+  limit = 50,
+): Promise<VariantEvidenceSummaryRow[]> {
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/variant-evidence-summary?limit=${limit}`;
+  const res = await fetchJson<{ data: VariantEvidenceSummaryRow[] }>(url);
+  return res.data;
+}
+
+// ---------------------------------------------------------------------------
 // Tissue Signals
 // ---------------------------------------------------------------------------
 
