@@ -130,6 +130,11 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     ],
   },
   {
+    name: "Regulatory Evidence",
+    slug: "regulatory",
+    subCategories: [],
+  },
+  {
     name: "Genome Browser",
     slug: "genome-browser",
     subCategories: [],

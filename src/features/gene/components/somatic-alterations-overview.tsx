@@ -143,19 +143,15 @@ function extractAlterationEdges(relations: unknown, edges?: unknown): Alteration
   }
 
   return rows
-    .map((row: any): AlterationEdge | null => {
+    .map((row: any, idx: number): AlterationEdge | null => {
       const neighbor = row?.neighbor ?? row?.target ?? {};
       const link = row?.link ?? row?.edge ?? {};
       const props = link?.props ?? link ?? {};
-      const id = neighbor?.id ?? row?.neighbor_id ?? row?.id;
-      if (!id) return null;
-
-      // Build a unique key combining disease + alteration domain to avoid duplicate IDs
-      const domain = props.alteration_domain ?? "unknown";
-      const uniqueId = `${id}_${domain}`;
+      const rawId = neighbor?.id ?? row?.neighbor_id ?? row?.id;
+      if (!rawId) return null;
 
       return {
-        id: uniqueId,
+        id: `${rawId}_${idx}`,
         diseaseName: String(props.disease_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
         diseaseSubtitle: typeof neighbor?.subtitle === "string" ? neighbor.subtitle : null,
         alterationDomain: props.alteration_domain ?? null,

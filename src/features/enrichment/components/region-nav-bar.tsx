@@ -131,9 +131,13 @@ const NAV_GROUPS: NavGroup[] = [
 interface RegionNavBarProps {
   summary: RegionSummary;
   basePath: string;
+  navGroups?: NavGroup[];
 }
 
-export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
+export type { NavGroup, NavItem };
+
+export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps) {
+  const groups = navGroups ?? NAV_GROUPS;
   const pathname = usePathname();
 
   const activeSlug = useMemo(() => {
@@ -145,7 +149,7 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
     <TooltipProvider delayDuration={200}>
       <nav className="mb-6">
         <div className="flex items-center gap-0 overflow-x-auto border-b border-border">
-          {NAV_GROUPS.map((group, gi) => (
+          {groups.map((group, gi) => (
             <div key={gi} className="flex items-center">
               {/* Thin divider between groups */}
               {gi > 0 && (
