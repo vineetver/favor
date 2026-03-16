@@ -92,8 +92,8 @@ const NAV_ITEMS: {
   {
     key: null,
     slug: "tissue-scores",
-    label: "Tissue Scores",
-    hint: "cV2F and TLand tissue-specific variant functional scores",
+    label: "V2F Scores",
+    hint: "Tissue-specific variant functional scores: TLand (regulatory effect) and cV2F (variant-to-function probability)",
   },
 ];
 

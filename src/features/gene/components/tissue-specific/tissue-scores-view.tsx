@@ -121,17 +121,6 @@ const columns: ColumnDef<TissueScoreRow, unknown>[] = [
     ),
   },
   {
-    id: "tissue_group",
-    accessorKey: "tissue_group",
-    header: "Group",
-    enableSorting: false,
-    cell: ({ getValue }) => {
-      const v = getValue() as string | undefined;
-      if (!v) return <Dash />;
-      return <span className="text-xs text-muted-foreground">{v}</span>;
-    },
-  },
-  {
     id: "score_type",
     accessorKey: "score_type",
     header: "Type",

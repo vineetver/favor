@@ -134,7 +134,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "cCRE Links", slug: "ccre-links" },
       { text: "QTLs", slug: "qtls" },
       { text: "ChromBPNet", slug: "chrombpnet" },
-      { text: "Tissue Scores", slug: "tissue-scores" },
+      { text: "V2F Scores", slug: "tissue-scores" },
     ],
     showIcons: false,
     groups: [
@@ -171,7 +171,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         items: [
           { text: "QTLs", slug: "qtls" },
           { text: "ChromBPNet", slug: "chrombpnet" },
-          { text: "Tissue Scores", slug: "tissue-scores" },
+          { text: "V2F Scores", slug: "tissue-scores" },
         ],
       },
       {
