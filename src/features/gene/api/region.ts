@@ -554,6 +554,8 @@ export interface CcreDetail {
 // --- QTLs ---
 
 export interface QtlRow {
+  variant_vcf: string;
+  position: number;
   source: string;
   gene_symbol: string | null;
   gene_id: string | null;
@@ -563,6 +565,7 @@ export interface QtlRow {
   p_value?: number | null;
   neglog_pvalue?: number | null;
   is_significant: boolean;
+  tss_distance?: number | null;
   source_fields?: Record<string, unknown> | null;
 }
 
@@ -591,11 +594,17 @@ export async function fetchQtls(
 // --- ChromBPNet ---
 
 export interface ChromBpnetRow {
+  variant_vcf: string;
+  position: number;
   tissue_name: string;
   tissue_group?: string;
   combined_score: number;
   combined_pval: number;
   logfc_mean: number;
+  jsd_mean?: number | null;
+  peak_overlap?: boolean | null;
+  closest_gene_1?: string | null;
+  gene_distance_1?: number | null;
 }
 
 export interface FetchChromBpnetParams {
@@ -621,6 +630,8 @@ export async function fetchChromBpnet(
 // --- Tissue Scores (cV2F / TLand) ---
 
 export interface TissueScoreRow {
+  variant_vcf: string;
+  position: number;
   tissue_name: string;
   tissue_group?: string;
   score: number;
@@ -647,6 +658,8 @@ export async function fetchTissueScores(
 // --- Variant Allelic Imbalance (ENTEx histone) ---
 
 export interface VariantAllelicImbalanceRow {
+  variant_vcf: string;
+  position: number;
   tissue_name: string;
   tissue_group?: string;
   mark: string;
@@ -654,6 +667,9 @@ export interface VariantAllelicImbalanceRow {
   neglog_pvalue: number;
   imbalance_magnitude: number;
   is_significant: boolean;
+  ref_allele_ratio?: number | null;
+  alt_biased?: boolean | null;
+  ref_biased?: boolean | null;
 }
 
 export interface FetchVariantAllelicImbalanceParams {
@@ -680,12 +696,16 @@ export async function fetchVariantAllelicImbalance(
 // --- Methylation ---
 
 export interface MethylationRow {
+  variant_vcf: string;
+  position: number;
   tissue_name: string;
   tissue_group?: string;
-  mark?: string;
   neglog_pvalue: number;
   methylation_diff: number;
   is_significant: boolean;
+  methylation_allele1?: number | null;
+  methylation_allele2?: number | null;
+  ref_hypermethylated?: boolean | null;
 }
 
 export interface FetchMethylationParams {

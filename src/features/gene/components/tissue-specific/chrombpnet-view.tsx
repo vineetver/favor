@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
@@ -16,6 +17,27 @@ import { useChromBpnetQuery } from "@features/gene/hooks/use-chrombpnet-query";
 // ---------------------------------------------------------------------------
 
 const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
+  {
+    id: "variant_vcf",
+    accessorKey: "variant_vcf",
+    header: "Variant",
+    enableSorting: false,
+    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <div>
+        <Link
+          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
+          className="font-mono text-xs text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.variant_vcf}
+        </Link>
+        <span className="block text-[10px] tabular-nums text-muted-foreground">
+          pos {row.original.position.toLocaleString()}
+        </span>
+      </div>
+    ),
+  },
   {
     id: "tissue_name",
     accessorKey: "tissue_name",
@@ -107,6 +129,35 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
         >
           {v > 0 ? "+" : ""}
           {v.toFixed(3)}
+        </span>
+      );
+    },
+  },
+  {
+    id: "jsd_mean",
+    accessorKey: "jsd_mean",
+    header: "JSD",
+    enableSorting: false,
+    meta: { description: "Jensen-Shannon divergence — measures how much the variant changes the chromatin accessibility profile shape" } satisfies ColumnMeta,
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null;
+      if (v == null) return <span className="text-muted-foreground/40">&mdash;</span>;
+      return <span className="text-xs tabular-nums text-muted-foreground">{v.toFixed(4)}</span>;
+    },
+  },
+  {
+    id: "closest_gene_1",
+    accessorKey: "closest_gene_1",
+    header: "Nearest Gene",
+    enableSorting: false,
+    meta: { description: "Closest gene to this variant" } satisfies ColumnMeta,
+    cell: ({ row }) => {
+      const gene = row.original.closest_gene_1;
+      const dist = row.original.gene_distance_1;
+      if (!gene) return <span className="text-muted-foreground/40">&mdash;</span>;
+      return (
+        <span className="text-xs text-foreground">
+          {gene}{dist != null && dist > 0 ? ` (${dist >= 1000 ? `${(dist/1000).toFixed(1)}kb` : `${dist}bp`})` : ""}
         </span>
       );
     },

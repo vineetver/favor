@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
@@ -34,6 +35,27 @@ function sourceLabel(raw: string): string {
 // ---------------------------------------------------------------------------
 
 const columns: ColumnDef<QtlRow, unknown>[] = [
+  {
+    id: "variant_vcf",
+    accessorKey: "variant_vcf",
+    header: "Variant",
+    enableSorting: false,
+    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <div>
+        <Link
+          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
+          className="font-mono text-xs text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.variant_vcf}
+        </Link>
+        <span className="block text-[10px] tabular-nums text-muted-foreground">
+          pos {row.original.position.toLocaleString()}
+        </span>
+      </div>
+    ),
+  },
   {
     id: "source",
     accessorKey: "source",
@@ -79,6 +101,20 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
         {getValue() as string}
       </span>
     ),
+  },
+  {
+    id: "tss_distance",
+    accessorKey: "tss_distance",
+    header: "TSS Dist.",
+    enableSorting: false,
+    meta: { description: "Distance from variant to the transcription start site of the target gene" } satisfies ColumnMeta,
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null;
+      if (v == null) return <span className="text-muted-foreground/40">&mdash;</span>;
+      const abs = Math.abs(v);
+      const label = abs >= 1_000_000 ? `${(abs / 1_000_000).toFixed(1)} Mb` : abs >= 1_000 ? `${(abs / 1_000).toFixed(1)} kb` : `${abs} bp`;
+      return <span className="text-xs tabular-nums text-muted-foreground">{label}</span>;
+    },
   },
   {
     id: "neglog_pvalue",

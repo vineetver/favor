@@ -6,6 +6,7 @@ import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { TissueScoreRow, PaginatedResponse } from "@features/gene/api/region";
@@ -55,6 +56,27 @@ function parseFilters(sp: URLSearchParams): TissueScoreFilters {
 // ---------------------------------------------------------------------------
 
 const columns: ColumnDef<TissueScoreRow, unknown>[] = [
+  {
+    id: "variant_vcf",
+    accessorKey: "variant_vcf",
+    header: "Variant",
+    enableSorting: false,
+    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <div>
+        <Link
+          href={`/hg38/variant/${encodeURIComponent(row.original.variant_vcf)}`}
+          className="font-mono text-xs text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.variant_vcf}
+        </Link>
+        <span className="block text-[10px] tabular-nums text-muted-foreground">
+          pos {row.original.position.toLocaleString()}
+        </span>
+      </div>
+    ),
+  },
   {
     id: "tissue_name",
     accessorKey: "tissue_name",
