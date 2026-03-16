@@ -1,6 +1,8 @@
 import { VariantHeader } from "@features/variant/components/header/variant-header";
+import { variantDataChecks } from "@features/variant/config/hg38/data-availability";
 import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
+import { getDisabledSlugs } from "@shared/utils/data-availability";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
@@ -35,6 +37,8 @@ export default async function VariantLayout({
     notFound();
   }
 
+  const disabledSlugs = getDisabledSlugs(result.selected, variantDataChecks);
+
   return (
     <div className="min-h-screen bg-background">
 
@@ -56,6 +60,7 @@ export default async function VariantLayout({
               }))}
               activeItem={category}
               basePath={`/hg38/variant/${encodeURIComponent(vcf)}`}
+              disabledSlugs={disabledSlugs}
             />
           </div>
 
@@ -64,6 +69,7 @@ export default async function VariantLayout({
               <MobileSubNavigation
                 items={currentCategory.subCategories}
                 basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
+                disabledSlugs={disabledSlugs}
               />
             </div>
           )}
@@ -80,6 +86,7 @@ export default async function VariantLayout({
               groups={currentCategory.groups}
               basePath={`/hg38/variant/${encodeURIComponent(vcf)}/${category}`}
               showIcons={currentCategory.showIcons}
+              disabledSlugs={disabledSlugs}
             />
           )}
 

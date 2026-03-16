@@ -16,6 +16,7 @@ interface NavigationTabsProps {
   activeItem: string;
   basePath: string;
   queryString?: string;
+  disabledSlugs?: string[];
 }
 
 // Scroll state as single object (Commandment II: fewer invalid states)
@@ -26,7 +27,9 @@ export function NavigationTabs({
   activeItem,
   basePath,
   queryString = "",
+  disabledSlugs,
 }: NavigationTabsProps) {
+  const disabledSet = new Set(disabledSlugs);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState<ScrollState>({
     left: false,
@@ -66,6 +69,24 @@ export function NavigationTabs({
         <div className="inline-flex items-center gap-2 min-w-fit">
           {items.map((item) => {
             const isActive = activeItem === item.slug;
+            const isDisabled = disabledSet.has(item.slug);
+
+            if (isDisabled) {
+              return (
+                <span
+                  key={item.slug}
+                  title="No data available"
+                  className={cn(
+                    "relative px-4 py-2.5",
+                    "rounded-xl whitespace-nowrap",
+                    "text-sm font-medium",
+                    "text-muted-foreground bg-muted/60 opacity-40 cursor-default",
+                  )}
+                >
+                  {item.name}
+                </span>
+              );
+            }
 
             return (
               <Link

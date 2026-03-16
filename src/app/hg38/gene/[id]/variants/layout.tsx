@@ -1,6 +1,8 @@
 import { fetchGene } from "@features/gene/api";
 import { GeneHeader } from "@features/gene/components/header/gene-header";
+import { geneDataChecks } from "@features/gene/config/hg38/data-availability";
 import { GENE_NAVIGATION_CONFIG } from "@features/gene/config/hg38/navigation";
+import { getDisabledSlugs } from "@shared/utils/data-availability";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
@@ -36,6 +38,8 @@ export default async function VariantsLayout({
     notFound();
   }
 
+  const disabledSlugs = getDisabledSlugs(gene, geneDataChecks);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Section */}
@@ -56,6 +60,7 @@ export default async function VariantsLayout({
               }))}
               activeItem={category}
               basePath={`/hg38/gene/${encodeURIComponent(id)}`}
+              disabledSlugs={disabledSlugs}
             />
           </div>
 
@@ -64,6 +69,7 @@ export default async function VariantsLayout({
               <MobileSubNavigation
                 items={currentCategory.subCategories}
                 basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
+                disabledSlugs={disabledSlugs}
               />
             </div>
           )}
@@ -80,6 +86,7 @@ export default async function VariantsLayout({
               groups={currentCategory.groups}
               basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
               showIcons={currentCategory.showIcons}
+              disabledSlugs={disabledSlugs}
             />
           )}
 

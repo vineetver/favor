@@ -15,13 +15,16 @@ interface MobileSubNavigationProps {
   items: NavigationItem[];
   basePath: string;
   queryString?: string;
+  disabledSlugs?: string[];
 }
 
 export function MobileSubNavigation({
   items,
   basePath,
   queryString = "",
+  disabledSlugs,
 }: MobileSubNavigationProps) {
+  const disabledSet = new Set(disabledSlugs);
   const params = useParams();
   const pathname = usePathname();
   const currentSubcategory = params.subcategory as string;
@@ -62,6 +65,19 @@ export function MobileSubNavigation({
             <div className="p-1.5">
               {items.map((item) => {
                 const isActive = isActiveItem(item.slug);
+                const isDisabled = disabledSet.has(item.slug);
+
+                if (isDisabled) {
+                  return (
+                    <span
+                      key={item.slug}
+                      className="block w-full text-left px-3.5 py-2.5 text-sm rounded-lg opacity-40 cursor-default"
+                    >
+                      {item.text}
+                    </span>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.slug}

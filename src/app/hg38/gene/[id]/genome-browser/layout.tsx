@@ -1,6 +1,8 @@
 import { fetchGene } from "@features/gene/api";
 import { GeneHeader } from "@features/gene/components/header/gene-header";
+import { geneDataChecks } from "@features/gene/config/hg38/data-availability";
 import { GENE_NAVIGATION_CONFIG } from "@features/gene/config/hg38/navigation";
+import { getDisabledSlugs } from "@shared/utils/data-availability";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
 import { notFound } from "next/navigation";
 
@@ -34,6 +36,8 @@ export default async function GenomeBrowserLayout({
     notFound();
   }
 
+  const disabledSlugs = getDisabledSlugs(gene, geneDataChecks);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Section */}
@@ -54,6 +58,7 @@ export default async function GenomeBrowserLayout({
               }))}
               activeItem={category}
               basePath={`/hg38/gene/${encodeURIComponent(id)}`}
+              disabledSlugs={disabledSlugs}
             />
           </div>
         </div>

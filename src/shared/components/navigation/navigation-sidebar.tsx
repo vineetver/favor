@@ -101,6 +101,7 @@ interface NavigationSidebarProps {
   basePath: string;
   queryString?: string;
   showIcons?: boolean; // Set to false to hide icons (default: true)
+  disabledSlugs?: string[];
 }
 
 export function NavigationSidebar({
@@ -109,7 +110,12 @@ export function NavigationSidebar({
   basePath,
   queryString = "",
   showIcons = true,
+  disabledSlugs,
 }: NavigationSidebarProps) {
+  const disabledSet = useMemo(
+    () => new Set(disabledSlugs),
+    [disabledSlugs],
+  );
   const params = useParams();
   const pathname = usePathname();
 
@@ -153,7 +159,23 @@ export function NavigationSidebar({
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const isActive = item.slug === activeSlug;
+                    const isDisabled = disabledSet.has(item.slug);
                     const Icon = showIcons && item.icon ? iconMap[item.icon] : null;
+
+                    if (isDisabled) {
+                      return (
+                        <span
+                          key={item.slug}
+                          title="No data available"
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm opacity-40 cursor-default"
+                        >
+                          {Icon && (
+                            <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
+                          )}
+                          <span>{item.text}</span>
+                        </span>
+                      );
+                    }
 
                     return (
                       <Link
@@ -195,6 +217,20 @@ export function NavigationSidebar({
       <nav className="space-y-0.5">
         {items?.map((item) => {
           const isActive = item.slug === activeSlug;
+          const isDisabled = disabledSet.has(item.slug);
+
+          if (isDisabled) {
+            return (
+              <span
+                key={item.slug}
+                title="No data available"
+                className="flex items-center justify-between px-3 py-2 rounded-lg text-sm opacity-40 cursor-default"
+              >
+                <span>{item.text}</span>
+                <ChevronRight className="w-4 h-4 opacity-0" />
+              </span>
+            );
+          }
 
           return (
             <Link

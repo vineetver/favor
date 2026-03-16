@@ -63,7 +63,7 @@ export function subscribeToStream(
   onError?: (error: Error) => void,
 ): () => void {
   const eventSource = new EventSource(
-    `${AI_TEXT_API_BASE}/stream/${requestId}`,
+    `/api/ai-text/stream/${requestId}`,
   );
 
   eventSource.addEventListener("status", (event) => {
