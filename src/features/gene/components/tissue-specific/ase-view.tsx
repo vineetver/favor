@@ -148,13 +148,21 @@ const columns: ColumnDef<AseRow, unknown>[] = [
 function buildFilters(
   tissues: string[],
   assays: string[],
+  tissueGroups: string[],
 ): ServerFilterConfig[] {
   return [
     {
-      id: "tissue",
-      label: "Tissue",
+      id: "tissue_group",
+      label: "Tissue Group",
       type: "select",
-      placeholder: "All tissues",
+      placeholder: "All groups",
+      options: tissueGroups.map((g) => ({ value: g, label: g })),
+    },
+    {
+      id: "tissue",
+      label: "Biosample",
+      type: "select",
+      placeholder: "All biosamples",
       options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
     },
     {
@@ -199,11 +207,6 @@ export function AseView({
   summary,
   basePath,
 }: AseViewProps) {
-  const filters = useMemo(
-    () => buildFilters(tissues, assays),
-    [tissues, assays],
-  );
-
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useAseQuery({
@@ -211,8 +214,22 @@ export function AseView({
     initialData,
   });
 
+  const tissueGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const row of data) {
+      if (row.tissue_group) groups.add(row.tissue_group);
+    }
+    return [...groups].sort();
+  }, [data]);
+
+  const filters = useMemo(
+    () => buildFilters(tissues, assays, tissueGroups),
+    [tissues, assays, tissueGroups],
+  );
+
   const hasActiveFilters = Boolean(
     searchParams.get("tissue") ||
+    searchParams.get("tissue_group") ||
     searchParams.get("assay") ||
     searchParams.get("significant_only"),
   );

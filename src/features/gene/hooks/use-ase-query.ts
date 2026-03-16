@@ -14,6 +14,7 @@ import type {
 
 interface AseFilterOptions {
   tissue?: string;
+  tissue_group?: string;
   assay?: string;
   significant_only?: boolean;
   sort_by?: string;
@@ -28,6 +29,7 @@ async function fetchAseClient(
 ): Promise<PaginatedResponse<AseRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.assay) params.set("assay", filters.assay);
   if (filters.significant_only) params.set("significant_only", "true");
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
@@ -50,6 +52,8 @@ function parseFilters(sp: URLSearchParams): AseFilterOptions {
   const f: AseFilterOptions = {};
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const assay = sp.get("assay");
   if (assay) f.assay = assay;
   if (sp.get("significant_only") === "true") f.significant_only = true;

@@ -11,6 +11,7 @@ import type { SignalRow, PaginatedResponse } from "@features/gene/api/region";
 
 interface SignalFilterOptions {
   tissue?: string;
+  tissue_group?: string;
   ccre_class?: string;
   min_signal?: number;
   sort_by?: string;
@@ -25,6 +26,7 @@ async function fetchSignalsClient(
 ): Promise<PaginatedResponse<SignalRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.ccre_class) params.set("ccre_class", filters.ccre_class);
   if (filters.min_signal) params.set("min_signal", String(filters.min_signal));
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
@@ -48,6 +50,9 @@ function parseFilters(searchParams: URLSearchParams): SignalFilterOptions {
 
   const tissue = searchParams.get("tissue");
   if (tissue) filters.tissue = tissue;
+
+  const tissueGroup = searchParams.get("tissue_group");
+  if (tissueGroup) filters.tissue_group = tissueGroup;
 
   const ccreClass = searchParams.get("ccre_class");
   if (ccreClass) filters.ccre_class = ccreClass;

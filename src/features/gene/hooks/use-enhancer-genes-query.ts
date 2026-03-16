@@ -15,6 +15,7 @@ import type {
 interface EnhancerGeneFilterOptions {
   method: string;
   tissue?: string;
+  tissue_group?: string;
   target_gene?: string;
   min_score?: number;
   sort_by?: string;
@@ -30,6 +31,7 @@ async function fetchEnhancerGenesClient(
   const params = new URLSearchParams();
   params.set("method", filters.method);
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.target_gene) params.set("target_gene", filters.target_gene);
   if (filters.min_score) params.set("min_score", String(filters.min_score));
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
@@ -54,6 +56,8 @@ function parseFilters(sp: URLSearchParams): EnhancerGeneFilterOptions {
   };
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const targetGene = sp.get("target_gene");
   if (targetGene) f.target_gene = targetGene;
   const minScore = sp.get("min_score");

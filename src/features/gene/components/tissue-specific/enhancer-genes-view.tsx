@@ -711,7 +711,7 @@ export function EnhancerGenesView({
     useEnhancerGenesQuery({ loc, initialData });
 
   const hasActiveFilters = Boolean(
-    searchParams.get("target_gene") || searchParams.get("tissue"),
+    searchParams.get("target_gene") || searchParams.get("tissue") || searchParams.get("tissue_group"),
   );
 
   const liveTotal =

@@ -357,13 +357,21 @@ const columns: ColumnDef<ChromatinStateRow, unknown>[] = [
 function buildFilters(
   tissues: string[],
   categories: string[],
+  tissueGroups: string[],
 ): ServerFilterConfig[] {
   return [
     {
-      id: "tissue",
-      label: "Tissue",
+      id: "tissue_group",
+      label: "Tissue Group",
       type: "select",
-      placeholder: "All tissues",
+      placeholder: "All groups",
+      options: tissueGroups.map((g) => ({ value: g, label: g })),
+    },
+    {
+      id: "tissue",
+      label: "Biosample",
+      type: "select",
+      placeholder: "All biosamples",
       options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
     },
     {
@@ -404,11 +412,6 @@ export function ChromatinStatesView({
   summary,
   basePath,
 }: ChromatinStatesViewProps) {
-  const filters = useMemo(
-    () => buildFilters(tissues, categories),
-    [tissues, categories],
-  );
-
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useChromatinQuery({
@@ -416,8 +419,21 @@ export function ChromatinStatesView({
     initialData,
   });
 
+  const tissueGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const row of data) {
+      if (row.tissue_group) groups.add(row.tissue_group);
+    }
+    return [...groups].sort();
+  }, [data]);
+
+  const filters = useMemo(
+    () => buildFilters(tissues, categories, tissueGroups),
+    [tissues, categories, tissueGroups],
+  );
+
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("state_category"),
+    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("state_category"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

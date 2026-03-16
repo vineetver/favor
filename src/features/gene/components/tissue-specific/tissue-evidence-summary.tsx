@@ -130,14 +130,16 @@ function MiniBar({
   value,
   max,
   color,
-  label,
+  detail,
 }: {
   value: number;
   max: number;
   color: string;
-  label: string;
+  /** Raw detail for tooltip, e.g. "Z-score: 4.5, 1.2K cCREs" */
+  detail: string;
 }) {
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
+  const pctLabel = `${Math.round(pct * 100)}%`;
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -153,12 +155,12 @@ function MiniBar({
               />
             </div>
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {label}
+              {pctLabel}
             </span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {((pct * 100) | 0)}% of max across all tissues
+          {detail}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -275,7 +277,7 @@ function buildColumns(maxes: {
             value={s.max_value}
             max={maxes.s}
             color={EVIDENCE_COLORS.signals}
-            label={`${s.max_value.toFixed(1)} (${fmtK(s.count)})`}
+            detail={`Max Z-score: ${s.max_value.toFixed(1)} across ${fmtK(s.count)} cCREs`}
           />
         );
       },
@@ -329,7 +331,7 @@ function buildColumns(maxes: {
             value={e.max_value}
             max={maxes.e}
             color={EVIDENCE_COLORS.enhancers}
-            label={`${fmtScore(e.max_value)} (${e.count})`}
+            detail={`Best score: ${fmtScore(e.max_value)} across ${e.count} predictions`}
           />
         );
       },
@@ -352,7 +354,7 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.a}
             color={EVIDENCE_COLORS.accessibility}
-            label={`${a.max_value.toFixed(1)}\u00d7 (${a.count})`}
+            detail={`${a.max_value.toFixed(1)}\u00d7 fold enrichment across ${a.count} peaks`}
           />
         );
       },
@@ -395,7 +397,7 @@ function buildColumns(maxes: {
             value={a.max_value}
             max={maxes.x}
             color={EVIDENCE_COLORS.ase}
-            label={a.max_value.toFixed(1)}
+            detail={`Best \u2212log\u2081\u2080(p): ${a.max_value.toFixed(1)} across ${a.count} observations`}
           />
         );
       },
@@ -407,9 +409,6 @@ function buildColumns(maxes: {
 // Expanded detail panel
 // ---------------------------------------------------------------------------
 
-// Slugs where ?tissue=<group_name> works (API uses group-level tissue names)
-const TISSUE_FILTER_SUPPORTED = new Set(["tissue-signals"]);
-
 function TissueDetail({
   tissue,
   basePath,
@@ -417,7 +416,7 @@ function TissueDetail({
   tissue: TissueEvidence;
   basePath: string;
 }) {
-  const tp = encodeURIComponent(tissue.tissue_name);
+  const tg = encodeURIComponent(tissue.tissue_name);
 
   const cards: { label: string; slug: string; lines: string[] }[] = [];
 
@@ -488,10 +487,7 @@ function TissueDetail({
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
         {cards.map((c) => {
-          // Only pass ?tissue= for endpoints that support group-level filtering
-          const href = TISSUE_FILTER_SUPPORTED.has(c.slug)
-            ? `${basePath}/${c.slug}?tissue=${tp}`
-            : `${basePath}/${c.slug}`;
+          const href = `${basePath}/${c.slug}?tissue_group=${tg}`;
 
           return (
             <div

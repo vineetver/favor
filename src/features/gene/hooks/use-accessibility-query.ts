@@ -14,6 +14,7 @@ import type {
 
 interface AccessibilityFilterOptions {
   tissue?: string;
+  tissue_group?: string;
   min_signal?: number;
   sort_by?: string;
   sort_dir?: string;
@@ -27,6 +28,7 @@ async function fetchAccessibilityClient(
 ): Promise<PaginatedResponse<AccessibilityRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.min_signal != null)
     params.set("min_signal", String(filters.min_signal));
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
@@ -49,6 +51,8 @@ function parseFilters(sp: URLSearchParams): AccessibilityFilterOptions {
   const f: AccessibilityFilterOptions = {};
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const minSig = sp.get("min_signal");
   if (minSig) f.min_signal = Number(minSig);
   f.sort_by = sp.get("sort_by") || "max_signal";

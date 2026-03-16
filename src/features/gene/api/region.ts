@@ -144,6 +144,7 @@ export interface SignalRow {
   start: number;
   end: number;
   tissue_name: string;
+  tissue_group?: string;
   subtissue_name?: string;
   dnase: number | null;
   atac: number | null;
@@ -161,6 +162,7 @@ export interface SignalRow {
 
 export interface FetchSignalsParams {
   tissue?: string;
+  tissue_group?: string;
   ccre_class?: string;
   min_signal?: number;
   facets?: "tissue_name" | "ccre_classification";
@@ -203,6 +205,7 @@ export interface ChromatinStateRow {
   start: number;
   end: number;
   tissue_name: string;
+  tissue_group?: string;
   state_code: string;
   state_name: string;
   state_category: string;
@@ -211,6 +214,7 @@ export interface ChromatinStateRow {
 
 export interface FetchChromatinStatesParams {
   tissue?: string;
+  tissue_group?: string;
   state_category?: string;
   facets?: "tissue_name" | "state_category" | "state_code";
   sort_by?: "position" | "tissue_name";
@@ -246,6 +250,7 @@ export interface EnhancerGeneRow {
   end: number;
   gene_symbol: string | null;
   tissue_name: string;
+  tissue_group?: string;
   score: number | null;
   distance: number | null;
   detail: Record<string, unknown> | null;
@@ -253,6 +258,7 @@ export interface EnhancerGeneRow {
 
 export interface FetchEnhancerGenesParams {
   tissue?: string;
+  tissue_group?: string;
   method?: "abc" | "epiraction" | "epimap" | "re2g";
   target_gene?: string;
   min_score?: number;
@@ -289,11 +295,13 @@ export interface AccessibilityRow {
   end: number;
   peak_id: string;
   tissue_name: string;
+  tissue_group?: string;
   signal_value: number;
 }
 
 export interface FetchAccessibilityParams {
   tissue?: string;
+  tissue_group?: string;
   min_signal?: number;
   sort_by?: "position" | "max_signal" | "tissue_name";
   sort_dir?: "asc" | "desc";
@@ -322,10 +330,12 @@ export interface LoopRow {
   loop_span: number;
   assay_type: string;
   tissue_name: string;
+  tissue_group?: string;
 }
 
 export interface FetchLoopsParams {
   tissue?: string;
+  tissue_group?: string;
   assay?: string;
   cursor?: string;
   limit?: number;
@@ -349,6 +359,7 @@ export interface AseRow {
   start: number;
   end: number;
   tissue_name: string;
+  tissue_group?: string;
   assay: string;
   neglog_pvalue: number;
   is_significant: boolean;
@@ -356,6 +367,7 @@ export interface AseRow {
 
 export interface FetchAseParams {
   tissue?: string;
+  tissue_group?: string;
   significant_only?: boolean;
   assay?: string;
   sort_by?: "position" | "tissue_name";

@@ -14,6 +14,7 @@ import type {
 
 interface LoopsFilterOptions {
   tissue?: string;
+  tissue_group?: string;
   assay?: string;
   cursor?: string;
   limit?: number;
@@ -25,6 +26,7 @@ async function fetchLoopsClient(
 ): Promise<PaginatedResponse<LoopRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.assay) params.set("assay", filters.assay);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
@@ -44,6 +46,8 @@ function parseFilters(sp: URLSearchParams): LoopsFilterOptions {
   const f: LoopsFilterOptions = {};
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const assay = sp.get("assay");
   if (assay) f.assay = assay;
   const cursor = sp.get("cursor");

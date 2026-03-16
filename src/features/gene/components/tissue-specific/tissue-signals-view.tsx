@@ -236,7 +236,7 @@ export function TissueSignalsView({
     useSignalsQuery({ loc, initialData });
 
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("ccre_class"),
+    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("ccre_class"),
   );
 
   const liveTotal =

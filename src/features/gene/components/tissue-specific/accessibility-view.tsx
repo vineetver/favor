@@ -204,13 +204,20 @@ const columns: ColumnDef<AccessibilityRow, unknown>[] = [
 // Filter config
 // ---------------------------------------------------------------------------
 
-function buildFilters(tissues: string[]): ServerFilterConfig[] {
+function buildFilters(tissues: string[], tissueGroups: string[]): ServerFilterConfig[] {
   return [
     {
-      id: "tissue",
-      label: "Tissue",
+      id: "tissue_group",
+      label: "Tissue Group",
       type: "select",
-      placeholder: "All tissues",
+      placeholder: "All groups",
+      options: tissueGroups.map((g) => ({ value: g, label: g })),
+    },
+    {
+      id: "tissue",
+      label: "Biosample",
+      type: "select",
+      placeholder: "All biosamples",
       options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
     },
   ];
@@ -239,8 +246,6 @@ export function AccessibilityView({
   summary,
   basePath,
 }: AccessibilityViewProps) {
-  const filters = useMemo(() => buildFilters(tissues), [tissues]);
-
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useAccessibilityQuery({
@@ -248,8 +253,18 @@ export function AccessibilityView({
     initialData,
   });
 
+  const tissueGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const row of data) {
+      if (row.tissue_group) groups.add(row.tissue_group);
+    }
+    return [...groups].sort();
+  }, [data]);
+
+  const filters = useMemo(() => buildFilters(tissues, tissueGroups), [tissues, tissueGroups]);
+
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("min_signal"),
+    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("min_signal"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

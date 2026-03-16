@@ -14,6 +14,7 @@ import type {
 
 interface ChromatinFilterOptions {
   tissue?: string;
+  tissue_group?: string;
   state_category?: string;
   sort_by?: string;
   sort_dir?: string;
@@ -27,6 +28,7 @@ async function fetchChromatinClient(
 ): Promise<PaginatedResponse<ChromatinStateRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.state_category)
     params.set("state_category", filters.state_category);
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
@@ -49,6 +51,8 @@ function parseFilters(sp: URLSearchParams): ChromatinFilterOptions {
   const f: ChromatinFilterOptions = {};
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const cat = sp.get("state_category");
   if (cat) f.state_category = cat;
   f.sort_by = sp.get("sort_by") || "position";
