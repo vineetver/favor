@@ -9,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Info } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
@@ -81,7 +80,7 @@ const NAV_ITEMS: {
 ];
 
 // ---------------------------------------------------------------------------
-// Component
+// Component — underline-style text nav, visually subordinate to primary tabs
 // ---------------------------------------------------------------------------
 
 interface RegionNavBarProps {
@@ -99,8 +98,8 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <nav className="mb-6">
-        <div className="flex items-center gap-1 flex-wrap">
+      <nav className="mb-4 border-b border-border">
+        <div className="flex items-center gap-0 -mb-px overflow-x-auto">
           {NAV_ITEMS.map(({ key, slug, label, hint }) => {
             const count = key ? summary.counts[key] : null;
             const isActive = activeSlug === slug;
@@ -112,12 +111,12 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
                   <Link
                     href={`${basePath}/${slug}`}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                      "inline-flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap border-b-2 transition-colors",
                       isActive
-                        ? "bg-primary/10 text-foreground font-medium"
+                        ? "border-primary text-foreground font-medium"
                         : isEmpty
-                          ? "text-muted-foreground/40 cursor-default"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                          ? "border-transparent text-muted-foreground/30 cursor-default"
+                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
                     )}
                     {...(isEmpty
                       ? {
@@ -127,12 +126,19 @@ export function RegionNavBar({ summary, basePath }: RegionNavBarProps) {
                         }
                       : {})}
                   >
-                    {count != null && (
-                      <span className="tabular-nums font-semibold">
+                    <span>{label}</span>
+                    {count != null && count > 0 && (
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          isActive
+                            ? "text-primary font-semibold"
+                            : "text-muted-foreground/50",
+                        )}
+                      >
                         {formatCount(count)}
                       </span>
                     )}
-                    <span>{label}</span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs max-w-xs">
