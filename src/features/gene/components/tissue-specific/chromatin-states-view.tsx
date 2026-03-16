@@ -20,19 +20,16 @@ import { useMemo } from "react";
 import type {
   ChromatinStateRow,
   PaginatedResponse,
+  RegionSummary,
 } from "@features/gene/api/region";
 import { useChromatinQuery } from "@features/gene/hooks/use-chromatin-query";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 function parseRegion(coords: string): [number, number] {
   const match = coords.match(/:(\d+)-(\d+)/);
@@ -394,6 +391,8 @@ interface ChromatinStatesViewProps {
   totalCount: number;
   regionCoords: string;
   initialData?: PaginatedResponse<ChromatinStateRow>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function ChromatinStatesView({
@@ -403,6 +402,8 @@ export function ChromatinStatesView({
   totalCount,
   regionCoords,
   initialData,
+  summary,
+  basePath,
 }: ChromatinStatesViewProps) {
   const filters = useMemo(
     () => buildFilters(tissues, categories),
@@ -447,6 +448,14 @@ export function ChromatinStatesView({
 
   return (
     <div className="space-y-6">
+      {summary && basePath && (
+        <RegionContextBar
+          summary={summary}
+          basePath={basePath}
+          currentSlug="chromatin-states"
+        />
+      )}
+
       <ChromatinTrackViz
         loc={loc}
         regionStart={regionStart}

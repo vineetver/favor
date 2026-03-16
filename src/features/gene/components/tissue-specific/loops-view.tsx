@@ -18,19 +18,16 @@ import { useMemo, useState } from "react";
 import type {
   LoopRow,
   PaginatedResponse,
+  RegionSummary,
 } from "@features/gene/api/region";
 import { useLoopsQuery } from "@features/gene/hooks/use-loops-query";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 function parseRegion(coords: string): [number, number] {
   const match = coords.match(/:(\d+)-(\d+)/);
@@ -388,6 +385,8 @@ interface LoopsViewProps {
   totalCount: number;
   regionCoords: string;
   initialData?: PaginatedResponse<LoopRow>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function LoopsView({
@@ -397,6 +396,8 @@ export function LoopsView({
   totalCount,
   regionCoords,
   initialData,
+  summary,
+  basePath,
 }: LoopsViewProps) {
   const filters = useMemo(
     () => buildFilters(tissues, assays),
@@ -444,6 +445,14 @@ export function LoopsView({
 
   return (
     <div className="space-y-6">
+      {summary && basePath && (
+        <RegionContextBar
+          summary={summary}
+          basePath={basePath}
+          currentSlug="loops"
+        />
+      )}
+
       {regionStart > 0 && (
         <LoopArcDiagram
           rows={arcRows}

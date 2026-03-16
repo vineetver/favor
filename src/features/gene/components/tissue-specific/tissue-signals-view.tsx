@@ -8,10 +8,13 @@ import type {
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import type { RegionSummary } from "@features/gene/api/region";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SignalRow, PaginatedResponse } from "@features/gene/api/region";
 import { useSignalsQuery } from "@features/gene/hooks/use-signals-query";
+import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -24,6 +27,8 @@ interface TissueSignalsViewProps {
   classifications: string[];
   initialData?: PaginatedResponse<SignalRow>;
   serverFilters?: Record<string, string>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -218,6 +223,8 @@ export function TissueSignalsView({
   classifications,
   initialData,
   serverFilters = {},
+  summary,
+  basePath,
 }: TissueSignalsViewProps) {
   const filters = useMemo(
     () => buildFilters(tissues, classifications),
@@ -258,33 +265,82 @@ export function TissueSignalsView({
     }
   }, [pageInfo.hasMore, isFetching, prefetchNext]);
 
+  // cCRE detail sheet
+  const [selectedCcre, setSelectedCcre] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const openCcreSheet = useCallback((ccreId: string) => {
+    setSelectedCcre(ccreId);
+    setSheetOpen(true);
+  }, []);
+
+  // Override cCRE column to be clickable
+  const columnsWithSheet = useMemo(() => {
+    return signalColumns.map((col) => {
+      if (col.id === "ccre_id") {
+        return {
+          ...col,
+          cell: ({ getValue }: { getValue: () => unknown }) => {
+            const id = getValue() as string;
+            return (
+              <button
+                className="font-mono text-xs text-primary hover:underline cursor-pointer"
+                onClick={() => openCcreSheet(id)}
+              >
+                {id}
+              </button>
+            );
+          },
+        };
+      }
+      return col;
+    });
+  }, [openCcreSheet]);
+
   const subtitle =
     liveTotal != null
       ? `${liveTotal.toLocaleString()} cCRE signal values across ${tissues.length} tissues`
       : `cCRE signal values across ${tissues.length} tissues`;
 
   return (
-    <DataSurface
-      data={data}
-      columns={signalColumns}
-      subtitle={subtitle}
-      searchPlaceholder="Search cCREs, tissues..."
-      searchColumn="tissue_name"
-      exportable
-      exportFilename={`tissue-signals-${loc}`}
-      filterable
-      filters={filters}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[25, 50, 100]}
-      emptyMessage="No signals found for this region"
-    />
+    <>
+      {summary && basePath && (
+        <div className="mb-4">
+          <RegionContextBar
+            summary={summary}
+            basePath={basePath}
+            currentSlug="tissue-signals"
+          />
+        </div>
+      )}
+
+      <DataSurface
+        data={data}
+        columns={columnsWithSheet}
+        subtitle={subtitle}
+        searchPlaceholder="Search cCREs, tissues..."
+        searchColumn="tissue_name"
+        exportable
+        exportFilename={`tissue-signals-${loc}`}
+        filterable
+        filters={filters}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[25, 50, 100]}
+        emptyMessage="No signals found for this region"
+      />
+
+      <CcreDetailSheet
+        ccreId={selectedCcre}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
+    </>
   );
 }

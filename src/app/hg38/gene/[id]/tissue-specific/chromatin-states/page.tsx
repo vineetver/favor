@@ -24,6 +24,7 @@ export default async function ChromatinStatesPage({
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
   const [tissueFacets, categoryFacets, summary, initialData] =
     await Promise.all([
@@ -51,6 +52,8 @@ export default async function ChromatinStatesPage({
       totalCount={summary?.counts.chromatin_states ?? 0}
       regionCoords={summary?.region ?? ""}
       initialData={initialData ?? undefined}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

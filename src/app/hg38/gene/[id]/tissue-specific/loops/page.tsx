@@ -21,8 +21,8 @@ export default async function LoopsPage({ params }: LoopsPageProps) {
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
-  // Loops are typically small datasets — fetch up to 100 to extract filters
   const [summary, initialData] = await Promise.all([
     fetchRegionSummary(loc).catch(() => null),
     fetchLoops(loc, { limit: 100 }).catch(() => null),
@@ -32,7 +32,6 @@ export default async function LoopsPage({ params }: LoopsPageProps) {
     ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
     : [];
 
-  // Extract unique individual assays from comma-separated assay_type values
   const assays = initialData
     ? [
         ...new Set(
@@ -51,6 +50,8 @@ export default async function LoopsPage({ params }: LoopsPageProps) {
       totalCount={summary?.counts.loops ?? 0}
       regionCoords={summary?.region ?? ""}
       initialData={initialData ?? undefined}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

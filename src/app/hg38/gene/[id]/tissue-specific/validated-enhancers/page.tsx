@@ -23,6 +23,7 @@ export default async function ValidatedEnhancersPage({
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
   const [summary, data] = await Promise.all([
     fetchRegionSummary(loc).catch(() => null),
@@ -34,6 +35,8 @@ export default async function ValidatedEnhancersPage({
       loc={loc}
       data={data}
       regionCoords={summary?.region ?? ""}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

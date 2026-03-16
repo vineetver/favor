@@ -17,19 +17,16 @@ import { useMemo } from "react";
 import type {
   AccessibilityRow,
   PaginatedResponse,
+  RegionSummary,
 } from "@features/gene/api/region";
 import { useAccessibilityQuery } from "@features/gene/hooks/use-accessibility-query";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 // ---------------------------------------------------------------------------
 // TissueSummaryChart — horizontal bar chart ranked by peak signal
@@ -230,6 +227,8 @@ interface AccessibilityViewProps {
   totalCount: number;
   regionCoords: string;
   initialData?: PaginatedResponse<AccessibilityRow>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function AccessibilityView({
@@ -238,6 +237,8 @@ export function AccessibilityView({
   totalCount,
   regionCoords,
   initialData,
+  summary,
+  basePath,
 }: AccessibilityViewProps) {
   const filters = useMemo(() => buildFilters(tissues), [tissues]);
 
@@ -277,6 +278,14 @@ export function AccessibilityView({
 
   return (
     <div className="space-y-6">
+      {summary && basePath && (
+        <RegionContextBar
+          summary={summary}
+          basePath={basePath}
+          currentSlug="accessibility"
+        />
+      )}
+
       <TissueSummaryChart rows={chartRows} />
 
       <DataSurface

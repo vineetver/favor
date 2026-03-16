@@ -6,19 +6,15 @@ import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState, useCallback } from "react";
-import type { CcreLinkRow } from "@features/gene/api/region";
+import type { CcreLinkRow, RegionSummary } from "@features/gene/api/region";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 // Readable source labels
 const SOURCE_LABELS: Record<string, string> = {
@@ -66,6 +62,8 @@ interface CcreLinksViewProps {
   initialData: CcreLinkRow[];
   sources: string[];
   tissues: string[];
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function CcreLinksView({
@@ -73,6 +71,8 @@ export function CcreLinksView({
   initialData,
   sources,
   tissues,
+  summary,
+  basePath,
 }: CcreLinksViewProps) {
   const searchParams = useClientSearchParams();
 
@@ -219,6 +219,16 @@ export function CcreLinksView({
 
   return (
     <>
+      {summary && basePath && (
+        <div className="mb-4">
+          <RegionContextBar
+            summary={summary}
+            basePath={basePath}
+            currentSlug="ccre-links"
+          />
+        </div>
+      )}
+
       <DataSurface
         data={data}
         columns={columns}

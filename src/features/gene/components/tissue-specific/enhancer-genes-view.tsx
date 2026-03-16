@@ -21,8 +21,10 @@ import { useCallback, useEffect, useMemo } from "react";
 import type {
   EnhancerGeneRow,
   PaginatedResponse,
+  RegionSummary,
 } from "@features/gene/api/region";
 import { useEnhancerGenesQuery } from "@features/gene/hooks/use-enhancer-genes-query";
+import { RegionContextBar } from "./region-context-bar";
 
 // ============================================================================
 // Method config
@@ -680,6 +682,8 @@ interface EnhancerGenesViewProps {
   genes: string[];
   tissues: string[];
   initialData?: PaginatedResponse<EnhancerGeneRow>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function EnhancerGenesView({
@@ -688,6 +692,8 @@ export function EnhancerGenesView({
   genes,
   tissues,
   initialData,
+  summary,
+  basePath,
 }: EnhancerGenesViewProps) {
   const searchParams = useClientSearchParams();
   const activeMethod = searchParams.get("method") || "abc";
@@ -748,6 +754,14 @@ export function EnhancerGenesView({
 
   return (
     <div className="space-y-4">
+      {summary && basePath && (
+        <RegionContextBar
+          summary={summary}
+          basePath={basePath}
+          currentSlug="enhancer-genes"
+        />
+      )}
+
       <MethodTabBar
         activeMethod={activeMethod}
         onMethodChange={handleMethodChange}

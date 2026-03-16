@@ -1,5 +1,5 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchCcreLinks } from "@features/gene/api/region";
+import { fetchCcreLinks, fetchRegionSummary } from "@features/gene/api/region";
 import { CcreLinksView } from "@features/gene/components/tissue-specific/ccre-links-view";
 import { notFound } from "next/navigation";
 
@@ -18,10 +18,12 @@ export default async function CcreLinksPage({ params }: CcreLinksPageProps) {
   }
 
   const symbol = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
-  const initialData = await fetchCcreLinks(symbol, { limit: 50 }).catch(
-    () => [],
-  );
+  const [summary, initialData] = await Promise.all([
+    fetchRegionSummary(symbol).catch(() => null),
+    fetchCcreLinks(symbol, { limit: 50 }).catch(() => []),
+  ]);
 
   const sources = [...new Set(initialData.map((r) => r.source))].sort();
   const tissues = [...new Set(initialData.map((r) => r.tissue_name))].sort();
@@ -32,6 +34,8 @@ export default async function CcreLinksPage({ params }: CcreLinksPageProps) {
       initialData={initialData}
       sources={sources}
       tissues={tissues}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

@@ -407,6 +407,9 @@ function buildColumns(maxes: {
 // Expanded detail panel
 // ---------------------------------------------------------------------------
 
+// Slugs where ?tissue=<group_name> works (API uses group-level tissue names)
+const TISSUE_FILTER_SUPPORTED = new Set(["tissue-signals"]);
+
 function TissueDetail({
   tissue,
   basePath,
@@ -484,28 +487,35 @@ function TissueDetail({
         </span>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-        {cards.map((c) => (
-          <div
-            key={c.slug}
-            className="rounded-lg border border-border bg-card px-3 py-2.5"
-          >
-            <span className="text-xs font-medium text-foreground">
-              {c.label}
-            </span>
-            {c.lines.filter(Boolean).map((l, i) => (
-              <p key={i} className="text-xs text-muted-foreground mt-0.5">
-                {l}
-              </p>
-            ))}
-            <Link
-              href={`${basePath}/${c.slug}?tissue=${tp}`}
-              className="inline-flex items-center gap-0.5 mt-1.5 text-xs text-primary hover:underline"
-              onClick={(e) => e.stopPropagation()}
+        {cards.map((c) => {
+          // Only pass ?tissue= for endpoints that support group-level filtering
+          const href = TISSUE_FILTER_SUPPORTED.has(c.slug)
+            ? `${basePath}/${c.slug}?tissue=${tp}`
+            : `${basePath}/${c.slug}`;
+
+          return (
+            <div
+              key={c.slug}
+              className="rounded-lg border border-border bg-card px-3 py-2.5"
             >
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-        ))}
+              <span className="text-xs font-medium text-foreground">
+                {c.label}
+              </span>
+              {c.lines.filter(Boolean).map((l, i) => (
+                <p key={i} className="text-xs text-muted-foreground mt-0.5">
+                  {l}
+                </p>
+              ))}
+              <Link
+                href={href}
+                className="inline-flex items-center gap-0.5 mt-1.5 text-xs text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

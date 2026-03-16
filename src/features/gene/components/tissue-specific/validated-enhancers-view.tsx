@@ -6,7 +6,8 @@ import { Button } from "@shared/components/ui/button";
 import { Switch } from "@shared/components/ui/switch";
 import { Label } from "@shared/components/ui/label";
 import { useState, useMemo } from "react";
-import type { ValidatedEnhancerRow } from "@features/gene/api/region";
+import type { ValidatedEnhancerRow, RegionSummary } from "@features/gene/api/region";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -16,12 +17,16 @@ interface ValidatedEnhancersViewProps {
   loc: string;
   data: ValidatedEnhancerRow[];
   regionCoords: string;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function ValidatedEnhancersView({
   loc,
   data,
   regionCoords,
+  summary,
+  basePath,
 }: ValidatedEnhancersViewProps) {
   const [positiveOnly, setPositiveOnly] = useState(false);
 
@@ -47,6 +52,14 @@ export function ValidatedEnhancersView({
 
   return (
     <div className="space-y-4">
+      {summary && basePath && (
+        <RegionContextBar
+          summary={summary}
+          basePath={basePath}
+          currentSlug="validated-enhancers"
+        />
+      )}
+
       {/* Header + filter */}
       <div className="flex items-center justify-between">
         <div>

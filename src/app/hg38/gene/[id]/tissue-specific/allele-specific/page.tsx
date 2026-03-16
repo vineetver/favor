@@ -21,9 +21,8 @@ export default async function AsePage({ params }: AsePageProps) {
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
-  // Fetch initial data + summary in parallel.
-  // No facets support — extract tissues/assays from initial data.
   const [summary, initialData] = await Promise.all([
     fetchRegionSummary(loc).catch(() => null),
     fetchAse(loc, {
@@ -48,6 +47,8 @@ export default async function AsePage({ params }: AsePageProps) {
       assays={assays}
       totalCount={summary?.counts.ase ?? 0}
       initialData={initialData ?? undefined}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

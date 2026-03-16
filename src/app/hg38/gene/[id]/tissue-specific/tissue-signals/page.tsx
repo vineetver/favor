@@ -25,6 +25,7 @@ export default async function TissueSignalsPage({
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
   const [tissueFacets, classFacets, summary, initialSignals] =
     await Promise.all([
@@ -54,6 +55,8 @@ export default async function TissueSignalsPage({
         tissues={tissueFacets.facets.filter(Boolean)}
         classifications={classFacets.facets.filter(Boolean)}
         initialData={initialSignals ?? undefined}
+        summary={summary}
+        basePath={basePath}
       />
     </div>
   );

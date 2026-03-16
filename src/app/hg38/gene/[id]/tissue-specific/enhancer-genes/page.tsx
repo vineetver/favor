@@ -24,6 +24,7 @@ export default async function EnhancerGenesPage({
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
   const [geneFacets, tissueFacets, summary, initialData] = await Promise.all([
     fetchEnhancerGeneFacets(loc, "gene_symbol").catch(() => ({
@@ -50,6 +51,8 @@ export default async function EnhancerGenesPage({
       genes={geneFacets.facets.filter(Boolean)}
       tissues={tissueFacets.facets.filter(Boolean)}
       initialData={initialData ?? undefined}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

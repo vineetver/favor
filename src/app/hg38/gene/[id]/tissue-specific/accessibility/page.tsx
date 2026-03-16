@@ -23,9 +23,8 @@ export default async function AccessibilityPage({
   }
 
   const loc = gene.gene_symbol || id;
+  const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
-  // Accessibility endpoint has no facets support.
-  // Fetch all rows (typically < 200 per gene) to extract tissue list.
   const [summary, initialData] = await Promise.all([
     fetchRegionSummary(loc).catch(() => null),
     fetchAccessibility(loc, {
@@ -46,6 +45,8 @@ export default async function AccessibilityPage({
       totalCount={summary?.counts.accessibility_peaks ?? 0}
       regionCoords={summary?.region ?? ""}
       initialData={initialData ?? undefined}
+      summary={summary}
+      basePath={basePath}
     />
   );
 }

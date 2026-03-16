@@ -35,12 +35,7 @@ async function fetchCcre(ccreId: string): Promise<CcreDetail> {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 // ---------------------------------------------------------------------------
 // Component

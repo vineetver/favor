@@ -7,23 +7,21 @@ import type {
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type {
   AseRow,
   PaginatedResponse,
+  RegionSummary,
 } from "@features/gene/api/region";
 import { useAseQuery } from "@features/gene/hooks/use-ase-query";
+import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { RegionContextBar } from "./region-context-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatTissueName(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
-}
+import { formatTissueName } from "@shared/utils/tissue-format";
 
 function formatPvalue(neglogp: number): string {
   if (neglogp <= 0) return "1";
@@ -189,6 +187,8 @@ interface AseViewProps {
   assays: string[];
   totalCount: number;
   initialData?: PaginatedResponse<AseRow>;
+  summary?: RegionSummary | null;
+  basePath?: string;
 }
 
 export function AseView({
@@ -197,6 +197,8 @@ export function AseView({
   assays,
   totalCount,
   initialData,
+  summary,
+  basePath,
 }: AseViewProps) {
   const filters = useMemo(
     () => buildFilters(tissues, assays),
@@ -231,33 +233,82 @@ export function AseView({
     paginationInfo,
   });
 
+  // cCRE detail sheet
+  const [selectedCcre, setSelectedCcre] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const openCcreSheet = useCallback((ccreId: string) => {
+    setSelectedCcre(ccreId);
+    setSheetOpen(true);
+  }, []);
+
+  // Override cCRE column to be clickable
+  const columnsWithSheet = useMemo(() => {
+    return columns.map((col) => {
+      if (col.id === "ccre_accession") {
+        return {
+          ...col,
+          cell: ({ getValue }: { getValue: () => unknown }) => {
+            const id = getValue() as string;
+            return (
+              <button
+                className="text-xs font-mono text-primary hover:underline cursor-pointer"
+                onClick={() => openCcreSheet(id)}
+              >
+                {id}
+              </button>
+            );
+          },
+        };
+      }
+      return col;
+    });
+  }, [openCcreSheet]);
+
   const subtitle =
     liveTotal != null
       ? `${liveTotal.toLocaleString()} observations across ${tissues.length} biosamples`
       : `Observations across ${tissues.length} biosamples`;
 
   return (
-    <DataSurface
-      data={data}
-      columns={columns}
-      subtitle={subtitle}
-      searchPlaceholder="Search cCREs, tissues..."
-      searchColumn="tissue_name"
-      exportable
-      exportFilename={`ase-${loc}`}
-      filterable
-      filters={filters}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[25, 50, 100]}
-      emptyMessage="No allele-specific activity found for this region"
-    />
+    <>
+      {summary && basePath && (
+        <div className="mb-4">
+          <RegionContextBar
+            summary={summary}
+            basePath={basePath}
+            currentSlug="allele-specific"
+          />
+        </div>
+      )}
+
+      <DataSurface
+        data={data}
+        columns={columnsWithSheet}
+        subtitle={subtitle}
+        searchPlaceholder="Search cCREs, tissues..."
+        searchColumn="tissue_name"
+        exportable
+        exportFilename={`ase-${loc}`}
+        filterable
+        filters={filters}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[25, 50, 100]}
+        emptyMessage="No allele-specific activity found for this region"
+      />
+
+      <CcreDetailSheet
+        ccreId={selectedCcre}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
+    </>
   );
 }
