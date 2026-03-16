@@ -7,6 +7,7 @@ import type {
   ServerPaginationInfo,
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo } from "react";
 import type { SignalRow, PaginatedResponse } from "@features/gene/api/region";
@@ -82,6 +83,7 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "ccre_id",
     accessorKey: "ccre_id",
     header: "cCRE",
+    meta: { description: "ENCODE candidate cis-Regulatory Element accession" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <span className="font-mono text-xs text-foreground">
@@ -94,6 +96,7 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Tissue",
+    meta: { description: "Tissue group (6 groups)" } satisfies ColumnMeta,
     enableSorting: true,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[160px] block">
@@ -105,6 +108,7 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "ccre_classification",
     accessorKey: "ccre_classification",
     header: "Class",
+    meta: { description: "PLS (promoter-like), pELS/dELS (enhancer-like), CTCF-only, DNase-H3K4me3" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => {
       const val = getValue() as string;
@@ -119,9 +123,10 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: () => (
       <div className="flex items-center gap-1.5">
         <div className={cn("w-2 h-2 rounded-full", MARK_COLORS.dnase)} />
-        DNase
+        DNase Z
       </div>
     ),
+    meta: { description: "DNase-seq signal Z-score \u2014 chromatin accessibility" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <SignalCell value={getValue() as number | null} />
@@ -133,9 +138,10 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: () => (
       <div className="flex items-center gap-1.5">
         <div className={cn("w-2 h-2 rounded-full", MARK_COLORS.atac)} />
-        ATAC
+        ATAC Z
       </div>
     ),
+    meta: { description: "ATAC-seq signal Z-score \u2014 chromatin accessibility" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <SignalCell value={getValue() as number | null} />
@@ -147,9 +153,10 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: () => (
       <div className="flex items-center gap-1.5">
         <div className={cn("w-2 h-2 rounded-full", MARK_COLORS.ctcf)} />
-        CTCF
+        CTCF Z
       </div>
     ),
+    meta: { description: "CTCF ChIP-seq Z-score \u2014 insulator binding" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <SignalCell value={getValue() as number | null} />
@@ -161,9 +168,10 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: () => (
       <div className="flex items-center gap-1.5">
         <div className={cn("w-2 h-2 rounded-full", MARK_COLORS.h3k27ac)} />
-        H3K27ac
+        H3K27ac Z
       </div>
     ),
+    meta: { description: "H3K27ac ChIP-seq Z-score \u2014 active enhancer/promoter mark" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <SignalCell value={getValue() as number | null} />
@@ -175,9 +183,10 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: () => (
       <div className="flex items-center gap-1.5">
         <div className={cn("w-2 h-2 rounded-full", MARK_COLORS.h3k4me3)} />
-        H3K4me3
+        H3K4me3 Z
       </div>
     ),
+    meta: { description: "H3K4me3 ChIP-seq Z-score \u2014 active promoter mark" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => (
       <SignalCell value={getValue() as number | null} />
@@ -187,7 +196,8 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     // ID matches API sort_by value
     id: "max_signal",
     accessorKey: "max_signal",
-    header: "Max Signal",
+    header: "Max Z",
+    meta: { description: "Maximum Z-score across all available assays for this biosample" } satisfies ColumnMeta,
     enableSorting: true,
     cell: ({ getValue }) => (
       <span className="text-sm font-medium tabular-nums text-foreground">

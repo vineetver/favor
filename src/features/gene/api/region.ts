@@ -58,11 +58,17 @@ export interface SignalRow {
   start: number;
   end: number;
   tissue_name: string;
+  subtissue_name?: string;
   dnase: number | null;
   atac: number | null;
   ctcf: number | null;
   h3k27ac: number | null;
   h3k4me3: number | null;
+  has_dnase?: boolean;
+  has_atac?: boolean;
+  has_ctcf?: boolean;
+  has_h3k27ac?: boolean;
+  has_h3k4me3?: boolean;
   max_signal: number;
   ccre_classification: string;
 }
@@ -186,4 +192,199 @@ export async function fetchEnhancerGeneFacets(
 ): Promise<FacetsResponse> {
   const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?facets=${facet}`;
   return fetchJson<FacetsResponse>(url);
+}
+
+// ---------------------------------------------------------------------------
+// Accessibility Peaks
+// ---------------------------------------------------------------------------
+
+export interface AccessibilityRow {
+  start: number;
+  end: number;
+  peak_id: string;
+  tissue_name: string;
+  signal_value: number;
+}
+
+export interface FetchAccessibilityParams {
+  tissue?: string;
+  min_signal?: number;
+  sort_by?: "position" | "max_signal" | "tissue_name";
+  sort_dir?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchAccessibility(
+  loc: string,
+  params: FetchAccessibilityParams = {},
+): Promise<PaginatedResponse<AccessibilityRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<AccessibilityRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
+// Chromatin Loops
+// ---------------------------------------------------------------------------
+
+export interface LoopRow {
+  anchor1_start: number;
+  anchor1_end: number;
+  anchor2_start: number;
+  anchor2_end: number;
+  loop_span: number;
+  assay_type: string;
+  tissue_name: string;
+}
+
+export interface FetchLoopsParams {
+  tissue?: string;
+  assay?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchLoops(
+  loc: string,
+  params: FetchLoopsParams = {},
+): Promise<PaginatedResponse<LoopRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/loops${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<LoopRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
+// Allele-Specific Epigenomic Activity (ASE)
+// ---------------------------------------------------------------------------
+
+export interface AseRow {
+  ccre_accession: string;
+  start: number;
+  end: number;
+  tissue_name: string;
+  assay: string;
+  neglog_pvalue: number;
+  is_significant: boolean;
+}
+
+export interface FetchAseParams {
+  tissue?: string;
+  significant_only?: boolean;
+  assay?: string;
+  sort_by?: "position" | "tissue_name";
+  sort_dir?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchAse(
+  loc: string,
+  params: FetchAseParams = {},
+): Promise<PaginatedResponse<AseRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/ase${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<AseRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
+// Validated Enhancers (VISTA)
+// ---------------------------------------------------------------------------
+
+export interface ValidatedEnhancerRow {
+  start: number;
+  end: number;
+  element_id: string;
+  is_positive: boolean;
+  tissues_raw: string;
+}
+
+export async function fetchValidatedEnhancers(
+  loc: string,
+  positiveOnly?: boolean,
+): Promise<ValidatedEnhancerRow[]> {
+  const params = positiveOnly ? "?positive_only=true" : "";
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/validated-enhancers${params}`;
+  return fetchJson<ValidatedEnhancerRow[]>(url);
+}
+
+// ---------------------------------------------------------------------------
+// cCRE-Gene Links (gene-keyed, not region-indexed)
+// ---------------------------------------------------------------------------
+
+export interface CcreLinkRow {
+  ccre_id: string;
+  gene_symbol: string;
+  source: string;
+  method: string;
+  tissue_name: string;
+  score: number | null;
+  effect_size: number | null;
+}
+
+interface CcreLinksResponse {
+  data: CcreLinkRow[];
+}
+
+export interface FetchCcreLinksParams {
+  source?: string;
+  method?: string;
+  tissue?: string;
+  limit?: number;
+}
+
+export async function fetchCcreLinks(
+  gene: string,
+  params: FetchCcreLinksParams = {},
+): Promise<CcreLinkRow[]> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links${qs ? `?${qs}` : ""}`;
+  const res = await fetchJson<CcreLinksResponse>(url);
+  return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// cCRE Detail (for slide-over panel)
+// ---------------------------------------------------------------------------
+
+export interface CcreSignal {
+  tissue_name: string;
+  max_signal: number;
+  h3k27ac?: number;
+  dnase?: number;
+}
+
+export interface CcreGeneLink {
+  gene_symbol: string;
+  source: string;
+  method: string;
+  tissue_name: string;
+  score: number | null;
+}
+
+export interface CcreDetail {
+  ccre_id: string;
+  chrom: string;
+  start: number;
+  end: number;
+  classifications: string[];
+  signals: {
+    total_tissues: number;
+    top: CcreSignal[];
+  };
+  genes: {
+    total: number;
+    links: CcreGeneLink[];
+  };
+}
+
+export async function fetchCcreDetail(
+  ccreId: string,
+  params?: { tissue?: string; signal_limit?: number; gene_limit?: number },
+): Promise<CcreDetail> {
+  const qs = params
+    ? buildParams(params as unknown as Record<string, unknown>)
+    : "";
+  const url = `${API_BASE}/ccres/${encodeURIComponent(ccreId)}${qs ? `?${qs}` : ""}`;
+  return fetchJson<CcreDetail>(url);
 }

@@ -4,7 +4,7 @@ import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import type {
-  ChromatinStateRow,
+  AccessibilityRow,
   PaginatedResponse,
 } from "@features/gene/api/region";
 
@@ -12,30 +12,30 @@ import type {
 // Fetch
 // ---------------------------------------------------------------------------
 
-interface ChromatinFilterOptions {
+interface AccessibilityFilterOptions {
   tissue?: string;
-  state_category?: string;
+  min_signal?: number;
   sort_by?: string;
   sort_dir?: string;
   cursor?: string;
   limit?: number;
 }
 
-async function fetchChromatinClient(
+async function fetchAccessibilityClient(
   loc: string,
-  filters: ChromatinFilterOptions,
-): Promise<PaginatedResponse<ChromatinStateRow>> {
+  filters: AccessibilityFilterOptions,
+): Promise<PaginatedResponse<AccessibilityRow>> {
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
-  if (filters.state_category)
-    params.set("state_category", filters.state_category);
+  if (filters.min_signal != null)
+    params.set("min_signal", String(filters.min_signal));
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
   if (filters.sort_dir) params.set("sort_dir", filters.sort_dir);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
 
   const res = await fetch(
-    `/api/v1/regions/${encodeURIComponent(loc)}/chromatin-states?${params}`,
+    `/api/v1/regions/${encodeURIComponent(loc)}/accessibility?${params}`,
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
@@ -45,14 +45,14 @@ async function fetchChromatinClient(
 // URL → filter parsing
 // ---------------------------------------------------------------------------
 
-function parseFilters(sp: URLSearchParams): ChromatinFilterOptions {
-  const f: ChromatinFilterOptions = {};
+function parseFilters(sp: URLSearchParams): AccessibilityFilterOptions {
+  const f: AccessibilityFilterOptions = {};
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
-  const cat = sp.get("state_category");
-  if (cat) f.state_category = cat;
-  f.sort_by = sp.get("sort_by") || "position";
-  f.sort_dir = sp.get("sort_dir") || "asc";
+  const minSig = sp.get("min_signal");
+  if (minSig) f.min_signal = Number(minSig);
+  f.sort_by = sp.get("sort_by") || "max_signal";
+  f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");
@@ -64,13 +64,13 @@ function parseFilters(sp: URLSearchParams): ChromatinFilterOptions {
 // Hook
 // ---------------------------------------------------------------------------
 
-interface UseChromatinQueryOptions {
+interface UseAccessibilityQueryOptions {
   loc: string;
-  initialData?: PaginatedResponse<ChromatinStateRow>;
+  initialData?: PaginatedResponse<AccessibilityRow>;
 }
 
-interface UseChromatinQueryResult {
-  data: ChromatinStateRow[];
+interface UseAccessibilityQueryResult {
+  data: AccessibilityRow[];
   pageInfo: {
     hasMore: boolean;
     nextCursor: string | null;
@@ -81,22 +81,21 @@ interface UseChromatinQueryResult {
   isFetching: boolean;
 }
 
-export function useChromatinQuery({
+export function useAccessibilityQuery({
   loc,
   initialData,
-}: UseChromatinQueryOptions): UseChromatinQueryResult {
+}: UseAccessibilityQueryOptions): UseAccessibilityQueryResult {
   const searchParams = useClientSearchParams();
   const isFirstMount = useRef(true);
 
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
 
   const query = useQuery({
-    queryKey: ["chromatin-states", loc, filters],
-    queryFn: () => fetchChromatinClient(loc, filters),
-    placeholderData: isFirstMount.current && initialData
-      ? initialData
-      : (prev) => prev,
-    staleTime: 30 * 1000,
+    queryKey: ["accessibility", loc, filters],
+    queryFn: () => fetchAccessibilityClient(loc, filters),
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000,
+    ...(isFirstMount.current && initialData ? { initialData } : {}),
   });
 
   useEffect(() => {

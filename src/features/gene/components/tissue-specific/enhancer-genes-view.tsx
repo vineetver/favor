@@ -2,13 +2,21 @@
 
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import {
   useServerTable,
   useClientSearchParams,
   updateClientUrl,
 } from "@shared/hooks";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 import type {
   EnhancerGeneRow,
@@ -21,10 +29,10 @@ import { useEnhancerGenesQuery } from "@features/gene/hooks/use-enhancer-genes-q
 // ============================================================================
 
 const METHODS = [
-  { id: "abc", label: "ABC", desc: "Activity-By-Contact model" },
-  { id: "epiraction", label: "EPIraction", desc: "Hi-C + epigenomic composite" },
-  { id: "epimap", label: "EpiMap", desc: "Module-based linking" },
-  { id: "re2g", label: "RE2G", desc: "ENCODE rE2G v3" },
+  { id: "abc", label: "ABC" },
+  { id: "epiraction", label: "EPIraction" },
+  { id: "epimap", label: "EpiMap" },
+  { id: "re2g", label: "RE2G" },
 ] as const;
 
 const STRONG_THRESHOLD: Record<string, number> = {
@@ -34,6 +42,20 @@ const STRONG_THRESHOLD: Record<string, number> = {
   re2g: 0.02,
 };
 
+const METHOD_COLORS: Record<string, string> = {
+  abc: "#8b5cf6",
+  epiraction: "#3b82f6",
+  epimap: "#f59e0b",
+  re2g: "#10b981",
+};
+
+const AXIS_LABELS: Record<string, string> = {
+  abc: "ABC score (Activity \u00d7 Contact / \u03a3)",
+  epiraction: "EPIraction score",
+  epimap: "Link score (co-activity correlation)",
+  re2g: "RE2G score",
+};
+
 // ============================================================================
 // Formatting helpers
 // ============================================================================
@@ -41,17 +63,18 @@ const STRONG_THRESHOLD: Record<string, number> = {
 function normalizeScore(score: number, method: string): number {
   if (score <= 0) return 0;
   if (method === "epiraction") {
-    // Log-scale: 1e-6 → 0, 0.1 → 1
+    // Log-scale: 1e-6 -> 0, 0.1 -> 1
     return Math.min(1, Math.max(0, (Math.log10(score) + 6) / 5));
   }
-  // sqrt spreads ABC/RE2G's typical 0.001–0.1 range
+  // sqrt spreads ABC/RE2G's typical 0.001-0.1 range
   return Math.min(1, Math.sqrt(score));
 }
 
 function formatScoreValue(
-  score: number,
+  score: number | null | undefined,
   method: string,
 ): React.ReactNode {
+  if (score == null) return "\u2014";
   if (method === "epiraction") {
     if (score === 0) return "0";
     const exp = Math.floor(Math.log10(Math.abs(score)));
@@ -135,11 +158,13 @@ function BoolBadge({ value, label }: { value: unknown; label: string }) {
 function detailText(
   key: string,
   header: string,
+  description?: string,
 ): ColumnDef<EnhancerGeneRow, unknown> {
   return {
     id: `d_${key}`,
     header,
     enableSorting: false,
+    meta: description ? ({ description } satisfies ColumnMeta) : undefined,
     cell: ({ row }) => {
       const v = row.original.detail?.[key];
       if (v == null)
@@ -155,11 +180,13 @@ function detailNum(
   key: string,
   header: string,
   decimals = 2,
+  description?: string,
 ): ColumnDef<EnhancerGeneRow, unknown> {
   return {
     id: `d_${key}`,
     header,
     enableSorting: false,
+    meta: description ? ({ description } satisfies ColumnMeta) : undefined,
     cell: ({ row }) => {
       const v = row.original.detail?.[key] as number | null | undefined;
       if (v == null)
@@ -182,6 +209,7 @@ const geneCol: ColumnDef<EnhancerGeneRow, unknown> = {
   accessorKey: "gene_symbol",
   header: "Gene",
   enableSorting: false,
+  meta: { description: "Target gene symbol" } satisfies ColumnMeta,
   cell: ({ row }) => {
     const gene = row.original.gene_symbol;
     if (gene)
@@ -205,6 +233,7 @@ const tissueCol: ColumnDef<EnhancerGeneRow, unknown> = {
   accessorKey: "tissue_name",
   header: "Tissue",
   enableSorting: false,
+  meta: { description: "Biosample tissue" } satisfies ColumnMeta,
   cell: ({ getValue }) => (
     <span className="text-sm text-muted-foreground truncate max-w-[180px] block">
       {getValue() as string}
@@ -212,21 +241,28 @@ const tissueCol: ColumnDef<EnhancerGeneRow, unknown> = {
   ),
 };
 
-const scoreCol: ColumnDef<EnhancerGeneRow, unknown> = {
-  id: "score",
-  accessorKey: "score",
-  header: "Score",
-  enableSorting: true,
-  cell: ({ row }) => (
-    <ScoreCell score={row.original.score} method={row.original.method} />
-  ),
-};
+function makeScoreCol(
+  header: string,
+  description: string,
+): ColumnDef<EnhancerGeneRow, unknown> {
+  return {
+    id: "score",
+    accessorKey: "score",
+    header,
+    enableSorting: true,
+    meta: { description } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <ScoreCell score={row.original.score} method={row.original.method} />
+    ),
+  };
+}
 
 const distCol: ColumnDef<EnhancerGeneRow, unknown> = {
   id: "distance",
   accessorKey: "distance",
   header: "Distance",
   enableSorting: true,
+  meta: { description: "Enhancer midpoint to gene TSS (bp)" } satisfies ColumnMeta,
   cell: ({ getValue }) => {
     const v = getValue() as number | null;
     if (v == null)
@@ -242,8 +278,9 @@ const distCol: ColumnDef<EnhancerGeneRow, unknown> = {
 const regionCol: ColumnDef<EnhancerGeneRow, unknown> = {
   id: "position",
   accessorFn: (row) => row.start,
-  header: "Region",
+  header: "Enhancer",
   enableSorting: true,
+  meta: { description: "Enhancer region coordinates" } satisfies ColumnMeta,
   cell: ({ row }) => (
     <span className="text-xs font-mono tabular-nums text-muted-foreground">
       {row.original.start.toLocaleString()}&ndash;
@@ -260,70 +297,49 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
   switch (method) {
     case "abc":
       return [
+        regionCol,
         geneCol,
         tissueCol,
-        detailText("tissue_group", "Group"),
-        scoreCol,
-        detailNum("log10_score", "log\u2081\u2080", 3),
-        {
-          id: "d_direction",
-          header: "\u2191\u2193",
-          enableSorting: false,
-          cell: ({ row }) => {
-            const dir = row.original.detail?.direction as number | null;
-            if (dir == null)
-              return <span className="text-muted-foreground/40">&mdash;</span>;
-            return (
-              <span
-                className={cn(
-                  "text-xs font-medium",
-                  dir === 1
-                    ? "text-emerald-600"
-                    : "text-amber-600",
-                )}
-              >
-                {dir === 1 ? "\u2193 down" : "\u2191 up"}
-              </span>
-            );
-          },
-        },
+        detailText("tissue_group", "Group", "Tissue group (11 groups)"),
+        makeScoreCol("ABC Score", "Activity \u00d7 Contact / \u03a3. >0.015 = functional link (Fulco 2019)"),
+        detailNum("log10_score", "log\u2081\u2080(ABC)", 3, "Log\u2081\u2080 of ABC score"),
         distCol,
-        regionCol,
       ];
 
     case "epiraction":
       return [
+        regionCol,
         geneCol,
         tissueCol,
         detailText("element_class", "Class"),
-        scoreCol,
-        detailNum("h3k27ac", "H3K27ac"),
-        detailNum("open_chromatin", "Open Chrom."),
-        detailNum("hic_contacts", "Hi-C"),
+        makeScoreCol("EPIraction", "H3K27ac \u00d7 open chromatin \u00d7 Hi-C contact"),
+        detailNum("h3k27ac", "H3K27ac", 2, "Raw ChIP-seq signal at enhancer"),
+        detailNum("open_chromatin", "Open Chrom.", 2, "Accessibility signal"),
+        detailNum("hic_contacts", "Hi-C", 2, "3D contact frequency"),
         detailNum("hic_fold_change", "Hi-C FC"),
         detailNum("activity", "Activity"),
         distCol,
-        regionCol,
       ];
 
     case "epimap":
       return [
+        regionCol,
         geneCol,
         detailText("gene_id", "Ensembl ID"),
         tissueCol,
-        scoreCol,
+        makeScoreCol("Link Score", "Enhancer-gene co-activity correlation"),
         detailText("enhancer_id", "Module ID"),
-        regionCol,
       ];
 
     case "re2g":
       return [
+        regionCol,
         geneCol,
         tissueCol,
         detailText("sub_method", "Sub-method"),
         detailText("element_class", "Class"),
-        scoreCol,
-        detailNum("activity_base", "Activity"),
+        makeScoreCol("ABC Score", "Activity \u00d7 Contact model score"),
+        detailNum("activity_base", "Activity", 2, "DNase/ATAC signal at enhancer"),
         {
           id: "d_flags",
           header: "Flags",
@@ -339,13 +355,12 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
             );
           },
         },
-        detailNum("hic_contact", "Hi-C", 4),
+        detailNum("hic_contact", "Hi-C Obs.", 4, "Measured 3D contact frequency"),
         distCol,
-        regionCol,
       ];
 
     default:
-      return [geneCol, tissueCol, scoreCol, distCol, regionCol];
+      return [regionCol, geneCol, tissueCol, makeScoreCol("Score", "Prediction score"), distCol];
   }
 }
 
@@ -360,29 +375,272 @@ function MethodTabBar({
   activeMethod: string;
   onMethodChange: (method: string) => void;
 }) {
-  const active = METHODS.find((m) => m.id === activeMethod) ?? METHODS[0];
+  return (
+    <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
+      {METHODS.map((m) => (
+        <button
+          key={m.id}
+          type="button"
+          onClick={() => onMethodChange(m.id)}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+            m.id === activeMethod
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// Tissue Summary — server-aggregated via group_by=tissue_name
+// ============================================================================
+
+interface TissueAggRow {
+  tissue_name: string;
+  max_value: number;
+  count: number;
+  top_item: string | null;
+}
+
+async function fetchTissueAgg(
+  loc: string,
+  method: string,
+): Promise<TissueAggRow[]> {
+  const params = new URLSearchParams({
+    method,
+    group_by: "tissue_name",
+  });
+  const res = await fetch(
+    `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+  );
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const json: { data: TissueAggRow[] } = await res.json();
+  return json.data;
+}
+
+function dotRadius(count: number): number {
+  if (count >= 15) return 8;
+  if (count >= 5) return 6;
+  return 4;
+}
+
+function TissueSummaryChart({
+  loc,
+  activeMethod,
+}: {
+  loc: string;
+  activeMethod: string;
+}) {
+  const { data: rows, isLoading } = useQuery({
+    queryKey: ["enhancer-tissue-agg", loc, activeMethod],
+    queryFn: () => fetchTissueAgg(loc, activeMethod),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const methodLabel =
+    METHODS.find((m) => m.id === activeMethod)?.label ?? activeMethod;
+  const dotColor = METHOD_COLORS[activeMethod] ?? "#8b5cf6";
+  const threshold = STRONG_THRESHOLD[activeMethod] ?? 0;
+  const axisLabel = AXIS_LABELS[activeMethod] ?? "Score";
+
+  // Already sorted by max_value desc from API — take top 20
+  const top = rows?.slice(0, 20) ?? [];
+  const maxScore = top.length > 0 ? top[0].max_value : 0;
+  const xMax = maxScore * 1.1;
+
+  // Generate ~5 nice tick values for the X axis (must be before any early return)
+  const ticks = useMemo(() => {
+    if (xMax <= 0) return [0];
+    const step = xMax / 5;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
+    const niceStep =
+      step / magnitude >= 5
+        ? 5 * magnitude
+        : step / magnitude >= 2
+          ? 2 * magnitude
+          : magnitude;
+    const result: number[] = [];
+    for (let v = 0; v <= xMax; v += niceStep) {
+      result.push(v);
+    }
+    return result;
+  }, [xMax]);
+
+  const toPercent = (score: number) =>
+    xMax > 0 ? (score / xMax) * 100 : 0;
+  const thresholdPct = toPercent(threshold);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-border">
+          <div className="text-sm font-medium text-foreground">Top Tissues</div>
+          <div className="text-xs text-muted-foreground">Loading...</div>
+        </div>
+        <div className="p-4 space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-28 h-3 bg-muted rounded animate-pulse" />
+              <div className="flex-1 h-3 bg-muted/50 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!top.length) return null;
 
   return (
-    <div className="space-y-1.5">
-      <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
-        {METHODS.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => onMethodChange(m.id)}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-              m.id === activeMethod
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
+    <TooltipProvider delayDuration={100}>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground">
+            Top Tissues by {methodLabel} Score
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Best prediction score per tissue across all {methodLabel} predictions
+          </p>
+        </div>
+
+        <div className="px-4 py-3">
+          {/* Dot plot rows */}
+          {top.map(({ tissue_name, max_value, count, top_item }) => {
+            const r = dotRadius(count);
+            const pct = toPercent(max_value);
+
+            return (
+              <Tooltip key={tissue_name}>
+                <TooltipTrigger asChild>
+                  <div
+                    className="flex items-center group cursor-default"
+                    style={{ height: 24 }}
+                  >
+                    {/* Tissue label */}
+                    <span
+                      className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors truncate shrink-0 text-right pr-2"
+                      style={{ width: 130 }}
+                    >
+                      {tissue_name}
+                    </span>
+
+                    {/* Dot plot area */}
+                    <div className="flex-1 relative" style={{ height: 24 }}>
+                      {/* Horizontal leader line */}
+                      <div
+                        className="absolute top-1/2 left-0 border-t border-border"
+                        style={{ width: `${pct}%`, transform: "translateY(-50%)" }}
+                      />
+                      {/* Dot */}
+                      <div
+                        className="absolute top-1/2 rounded-full transition-transform group-hover:scale-125"
+                        style={{
+                          left: `${pct}%`,
+                          width: r * 2,
+                          height: r * 2,
+                          backgroundColor: dotColor,
+                          transform: `translate(-50%, -50%)`,
+                        }}
+                      />
+                    </div>
+
+                    {/* Gene name */}
+                    <span className="text-[10px] font-mono text-muted-foreground w-20 truncate shrink-0 pl-1.5">
+                      {top_item ?? "\u2014"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {count.toLocaleString()} prediction{count !== 1 ? "s" : ""}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+
+          {/* X axis with threshold line */}
+          <div className="flex items-start" style={{ paddingTop: 4 }}>
+            <div style={{ width: 130 }} className="shrink-0" />
+            <div className="flex-1 relative" style={{ height: 28 }}>
+              {/* Threshold dashed line (spans full height of chart above) */}
+              {thresholdPct > 0 && thresholdPct < 100 && (
+                <div
+                  className="absolute border-l border-dashed border-muted-foreground/50"
+                  style={{
+                    left: `${thresholdPct}%`,
+                    bottom: 14,
+                    height: top.length * 24 + 4,
+                  }}
+                />
+              )}
+              {/* Axis line */}
+              <div className="absolute top-0 left-0 right-0 border-t border-border" />
+              {/* Tick marks and labels */}
+              {ticks.map((v) => {
+                const pct = toPercent(v);
+                return (
+                  <div
+                    key={v}
+                    className="absolute"
+                    style={{ left: `${pct}%`, top: 0 }}
+                  >
+                    <div className="border-l border-border" style={{ height: 4 }} />
+                    <span
+                      className="text-[9px] tabular-nums text-muted-foreground absolute"
+                      style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
+                    >
+                      {v < 0.001
+                        ? v.toExponential(0)
+                        : v < 1
+                          ? v.toPrecision(2)
+                          : v.toFixed(1)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="w-20 shrink-0" />
+          </div>
+
+          {/* Axis label */}
+          <div className="flex items-center" style={{ paddingTop: 2 }}>
+            <div style={{ width: 130 }} className="shrink-0" />
+            <div className="flex-1 text-center text-[10px] text-muted-foreground">
+              {axisLabel}
+            </div>
+            <div className="w-20 shrink-0" />
+          </div>
+
+          {/* Dot size legend */}
+          <div className="flex items-center justify-center gap-4 pt-3">
+            {[
+              { label: "1\u20134", r: 4 },
+              { label: "5\u201314", r: 6 },
+              { label: "15+", r: 8 },
+            ].map(({ label, r }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div
+                  className="rounded-full"
+                  style={{
+                    width: r * 2,
+                    height: r * 2,
+                    backgroundColor: dotColor,
+                    opacity: 0.6,
+                  }}
+                />
+                <span className="text-[10px] text-muted-foreground">
+                  {label} predictions
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">{active.desc}</p>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -494,6 +752,8 @@ export function EnhancerGenesView({
         activeMethod={activeMethod}
         onMethodChange={handleMethodChange}
       />
+
+      <TissueSummaryChart loc={loc} activeMethod={activeMethod} />
 
       <DataSurface
         data={data}

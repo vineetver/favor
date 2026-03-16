@@ -1,0 +1,263 @@
+"use client";
+
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type {
+  ServerFilterConfig,
+  ServerPaginationInfo,
+} from "@shared/hooks";
+import { useServerTable, useClientSearchParams } from "@shared/hooks";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
+import type {
+  AseRow,
+  PaginatedResponse,
+} from "@features/gene/api/region";
+import { useAseQuery } from "@features/gene/hooks/use-ase-query";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatTissueName(raw: string): string {
+  return raw
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\((\d+)\s+(Years?|Days?)\)/gi, "($1 $2)");
+}
+
+function formatPvalue(neglogp: number): string {
+  if (neglogp <= 0) return "1";
+  const p = Math.pow(10, -neglogp);
+  if (p < 0.001) return p.toExponential(1);
+  return p.toFixed(3);
+}
+
+// Clean assay names: "HM-ChIP-seq_H3K27ac" → "H3K27ac"
+function shortAssayLabel(raw: string): string {
+  // Strip common prefixes
+  return raw
+    .replace(/^HM-ChIP-seq_/, "")
+    .replace(/^TF-ChIP-seq_/, "")
+    .replace(/^ATAC-seq$/, "ATAC");
+}
+
+// ---------------------------------------------------------------------------
+// Table columns
+// ---------------------------------------------------------------------------
+
+const columns: ColumnDef<AseRow, unknown>[] = [
+  {
+    id: "ccre_accession",
+    accessorKey: "ccre_accession",
+    header: "cCRE",
+    enableSorting: false,
+    cell: ({ getValue }) => (
+      <span className="text-xs font-mono text-foreground">
+        {getValue() as string}
+      </span>
+    ),
+  },
+  {
+    id: "tissue_name",
+    accessorKey: "tissue_name",
+    header: "Tissue",
+    enableSorting: true,
+    cell: ({ getValue }) => (
+      <span className="text-sm text-muted-foreground truncate max-w-[180px] block">
+        {formatTissueName(getValue() as string)}
+      </span>
+    ),
+  },
+  {
+    id: "assay",
+    accessorKey: "assay",
+    header: "Assay",
+    enableSorting: false,
+    cell: ({ getValue }) => {
+      const raw = getValue() as string;
+      return (
+        <span className="text-xs text-muted-foreground" title={raw}>
+          {shortAssayLabel(raw)}
+        </span>
+      );
+    },
+  },
+  {
+    id: "neglog_pvalue",
+    accessorKey: "neglog_pvalue",
+    header: "-log\u2081\u2080(p)",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const val = row.original.neglog_pvalue;
+      const maxBar = 10;
+      const pct = Math.min(Math.max(val, 0) / maxBar, 1) * 100;
+      return (
+        <div className="flex items-center gap-2 min-w-[120px]">
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[80px]">
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{
+                width: `${Math.max(pct, 1)}%`,
+                opacity: Math.max(0.3, pct / 100),
+              }}
+            />
+          </div>
+          <span className="text-xs tabular-nums text-foreground">
+            {val > 0 ? val.toFixed(2) : "0"}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    id: "p_value",
+    header: "p-value",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className="text-xs tabular-nums text-muted-foreground">
+        {formatPvalue(row.original.neglog_pvalue)}
+      </span>
+    ),
+  },
+  {
+    id: "position",
+    accessorFn: (row) => row.start,
+    header: "Coordinates",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <span className="text-xs tabular-nums text-muted-foreground">
+        {row.original.start.toLocaleString()}&ndash;
+        {row.original.end.toLocaleString()}
+      </span>
+    ),
+  },
+  {
+    id: "is_significant",
+    accessorKey: "is_significant",
+    header: "Sig.",
+    enableSorting: false,
+    cell: ({ getValue }) => (
+      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
+        {getValue() ? "Yes" : "No"}
+      </span>
+    ),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Filter config
+// ---------------------------------------------------------------------------
+
+function buildFilters(
+  tissues: string[],
+  assays: string[],
+): ServerFilterConfig[] {
+  return [
+    {
+      id: "tissue",
+      label: "Tissue",
+      type: "select",
+      placeholder: "All tissues",
+      options: tissues.map((t) => ({ value: t, label: formatTissueName(t) })),
+    },
+    {
+      id: "assay",
+      label: "Assay",
+      type: "select",
+      placeholder: "All assays",
+      options: assays.map((a) => ({ value: a, label: shortAssayLabel(a) })),
+    },
+    {
+      id: "significant_only",
+      label: "Significant",
+      type: "select",
+      placeholder: "All",
+      options: [
+        { value: "true", label: "Significant only" },
+      ],
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+interface AseViewProps {
+  loc: string;
+  tissues: string[];
+  assays: string[];
+  totalCount: number;
+  initialData?: PaginatedResponse<AseRow>;
+}
+
+export function AseView({
+  loc,
+  tissues,
+  assays,
+  totalCount,
+  initialData,
+}: AseViewProps) {
+  const filters = useMemo(
+    () => buildFilters(tissues, assays),
+    [tissues, assays],
+  );
+
+  const searchParams = useClientSearchParams();
+
+  const { data, pageInfo, isLoading, isFetching } = useAseQuery({
+    loc,
+    initialData,
+  });
+
+  const hasActiveFilters = Boolean(
+    searchParams.get("tissue") ||
+    searchParams.get("assay") ||
+    searchParams.get("significant_only"),
+  );
+  const liveTotal =
+    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+
+  const paginationInfo: ServerPaginationInfo = {
+    totalCount: liveTotal,
+    pageSize: 25,
+    hasMore: pageInfo.hasMore,
+    currentCursor: pageInfo.nextCursor,
+  };
+
+  const tableState = useServerTable({
+    filters,
+    serverPagination: true,
+    paginationInfo,
+  });
+
+  const subtitle =
+    liveTotal != null
+      ? `${liveTotal.toLocaleString()} observations across ${tissues.length} biosamples`
+      : `Observations across ${tissues.length} biosamples`;
+
+  return (
+    <DataSurface
+      data={data}
+      columns={columns}
+      subtitle={subtitle}
+      searchPlaceholder="Search cCREs, tissues..."
+      searchColumn="tissue_name"
+      exportable
+      exportFilename={`ase-${loc}`}
+      filterable
+      filters={filters}
+      filterValues={tableState.filterValues}
+      onFilterChange={tableState.onFilterChange}
+      filterChips={tableState.filterChips}
+      onRemoveFilterChip={tableState.onRemoveFilterChip}
+      onClearFilters={tableState.onClearFilters}
+      loading={isLoading && data.length === 0}
+      transitioning={isFetching && data.length > 0}
+      serverPagination={tableState.pagination}
+      serverSort={tableState.serverSort}
+      pageSizeOptions={[25, 50, 100]}
+      emptyMessage="No allele-specific activity found for this region"
+    />
+  );
+}

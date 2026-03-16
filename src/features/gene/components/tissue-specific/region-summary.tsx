@@ -25,7 +25,7 @@ function formatCount(n: number): string {
 }
 
 const NAV_ITEMS: {
-  key: keyof RegionSummary["counts"];
+  key: keyof RegionSummary["counts"] | null;
   slug: string;
   label: string;
   hint: string;
@@ -37,6 +37,7 @@ const NAV_ITEMS: {
   { key: "loops", slug: "loops", label: "Chromatin Loops", hint: "Two-anchor loops from Hi-C / ChIA-PET" },
   { key: "ase", slug: "allele-specific", label: "ASE cCREs", hint: "Allele-specific epigenomic activity at cCREs" },
   { key: "validated_enhancers", slug: "validated-enhancers", label: "VISTA Enhancers", hint: "In vivo validated enhancers from VISTA" },
+  { key: null, slug: "ccre-links", label: "cCRE Links", hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN" },
 ];
 
 export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
@@ -50,15 +51,15 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {NAV_ITEMS.map(({ key, slug, label, hint }) => {
-            const count = summary.counts[key];
+            const count = key ? summary.counts[key] : null;
             const isActive = activeSlug === slug;
             const isEmpty = count === 0;
 
             return (
               <Link
-                key={key}
+                key={slug}
                 href={`${basePath}/${slug}`}
                 className={cn(
                   "rounded-lg border p-4 transition-colors",
@@ -68,7 +69,7 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
                       ? "bg-card border-border opacity-40 cursor-default"
                       : "bg-card border-border hover:bg-accent",
                 )}
-                {...(isEmpty ? { tabIndex: -1, "aria-disabled": true } : {})}
+                {...(isEmpty ? { tabIndex: -1, "aria-disabled": true, onClick: (e: React.MouseEvent) => e.preventDefault() } : {})}
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span
@@ -94,7 +95,7 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
                     isActive ? "text-foreground" : "text-foreground",
                   )}
                 >
-                  {formatCount(count)}
+                  {count != null ? formatCount(count) : "\u2014"}
                 </span>
               </Link>
             );

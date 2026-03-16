@@ -108,11 +108,10 @@ export function useSignalsQuery({
   const query = useQuery({
     queryKey,
     queryFn: () => fetchSignalsClient(loc, filters),
-    placeholderData: (prev) => prev,
-    staleTime: 5 * 60 * 1000,
-    ...(isFirstMount.current && initialData
-      ? { initialData }
-      : {}),
+    placeholderData: isFirstMount.current && initialData
+      ? initialData
+      : (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   useEffect(() => {
