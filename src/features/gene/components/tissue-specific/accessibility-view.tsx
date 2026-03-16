@@ -81,12 +81,12 @@ function TissueSummaryChart({ rows }: { rows: AccessibilityRow[] }) {
         </div>
 
         <div className="px-4 py-3 space-y-1">
-          {tissueScores.map(({ tissue, bestSignal, peakCount }) => {
+          {tissueScores.map(({ tissue, bestSignal, peakCount }, idx) => {
             const pct =
               maxSignal > 0 ? (bestSignal / maxSignal) * 100 : 0;
 
             return (
-              <Tooltip key={tissue}>
+              <Tooltip key={`${tissue}-${idx}`}>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-3 group cursor-default">
                     <span

@@ -71,12 +71,32 @@ export interface TissueGroupRow {
   top_item?: string;
 }
 
-export async function fetchSignalsByTissueGroup(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/signals?group_by=tissue_group`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+/** API returns `group_key` — map to our `tissue_name` field */
+interface RawGroupRow {
+  group_key: string;
+  max_value: number;
+  count: number;
+  significant?: number;
+  top_item?: string;
+}
+
+function mapGroupRows(raw: RawGroupRow[]): TissueGroupRow[] {
+  return raw.map((r) => ({
+    tissue_name: r.group_key,
+    max_value: r.max_value,
+    count: r.count,
+    significant: r.significant,
+    top_item: r.top_item,
+  }));
+}
+
+async function fetchGrouped(url: string): Promise<TissueGroupRow[]> {
+  const res = await fetchJson<{ data: RawGroupRow[] }>(url);
+  return mapGroupRows(res.data);
+}
+
+export async function fetchSignalsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/signals?group_by=tissue_group`);
 }
 
 export async function fetchEnhancersByTissueGroup(
@@ -86,70 +106,35 @@ export async function fetchEnhancersByTissueGroup(
   const params = new URLSearchParams({ group_by: "tissue_group" });
   if (opts.method) params.set("method", opts.method);
   if (opts.target_gene) params.set("target_gene", opts.target_gene);
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`);
 }
 
-export async function fetchAseByTissueGroup(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/ase?group_by=tissue_group`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchAseByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/ase?group_by=tissue_group`);
 }
 
-export async function fetchChromatinByTissueGroup(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?group_by=tissue_group`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchChromatinByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?group_by=tissue_group`);
 }
 
-export async function fetchAccessibilityByTissueGroup(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility?group_by=tissue_group`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchAccessibilityByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility?group_by=tissue_group`);
 }
 
-export async function fetchLoopsByTissueGroup(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/loops?group_by=tissue_group`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchLoopsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/loops?group_by=tissue_group`);
 }
 
-// ---------------------------------------------------------------------------
-// Variant-level tissue group aggregation (for overview evidence table)
-// Uses group_by=tissue_name since group_by=tissue_group not supported
-// ---------------------------------------------------------------------------
-
-export async function fetchQtlsByTissue(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/variants/${encodeURIComponent(loc)}/qtls?group_by=tissue_name`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchQtlsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/qtls?group_by=tissue_group`);
 }
 
-export async function fetchChromBpnetByTissue(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/variants/${encodeURIComponent(loc)}/chrombpnet?group_by=tissue_name`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchChromBpnetByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/chrombpnet?group_by=tissue_group`);
 }
 
-export async function fetchVariantAllelicImbalanceByTissue(
-  loc: string,
-): Promise<TissueGroupRow[]> {
-  const url = `${API_BASE}/variants/${encodeURIComponent(loc)}/allelic-imbalance?group_by=tissue_name`;
-  const res = await fetchJson<{ data: TissueGroupRow[] }>(url);
-  return res.data;
+export async function fetchVariantAllelicImbalanceByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/allelic-imbalance?group_by=tissue_group`);
 }
 
 // ---------------------------------------------------------------------------

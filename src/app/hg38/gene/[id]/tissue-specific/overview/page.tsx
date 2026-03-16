@@ -2,14 +2,14 @@ import { fetchGene } from "@features/gene/api";
 import {
   fetchAccessibilityByTissueGroup,
   fetchAseByTissueGroup,
-  fetchChromBpnetByTissue,
+  fetchChromBpnetByTissueGroup,
   fetchChromatinByTissueGroup,
   fetchEnhancersByTissueGroup,
   fetchLoopsByTissueGroup,
-  fetchQtlsByTissue,
+  fetchQtlsByTissueGroup,
   fetchRegionSummary,
   fetchSignalsByTissueGroup,
-  fetchVariantAllelicImbalanceByTissue,
+  fetchVariantAllelicImbalanceByTissueGroup,
   fetchVariantEvidenceSummary,
 } from "@features/gene/api/region";
 import { VariantEvidenceView } from "@features/gene/components/tissue-specific/variant-evidence-view";
@@ -54,9 +54,9 @@ export default async function TissueOverviewPage({
     fetchAccessibilityByTissueGroup(loc).catch(() => []),
     fetchLoopsByTissueGroup(loc).catch(() => []),
     fetchAseByTissueGroup(loc).catch(() => []),
-    fetchQtlsByTissue(loc).catch(() => []),
-    fetchChromBpnetByTissue(loc).catch(() => []),
-    fetchVariantAllelicImbalanceByTissue(loc).catch(() => []),
+    fetchQtlsByTissueGroup(loc).catch(() => []),
+    fetchChromBpnetByTissueGroup(loc).catch(() => []),
+    fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []),
     fetchRegionSummary(loc).catch(() => null),
     fetchVariantEvidenceSummary(loc, 50).catch(() => []),
   ]);

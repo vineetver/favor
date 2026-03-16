@@ -39,6 +39,11 @@ async function fetchQtlsClient(
   return res.json();
 }
 
+/** SuSiE fine-mapped results don't have p-values — sort by PIP instead */
+const SOURCE_DEFAULT_SORT: Record<string, string> = {
+  gtex_susie: "posterior_inclusion_prob",
+};
+
 function parseFilters(sp: URLSearchParams): QtlFilterOptions {
   const f: QtlFilterOptions = {};
   const tissue = sp.get("tissue");
@@ -50,7 +55,8 @@ function parseFilters(sp: URLSearchParams): QtlFilterOptions {
   const gene = sp.get("gene");
   if (gene) f.gene = gene;
   if (sp.get("significant_only") === "true") f.significant_only = true;
-  f.sort_by = sp.get("sort_by") || "neglog_pvalue";
+  const defaultSort = (source && SOURCE_DEFAULT_SORT[source]) || "neglog_pvalue";
+  f.sort_by = sp.get("sort_by") || defaultSort;
   f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;

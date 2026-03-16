@@ -2,6 +2,7 @@
 
 import { cn } from "@infra/utils";
 import type { VariantEvidenceSummaryRow } from "@features/gene/api/region";
+import { formatCount } from "@shared/utils/tissue-format";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import {
   Tooltip,
@@ -14,7 +15,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 
 // ---------------------------------------------------------------------------
-// Readable labels for region_table values
+// Region table labels
 // ---------------------------------------------------------------------------
 
 const REGION_TABLE_LABELS: Record<string, string> = {
@@ -32,55 +33,38 @@ function regionLabel(table: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Evidence types
+// Evidence counting
 // ---------------------------------------------------------------------------
 
-const EVIDENCE_TYPES = [
-  { key: "region_overlap_count" as const, label: "Region overlaps" },
-  { key: "qtl_count" as const, label: "QTLs" },
-  { key: "chrombpnet_count" as const, label: "ChromBPNet" },
-  { key: "imbalance_count" as const, label: "Allelic imbalance" },
-  { key: "methylation_count" as const, label: "Methylation" },
-  { key: "pgs_count" as const, label: "PGS" },
+const EVIDENCE_KEYS = [
+  "region_overlap_count", "qtl_count", "chrombpnet_count",
+  "imbalance_count", "methylation_count", "pgs_count",
 ] as const;
 
-const TOTAL_VARIANT_EVIDENCE = 7; // 6 above + tissue_score_max
+const TOTAL_VARIANT_EVIDENCE = 7; // 6 keys above + tissue_score_max
 
 function countEvidence(row: VariantEvidenceSummaryRow): number {
   let n = 0;
-  for (const t of EVIDENCE_TYPES) if (row[t.key] > 0) n++;
+  for (const k of EVIDENCE_KEYS) if (row[k] > 0) n++;
   if (row.tissue_score_max > 0) n++;
   return n;
 }
 
 // ---------------------------------------------------------------------------
-// Strength system — shared with tissue evidence table
+// Strength system
 // ---------------------------------------------------------------------------
 
 type Strength = "strong" | "moderate" | "low";
 
-function classifyCount(
-  count: number,
-  strongThreshold: number,
-  moderateThreshold: number,
-): Strength {
-  if (count >= strongThreshold) return "strong";
-  if (count >= moderateThreshold) return "moderate";
+function classify(value: number, strong: number, moderate: number): Strength {
+  if (value >= strong) return "strong";
+  if (value >= moderate) return "moderate";
   return "low";
 }
 
-/** Fixed bar width per tier so bar and label always agree visually. */
 const TIER_FILL: Record<Strength, number> = { strong: 85, moderate: 50, low: 18 };
 
-function StrengthCell({
-  strength,
-  label,
-  detail,
-}: {
-  strength: Strength;
-  label: string;
-  detail: string;
-}) {
+function StrengthCell({ strength, label, detail }: { strength: Strength; label: string; detail: string }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -109,9 +93,7 @@ function StrengthCell({
             </span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs max-w-xs">
-          {detail}
-        </TooltipContent>
+        <TooltipContent side="top" className="text-xs max-w-xs">{detail}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -121,10 +103,6 @@ function Dash() {
   return <span className="text-xs text-muted-foreground/30">&mdash;</span>;
 }
 
-// ---------------------------------------------------------------------------
-// Convergence dots
-// ---------------------------------------------------------------------------
-
 function EvidenceDots({ count }: { count: number }) {
   return (
     <TooltipProvider delayDuration={150}>
@@ -133,18 +111,10 @@ function EvidenceDots({ count }: { count: number }) {
           <div className="flex items-center gap-1">
             <div className="flex gap-[3px]">
               {Array.from({ length: TOTAL_VARIANT_EVIDENCE }, (_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    i < count ? "bg-primary" : "bg-border"
-                  )}
-                />
+                <div key={i} className={cn("w-1.5 h-1.5 rounded-full", i < count ? "bg-primary" : "bg-border")} />
               ))}
             </div>
-            <span className="text-xs tabular-nums text-muted-foreground ml-0.5">
-              {count}/{TOTAL_VARIANT_EVIDENCE}
-            </span>
+            <span className="text-xs tabular-nums text-muted-foreground ml-0.5">{count}/{TOTAL_VARIANT_EVIDENCE}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs max-w-xs">
@@ -153,16 +123,6 @@ function EvidenceDots({ count }: { count: number }) {
       </Tooltip>
     </TooltipProvider>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmtK(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
 }
 
 // ---------------------------------------------------------------------------
@@ -234,17 +194,9 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     cell: ({ row }) => {
       const { qtl_count, qtl_significant } = row.original;
       if (qtl_count === 0) return <Dash />;
-      const strength = classifyCount(qtl_count, 500, 50);
-      const label = `${fmtK(qtl_count)} hits`;
+      const strength = classify(qtl_count, 500, 50);
       const sigNote = qtl_significant > 0 ? `, ${qtl_significant} genome-wide significant` : "";
-      return (
-        <StrengthCell
-          strength={strength}
-          label={label}
-
-          detail={`${qtl_count.toLocaleString()} QTL associations${sigNote}`}
-        />
-      );
+      return <StrengthCell strength={strength} label={`${formatCount(qtl_count)} hits`} detail={`${qtl_count.toLocaleString()} QTL associations${sigNote}`} />;
     },
   },
   {
@@ -257,19 +209,10 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     cell: ({ row }) => {
       const { imbalance_count, imbalance_significant } = row.original;
       if (imbalance_count === 0) return <Dash />;
-      const strength = classifyCount(imbalance_count, 50, 10);
+      const label = imbalance_significant > 0 ? `${imbalance_significant} sig.` : `${imbalance_count} obs.`;
+      const strength: Strength = imbalance_significant > 5 ? "strong" : imbalance_significant > 0 ? "moderate" : "low";
       const sigNote = imbalance_significant > 0 ? `, ${imbalance_significant} significant` : "";
-      const label = imbalance_significant > 0
-        ? `${imbalance_significant} sig.`
-        : `${imbalance_count} obs.`;
-      return (
-        <StrengthCell
-          strength={imbalance_significant > 5 ? "strong" : imbalance_significant > 0 ? "moderate" : "low"}
-          label={label}
-
-          detail={`${imbalance_count} histone imbalance observations${sigNote} (FDR < 0.05)`}
-        />
-      );
+      return <StrengthCell strength={strength} label={label} detail={`${imbalance_count} histone imbalance observations${sigNote} (FDR < 0.05)`} />;
     },
   },
   {
@@ -284,14 +227,7 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
       if (v === 0) return <Dash />;
       const strength: Strength = v >= 0.5 ? "strong" : v >= 0.1 ? "moderate" : "low";
       const label = strength === "strong" ? "High" : strength === "moderate" ? "Moderate" : "Low";
-      return (
-        <StrengthCell
-          strength={strength}
-          label={label}
-
-          detail={`Max tissue score: ${v.toFixed(3)} (0–1 scale, higher = more likely functional)`}
-        />
-      );
+      return <StrengthCell strength={strength} label={label} detail={`Max tissue score: ${v.toFixed(3)} (0–1 scale, higher = more likely functional)`} />;
     },
   },
   {
@@ -304,16 +240,8 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     cell: ({ getValue }) => {
       const v = getValue() as number;
       if (v === 0) return <Dash />;
-      const strength = classifyCount(v, 3, 1);
-      const label = `${v} pred.`;
-      return (
-        <StrengthCell
-          strength={strength}
-          label={label}
-
-          detail={`${v} ChromBPNet prediction${v !== 1 ? "s" : ""} of variant effect on chromatin accessibility`}
-        />
-      );
+      const strength = classify(v, 3, 1);
+      return <StrengthCell strength={strength} label={`${v} pred.`} detail={`${v} ChromBPNet prediction${v !== 1 ? "s" : ""} of variant effect on chromatin accessibility`} />;
     },
   },
   {
@@ -326,16 +254,8 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     cell: ({ getValue }) => {
       const v = getValue() as number;
       if (v === 0) return <Dash />;
-      const strength = classifyCount(v, 50, 10);
-      const label = `${fmtK(v)} scores`;
-      return (
-        <StrengthCell
-          strength={strength}
-          label={label}
-
-          detail={`Included in ${v.toLocaleString()} polygenic score${v !== 1 ? "s" : ""} from the PGS Catalog`}
-        />
-      );
+      const strength = classify(v, 50, 10);
+      return <StrengthCell strength={strength} label={`${formatCount(v)} scores`} detail={`Included in ${v.toLocaleString()} polygenic score${v !== 1 ? "s" : ""} from the PGS Catalog`} />;
     },
   },
   {
@@ -348,16 +268,8 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     cell: ({ getValue }) => {
       const v = getValue() as number;
       if (v === 0) return <Dash />;
-      const strength = classifyCount(v, 10, 3);
-      const label = `${v} obs.`;
-      return (
-        <StrengthCell
-          strength={strength}
-          label={label}
-
-          detail={`${v} allelic methylation observation${v !== 1 ? "s" : ""} across ENTEx tissues`}
-        />
-      );
+      const strength = classify(v, 10, 3);
+      return <StrengthCell strength={strength} label={`${v} obs.`} detail={`${v} allelic methylation observation${v !== 1 ? "s" : ""} across ENTEx tissues`} />;
     },
   },
 ];

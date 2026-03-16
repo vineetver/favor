@@ -395,8 +395,15 @@ function MethodTabBar({
 // Tissue Summary — server-aggregated via group_by=tissue_name
 // ============================================================================
 
+interface TissueAggRaw {
+  group_key: string;
+  max_value: number;
+  count: number;
+  top_item: string | null;
+}
+
 interface TissueAggRow {
-  tissue_name: string;
+  tissue: string;
   max_value: number;
   count: number;
   top_item: string | null;
@@ -409,15 +416,20 @@ async function fetchTissueAgg(
 ): Promise<TissueAggRow[]> {
   const params = new URLSearchParams({
     method,
-    group_by: "tissue_name",
+    group_by: "tissue_group",
   });
   if (tissueGroup) params.set("tissue_group", tissueGroup);
   const res = await fetch(
     `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const json: { data: TissueAggRow[] } = await res.json();
-  return json.data;
+  const json: { data: TissueAggRaw[] } = await res.json();
+  return json.data.map((r) => ({
+    tissue: r.group_key,
+    max_value: r.max_value,
+    count: r.count,
+    top_item: r.top_item,
+  }));
 }
 
 function dotRadius(count: number): number {
@@ -509,12 +521,12 @@ function TissueSummaryChart({
 
         <div className="px-4 py-3">
           {/* Dot plot rows */}
-          {top.map(({ tissue_name, max_value, count, top_item }) => {
-            const r = dotRadius(count);
-            const pct = toPercent(max_value);
+          {top.map((row, idx) => {
+            const r = dotRadius(row.count);
+            const pct = toPercent(row.max_value);
 
             return (
-              <Tooltip key={tissue_name}>
+              <Tooltip key={`${row.tissue}-${idx}`}>
                 <TooltipTrigger asChild>
                   <div
                     className="flex items-center group cursor-default"
@@ -525,7 +537,7 @@ function TissueSummaryChart({
                       className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors truncate shrink-0 text-right pr-2"
                       style={{ width: 130 }}
                     >
-                      {tissue_name}
+                      {row.tissue}
                     </span>
 
                     {/* Dot plot area */}
@@ -550,12 +562,12 @@ function TissueSummaryChart({
 
                     {/* Gene name */}
                     <span className="text-xs font-mono text-muted-foreground w-20 truncate shrink-0 pl-1.5">
-                      {top_item ?? "\u2014"}
+                      {row.top_item ?? "\u2014"}
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {count.toLocaleString()} prediction{count !== 1 ? "s" : ""}
+                  {row.count.toLocaleString()} prediction{row.count !== 1 ? "s" : ""}
                 </TooltipContent>
               </Tooltip>
             );
