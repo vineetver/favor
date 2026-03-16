@@ -440,22 +440,24 @@ export function DataSurface<TData, TValue>({
         <ScopeBar dimensions={dimensions} />
       )}
 
-      {/* Control Bar */}
-      <ControlBar
-        searchPlaceholder={searchPlaceholder}
-        searchValue={searchValue}
-        onSearchChange={searchable ? handleSearch : undefined}
-        showSearch={searchable}
-        onFilterClick={filterable ? () => setFilterDrawerOpen(true) : undefined}
-        hasActiveFilters={hasFilters}
-        filterChips={filterChips}
-        onRemoveFilterChip={onRemoveFilterChip}
-        onClearFilters={onClearFilters}
-        viewMode={viewMode}
-        onViewModeChange={showViewSwitch ? setViewMode : undefined}
-        showViewSwitch={showViewSwitch && !!Visualization}
-        sticky={stickyHeader}
-      />
+      {/* Control Bar — only render when there's something to show */}
+      {(searchable || filterable || (showViewSwitch && !!Visualization) || filterChips.length > 0) && (
+        <ControlBar
+          searchPlaceholder={searchPlaceholder}
+          searchValue={searchValue}
+          onSearchChange={searchable ? handleSearch : undefined}
+          showSearch={searchable}
+          onFilterClick={filterable ? () => setFilterDrawerOpen(true) : undefined}
+          hasActiveFilters={hasFilters}
+          filterChips={filterChips}
+          onRemoveFilterChip={onRemoveFilterChip}
+          onClearFilters={onClearFilters}
+          viewMode={viewMode}
+          onViewModeChange={showViewSwitch ? setViewMode : undefined}
+          showViewSwitch={showViewSwitch && !!Visualization}
+          sticky={stickyHeader}
+        />
+      )}
 
       {/* Content */}
       {error ? (
