@@ -57,8 +57,8 @@ function parseFilters(sp: URLSearchParams): AseFilterOptions {
   const assay = sp.get("assay");
   if (assay) f.assay = assay;
   if (sp.get("significant_only") === "true") f.significant_only = true;
-  f.sort_by = sp.get("sort_by") || "tissue_name";
-  f.sort_dir = sp.get("sort_dir") || "asc";
+  f.sort_by = sp.get("sort_by") || "neglog_pvalue";
+  f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");
