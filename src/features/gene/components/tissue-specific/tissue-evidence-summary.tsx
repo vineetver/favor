@@ -12,13 +12,11 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const TOP_N = 15;
 
 const STATE_COLORS: Record<string, string> = {
   promoter: "#ef4444",
@@ -538,11 +536,7 @@ export function TissueEvidenceSummary({
   summary,
   basePath,
 }: Props) {
-  const [showAll, setShowAll] = useState(false);
-
   const all = useMemo(() => buildTissueEvidence(evidence), [evidence]);
-  const display = showAll ? all : all.slice(0, TOP_N);
-  const hasMore = all.length > TOP_N;
 
   const maxes = useMemo(() => {
     let s = 0,
@@ -566,38 +560,22 @@ export function TissueEvidenceSummary({
     : null;
 
   const subtitle = [
-    showAll
-      ? `All ${all.length}`
-      : `Top ${Math.min(TOP_N, all.length)} of ${all.length}`,
-    "tissue groups ranked by evidence convergence",
+    `${all.length} tissue groups ranked by evidence convergence`,
     totalRecords != null ? `\u00b7 ${fmtK(totalRecords)} total records` : null,
   ]
     .filter(Boolean)
     .join(" ");
 
-  const toggle = hasMore ? (
-    <button
-      type="button"
-      onClick={() => setShowAll(!showAll)}
-      className="text-xs text-primary hover:underline"
-    >
-      {showAll ? `Show top ${TOP_N}` : `Show all ${all.length}`}
-    </button>
-  ) : undefined;
-
   return (
     <DataSurface
       title="Tissue Regulatory Evidence"
       subtitle={subtitle}
-      headerActions={toggle}
-      data={display}
+      data={all}
       columns={columns}
-      searchable={showAll}
-      searchPlaceholder="Search tissues..."
-      searchColumn="tissue_name"
-      defaultPageSize={showAll ? 25 : TOP_N}
-      pageSizeOptions={[25, 50]}
-      exportable={showAll}
+      searchable={false}
+      defaultPageSize={all.length}
+      pageSizeOptions={[all.length]}
+      exportable
       exportFilename="tissue-evidence"
       emptyMessage="No tissue-specific regulatory evidence found for this gene."
       renderExpandedRow={(tissue) => (
