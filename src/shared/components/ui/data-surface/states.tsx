@@ -28,7 +28,7 @@ export function LoadingState({ rows = 5, columns = 4 }: LoadingStateProps) {
                 <td key={colIdx} className="px-6 py-3">
                   <div
                     className="h-4 bg-muted rounded animate-pulse"
-                    style={{ width: `${60 + Math.random() * 40}%` }}
+                    style={{ width: `${65 + ((rowIdx * 7 + colIdx * 13) % 30)}%` }}
                   />
                 </td>
               ))}

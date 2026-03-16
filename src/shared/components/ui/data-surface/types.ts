@@ -96,6 +96,15 @@ export interface ServerPaginationProps {
   canGoPrevious: boolean;
 }
 
+export interface ServerSortProps {
+  /** Current sort column (matches column id) */
+  sortBy: string | null;
+  /** Current sort direction */
+  sortDir: "asc" | "desc";
+  /** Called when user clicks a sortable column header */
+  onSortChange: (columnId: string, desc: boolean) => void;
+}
+
 export interface DataSurfaceProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -136,6 +145,10 @@ export interface DataSurfaceProps<TData, TValue> {
   // Server pagination props
   /** Enable server-side pagination mode */
   serverPagination?: ServerPaginationProps;
+  /** Enable server-side sorting (manual sorting — API handles the sort) */
+  serverSort?: ServerSortProps;
+  /** Show subtle transition indicator when true (does NOT replace table with skeleton) */
+  transitioning?: boolean;
   // Transposed mode props
   /** Enable transposed mode - columns become rows */
   transposed?: boolean;

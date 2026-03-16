@@ -129,7 +129,7 @@ export function FilterDrawer({
                   <SelectTrigger className="w-full h-10">
                     <SelectValue placeholder={filter.placeholder ?? "All"} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-w-[var(--radix-select-trigger-width)]">
                     <SelectItem value="__all__">{filter.placeholder ?? "All"}</SelectItem>
                     {filter.options.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>

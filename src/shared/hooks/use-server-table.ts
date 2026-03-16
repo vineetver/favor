@@ -1,4 +1,7 @@
-import type { FilterChip } from "@shared/components/ui/data-surface/types";
+import type {
+  FilterChip,
+  ServerSortProps,
+} from "@shared/components/ui/data-surface/types";
 import { usePathname } from "next/navigation";
 import {
   useCallback,
@@ -73,6 +76,8 @@ export interface UseServerTableReturn {
     pageSize: number;
     totalCount?: number;
   };
+  /** Server sort state (only when serverPagination is enabled) */
+  serverSort?: ServerSortProps;
 }
 
 // ============================================================================
@@ -336,6 +341,39 @@ export function useServerTable({
   }, [filters, filterValues]);
 
   // ============================================================================
+  // Sorting Handlers
+  // ============================================================================
+
+  const handleSortChange = useCallback(
+    (columnId: string, desc: boolean) => {
+      // Read current URL directly to avoid stale closure over searchParams
+      const params = new URLSearchParams(window.location.search);
+      if (columnId) {
+        params.set("sort_by", columnId);
+        params.set("sort_dir", desc ? "desc" : "asc");
+      } else {
+        params.delete("sort_by");
+        params.delete("sort_dir");
+      }
+      // Reset pagination on sort change
+      params.delete("cursor");
+      cursorHistory.current = [];
+
+      const newUrl = params.toString() ? `${pathname}?${params}` : pathname;
+      updateClientUrl(newUrl, false);
+    },
+    [pathname],
+  );
+
+  const serverSort = useMemo<ServerSortProps | undefined>(() => {
+    if (!serverPagination) return undefined;
+    const sortBy = searchParams.get("sort_by") || null;
+    const sortDir =
+      (searchParams.get("sort_dir") as "asc" | "desc") || "desc";
+    return { sortBy, sortDir, onSortChange: handleSortChange };
+  }, [serverPagination, searchParams, handleSortChange]);
+
+  // ============================================================================
   // Pagination Handlers
   // ============================================================================
 
@@ -422,5 +460,6 @@ export function useServerTable({
     onClearFilters: handleClearFilters,
     loading: isPending,
     pagination,
+    serverSort,
   };
 }

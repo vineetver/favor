@@ -30,6 +30,7 @@ import { TableContent } from "./table-content";
 import type {
   ColumnMeta,
   DataSurfaceProps,
+  ServerSortProps,
   TransposedRow,
   ViewMode,
   VisualizationProps,
@@ -70,17 +71,32 @@ export function DataSurface<TData, TValue>({
   className,
   // Server pagination props
   serverPagination,
+  serverSort,
+  transitioning = false,
   // Transposed mode props
   transposed = false,
   sourceObject,
   derivedColumn,
   defaultSort,
 }: DataSurfaceProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>(
-    defaultSort
-      ? [{ id: defaultSort.column, desc: defaultSort.direction === "desc" }]
-      : [],
-  );
+  const [sorting, setSorting] = React.useState<SortingState>(() => {
+    if (serverSort?.sortBy) {
+      return [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }];
+    }
+    if (defaultSort) {
+      return [{ id: defaultSort.column, desc: defaultSort.direction === "desc" }];
+    }
+    return [];
+  });
+
+  // Sync sorting state when server sort changes (e.g., back/forward navigation)
+  React.useEffect(() => {
+    if (!serverSort) return;
+    const next: SortingState = serverSort.sortBy
+      ? [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }]
+      : [];
+    setSorting(next);
+  }, [serverSort?.sortBy, serverSort?.sortDir]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
@@ -256,6 +272,29 @@ export function DataSurface<TData, TValue>({
     ? Math.max(defaultPageSize, 50)
     : defaultPageSize;
 
+  // Intercept sorting changes for server-side sort
+  const handleSortingChange: React.Dispatch<
+    React.SetStateAction<SortingState>
+  > = React.useCallback(
+    (updaterOrValue) => {
+      setSorting((prev) => {
+        const next =
+          typeof updaterOrValue === "function"
+            ? updaterOrValue(prev)
+            : updaterOrValue;
+        if (serverSort) {
+          if (next.length > 0) {
+            serverSort.onSortChange(next[0].id, next[0].desc);
+          } else {
+            serverSort.onSortChange("", false);
+          }
+        }
+        return next;
+      });
+    },
+    [serverSort],
+  );
+
   const table = useReactTable({
     data: effectiveData,
     columns: effectiveColumns,
@@ -264,11 +303,11 @@ export function DataSurface<TData, TValue>({
       columnFilters,
       globalFilter,
     },
-    onSortingChange: setSorting,
+    onSortingChange: serverSort ? handleSortingChange : setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: serverSort ? undefined : getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     // Only use client pagination if NOT in server pagination mode
     getPaginationRowModel: serverPagination ? undefined : getPaginationRowModel(),
@@ -277,7 +316,8 @@ export function DataSurface<TData, TValue>({
         ? undefined
         : { pageSize: effectivePageSize },
     },
-    manualPagination: serverPagination ? true : false,
+    manualPagination: !!serverPagination,
+    manualSorting: !!serverSort,
     pageCount: serverPagination ? -1 : undefined,
   });
 
@@ -418,7 +458,7 @@ export function DataSurface<TData, TValue>({
       {/* Content */}
       {error ? (
         <ErrorState error={error} onRetry={onRetry} />
-      ) : loading ? (
+      ) : loading && effectiveData.length === 0 ? (
         <LoadingState columns={effectiveColumns.length} />
       ) : viewMode === "chart" && Visualization ? (
         <div className="p-6">
@@ -438,14 +478,21 @@ export function DataSurface<TData, TValue>({
               )}
         </div>
       ) : (
-        <TableContent
-          table={table}
-          rows={table.getRowModel().rows}
-          sorting={sorting}
-          onRowClick={onRowClick}
-          emptyMessage={emptyMessage}
-          loading={false}
-        />
+        <div
+          className={cn(
+            "transition-opacity duration-150",
+            transitioning && "opacity-60",
+          )}
+        >
+          <TableContent
+            table={table}
+            rows={table.getRowModel().rows}
+            sorting={sorting}
+            onRowClick={onRowClick}
+            emptyMessage={emptyMessage}
+            loading={false}
+          />
+        </div>
       )}
 
       {/* Footer - hidden in chart view or when no data */}
