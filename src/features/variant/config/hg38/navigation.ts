@@ -121,7 +121,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     name: "Cell/Tissue Annotation",
     slug: "single-cell-tissue",
     subCategories: [
-      { text: "cCREs", slug: "ccres" },
       { text: "CATlas", slug: "catlas" },
       { text: "ENTEx", slug: "entex" },
       { text: "SCENT", slug: "scent" },

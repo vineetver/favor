@@ -65,6 +65,12 @@ const VARIANT_NAV_GROUPS: NavGroup[] = [
         label: "VISTA",
         hint: "In vivo validated enhancers from VISTA",
       },
+      {
+        key: null,
+        slug: "ccre-links",
+        label: "cCRE Links",
+        hint: "Gene linkages for the cCRE overlapping this variant (ChIA-PET, ENCODE SCREEN)",
+      },
     ],
   },
   {

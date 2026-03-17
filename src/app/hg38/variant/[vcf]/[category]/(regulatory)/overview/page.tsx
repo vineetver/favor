@@ -9,12 +9,14 @@ import {
   fetchQtlsByTissueGroup,
   fetchRegionSummary,
   fetchSignalsByTissueGroup,
+  fetchTargetGenes,
   fetchVariantAllelicImbalanceByTissueGroup,
 } from "@features/enrichment/api/region";
 import {
   TissueEvidenceSummary,
   type TissueEvidenceData,
 } from "@features/enrichment/components/tissue-evidence-summary";
+import { TargetGenesView } from "@features/enrichment/components/target-genes-view";
 import { notFound } from "next/navigation";
 
 interface OverviewPageProps {
@@ -31,6 +33,7 @@ export default async function VariantRegulatoryOverviewPage({
 
   const v = result.selected;
   const loc = `chr${v.chromosome}:${v.position}-${v.position}`;
+  const ref = v.variant_vcf;
 
   const [
     signals,
@@ -43,6 +46,7 @@ export default async function VariantRegulatoryOverviewPage({
     chrombpnet,
     variantAllelicImbalance,
     summary,
+    targetGenes,
   ] = await Promise.all([
     fetchSignalsByTissueGroup(loc).catch(() => []),
     fetchChromatinByTissueGroup(loc).catch(() => []),
@@ -54,6 +58,7 @@ export default async function VariantRegulatoryOverviewPage({
     fetchChromBpnetByTissueGroup(loc).catch(() => []),
     fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []),
     fetchRegionSummary(loc).catch(() => null),
+    fetchTargetGenes(ref, 50).catch(() => []),
   ]);
 
   const evidence: TissueEvidenceData = {
@@ -69,10 +74,18 @@ export default async function VariantRegulatoryOverviewPage({
   };
 
   return (
-    <TissueEvidenceSummary
-      evidence={evidence}
-      summary={summary}
-      basePath={`/hg38/variant/${encodeURIComponent(vcf)}/regulatory`}
-    />
+    <div className="space-y-8">
+      <section>
+        <TissueEvidenceSummary
+          evidence={evidence}
+          summary={summary}
+          basePath={`/hg38/variant/${encodeURIComponent(vcf)}/regulatory`}
+        />
+      </section>
+
+      <section>
+        <TargetGenesView data={targetGenes} variantVcf={ref} />
+      </section>
+    </div>
   );
 }

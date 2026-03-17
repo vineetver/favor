@@ -189,6 +189,49 @@ export async function fetchVariantEvidenceSummary(
 }
 
 // ---------------------------------------------------------------------------
+// Target Gene Evidence (variant → which genes does it regulate?)
+// ---------------------------------------------------------------------------
+
+export interface SourceEvidence {
+  source: string;
+  label: string;
+  category: string;
+  associations: number;
+  significant: number;
+  tissues: number;
+  best_neglog_p?: number;
+  best_score?: number;
+}
+
+export interface TissueEvidence {
+  tissue: string;
+  sources: string[];
+  best_neglog_p?: number;
+  best_score?: number;
+  significant: boolean;
+}
+
+export interface TargetGeneEvidence {
+  gene_symbol: string;
+  evidence_count: number;
+  significant_count: number;
+  tissue_count: number;
+  max_neglog_p?: number;
+  max_score?: number;
+  sources: SourceEvidence[];
+  top_tissues: TissueEvidence[];
+}
+
+export async function fetchTargetGenes(
+  ref: string,
+  limit = 50,
+): Promise<TargetGeneEvidence[]> {
+  const url = `${API_BASE}/variants/${encodeURIComponent(ref)}/target-genes?limit=${limit}`;
+  const res = await fetchJson<{ data: TargetGeneEvidence[] }>(url);
+  return res.data;
+}
+
+// ---------------------------------------------------------------------------
 // Tissue Signals
 // ---------------------------------------------------------------------------
 
@@ -473,25 +516,52 @@ export interface CcreLinkRow {
   effect_size: number | null;
 }
 
-interface CcreLinksResponse {
-  data: CcreLinkRow[];
-}
-
 export interface FetchCcreLinksParams {
   source?: string;
   method?: string;
   tissue?: string;
+  cursor?: string;
   limit?: number;
 }
 
 export async function fetchCcreLinks(
   gene: string,
   params: FetchCcreLinksParams = {},
-): Promise<CcreLinkRow[]> {
+): Promise<PaginatedResponse<CcreLinkRow>> {
   const qs = buildParams(params as unknown as Record<string, unknown>);
   const url = `${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links${qs ? `?${qs}` : ""}`;
-  const res = await fetchJson<CcreLinksResponse>(url);
-  return res.data;
+  return fetchJson<PaginatedResponse<CcreLinkRow>>(url);
+}
+
+// ---------------------------------------------------------------------------
+// cCRE Gene Links (cCRE-keyed — unions chiapet, crispr, screen_v4, eqtl_ccre)
+// ---------------------------------------------------------------------------
+
+export interface CcreGeneLinkRow {
+  gene_symbol: string;
+  source: string;
+  tissue_name: string;
+  score: number | null;
+  effect_size?: number | null;
+  method: string;
+}
+
+export interface FetchCcreGeneLinksParams {
+  source?: string;
+  method?: string;
+  tissue?: string;
+  gene?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export async function fetchCcreGeneLinks(
+  ccreId: string,
+  params: FetchCcreGeneLinksParams = {},
+): Promise<PaginatedResponse<CcreGeneLinkRow>> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/ccres/${encodeURIComponent(ccreId)}/gene-links${qs ? `?${qs}` : ""}`;
+  return fetchJson<PaginatedResponse<CcreGeneLinkRow>>(url);
 }
 
 // ---------------------------------------------------------------------------
