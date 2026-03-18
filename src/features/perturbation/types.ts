@@ -1,7 +1,3 @@
-// ---------------------------------------------------------------------------
-// CRISPR essentiality screens (DepMap)
-// ---------------------------------------------------------------------------
-
 export interface CrisprRow {
   perturbation_gene: string;
   score_name: string;
@@ -34,10 +30,6 @@ export interface FetchCrisprParams {
   cursor?: string;
   limit?: number;
 }
-
-// ---------------------------------------------------------------------------
-// Perturb-seq differential expression
-// ---------------------------------------------------------------------------
 
 export interface PerturbSeqRow {
   perturbation_gene: string;
@@ -72,37 +64,4 @@ export interface FetchPerturbSeqParams {
   cell_type?: string;
   cursor?: string;
   limit?: number;
-}
-
-// ---------------------------------------------------------------------------
-// MAVE variant effect scores
-// ---------------------------------------------------------------------------
-
-export interface MaveRow {
-  perturbation_gene: string;
-  perturbation_name: string;
-  position: number;
-  aa_wt?: string;
-  aa_change?: string;
-  score_name: string;
-  score_value: number;
-  dataset_id: string;
-}
-
-export interface FetchMaveParams {
-  dataset_id?: string;
-  score_name?: string;
-  cursor?: string;
-  limit?: number;
-}
-
-// ---------------------------------------------------------------------------
-// Summary stats for the perturbation tab header
-// ---------------------------------------------------------------------------
-
-export interface PerturbationSummary {
-  perturbSeqDatasets: number;
-  downstreamTargets: number;
-  crisprScreens: number;
-  essentialIn: number;
 }

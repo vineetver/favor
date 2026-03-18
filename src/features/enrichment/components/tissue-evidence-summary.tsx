@@ -2,7 +2,6 @@
 
 import { cn } from "@infra/utils";
 import type { RegionSummary, TissueGroupRow } from "@features/enrichment/api/region";
-import type { CrisprTissueGroupRow } from "@features/perturbation/api";
 import { formatCount, fmtScore } from "@shared/utils/tissue-format";
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
@@ -56,7 +55,7 @@ interface TissueEvidence {
   qtls: TissueGroupRow | null;
   chrombpnet: TissueGroupRow | null;
   variantAllelicImbalance: TissueGroupRow | null;
-  crisprEssentiality: CrisprTissueGroupRow | null;
+  crisprEssentiality: TissueGroupRow | null;
   convergence: number;
   score: number;
 }
@@ -71,7 +70,7 @@ export interface TissueEvidenceData {
   qtls?: TissueGroupRow[];
   chrombpnet?: TissueGroupRow[];
   variantAllelicImbalance?: TissueGroupRow[];
-  crisprEssentiality?: CrisprTissueGroupRow[];
+  crisprEssentiality?: TissueGroupRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +121,7 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
   if (data.qtls?.length) for (const r of data.qtls) get(r.tissue_name).qtls = r;
   if (data.chrombpnet?.length) for (const r of data.chrombpnet) get(r.tissue_name).chrombpnet = r;
   if (data.variantAllelicImbalance?.length) for (const r of data.variantAllelicImbalance) get(r.tissue_name).variantAllelicImbalance = r;
-  if (data.crisprEssentiality?.length) for (const r of data.crisprEssentiality) get(r.tissue_name).crisprEssentiality = r as CrisprTissueGroupRow;
+  if (data.crisprEssentiality?.length) for (const r of data.crisprEssentiality) get(r.tissue_name).crisprEssentiality = r;
 
   for (const t of map.values()) {
     t.convergence = [
@@ -419,7 +418,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
     },
     {
       id: "crisprEssentiality",
-      accessorFn: (r) => r.crisprEssentiality?.essential_fraction ?? null,
+      accessorFn: (r) => r.crisprEssentiality ? (r.crisprEssentiality.significant ?? 0) / Math.max(r.crisprEssentiality.count, 1) : null,
       header: () => (
         <span className="flex flex-col leading-tight">
           <span>Essentiality</span>
@@ -432,50 +431,10 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       cell: ({ row }) => {
         const c = row.original.crisprEssentiality;
         if (!c) return <Dash />;
-        const pct = Math.round(c.essential_fraction * 100);
+        const sig = c.significant ?? 0;
+        const pct = Math.round(sig / Math.max(c.count, 1) * 100);
         const strength: Strength = pct >= 50 ? "strong" : pct >= 20 ? "moderate" : "low";
-        return (
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex flex-col gap-0.5 cursor-default">
-                  <span className="inline-flex items-center gap-2 text-xs">
-                    <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
-                      <span
-                        className={cn(
-                          "block h-full rounded-full bg-destructive",
-                          strength === "strong" && "opacity-80",
-                          strength === "moderate" && "opacity-45",
-                          strength === "low" && "opacity-20",
-                        )}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </span>
-                    <span
-                      className={cn(
-                        "whitespace-nowrap tabular-nums",
-                        strength === "strong" && "text-foreground",
-                        strength === "moderate" && "text-muted-foreground",
-                        strength === "low" && "text-muted-foreground/50",
-                      )}
-                    >
-                      {c.significant}/{c.count}
-                    </span>
-                  </span>
-                  <span className={cn(
-                    "text-[10px]",
-                    strength === "strong" ? "text-destructive" : "text-muted-foreground/70",
-                  )}>
-                    Essential in {pct}% of lines
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs max-w-xs">
-                Essential in {c.significant} of {c.count} cell lines ({pct}%) in {row.original.tissue_name}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
+        return <StrengthCell strength={strength} label={`${sig}/${c.count}`} detail={`Essential in ${sig} of ${c.count} cell lines (${pct}%) in ${row.original.tissue_name}`} />;
       },
     },
   ];

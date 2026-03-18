@@ -552,52 +552,14 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
     cell: ({ row }) => {
       const n = row.original.perturb_seq_downstream_genes;
       if (n == null || n === 0) return <Dash />;
-      const topGenes = row.original.perturb_seq_top_genes;
       const strength: Strength =
         n >= 100 ? "strong" : n >= 20 ? "moderate" : "low";
       return (
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex flex-col gap-0.5 cursor-default">
-                <span className="inline-flex items-center gap-2 text-xs">
-                  <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
-                    <span
-                      className={cn(
-                        "block h-full rounded-full bg-primary",
-                        strength === "strong" && "opacity-80",
-                        strength === "moderate" && "opacity-45",
-                        strength === "low" && "opacity-20",
-                      )}
-                      style={{ width: `${TIER_FILL[strength]}%` }}
-                    />
-                  </span>
-                  <span
-                    className={cn(
-                      "whitespace-nowrap",
-                      strength === "strong" && "text-foreground",
-                      strength === "moderate" && "text-muted-foreground",
-                      strength === "low" && "text-muted-foreground/50",
-                    )}
-                  >
-                    {n} genes
-                  </span>
-                </span>
-                {topGenes && topGenes.length > 0 && (
-                  <span className="text-[10px] text-muted-foreground/70 truncate max-w-[160px]">
-                    top: {topGenes.slice(0, 2).join(", ")}
-                  </span>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs max-w-xs">
-              {n} downstream genes causally affected if this variant disrupts {row.original.gene_symbol}
-              {topGenes && topGenes.length > 0 && (
-                <p className="mt-1">Top targets: {topGenes.join(", ")}</p>
-              )}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <StrengthCell
+          strength={strength}
+          label={`${n} genes`}
+          detail={`${n} downstream genes causally affected if this variant disrupts ${row.original.gene_symbol}`}
+        />
       );
     },
   },

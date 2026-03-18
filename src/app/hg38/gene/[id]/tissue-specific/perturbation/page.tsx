@@ -1,6 +1,5 @@
 import { fetchGene } from "@features/gene/api";
 import { fetchCrispr, fetchPerturbSeq } from "@features/perturbation/api";
-import type { PerturbationSummary } from "@features/perturbation/types";
 import { PerturbationView } from "@features/perturbation/components/perturbation-view";
 import { notFound } from "next/navigation";
 
@@ -45,7 +44,7 @@ export default async function PerturbationPage({
   const perturbSeqDatasets = new Set(downstream.map((r) => r.dataset_id)).size;
   const essentialIn = crispr.filter((r) => r.is_significant).length;
 
-  const summary: PerturbationSummary = {
+  const summary = {
     perturbSeqDatasets,
     downstreamTargets: downstreamTotalCount,
     crisprScreens: crisprTotalCount,

@@ -227,7 +227,6 @@ export interface TargetGeneEvidence {
   crispr_total?: number;
   crispr_significant?: number;
   perturb_seq_downstream_genes?: number;
-  perturb_seq_top_genes?: string[];
 }
 
 export async function fetchTargetGenes(
@@ -276,7 +275,7 @@ export interface FetchSignalsParams {
   limit?: number;
 }
 
-function buildParams(params: Record<string, unknown>): string {
+export function buildParams(params: Record<string, unknown>): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v != null && v !== "") sp.set(k, String(v));
