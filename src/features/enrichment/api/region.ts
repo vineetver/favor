@@ -710,6 +710,8 @@ export interface FetchTissueScoresParams {
   tissue?: string;
   score_type?: string;
   min_score?: number;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
   cursor?: string;
   limit?: number;
 }

@@ -29,7 +29,7 @@ export default async function ChromBpnetPage({
       ? fetchChromBpnetByTissueGroup(loc).catch(() => [])
       : Promise.resolve([]),
     tissueGroup
-      ? fetchChromBpnet(loc, { tissue_group: tissueGroup, limit: 25 }).catch(
+      ? fetchChromBpnet(loc, { tissue_group: tissueGroup, sort_by: "combined_score", sort_dir: "desc", limit: 25 }).catch(
           () => null,
         )
       : Promise.resolve(null),

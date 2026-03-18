@@ -23,9 +23,10 @@ export default async function PerturbationPage({ params }: PerturbationPageProps
     fetchMave(geneSymbol, { limit: 100 }).catch(() => null),
   ]);
 
-  const downstream = downstreamRes?.data ?? [];
-  const upstream = upstreamRes?.data ?? [];
-  const crispr = crisprRes?.data ?? [];
+  // Sort by magnitude — highest impact first
+  const downstream = (downstreamRes?.data ?? []).sort((a, b) => Math.abs(b.log2fc) - Math.abs(a.log2fc));
+  const upstream = (upstreamRes?.data ?? []).sort((a, b) => Math.abs(b.log2fc) - Math.abs(a.log2fc));
+  const crispr = (crisprRes?.data ?? []).sort((a, b) => a.score_value - b.score_value);
   const mave = maveRes?.data ?? [];
 
   const downstreamTotalCount = downstreamRes?.page_info?.total_count ?? downstream.length;

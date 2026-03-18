@@ -164,6 +164,14 @@ export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresV
   const activeScoreType = searchParams.get("score_type") || "all";
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
 
+  // Hide Type column when a specific score type is selected — redundant info
+  const activeColumns = useMemo(() => {
+    if (activeScoreType !== "all") {
+      return columns.filter((c) => c.id !== "score_type");
+    }
+    return columns;
+  }, [activeScoreType]);
+
   const query = useQuery({
     queryKey: ["tissue-scores", loc, filters],
     queryFn: () => fetchClient(loc, filters),
@@ -215,7 +223,7 @@ export function TissueScoresView({ loc, totalCount, initialData }: TissueScoresV
   return (
     <DataSurface
       data={data}
-      columns={columns}
+      columns={activeColumns}
       subtitle={subtitle}
       dimensions={[scoreTypeDimension]}
       searchPlaceholder="Search tissues..."

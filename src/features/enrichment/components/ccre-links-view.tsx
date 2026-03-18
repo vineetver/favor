@@ -78,9 +78,10 @@ const SCREEN_METHODS = [
 
 const CCRE_LINKS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best Score",
-  metricDescription: "Strongest linkage score (ChIA-PET/SCREEN) or \u2212log\u2081\u2080(p) (eQTL) in this tissue group",
+  metricDescription: "Strongest linkage score across all sources (ChIA-PET, SCREEN, eQTL, CRISPRi) in this tissue group",
   countLabel: "Linkages",
   formatMetric: (v) => (v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3)),
+  sqrtScale: true,
   showTopItem: true,
   topItemLabel: "Top cCRE",
 };

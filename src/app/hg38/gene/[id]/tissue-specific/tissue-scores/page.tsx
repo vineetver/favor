@@ -16,7 +16,7 @@ export default async function TissueScoresPage({ params }: TissueScoresPageProps
 
   const loc = gene.gene_symbol || id;
 
-  const initialData = await fetchTissueScores(loc, { limit: 25 }).catch(() => null);
+  const initialData = await fetchTissueScores(loc, { sort_by: "score", sort_dir: "desc", limit: 25 }).catch(() => null);
 
   return (
     <TissueScoresView

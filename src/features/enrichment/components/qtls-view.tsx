@@ -159,9 +159,10 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
 
 const QTLS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best \u2212log\u2081\u2080(p)",
-  metricDescription: "Strongest QTL association significance across all sources in this tissue group",
+  metricDescription: "Strongest QTL association significance across all 7 sources in this tissue group",
   countLabel: "Associations",
   formatMetric: (v) => v.toFixed(1),
+  sqrtScale: true,
   showSignificant: true,
   showTopItem: true,
   topItemLabel: "Top Gene",

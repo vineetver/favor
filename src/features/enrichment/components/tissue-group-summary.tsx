@@ -36,6 +36,8 @@ export interface TissueGroupMetricConfig {
   topItemLabel?: string;
   /** Hide the metric bar entirely (for views where max_value isn't meaningful) */
   hideMetric?: boolean;
+  /** Use sqrt scaling for metric bar (handles skewed distributions like -log10p) */
+  sqrtScale?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,8 +62,10 @@ export function TissueGroupSummary({
     updateClientUrl(`${window.location.pathname}?${params}`, true);
   }, []);
 
-  const maxMetric = cfg.metricCeiling ?? Math.max(...data.map((r) => r.max_value), 1);
+  const rawMaxMetric = cfg.metricCeiling ?? Math.max(...data.map((r) => r.max_value), 1);
+  const maxMetric = cfg.sqrtScale ? Math.sqrt(rawMaxMetric) : rawMaxMetric;
   const maxCount = Math.max(...data.map((r) => r.count), 1);
+  const scaleMetric = (v: number) => (cfg.sqrtScale ? Math.sqrt(v) : v) / maxMetric;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -111,12 +115,12 @@ export function TissueGroupSummary({
               {/* Metric bar */}
               {!cfg.hideMetric && (
                 <div className="flex items-center gap-2.5">
-                  <div className="flex-1 h-1.5 rounded-full bg-primary/8 overflow-hidden max-w-[100px]">
+                  <div className="flex-1 h-1.5 rounded-full bg-primary/10 overflow-hidden max-w-[100px]">
                     <div
                       className="h-full rounded-full bg-primary transition-all"
                       style={{
-                        width: `${Math.max((row.max_value / maxMetric) * 100, 2)}%`,
-                        opacity: Math.max(0.25, Math.min(row.max_value / maxMetric, 0.85)),
+                        width: `${Math.max(scaleMetric(row.max_value) * 100, 2)}%`,
+                        opacity: Math.max(0.25, Math.min(scaleMetric(row.max_value), 0.85)),
                       }}
                     />
                   </div>

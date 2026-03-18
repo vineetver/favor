@@ -23,7 +23,7 @@ export default async function QtlsPage({ params, searchParams }: QtlsPageProps) 
       ? fetchQtlsByTissueGroup(loc).catch(() => [])
       : Promise.resolve([]),
     tissueGroup
-      ? fetchQtls(loc, { tissue_group: tissueGroup, limit: 25 }).catch(() => null)
+      ? fetchQtls(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
