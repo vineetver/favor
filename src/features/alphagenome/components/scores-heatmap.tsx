@@ -125,99 +125,90 @@ interface GroupHit {
   hasQuantile: boolean;
 }
 
-function extractGroupHits(blocks: ScorerBlock[], max: number): GroupHit[] {
-  const all: GroupHit[] = [];
+/** Best single hit per scorer — ensures each scorer in the group gets representation. */
+function extractGroupHits(blocks: ScorerBlock[]): GroupHit[] {
+  const result: GroupHit[] = [];
   for (const block of blocks) {
-    if (!block.summary?.top_tissues) continue;
+    if (!block.summary?.top_tissues?.length) continue;
     const scorer = friendlyScorerLabel(block.scorer);
+    let best: GroupHit | null = null;
+    let bestScore = -Infinity;
     for (const hit of block.summary.top_tissues) {
       const hasQ = isValidScore(hit.quantile_score) && hit.quantile_score > 0;
       const hasRaw = isValidScore(hit.raw_score) && hit.raw_score !== 0;
       if (!hasQ && !hasRaw) continue;
-      all.push({
-        tissue: hit.tissue_group || hit.biosample_name,
-        biosampleName: hit.biosample_name,
-        gene: hit.gene_name && hit.gene_name !== "?" ? hit.gene_name : null,
-        scorer,
-        quantile: hit.quantile_score,
-        raw: hit.raw_score,
-        hasQuantile: hasQ,
-      });
+      const score = hasQ ? hit.quantile_score : Math.abs(hit.raw_score);
+      if (score > bestScore) {
+        bestScore = score;
+        best = {
+          tissue: hit.tissue_group || hit.biosample_name,
+          biosampleName: hit.biosample_name,
+          gene: hit.gene_name && hit.gene_name !== "?" ? hit.gene_name : null,
+          scorer,
+          quantile: hit.quantile_score,
+          raw: hit.raw_score,
+          hasQuantile: hasQ,
+        };
+      }
     }
+    // Skip negligible signals
+    if (!best) continue;
+    if (best.hasQuantile && best.quantile < 0.5) continue;
+    if (!best.hasQuantile && Math.abs(best.raw) < 0.001) continue;
+    result.push(best);
   }
-
-  // Sort: quantile-validated first, then by raw magnitude
-  all.sort((a, b) => {
+  result.sort((a, b) => {
     if (a.hasQuantile && b.hasQuantile) return b.quantile - a.quantile;
     if (!a.hasQuantile && !b.hasQuantile) return Math.abs(b.raw) - Math.abs(a.raw);
     return a.hasQuantile ? -1 : 1;
   });
-
-  // Dedup by tissue+gene
-  const seen = new Set<string>();
-  const result: GroupHit[] = [];
-  for (const hit of all) {
-    const key = hit.gene ? `${hit.tissue}|${hit.gene}` : `${hit.tissue}|${hit.scorer}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push(hit);
-    if (result.length >= max) break;
-  }
   return result;
 }
 
+function compactScore(v: number): string {
+  if (!isValidScore(v)) return "—";
+  const sign = v > 0 ? "+" : "";
+  const abs = Math.abs(v);
+  if (abs >= 1) {
+    const s = `${sign}${v.toFixed(1)}`;
+    return s.endsWith(".0") ? s.slice(0, -2) : s;
+  }
+  return `${sign}${v.toFixed(2)}`;
+}
+
 function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
-  const hits = useMemo(() => extractGroupHits(blocks, 3), [blocks]);
+  const hits = useMemo(() => extractGroupHits(blocks), [blocks]);
   if (hits.length === 0) return null;
 
-  const maxRaw = Math.max(...hits.map(h => Math.abs(h.raw)).filter(isValidScore), 0.001);
-
   return (
-    <div className="mb-4">
-      {hits.map((hit, i) => {
-        const barPct = hit.hasQuantile
-          ? Math.round(hit.quantile * 100)
-          : Math.round((Math.abs(hit.raw) / maxRaw) * 100);
-        const label = hit.hasQuantile
-          ? `${Math.round(hit.quantile * 100)}%`
-          : formatScore(hit.raw);
-
-        return (
-          <Tooltip key={i}>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 py-1 text-sm cursor-help">
-                <span className="font-medium text-foreground w-24 shrink-0 truncate">
-                  {hit.tissue}
-                </span>
-                {hit.gene && (
-                  <span className="text-xs shrink-0">
-                    <GeneLink gene={hit.gene} />
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground shrink-0">
-                  {hit.scorer}
-                </span>
-                <div className="flex items-center gap-1.5 ml-auto shrink-0">
-                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${barPct}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] tabular-nums text-muted-foreground w-14 text-right">
-                    {label}
-                  </span>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{hit.biosampleName}</p>
-              {hit.hasQuantile && <p>Quantile: {Math.round(hit.quantile * 100)}%</p>}
-              <p>Raw score: {formatScore(hit.raw)}</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
+    <div className="space-y-0.5 mb-5">
+      {hits.map((hit, i) => (
+        <Tooltip key={i}>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5 py-0.5 text-sm cursor-help">
+              <span className="font-medium text-foreground">{hit.tissue}</span>
+              {hit.gene && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-sm"><GeneLink gene={hit.gene} /></span>
+                </>
+              )}
+              <span className="text-muted-foreground">·</span>
+              <span className="text-xs text-muted-foreground">{hit.scorer}</span>
+              <span className="text-sm tabular-nums text-muted-foreground ml-auto">
+                {hit.hasQuantile
+                  ? `${Math.round(hit.quantile * 100)}%`
+                  : compactScore(hit.raw)}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{hit.biosampleName}</p>
+            {hit.hasQuantile && <p>Quantile: {Math.round(hit.quantile * 100)}%</p>}
+            <p>Raw score: {formatScore(hit.raw)}</p>
+          </TooltipContent>
+        </Tooltip>
+      ))}
     </div>
   );
 }
@@ -329,18 +320,20 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
   }
 
   return (
-    <div className="space-y-8">
-      {groups.map(group => (
-        <section key={group.id} className="space-y-1">
+    <div>
+      {groups.map((group, gi) => (
+        <section key={group.id} className={gi > 0 ? "mt-8 pt-7 border-t border-border" : ""}>
           {/* Section header */}
-          <div className="flex items-baseline gap-3">
-            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              {group.title}
-            </h3>
-            <p className="text-xs text-muted-foreground">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="text-sm font-semibold text-foreground mb-3 cursor-help">
+                {group.title}
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
               {group.question}
-            </p>
-          </div>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Per-group top hits */}
           <GroupSummary blocks={group.blocks} />
@@ -351,7 +344,7 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
       ))}
 
       {/* Legend */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">
         <span className="text-[11px] text-muted-foreground">Effect magnitude:</span>
         <div className="flex items-center gap-px">
           {[0.1, 0.3, 0.5, 0.7, 0.9].map(v => (
