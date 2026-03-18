@@ -108,6 +108,17 @@ const VARIANT_NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    label: "AI Predictions",
+    items: [
+      {
+        key: null,
+        slug: "alphagenome",
+        label: "AlphaGenome",
+        hint: "Deep learning variant impact scores and ref vs alt track predictions",
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------

@@ -118,17 +118,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     ],
   },
   {
-    name: "Cell/Tissue Annotation",
-    slug: "single-cell-tissue",
-    subCategories: [
-      { text: "CATlas", slug: "catlas" },
-      { text: "ENTEx", slug: "entex" },
-      { text: "SCENT", slug: "scent" },
-      { text: "cV2F", slug: "cv2f" },
-      { text: "pgBoost", slug: "pgboost" },
-    ],
-  },
-  {
     name: "Regulatory Evidence",
     slug: "regulatory",
     subCategories: [],

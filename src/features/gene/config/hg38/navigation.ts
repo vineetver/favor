@@ -145,6 +145,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "QTLs", slug: "qtls" },
       { text: "ChromBPNet", slug: "chrombpnet" },
       { text: "V2F Scores", slug: "tissue-scores" },
+      { text: "AlphaGenome", slug: "alphagenome" },
     ],
     showIcons: false,
     groups: [
@@ -182,6 +183,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "QTLs", slug: "qtls" },
           { text: "ChromBPNet", slug: "chrombpnet" },
           { text: "V2F Scores", slug: "tissue-scores" },
+        ],
+      },
+      {
+        name: "AI Predictions",
+        items: [
+          { text: "AlphaGenome", slug: "alphagenome" },
         ],
       },
       {
