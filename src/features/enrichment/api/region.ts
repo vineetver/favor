@@ -48,6 +48,9 @@ export interface RegionSummary {
     methylation: number;
     pgs: number;
     genotypes: number;
+    crispr_screens?: number;
+    perturb_seq?: number;
+    mave_scores?: number;
   };
 }
 
@@ -220,6 +223,10 @@ export interface TargetGeneEvidence {
   max_score?: number;
   sources: SourceEvidence[];
   top_tissues: TissueEvidence[];
+  crispr_total?: number;
+  crispr_significant?: number;
+  perturb_seq_downstream_genes?: number;
+  perturb_seq_top_genes?: string[];
 }
 
 export async function fetchTargetGenes(

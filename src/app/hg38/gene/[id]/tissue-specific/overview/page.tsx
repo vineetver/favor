@@ -12,6 +12,7 @@ import {
   fetchVariantAllelicImbalanceByTissueGroup,
   fetchVariantEvidenceSummary,
 } from "@features/enrichment/api/region";
+import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
 import { VariantEvidenceView } from "@features/enrichment/components/variant-evidence-view";
 import {
   TissueEvidenceSummary,
@@ -45,6 +46,7 @@ export default async function TissueOverviewPage({
     qtls,
     chrombpnet,
     variantAllelicImbalance,
+    crisprEssentiality,
     summary,
     variantEvidence,
   ] = await Promise.all([
@@ -57,6 +59,7 @@ export default async function TissueOverviewPage({
     fetchQtlsByTissueGroup(loc).catch(() => []),
     fetchChromBpnetByTissueGroup(loc).catch(() => []),
     fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []),
+    fetchCrisprByTissueGroup(loc).catch(() => []),
     fetchRegionSummary(loc).catch(() => null),
     fetchVariantEvidenceSummary(loc, 50).catch(() => []),
   ]);
@@ -71,6 +74,7 @@ export default async function TissueOverviewPage({
     qtls,
     chrombpnet,
     variantAllelicImbalance,
+    crisprEssentiality,
   };
 
   return (

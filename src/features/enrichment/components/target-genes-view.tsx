@@ -103,6 +103,9 @@ const ALL_SOURCES = [
   { source: "eqtl_ccre", label: "cCRE-eQTL", category: "ccre_links" },
   // Computational (teal)
   { source: "chrombpnet", label: "ChromBPNet", category: "computational" },
+  // Perturbation (red) — derived from perturbation fields, not sources array
+  { source: "crispr_essentiality", label: "CRISPR Essentiality", category: "perturbation" },
+  { source: "perturb_seq", label: "Perturb-seq", category: "perturbation" },
 ] as const;
 
 const CATEGORY_META: Record<string, { label: string; style: string }> = {
@@ -110,6 +113,7 @@ const CATEGORY_META: Record<string, { label: string; style: string }> = {
   enhancer_gene: { label: "Enhancer-Gene", style: "bg-violet-500/10 text-violet-700" },
   ccre_links: { label: "cCRE Links", style: "bg-amber-500/10 text-amber-700" },
   computational: { label: "Computational", style: "bg-teal-500/10 text-teal-700" },
+  perturbation: { label: "Perturbation", style: "bg-red-500/10 text-red-700" },
 };
 
 function categoryStyle(cat: string): string {
@@ -231,8 +235,20 @@ function GeneDetail({ gene }: { gene: TargetGeneEvidence }) {
 // Columns
 // ---------------------------------------------------------------------------
 
-const TOTAL_SOURCES = ALL_SOURCES.length;
-const CATEGORIES = ["qtl", "enhancer_gene", "ccre_links", "computational"] as const;
+const TOTAL_SOURCES = ALL_SOURCES.length; // 18
+const CATEGORIES = ["qtl", "enhancer_gene", "ccre_links", "computational", "perturbation"] as const;
+
+/** Build the full set of present sources, including perturbation derived from row fields */
+function getPresentSources(row: TargetGeneEvidence): Set<string> {
+  const present = new Set((row.sources ?? []).map((s) => s.source));
+  if (row.crispr_total != null && row.crispr_total > 0) {
+    present.add("crispr_essentiality");
+  }
+  if (row.perturb_seq_downstream_genes != null && row.perturb_seq_downstream_genes > 0) {
+    present.add("perturb_seq");
+  }
+  return present;
+}
 
 const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
   {
@@ -259,7 +275,7 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
   },
   {
     id: "evidence",
-    accessorKey: "evidence_count",
+    accessorFn: (r) => getPresentSources(r).size,
     header: "Evidence",
     enableSorting: true,
     sortDescFirst: true,
@@ -268,9 +284,8 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
         "Sources with evidence for this gene. Filled dot = source present, empty = not covered.",
     } satisfies ColumnMeta,
     cell: ({ row }) => {
-      const present = new Set((row.original.sources ?? []).map((s) => s.source));
+      const present = getPresentSources(row.original);
       const filled = present.size;
-      const empty = TOTAL_SOURCES - filled;
       return (
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -278,13 +293,13 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-col gap-[3px]">
                   <div className="flex gap-[3px]">
-                    {Array.from({ length: 8 }, (_, i) => (
+                    {Array.from({ length: 9 }, (_, i) => (
                       <div key={i} className={cn("w-1.5 h-1.5 rounded-full", i < filled ? "bg-primary" : "bg-border")} />
                     ))}
                   </div>
                   <div className="flex gap-[3px]">
-                    {Array.from({ length: 8 }, (_, i) => (
-                      <div key={i + 8} className={cn("w-1.5 h-1.5 rounded-full", i + 8 < filled ? "bg-primary" : "bg-border")} />
+                    {Array.from({ length: 9 }, (_, i) => (
+                      <div key={i + 9} className={cn("w-1.5 h-1.5 rounded-full", i + 9 < filled ? "bg-primary" : "bg-border")} />
                     ))}
                   </div>
                 </div>
@@ -484,6 +499,108 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
       );
     },
   },
+  {
+    id: "essential_crispr",
+    accessorFn: (r) => r.crispr_significant ?? null,
+    header: () => (
+      <span className="flex flex-col leading-tight">
+        <span>Essential</span>
+        <span>CRISPR</span>
+      </span>
+    ),
+    enableSorting: true,
+    sortDescFirst: true,
+    meta: {
+      description:
+        "CRISPR essentiality across cell lines. Shows how many screens found this gene essential out of total screens tested.",
+    } satisfies ColumnMeta,
+    cell: ({ row }) => {
+      const total = row.original.crispr_total;
+      const sig = row.original.crispr_significant;
+      if (total == null || total === 0) return <Dash />;
+      if (sig == null || sig === 0) {
+        return (
+          <span className="text-xs text-muted-foreground">Non-essential</span>
+        );
+      }
+      const strength: Strength =
+        sig >= 50 ? "strong" : sig >= 10 ? "moderate" : "low";
+      return (
+        <StrengthCell
+          strength={strength}
+          label={`Essential ${sig}/${total}`}
+          detail={`Essential in ${sig} of ${total} CRISPR screens`}
+        />
+      );
+    },
+  },
+  {
+    id: "ko_targets",
+    accessorFn: (r) => r.perturb_seq_downstream_genes ?? null,
+    header: () => (
+      <span className="flex flex-col leading-tight">
+        <span>KO Targets</span>
+        <span>Perturb-seq</span>
+      </span>
+    ),
+    enableSorting: true,
+    sortDescFirst: true,
+    meta: {
+      description:
+        "Downstream genes significantly affected when this target gene is knocked out (perturb-seq). Shows how many genes are causally affected if this variant disrupts its target.",
+    } satisfies ColumnMeta,
+    cell: ({ row }) => {
+      const n = row.original.perturb_seq_downstream_genes;
+      if (n == null || n === 0) return <Dash />;
+      const topGenes = row.original.perturb_seq_top_genes;
+      const strength: Strength =
+        n >= 100 ? "strong" : n >= 20 ? "moderate" : "low";
+      return (
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col gap-0.5 cursor-default">
+                <span className="inline-flex items-center gap-2 text-xs">
+                  <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
+                    <span
+                      className={cn(
+                        "block h-full rounded-full bg-primary",
+                        strength === "strong" && "opacity-80",
+                        strength === "moderate" && "opacity-45",
+                        strength === "low" && "opacity-20",
+                      )}
+                      style={{ width: `${TIER_FILL[strength]}%` }}
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      "whitespace-nowrap",
+                      strength === "strong" && "text-foreground",
+                      strength === "moderate" && "text-muted-foreground",
+                      strength === "low" && "text-muted-foreground/50",
+                    )}
+                  >
+                    {n} genes
+                  </span>
+                </span>
+                {topGenes && topGenes.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground/70 truncate max-w-[160px]">
+                    top: {topGenes.slice(0, 2).join(", ")}
+                  </span>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs max-w-xs">
+              {n} downstream genes causally affected if this variant disrupts {row.original.gene_symbol}
+              {topGenes && topGenes.length > 0 && (
+                <p className="mt-1">Top targets: {topGenes.join(", ")}</p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -498,11 +615,16 @@ interface TargetGenesViewProps {
 export function TargetGenesView({ data, variantVcf }: TargetGenesViewProps) {
   if (data.length === 0) return null;
 
+  // Sort by total evidence count (including perturbation sources) descending
+  const sorted = [...data].sort(
+    (a, b) => getPresentSources(b).size - getPresentSources(a).size,
+  );
+
   return (
     <DataSurface
       title="Target Genes"
-      subtitle={`${data.length} genes ranked by regulatory evidence linking them to this variant`}
-      data={data}
+      subtitle={`${sorted.length} genes ranked by regulatory evidence linking them to this variant`}
+      data={sorted}
       columns={columns}
       searchable={false}
       defaultPageSize={25}

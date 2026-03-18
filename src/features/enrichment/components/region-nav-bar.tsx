@@ -122,6 +122,17 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    label: "Perturbation",
+    items: [
+      {
+        key: null,
+        slug: "perturbation",
+        label: "Perturbation",
+        hint: "CRISPR essentiality screens, Perturb-seq downstream effects, and MAVE variant scores",
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------

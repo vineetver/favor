@@ -145,6 +145,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "QTLs", slug: "qtls" },
       { text: "ChromBPNet", slug: "chrombpnet" },
       { text: "V2F Scores", slug: "tissue-scores" },
+      { text: "Perturbation", slug: "perturbation" },
       { text: "AlphaGenome", slug: "alphagenome" },
     ],
     showIcons: false,
@@ -183,6 +184,12 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "QTLs", slug: "qtls" },
           { text: "ChromBPNet", slug: "chrombpnet" },
           { text: "V2F Scores", slug: "tissue-scores" },
+        ],
+      },
+      {
+        name: "Perturbation",
+        items: [
+          { text: "Perturbation", slug: "perturbation" },
         ],
       },
       {

@@ -92,9 +92,11 @@ export interface ScoreRow {
 
 /** Column label: a tissue/cell-type track with full metadata. */
 export interface ScoreTrack {
-  track_name: string;
+  name: string;
   biosample_name: string;
+  strand?: string;
   ontology_curie?: string;
+  biosample_type?: string;
   data_source?: string;
   [key: string]: unknown;
 }

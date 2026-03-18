@@ -1,21 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ScorerBlock } from "../types";
-import { formatQuantile, formatScore, parseScorerLabel, quantileColor } from "../utils";
+import { formatScore, parseScorerLabel } from "../utils";
 
 interface ScoresHeatmapProps {
   scorers: ScorerBlock[];
 }
-
-const MAX_VISIBLE_TRACKS = 30;
 
 export function ScoresHeatmap({ scorers }: ScoresHeatmapProps) {
   if (scorers.length === 0) {
@@ -29,44 +20,152 @@ export function ScoresHeatmap({ scorers }: ScoresHeatmapProps) {
   return (
     <div className="space-y-6">
       {scorers.map((block, idx) => (
-        <ScorerHeatmapBlock key={idx} block={block} />
+        <ScorerCanvas key={idx} block={block} />
       ))}
     </div>
   );
 }
 
-// ─── One scorer block ──────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────
 
-function ScorerHeatmapBlock({ block }: { block: ScorerBlock }) {
+const CELL_W = 5;
+const CELL_H = 14;
+const LABEL_W = 100; // left margin for gene labels
+const HEADER_H = 60; // top margin for track labels
+
+// ─── Per-block normalization ───────────────────────────────────
+
+function normalizeBlock(block: ScorerBlock): {
+  matrix: (number | null)[][];
+  hasQuantile: boolean;
+} {
+  if (block.quantile_scores) {
+    return { matrix: block.quantile_scores, hasQuantile: true };
+  }
+
+  // Normalize raw_scores to 0-1 per block using max absolute value
+  const flat = block.raw_scores.flat().filter((v): v is number => v != null && !isNaN(v));
+  if (flat.length === 0) return { matrix: block.raw_scores, hasQuantile: false };
+
+  const maxAbs = Math.max(...flat.map(Math.abs));
+  if (maxAbs === 0) return { matrix: block.raw_scores, hasQuantile: false };
+
+  const normalized = block.raw_scores.map((row) =>
+    row.map((v) => {
+      if (v == null || isNaN(v)) return null;
+      return Math.abs(v) / maxAbs;
+    }),
+  );
+  return { matrix: normalized, hasQuantile: false };
+}
+
+/** Map 0-1 value to heatmap color (violet sequential). */
+function toColor(v: number | null): string {
+  if (v == null) return "#f5f5f5";
+  const clamped = Math.max(0, Math.min(1, v));
+  // Low: light gray → High: deep violet
+  const r = Math.round(245 - clamped * 121); // 245 → 124
+  const g = Math.round(245 - clamped * 187); // 245 → 58
+  const b = Math.round(245 - clamped * 8);   // 245 → 237
+  return `rgb(${r},${g},${b})`;
+}
+
+// ─── Canvas heatmap per scorer ─────────────────────────────────
+
+function ScorerCanvas({ block }: { block: ScorerBlock }) {
   const label = parseScorerLabel(block.scorer);
-  const [showAll, setShowAll] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    gene: string;
+    track: string;
+    raw: number | null;
+    quantile: number | null;
+  } | null>(null);
 
-  // Use quantile_scores if available, fall back to raw_scores
-  const scores = block.quantile_scores ?? block.raw_scores;
-  const useQuantile = block.quantile_scores != null;
+  const nRows = block.raw_scores.length;
+  const nCols = block.tracks.length;
 
-  // Sort tracks by max score across all rows (most impactful first)
-  const sortedTrackIndices = useMemo(() => {
-    if (!scores) return block.tracks.map((_, j) => j);
-    const indices = block.tracks.map((_, j) => j);
-    indices.sort((a, b) => {
-      const val = (j: number) =>
-        Math.max(...scores.map((row) => {
-          const v = row?.[j];
-          return v != null && !isNaN(v) ? Math.abs(v) : 0;
-        }));
-      return val(b) - val(a);
-    });
-    return indices;
-  }, [block, scores]);
+  // Gene labels: use gene_name if rows exist, else "Score"
+  const rowLabels = useMemo(
+    () => (block.rows.length > 0 ? block.rows.map((r) => r.gene_name) : ["Score"]),
+    [block.rows],
+  );
 
-  const visibleCount = showAll
-    ? sortedTrackIndices.length
-    : Math.min(sortedTrackIndices.length, MAX_VISIBLE_TRACKS);
-  const visibleIndices = sortedTrackIndices.slice(0, visibleCount);
-  const hasMore = sortedTrackIndices.length > MAX_VISIBLE_TRACKS;
+  const { matrix } = useMemo(() => normalizeBlock(block), [block]);
 
-  if (block.rows.length === 0 || block.tracks.length === 0) return null;
+  const canvasW = LABEL_W + nCols * CELL_W;
+  const canvasH = HEADER_H + nRows * CELL_H;
+
+  // Draw
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvasW * dpr;
+    canvas.height = canvasH * dpr;
+    canvas.style.width = `${canvasW}px`;
+    canvas.style.height = `${canvasH}px`;
+
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, canvasW, canvasH);
+
+    // Row labels
+    ctx.font = "11px system-ui, sans-serif";
+    ctx.fillStyle = "#374151";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i < nRows; i++) {
+      const label = rowLabels[i];
+      const truncated = label.length > 14 ? label.slice(0, 13) + "…" : label;
+      ctx.fillText(truncated, LABEL_W - 4, HEADER_H + i * CELL_H + CELL_H / 2);
+    }
+
+    // Cells
+    for (let i = 0; i < nRows; i++) {
+      for (let j = 0; j < nCols; j++) {
+        const v = matrix[i]?.[j] ?? null;
+        ctx.fillStyle = toColor(v);
+        ctx.fillRect(LABEL_W + j * CELL_W, HEADER_H + i * CELL_H, CELL_W - 0.5, CELL_H - 0.5);
+      }
+    }
+  }, [matrix, nRows, nCols, canvasW, canvasH, rowLabels]);
+
+  // Hover
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const rect = canvasRef.current!.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const col = Math.floor((x - LABEL_W) / CELL_W);
+      const row = Math.floor((y - HEADER_H) / CELL_H);
+
+      if (col < 0 || col >= nCols || row < 0 || row >= nRows) {
+        setTooltip(null);
+        return;
+      }
+
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      setTooltip({
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top - 60,
+        gene: rowLabels[row],
+        track: block.tracks[col].biosample_name,
+        raw: block.raw_scores[row]?.[col] ?? null,
+        quantile: block.quantile_scores?.[row]?.[col] ?? null,
+      });
+    },
+    [nRows, nCols, rowLabels, block],
+  );
+
+  const handleMouseLeave = useCallback(() => setTooltip(null), []);
+
+  if (nRows === 0 || nCols === 0) return null;
 
   return (
     <div>
@@ -75,138 +174,54 @@ function ScorerHeatmapBlock({ block }: { block: ScorerBlock }) {
           {label}
         </h4>
         <span className="text-[11px] text-muted-foreground">
-          {block.rows.length} {block.rows.length === 1 ? "gene" : "genes"} &times;{" "}
-          {block.tracks.length} tracks
+          {nRows} {nRows === 1 ? "row" : "rows"} &times; {nCols} tracks
         </span>
       </div>
 
-      <TooltipProvider delayDuration={150}>
-        <div className="overflow-x-auto">
-          <table className="text-[11px] border-collapse">
-            <thead>
-              <tr>
-                {/* Row header (gene) */}
-                <th className="sticky left-0 bg-background z-10 text-left pr-3 py-1 text-muted-foreground font-medium whitespace-nowrap">
-                  Gene
-                </th>
-                {visibleIndices.map((j) => (
-                  <Tooltip key={j}>
-                    <TooltipTrigger asChild>
-                      <th className="px-0.5 py-1 text-muted-foreground font-normal cursor-help">
-                        <div className="w-5 h-12 flex items-end justify-center">
-                          <span className="block origin-bottom-left rotate-[-55deg] whitespace-nowrap translate-x-2">
-                            {block.tracks[j].biosample_name}
-                          </span>
-                        </div>
-                      </th>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-56">
-                      <p className="font-medium">{block.tracks[j].biosample_name}</p>
-                      {block.tracks[j].data_source && (
-                        <p className="text-muted-foreground">
-                          {block.tracks[j].data_source}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {block.rows.map((row, i) => (
-                <tr key={row.gene_id}>
-                  {/* Gene label */}
-                  <td className="sticky left-0 bg-background z-10 pr-3 py-0.5 text-foreground font-medium whitespace-nowrap">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help">
-                          {row.gene_name}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p className="font-medium">{row.gene_name}</p>
-                        <p className="text-muted-foreground">{row.gene_id}</p>
-                        {row.gene_type && (
-                          <p className="text-muted-foreground">{row.gene_type}</p>
-                        )}
-                        {row.strand && (
-                          <p className="text-muted-foreground">Strand: {row.strand}</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  </td>
+      <div ref={containerRef} className="relative overflow-x-auto">
+        <canvas
+          ref={canvasRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          className="block"
+          style={{ imageRendering: "pixelated" }}
+        />
 
-                  {/* Score cells */}
-                  {visibleIndices.map((j) => {
-                    const cellScore = scores?.[i]?.[j];
-                    const raw = block.raw_scores?.[i]?.[j];
-                    const isValid = cellScore != null && !isNaN(cellScore);
-
-                    return (
-                      <Tooltip key={j}>
-                        <TooltipTrigger asChild>
-                          <td className="px-0.5 py-0.5">
-                            <div
-                              className={cn(
-                                "w-5 h-4 rounded-[2px]",
-                                !isValid && "bg-muted/30",
-                              )}
-                              style={
-                                isValid
-                                  ? { backgroundColor: quantileColor(useQuantile ? cellScore : Math.min(Math.abs(cellScore) * 5, 1)) }
-                                  : undefined
-                              }
-                            />
-                          </td>
-                        </TooltipTrigger>
-                        {isValid && (
-                          <TooltipContent side="top" className="max-w-56">
-                            <p className="font-medium">
-                              {row.gene_name} &times; {block.tracks[j].biosample_name}
-                            </p>
-                            {useQuantile && (
-                              <p className="text-muted-foreground">
-                                Quantile: {formatQuantile(cellScore)}
-                              </p>
-                            )}
-                            <p className="text-muted-foreground">
-                              Raw: {formatScore(raw ?? cellScore)}
-                            </p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </TooltipProvider>
+        {/* Single floating tooltip */}
+        {tooltip && (
+          <div
+            className="absolute z-50 pointer-events-none rounded-md border border-border bg-card px-2.5 py-1.5 shadow-md text-xs"
+            style={{ left: tooltip.x, top: tooltip.y, transform: "translateX(-50%)" }}
+          >
+            <p className="font-medium text-foreground">
+              {tooltip.gene} &times; {tooltip.track}
+            </p>
+            <p className="text-muted-foreground">
+              Raw: {tooltip.raw != null ? formatScore(tooltip.raw) : "—"}
+            </p>
+            {tooltip.quantile != null && (
+              <p className="text-muted-foreground">
+                Quantile: {(tooltip.quantile * 100).toFixed(0)}%
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex items-center gap-2 mt-2">
         <span className="text-[10px] text-muted-foreground">Effect:</span>
-        <div className="flex items-center gap-0.5">
-          {[0.1, 0.3, 0.5, 0.7, 0.9].map((q) => (
+        <div className="flex items-center gap-px">
+          {[0, 0.2, 0.4, 0.6, 0.8, 1].map((v) => (
             <div
-              key={q}
-              className="w-4 h-3 rounded-[2px]"
-              style={{ backgroundColor: quantileColor(q) }}
+              key={v}
+              className="w-4 h-3 rounded-[1px]"
+              style={{ backgroundColor: toColor(v) }}
             />
           ))}
         </div>
         <span className="text-[10px] text-muted-foreground">Low → High</span>
       </div>
-
-      {hasMore && !showAll && (
-        <button
-          onClick={() => setShowAll(true)}
-          className="text-xs text-primary hover:underline mt-1"
-        >
-          Show all {sortedTrackIndices.length} tracks
-        </button>
-      )}
     </div>
   );
 }
