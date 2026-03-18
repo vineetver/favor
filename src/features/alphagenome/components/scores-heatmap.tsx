@@ -1,14 +1,24 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
-import Link from "next/link";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@shared/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import type { ScorerBlock, ScoreTrack, TopTissueHit } from "../types";
-import { formatScore, formatQuantile, friendlyScorerLabel, isValidScore } from "../utils";
+import Link from "next/link";
+import { Fragment, useMemo, useState } from "react";
+import type { ScorerBlock, ScoreTrack } from "../types";
+import {
+  formatQuantile,
+  formatScore,
+  friendlyScorerLabel,
+  isValidScore,
+} from "../utils";
 
 // ─── Gene link ───────────────────────────────────────────────
 
@@ -27,46 +37,129 @@ function GeneLink({ gene }: { gene: string }) {
 // ─── Tissue grouping ─────────────────────────────────────────
 
 const CELL_LINE_EXACT = new Set([
-  "hela","hela-s3","k562","hepg2","imr-90","imr90","hffc6","thp-1","thp1",
-  "cyt49","a549","mcf-7","mcf7","u2os","jurkat","hek293","kasumi","nb4",
-  "hl-60","hl60","gm12878","gm19239","rpmi",
+  "hela",
+  "hela-s3",
+  "k562",
+  "hepg2",
+  "imr-90",
+  "imr90",
+  "hffc6",
+  "thp-1",
+  "thp1",
+  "cyt49",
+  "a549",
+  "mcf-7",
+  "mcf7",
+  "u2os",
+  "jurkat",
+  "hek293",
+  "kasumi",
+  "nb4",
+  "hl-60",
+  "hl60",
+  "gm12878",
+  "gm19239",
+  "rpmi",
 ]);
-const STEM_CELL_EXACT = new Set(["h9","h1-hesc","h1","ips"]);
+const STEM_CELL_EXACT = new Set(["h9", "h1-hesc", "h1", "ips"]);
 const TISSUE_KEYWORDS: [string, string][] = [
-  ["proximal tubule","Kidney"],["nervous system","Nerve"],
-  ["skeletal muscle","Muscle"],["trabecular meshwork","Eye"],
-  ["mammary gland","Reproductive"],["umbilical cord","Stem Cell"],
-  ["lymphatic vessel","Immune"],["villous mesenchyme","Reproductive"],
-  ["brain","Brain"],["cerebr","Brain"],["hippocamp","Brain"],
-  ["lung","Lung"],["bronchial","Lung"],["liver","Liver"],["hepatic","Liver"],
-  ["kidney","Kidney"],["renal","Kidney"],["perirenal","Kidney"],
-  ["heart","Cardiovascular"],["coronary","Cardiovascular"],
-  ["carotid","Cardiovascular"],["aort","Cardiovascular"],["artery","Cardiovascular"],
-  ["skin","Skin"],["vagina","Reproductive"],["ovary","Reproductive"],
-  ["ovarian","Reproductive"],["uterus","Reproductive"],["uterine","Reproductive"],
-  ["testis","Reproductive"],["breast","Reproductive"],["mammary","Reproductive"],
-  ["placent","Reproductive"],["amnion","Reproductive"],["amniotic","Reproductive"],
-  ["chorion","Reproductive"],["adrenal","Endocrine"],["thyroid","Endocrine"],
-  ["pituitary","Endocrine"],["pancrea","Pancreas"],["esophag","Digestive"],
-  ["stomach","Digestive"],["gastric","Digestive"],["colon","Digestive"],
-  ["intestin","Digestive"],["tongue","Digestive"],["spleen","Immune"],
-  ["lymph","Immune"],["blood","Immune"],["retina","Eye"],["cornea","Eye"],
-  ["eye","Eye"],["bladder","Kidney"],["nerve","Nerve"],["muscle","Muscle"],
-  ["pneumocyte","Lung"],["alveolar","Lung"],["airway","Lung"],
-  ["pulmonary","Lung"],["hepatocyte","Liver"],["mesangial","Kidney"],
-  ["podocyte","Kidney"],["glomerul","Kidney"],["cardiac","Cardiovascular"],
-  ["cardiomyocyte","Cardiovascular"],["vascular","Cardiovascular"],
-  ["endothelial","Cardiovascular"],["myotube","Muscle"],["myoblast","Muscle"],
-  ["myocyte","Muscle"],["fibroblast","Connective"],["adipocyte","Connective"],
-  ["preadipocyte","Connective"],["adipose","Connective"],
-  ["mesothelial","Connective"],["chondrocyte","Connective"],
-  ["osteoblast","Connective"],["keratinocyte","Skin"],["melanocyte","Skin"],
-  ["epiderm","Skin"],["sertoli","Reproductive"],["trophoblast","Reproductive"],
-  ["monocyte","Immune"],["macrophage","Immune"],["dendritic","Immune"],
-  ["leukocyte","Immune"],["astrocyte","Brain"],["neuron","Brain"],
-  ["oligodendrocyte","Brain"],["microglia","Brain"],["neural","Brain"],
-  ["schwann","Nerve"],["mesenchymal","Connective"],["stem cell","Stem Cell"],
-  ["embryonic","Stem Cell"],["hesc","Stem Cell"],["ipsc","Stem Cell"],
+  ["proximal tubule", "Kidney"],
+  ["nervous system", "Nerve"],
+  ["skeletal muscle", "Muscle"],
+  ["trabecular meshwork", "Eye"],
+  ["mammary gland", "Reproductive"],
+  ["umbilical cord", "Stem Cell"],
+  ["lymphatic vessel", "Immune"],
+  ["villous mesenchyme", "Reproductive"],
+  ["brain", "Brain"],
+  ["cerebr", "Brain"],
+  ["hippocamp", "Brain"],
+  ["lung", "Lung"],
+  ["bronchial", "Lung"],
+  ["liver", "Liver"],
+  ["hepatic", "Liver"],
+  ["kidney", "Kidney"],
+  ["renal", "Kidney"],
+  ["perirenal", "Kidney"],
+  ["heart", "Cardiovascular"],
+  ["coronary", "Cardiovascular"],
+  ["carotid", "Cardiovascular"],
+  ["aort", "Cardiovascular"],
+  ["artery", "Cardiovascular"],
+  ["skin", "Skin"],
+  ["vagina", "Reproductive"],
+  ["ovary", "Reproductive"],
+  ["ovarian", "Reproductive"],
+  ["uterus", "Reproductive"],
+  ["uterine", "Reproductive"],
+  ["testis", "Reproductive"],
+  ["breast", "Reproductive"],
+  ["mammary", "Reproductive"],
+  ["placent", "Reproductive"],
+  ["amnion", "Reproductive"],
+  ["amniotic", "Reproductive"],
+  ["chorion", "Reproductive"],
+  ["adrenal", "Endocrine"],
+  ["thyroid", "Endocrine"],
+  ["pituitary", "Endocrine"],
+  ["pancrea", "Pancreas"],
+  ["esophag", "Digestive"],
+  ["stomach", "Digestive"],
+  ["gastric", "Digestive"],
+  ["colon", "Digestive"],
+  ["intestin", "Digestive"],
+  ["tongue", "Digestive"],
+  ["spleen", "Immune"],
+  ["lymph", "Immune"],
+  ["blood", "Immune"],
+  ["retina", "Eye"],
+  ["cornea", "Eye"],
+  ["eye", "Eye"],
+  ["bladder", "Kidney"],
+  ["nerve", "Nerve"],
+  ["muscle", "Muscle"],
+  ["pneumocyte", "Lung"],
+  ["alveolar", "Lung"],
+  ["airway", "Lung"],
+  ["pulmonary", "Lung"],
+  ["hepatocyte", "Liver"],
+  ["mesangial", "Kidney"],
+  ["podocyte", "Kidney"],
+  ["glomerul", "Kidney"],
+  ["cardiac", "Cardiovascular"],
+  ["cardiomyocyte", "Cardiovascular"],
+  ["vascular", "Cardiovascular"],
+  ["endothelial", "Cardiovascular"],
+  ["myotube", "Muscle"],
+  ["myoblast", "Muscle"],
+  ["myocyte", "Muscle"],
+  ["fibroblast", "Connective"],
+  ["adipocyte", "Connective"],
+  ["preadipocyte", "Connective"],
+  ["adipose", "Connective"],
+  ["mesothelial", "Connective"],
+  ["chondrocyte", "Connective"],
+  ["osteoblast", "Connective"],
+  ["keratinocyte", "Skin"],
+  ["melanocyte", "Skin"],
+  ["epiderm", "Skin"],
+  ["sertoli", "Reproductive"],
+  ["trophoblast", "Reproductive"],
+  ["monocyte", "Immune"],
+  ["macrophage", "Immune"],
+  ["dendritic", "Immune"],
+  ["leukocyte", "Immune"],
+  ["astrocyte", "Brain"],
+  ["neuron", "Brain"],
+  ["oligodendrocyte", "Brain"],
+  ["microglia", "Brain"],
+  ["neural", "Brain"],
+  ["schwann", "Nerve"],
+  ["mesenchymal", "Connective"],
+  ["stem cell", "Stem Cell"],
+  ["embryonic", "Stem Cell"],
+  ["hesc", "Stem Cell"],
+  ["ipsc", "Stem Cell"],
 ];
 
 function inferGroup(track: ScoreTrack): string {
@@ -75,7 +168,9 @@ function inferGroup(track: ScoreTrack): string {
   if (CELL_LINE_EXACT.has(lower)) return "Cell Line";
   if (STEM_CELL_EXACT.has(lower)) return "Stem Cell";
   if (/^gm\d+$/i.test(lower)) return "Cell Line";
-  for (const [kw, g] of TISSUE_KEYWORDS) { if (lower.includes(kw)) return g; }
+  for (const [kw, g] of TISSUE_KEYWORDS) {
+    if (lower.includes(kw)) return g;
+  }
   return "Other";
 }
 
@@ -92,14 +187,30 @@ interface ScorerGroup {
 function scorerCategory(scorer: string): string {
   const l = scorer.toLowerCase();
   if (l.includes("centermask") || l.includes("contactmap")) return "position";
-  if (l.includes("genemask") && (l.includes("lfc") || l.includes("active"))) return "expression";
+  if (l.includes("genemask") && (l.includes("lfc") || l.includes("active")))
+    return "expression";
   return "rna";
 }
 
-const GROUP_META: Record<string, { title: string; question: string; order: number }> = {
-  expression: { title: "Gene Expression", question: "Which genes' expression is predicted to change?", order: 0 },
-  rna: { title: "RNA Processing", question: "Does it affect splicing or polyadenylation?", order: 1 },
-  position: { title: "Regulatory Signal", question: "Does this variant disrupt regulatory activity?", order: 2 },
+const GROUP_META: Record<
+  string,
+  { title: string; question: string; order: number }
+> = {
+  expression: {
+    title: "Gene Expression",
+    question: "Which genes' expression is predicted to change?",
+    order: 0,
+  },
+  rna: {
+    title: "RNA Processing",
+    question: "Does it affect splicing or polyadenylation?",
+    order: 1,
+  },
+  position: {
+    title: "Regulatory Signal",
+    question: "Does this variant disrupt regulatory activity?",
+    order: 2,
+  },
 };
 
 function groupScorers(scorers: ScorerBlock[]): ScorerGroup[] {
@@ -151,15 +262,13 @@ function extractGroupHits(blocks: ScorerBlock[]): GroupHit[] {
         };
       }
     }
-    // Skip negligible signals
     if (!best) continue;
-    if (best.hasQuantile && best.quantile < 0.5) continue;
-    if (!best.hasQuantile && Math.abs(best.raw) < 0.001) continue;
     result.push(best);
   }
   result.sort((a, b) => {
     if (a.hasQuantile && b.hasQuantile) return b.quantile - a.quantile;
-    if (!a.hasQuantile && !b.hasQuantile) return Math.abs(b.raw) - Math.abs(a.raw);
+    if (!a.hasQuantile && !b.hasQuantile)
+      return Math.abs(b.raw) - Math.abs(a.raw);
     return a.hasQuantile ? -1 : 1;
   });
   return result;
@@ -173,51 +282,107 @@ function compactScore(v: number): string {
     const s = `${sign}${v.toFixed(1)}`;
     return s.endsWith(".0") ? s.slice(0, -2) : s;
   }
-  return `${sign}${v.toFixed(2)}`;
+  if (abs >= 0.01) return `${sign}${v.toFixed(2)}`;
+  if (abs >= 0.001) return `${sign}${v.toFixed(3)}`;
+  return `${sign}${v.toFixed(4)}`;
+}
+
+/** Normalized magnitude 0–1 for bar width, using quantile when available. */
+function hitMagnitude(hit: GroupHit, allHits: GroupHit[]): number {
+  if (hit.hasQuantile) return hit.quantile;
+  const maxRaw = Math.max(
+    ...allHits.filter((h) => !h.hasQuantile).map((h) => Math.abs(h.raw)),
+    0.001,
+  );
+  return Math.min(1, Math.abs(hit.raw) / maxRaw);
 }
 
 function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
   const hits = useMemo(() => extractGroupHits(blocks), [blocks]);
-  if (hits.length === 0) return null;
+  if (hits.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-1">
+        No significant signal detected.
+      </p>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-start gap-0.5 mb-5">
-      {hits.map((hit, i) => (
-        <Tooltip key={i}>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 py-0.5 text-sm cursor-help max-w-lg">
-              <span className="font-medium text-foreground">{hit.tissue}</span>
-              {hit.gene && (
-                <>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-sm"><GeneLink gene={hit.gene} /></span>
-                </>
-              )}
-              <span className="text-muted-foreground">·</span>
-              <span className="text-xs text-muted-foreground">{hit.scorer}</span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                {hit.hasQuantile
-                  ? `${Math.round(hit.quantile * 100)}%`
-                  : compactScore(hit.raw)}
-              </span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{hit.biosampleName}</p>
-            {hit.hasQuantile && <p>Quantile: {Math.round(hit.quantile * 100)}%</p>}
-            <p>Raw score: {formatScore(hit.raw)}</p>
-          </TooltipContent>
-        </Tooltip>
-      ))}
+    <div className="mt-3">
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+        Top signals
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {hits.map((hit, i) => {
+          const mag = hitMagnitude(hit, hits);
+          const barW = Math.max(4, Math.round(mag * 64));
+          return (
+            <Tooltip key={i}>
+              <TooltipTrigger asChild>
+                <div
+                  className="grid items-center gap-x-2 py-0.5 cursor-help max-w-lg"
+                  style={{ gridTemplateColumns: "auto 1fr" }}
+                >
+                  {/* Row 1: text labels */}
+                  <div className="flex items-center gap-1.5 text-sm min-w-0">
+                    <span className="font-medium text-foreground shrink-0">
+                      {hit.tissue}
+                    </span>
+                    {hit.gene && (
+                      <>
+                        <span className="text-muted-foreground shrink-0">
+                          ·
+                        </span>
+                        <GeneLink gene={hit.gene} />
+                      </>
+                    )}
+                    <span className="text-muted-foreground shrink-0">·</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {hit.scorer}
+                    </span>
+                  </div>
+                  {/* Score + bar */}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2 rounded-sm bg-foreground/20"
+                      style={{ width: barW }}
+                    />
+                    <span className="text-sm tabular-nums text-muted-foreground whitespace-nowrap">
+                      {hit.hasQuantile
+                        ? `${Math.round(hit.quantile * 100)}%`
+                        : compactScore(hit.raw)}
+                    </span>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="space-y-0.5">
+                  <p className="font-medium">{hit.biosampleName}</p>
+                  {hit.hasQuantile && (
+                    <p>Quantile: {Math.round(hit.quantile * 100)}%</p>
+                  )}
+                  <p>Raw score: {formatScore(hit.raw)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 // ─── Data helpers ─────────────────────────────────────────────
 
-interface TissueGroupData { name: string; trackIndices: number[]; }
-interface CellInfo { norm: number | null; rowIdx: number; trackIdx: number | null; }
+interface TissueGroupData {
+  name: string;
+  trackIndices: number[];
+}
+interface CellInfo {
+  norm: number | null;
+  rowIdx: number;
+  trackIdx: number | null;
+}
 
 function buildTissueGroups(tracks: ScoreTrack[]): TissueGroupData[] {
   const map = new Map<string, number[]>();
@@ -225,35 +390,55 @@ function buildTissueGroups(tracks: ScoreTrack[]): TissueGroupData[] {
     const g = inferGroup(tracks[i]);
     (map.get(g) ?? (map.set(g, []), map.get(g)!)).push(i);
   }
-  return Array.from(map.entries()).map(([name, trackIndices]) => ({ name, trackIndices }));
+  return Array.from(map.entries()).map(([name, trackIndices]) => ({
+    name,
+    trackIndices,
+  }));
 }
 
 function normalizeBlock(block: ScorerBlock): (number | null)[][] {
   if (block.quantile_scores) return block.quantile_scores;
-  const flat = block.raw_scores.flat().filter((v): v is number => v != null && !isNaN(v));
+  const flat = block.raw_scores
+    .flat()
+    .filter((v): v is number => v != null && !isNaN(v));
   if (flat.length === 0) return block.raw_scores;
   const maxAbs = Math.max(...flat.map(Math.abs));
   if (maxAbs === 0) return block.raw_scores;
-  return block.raw_scores.map(row => row.map(v => (v == null || isNaN(v)) ? null : Math.abs(v) / maxAbs));
+  return block.raw_scores.map((row) =>
+    row.map((v) => (v == null || isNaN(v) ? null : Math.abs(v) / maxAbs)),
+  );
 }
 
-function computeGroupCells(normalized: (number | null)[][], groups: TissueGroupData[]): CellInfo[][] {
+function computeGroupCells(
+  normalized: (number | null)[][],
+  groups: TissueGroupData[],
+): CellInfo[][] {
   return normalized.map((row, rowIdx) =>
-    groups.map(g => {
+    groups.map((g) => {
       let best: CellInfo = { norm: null, rowIdx, trackIdx: null };
       let bestVal = -1;
       for (const idx of g.trackIndices) {
         const v = row[idx];
-        if (v != null && v > bestVal) { bestVal = v; best = { norm: v, rowIdx, trackIdx: idx }; }
+        if (v != null && v > bestVal) {
+          bestVal = v;
+          best = { norm: v, rowIdx, trackIdx: idx };
+        }
       }
       return best;
     }),
   );
 }
 
-function deduplicateAndSort(labels: string[], cells: CellInfo[][], max: number) {
+function deduplicateAndSort(
+  labels: string[],
+  cells: CellInfo[][],
+  max: number,
+) {
   const map = new Map<string, number[]>();
-  for (let i = 0; i < labels.length; i++) (map.get(labels[i]) ?? (map.set(labels[i], []), map.get(labels[i])!)).push(i);
+  for (let i = 0; i < labels.length; i++)
+    (map.get(labels[i]) ?? (map.set(labels[i], []), map.get(labels[i])!)).push(
+      i,
+    );
 
   const rows: { label: string; cells: CellInfo[]; max: number }[] = [];
   for (const [name, indices] of map) {
@@ -264,7 +449,12 @@ function deduplicateAndSort(labels: string[], cells: CellInfo[][], max: number) 
       let best: CellInfo = { norm: null, rowIdx: indices[0], trackIdx: null };
       for (const ri of indices) {
         const cell = cells[ri]?.[c];
-        if (cell && cell.norm != null && (best.norm === null || cell.norm > best.norm)) best = cell;
+        if (
+          cell &&
+          cell.norm != null &&
+          (best.norm === null || cell.norm > best.norm)
+        )
+          best = cell;
       }
       merged.push(best);
       if (best.norm != null && best.norm > rowMax) rowMax = best.norm;
@@ -273,7 +463,7 @@ function deduplicateAndSort(labels: string[], cells: CellInfo[][], max: number) 
   }
   rows.sort((a, b) => b.max - a.max);
   const top = rows.slice(0, max);
-  return { labels: top.map(r => r.label), cells: top.map(r => r.cells) };
+  return { labels: top.map((r) => r.label), cells: top.map((r) => r.cells) };
 }
 
 // ─── Color ────────────────────────────────────────────────────
@@ -293,20 +483,34 @@ const MAX_ROWS = 12;
 
 // ─── Angled column header ─────────────────────────────────────
 
-function AngledHeader({ name, trackCount }: { name: string; trackCount: number }) {
+function AngledHeader({
+  name,
+  trackCount,
+}: {
+  name: string;
+  trackCount: number;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="relative h-full flex items-end justify-center" style={{ overflow: "visible" }}>
+        <div
+          className="relative h-full flex items-end justify-center"
+          style={{ overflow: "visible" }}
+        >
           <span
             className="text-xs text-muted-foreground whitespace-nowrap origin-bottom-left"
-            style={{ transform: "rotate(-45deg) translateX(-2px)", marginBottom: 2 }}
+            style={{
+              transform: "rotate(-45deg) translateX(-2px)",
+              marginBottom: 2,
+            }}
           >
             {name}
           </span>
         </div>
       </TooltipTrigger>
-      <TooltipContent>{name} ({trackCount} tracks)</TooltipContent>
+      <TooltipContent>
+        {name} ({trackCount} tracks)
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -317,39 +521,31 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
   const groups = useMemo(() => groupScorers(scorers), [scorers]);
 
   if (scorers.length === 0) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">No scores returned.</p>;
+    return (
+      <p className="text-sm text-muted-foreground py-6 text-center">
+        No scores returned.
+      </p>
+    );
   }
 
   return (
     <div>
       {groups.map((group, gi) => (
-        <section key={group.id} className={gi > 0 ? "mt-8 pt-7 border-t border-border" : ""}>
-          {/* Section header */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <h3 className="text-sm font-semibold text-foreground mb-3 cursor-help">
-                {group.title}
-              </h3>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs">
-              {group.question}
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Per-group top hits */}
-          <GroupSummary blocks={group.blocks} />
-
-          {/* Heatmaps */}
-          <ScorerGroupContent blocks={group.blocks} />
-        </section>
+        <ScorerGroupSection key={group.id} group={group} isFirst={gi === 0} />
       ))}
 
       {/* Legend */}
-      <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">
-        <span className="text-[11px] text-muted-foreground">Effect magnitude:</span>
+      <div className="flex items-center gap-2 mt-8 pt-4 border-t border-border">
+        <span className="text-[11px] text-muted-foreground">
+          Effect magnitude:
+        </span>
         <div className="flex items-center gap-px">
-          {[0.1, 0.3, 0.5, 0.7, 0.9].map(v => (
-            <div key={v} className="w-6 h-3.5 rounded-[2px]" style={{ backgroundColor: cellColor(v) }} />
+          {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
+            <div
+              key={v}
+              className="w-6 h-3.5 rounded-[2px]"
+              style={{ backgroundColor: cellColor(v) }}
+            />
           ))}
         </div>
         <span className="text-[11px] text-muted-foreground">Low → High</span>
@@ -358,11 +554,131 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
   );
 }
 
+// ─── Per-group section ───────────────────────────────────────
+
+function ScorerGroupSection({
+  group,
+  isFirst,
+}: {
+  group: ScorerGroup;
+  isFirst: boolean;
+}) {
+  return (
+    <section className={isFirst ? "" : "mt-8 pt-7 border-t border-border"}>
+      {/* Header + subtitle */}
+      <h3 className="text-sm font-semibold text-foreground">{group.title}</h3>
+      <p className="text-xs text-muted-foreground mt-0.5">{group.question}</p>
+
+      {/* Top signals */}
+      <GroupSummary blocks={group.blocks} />
+
+      <div className="mt-6">
+        <ScorerGroupContent blocks={group.blocks} />
+      </div>
+    </section>
+  );
+}
+
+// ─── Tissue breakdown content (renders inside Popover) ──────
+
+function CellBreakdownContent({
+  block,
+  rowIdx,
+  trackIndices,
+  geneName,
+  groupName,
+}: {
+  block: ScorerBlock;
+  rowIdx: number;
+  trackIndices: number[];
+  geneName: string;
+  groupName: string;
+}) {
+  const hasQuantile = block.quantile_scores != null;
+  const entries = useMemo(() => {
+    const items = trackIndices
+      .map((idx) => ({
+        name: block.tracks[idx].biosample_name,
+        raw: block.raw_scores[rowIdx]?.[idx] ?? 0,
+        quantile: block.quantile_scores?.[rowIdx]?.[idx] ?? null,
+        absRaw: Math.abs(block.raw_scores[rowIdx]?.[idx] ?? 0),
+        idx,
+      }))
+      .filter((e) => isValidScore(e.raw) && e.absRaw > 0.0001);
+    items.sort((a, b) => {
+      if (hasQuantile && a.quantile != null && b.quantile != null)
+        return b.quantile - a.quantile;
+      return b.absRaw - a.absRaw;
+    });
+    return items;
+  }, [block, rowIdx, trackIndices, hasQuantile]);
+
+  const [showAll, setShowAll] = useState(false);
+  const display = showAll ? entries : entries.slice(0, 10);
+  const maxAbs = entries[0]?.absRaw ?? 1;
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">No significant signal.</p>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-foreground mb-2">
+        {geneName} × {groupName}
+        <span className="text-muted-foreground font-normal ml-1">
+          ({entries.length})
+        </span>
+      </p>
+      <div className="space-y-0.5 max-h-64 overflow-y-auto">
+        {display.map((e) => {
+          const barW = Math.max(2, Math.round((e.absRaw / maxAbs) * 40));
+          return (
+            <div
+              key={e.idx}
+              className="flex items-center gap-2 text-[11px] py-px"
+            >
+              <span
+                className="text-muted-foreground truncate w-[120px] shrink-0"
+                title={e.name}
+              >
+                {e.name}
+              </span>
+              <div
+                className="h-1.5 rounded-sm bg-foreground/20 shrink-0"
+                style={{ width: barW }}
+              />
+              {hasQuantile && e.quantile != null && (
+                <span className="tabular-nums text-muted-foreground shrink-0">
+                  {Math.round(e.quantile * 100)}%
+                </span>
+              )}
+              <span className="tabular-nums text-muted-foreground shrink-0">
+                {compactScore(e.raw)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {entries.length > 10 && !showAll && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="text-xs text-primary hover:underline mt-1.5"
+        >
+          Show all {entries.length} tissues
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Group content: combines single-row scorers, separates multi-row ─
 
 function uniqueGeneCount(block: ScorerBlock): number {
   if (block.rows.length === 0) return 1;
-  return new Set(block.rows.map(r => r.gene_name)).size;
+  return new Set(block.rows.map((r) => r.gene_name)).size;
 }
 
 function ScorerGroupContent({ blocks }: { blocks: ScorerBlock[] }) {
@@ -376,7 +692,9 @@ function ScorerGroupContent({ blocks }: { blocks: ScorerBlock[] }) {
     <div className="space-y-5">
       {compact.length > 1 && <CombinedScorerView blocks={compact} />}
       {compact.length === 1 && <TissueHeatmap block={compact[0]} />}
-      {full.map((block, idx) => <TissueHeatmap key={idx} block={block} />)}
+      {full.map((block, idx) => (
+        <TissueHeatmap key={idx} block={block} />
+      ))}
     </div>
   );
 }
@@ -385,7 +703,19 @@ function ScorerGroupContent({ blocks }: { blocks: ScorerBlock[] }) {
 
 interface CombinedRow {
   label: string;
-  scores: Map<string, { norm: number; raw: number | null; quantile: number | null; trackName: string; trackCount: number }>;
+  scores: Map<
+    string,
+    {
+      norm: number;
+      raw: number | null;
+      quantile: number | null;
+      trackName: string;
+      trackCount: number;
+      blockRef: ScorerBlock;
+      bestRowIdx: number;
+      trackIndices: number[];
+    }
+  >;
   hasQuantile: boolean;
 }
 
@@ -405,15 +735,20 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
       if (block.rows.length > 0) {
         for (let r = 0; r < block.rows.length; r++) {
           const name = block.rows[r].gene_name;
-          (geneRows.get(name) ?? (geneRows.set(name, []), geneRows.get(name)!)).push(r);
+          (
+            geneRows.get(name) ?? (geneRows.set(name, []), geneRows.get(name)!)
+          ).push(r);
         }
       } else {
-        geneRows.set("", Array.from({ length: block.raw_scores.length }, (_, i) => i));
+        geneRows.set(
+          "",
+          Array.from({ length: block.raw_scores.length }, (_, i) => i),
+        );
       }
 
       for (const [geneName, rowIndices] of geneRows) {
         const label = geneName ? `${scorerLabel} · ${geneName}` : scorerLabel;
-        const scores = new Map<string, { norm: number; raw: number | null; quantile: number | null; trackName: string; trackCount: number }>();
+        const scores: CombinedRow["scores"] = new Map();
 
         for (const g of groups) {
           let bestNorm = 0;
@@ -422,20 +757,34 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
           for (const r of rowIndices) {
             for (const idx of g.trackIndices) {
               const v = normalized[r]?.[idx] ?? 0;
-              if (v != null && v > bestNorm) { bestNorm = v; bestRowIdx = r; bestTrackIdx = idx; }
+              if (v != null && v > bestNorm) {
+                bestNorm = v;
+                bestRowIdx = r;
+                bestTrackIdx = idx;
+              }
             }
           }
           if (bestNorm > 0.01) {
             scores.set(g.name, {
               norm: bestNorm,
               raw: block.raw_scores[bestRowIdx]?.[bestTrackIdx] ?? null,
-              quantile: block.quantile_scores?.[bestRowIdx]?.[bestTrackIdx] ?? null,
+              quantile:
+                block.quantile_scores?.[bestRowIdx]?.[bestTrackIdx] ?? null,
               trackName: block.tracks[bestTrackIdx]?.biosample_name ?? "",
               trackCount: g.trackIndices.length,
+              blockRef: block,
+              bestRowIdx,
+              trackIndices: g.trackIndices,
             });
           }
-          allGroupScores.set(g.name, Math.max(allGroupScores.get(g.name) ?? 0, bestNorm));
-          allGroupCounts.set(g.name, Math.max(allGroupCounts.get(g.name) ?? 0, g.trackIndices.length));
+          allGroupScores.set(
+            g.name,
+            Math.max(allGroupScores.get(g.name) ?? 0, bestNorm),
+          );
+          allGroupCounts.set(
+            g.name,
+            Math.max(allGroupCounts.get(g.name) ?? 0, g.trackIndices.length),
+          );
         }
 
         combinedRows.push({ label, scores, hasQuantile });
@@ -453,48 +802,96 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
   if (rows.length === 0 || sortedGroups.length === 0) return null;
 
   return (
-    <div style={{ overflow: "visible" }}>
-      <div
-        className="grid w-full"
-        style={{
-          gridTemplateColumns: `${LABEL_W}px repeat(${sortedGroups.length}, minmax(28px, 1fr))`,
-          gridTemplateRows: `${HEADER_H}px repeat(${rows.length}, ${CELL_H}px)`,
-          overflow: "visible",
-        }}
-      >
-        <div />
-        {sortedGroups.map(g => <AngledHeader key={g.name} name={g.name} trackCount={g.trackCount} />)}
+    <div>
+      <div style={{ overflow: "visible" }}>
+        <div
+          className="grid w-full"
+          style={{
+            gridTemplateColumns: `${LABEL_W}px repeat(${sortedGroups.length}, minmax(28px, 1fr))`,
+            gridTemplateRows: `${HEADER_H}px repeat(${rows.length}, ${CELL_H}px)`,
+            overflow: "visible",
+          }}
+        >
+          <div />
+          {sortedGroups.map((g) => (
+            <AngledHeader
+              key={g.name}
+              name={g.name}
+              trackCount={g.trackCount}
+            />
+          ))}
 
-        {rows.map((row, ri) => (
-          <Fragment key={ri}>
-            <div className="flex items-center pr-3 text-xs text-foreground truncate" title={row.label}>
-              {row.label}
-            </div>
-            {sortedGroups.map(g => {
-              const score = row.scores.get(g.name);
-              const color = cellColor(score?.norm ?? null);
-              return (
-                <Tooltip key={`${ri}-${g.name}`}>
-                  <TooltipTrigger asChild>
-                    <div className="p-[1px]">
-                      <div className="w-full h-full rounded-[2px]" style={{ backgroundColor: color }} />
+          {rows.map((row, ri) => (
+            <Fragment key={ri}>
+              <div
+                className="flex items-center pr-3 text-xs text-foreground truncate"
+                title={row.label}
+              >
+                {row.label}
+              </div>
+              {sortedGroups.map((g) => {
+                const score = row.scores.get(g.name);
+                const color = cellColor(score?.norm ?? null);
+                const hasSignal = score != null && score.norm > 0.01;
+                if (!hasSignal) {
+                  return (
+                    <div key={`${ri}-${g.name}`} className="p-[1px]">
+                      <div
+                        className="w-full h-full rounded-[2px]"
+                        style={{ backgroundColor: color }}
+                      />
                     </div>
-                  </TooltipTrigger>
-                  {score && score.norm > 0.01 && (
-                    <TooltipContent>
-                      <div className="space-y-0.5">
-                        <p className="font-medium">{row.label} × {g.name}</p>
+                  );
+                }
+                return (
+                  <Popover key={`${ri}-${g.name}`}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="p-[1px]">
+                            <div
+                              className="w-full h-full rounded-[2px]"
+                              style={{ backgroundColor: color }}
+                            />
+                          </button>
+                        </PopoverTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-medium">
+                          {row.label} × {g.name}
+                        </p>
                         {score.trackCount > 1 && <p>Top: {score.trackName}</p>}
-                        {row.hasQuantile && score.quantile != null && <p>Quantile: {formatQuantile(score.quantile)}</p>}
-                        <p>Raw: {score.raw != null ? formatScore(score.raw) : "—"}</p>
-                      </div>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              );
-            })}
-          </Fragment>
-        ))}
+                        {row.hasQuantile && score.quantile != null && (
+                          <p>Quantile: {formatQuantile(score.quantile)}</p>
+                        )}
+                        <p>
+                          Raw:{" "}
+                          {score.raw != null ? formatScore(score.raw) : "—"}
+                        </p>
+                        <p className="text-[10px] opacity-60 mt-1">
+                          Click for tissue breakdown
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <PopoverContent
+                      side="bottom"
+                      align="start"
+                      className="w-80 p-3"
+                    >
+                      <CellBreakdownContent
+                        block={score.blockRef}
+                        rowIdx={score.bestRowIdx}
+                        trackIndices={score.trackIndices}
+                        geneName={row.label}
+                        groupName={g.name}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -506,32 +903,57 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
   const label = friendlyScorerLabel(block.scorer);
   const hasQuantile = block.quantile_scores != null;
   const normalized = useMemo(() => normalizeBlock(block), [block]);
-  const tissueGroups = useMemo(() => buildTissueGroups(block.tracks), [block.tracks]);
-  const rawCells = useMemo(() => computeGroupCells(normalized, tissueGroups), [normalized, tissueGroups]);
-  const rawLabels = useMemo(() => block.rows.length > 0 ? block.rows.map(r => r.gene_name) : ["(all positions)"], [block.rows]);
-  const { labels, cells } = useMemo(() => deduplicateAndSort(rawLabels, rawCells, MAX_ROWS), [rawLabels, rawCells]);
+  const tissueGroups = useMemo(
+    () => buildTissueGroups(block.tracks),
+    [block.tracks],
+  );
+  const rawCells = useMemo(
+    () => computeGroupCells(normalized, tissueGroups),
+    [normalized, tissueGroups],
+  );
+  const rawLabels = useMemo(
+    () =>
+      block.rows.length > 0
+        ? block.rows.map((r) => r.gene_name)
+        : ["(all positions)"],
+    [block.rows],
+  );
+  const uniqueGenes = new Set(rawLabels).size;
+
+  const [showAllGenes, setShowAllGenes] = useState(false);
+  const rowLimit = showAllGenes ? uniqueGenes : MAX_ROWS;
+  const { labels, cells } = useMemo(
+    () => deduplicateAndSort(rawLabels, rawCells, rowLimit),
+    [rawLabels, rawCells, rowLimit],
+  );
 
   const sortedGroupIndices = useMemo(() => {
     const withMax = tissueGroups.map((_, gi) => {
       let max = 0;
-      for (const row of cells) { const v = row[gi]?.norm; if (v != null && v > max) max = v; }
+      for (const row of cells) {
+        const v = row[gi]?.norm;
+        if (v != null && v > max) max = v;
+      }
       return { gi, max };
     });
-    return withMax.filter(({ max }) => max > 0.01).sort((a, b) => b.max - a.max).map(({ gi }) => gi);
+    return withMax
+      .filter(({ max }) => max > 0.01)
+      .sort((a, b) => b.max - a.max)
+      .map(({ gi }) => gi);
   }, [tissueGroups, cells]);
 
   if (labels.length === 0 || sortedGroupIndices.length === 0) return null;
   const nCols = sortedGroupIndices.length;
   const nRows = labels.length;
-  const uniqueGenes = new Set(rawLabels).size;
   const hasGeneLabels = block.rows.length > 0;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-3 mb-2">
         <span className="text-xs font-medium text-foreground">{label}</span>
         <span className="text-[11px] text-muted-foreground">
-          {uniqueGenes > 1 ? `${uniqueGenes} genes · ` : ""}{block.tracks.length} tracks · {nCols} groups
+          {uniqueGenes > 1 ? `${uniqueGenes} genes · ` : ""}
+          {block.tracks.length} tracks · {nCols} groups
         </span>
       </div>
 
@@ -547,46 +969,108 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
           }}
         >
           {hasGeneLabels && <div />}
-          {sortedGroupIndices.map(gi => {
+          {sortedGroupIndices.map((gi) => {
             const g = tissueGroups[gi];
-            return <AngledHeader key={`hdr-${gi}`} name={g.name} trackCount={g.trackIndices.length} />;
+            return (
+              <AngledHeader
+                key={`hdr-${gi}`}
+                name={g.name}
+                trackCount={g.trackIndices.length}
+              />
+            );
           })}
 
           {labels.map((rowLabel, ri) => (
             <Fragment key={ri}>
               {hasGeneLabels && (
-                <div className="flex items-center pr-3 text-xs text-foreground truncate" title={rowLabel}>
+                <div
+                  className="flex items-center pr-3 text-xs text-foreground truncate"
+                  title={rowLabel}
+                >
                   {rowLabel}
                 </div>
               )}
-              {sortedGroupIndices.map(gi => {
+              {sortedGroupIndices.map((gi) => {
                 const cell = cells[ri]?.[gi];
                 const g = tissueGroups[gi];
                 const color = cellColor(cell?.norm ?? null);
                 const hasValue = cell?.norm != null && cell.norm > 0.01;
+                if (!hasValue) {
+                  return (
+                    <div key={`${ri}-${gi}`} className="p-[1px]">
+                      <div
+                        className="w-full h-full rounded-[2px]"
+                        style={{ backgroundColor: color }}
+                      />
+                    </div>
+                  );
+                }
                 return (
-                  <Tooltip key={`${ri}-${gi}`}>
-                    <TooltipTrigger asChild>
-                      <div className="p-[1px]">
-                        <div className="w-full h-full rounded-[2px]" style={{ backgroundColor: color }} />
-                      </div>
-                    </TooltipTrigger>
-                    {hasValue && (
+                  <Popover key={`${ri}-${gi}`}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="p-[1px]">
+                            <div
+                              className="w-full h-full rounded-[2px]"
+                              style={{ backgroundColor: color }}
+                            />
+                          </button>
+                        </PopoverTrigger>
+                      </TooltipTrigger>
                       <TooltipContent>
-                        <div className="space-y-0.5">
-                          <p className="font-medium">{rowLabel} × {g.name}</p>
-                          {g.trackIndices.length > 1 && <p>{g.trackIndices.length} tracks</p>}
-                          {cell!.trackIdx != null && g.trackIndices.length > 1 && (
-                            <p>Top: {block.tracks[cell!.trackIdx].biosample_name}</p>
+                        <p className="font-medium">
+                          {rowLabel} × {g.name}
+                        </p>
+                        {cell!.trackIdx != null &&
+                          g.trackIndices.length > 1 && (
+                            <p>
+                              Top: {block.tracks[cell!.trackIdx].biosample_name}
+                            </p>
                           )}
-                          {hasQuantile && cell!.trackIdx != null && block.quantile_scores?.[cell!.rowIdx]?.[cell!.trackIdx] != null && (
-                            <p>Quantile: {formatQuantile(block.quantile_scores![cell!.rowIdx][cell!.trackIdx])}</p>
+                        {hasQuantile &&
+                          cell!.trackIdx != null &&
+                          block.quantile_scores?.[cell!.rowIdx]?.[
+                            cell!.trackIdx
+                          ] != null && (
+                            <p>
+                              Quantile:{" "}
+                              {formatQuantile(
+                                block.quantile_scores![cell!.rowIdx][
+                                  cell!.trackIdx
+                                ],
+                              )}
+                            </p>
                           )}
-                          <p>Raw: {cell!.trackIdx != null ? formatScore(block.raw_scores[cell!.rowIdx]?.[cell!.trackIdx] ?? 0) : "—"}</p>
-                        </div>
+                        <p>
+                          Raw:{" "}
+                          {cell!.trackIdx != null
+                            ? formatScore(
+                                block.raw_scores[cell!.rowIdx]?.[
+                                  cell!.trackIdx
+                                ] ?? 0,
+                              )
+                            : "—"}
+                        </p>
+                        <p className="text-[10px] opacity-60 mt-1">
+                          Click for tissue breakdown
+                        </p>
                       </TooltipContent>
-                    )}
-                  </Tooltip>
+                    </Tooltip>
+                    <PopoverContent
+                      side="bottom"
+                      align="start"
+                      className="w-80 p-3"
+                    >
+                      <CellBreakdownContent
+                        block={block}
+                        rowIdx={cell!.rowIdx}
+                        trackIndices={g.trackIndices}
+                        geneName={rowLabel}
+                        groupName={g.name}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 );
               })}
             </Fragment>
@@ -594,10 +1078,17 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
         </div>
       </div>
 
+      {/* Show all genes toggle */}
       {uniqueGenes > MAX_ROWS && (
-        <p className="text-[11px] text-muted-foreground mt-1">
-          Showing top {nRows} of {uniqueGenes} genes
-        </p>
+        <button
+          type="button"
+          onClick={() => setShowAllGenes((v) => !v)}
+          className="text-[11px] text-primary hover:underline mt-1"
+        >
+          {showAllGenes
+            ? `Show top ${MAX_ROWS} genes`
+            : `Show all ${uniqueGenes} genes`}
+        </button>
       )}
     </div>
   );
