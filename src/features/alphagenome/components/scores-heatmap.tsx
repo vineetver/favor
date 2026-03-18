@@ -1,13 +1,28 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
+import Link from "next/link";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import type { ScorerBlock, ScoreTrack } from "../types";
-import { formatScore, formatQuantile, friendlyScorerLabel } from "../utils";
+import type { ScorerBlock, ScoreTrack, TopTissueHit } from "../types";
+import { formatScore, formatQuantile, friendlyScorerLabel, isValidScore } from "../utils";
+
+// ─── Gene link ───────────────────────────────────────────────
+
+function GeneLink({ gene }: { gene: string }) {
+  const isEnsembl = gene.startsWith("ENSG");
+  return (
+    <Link
+      href={`/hg38/gene/${isEnsembl ? gene : encodeURIComponent(gene)}`}
+      className="text-primary hover:underline"
+    >
+      {gene}
+    </Link>
+  );
+}
 
 // ─── Tissue grouping ─────────────────────────────────────────
 
@@ -67,6 +82,7 @@ function inferGroup(track: ScoreTrack): string {
 // ─── Scorer grouping ─────────────────────────────────────────
 
 interface ScorerGroup {
+  id: string;
   title: string;
   question: string;
   order: number;
@@ -81,9 +97,9 @@ function scorerCategory(scorer: string): string {
 }
 
 const GROUP_META: Record<string, { title: string; question: string; order: number }> = {
-  position: { title: "Regulatory Signal", question: "Does this variant disrupt regulatory activity at this position?", order: 0 },
-  expression: { title: "Gene Expression", question: "Which genes' expression is predicted to change?", order: 1 },
-  rna: { title: "RNA Processing", question: "Does it affect splicing or polyadenylation?", order: 2 },
+  expression: { title: "Gene Expression", question: "Which genes' expression is predicted to change?", order: 0 },
+  rna: { title: "RNA Processing", question: "Does it affect splicing or polyadenylation?", order: 1 },
+  position: { title: "Regulatory Signal", question: "Does this variant disrupt regulatory activity?", order: 2 },
 };
 
 function groupScorers(scorers: ScorerBlock[]): ScorerGroup[] {
@@ -93,16 +109,125 @@ function groupScorers(scorers: ScorerBlock[]): ScorerGroup[] {
     (map.get(cat) ?? (map.set(cat, []), map.get(cat)!)).push(b);
   }
   return Array.from(map.entries())
-    .map(([cat, blocks]) => ({ ...GROUP_META[cat], blocks }))
+    .map(([cat, blocks]) => ({ id: cat, ...GROUP_META[cat], blocks }))
     .sort((a, b) => a.order - b.order);
+}
+
+// ─── Per-group summary ───────────────────────────────────────
+
+interface GroupHit {
+  tissue: string;
+  biosampleName: string;
+  gene: string | null;
+  scorer: string;
+  quantile: number;
+  raw: number;
+  hasQuantile: boolean;
+}
+
+function extractGroupHits(blocks: ScorerBlock[], max: number): GroupHit[] {
+  const all: GroupHit[] = [];
+  for (const block of blocks) {
+    if (!block.summary?.top_tissues) continue;
+    const scorer = friendlyScorerLabel(block.scorer);
+    for (const hit of block.summary.top_tissues) {
+      const hasQ = isValidScore(hit.quantile_score) && hit.quantile_score > 0;
+      const hasRaw = isValidScore(hit.raw_score) && hit.raw_score !== 0;
+      if (!hasQ && !hasRaw) continue;
+      all.push({
+        tissue: hit.tissue_group || hit.biosample_name,
+        biosampleName: hit.biosample_name,
+        gene: hit.gene_name && hit.gene_name !== "?" ? hit.gene_name : null,
+        scorer,
+        quantile: hit.quantile_score,
+        raw: hit.raw_score,
+        hasQuantile: hasQ,
+      });
+    }
+  }
+
+  // Sort: quantile-validated first, then by raw magnitude
+  all.sort((a, b) => {
+    if (a.hasQuantile && b.hasQuantile) return b.quantile - a.quantile;
+    if (!a.hasQuantile && !b.hasQuantile) return Math.abs(b.raw) - Math.abs(a.raw);
+    return a.hasQuantile ? -1 : 1;
+  });
+
+  // Dedup by tissue+gene
+  const seen = new Set<string>();
+  const result: GroupHit[] = [];
+  for (const hit of all) {
+    const key = hit.gene ? `${hit.tissue}|${hit.gene}` : `${hit.tissue}|${hit.scorer}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(hit);
+    if (result.length >= max) break;
+  }
+  return result;
+}
+
+function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
+  const hits = useMemo(() => extractGroupHits(blocks, 3), [blocks]);
+  if (hits.length === 0) return null;
+
+  const maxRaw = Math.max(...hits.map(h => Math.abs(h.raw)).filter(isValidScore), 0.001);
+
+  return (
+    <div className="mb-4">
+      {hits.map((hit, i) => {
+        const barPct = hit.hasQuantile
+          ? Math.round(hit.quantile * 100)
+          : Math.round((Math.abs(hit.raw) / maxRaw) * 100);
+        const label = hit.hasQuantile
+          ? `${Math.round(hit.quantile * 100)}%`
+          : formatScore(hit.raw);
+
+        return (
+          <Tooltip key={i}>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 py-1 text-sm cursor-help">
+                <span className="font-medium text-foreground w-24 shrink-0 truncate">
+                  {hit.tissue}
+                </span>
+                {hit.gene && (
+                  <span className="text-xs shrink-0">
+                    <GeneLink gene={hit.gene} />
+                  </span>
+                )}
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  {hit.scorer}
+                </span>
+                <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] tabular-nums text-muted-foreground w-14 text-right">
+                    {label}
+                  </span>
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{hit.biosampleName}</p>
+              {hit.hasQuantile && <p>Quantile: {Math.round(hit.quantile * 100)}%</p>}
+              <p>Raw score: {formatScore(hit.raw)}</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── Data helpers ─────────────────────────────────────────────
 
-interface TissueGroup { name: string; trackIndices: number[]; }
+interface TissueGroupData { name: string; trackIndices: number[]; }
 interface CellInfo { norm: number | null; rowIdx: number; trackIdx: number | null; }
 
-function buildTissueGroups(tracks: ScoreTrack[]): TissueGroup[] {
+function buildTissueGroups(tracks: ScoreTrack[]): TissueGroupData[] {
   const map = new Map<string, number[]>();
   for (let i = 0; i < tracks.length; i++) {
     const g = inferGroup(tracks[i]);
@@ -120,7 +245,7 @@ function normalizeBlock(block: ScorerBlock): (number | null)[][] {
   return block.raw_scores.map(row => row.map(v => (v == null || isNaN(v)) ? null : Math.abs(v) / maxAbs));
 }
 
-function computeGroupCells(normalized: (number | null)[][], groups: TissueGroup[]): CellInfo[][] {
+function computeGroupCells(normalized: (number | null)[][], groups: TissueGroupData[]): CellInfo[][] {
   return normalized.map((row, rowIdx) =>
     groups.map(g => {
       let best: CellInfo = { norm: null, rowIdx, trackIdx: null };
@@ -180,10 +305,10 @@ function AngledHeader({ name, trackCount }: { name: string; trackCount: number }
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="relative h-full" style={{ overflow: "visible" }}>
+        <div className="relative h-full flex items-end justify-center" style={{ overflow: "visible" }}>
           <span
-            className="absolute text-xs text-muted-foreground whitespace-nowrap"
-            style={{ bottom: 4, left: "50%", transformOrigin: "0% 100%", transform: "rotate(-45deg)" }}
+            className="text-xs text-muted-foreground whitespace-nowrap origin-bottom-left"
+            style={{ transform: "rotate(-45deg) translateX(-2px)", marginBottom: 2 }}
           >
             {name}
           </span>
@@ -206,15 +331,26 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
   return (
     <div className="space-y-8">
       {groups.map(group => (
-        <div key={group.title}>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            {group.title}
-          </h3>
+        <section key={group.id} className="space-y-1">
+          {/* Section header */}
+          <div className="flex items-baseline gap-3">
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              {group.title}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {group.question}
+            </p>
+          </div>
+
+          {/* Per-group top hits */}
+          <GroupSummary blocks={group.blocks} />
+
+          {/* Heatmaps */}
           <ScorerGroupContent blocks={group.blocks} />
-        </div>
+        </section>
       ))}
 
-      {/* Single legend */}
+      {/* Legend */}
       <div className="flex items-center gap-2 pt-1">
         <span className="text-[11px] text-muted-foreground">Effect magnitude:</span>
         <div className="flex items-center gap-px">
@@ -236,8 +372,6 @@ function uniqueGeneCount(block: ScorerBlock): number {
 }
 
 function ScorerGroupContent({ blocks }: { blocks: ScorerBlock[] }) {
-  // Blocks with few unique genes → combine into shared view
-  // Blocks with many genes → individual heatmaps
   const compact: ScorerBlock[] = [];
   const full: ScorerBlock[] = [];
   for (const b of blocks) {
@@ -273,7 +407,6 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
       const groups = buildTissueGroups(block.tracks);
       const hasQuantile = block.quantile_scores != null;
 
-      // Deduplicate: group data rows by gene name
       const geneRows = new Map<string, number[]>();
       if (block.rows.length > 0) {
         for (let r = 0; r < block.rows.length; r++) {
@@ -292,7 +425,6 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
           let bestNorm = 0;
           let bestRowIdx = rowIndices[0];
           let bestTrackIdx = 0;
-          // Max across all duplicate rows AND all tracks in group
           for (const r of rowIndices) {
             for (const idx of g.trackIndices) {
               const v = normalized[r]?.[idx] ?? 0;
