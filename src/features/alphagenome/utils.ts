@@ -45,7 +45,7 @@ export const SCORERS: ScorerMeta[] = [
 
 export const ALL_SCORER_KEYS: ScorerKey[] = SCORERS.map(s => s.id);
 
-export const DEFAULT_SCORERS: ScorerKey[] = ["center_mask", "gene_mask_lfc", "contact_map"];
+export const DEFAULT_SCORERS: ScorerKey[] = ALL_SCORER_KEYS;
 
 /** Extract a short scorer label from the full scorer string (e.g. "CenterMaskScorer(...)") */
 export function parseScorerLabel(scorer: string): string {
@@ -172,7 +172,7 @@ export function quantileColor(q: number): string {
 
 /** Format raw score for tooltip display — no scientific notation. */
 export function formatScore(score: number): string {
-  if (isNaN(score)) return "—";
+  if (score == null || isNaN(score)) return "—";
   const sign = score > 0 ? "+" : "";
   if (Math.abs(score) < 0.0001) return `${sign}${score.toFixed(6)}`;
   return `${sign}${score.toFixed(4)}`;
