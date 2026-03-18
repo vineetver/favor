@@ -140,6 +140,10 @@ export async function fetchVariantAllelicImbalanceByTissueGroup(loc: string): Pr
   return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/allelic-imbalance?group_by=tissue_group`);
 }
 
+export async function fetchCcreLinksByTissueGroup(gene: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links?group_by=tissue_group`);
+}
+
 // ---------------------------------------------------------------------------
 // Region Variants (variant-regulatory connections)
 // ---------------------------------------------------------------------------
@@ -172,8 +176,11 @@ export interface VariantEvidenceSummaryRow {
   position: number;
   region_tables: string[];
   region_overlap_count: number;
+  ccre_overlap_count: number;
+  chromatin_state_count: number;
   qtl_count: number;
   qtl_significant: number;
+  qtl_sources?: string[];
   chrombpnet_count: number;
   tissue_score_max: number;
   imbalance_count: number;
@@ -209,6 +216,7 @@ export interface SourceEvidence {
 
 export interface TissueEvidence {
   tissue: string;
+  tissue_group?: string;
   sources: string[];
   best_neglog_p?: number;
   best_score?: number;
@@ -527,6 +535,7 @@ export interface FetchCcreLinksParams {
   source?: string;
   method?: string;
   tissue?: string;
+  tissue_group?: string;
   cursor?: string;
   limit?: number;
 }

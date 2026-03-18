@@ -10,8 +10,11 @@ import { tissueGroupFilter, significantOnlyFilter } from "./filter-helpers";
 import type { ColumnMeta, DimensionConfig } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useMemo } from "react";
-import type { QtlRow, PaginatedResponse } from "@features/enrichment/api/region";
+import type { QtlRow, PaginatedResponse, TissueGroupRow } from "@features/enrichment/api/region";
 import { useQtlsQuery } from "@features/enrichment/hooks/use-qtls-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Source config
@@ -154,20 +157,49 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
 // Main
 // ---------------------------------------------------------------------------
 
+const QTLS_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best \u2212log\u2081\u2080(p)",
+  metricDescription: "Strongest QTL association significance across all sources in this tissue group",
+  countLabel: "Associations",
+  formatMetric: (v) => v.toFixed(1),
+  showSignificant: true,
+  showTopItem: true,
+  topItemLabel: "Top Gene",
+};
+
 interface QtlsViewProps {
   loc: string;
   totalCount: number;
   genes: string[];
   initialData?: PaginatedResponse<QtlRow>;
+  groupedData?: TissueGroupRow[];
 }
 
-export function QtlsView({ loc, totalCount, genes, initialData }: QtlsViewProps) {
+export function QtlsView({ loc, totalCount, genes, initialData, groupedData }: QtlsViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={QTLS_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total associations`}
+      />
+    );
+  }
+
+  return (
+    <QtlsDetailView loc={loc} totalCount={totalCount} genes={genes} initialData={initialData} />
+  );
+}
+
+function QtlsDetailView({ loc, totalCount, genes, initialData }: Omit<QtlsViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
   const activeSource = searchParams.get("source") || "all";
 
   const filters = useMemo(() => buildFilters(genes), [genes]);
 
-  // Show Source column only on "All Sources" tab
   const activeColumns = useMemo(() => {
     if (activeSource === "all") {
       const sourceCol: ColumnDef<QtlRow, unknown> = {
@@ -180,7 +212,6 @@ export function QtlsView({ loc, totalCount, genes, initialData }: QtlsViewProps)
           <span className="text-xs text-muted-foreground">{sourceLabel(getValue() as string)}</span>
         ),
       };
-      // Insert after variant_vcf (index 0)
       return [columns[0], sourceCol, ...columns.slice(1)];
     }
     return columns;
@@ -228,28 +259,31 @@ export function QtlsView({ loc, totalCount, genes, initialData }: QtlsViewProps)
     : `${sourceInfo?.label ?? "QTL"} associations for variants in this region`;
 
   return (
-    <DataSurface
-      data={data}
-      columns={activeColumns}
-      subtitle={subtitle}
-      dimensions={[sourceDimension]}
-      searchPlaceholder="Search genes, tissues..."
-      searchColumn="gene_symbol"
-      exportable
-      exportFilename={`qtls-${activeSource}-${loc}`}
-      filterable
-      filters={filters}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[25, 50, 100]}
-      emptyMessage="No QTL associations found for variants in this region"
-    />
+    <>
+      <TissueGroupBackButton />
+      <DataSurface
+        data={data}
+        columns={activeColumns}
+        subtitle={subtitle}
+        dimensions={[sourceDimension]}
+        searchPlaceholder="Search genes, tissues..."
+        searchColumn="gene_symbol"
+        exportable
+        exportFilename={`qtls-${activeSource}-${loc}`}
+        filterable
+        filters={filters}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[25, 50, 100]}
+        emptyMessage="No QTL associations found for variants in this region"
+      />
+    </>
   );
 }

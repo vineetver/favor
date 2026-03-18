@@ -16,6 +16,7 @@ interface GeneCcreLinksFilterOptions {
   source?: string;
   method?: string;
   tissue?: string;
+  tissue_group?: string;
   cursor?: string;
   limit?: number;
 }
@@ -28,6 +29,7 @@ async function fetchGeneCcreLinksClient(
   if (filters.source) params.set("source", filters.source);
   if (filters.method) params.set("method", filters.method);
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 50));
 
@@ -50,6 +52,8 @@ function parseFilters(sp: URLSearchParams): GeneCcreLinksFilterOptions {
   if (method) f.method = method;
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const cursor = sp.get("cursor");
   if (cursor) f.cursor = cursor;
   const pageSize = sp.get("page_size");

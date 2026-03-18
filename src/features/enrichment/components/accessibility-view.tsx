@@ -19,8 +19,12 @@ import type {
   AccessibilityRow,
   PaginatedResponse,
   RegionSummary,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useAccessibilityQuery } from "@features/enrichment/hooks/use-accessibility-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -216,6 +220,13 @@ function buildFilters(tissues: string[], tissueGroups: string[]): ServerFilterCo
 // Main component
 // ---------------------------------------------------------------------------
 
+const ACCESSIBILITY_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best Signal",
+  metricDescription: "Strongest ATAC-seq/DNase peak signal enrichment in this tissue group",
+  countLabel: "Peaks",
+  formatMetric: (v) => v.toFixed(1),
+};
+
 interface AccessibilityViewProps {
   loc: string;
   tissues: string[];
@@ -224,6 +235,7 @@ interface AccessibilityViewProps {
   initialData?: PaginatedResponse<AccessibilityRow>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 export function AccessibilityView({
@@ -234,7 +246,43 @@ export function AccessibilityView({
   initialData,
   summary,
   basePath,
+  groupedData,
 }: AccessibilityViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={ACCESSIBILITY_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total peaks`}
+      />
+    );
+  }
+
+  return (
+    <AccessibilityDetailView
+      loc={loc}
+      tissues={tissues}
+      totalCount={totalCount}
+      regionCoords={regionCoords}
+      initialData={initialData}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function AccessibilityDetailView({
+  loc,
+  tissues,
+  totalCount,
+  regionCoords,
+  initialData,
+  summary,
+  basePath,
+}: Omit<AccessibilityViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useAccessibilityQuery({
@@ -281,6 +329,8 @@ export function AccessibilityView({
 
   return (
     <div className="space-y-6">
+      <TissueGroupBackButton />
+
       <TissueSummaryChart rows={chartRows} />
 
       <DataSurface

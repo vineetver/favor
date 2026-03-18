@@ -1,14 +1,16 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchQtls } from "@features/enrichment/api/region";
+import { fetchQtls, fetchQtlsByTissueGroup } from "@features/enrichment/api/region";
 import { QtlsView } from "@features/enrichment/components/qtls-view";
 import { notFound } from "next/navigation";
 
 interface QtlsPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tissue_group?: string }>;
 }
 
-export default async function QtlsPage({ params }: QtlsPageProps) {
+export default async function QtlsPage({ params, searchParams }: QtlsPageProps) {
   const { id } = await params;
+  const { tissue_group: tissueGroup } = await searchParams;
 
   const geneResponse = await fetchGene(id);
   const gene = geneResponse?.data;
@@ -16,7 +18,14 @@ export default async function QtlsPage({ params }: QtlsPageProps) {
 
   const loc = gene.gene_symbol || id;
 
-  const initialData = await fetchQtls(loc, { limit: 25 }).catch(() => null);
+  const [groupedData, initialData] = await Promise.all([
+    !tissueGroup
+      ? fetchQtlsByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
+    tissueGroup
+      ? fetchQtls(loc, { tissue_group: tissueGroup, limit: 25 }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
 
   // Extract unique genes from initial data for filter dropdown
   const genes = initialData
@@ -29,6 +38,7 @@ export default async function QtlsPage({ params }: QtlsPageProps) {
       totalCount={initialData?.page_info?.total_count ?? 0}
       genes={genes}
       initialData={initialData ?? undefined}
+      groupedData={groupedData}
     />
   );
 }

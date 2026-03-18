@@ -54,6 +54,9 @@ function getEvidencePresence(row: VariantEvidenceSummaryRow): boolean[] {
     if (key === "perturbation_targets") {
       return (row.perturbation_targets?.length ?? 0) > 0;
     }
+    if (key === "region_overlap_count") {
+      return row.region_overlap_count > 0 || row.ccre_overlap_count > 0;
+    }
     const v = row[key as keyof VariantEvidenceSummaryRow];
     return typeof v === "number" && v > 0;
   });
@@ -172,24 +175,30 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     header: "Evidence",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Number of distinct evidence categories with data (out of 7: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS)" } satisfies ColumnMeta,
+    meta: { description: "Number of distinct evidence categories with data (out of 8: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS, perturb-seq)" } satisfies ColumnMeta,
     cell: ({ row }) => <EvidenceDots row={row.original} />,
   },
   {
     id: "region_overlaps",
-    accessorKey: "region_overlap_count",
+    accessorFn: (r) => r.region_overlap_count + (r.ccre_overlap_count > 0 ? 1 : 0),
     header: "Reg. Elements",
     enableSorting: true,
     sortDescFirst: true,
-    meta: { description: "Regulatory element types this variant overlaps (enhancers, loops, peaks, ASE cCREs)" } satisfies ColumnMeta,
+    meta: { description: "Regulatory element types and cCRE overlaps (enhancers, loops, peaks, ASE cCREs, ENCODE cCREs)" } satisfies ColumnMeta,
     cell: ({ row }) => {
       const tables = row.original.region_tables;
-      if (!tables.length) return <Dash />;
+      const ccreCount = row.original.ccre_overlap_count;
+      if (!tables.length && !ccreCount) return <Dash />;
       return (
         <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex flex-wrap gap-1">
+                {ccreCount > 0 && (
+                  <span className="inline-flex px-1.5 py-0.5 rounded text-[11px] bg-primary/10 text-primary font-medium">
+                    {ccreCount} cCRE{ccreCount !== 1 ? "s" : ""}
+                  </span>
+                )}
                 {tables.map((t) => (
                   <span key={t} className="inline-flex px-1.5 py-0.5 rounded text-[11px] bg-muted text-muted-foreground">
                     {regionLabel(t)}
@@ -198,7 +207,12 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
               </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs max-w-xs">
-              Overlaps {tables.length} regulatory element type{tables.length !== 1 ? "s" : ""}: {tables.map(regionLabel).join(", ")}
+              {ccreCount > 0 && <p>Overlaps {ccreCount} ENCODE cCRE{ccreCount !== 1 ? "s" : ""}</p>}
+              {tables.length > 0 && (
+                <p>
+                  {tables.length} regulatory element type{tables.length !== 1 ? "s" : ""}: {tables.map(regionLabel).join(", ")}
+                </p>
+              )}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -213,11 +227,13 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     sortDescFirst: true,
     meta: { description: "eQTL/sQTL associations across GTEx, eQTL Catalogue, and single-cell studies. Higher = more tissues/genes affected." } satisfies ColumnMeta,
     cell: ({ row }) => {
-      const { qtl_count, qtl_significant } = row.original;
+      const { qtl_count, qtl_significant, qtl_sources } = row.original;
       if (qtl_count === 0) return <Dash />;
       const strength = classify(qtl_count, 500, 50);
       const sigNote = qtl_significant > 0 ? `, ${qtl_significant} genome-wide significant` : "";
-      return <StrengthCell strength={strength} label={`${formatCount(qtl_count)} hits`} detail={`${qtl_count.toLocaleString()} QTL associations${sigNote}`} />;
+      const sourceNote = qtl_sources?.length ? `\nSources: ${qtl_sources.join(", ")}` : "";
+      const label = qtl_significant > 0 ? `${formatCount(qtl_count)} hits, ${qtl_significant} sig.` : `${formatCount(qtl_count)} hits`;
+      return <StrengthCell strength={strength} label={label} detail={`${qtl_count.toLocaleString()} QTL associations${sigNote}${sourceNote}`} />;
     },
   },
   {

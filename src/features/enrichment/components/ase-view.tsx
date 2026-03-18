@@ -13,9 +13,13 @@ import type {
   AseRow,
   PaginatedResponse,
   RegionSummary,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useAseQuery } from "@features/enrichment/hooks/use-ase-query";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -162,6 +166,14 @@ function buildFilters(
 // Main component
 // ---------------------------------------------------------------------------
 
+const ASE_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best \u2212log\u2081\u2080(p)",
+  metricDescription: "Strongest allele-specific epigenomic activity significance in this tissue group",
+  countLabel: "Observations",
+  formatMetric: (v) => v.toFixed(1),
+  showSignificant: true,
+};
+
 interface AseViewProps {
   loc: string;
   tissues: string[];
@@ -170,6 +182,7 @@ interface AseViewProps {
   initialData?: PaginatedResponse<AseRow>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 export function AseView({
@@ -180,7 +193,43 @@ export function AseView({
   initialData,
   summary,
   basePath,
+  groupedData,
 }: AseViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={ASE_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total observations`}
+      />
+    );
+  }
+
+  return (
+    <AseDetailView
+      loc={loc}
+      tissues={tissues}
+      assays={assays}
+      totalCount={totalCount}
+      initialData={initialData}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function AseDetailView({
+  loc,
+  tissues,
+  assays,
+  totalCount,
+  initialData,
+  summary,
+  basePath,
+}: Omit<AseViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useAseQuery({
@@ -261,6 +310,7 @@ export function AseView({
 
   return (
     <>
+      <TissueGroupBackButton />
       <DataSurface
         data={data}
         columns={columnsWithSheet}

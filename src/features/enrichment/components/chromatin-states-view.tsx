@@ -22,14 +22,18 @@ import type {
   ChromatinStateRow,
   PaginatedResponse,
   RegionSummary,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useChromatinQuery } from "@features/enrichment/hooks/use-chromatin-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { formatTissueName } from "@shared/utils/tissue-format";
+import { formatTissueName, formatCount } from "@shared/utils/tissue-format";
 
 function parseRegion(coords: string): [number, number] {
   const match = coords.match(/:(\d+)-(\d+)/);
@@ -383,6 +387,16 @@ function buildFilters(
 // Main component
 // ---------------------------------------------------------------------------
 
+const CHROMATIN_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Segments",
+  metricDescription: "Number of chromatin state annotations in this tissue group",
+  countLabel: "Segments",
+  formatMetric: (v) => formatCount(v),
+  hideMetric: true,
+  showTopItem: true,
+  topItemLabel: "Dominant State",
+};
+
 interface ChromatinStatesViewProps {
   loc: string;
   tissues: string[];
@@ -392,6 +406,7 @@ interface ChromatinStatesViewProps {
   initialData?: PaginatedResponse<ChromatinStateRow>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 export function ChromatinStatesView({
@@ -403,7 +418,45 @@ export function ChromatinStatesView({
   initialData,
   summary,
   basePath,
+  groupedData,
 }: ChromatinStatesViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={CHROMATIN_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total annotations`}
+      />
+    );
+  }
+
+  return (
+    <ChromatinStatesDetailView
+      loc={loc}
+      tissues={tissues}
+      categories={categories}
+      totalCount={totalCount}
+      regionCoords={regionCoords}
+      initialData={initialData}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function ChromatinStatesDetailView({
+  loc,
+  tissues,
+  categories,
+  totalCount,
+  regionCoords,
+  initialData,
+  summary,
+  basePath,
+}: Omit<ChromatinStatesViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useChromatinQuery({
@@ -455,6 +508,8 @@ export function ChromatinStatesView({
 
   return (
     <div className="space-y-6">
+      <TissueGroupBackButton />
+
       <ChromatinTrackViz
         loc={loc}
         regionStart={regionStart}

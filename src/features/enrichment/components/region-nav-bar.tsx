@@ -22,6 +22,7 @@ interface NavItem {
   slug: string;
   label: string;
   hint: string;
+  hot?: boolean;
 }
 
 interface NavGroup {
@@ -141,6 +142,7 @@ const NAV_GROUPS: NavGroup[] = [
         slug: "alphagenome",
         label: "AlphaGenome",
         hint: "AlphaGenome gene-level scores and region track predictions",
+        hot: true,
       },
     ],
   },
@@ -179,7 +181,7 @@ export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps
               )}
 
               {/* Tab items */}
-              {group.items.map(({ key, slug, label, hint }) => {
+              {group.items.map(({ key, slug, label, hint, hot }) => {
                 const count = key ? summary.counts[key] : null;
                 const isActive = activeSlug === slug;
                 const isEmpty = key != null && count === 0;
@@ -206,6 +208,9 @@ export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps
                           : {})}
                       >
                         <span>{label}</span>
+                        {hot && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 shrink-0" />
+                        )}
                         {count != null && count > 0 && (
                           <span
                             className={cn(

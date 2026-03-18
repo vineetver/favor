@@ -11,8 +11,11 @@ import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
-import type { ChromBpnetRow, PaginatedResponse } from "@features/enrichment/api/region";
+import type { ChromBpnetRow, PaginatedResponse, TissueGroupRow } from "@features/enrichment/api/region";
 import { useChromBpnetQuery } from "@features/enrichment/hooks/use-chrombpnet-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Columns — ChromBPNet: bias-factorized deep learning model predicting
@@ -144,13 +147,40 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
 // Main
 // ---------------------------------------------------------------------------
 
+const CHROMBPNET_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best Combined",
+  metricDescription: "Strongest combined variant effect score (|log\u2082FC| \u00d7 JSD) in this tissue group",
+  countLabel: "Predictions",
+  formatMetric: (v) => v.toExponential(2),
+};
+
 interface ChromBpnetViewProps {
   loc: string;
   totalCount: number;
   initialData?: PaginatedResponse<ChromBpnetRow>;
+  groupedData?: TissueGroupRow[];
 }
 
-export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewProps) {
+export function ChromBpnetView({ loc, totalCount, initialData, groupedData }: ChromBpnetViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={CHROMBPNET_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total predictions`}
+      />
+    );
+  }
+
+  return (
+    <ChromBpnetDetailView loc={loc} totalCount={totalCount} initialData={initialData} />
+  );
+}
+
+function ChromBpnetDetailView({ loc, totalCount, initialData }: Omit<ChromBpnetViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
   const { data, pageInfo, isLoading, isFetching } = useChromBpnetQuery({ ref: loc, initialData });
 
@@ -175,27 +205,30 @@ export function ChromBpnetView({ loc, totalCount, initialData }: ChromBpnetViewP
     : "Bias-factorized deep learning predictions of variant effects on chromatin accessibility";
 
   return (
-    <DataSurface
-      data={data}
-      columns={columns}
-      subtitle={subtitle}
-      searchPlaceholder="Search tissues..."
-      searchColumn="tissue_name"
-      exportable
-      exportFilename={`chrombpnet-${loc}`}
-      filterable
-      filters={filterConfigs}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[25, 50, 100]}
-      emptyMessage="No ChromBPNet predictions found for variants in this region"
-    />
+    <>
+      <TissueGroupBackButton />
+      <DataSurface
+        data={data}
+        columns={columns}
+        subtitle={subtitle}
+        searchPlaceholder="Search tissues..."
+        searchColumn="tissue_name"
+        exportable
+        exportFilename={`chrombpnet-${loc}`}
+        filterable
+        filters={filterConfigs}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[25, 50, 100]}
+        emptyMessage="No ChromBPNet predictions found for variants in this region"
+      />
+    </>
   );
 }

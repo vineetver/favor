@@ -265,7 +265,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       header: "Evidence",
       enableSorting: true,
       sortDescFirst: true,
-      meta: { description: "Number of independent data types (out of 9) with regulatory evidence in this tissue. More evidence types = higher confidence." },
+      meta: { description: "Number of independent data types (out of 10) with regulatory evidence in this tissue. More evidence types = higher confidence." },
       cell: ({ row }) => <ConvergenceDots tissue={row.original} />,
     },
     {
@@ -495,6 +495,14 @@ function TissueDetail({ tissue, basePath }: { tissue: TissueEvidence; basePath: 
       `${tissue.variantAllelicImbalance.count} observations${tissue.variantAllelicImbalance.significant ? `, ${tissue.variantAllelicImbalance.significant} significant` : ""}`,
       `Best \u2212log\u2081\u2080(p): ${tissue.variantAllelicImbalance.max_value.toFixed(1)}`,
     ] });
+  if (tissue.crisprEssentiality) {
+    const sig = tissue.crisprEssentiality.significant ?? 0;
+    const total = tissue.crisprEssentiality.count;
+    const pct = Math.round(sig / Math.max(total, 1) * 100);
+    cards.push({ label: "CRISPR Essentiality", slug: "perturbation", lines: [
+      `Essential in ${sig} of ${total} cell lines (${pct}%)`,
+    ] });
+  }
 
   return (
     <div className="py-3">

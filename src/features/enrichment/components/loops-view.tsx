@@ -20,8 +20,12 @@ import type {
   LoopRow,
   PaginatedResponse,
   RegionSummary,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useLoopsQuery } from "@features/enrichment/hooks/use-loops-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -374,6 +378,19 @@ function buildFilters(
 // Main component
 // ---------------------------------------------------------------------------
 
+const LOOPS_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Max Span",
+  metricDescription: "Longest chromatin loop span (bp) in this tissue group",
+  countLabel: "Loops",
+  formatMetric: (v) => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} Mb`;
+    if (v >= 1_000) return `${(v / 1_000).toFixed(0)} kb`;
+    return `${v} bp`;
+  },
+  showTopItem: true,
+  topItemLabel: "Top Assay",
+};
+
 interface LoopsViewProps {
   loc: string;
   tissues: string[];
@@ -383,6 +400,7 @@ interface LoopsViewProps {
   initialData?: PaginatedResponse<LoopRow>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 export function LoopsView({
@@ -394,7 +412,45 @@ export function LoopsView({
   initialData,
   summary,
   basePath,
+  groupedData,
 }: LoopsViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={LOOPS_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total loops`}
+      />
+    );
+  }
+
+  return (
+    <LoopsDetailView
+      loc={loc}
+      tissues={tissues}
+      assays={assays}
+      totalCount={totalCount}
+      regionCoords={regionCoords}
+      initialData={initialData}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function LoopsDetailView({
+  loc,
+  tissues,
+  assays,
+  totalCount,
+  regionCoords,
+  initialData,
+  summary,
+  basePath,
+}: Omit<LoopsViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useLoopsQuery({
@@ -449,6 +505,8 @@ export function LoopsView({
 
   return (
     <div className="space-y-6">
+      <TissueGroupBackButton />
+
       {regionStart > 0 && (
         <LoopArcDiagram
           rows={arcRows}

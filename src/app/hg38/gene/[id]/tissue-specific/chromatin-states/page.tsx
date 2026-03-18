@@ -1,5 +1,6 @@
 import { fetchGene } from "@features/gene/api";
 import {
+  fetchChromatinByTissueGroup,
   fetchChromatinStateFacets,
   fetchChromatinStates,
   fetchRegionSummary,
@@ -9,12 +10,15 @@ import { notFound } from "next/navigation";
 
 interface ChromatinStatesPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tissue_group?: string }>;
 }
 
 export default async function ChromatinStatesPage({
   params,
+  searchParams,
 }: ChromatinStatesPageProps) {
   const { id } = await params;
+  const { tissue_group: tissueGroup } = await searchParams;
 
   const geneResponse = await fetchGene(id);
   const gene = geneResponse?.data;
@@ -26,22 +30,32 @@ export default async function ChromatinStatesPage({
   const loc = gene.gene_symbol || id;
   const basePath = `/hg38/gene/${encodeURIComponent(id)}/tissue-specific`;
 
-  const [tissueFacets, categoryFacets, summary, initialData] =
+  const [groupedData, tissueFacets, categoryFacets, summary, initialData] =
     await Promise.all([
-      fetchChromatinStateFacets(loc, "tissue_name").catch(() => ({
-        facets: [],
-        count: 0,
-      })),
-      fetchChromatinStateFacets(loc, "state_category").catch(() => ({
-        facets: [],
-        count: 0,
-      })),
+      !tissueGroup
+        ? fetchChromatinByTissueGroup(loc).catch(() => [])
+        : Promise.resolve([]),
+      tissueGroup
+        ? fetchChromatinStateFacets(loc, "tissue_name").catch(() => ({
+            facets: [],
+            count: 0,
+          }))
+        : Promise.resolve({ facets: [], count: 0 }),
+      tissueGroup
+        ? fetchChromatinStateFacets(loc, "state_category").catch(() => ({
+            facets: [],
+            count: 0,
+          }))
+        : Promise.resolve({ facets: [], count: 0 }),
       fetchRegionSummary(loc).catch(() => null),
-      fetchChromatinStates(loc, {
-        sort_by: "position",
-        sort_dir: "asc",
-        limit: 25,
-      }).catch(() => null),
+      tissueGroup
+        ? fetchChromatinStates(loc, {
+            tissue_group: tissueGroup,
+            sort_by: "position",
+            sort_dir: "asc",
+            limit: 25,
+          }).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
   return (
@@ -54,6 +68,7 @@ export default async function ChromatinStatesPage({
       initialData={initialData ?? undefined}
       summary={summary}
       basePath={basePath}
+      groupedData={groupedData}
     />
   );
 }

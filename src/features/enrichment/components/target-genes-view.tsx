@@ -117,8 +117,7 @@ const CATEGORY_META: Record<string, { label: string; style: string }> = {
 };
 
 function categoryStyle(cat: string): string {
-  const key = cat === "chromatin3d" ? "ccre_links" : cat;
-  return CATEGORY_META[key]?.style ?? "bg-muted text-muted-foreground";
+  return CATEGORY_META[cat]?.style ?? "bg-muted text-muted-foreground";
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +175,7 @@ function GeneDetail({ gene }: { gene: TargetGeneEvidence }) {
                 {t.significant && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                 )}
-                {formatTissueName(t.tissue)}
+                {t.tissue_group ?? formatTissueName(t.tissue)}
               </span>
             ))}
           </div>
@@ -262,14 +261,29 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
     } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const gene = getValue() as string;
+      const isReadthrough = /^[A-Z0-9]+-[A-Z0-9]+$/.test(gene);
       return (
-        <Link
-          href={`/hg38/gene/${encodeURIComponent(gene)}`}
-          className="text-sm font-medium text-primary hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {gene}
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link
+            href={`/hg38/gene/${encodeURIComponent(gene)}`}
+            className="text-sm font-medium text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {gene}
+          </Link>
+          {isReadthrough && (
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[10px] text-muted-foreground/60 leading-none">RT</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs max-w-xs">
+                  Readthrough transcript spanning {gene.split("-").join(" and ")}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       );
     },
   },
@@ -286,6 +300,7 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
     cell: ({ row }) => {
       const present = getPresentSources(row.original);
       const filled = present.size;
+
       return (
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -366,12 +381,13 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
                       <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
                     )}
                     <span className="truncate">
-                      {formatTissueName(t.tissue)}
+                      {t.tissue_group ?? formatTissueName(t.tissue)}
                     </span>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs max-w-xs">
                   <p className="font-medium">{formatTissueName(t.tissue)}</p>
+                  {t.tissue_group && <p className="text-muted-foreground">{t.tissue_group}</p>}
                   <p>Sources: {t.sources.join(", ")}</p>
                   {t.best_score != null && (
                     <p>Best score: {fmtScore(t.best_score)}</p>
@@ -523,13 +539,14 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
           <span className="text-xs text-muted-foreground">Non-essential</span>
         );
       }
+      const pct = Math.round((sig / total) * 100);
       const strength: Strength =
-        sig >= 50 ? "strong" : sig >= 10 ? "moderate" : "low";
+        pct >= 50 ? "strong" : pct >= 10 ? "moderate" : "low";
       return (
         <StrengthCell
           strength={strength}
-          label={`Essential ${sig}/${total}`}
-          detail={`Essential in ${sig} of ${total} CRISPR screens`}
+          label={`${pct}% (${sig}/${total})`}
+          detail={`Essential in ${sig} of ${total} CRISPR screens (${pct}%)`}
         />
       );
     },

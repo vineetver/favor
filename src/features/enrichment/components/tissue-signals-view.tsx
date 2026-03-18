@@ -8,17 +8,29 @@ import type {
 } from "@shared/hooks";
 import { useServerTable, useClientSearchParams } from "@shared/hooks";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
-import type { RegionSummary } from "@features/enrichment/api/region";
+import type { RegionSummary, TissueGroupRow } from "@features/enrichment/api/region";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SignalRow, PaginatedResponse } from "@features/enrichment/api/region";
 import { useSignalsQuery } from "@features/enrichment/hooks/use-signals-query";
 import { tissueFilter } from "./filter-helpers";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+
+const SIGNALS_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Max Z-score",
+  metricDescription: "Strongest epigenomic signal Z-score across all cCREs in this tissue group",
+  countLabel: "Elements",
+  formatMetric: (v) => v.toFixed(1),
+  showTopItem: true,
+  topItemLabel: "Top cCRE",
+};
 
 interface TissueSignalsViewProps {
   loc: string;
@@ -29,6 +41,7 @@ interface TissueSignalsViewProps {
   serverFilters?: Record<string, string>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +232,45 @@ export function TissueSignalsView({
   serverFilters = {},
   summary,
   basePath,
+  groupedData,
 }: TissueSignalsViewProps) {
+  const searchParams0 = useClientSearchParams();
+  const activeTissueGroup = searchParams0.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={SIGNALS_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalSignals.toLocaleString()} total elements`}
+      />
+    );
+  }
+
+  return (
+    <TissueSignalsDetailView
+      loc={loc}
+      totalSignals={totalSignals}
+      tissues={tissues}
+      classifications={classifications}
+      initialData={initialData}
+      serverFilters={serverFilters}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function TissueSignalsDetailView({
+  loc,
+  totalSignals,
+  tissues,
+  classifications,
+  initialData,
+  serverFilters = {},
+  summary,
+  basePath,
+}: Omit<TissueSignalsViewProps, "groupedData">) {
   const filters = useMemo(
     () => buildFilters(tissues, classifications),
     [tissues, classifications],
@@ -297,6 +348,7 @@ export function TissueSignalsView({
 
   return (
     <>
+      <TissueGroupBackButton />
       <DataSurface
         data={data}
         columns={columnsWithSheet}

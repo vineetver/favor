@@ -22,10 +22,14 @@ import type {
   EnhancerGeneRow,
   PaginatedResponse,
   RegionSummary,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useEnhancerGenesQuery } from "@features/enrichment/hooks/use-enhancer-genes-query";
 import { formatDist } from "@shared/utils/tissue-format";
 import { tissueFilter } from "./filter-helpers";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ============================================================================
 // Method config
@@ -679,6 +683,13 @@ function buildFilters(
 // Main component
 // ============================================================================
 
+const ENHANCER_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best Score",
+  metricDescription: "Strongest enhancer-gene prediction score (ABC/EPIraction/EpiMap/RE2G) in this tissue group",
+  countLabel: "Predictions",
+  formatMetric: (v) => (v < 0.01 ? v.toExponential(1) : v.toFixed(3)),
+};
+
 interface EnhancerGenesViewProps {
   loc: string;
   totalCount: number;
@@ -687,6 +698,7 @@ interface EnhancerGenesViewProps {
   initialData?: PaginatedResponse<EnhancerGeneRow>;
   summary?: RegionSummary | null;
   basePath?: string;
+  groupedData?: TissueGroupRow[];
 }
 
 export function EnhancerGenesView({
@@ -697,7 +709,43 @@ export function EnhancerGenesView({
   initialData,
   summary,
   basePath,
+  groupedData,
 }: EnhancerGenesViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={ENHANCER_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total predictions`}
+      />
+    );
+  }
+
+  return (
+    <EnhancerGenesDetailView
+      loc={loc}
+      totalCount={totalCount}
+      genes={genes}
+      tissues={tissues}
+      initialData={initialData}
+      summary={summary}
+      basePath={basePath}
+    />
+  );
+}
+
+function EnhancerGenesDetailView({
+  loc,
+  totalCount,
+  genes,
+  tissues,
+  initialData,
+  summary,
+  basePath,
+}: Omit<EnhancerGenesViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
   const activeMethod = searchParams.get("method") || "abc";
 
@@ -740,13 +788,11 @@ export function EnhancerGenesView({
     }
   }, [pageInfo.hasMore, isFetching, prefetchNext]);
 
-  // Tab change: update method in URL, reset cursor
   const handleMethodChange = useCallback((method: string) => {
     const params = new URLSearchParams(window.location.search);
     params.set("method", method);
     params.delete("cursor");
-    const pathname = window.location.pathname;
-    updateClientUrl(`${pathname}?${params}`, false);
+    updateClientUrl(`${window.location.pathname}?${params}`, false);
   }, []);
 
   const methodInfo = METHODS.find((m) => m.id === activeMethod) ?? METHODS[0];
@@ -757,6 +803,8 @@ export function EnhancerGenesView({
 
   return (
     <div className="space-y-4">
+      <TissueGroupBackButton />
+
       <MethodTabBar
         activeMethod={activeMethod}
         onMethodChange={handleMethodChange}

@@ -19,9 +19,13 @@ import { useCallback, useMemo, useState } from "react";
 import type {
   CcreLinkRow,
   PaginatedResponse,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useGeneCcreLinksQuery } from "@features/enrichment/hooks/use-gene-ccre-links-query";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Source & method config
@@ -72,17 +76,51 @@ const SCREEN_METHODS = [
 // Main component
 // ---------------------------------------------------------------------------
 
+const CCRE_LINKS_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best Score",
+  metricDescription: "Strongest linkage score (ChIA-PET/SCREEN) or \u2212log\u2081\u2080(p) (eQTL) in this tissue group",
+  countLabel: "Linkages",
+  formatMetric: (v) => (v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3)),
+  showTopItem: true,
+  topItemLabel: "Top cCRE",
+};
+
 interface CcreLinksViewProps {
   gene: string;
   totalCount: number;
   initialData?: PaginatedResponse<CcreLinkRow>;
+  groupedData?: TissueGroupRow[];
 }
 
 export function CcreLinksView({
   gene,
   totalCount,
   initialData,
+  groupedData,
 }: CcreLinksViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={CCRE_LINKS_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total linkages`}
+      />
+    );
+  }
+
+  return (
+    <CcreLinksDetailView gene={gene} totalCount={totalCount} initialData={initialData} />
+  );
+}
+
+function CcreLinksDetailView({
+  gene,
+  totalCount,
+  initialData,
+}: Omit<CcreLinksViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
   const activeSource = searchParams.get("source") || "all";
 
@@ -269,6 +307,7 @@ export function CcreLinksView({
 
   return (
     <>
+      <TissueGroupBackButton />
       <DataSurface
         data={data}
         columns={activeColumns}
