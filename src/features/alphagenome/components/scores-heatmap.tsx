@@ -187,8 +187,7 @@ interface ScorerGroup {
 function scorerCategory(scorer: string): string {
   const l = scorer.toLowerCase();
   if (l.includes("centermask") || l.includes("contactmap")) return "position";
-  if (l.includes("genemask") && (l.includes("lfc") || l.includes("active")))
-    return "expression";
+  if (l.includes("genemask") && !l.includes("splicing")) return "expression";
   return "rna";
 }
 
@@ -309,50 +308,35 @@ function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
 
   return (
     <div className="mt-3">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-        Top signals
-      </p>
-      <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] text-muted-foreground mb-1">Top signals</p>
+      <div className="flex flex-col gap-0.5">
         {hits.map((hit, i) => {
           const mag = hitMagnitude(hit, hits);
-          const barW = Math.max(4, Math.round(mag * 64));
+          const barW = Math.max(3, Math.round(mag * 40));
           return (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <div
-                  className="grid items-center gap-x-2 py-0.5 cursor-help max-w-lg"
-                  style={{ gridTemplateColumns: "auto 1fr" }}
-                >
-                  {/* Row 1: text labels */}
-                  <div className="flex items-center gap-1.5 text-sm min-w-0">
-                    <span className="font-medium text-foreground shrink-0">
-                      {hit.tissue}
-                    </span>
-                    {hit.gene && (
-                      <>
-                        <span className="text-muted-foreground shrink-0">
-                          ·
-                        </span>
-                        <GeneLink gene={hit.gene} />
-                      </>
-                    )}
-                    <span className="text-muted-foreground shrink-0">·</span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {hit.scorer}
-                    </span>
-                  </div>
-                  {/* Score + bar */}
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2 rounded-sm bg-foreground/20"
-                      style={{ width: barW }}
-                    />
-                    <span className="text-sm tabular-nums text-muted-foreground whitespace-nowrap">
-                      {hit.hasQuantile
-                        ? `${Math.round(hit.quantile * 100)}%`
-                        : compactScore(hit.raw)}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-1.5 text-xs cursor-help">
+                  <span className="text-foreground shrink-0">{hit.tissue}</span>
+                  {hit.gene && (
+                    <>
+                      <span className="text-muted-foreground/50">·</span>
+                      <GeneLink gene={hit.gene} />
+                    </>
+                  )}
+                  <span className="text-muted-foreground/50">·</span>
+                  <span className="text-muted-foreground shrink-0">
+                    {hit.scorer}
+                  </span>
+                  <div
+                    className="h-1.5 rounded-sm bg-foreground/15 shrink-0"
+                    style={{ width: barW }}
+                  />
+                  <span className="tabular-nums text-muted-foreground shrink-0">
+                    {hit.hasQuantile
+                      ? `${Math.round(hit.quantile * 100)}%`
+                      : compactScore(hit.raw)}
+                  </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -528,10 +512,17 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
     );
   }
 
+  const singleGroup = groups.length === 1;
+
   return (
     <div>
       {groups.map((group, gi) => (
-        <ScorerGroupSection key={group.id} group={group} isFirst={gi === 0} />
+        <ScorerGroupSection
+          key={group.id}
+          group={group}
+          isFirst={gi === 0}
+          hideHeader={singleGroup}
+        />
       ))}
 
       {/* Legend */}
@@ -559,17 +550,21 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
 function ScorerGroupSection({
   group,
   isFirst,
+  hideHeader,
 }: {
   group: ScorerGroup;
   isFirst: boolean;
+  hideHeader?: boolean;
 }) {
   return (
     <section className={isFirst ? "" : "mt-8 pt-7 border-t border-border"}>
-      {/* Header + subtitle */}
-      <h3 className="text-sm font-semibold text-foreground">{group.title}</h3>
-      <p className="text-xs text-muted-foreground mt-0.5">{group.question}</p>
+      {!hideHeader && (
+        <>
+          <h3 className="text-sm font-semibold text-foreground">{group.title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{group.question}</p>
+        </>
+      )}
 
-      {/* Top signals */}
       <GroupSummary blocks={group.blocks} />
 
       <div className="mt-6">
@@ -596,7 +591,8 @@ function CellBreakdownContent({
 }) {
   const hasQuantile = block.quantile_scores != null;
   const entries = useMemo(() => {
-    const items = trackIndices
+    // Collect all tracks, then deduplicate by biosample name (keep max score)
+    const raw = trackIndices
       .map((idx) => ({
         name: block.tracks[idx].biosample_name,
         raw: block.raw_scores[rowIdx]?.[idx] ?? 0,
@@ -605,6 +601,16 @@ function CellBreakdownContent({
         idx,
       }))
       .filter((e) => isValidScore(e.raw) && e.absRaw > 0.0001);
+
+    // Deduplicate: one entry per biosample name, max score wins
+    const byName = new Map<string, (typeof raw)[number]>();
+    for (const e of raw) {
+      const existing = byName.get(e.name);
+      if (!existing || e.absRaw > existing.absRaw) {
+        byName.set(e.name, e);
+      }
+    }
+    const items = Array.from(byName.values());
     items.sort((a, b) => {
       if (hasQuantile && a.quantile != null && b.quantile != null)
         return b.quantile - a.quantile;

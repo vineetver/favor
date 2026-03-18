@@ -1,4 +1,6 @@
 import type {
+  IntervalScoreRequest,
+  IntervalScoreResult,
   JobResponse,
   Prediction,
   RegionRequest,
@@ -39,9 +41,19 @@ async function readJson<T>(response: Response): Promise<T> {
 /** Sleep that respects an AbortSignal. */
 function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) { reject(signal.reason); return; }
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
     const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      },
+      { once: true },
+    );
   });
 }
 
@@ -69,8 +81,12 @@ async function fetchPrediction<T>(
 
   if (!res.ok && res.status !== 202) {
     const text = await res.text().catch(() => "");
-    if (res.status === 408) throw new Error("Prediction timed out — try fewer modalities or a smaller region");
-    if (res.status === 502 || res.status === 503) throw new Error("AlphaGenome service is currently unavailable");
+    if (res.status === 408)
+      throw new Error(
+        "Prediction timed out — try fewer modalities or a smaller region",
+      );
+    if (res.status === 502 || res.status === 503)
+      throw new Error("AlphaGenome service is currently unavailable");
     throw new Error(`Prediction failed (${res.status}): ${text}`);
   }
 
@@ -157,4 +173,11 @@ export function predictRegion(
   signal?: AbortSignal,
 ): Promise<Prediction<RegionResult>> {
   return fetchPrediction("region", req, signal);
+}
+
+export function predictIntervalScores(
+  req: IntervalScoreRequest,
+  signal?: AbortSignal,
+): Promise<Prediction<IntervalScoreResult>> {
+  return fetchPrediction("interval_scores", req, signal);
 }

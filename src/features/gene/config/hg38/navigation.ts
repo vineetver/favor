@@ -1,70 +1,85 @@
 import type { GeneNavigationSection } from "@features/gene/types";
 
 export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
-{
-  name: "Gene Annotation",
-  slug: "gene-level-annotation",
-  subCategories: [
-    { text: "LLM Summary", slug: "llm-summary" },
-    { text: "Info and IDs", slug: "info-and-ids" },
+  {
+    name: "Gene Annotation",
+    slug: "gene-level-annotation",
+    subCategories: [
+      { text: "LLM Summary", slug: "llm-summary" },
+      { text: "Info and IDs", slug: "info-and-ids" },
 
-    { text: "Function", slug: "function" },
-    { text: "Expression", slug: "expression" },
-    { text: "Protein Structure", slug: "protein-structure" },
-    { text: "Protein-Protein Interactions", slug: "protein-protein-interactions" },
-    { text: "Pathways", slug: "pathways" },
+      { text: "Function", slug: "function" },
+      { text: "Expression", slug: "expression" },
+      { text: "Protein Structure", slug: "protein-structure" },
+      {
+        text: "Protein-Protein Interactions",
+        slug: "protein-protein-interactions",
+      },
+      { text: "Pathways", slug: "pathways" },
 
-    { text: "Human Phenotype", slug: "human-phenotype" },
-    { text: "Animal Phenotype", slug: "animal-phenotype" },
+      { text: "Human Phenotype", slug: "human-phenotype" },
+      { text: "Animal Phenotype", slug: "animal-phenotype" },
 
-    { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo" },
+      {
+        text: "Constraints and Haploinsufficiency",
+        slug: "constraints-and-heplo",
+      },
 
-    { text: "Graph Explorer", slug: "graph-explorer" },
-    { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
-    { text: "Pathway Leverage Map", slug: "pathway-leverage-map" },
-  ],
-  showIcons: false,
-  groups: [
-    {
-      name: "Overview",
-      items: [
-        { text: "LLM Summary", slug: "llm-summary" },
-        { text: "Info and IDs", slug: "info-and-ids" },
-      ],
-    },
-    {
-      name: "Biology",
-      items: [
-        { text: "Function", slug: "function" },
-        { text: "Expression", slug: "expression" },
-        { text: "Protein Structure", slug: "protein-structure" },
-        { text: "Constraints and Haploinsufficiency", slug: "constraints-and-heplo" },
-      ],
-    },
-    {
-      name: "Phenotypes",
-      items: [
-        { text: "Human Phenotype", slug: "human-phenotype" },
-        { text: "Animal Phenotype", slug: "animal-phenotype" },
-      ],
-    },
-    {
-      name: "Graph Tools",
-      items: [
-        { text: "Graph Explorer", slug: "graph-explorer" },
-        { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
-        { text: "Pathways", slug: "pathway-leverage-map" },
-      ],
-    },
-  ],
-},
+      { text: "Graph Explorer", slug: "graph-explorer" },
+      { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
+      { text: "Pathway Leverage Map", slug: "pathway-leverage-map" },
+    ],
+    showIcons: false,
+    groups: [
+      {
+        name: "Overview",
+        items: [
+          { text: "LLM Summary", slug: "llm-summary" },
+          { text: "Info and IDs", slug: "info-and-ids" },
+        ],
+      },
+      {
+        name: "Biology",
+        items: [
+          { text: "Function", slug: "function" },
+          { text: "Expression", slug: "expression" },
+          { text: "Protein Structure", slug: "protein-structure" },
+          {
+            text: "Constraints and Haploinsufficiency",
+            slug: "constraints-and-heplo",
+          },
+        ],
+      },
+      {
+        name: "Phenotypes",
+        items: [
+          { text: "Human Phenotype", slug: "human-phenotype" },
+          { text: "Animal Phenotype", slug: "animal-phenotype" },
+        ],
+      },
+      {
+        name: "Graph Tools",
+        items: [
+          { text: "Graph Explorer", slug: "graph-explorer" },
+          {
+            text: "Interaction Neighborhood",
+            slug: "interaction-neighborhood",
+          },
+          { text: "Pathways", slug: "pathway-leverage-map" },
+        ],
+      },
+    ],
+  },
   {
     name: "Disease & Therapeutics",
     slug: "disease-and-therapeutics",
     subCategories: [
       { text: "Disease Portfolio", slug: "disease-portfolio" },
       { text: "Phenotype Signature", slug: "phenotype-signature" },
-      { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
+      {
+        text: "Tractability & Target Class",
+        slug: "tractability-and-target-class",
+      },
       { text: "Drug Landscape", slug: "drug-landscape" },
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
       { text: "Chemical Probes", slug: "chemical-probes" },
@@ -84,7 +99,10 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       {
         name: "Therapeutic Readiness",
         items: [
-          { text: "Tractability & Target Class", slug: "tractability-and-target-class" },
+          {
+            text: "Tractability & Target Class",
+            slug: "tractability-and-target-class",
+          },
           { text: "Drug Landscape", slug: "drug-landscape" },
           { text: "Pharmacogenomics", slug: "pharmacogenomics" },
           { text: "Chemical Probes", slug: "chemical-probes" },
@@ -116,15 +134,11 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     groups: [
       {
         name: "Overview",
-        items: [
-          { text: "Summary Statistics", slug: "summary-statistics" },
-        ],
+        items: [{ text: "Summary Statistics", slug: "summary-statistics" }],
       },
       {
         name: "Explore",
-        items: [
-          { text: "Variant Explorer", slug: "variant-explorer" },
-        ],
+        items: [{ text: "Variant Explorer", slug: "variant-explorer" }],
       },
     ],
   },
@@ -152,9 +166,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
     groups: [
       {
         name: "Overview",
-        items: [
-          { text: "Evidence Summary", slug: "overview" },
-        ],
+        items: [{ text: "Evidence Summary", slug: "overview" }],
       },
       {
         name: "Epigenomic Signals",
@@ -188,9 +200,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Perturbation",
-        items: [
-          { text: "Perturbation", slug: "perturbation" },
-        ],
+        items: [{ text: "Perturbation", slug: "perturbation" }],
       },
       {
         name: "AI Predictions",
@@ -200,9 +210,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "Validation",
-        items: [
-          { text: "Validated Enhancers", slug: "validated-enhancers" },
-        ],
+        items: [{ text: "Validated Enhancers", slug: "validated-enhancers" }],
       },
     ],
   },

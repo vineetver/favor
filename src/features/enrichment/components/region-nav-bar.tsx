@@ -133,6 +133,17 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    label: "AI",
+    items: [
+      {
+        key: null,
+        slug: "alphagenome",
+        label: "AlphaGenome",
+        hint: "AlphaGenome gene-level scores and region track predictions",
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------

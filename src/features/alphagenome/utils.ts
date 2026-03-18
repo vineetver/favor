@@ -1,4 +1,12 @@
-import type { ModalityMeta, Modality, ParsedVcf, ScorerKey, ScorerMeta, SupportedWidth, TissueGroup } from "./types";
+import type {
+  Modality,
+  ModalityMeta,
+  ParsedVcf,
+  ScorerKey,
+  ScorerMeta,
+  SupportedWidth,
+  TissueGroup,
+} from "./types";
 
 /** Parse "1-10001-A-T" or "chr1-10001-A-T" → { chromosome, position, ref, alt } */
 export function parseVariantVcf(vcf: string): ParsedVcf {
@@ -17,16 +25,66 @@ export function parseVariantVcf(vcf: string): ParsedVcf {
 // ─── Modality catalog ──────────────────────────────────────────
 
 export const MODALITIES: ModalityMeta[] = [
-  { id: "cage", label: "CAGE", resolution: "1bp", description: "Gene expression (TSS signal)" },
-  { id: "dnase", label: "DNase", resolution: "1bp", description: "Open chromatin (DNase-seq)" },
-  { id: "atac", label: "ATAC", resolution: "1bp", description: "Open chromatin (ATAC-seq)" },
-  { id: "rna_seq", label: "RNA-seq", resolution: "1bp", description: "RNA coverage" },
-  { id: "chip_histone", label: "Histone ChIP", resolution: "128bp", description: "Histone modifications" },
-  { id: "chip_tf", label: "TF ChIP", resolution: "128bp", description: "Transcription factor binding" },
-  { id: "splice_sites", label: "Splice Sites", resolution: "1bp", description: "Splice donor/acceptor probability" },
-  { id: "splice_site_usage", label: "Splice Usage", resolution: "1bp", description: "Tissue-specific splice usage" },
-  { id: "splice_junctions", label: "Splice Junctions", resolution: "per-junction", description: "Junction read counts" },
-  { id: "contact_maps", label: "Contact Maps", resolution: "2048bp", description: "3D chromatin contacts" },
+  {
+    id: "cage",
+    label: "CAGE",
+    resolution: "1bp",
+    description: "Gene expression (TSS signal)",
+  },
+  {
+    id: "dnase",
+    label: "DNase",
+    resolution: "1bp",
+    description: "Open chromatin (DNase-seq)",
+  },
+  {
+    id: "atac",
+    label: "ATAC",
+    resolution: "1bp",
+    description: "Open chromatin (ATAC-seq)",
+  },
+  {
+    id: "rna_seq",
+    label: "RNA-seq",
+    resolution: "1bp",
+    description: "RNA coverage",
+  },
+  {
+    id: "chip_histone",
+    label: "Histone ChIP",
+    resolution: "128bp",
+    description: "Histone modifications",
+  },
+  {
+    id: "chip_tf",
+    label: "TF ChIP",
+    resolution: "128bp",
+    description: "Transcription factor binding",
+  },
+  {
+    id: "splice_sites",
+    label: "Splice Sites",
+    resolution: "1bp",
+    description: "Splice donor/acceptor probability",
+  },
+  {
+    id: "splice_site_usage",
+    label: "Splice Usage",
+    resolution: "1bp",
+    description: "Tissue-specific splice usage",
+  },
+  {
+    id: "splice_junctions",
+    label: "Splice Junctions",
+    resolution: "per-junction",
+    description: "Junction read counts",
+  },
+  {
+    id: "contact_maps",
+    label: "Contact Maps",
+    resolution: "2048bp",
+    description: "3D chromatin contacts",
+  },
 ];
 
 export const DEFAULT_VARIANT_MODALITIES: Modality[] = ["cage", "dnase"];
@@ -34,22 +92,58 @@ export const DEFAULT_VARIANT_MODALITIES: Modality[] = ["cage", "dnase"];
 // ─── Scorer catalog ────────────────────────────────────────────
 
 export const SCORERS: ScorerMeta[] = [
-  { id: "center_mask", label: "Center Mask", description: "How much this variant disrupts regulatory activity at its position" },
-  { id: "contact_map", label: "Contact Map", description: "Change in how DNA folds and loops in 3D, which controls which genes are activated" },
-  { id: "gene_mask_lfc", label: "Gene LFC", description: "Predicted change in how much a gene is turned on or off" },
-  { id: "gene_mask_active", label: "Gene Active", description: "Whether this variant shifts a gene between active and inactive states" },
-  { id: "gene_mask_splicing", label: "Gene Splicing", description: "Change in how gene RNA is cut and reassembled, which can alter the resulting protein" },
-  { id: "polyadenylation", label: "PolyA", description: "Change in RNA processing signals that control gene message stability" },
-  { id: "splice_junction", label: "Splice Junction", description: "Change in specific RNA cutting sites that determine which protein version is made" },
+  {
+    id: "center_mask",
+    label: "Center Mask",
+    description:
+      "How much this variant disrupts regulatory activity at its position",
+  },
+  {
+    id: "contact_map",
+    label: "Contact Map",
+    description:
+      "Change in how DNA folds and loops in 3D, which controls which genes are activated",
+  },
+  {
+    id: "gene_mask_lfc",
+    label: "Gene LFC",
+    description: "Predicted change in how much a gene is turned on or off",
+  },
+  {
+    id: "gene_mask_active",
+    label: "Gene Active",
+    description:
+      "Whether this variant shifts a gene between active and inactive states",
+  },
+  {
+    id: "gene_mask_splicing",
+    label: "Gene Splicing",
+    description:
+      "Change in how gene RNA is cut and reassembled, which can alter the resulting protein",
+  },
+  {
+    id: "polyadenylation",
+    label: "PolyA",
+    description:
+      "Change in RNA processing signals that control gene message stability",
+  },
+  {
+    id: "splice_junction",
+    label: "Splice Junction",
+    description:
+      "Change in specific RNA cutting sites that determine which protein version is made",
+  },
 ];
 
-export const ALL_SCORER_KEYS: ScorerKey[] = SCORERS.map(s => s.id);
+export const ALL_SCORER_KEYS: ScorerKey[] = SCORERS.map((s) => s.id);
 
 export const DEFAULT_SCORERS: ScorerKey[] = ALL_SCORER_KEYS;
 
 /** Extract a short scorer label from the full scorer string (e.g. "CenterMaskScorer(...)") */
 export function parseScorerLabel(scorer: string): string {
-  const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+  const match = SCORERS.find((s) =>
+    scorer.toLowerCase().includes(s.id.replace(/_/g, "")),
+  );
   if (match) return match.label;
   // Fallback: take the class name before "("
   const name = scorer.split("(")[0];
@@ -68,14 +162,28 @@ const FRIENDLY_LABELS: Record<string, string> = {
 };
 
 export function friendlyScorerLabel(scorer: string): string {
-  const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+  const match = SCORERS.find((s) =>
+    scorer.toLowerCase().includes(s.id.replace(/_/g, "")),
+  );
   if (match && FRIENDLY_LABELS[match.id]) return FRIENDLY_LABELS[match.id];
+  // Bare GeneMaskScorer (interval scores) — no lfc/active/splicing suffix
+  const l = scorer.toLowerCase();
+  if (
+    l.includes("genemask") &&
+    !l.includes("lfc") &&
+    !l.includes("active") &&
+    !l.includes("splicing")
+  ) {
+    return "Expression Level";
+  }
   return parseScorerLabel(scorer);
 }
 
 /** One-line plain-English explanation of what a scorer measures. */
 export function friendlyScorerDescription(scorer: string): string | null {
-  const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+  const match = SCORERS.find((s) =>
+    scorer.toLowerCase().includes(s.id.replace(/_/g, "")),
+  );
   return match?.description ?? null;
 }
 
@@ -122,7 +230,10 @@ export function snapToInterval(
 }
 
 /** Find the smallest supported width that covers a gene region. */
-export function widthForGene(geneStart: number, geneEnd: number): SupportedWidth {
+export function widthForGene(
+  geneStart: number,
+  geneEnd: number,
+): SupportedWidth {
   const geneLen = geneEnd - geneStart;
   for (const { value } of SUPPORTED_WIDTHS) {
     if (value >= geneLen) return value;
@@ -136,9 +247,12 @@ export function widthForGene(geneStart: number, geneEnd: number): SupportedWidth
 export function classificationColor(classification: string): string {
   const key = classification.toLowerCase().replace(/[\s-]+/g, "_");
   if (key.includes("high")) return "bg-red-100 text-red-800 border-red-200";
-  if (key.includes("moderate")) return "bg-amber-100 text-amber-800 border-amber-200";
-  if (key.includes("low")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
-  if (key.includes("benign")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (key.includes("moderate"))
+    return "bg-amber-100 text-amber-800 border-amber-200";
+  if (key.includes("low"))
+    return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (key.includes("benign"))
+    return "bg-emerald-100 text-emerald-800 border-emerald-200";
   return "bg-muted text-muted-foreground border-border";
 }
 

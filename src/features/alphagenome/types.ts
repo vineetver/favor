@@ -178,6 +178,48 @@ export interface ScoreResult {
   scorers: ScorerBlock[];
 }
 
+// ─── Interval (gene-level) Scores ─────────────────────────────
+
+export type IntervalScorerKey = "gene_mask";
+
+export type IntervalAggregation = "mean" | "sum";
+
+export type IntervalWidth = null | 501 | 2001 | 10001 | 100001 | 200001;
+
+export type IntervalOutput =
+  | "cage"
+  | "dnase"
+  | "atac"
+  | "rna_seq"
+  | "chip_histone"
+  | "chip_tf"
+  | "splice_sites"
+  | "splice_site_usage";
+
+export interface IntervalScoreRequest {
+  chromosome: string;
+  start: number;
+  end: number;
+  scorers?: IntervalScorerKey[];
+  requested_output?: IntervalOutput;
+  width?: IntervalWidth;
+  aggregation_type?: IntervalAggregation;
+}
+
+export interface IntervalScoreResult {
+  type: "interval_scores";
+  input: {
+    chromosome: string;
+    start: number;
+    end: number;
+    requested_output: string;
+    width: number | null;
+    aggregation_type: string;
+  };
+  overall?: OverallScore;
+  scorers: ScorerBlock[];
+}
+
 // ─── Region ────────────────────────────────────────────────────
 
 export interface RegionRequest {

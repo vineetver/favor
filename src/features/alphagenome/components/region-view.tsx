@@ -1,22 +1,22 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { cn } from "@infra/utils";
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
-import { cn } from "@infra/utils";
+import { Loader2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useRegionTracks } from "../hooks/use-region-tracks";
 import type { Modality, SupportedWidth, TrackData } from "../types";
 import {
   DEFAULT_VARIANT_MODALITIES,
   MODALITIES,
-  snapToInterval,
   SUPPORTED_WIDTHS,
+  snapToInterval,
   widthForGene,
 } from "../utils";
-import { useRegionTracks } from "../hooks/use-region-tracks";
-import { TrackChart } from "./track-chart";
 import { ModalityPicker } from "./modality-picker";
+import { TrackChart } from "./track-chart";
 
 interface AlphaGenomeRegionViewProps {
   chromosome: string;
@@ -35,10 +35,7 @@ export function AlphaGenomeRegionView({
 
   // Default zoom: smallest width that covers the gene
   const defaultWidth = useMemo(() => widthForGene(start, end), [start, end]);
-  const geneCenter = useMemo(
-    () => Math.floor((start + end) / 2),
-    [start, end],
-  );
+  const geneCenter = useMemo(() => Math.floor((start + end) / 2), [start, end]);
 
   const [width, setWidth] = useState<SupportedWidth>(defaultWidth);
   const [selectedModalities, setSelectedModalities] = useState<Modality[]>(
@@ -52,9 +49,7 @@ export function AlphaGenomeRegionView({
   // Snap interval to selected width centered on gene
   const interval = useMemo(
     () =>
-      requestedState
-        ? snapToInterval(geneCenter, requestedState.width)
-        : null,
+      requestedState ? snapToInterval(geneCenter, requestedState.width) : null,
     [geneCenter, requestedState],
   );
 
@@ -77,58 +72,51 @@ export function AlphaGenomeRegionView({
     : `${chrWithPrefix}:${start.toLocaleString()}-${end.toLocaleString()}`;
 
   return (
-    <div className="space-y-4">
+    <section className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <p className="text-xs text-muted-foreground">
-          Region: {regionLabel}
-        </p>
+        <h3 className="text-sm font-semibold text-foreground">Region Tracks</h3>
+        {!data && (
+          <span className="text-xs text-muted-foreground">
+            Predicted signals across the gene region
+          </span>
+        )}
         {cached && (
-          <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">
+          <Badge
+            variant="secondary"
+            className="text-[10px] h-4 px-1.5 font-normal"
+          >
             cached
           </Badge>
         )}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-end gap-4 flex-wrap">
-        {/* Zoom selector */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground font-medium">
-            Zoom
-          </label>
-          <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
-            {SUPPORTED_WIDTHS.map((w) => (
-              <Button
-                key={w.value}
-                variant="ghost"
-                size="sm"
-                onClick={() => setWidth(w.value)}
-                className={cn(
-                  "h-6 px-2.5 text-xs font-medium rounded-md",
-                  w.value === width
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {w.label}
-              </Button>
-            ))}
-          </div>
+      {/* Single toolbar: zoom · modalities · predict */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
+          {SUPPORTED_WIDTHS.map((w) => (
+            <Button
+              key={w.value}
+              variant="ghost"
+              size="sm"
+              onClick={() => setWidth(w.value)}
+              className={cn(
+                "h-6 px-2.5 text-xs font-medium rounded-md",
+                w.value === width
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              {w.label}
+            </Button>
+          ))}
         </div>
-
-        {/* Modality picker */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground font-medium">
-            Modalities
-          </label>
-          <ModalityPicker
-            selected={selectedModalities}
-            onChange={setSelectedModalities}
-            disabled={isLoading}
-          />
-        </div>
-
+        <div className="w-px h-5 bg-border shrink-0" />
+        <ModalityPicker
+          selected={selectedModalities}
+          onChange={setSelectedModalities}
+          disabled={isLoading}
+        />
         <Button
           size="sm"
           onClick={handlePredict}
@@ -140,6 +128,8 @@ export function AlphaGenomeRegionView({
               <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
               Predicting...
             </>
+          ) : data ? (
+            "Re-predict"
           ) : (
             "Predict"
           )}
@@ -168,7 +158,7 @@ export function AlphaGenomeRegionView({
 
       {/* Results */}
       {data && <RegionTrackResults data={data} />}
-    </div>
+    </section>
   );
 }
 
