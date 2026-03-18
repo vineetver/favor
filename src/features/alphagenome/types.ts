@@ -39,12 +39,33 @@ export type SupportedWidth = 16384 | 131072 | 524288 | 1048576;
 
 // ─── Variant Tracks ────────────────────────────────────────────
 
+export type TissueGroup =
+  | "Brain"
+  | "Immune"
+  | "Cardiovascular"
+  | "Connective"
+  | "Digestive"
+  | "Reproductive"
+  | "Cell Line"
+  | "Kidney"
+  | "Skin"
+  | "Lung"
+  | "Eye"
+  | "Muscle"
+  | "Nerve"
+  | "Liver"
+  | "Endocrine"
+  | "Pancreas"
+  | "Stem Cell"
+  | "Other";
+
 export interface VariantTrackRequest {
   chromosome: string;
   position: number;
   ref: string;
   alt: string;
   modalities?: Modality[];
+  tissue_groups?: TissueGroup[];
 }
 
 export interface TrackMeta {

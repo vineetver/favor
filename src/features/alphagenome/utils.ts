@@ -1,4 +1,4 @@
-import type { ModalityMeta, Modality, ParsedVcf, ScorerKey, ScorerMeta, SupportedWidth } from "./types";
+import type { ModalityMeta, Modality, ParsedVcf, ScorerKey, ScorerMeta, SupportedWidth, TissueGroup } from "./types";
 
 /** Parse "1-10001-A-T" or "chr1-10001-A-T" → { chromosome, position, ref, alt } */
 export function parseVariantVcf(vcf: string): ParsedVcf {
@@ -53,6 +53,46 @@ export function parseScorerLabel(scorer: string): string {
   const name = scorer.split("(")[0];
   return name.replace(/Scorer$/, "").replace(/([a-z])([A-Z])/g, "$1 $2");
 }
+
+/** Human-readable scorer label for display in heatmaps (plain English). */
+const FRIENDLY_LABELS: Record<string, string> = {
+  center_mask: "Position Effect",
+  contact_map: "3D Contacts",
+  gene_mask_lfc: "Expression Change",
+  gene_mask_active: "Active Expression",
+  gene_mask_splicing: "Splicing",
+  polyadenylation: "Polyadenylation",
+  splice_junction: "Junction Usage",
+};
+
+export function friendlyScorerLabel(scorer: string): string {
+  const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+  if (match && FRIENDLY_LABELS[match.id]) return FRIENDLY_LABELS[match.id];
+  return parseScorerLabel(scorer);
+}
+
+// ─── Tissue groups ──────────────────────────────────────────────
+
+export const TISSUE_GROUPS: { id: TissueGroup; label: string }[] = [
+  { id: "Brain", label: "Brain" },
+  { id: "Immune", label: "Immune" },
+  { id: "Cardiovascular", label: "Cardiovascular" },
+  { id: "Connective", label: "Connective" },
+  { id: "Digestive", label: "Digestive" },
+  { id: "Reproductive", label: "Reproductive" },
+  { id: "Cell Line", label: "Cell Line" },
+  { id: "Kidney", label: "Kidney" },
+  { id: "Skin", label: "Skin" },
+  { id: "Lung", label: "Lung" },
+  { id: "Eye", label: "Eye" },
+  { id: "Muscle", label: "Muscle" },
+  { id: "Nerve", label: "Nerve" },
+  { id: "Liver", label: "Liver" },
+  { id: "Endocrine", label: "Endocrine" },
+  { id: "Pancreas", label: "Pancreas" },
+  { id: "Stem Cell", label: "Stem Cell" },
+  { id: "Other", label: "Other" },
+];
 
 // ─── Region widths ─────────────────────────────────────────────
 

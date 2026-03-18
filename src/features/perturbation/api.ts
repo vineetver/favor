@@ -6,6 +6,8 @@ import type {
   FetchCrisprParams,
   PerturbSeqRow,
   FetchPerturbSeqParams,
+  MaveRow,
+  FetchMaveParams,
 } from "./types";
 
 const API_BASE =
@@ -21,6 +23,13 @@ export async function fetchCrispr(
   params: FetchCrisprParams = {},
 ): Promise<PaginatedResponse<CrisprRow>> {
   return fetchJson(perturbUrl(loc, "crispr", params as Record<string, unknown>));
+}
+
+export async function fetchMave(
+  loc: string,
+  params: FetchMaveParams = {},
+): Promise<PaginatedResponse<MaveRow>> {
+  return fetchJson(perturbUrl(loc, "mave", params as Record<string, unknown>));
 }
 
 export async function fetchPerturbSeq(

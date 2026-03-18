@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import type { CrisprRow, PerturbSeqRow } from "../types";
+import type { CrisprRow, PerturbSeqRow, MaveRow } from "../types";
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import { Badge } from "@shared/components/ui/badge";
@@ -248,31 +248,106 @@ function CrisprSection({ data, geneSymbol, totalCount }: { data: CrisprRow[]; ge
 }
 
 // ---------------------------------------------------------------------------
+// MAVE columns
+// ---------------------------------------------------------------------------
+
+const maveColumns: ColumnDef<MaveRow, unknown>[] = [
+  {
+    id: "perturbation_name",
+    accessorKey: "perturbation_name",
+    header: "Variant",
+    enableSorting: false,
+    cell: ({ getValue }) => <span className="text-xs font-mono text-foreground">{getValue() as string}</span>,
+  },
+  {
+    id: "position",
+    accessorKey: "position",
+    header: "Position",
+    enableSorting: true,
+    cell: ({ getValue }) => <span className="text-xs tabular-nums text-muted-foreground">{getValue() as number}</span>,
+  },
+  {
+    id: "aa_change",
+    accessorFn: (r) => r.aa_wt && r.aa_change ? `${r.aa_wt}→${r.aa_change}` : null,
+    header: "AA Change",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { aa_wt, aa_change } = row.original;
+      if (!aa_wt || !aa_change) return <Dash />;
+      const isSyn = aa_change === "=";
+      return (
+        <span className={cn("text-xs", isSyn ? "text-muted-foreground" : "text-foreground")}>
+          {aa_wt}{isSyn ? " (syn)" : `→${aa_change}`}
+        </span>
+      );
+    },
+  },
+  {
+    id: "score_value",
+    accessorKey: "score_value",
+    header: "Score",
+    enableSorting: true,
+    sortDescFirst: true,
+    cell: ({ getValue }) => <span className="text-xs tabular-nums text-foreground">{(getValue() as number).toFixed(4)}</span>,
+  },
+  {
+    id: "score_name",
+    accessorKey: "score_name",
+    header: "Score Type",
+    enableSorting: false,
+    cell: ({ getValue }) => <span className="text-xs text-muted-foreground">{getValue() as string}</span>,
+  },
+  {
+    id: "dataset_id",
+    accessorKey: "dataset_id",
+    header: "Dataset",
+    enableSorting: false,
+    cell: ({ getValue }) => <span className="text-xs text-muted-foreground truncate max-w-[180px] block">{getValue() as string}</span>,
+  },
+];
+
+function MaveSection({ data, geneSymbol, totalCount }: { data: MaveRow[]; geneSymbol: string; totalCount: number }) {
+  const datasets = useMemo(() => new Set(data.map((r) => r.dataset_id)).size, [data]);
+  return (
+    <DataSurface
+      title="MAVE variant effect scores"
+      subtitle={`${totalCount.toLocaleString()} functional scores from ${datasets} MaveDB dataset${datasets !== 1 ? "s" : ""} for ${geneSymbol}`}
+      data={data} columns={maveColumns} searchable={false} defaultPageSize={25} pageSizeOptions={[25, 50, 100]}
+      exportable exportFilename={`mave-scores-${geneSymbol}`} emptyMessage={`No MAVE data found for ${geneSymbol}`}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 interface PerturbationViewProps {
   geneSymbol: string;
-  summary: { perturbSeqDatasets: number; downstreamTargets: number; crisprScreens: number; essentialIn: number };
+  summary: { perturbSeqDatasets: number; downstreamTargets: number; crisprScreens: number; essentialIn: number; maveScores: number };
   downstream: PerturbSeqRow[];
   upstream: PerturbSeqRow[];
   crispr: CrisprRow[];
+  mave: MaveRow[];
   crisprTotalCount: number;
   downstreamTotalCount: number;
+  maveTotalCount: number;
 }
 
-export function PerturbationView({ geneSymbol, summary, downstream, upstream, crispr, crisprTotalCount, downstreamTotalCount }: PerturbationViewProps) {
+export function PerturbationView({ geneSymbol, summary, downstream, upstream, crispr, mave, crisprTotalCount, downstreamTotalCount, maveTotalCount }: PerturbationViewProps) {
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard label="Perturb-seq datasets" value={summary.perturbSeqDatasets} />
         <StatCard label="Downstream targets" value={summary.downstreamTargets} />
         <StatCard label="CRISPR screens" value={summary.crisprScreens} />
         <StatCard label="Essential in" value={`${summary.essentialIn} lines`} highlight />
+        <StatCard label="MAVE scores" value={summary.maveScores} />
       </div>
       {downstream.length > 0 && <DownstreamSection data={downstream} geneSymbol={geneSymbol} totalCount={downstreamTotalCount} />}
       {upstream.length > 0 && <UpstreamSection data={upstream} geneSymbol={geneSymbol} />}
       {crispr.length > 0 && <CrisprSection data={crispr} geneSymbol={geneSymbol} totalCount={crisprTotalCount} />}
+      {mave.length > 0 && <MaveSection data={mave} geneSymbol={geneSymbol} totalCount={maveTotalCount} />}
     </div>
   );
 }

@@ -52,6 +52,24 @@ export interface PerturbSeqRow {
   study_year?: number;
 }
 
+export interface MaveRow {
+  perturbation_gene: string;
+  perturbation_name: string;
+  position: number;
+  aa_wt?: string;
+  aa_change?: string;
+  score_name: string;
+  score_value: number;
+  dataset_id: string;
+}
+
+export interface FetchMaveParams {
+  dataset_id?: string;
+  score_name?: string;
+  cursor?: string;
+  limit?: number;
+}
+
 export interface FetchPerturbSeqParams {
   dataset_id?: string;
   tissue?: string;
