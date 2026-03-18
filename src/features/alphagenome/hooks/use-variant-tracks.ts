@@ -22,14 +22,15 @@ export function useVariantTracks({
 }: UseVariantTracksOptions) {
   const query = useQuery({
     queryKey: ["alphagenome-tracks", parsed.chromosome, parsed.position, parsed.ref, parsed.alt, modalities, tissueGroups],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       predictVariantTracks({
         ...parsed,
         modalities: modalities!,
         ...(tissueGroups?.length ? { tissue_groups: tissueGroups } : {}),
-      }),
+      }, signal),
     enabled: modalities !== null,
     staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: 1,
   });
 

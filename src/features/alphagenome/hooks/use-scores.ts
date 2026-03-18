@@ -20,13 +20,14 @@ export function useScores({
 
   const query = useQuery({
     queryKey: ["alphagenome-scores", parsed.chromosome, parsed.position, parsed.ref, parsed.alt, effectiveScorers],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       predictScores({
         ...parsed,
         scorers: effectiveScorers,
-      }),
+      }, signal),
     enabled,
     staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: 1,
   });
 

@@ -1,6 +1,6 @@
 import type {
+  JobResponse,
   Prediction,
-  PredictResponse,
   RegionRequest,
   RegionResult,
   ScoreRequest,
@@ -9,7 +9,16 @@ import type {
   VariantTrackResult,
 } from "./types";
 
-const PREDICT_BASE = "/api/v1/predict";
+const API_BASE = "/api/v1";
+const PREDICT_BASE = `${API_BASE}/predict`;
+const POLL_INTERVAL_MS = 10_000;
+
+/** Ensure poll_url goes through the API proxy (backend returns bare /predict/... paths). */
+function resolvePollUrl(pollUrl: string): string {
+  if (pollUrl.startsWith(API_BASE)) return pollUrl;
+  if (pollUrl.startsWith("/")) return `${API_BASE}${pollUrl}`;
+  return pollUrl;
+}
 
 /**
  * Parse JSON that may contain non-standard tokens (NaN, Infinity).
@@ -27,41 +36,85 @@ async function readJson<T>(response: Response): Promise<T> {
   return parseLooseJson<T>(text);
 }
 
+/** Sleep that respects an AbortSignal. */
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason); return; }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+  });
+}
+
 /**
- * Two-step fetch: POST → presigned S3 URL → gzipped artifact.
- * Returns { data, cached } so the UI can show a cached badge.
+ * Submit a prediction job and poll until done.
+ *
+ * Flow:
+ *  1. POST → 200 (cached, done immediately) or 202 (running)
+ *  2. If running, poll GET poll_url every 10s until done/failed
+ *  3. Fetch the S3 artifact from the returned url
+ *
+ * Accepts an AbortSignal so React Query can cancel when the component unmounts.
  */
 async function fetchPrediction<T>(
   endpoint: string,
   body: object,
+  signal?: AbortSignal,
 ): Promise<Prediction<T>> {
   const res = await fetch(`${PREDICT_BASE}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
 
-  if (!res.ok) {
+  if (!res.ok && res.status !== 202) {
     const text = await res.text().catch(() => "");
     if (res.status === 408) throw new Error("Prediction timed out — try fewer modalities or a smaller region");
-    if (res.status === 503) throw new Error("AlphaGenome service is currently unavailable");
+    if (res.status === 502 || res.status === 503) throw new Error("AlphaGenome service is currently unavailable");
     throw new Error(`Prediction failed (${res.status}): ${text}`);
   }
 
-  const payload = await readJson<Record<string, unknown>>(res);
-
-  // Backend may return data inline (no S3 URL)
-  if (!payload.url) {
-    return { data: payload as T, cached: false };
+  let job: JobResponse;
+  try {
+    job = await readJson<JobResponse>(res);
+  } catch {
+    throw new Error("AlphaGenome service is currently unavailable");
   }
 
-  const { url, cached } = payload as unknown as PredictResponse;
+  // Poll until done or failed
+  while (job.status === "running") {
+    await abortableSleep(POLL_INTERVAL_MS, signal);
+    let poll: Response;
+    try {
+      poll = await fetch(resolvePollUrl(job.poll_url), { signal });
+    } catch (e) {
+      if (signal?.aborted) throw e; // let React Query handle abort
+      throw new Error("Lost connection to AlphaGenome service");
+    }
+    if (poll.status === 502 || poll.status === 503) {
+      throw new Error("AlphaGenome service is currently unavailable");
+    }
+    if (!poll.ok) {
+      throw new Error("AlphaGenome service is currently unavailable");
+    }
+    job = await readJson<JobResponse>(poll);
+  }
 
-  // Fetch artifact from S3 — retry once on 404 (propagation delay)
-  let artifact = await fetch(url);
+  if (job.status === "failed") {
+    throw new Error(job.error ?? "Prediction failed");
+  }
+
+  // status === "done" — fetch the S3 artifact
+  const url = job.url!;
+  const cached = job.cached ?? false;
+
+  // Fetch artifact — retry once on 404 (S3 propagation delay).
+  // S3 URLs are immutable per computation, so force-cache lets the browser
+  // skip the network entirely on revisit / page refresh.
+  let artifact = await fetch(url, { signal, cache: "force-cache" });
   if (artifact.status === 404) {
-    await new Promise((r) => setTimeout(r, 2000));
-    artifact = await fetch(url);
+    await abortableSleep(2000, signal);
+    artifact = await fetch(url, { signal, cache: "force-cache" });
   }
 
   if (!artifact.ok) {
@@ -87,18 +140,21 @@ async function fetchPrediction<T>(
 
 export function predictVariantTracks(
   req: VariantTrackRequest,
+  signal?: AbortSignal,
 ): Promise<Prediction<VariantTrackResult>> {
-  return fetchPrediction("variant", req);
+  return fetchPrediction("variant", req, signal);
 }
 
 export function predictScores(
   req: ScoreRequest,
+  signal?: AbortSignal,
 ): Promise<Prediction<ScoreResult>> {
-  return fetchPrediction("scores", req);
+  return fetchPrediction("scores", req, signal);
 }
 
 export function predictRegion(
   req: RegionRequest,
+  signal?: AbortSignal,
 ): Promise<Prediction<RegionResult>> {
-  return fetchPrediction("region", req);
+  return fetchPrediction("region", req, signal);
 }

@@ -1,8 +1,12 @@
 // ─── Common ────────────────────────────────────────────────────
 
-export interface PredictResponse {
-  url: string;
-  cached: boolean;
+export interface JobResponse {
+  job_id: string;
+  status: "running" | "done" | "failed";
+  poll_url: string;
+  url?: string;
+  cached?: boolean;
+  error?: string;
 }
 
 export interface Prediction<T> {

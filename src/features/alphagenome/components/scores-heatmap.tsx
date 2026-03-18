@@ -228,67 +228,6 @@ export function ScoresHeatmap({ scorers }: { scorers: ScorerBlock[] }) {
   );
 }
 
-// ─── Group top hit summary ────────────────────────────────────
-
-function GroupTopHit({ blocks }: { blocks: ScorerBlock[] }) {
-  const hit = useMemo(() => {
-    let bestGene = "";
-    let bestTissueGroup = "";
-    let bestTrackName = "";
-    let bestScorer = "";
-    let bestQuantile: number | null = null;
-    let bestRaw: number | null = null;
-    let bestVal = -1;
-
-    for (const block of blocks) {
-      const scorer = friendlyScorerLabel(block.scorer);
-      const hasQ = block.quantile_scores != null;
-      const normalized = normalizeBlock(block);
-
-      for (let r = 0; r < block.raw_scores.length; r++) {
-        for (let c = 0; c < block.tracks.length; c++) {
-          const norm = normalized[r]?.[c] ?? 0;
-          if (norm != null && norm > bestVal) {
-            bestVal = norm;
-            bestGene = block.rows[r]?.gene_name ?? "";
-            bestTissueGroup = (block.tracks[c] as { tissue_group?: string })?.tissue_group ?? inferGroup(block.tracks[c]);
-            bestTrackName = block.tracks[c]?.biosample_name ?? "";
-            bestScorer = scorer;
-            bestQuantile = hasQ ? (block.quantile_scores![r]?.[c] ?? null) : null;
-            bestRaw = block.raw_scores[r]?.[c] ?? null;
-          }
-        }
-      }
-    }
-
-    if (bestVal <= 0) return null;
-    return { gene: bestGene, tissueGroup: bestTissueGroup, trackName: bestTrackName, scorer: bestScorer, quantile: bestQuantile, raw: bestRaw };
-  }, [blocks]);
-
-  if (!hit) return null;
-
-  const score = hit.quantile != null ? formatQuantile(hit.quantile) : (hit.raw != null ? formatScore(hit.raw) : "");
-
-  return (
-    <p className="text-xs text-muted-foreground mt-1.5">
-      Top:{" "}
-      <span className="text-foreground font-medium">
-        {hit.tissueGroup}
-      </span>
-      {" "}({hit.trackName})
-      {hit.gene && (
-        <>
-          {" — "}
-          <span className="text-foreground font-medium">{hit.gene}</span>
-        </>
-      )}
-      {score && (
-        <span className="text-muted-foreground"> · {hit.scorer} {score}</span>
-      )}
-    </p>
-  );
-}
-
 // ─── Group content: combines single-row scorers, separates multi-row ─
 
 function uniqueGeneCount(block: ScorerBlock): number {

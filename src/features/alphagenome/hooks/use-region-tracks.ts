@@ -23,13 +23,13 @@ export function useRegionTracks({
 }: UseRegionTracksOptions) {
   const query = useQuery({
     queryKey: ["alphagenome-region", chromosome, start, end, modalities],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       predictRegion({
         chromosome,
         start,
         end,
         modalities: modalities!,
-      }),
+      }, signal),
     enabled: modalities !== null,
     staleTime: 10 * 60 * 1000,
     retry: 1,

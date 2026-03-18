@@ -34,14 +34,16 @@ export const DEFAULT_VARIANT_MODALITIES: Modality[] = ["cage", "dnase"];
 // ─── Scorer catalog ────────────────────────────────────────────
 
 export const SCORERS: ScorerMeta[] = [
-  { id: "center_mask", label: "Center Mask", description: "General effect at variant position" },
-  { id: "contact_map", label: "Contact Map", description: "3D chromatin structure change" },
-  { id: "gene_mask_lfc", label: "Gene LFC", description: "Log fold-change in gene expression" },
-  { id: "gene_mask_active", label: "Gene Active", description: "Active allele expression effect" },
-  { id: "gene_mask_splicing", label: "Gene Splicing", description: "Splicing impact on gene" },
-  { id: "polyadenylation", label: "PolyA", description: "Polyadenylation effect" },
-  { id: "splice_junction", label: "Splice Junction", description: "Splice junction usage change" },
+  { id: "center_mask", label: "Center Mask", description: "How much this variant disrupts regulatory activity at its position" },
+  { id: "contact_map", label: "Contact Map", description: "Change in how DNA folds and loops in 3D, which controls which genes are activated" },
+  { id: "gene_mask_lfc", label: "Gene LFC", description: "Predicted change in how much a gene is turned on or off" },
+  { id: "gene_mask_active", label: "Gene Active", description: "Whether this variant shifts a gene between active and inactive states" },
+  { id: "gene_mask_splicing", label: "Gene Splicing", description: "Change in how gene RNA is cut and reassembled, which can alter the resulting protein" },
+  { id: "polyadenylation", label: "PolyA", description: "Change in RNA processing signals that control gene message stability" },
+  { id: "splice_junction", label: "Splice Junction", description: "Change in specific RNA cutting sites that determine which protein version is made" },
 ];
+
+export const ALL_SCORER_KEYS: ScorerKey[] = SCORERS.map(s => s.id);
 
 export const DEFAULT_SCORERS: ScorerKey[] = ["center_mask", "gene_mask_lfc", "contact_map"];
 
@@ -56,19 +58,25 @@ export function parseScorerLabel(scorer: string): string {
 
 /** Human-readable scorer label for display in heatmaps (plain English). */
 const FRIENDLY_LABELS: Record<string, string> = {
-  center_mask: "Position Effect",
-  contact_map: "3D Contacts",
+  center_mask: "Regulatory Disruption",
+  contact_map: "DNA Folding",
   gene_mask_lfc: "Expression Change",
-  gene_mask_active: "Active Expression",
-  gene_mask_splicing: "Splicing",
-  polyadenylation: "Polyadenylation",
-  splice_junction: "Junction Usage",
+  gene_mask_active: "Gene Activation",
+  gene_mask_splicing: "RNA Splicing",
+  polyadenylation: "RNA Processing",
+  splice_junction: "Splice Site",
 };
 
 export function friendlyScorerLabel(scorer: string): string {
   const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
   if (match && FRIENDLY_LABELS[match.id]) return FRIENDLY_LABELS[match.id];
   return parseScorerLabel(scorer);
+}
+
+/** One-line plain-English explanation of what a scorer measures. */
+export function friendlyScorerDescription(scorer: string): string | null {
+  const match = SCORERS.find((s) => scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+  return match?.description ?? null;
 }
 
 // ─── Tissue groups ──────────────────────────────────────────────
@@ -139,6 +147,13 @@ export function classificationLabel(classification: string): string {
   return classification
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ─── NaN-safe helpers ─────────────────────────────────────────
+
+/** Returns true if the number is a real, finite value (not NaN/Infinity). */
+export function isValidScore(n: number): boolean {
+  return !isNaN(n) && isFinite(n);
 }
 
 // ─── Score display helpers ─────────────────────────────────────

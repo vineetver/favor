@@ -20,15 +20,19 @@ import type {
   TrackData,
 } from "../types";
 import {
+  ALL_SCORER_KEYS,
   classificationColor,
   classificationLabel,
   DEFAULT_SCORERS,
   DEFAULT_VARIANT_MODALITIES,
   formatQuantile,
   formatScore,
+  friendlyScorerDescription,
   friendlyScorerLabel,
+  isValidScore,
   MODALITIES,
   parseVariantVcf,
+  SCORERS,
 } from "../utils";
 import { useScores } from "../hooks/use-scores";
 import { useVariantTracks } from "../hooks/use-variant-tracks";
@@ -62,16 +66,26 @@ export function AlphaGenomeVariantView({ vcf }: AlphaGenomeVariantViewProps) {
 // ─── Layer 1 + 2 + 3: Scores ─────────────────────────────────
 
 function ScoresSection({ parsed }: { parsed: ParsedVcf }) {
-  const [selectedScorers, setSelectedScorers] = useState<ScorerKey[]>(DEFAULT_SCORERS);
-
+  // Fetch ALL scorers once — picker is a client-side display filter, not a fetch trigger
   const { data, isLoading, error } = useScores({
     parsed,
-    scorers: selectedScorers,
+    scorers: ALL_SCORER_KEYS,
   });
+
+  const [visibleScorers, setVisibleScorers] = useState<ScorerKey[]>(DEFAULT_SCORERS);
+
+  // Derive filtered scorer blocks from the full dataset
+  const visibleScorerSet = useMemo(() => new Set(visibleScorers), [visibleScorers]);
+  const filteredBlocks = useMemo(() => {
+    if (!data) return [];
+    return data.scorers.filter(block => {
+      const match = SCORERS.find(s => block.scorer.toLowerCase().includes(s.id.replace(/_/g, "")));
+      return match ? visibleScorerSet.has(match.id) : true;
+    });
+  }, [data, visibleScorerSet]);
 
   return (
     <section className="space-y-6">
-      {/* Layer 1: "Should I care?" — hero classification */}
       {isLoading && <ImpactLoading />}
 
       {error && (
@@ -87,22 +101,20 @@ function ScoresSection({ parsed }: { parsed: ParsedVcf }) {
             scorers={data.scorers}
           />
 
-          {/* Layer 2: "What does it affect?" — top hits */}
           <TopHitsSection scorers={data.scorers} />
 
-          {/* Layer 3: Full heatmap with inline scorer filter */}
+          {/* Layer 3: Full heatmap — picker filters locally, no refetch */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-semibold text-foreground">
                 Tissue Heatmap
               </h3>
               <ScorerPicker
-                selected={selectedScorers}
-                onChange={setSelectedScorers}
-                disabled={isLoading}
+                selected={visibleScorers}
+                onChange={setVisibleScorers}
               />
             </div>
-            <ScoresHeatmap scorers={data.scorers} />
+            <ScoresHeatmap scorers={filteredBlocks} />
           </div>
         </>
       )}
@@ -119,7 +131,7 @@ function ImpactHero({
   overall?: OverallScore;
   scorers: ScorerBlock[];
 }) {
-  // Find the single best hit across all scorers
+  // Find the single best hit across all scorers, filtering NaN
   const bestHit = useMemo(() => {
     let best: (TopTissueHit & { scorer: string }) | null = null;
     let bestVal = -1;
@@ -127,8 +139,9 @@ function ImpactHero({
       if (!block.summary?.top_tissues?.length) continue;
       const scorer = friendlyScorerLabel(block.scorer);
       for (const hit of block.summary.top_tissues) {
+        if (!isValidScore(hit.raw_score)) continue;
         const val = hit.quantile_score || Math.abs(hit.raw_score);
-        if (val > bestVal) {
+        if (isValidScore(val) && val > bestVal) {
           bestVal = val;
           best = { ...hit, scorer };
         }
@@ -138,9 +151,8 @@ function ImpactHero({
   }, [scorers]);
 
   if (!overall) {
-    // No classification available — show a minimal summary
     return bestHit ? (
-      <div className="rounded-lg border border-border bg-card p-5">
+      <div className="space-y-1">
         <p className="text-sm text-muted-foreground">
           Strongest predicted effect on{" "}
           <span className="text-foreground font-medium">
@@ -157,8 +169,6 @@ function ImpactHero({
   }
 
   const colorClasses = classificationColor(overall.classification);
-  // classificationLabel may return "Moderate Impact" or just "Moderate" —
-  // normalize so we never double up "Impact Impact"
   const rawLabel = classificationLabel(overall.classification);
   const impactLabel = rawLabel.toLowerCase().includes("impact")
     ? rawLabel
@@ -166,64 +176,67 @@ function ImpactHero({
   const pctile = Math.round(overall.quantile * 100);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          {/* Classification badge + percentile */}
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-semibold ${colorClasses}`}
-            >
-              {impactLabel}
-            </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {ordinal(pctile)} percentile
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Ranked against all variants across all tissues and scorers
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Natural language summary */}
-          {bestHit && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {bestHit.gene_name ? (
-                <>
-                  Predicted to most strongly affect{" "}
-                  <span className="text-foreground font-medium">
-                    {bestHit.gene_name}
-                  </span>{" "}
-                  expression in{" "}
-                  <span className="text-foreground font-medium">
-                    {bestHit.tissue_group || bestHit.biosample_name}
-                  </span>{" "}
-                  tissue
-                </>
-              ) : (
-                <>
-                  Strongest predicted regulatory effect in{" "}
-                  <span className="text-foreground font-medium">
-                    {bestHit.tissue_group || bestHit.biosample_name}
-                  </span>{" "}
-                  tissue
-                </>
-              )}
-            </p>
-          )}
-        </div>
-
+    <div className="space-y-2">
+      {/* Classification badge + percentile with quantile bar */}
+      <div className="flex items-center gap-3">
+        <span
+          className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-semibold ${colorClasses}`}
+        >
+          {impactLabel}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {ordinal(pctile)} percentile
+              </span>
+              <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${pctile}%` }}
+                />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Higher than {pctile}% of all scored variants
+          </TooltipContent>
+        </Tooltip>
       </div>
+
+      {/* Natural language summary */}
+      {bestHit && (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {bestHit.gene_name ? (
+            <>
+              Predicted to most strongly affect{" "}
+              <span className="text-foreground font-medium">
+                {bestHit.gene_name}
+              </span>{" "}
+              expression in{" "}
+              <span className="text-foreground font-medium">
+                {bestHit.tissue_group || bestHit.biosample_name}
+              </span>{" "}
+              tissue
+            </>
+          ) : (
+            <>
+              Strongest predicted regulatory effect in{" "}
+              <span className="text-foreground font-medium">
+                {bestHit.tissue_group || bestHit.biosample_name}
+              </span>{" "}
+              tissue
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }
 
 function ImpactLoading() {
   return (
-    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         Computing variant impact...
@@ -234,10 +247,11 @@ function ImpactLoading() {
   );
 }
 
-// ─── Layer 2: Top tissue hits — pre-computed by backend ──────
+// ─── Layer 2: Top tissue hits — ranked cards ──────────────────
 
 interface RankedHit extends TopTissueHit {
   scorer: string;
+  scorerRaw: string;
 }
 
 function TopHitsSection({ scorers }: { scorers: ScorerBlock[] }) {
@@ -247,10 +261,10 @@ function TopHitsSection({ scorers }: { scorers: ScorerBlock[] }) {
       if (!block.summary?.top_tissues) continue;
       const scorer = friendlyScorerLabel(block.scorer);
       for (const hit of block.summary.top_tissues) {
-        all.push({ ...hit, scorer });
+        if (!isValidScore(hit.raw_score)) continue;
+        all.push({ ...hit, scorer, scorerRaw: block.scorer });
       }
     }
-    // Sort by quantile (or raw if no quantile) and deduplicate by tissue+gene
     all.sort((a, b) => (b.quantile_score || 0) - (a.quantile_score || 0));
     const seen = new Set<string>();
     const unique: RankedHit[] = [];
@@ -268,10 +282,10 @@ function TopHitsSection({ scorers }: { scorers: ScorerBlock[] }) {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-foreground mb-2">
+      <h3 className="text-sm font-semibold text-foreground mb-1">
         Top Affected Tissues
       </h3>
-      <div className="divide-y divide-border">
+      <div>
         {hits.map((hit, i) => (
           <TopHitRow key={i} hit={hit} />
         ))}
@@ -283,36 +297,41 @@ function TopHitsSection({ scorers }: { scorers: ScorerBlock[] }) {
 function TopHitRow({ hit }: { hit: RankedHit }) {
   const hasQuantile = hit.quantile_score > 0;
   const tissue = hit.tissue_group || hit.biosample_name;
-  const score = hasQuantile
-    ? formatQuantile(hit.quantile_score)
+  const scoreLabel = hasQuantile
+    ? `${ordinal(Math.round(hit.quantile_score * 100))} pctile`
     : formatScore(hit.raw_score);
+  const scorerDesc = friendlyScorerDescription(hit.scorerRaw);
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center gap-3 py-2 text-sm">
-          <span className="font-medium text-foreground w-32 truncate shrink-0">
-            {tissue}
-          </span>
-          {hit.gene_name && (
-            <span className="text-xs text-muted-foreground truncate">
-              {hit.gene_name}
-            </span>
-          )}
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground shrink-0">
-            {score}
-          </span>
-          <span className="text-[11px] text-muted-foreground w-24 text-right shrink-0">
+    <div className="flex items-center gap-3 py-1.5 text-sm">
+      <span className="font-medium text-foreground w-28 truncate shrink-0">
+        {tissue}
+      </span>
+      {hit.biosample_name !== tissue && (
+        <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+          {hit.biosample_name}
+        </span>
+      )}
+      {hit.gene_name && (
+        <span className="inline-flex items-center gap-0.5 text-xs text-primary shrink-0 ml-auto">
+          {hit.gene_name}
+          <ArrowUpRight className="h-3 w-3" />
+        </span>
+      )}
+      <span className="text-xs tabular-nums text-muted-foreground shrink-0">
+        {scoreLabel}
+      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-[11px] text-muted-foreground shrink-0 hidden sm:inline cursor-help">
             {hit.scorer}
           </span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        {hit.biosample_name !== tissue && <p>Top track: {hit.biosample_name}</p>}
-        {hasQuantile && <p>Quantile: {formatQuantile(hit.quantile_score)}</p>}
-        <p>Raw: {formatScore(hit.raw_score)}</p>
-      </TooltipContent>
-    </Tooltip>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          {scorerDesc}
+        </TooltipContent>
+      </Tooltip>
+    </div>
   );
 }
 
@@ -390,6 +409,9 @@ function TracksSection({ parsed }: { parsed: ParsedVcf }) {
 
       {isLoading && (
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            First predictions can take 1-10 minutes. Subsequent requests for the same variant are instant.
+          </p>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full rounded" />
           ))}
@@ -419,11 +441,11 @@ function VariantTrackResults({
       <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-4 h-0.5 bg-blue-500 rounded" />
-          Reference
+          Reference (up)
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 border-t border-dashed border-red-500" />
-          Alternate
+          <span className="inline-block w-4 h-0.5 bg-red-500 rounded" />
+          Alternate (down)
         </div>
       </div>
 
@@ -441,9 +463,45 @@ function VariantTrackResults({
             modalityLabel={modalityLabel}
             refTrack={refTrack}
             altTrack={altTrack}
+            variantPos={data.input.position}
           />
         );
       })}
+    </div>
+  );
+}
+
+/** Transpose [positions][tracks] → [tracks][positions] once for all tracks. */
+function transposeValues(values: number[][]): number[][] {
+  if (values.length === 0) return [];
+  const nTracks = values[0].length;
+  const nPos = values.length;
+  const out: number[][] = Array.from({ length: nTracks }, () => new Array<number>(nPos));
+  for (let p = 0; p < nPos; p++) {
+    const row = values[p];
+    for (let t = 0; t < nTracks; t++) {
+      out[t][p] = row[t];
+    }
+  }
+  return out;
+}
+
+function formatCoord(pos: number): string {
+  if (pos >= 1_000_000) return `${(pos / 1_000_000).toFixed(2)}Mb`;
+  if (pos >= 1_000) return `${(pos / 1_000).toFixed(1)}Kb`;
+  return String(pos);
+}
+
+function GenomicRuler({ start, end, variantPos }: { start: number; end: number; variantPos?: number }) {
+  const ticks = 5;
+  const step = (end - start) / (ticks - 1);
+  const positions = Array.from({ length: ticks }, (_, i) => Math.round(start + i * step));
+
+  return (
+    <div className="flex items-center justify-between py-1.5 px-2 text-[10px] tabular-nums text-muted-foreground">
+      {positions.map((pos, i) => (
+        <span key={i}>{formatCoord(pos)}</span>
+      ))}
     </div>
   );
 }
@@ -452,18 +510,27 @@ function ModalityTrackGroup({
   modalityLabel,
   refTrack,
   altTrack,
+  variantPos,
 }: {
   modalityLabel: string;
   refTrack: TrackData;
   altTrack: TrackData;
+  variantPos?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
   const trackCount = refTrack.tracks.length;
   const displayCount = showAll ? trackCount : Math.min(trackCount, 5);
+  const numPositions = refTrack.values.length;
+  const variantIndex = Math.floor(numPositions / 2);
+  const interval = refTrack.interval;
+
+  // Transpose once — O(positions × tracks), memoized
+  const refByTrack = useMemo(() => transposeValues(refTrack.values), [refTrack.values]);
+  const altByTrack = useMemo(() => transposeValues(altTrack.values), [altTrack.values]);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
           {modalityLabel}
         </h4>
@@ -472,19 +539,22 @@ function ModalityTrackGroup({
         </span>
       </div>
 
+      {interval && (
+        <div className="mb-2">
+          <GenomicRuler start={interval.start} end={interval.end} variantPos={variantPos} />
+        </div>
+      )}
+
       <div className="space-y-2">
-        {refTrack.tracks.slice(0, displayCount).map((meta, idx) => {
-          const variantIndex = Math.floor(refTrack.values[idx].length / 2);
-          return (
-            <TrackChart
-              key={meta.biosample_name}
-              label={meta.biosample_name}
-              refValues={refTrack.values[idx]}
-              altValues={altTrack.values[idx]}
-              variantIndex={variantIndex}
-            />
-          );
-        })}
+        {refTrack.tracks.slice(0, displayCount).map((meta, idx) => (
+          <TrackChart
+            key={idx}
+            label={meta.biosample_name}
+            refValues={refByTrack[idx]}
+            altValues={altByTrack[idx]}
+            variantIndex={variantIndex}
+          />
+        ))}
       </div>
 
       {trackCount > 5 && !showAll && (
