@@ -181,11 +181,11 @@ function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
   if (hits.length === 0) return null;
 
   return (
-    <div className="space-y-0.5 mb-5">
+    <div className="flex flex-col items-start gap-0.5 mb-5">
       {hits.map((hit, i) => (
         <Tooltip key={i}>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 py-0.5 text-sm cursor-help">
+            <div className="flex items-center gap-1.5 py-0.5 text-sm cursor-help max-w-lg">
               <span className="font-medium text-foreground">{hit.tissue}</span>
               {hit.gene && (
                 <>
@@ -195,7 +195,8 @@ function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
               )}
               <span className="text-muted-foreground">·</span>
               <span className="text-xs text-muted-foreground">{hit.scorer}</span>
-              <span className="text-sm tabular-nums text-muted-foreground ml-auto">
+              <span className="text-muted-foreground">·</span>
+              <span className="text-sm tabular-nums text-muted-foreground">
                 {hit.hasQuantile
                   ? `${Math.round(hit.quantile * 100)}%`
                   : compactScore(hit.raw)}
