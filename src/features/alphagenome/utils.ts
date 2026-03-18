@@ -82,6 +82,25 @@ export function widthForGene(geneStart: number, geneEnd: number): SupportedWidth
   return 1048576;
 }
 
+// ─── Classification display ──────────────────────────────────
+
+/** Map classification string to a semantic color class for badges. */
+export function classificationColor(classification: string): string {
+  const key = classification.toLowerCase().replace(/[\s-]+/g, "_");
+  if (key.includes("high")) return "bg-red-100 text-red-800 border-red-200";
+  if (key.includes("moderate")) return "bg-amber-100 text-amber-800 border-amber-200";
+  if (key.includes("low")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (key.includes("benign")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  return "bg-muted text-muted-foreground border-border";
+}
+
+/** Human-readable label for classification. */
+export function classificationLabel(classification: string): string {
+  return classification
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 // ─── Score display helpers ─────────────────────────────────────
 
 /** Quantile (0-1) → heatmap color. High quantile = strong effect. */
@@ -96,11 +115,11 @@ export function quantileColor(q: number): string {
   return `rgba(124, 58, 237, ${0.15 + t * 0.65})`; // violet, increasing opacity
 }
 
-/** Format raw score for tooltip display. */
+/** Format raw score for tooltip display — no scientific notation. */
 export function formatScore(score: number): string {
   if (isNaN(score)) return "—";
-  if (Math.abs(score) < 0.001) return score.toExponential(2);
   const sign = score > 0 ? "+" : "";
+  if (Math.abs(score) < 0.0001) return `${sign}${score.toFixed(6)}`;
   return `${sign}${score.toFixed(4)}`;
 }
 

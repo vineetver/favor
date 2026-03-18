@@ -1,6 +1,5 @@
 import { fetchJson } from "@infra/api";
 import type { PaginatedResponse, TissueGroupRow } from "@features/enrichment/api/region";
-import { inferTissueGroup } from "@shared/utils/tissue-format";
 import type {
   CrisprRow,
   FetchCrisprParams,
@@ -61,63 +60,31 @@ export async function fetchMave(
 }
 
 // ---------------------------------------------------------------------------
-// CRISPR essentiality aggregated by tissue group
+// CRISPR essentiality aggregated by tissue group (native backend endpoint)
 // ---------------------------------------------------------------------------
 
 export interface CrisprTissueGroupRow extends TissueGroupRow {
-  /** Number of cell lines tested in this tissue group */
-  total_lines: number;
-  /** Number of cell lines where gene is essential */
-  essential_lines: number;
-  /** Fraction essential (essential_lines / total_lines) */
+  /** Fraction essential (significant / count) */
   essential_fraction: number;
 }
 
-/**
- * Fetch CRISPR data and aggregate by tissue group.
- * Returns one row per tissue group with essential/total cell line counts.
- */
+interface RawGroupRow {
+  group_key: string;
+  max_value: number;
+  count: number;
+  significant?: number;
+}
+
 export async function fetchCrisprByTissueGroup(
   loc: string,
 ): Promise<CrisprTissueGroupRow[]> {
-  // Fetch a large batch — paginate if needed
-  let allRows: CrisprRow[] = [];
-  let cursor: string | undefined;
-  for (let i = 0; i < 5; i++) {
-    const res = await fetchCrispr(loc, { limit: 100, cursor });
-    allRows = allRows.concat(res.data);
-    if (!res.page_info.has_more) break;
-    cursor = res.page_info.next_cursor ?? undefined;
-  }
-
-  // Group by tissue → unique cell lines
-  const groups = new Map<
-    string,
-    { total: Set<string>; essential: Set<string> }
-  >();
-  for (const r of allRows) {
-    const tissue = r.tissue
-      ? inferTissueGroup(r.tissue.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
-      : "Other";
-    const lineKey = r.cell_line ?? r.dataset_id;
-    let g = groups.get(tissue);
-    if (!g) {
-      g = { total: new Set(), essential: new Set() };
-      groups.set(tissue, g);
-    }
-    g.total.add(lineKey);
-    if (r.is_significant) g.essential.add(lineKey);
-  }
-
-  return [...groups.entries()]
-    .map(([tissue, g]) => ({
-      tissue_name: tissue,
-      max_value: g.essential.size / Math.max(g.total.size, 1),
-      count: g.total.size,
-      significant: g.essential.size,
-      total_lines: g.total.size,
-      essential_lines: g.essential.size,
-      essential_fraction: g.essential.size / Math.max(g.total.size, 1),
-    }))
-    .sort((a, b) => b.essential_fraction - a.essential_fraction);
+  const url = `${API_BASE}/perturbations/${encodeURIComponent(loc)}/crispr?group_by=tissue_group`;
+  const res = await fetchJson<{ data: RawGroupRow[] }>(url);
+  return res.data.map((r) => ({
+    tissue_name: r.group_key,
+    max_value: r.max_value,
+    count: r.count,
+    significant: r.significant ?? 0,
+    essential_fraction: (r.significant ?? 0) / Math.max(r.count, 1),
+  }));
 }

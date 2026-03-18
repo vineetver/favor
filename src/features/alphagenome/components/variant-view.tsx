@@ -5,11 +5,28 @@ import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
-import type { Modality, ParsedVcf, ScorerKey, TrackData } from "../types";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import type {
+  Modality,
+  OverallScore,
+  ParsedVcf,
+  ScorerBlock,
+  ScorerKey,
+  TrackData,
+} from "../types";
+import {
+  classificationColor,
+  classificationLabel,
   DEFAULT_SCORERS,
   DEFAULT_VARIANT_MODALITIES,
+  formatQuantile,
+  formatScore,
   MODALITIES,
+  parseScorerLabel,
   parseVariantVcf,
 } from "../utils";
 import { useScores } from "../hooks/use-scores";
@@ -73,8 +90,101 @@ function ScoresSection({ parsed }: { parsed: ParsedVcf }) {
         </p>
       )}
 
-      {data && <ScoresHeatmap scorers={data.scorers} />}
+      {data && (
+        <div className="space-y-4">
+          {data.overall && <OverallBadge overall={data.overall} />}
+          <DerivedSummary scorers={data.scorers} />
+          <ScoresHeatmap scorers={data.scorers} />
+        </div>
+      )}
     </section>
+  );
+}
+
+// ─── Overall badge (shows when API returns classification) ────
+
+function OverallBadge({ overall }: { overall: OverallScore }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${classificationColor(overall.classification)}`}
+          >
+            {classificationLabel(overall.classification)}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          Classification method: {overall.method}
+        </TooltipContent>
+      </Tooltip>
+      <span className="text-sm text-muted-foreground">
+        Quantile:{" "}
+        <span className="font-medium text-foreground">
+          {formatQuantile(overall.quantile)}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+// ─── Derived summary (computed from actual score data) ────────
+
+function DerivedSummary({ scorers }: { scorers: ScorerBlock[] }) {
+  const summary = useMemo(() => {
+    let bestGene = "";
+    let bestTrack = "";
+    let bestScorer = "";
+    let bestQuantile = 0;
+    let bestRaw = 0;
+    let hasQuantile = false;
+
+    for (const block of scorers) {
+      const scorerLabel = parseScorerLabel(block.scorer);
+      const useQuantile = block.quantile_scores != null;
+      if (useQuantile) hasQuantile = true;
+
+      for (let r = 0; r < block.raw_scores.length; r++) {
+        for (let c = 0; c < block.tracks.length; c++) {
+          const q = useQuantile
+            ? (block.quantile_scores![r]?.[c] ?? 0)
+            : 0;
+          const raw = block.raw_scores[r]?.[c] ?? 0;
+          const compare = useQuantile ? q : Math.abs(raw);
+
+          if (compare > (useQuantile ? bestQuantile : Math.abs(bestRaw))) {
+            bestQuantile = q;
+            bestRaw = raw;
+            bestGene = block.rows[r]?.gene_name ?? "Score";
+            bestTrack = block.tracks[c]?.biosample_name ?? "";
+            bestScorer = scorerLabel;
+          }
+        }
+      }
+    }
+
+    if (bestGene === "") return null;
+    return { gene: bestGene, track: bestTrack, scorer: bestScorer, quantile: bestQuantile, raw: bestRaw, hasQuantile };
+  }, [scorers]);
+
+  if (!summary) return null;
+
+  const showGene = summary.gene !== "Score";
+
+  return (
+    <p className="text-xs text-muted-foreground">
+      Strongest signal:{" "}
+      {showGene && (
+        <>
+          <span className="text-foreground font-medium">{summary.gene}</span>
+          {" in "}
+        </>
+      )}
+      {summary.track} via {summary.scorer}
+      {summary.hasQuantile
+        ? ` (${formatQuantile(summary.quantile)})`
+        : ` (${formatScore(summary.raw)})`}
+    </p>
   );
 }
 

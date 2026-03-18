@@ -1,8 +1,281 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ScorerBlock } from "../types";
-import { formatScore, parseScorerLabel } from "../utils";
+import { Fragment, useMemo } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import type { ScorerBlock, ScoreTrack } from "../types";
+import { formatScore, formatQuantile, parseScorerLabel } from "../utils";
+
+// ─── AlphaGenome tissue grouping ──────────────────────────────
+
+const CELL_LINE_EXACT = new Set([
+  "hela", "hela-s3", "k562", "hepg2", "imr-90", "imr90",
+  "hffc6", "thp-1", "thp1", "cyt49", "a549", "mcf-7", "mcf7",
+  "u2os", "jurkat", "hek293", "kasumi", "nb4", "hl-60", "hl60",
+  "gm12878", "gm19239", "rpmi",
+]);
+
+const STEM_CELL_EXACT = new Set(["h9", "h1-hesc", "h1", "ips"]);
+
+const TISSUE_KEYWORDS: [string, string][] = [
+  // Compound phrases first
+  ["proximal tubule", "Kidney"],
+  ["nervous system", "Nerve"],
+  ["skeletal muscle", "Muscle"],
+  ["trabecular meshwork", "Eye"],
+  ["mammary gland", "Reproductive"],
+  ["umbilical cord", "Stem Cell"],
+  ["lymphatic vessel", "Immune"],
+  ["villous mesenchyme", "Reproductive"],
+  // Organ keywords (specific before generic; "muscle" last)
+  ["brain", "Brain"],
+  ["cerebr", "Brain"],
+  ["hippocamp", "Brain"],
+  ["lung", "Lung"],
+  ["bronchial", "Lung"],
+  ["liver", "Liver"],
+  ["hepatic", "Liver"],
+  ["kidney", "Kidney"],
+  ["renal", "Kidney"],
+  ["perirenal", "Kidney"],
+  ["heart", "Cardiovascular"],
+  ["coronary", "Cardiovascular"],
+  ["carotid", "Cardiovascular"],
+  ["aort", "Cardiovascular"],
+  ["artery", "Cardiovascular"],
+  ["skin", "Skin"],
+  ["vagina", "Reproductive"],
+  ["ovary", "Reproductive"],
+  ["ovarian", "Reproductive"],
+  ["uterus", "Reproductive"],
+  ["uterine", "Reproductive"],
+  ["testis", "Reproductive"],
+  ["breast", "Reproductive"],
+  ["mammary", "Reproductive"],
+  ["placent", "Reproductive"],
+  ["amnion", "Reproductive"],
+  ["amniotic", "Reproductive"],
+  ["chorion", "Reproductive"],
+  ["adrenal", "Endocrine"],
+  ["thyroid", "Endocrine"],
+  ["pituitary", "Endocrine"],
+  ["pancrea", "Pancreas"],
+  ["esophag", "Digestive"],
+  ["stomach", "Digestive"],
+  ["gastric", "Digestive"],
+  ["colon", "Digestive"],
+  ["intestin", "Digestive"],
+  ["tongue", "Digestive"],
+  ["spleen", "Immune"],
+  ["lymph", "Immune"],
+  ["blood", "Immune"],
+  ["retina", "Eye"],
+  ["cornea", "Eye"],
+  ["eye", "Eye"],
+  ["bladder", "Kidney"],
+  ["nerve", "Nerve"],
+  ["muscle", "Muscle"],
+  // Cell-type keywords (checked last)
+  ["pneumocyte", "Lung"],
+  ["alveolar", "Lung"],
+  ["airway", "Lung"],
+  ["pulmonary", "Lung"],
+  ["hepatocyte", "Liver"],
+  ["mesangial", "Kidney"],
+  ["podocyte", "Kidney"],
+  ["glomerul", "Kidney"],
+  ["cardiac", "Cardiovascular"],
+  ["cardiomyocyte", "Cardiovascular"],
+  ["vascular", "Cardiovascular"],
+  ["endothelial", "Cardiovascular"],
+  ["myotube", "Muscle"],
+  ["myoblast", "Muscle"],
+  ["myocyte", "Muscle"],
+  ["fibroblast", "Connective"],
+  ["adipocyte", "Connective"],
+  ["preadipocyte", "Connective"],
+  ["adipose", "Connective"],
+  ["mesothelial", "Connective"],
+  ["chondrocyte", "Connective"],
+  ["osteoblast", "Connective"],
+  ["keratinocyte", "Skin"],
+  ["melanocyte", "Skin"],
+  ["epiderm", "Skin"],
+  ["sertoli", "Reproductive"],
+  ["trophoblast", "Reproductive"],
+  ["monocyte", "Immune"],
+  ["macrophage", "Immune"],
+  ["dendritic", "Immune"],
+  ["leukocyte", "Immune"],
+  ["astrocyte", "Brain"],
+  ["neuron", "Brain"],
+  ["oligodendrocyte", "Brain"],
+  ["microglia", "Brain"],
+  ["neural", "Brain"],
+  ["schwann", "Nerve"],
+  ["mesenchymal", "Connective"],
+  ["stem cell", "Stem Cell"],
+  ["embryonic", "Stem Cell"],
+  ["hesc", "Stem Cell"],
+  ["ipsc", "Stem Cell"],
+];
+
+function inferAlphaGenomeGroup(track: ScoreTrack): string {
+  // Prefer backend-provided tissue_group (from ClickHouse tissue_vocab)
+  if (track.tissue_group) return track.tissue_group;
+
+  // Fallback: keyword matching for older responses without tissue_group
+  const lower = track.biosample_name.toLowerCase().trim();
+  if (CELL_LINE_EXACT.has(lower)) return "Cell Line";
+  if (STEM_CELL_EXACT.has(lower)) return "Stem Cell";
+  if (/^gm\d+$/i.test(lower)) return "Cell Line";
+  for (const [kw, group] of TISSUE_KEYWORDS) {
+    if (lower.includes(kw)) return group;
+  }
+  return "Other";
+}
+
+// ─── Data types ───────────────────────────────────────────────
+
+interface TissueGroup {
+  name: string;
+  trackIndices: number[];
+}
+
+interface CellInfo {
+  norm: number | null;
+  rowIdx: number;
+  trackIdx: number | null;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+function buildTissueGroups(tracks: ScoreTrack[]): TissueGroup[] {
+  const map = new Map<string, number[]>();
+  for (let i = 0; i < tracks.length; i++) {
+    const group = inferAlphaGenomeGroup(tracks[i]);
+    const arr = map.get(group) ?? [];
+    arr.push(i);
+    map.set(group, arr);
+  }
+  return Array.from(map.entries()).map(([name, trackIndices]) => ({
+    name,
+    trackIndices,
+  }));
+}
+
+function normalizeBlock(block: ScorerBlock): (number | null)[][] {
+  if (block.quantile_scores) return block.quantile_scores;
+  const flat = block.raw_scores
+    .flat()
+    .filter((v): v is number => v != null && !isNaN(v));
+  if (flat.length === 0) return block.raw_scores;
+  const maxAbs = Math.max(...flat.map(Math.abs));
+  if (maxAbs === 0) return block.raw_scores;
+  return block.raw_scores.map((row) =>
+    row.map((v) => {
+      if (v == null || isNaN(v)) return null;
+      return Math.abs(v) / maxAbs;
+    }),
+  );
+}
+
+function computeGroupCells(
+  normalized: (number | null)[][],
+  groups: TissueGroup[],
+): CellInfo[][] {
+  return normalized.map((row, rowIdx) =>
+    groups.map((g) => {
+      let best: CellInfo = { norm: null, rowIdx, trackIdx: null };
+      let bestVal = -1;
+      for (const idx of g.trackIndices) {
+        const v = row[idx];
+        if (v != null && v > bestVal) {
+          bestVal = v;
+          best = { norm: v, rowIdx, trackIdx: idx };
+        }
+      }
+      return best;
+    }),
+  );
+}
+
+/** Merge duplicate gene names: for each unique name, take max per tissue group. */
+function deduplicateAndSort(
+  rowLabels: string[],
+  cellsByRow: CellInfo[][],
+  maxRows: number,
+): { labels: string[]; cells: CellInfo[][] } {
+  const map = new Map<string, number[]>();
+  for (let i = 0; i < rowLabels.length; i++) {
+    const arr = map.get(rowLabels[i]) ?? [];
+    arr.push(i);
+    map.set(rowLabels[i], arr);
+  }
+
+  const rows: { label: string; cells: CellInfo[]; maxScore: number }[] = [];
+
+  for (const [name, indices] of map) {
+    const nCols = cellsByRow[0]?.length ?? 0;
+    const merged: CellInfo[] = [];
+    let rowMax = 0;
+
+    for (let c = 0; c < nCols; c++) {
+      let best: CellInfo = {
+        norm: null,
+        rowIdx: indices[0],
+        trackIdx: null,
+      };
+      for (const ri of indices) {
+        const cell = cellsByRow[ri]?.[c];
+        if (
+          cell &&
+          cell.norm != null &&
+          (best.norm === null || cell.norm > best.norm)
+        ) {
+          best = cell;
+        }
+      }
+      merged.push(best);
+      if (best.norm != null && best.norm > rowMax) rowMax = best.norm;
+    }
+
+    rows.push({ label: name, cells: merged, maxScore: rowMax });
+  }
+
+  rows.sort((a, b) => b.maxScore - a.maxScore);
+  const top = rows.slice(0, maxRows);
+
+  return {
+    labels: top.map((r) => r.label),
+    cells: top.map((r) => r.cells),
+  };
+}
+
+// ─── Color scale ──────────────────────────────────────────────
+
+function cellColor(v: number | null): string {
+  if (v == null || isNaN(v) || v < 0.02) return "transparent";
+  const t = Math.max(0, Math.min(1, v));
+  // White (#fafafa) → Violet (#7c3aed, our --primary)
+  const r = Math.round(250 - t * 126);
+  const g = Math.round(250 - t * 192);
+  const b = Math.round(250 - t * 13);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ─── Constants ────────────────────────────────────────────────
+
+const CELL_W = 36;
+const CELL_H = 22;
+const LABEL_W = 140;
+const HEADER_H = 72;
+const MAX_ROWS = 12;
+
+// ─── Component ────────────────────────────────────────────────
 
 interface ScoresHeatmapProps {
   scorers: ScorerBlock[];
@@ -20,208 +293,221 @@ export function ScoresHeatmap({ scorers }: ScoresHeatmapProps) {
   return (
     <div className="space-y-6">
       {scorers.map((block, idx) => (
-        <ScorerCanvas key={idx} block={block} />
+        <TissueHeatmap key={idx} block={block} />
       ))}
     </div>
   );
 }
 
-// ─── Constants ─────────────────────────────────────────────────
+// ─── Heatmap per scorer ───────────────────────────────────────
 
-const CELL_W = 5;
-const CELL_H = 14;
-const LABEL_W = 100; // left margin for gene labels
-const HEADER_H = 60; // top margin for track labels
-
-// ─── Per-block normalization ───────────────────────────────────
-
-function normalizeBlock(block: ScorerBlock): {
-  matrix: (number | null)[][];
-  hasQuantile: boolean;
-} {
-  if (block.quantile_scores) {
-    return { matrix: block.quantile_scores, hasQuantile: true };
-  }
-
-  // Normalize raw_scores to 0-1 per block using max absolute value
-  const flat = block.raw_scores.flat().filter((v): v is number => v != null && !isNaN(v));
-  if (flat.length === 0) return { matrix: block.raw_scores, hasQuantile: false };
-
-  const maxAbs = Math.max(...flat.map(Math.abs));
-  if (maxAbs === 0) return { matrix: block.raw_scores, hasQuantile: false };
-
-  const normalized = block.raw_scores.map((row) =>
-    row.map((v) => {
-      if (v == null || isNaN(v)) return null;
-      return Math.abs(v) / maxAbs;
-    }),
-  );
-  return { matrix: normalized, hasQuantile: false };
-}
-
-/** Map 0-1 value to heatmap color (violet sequential). */
-function toColor(v: number | null): string {
-  if (v == null) return "#f5f5f5";
-  const clamped = Math.max(0, Math.min(1, v));
-  // Low: light gray → High: deep violet
-  const r = Math.round(245 - clamped * 121); // 245 → 124
-  const g = Math.round(245 - clamped * 187); // 245 → 58
-  const b = Math.round(245 - clamped * 8);   // 245 → 237
-  return `rgb(${r},${g},${b})`;
-}
-
-// ─── Canvas heatmap per scorer ─────────────────────────────────
-
-function ScorerCanvas({ block }: { block: ScorerBlock }) {
+function TissueHeatmap({ block }: { block: ScorerBlock }) {
   const label = parseScorerLabel(block.scorer);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    gene: string;
-    track: string;
-    raw: number | null;
-    quantile: number | null;
-  } | null>(null);
+  const hasQuantile = block.quantile_scores != null;
 
-  const nRows = block.raw_scores.length;
-  const nCols = block.tracks.length;
+  const normalized = useMemo(() => normalizeBlock(block), [block]);
+  const groups = useMemo(
+    () => buildTissueGroups(block.tracks),
+    [block.tracks],
+  );
+  const rawCells = useMemo(
+    () => computeGroupCells(normalized, groups),
+    [normalized, groups],
+  );
 
-  // Gene labels: use gene_name if rows exist, else "Score"
-  const rowLabels = useMemo(
-    () => (block.rows.length > 0 ? block.rows.map((r) => r.gene_name) : ["Score"]),
+  const rawLabels = useMemo(
+    () =>
+      block.rows.length > 0 ? block.rows.map((r) => r.gene_name) : ["Score"],
     [block.rows],
   );
 
-  const { matrix } = useMemo(() => normalizeBlock(block), [block]);
-
-  const canvasW = LABEL_W + nCols * CELL_W;
-  const canvasH = HEADER_H + nRows * CELL_H;
-
-  // Draw
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvasW * dpr;
-    canvas.height = canvasH * dpr;
-    canvas.style.width = `${canvasW}px`;
-    canvas.style.height = `${canvasH}px`;
-
-    const ctx = canvas.getContext("2d")!;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, canvasW, canvasH);
-
-    // Row labels
-    ctx.font = "11px system-ui, sans-serif";
-    ctx.fillStyle = "#374151";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    for (let i = 0; i < nRows; i++) {
-      const label = rowLabels[i];
-      const truncated = label.length > 14 ? label.slice(0, 13) + "…" : label;
-      ctx.fillText(truncated, LABEL_W - 4, HEADER_H + i * CELL_H + CELL_H / 2);
-    }
-
-    // Cells
-    for (let i = 0; i < nRows; i++) {
-      for (let j = 0; j < nCols; j++) {
-        const v = matrix[i]?.[j] ?? null;
-        ctx.fillStyle = toColor(v);
-        ctx.fillRect(LABEL_W + j * CELL_W, HEADER_H + i * CELL_H, CELL_W - 0.5, CELL_H - 0.5);
-      }
-    }
-  }, [matrix, nRows, nCols, canvasW, canvasH, rowLabels]);
-
-  // Hover
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const rect = canvasRef.current!.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const col = Math.floor((x - LABEL_W) / CELL_W);
-      const row = Math.floor((y - HEADER_H) / CELL_H);
-
-      if (col < 0 || col >= nCols || row < 0 || row >= nRows) {
-        setTooltip(null);
-        return;
-      }
-
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      setTooltip({
-        x: e.clientX - containerRect.left,
-        y: e.clientY - containerRect.top - 60,
-        gene: rowLabels[row],
-        track: block.tracks[col].biosample_name,
-        raw: block.raw_scores[row]?.[col] ?? null,
-        quantile: block.quantile_scores?.[row]?.[col] ?? null,
-      });
-    },
-    [nRows, nCols, rowLabels, block],
+  const { labels, cells } = useMemo(
+    () => deduplicateAndSort(rawLabels, rawCells, MAX_ROWS),
+    [rawLabels, rawCells],
   );
 
-  const handleMouseLeave = useCallback(() => setTooltip(null), []);
+  // Sort tissue groups by max score, drop empty
+  const sortedGroupIndices = useMemo(() => {
+    const withMax = groups.map((_, gi) => {
+      let max = 0;
+      for (const row of cells) {
+        const v = row[gi]?.norm;
+        if (v != null && v > max) max = v;
+      }
+      return { gi, max };
+    });
+    return withMax
+      .filter(({ max }) => max > 0.01)
+      .sort((a, b) => b.max - a.max)
+      .map(({ gi }) => gi);
+  }, [groups, cells]);
 
-  if (nRows === 0 || nCols === 0) return null;
+  if (labels.length === 0 || sortedGroupIndices.length === 0) return null;
+
+  const nCols = sortedGroupIndices.length;
+  const nRows = labels.length;
+  const uniqueGenes = new Set(rawLabels).size;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
           {label}
         </h4>
         <span className="text-[11px] text-muted-foreground">
-          {nRows} {nRows === 1 ? "row" : "rows"} &times; {nCols} tracks
+          {uniqueGenes > 1 ? `${uniqueGenes} genes` : ""}
+          {uniqueGenes > 1 ? " · " : ""}
+          {block.tracks.length} tracks · {nCols} groups
         </span>
       </div>
 
-      <div ref={containerRef} className="relative overflow-x-auto">
-        <canvas
-          ref={canvasRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          className="block"
-          style={{ imageRendering: "pixelated" }}
-        />
+      <div className="overflow-x-auto">
+        <div
+          className="inline-grid"
+          style={{
+            gridTemplateColumns: `${LABEL_W}px repeat(${nCols}, ${CELL_W}px)`,
+            gridTemplateRows: `${HEADER_H}px repeat(${nRows}, ${CELL_H}px)`,
+          }}
+        >
+          {/* Corner */}
+          <div />
 
-        {/* Single floating tooltip */}
-        {tooltip && (
-          <div
-            className="absolute z-50 pointer-events-none rounded-md border border-border bg-card px-2.5 py-1.5 shadow-md text-xs"
-            style={{ left: tooltip.x, top: tooltip.y, transform: "translateX(-50%)" }}
-          >
-            <p className="font-medium text-foreground">
-              {tooltip.gene} &times; {tooltip.track}
-            </p>
-            <p className="text-muted-foreground">
-              Raw: {tooltip.raw != null ? formatScore(tooltip.raw) : "—"}
-            </p>
-            {tooltip.quantile != null && (
-              <p className="text-muted-foreground">
-                Quantile: {(tooltip.quantile * 100).toFixed(0)}%
-              </p>
-            )}
-          </div>
-        )}
+          {/* Column headers */}
+          {sortedGroupIndices.map((gi) => {
+            const g = groups[gi];
+            return (
+              <Tooltip key={`hdr-${gi}`}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-end justify-center pb-1">
+                    <span
+                      className="text-[10px] text-muted-foreground whitespace-nowrap"
+                      style={{
+                        writingMode: "vertical-rl",
+                        transform: "rotate(180deg)",
+                      }}
+                    >
+                      {g.name}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {g.name} ({g.trackIndices.length} tracks)
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+
+          {/* Data rows */}
+          {labels.map((rowLabel, ri) => (
+            <Fragment key={ri}>
+              <div
+                className="flex items-center pr-3 text-[11px] text-foreground truncate"
+                title={rowLabel}
+              >
+                {rowLabel}
+              </div>
+              {sortedGroupIndices.map((gi) => {
+                const cell = cells[ri]?.[gi];
+                const g = groups[gi];
+                const color = cellColor(cell?.norm ?? null);
+                const hasValue = cell?.norm != null && cell.norm > 0.01;
+
+                return (
+                  <Tooltip key={`${ri}-${gi}`}>
+                    <TooltipTrigger asChild>
+                      <div className="p-[1px]">
+                        <div
+                          className="w-full h-full rounded-[2px]"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    {hasValue && (
+                      <TooltipContent>
+                        <HeatmapTooltip
+                          gene={rowLabel}
+                          group={g}
+                          cell={cell!}
+                          block={block}
+                          hasQuantile={hasQuantile}
+                        />
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
       </div>
+
+      {uniqueGenes > MAX_ROWS && (
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Showing top {nRows} of {uniqueGenes} genes
+        </p>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-[10px] text-muted-foreground">Effect:</span>
+        <span className="text-[10px] text-muted-foreground">Impact:</span>
         <div className="flex items-center gap-px">
-          {[0, 0.2, 0.4, 0.6, 0.8, 1].map((v) => (
+          {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
             <div
               key={v}
-              className="w-4 h-3 rounded-[1px]"
-              style={{ backgroundColor: toColor(v) }}
+              className="w-5 h-3 rounded-[1px]"
+              style={{ backgroundColor: cellColor(v) }}
             />
           ))}
         </div>
         <span className="text-[10px] text-muted-foreground">Low → High</span>
       </div>
+    </div>
+  );
+}
+
+// ─── Tooltip ──────────────────────────────────────────────────
+
+function HeatmapTooltip({
+  gene,
+  group,
+  cell,
+  block,
+  hasQuantile,
+}: {
+  gene: string;
+  group: TissueGroup;
+  cell: CellInfo;
+  block: ScorerBlock;
+  hasQuantile: boolean;
+}) {
+  const raw =
+    cell.trackIdx != null
+      ? (block.raw_scores[cell.rowIdx]?.[cell.trackIdx] ?? null)
+      : null;
+  const quantile =
+    cell.trackIdx != null
+      ? (block.quantile_scores?.[cell.rowIdx]?.[cell.trackIdx] ?? null)
+      : null;
+  const trackName =
+    cell.trackIdx != null
+      ? block.tracks[cell.trackIdx].biosample_name
+      : null;
+
+  return (
+    <div className="space-y-0.5">
+      <p className="font-medium">
+        {gene} × {group.name}
+      </p>
+      {group.trackIndices.length > 1 && (
+        <p>{group.trackIndices.length} tracks</p>
+      )}
+      {trackName && group.trackIndices.length > 1 && (
+        <p>Top: {trackName}</p>
+      )}
+      {hasQuantile && quantile != null && (
+        <p>Quantile: {formatQuantile(quantile)}</p>
+      )}
+      <p>Raw: {raw != null ? formatScore(raw) : "—"}</p>
     </div>
   );
 }

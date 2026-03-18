@@ -180,6 +180,7 @@ export interface VariantEvidenceSummaryRow {
   imbalance_significant: number;
   methylation_count: number;
   pgs_count: number;
+  perturbation_targets?: { gene: string; downstream_genes: number }[];
 }
 
 export async function fetchVariantEvidenceSummary(

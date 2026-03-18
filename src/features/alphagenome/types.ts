@@ -96,9 +96,34 @@ export interface ScoreTrack {
   biosample_name: string;
   strand?: string;
   ontology_curie?: string;
+  tissue_group?: string;
   biosample_type?: string;
   data_source?: string;
   [key: string]: unknown;
+}
+
+/** Overall variant impact classification. */
+export interface OverallScore {
+  quantile: number;
+  raw: number;
+  classification: string;
+  method: string;
+}
+
+/** A top tissue hit from a scorer's summary. */
+export interface TopTissueHit {
+  raw_score: number;
+  quantile_score: number;
+  biosample_name: string;
+  tissue_group?: string;
+  gene_name: string;
+}
+
+/** Per-scorer summary with top tissue hits. */
+export interface ScorerSummary {
+  max_quantile: number;
+  max_raw: number;
+  top_tissues: TopTissueHit[];
 }
 
 /** One scorer block in the response. */
@@ -110,6 +135,8 @@ export interface ScorerBlock {
   raw_scores: number[][];
   /** quantile_scores[row_i][track_j] — percentile 0-1, use for heatmap color. null if unavailable. */
   quantile_scores: number[][] | null;
+  /** Pre-computed summary with top tissue hits. */
+  summary?: ScorerSummary;
 }
 
 export interface ScoreResult {
@@ -121,6 +148,8 @@ export interface ScoreResult {
     alt: string;
     gene?: string | null;
   };
+  /** Overall variant impact classification. */
+  overall?: OverallScore;
   scorers: ScorerBlock[];
 }
 

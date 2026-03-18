@@ -79,7 +79,21 @@ export interface TissueEvidenceData {
 // ---------------------------------------------------------------------------
 
 const DEPRIORITIZED_GROUPS = new Set(["Other", "Cell Line", "Stem Cell"]);
-const TOTAL_EVIDENCE_TYPES = 9;
+
+const EVIDENCE_TYPES = [
+  { key: "signals", label: "Signals" },
+  { key: "chromatin", label: "Chromatin" },
+  { key: "accessibility", label: "Accessibility" },
+  { key: "enhancers", label: "Enhancers" },
+  { key: "loops", label: "Loops" },
+  { key: "ase", label: "Allelic Activity" },
+  { key: "qtls", label: "QTLs" },
+  { key: "chrombpnet", label: "ChromBPNet" },
+  { key: "variantAllelicImbalance", label: "Histone Imbal." },
+  { key: "crisprEssentiality", label: "CRISPR Essentiality" },
+] as const;
+
+const TOTAL_EVIDENCE_TYPES = EVIDENCE_TYPES.length;
 
 function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
   const map = new Map<string, TissueEvidence>();
@@ -113,7 +127,7 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
   for (const t of map.values()) {
     t.convergence = [
       t.signals, t.chromatin, t.enhancers, t.accessibility, t.loops, t.ase,
-      t.qtls, t.chrombpnet, t.variantAllelicImbalance,
+      t.qtls, t.chrombpnet, t.variantAllelicImbalance, t.crisprEssentiality,
     ].filter(Boolean).length;
     t.score =
       (t.signals?.max_value ?? 0) +
@@ -180,7 +194,13 @@ function StrengthCell({ strength, label, detail }: { strength: Strength; label: 
   );
 }
 
-function ConvergenceDots({ count }: { count: number }) {
+function ConvergenceDots({ tissue }: { tissue: TissueEvidence }) {
+  const present = EVIDENCE_TYPES.map(({ key }) => {
+    const val = tissue[key as keyof TissueEvidence];
+    return val != null;
+  });
+  const count = present.filter(Boolean).length;
+
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -202,9 +222,13 @@ function ConvergenceDots({ count }: { count: number }) {
             </span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          Evidence from {count} of {TOTAL_EVIDENCE_TYPES} data types (6 region + 3 variant).
-          More types = higher confidence in tissue-specific regulation.
+        <TooltipContent side="top" className="text-xs min-w-[160px]">
+          <p className="font-medium mb-1">{count} of {TOTAL_EVIDENCE_TYPES} data types</p>
+          {EVIDENCE_TYPES.map(({ key, label }, i) => (
+            <p key={key} className={cn("pl-1", !present[i] && "opacity-30")}>
+              {present[i] ? "✓" : "–"} {label}
+            </p>
+          ))}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -243,7 +267,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       enableSorting: true,
       sortDescFirst: true,
       meta: { description: "Number of independent data types (out of 9) with regulatory evidence in this tissue. More evidence types = higher confidence." },
-      cell: ({ row }) => <ConvergenceDots count={row.original.convergence} />,
+      cell: ({ row }) => <ConvergenceDots tissue={row.original} />,
     },
     {
       id: "signals",
@@ -435,7 +459,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
                         strength === "low" && "text-muted-foreground/50",
                       )}
                     >
-                      {c.essential_lines}/{c.total_lines}
+                      {c.significant}/{c.count}
                     </span>
                   </span>
                   <span className={cn(
@@ -447,7 +471,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs max-w-xs">
-                Essential in {c.essential_lines} of {c.total_lines} cell lines ({pct}%) in {row.original.tissue_name}
+                Essential in {c.significant} of {c.count} cell lines ({pct}%) in {row.original.tissue_name}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

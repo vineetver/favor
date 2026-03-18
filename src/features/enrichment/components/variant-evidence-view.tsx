@@ -36,18 +36,31 @@ function regionLabel(table: string): string {
 // Evidence counting
 // ---------------------------------------------------------------------------
 
-const EVIDENCE_KEYS = [
-  "region_overlap_count", "qtl_count", "chrombpnet_count",
-  "imbalance_count", "methylation_count", "pgs_count",
+const VARIANT_EVIDENCE_TYPES = [
+  { key: "region_overlap_count", label: "Reg. Elements" },
+  { key: "qtl_count", label: "Expression QTLs" },
+  { key: "chrombpnet_count", label: "ChromBPNet" },
+  { key: "tissue_score_max", label: "V2F Scores" },
+  { key: "imbalance_count", label: "Histone Imbal." },
+  { key: "methylation_count", label: "Methylation" },
+  { key: "pgs_count", label: "Polygenic" },
+  { key: "perturbation_targets", label: "Perturb-seq KO" },
 ] as const;
 
-const TOTAL_VARIANT_EVIDENCE = 7; // 6 keys above + tissue_score_max
+const TOTAL_VARIANT_EVIDENCE = VARIANT_EVIDENCE_TYPES.length;
+
+function getEvidencePresence(row: VariantEvidenceSummaryRow): boolean[] {
+  return VARIANT_EVIDENCE_TYPES.map(({ key }) => {
+    if (key === "perturbation_targets") {
+      return (row.perturbation_targets?.length ?? 0) > 0;
+    }
+    const v = row[key as keyof VariantEvidenceSummaryRow];
+    return typeof v === "number" && v > 0;
+  });
+}
 
 function countEvidence(row: VariantEvidenceSummaryRow): number {
-  let n = 0;
-  for (const k of EVIDENCE_KEYS) if (row[k] > 0) n++;
-  if (row.tissue_score_max > 0) n++;
-  return n;
+  return getEvidencePresence(row).filter(Boolean).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +116,10 @@ function Dash() {
   return <span className="text-xs text-muted-foreground/30">&mdash;</span>;
 }
 
-function EvidenceDots({ count }: { count: number }) {
+function EvidenceDots({ row }: { row: VariantEvidenceSummaryRow }) {
+  const present = getEvidencePresence(row);
+  const count = present.filter(Boolean).length;
+
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -117,8 +133,13 @@ function EvidenceDots({ count }: { count: number }) {
             <span className="text-xs tabular-nums text-muted-foreground ml-0.5">{count}/{TOTAL_VARIANT_EVIDENCE}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs max-w-xs">
-          Evidence from {count} of {TOTAL_VARIANT_EVIDENCE} data types: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS.
+        <TooltipContent side="top" className="text-xs min-w-[160px]">
+          <p className="font-medium mb-1">{count} of {TOTAL_VARIANT_EVIDENCE} data types</p>
+          {VARIANT_EVIDENCE_TYPES.map(({ key, label }, i) => (
+            <p key={key} className={cn("pl-1", !present[i] && "opacity-30")}>
+              {present[i] ? "✓" : "–"} {label}
+            </p>
+          ))}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -152,7 +173,7 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
     enableSorting: true,
     sortDescFirst: true,
     meta: { description: "Number of distinct evidence categories with data (out of 7: region overlaps, QTLs, ChromBPNet, V2F scores, allelic imbalance, methylation, PGS)" } satisfies ColumnMeta,
-    cell: ({ row }) => <EvidenceDots count={countEvidence(row.original)} />,
+    cell: ({ row }) => <EvidenceDots row={row.original} />,
   },
   {
     id: "region_overlaps",
@@ -256,6 +277,67 @@ const columns: ColumnDef<VariantEvidenceSummaryRow, unknown>[] = [
       if (v === 0) return <Dash />;
       const strength = classify(v, 50, 10);
       return <StrengthCell strength={strength} label={`${formatCount(v)} scores`} detail={`Included in ${v.toLocaleString()} polygenic score${v !== 1 ? "s" : ""} from the PGS Catalog`} />;
+    },
+  },
+  {
+    id: "perturbation",
+    accessorFn: (r) => r.perturbation_targets?.[0]?.downstream_genes ?? null,
+    header: () => (
+      <span className="flex flex-col leading-tight">
+        <span>KO Targets</span>
+        <span>Perturb-seq</span>
+      </span>
+    ),
+    enableSorting: true,
+    sortDescFirst: true,
+    meta: { description: "Links variant → eQTL target gene → perturb-seq downstream cascade. Shows how many genes are causally affected if this variant disrupts its target." } satisfies ColumnMeta,
+    cell: ({ row }) => {
+      const targets = row.original.perturbation_targets;
+      if (!targets?.length) return <Dash />;
+      const top = targets[0];
+      const totalDownstream = targets.reduce((s, t) => s + t.downstream_genes, 0);
+      const strength = classify(totalDownstream, 100, 20);
+      return (
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col gap-0.5 cursor-default">
+                <span className="inline-flex items-center gap-2 text-xs">
+                  <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
+                    <span
+                      className={cn(
+                        "block h-full rounded-full bg-primary",
+                        strength === "strong" && "opacity-80",
+                        strength === "moderate" && "opacity-45",
+                        strength === "low" && "opacity-20",
+                      )}
+                      style={{ width: `${TIER_FILL[strength]}%` }}
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      "whitespace-nowrap",
+                      strength === "strong" && "text-foreground",
+                      strength === "moderate" && "text-muted-foreground",
+                      strength === "low" && "text-muted-foreground/50",
+                    )}
+                  >
+                    {totalDownstream} KO targets
+                  </span>
+                </span>
+                <span className="text-[10px] text-muted-foreground/70 truncate max-w-[180px]">
+                  {targets.map((t) => t.gene).join(", ")}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs max-w-xs">
+              {targets.map((t) => (
+                <p key={t.gene}>{t.gene}: {t.downstream_genes} downstream genes via eQTL → perturb-seq</p>
+              ))}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     },
   },
   {
