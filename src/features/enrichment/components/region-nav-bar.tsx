@@ -19,6 +19,8 @@ import { useMemo } from "react";
 
 interface NavItem {
   key: keyof RegionSummary["counts"] | null;
+  /** Additional count keys to sum (e.g., enhancer methods split across multiple fields) */
+  alsoCount?: (keyof RegionSummary["counts"])[];
   slug: string;
   label: string;
   hint: string;
@@ -70,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         key: "enhancer_genes",
+        alsoCount: ["epiraction", "epimap", "encode_re2g"],
         slug: "enhancer-genes",
         label: "Enhancers",
         hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)",
@@ -181,8 +184,11 @@ export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps
               )}
 
               {/* Tab items */}
-              {group.items.map(({ key, slug, label, hint, hot }) => {
-                const count = key ? summary.counts[key] : null;
+              {group.items.map(({ key, alsoCount, slug, label, hint, hot }) => {
+                let count = key ? (summary.counts[key] ?? 0) : null;
+                if (count != null && alsoCount) {
+                  for (const k of alsoCount) count += summary.counts[k] ?? 0;
+                }
                 const isActive = activeSlug === slug;
                 const isEmpty = key != null && count === 0;
 

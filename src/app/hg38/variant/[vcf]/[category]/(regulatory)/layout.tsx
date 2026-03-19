@@ -43,6 +43,7 @@ const VARIANT_NAV_GROUPS: NavGroup[] = [
       },
       {
         key: "enhancer_genes",
+        alsoCount: ["epiraction", "epimap", "encode_re2g"],
         slug: "enhancer-genes",
         label: "Enhancers",
         hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)",

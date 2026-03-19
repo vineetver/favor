@@ -324,6 +324,9 @@ function ModalityTrackGroup({
   const refByTrack = useMemo(() => transposeValues(refTrack.values), [refTrack.values]);
   const altByTrack = useMemo(() => transposeValues(altTrack.values), [altTrack.values]);
 
+  // Variant line position as percentage of data width
+  const variantPct = numPositions > 0 ? (variantIndex / numPositions) * 100 : 50;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -341,14 +344,20 @@ function ModalityTrackGroup({
         </div>
       )}
 
-      <div className="space-y-2">
+      {/* Tracks with a single variant line spanning all of them */}
+      <div className="relative space-y-2">
+        {/* Full-height variant position line */}
+        <div
+          className="absolute top-0 bottom-0 w-px border-l border-dashed border-red-500/60 z-10 pointer-events-none"
+          style={{ left: `${variantPct}%` }}
+        />
+
         {refTrack.tracks.slice(0, displayCount).map((meta, idx) => (
           <TrackChart
             key={idx}
             label={meta.biosample_name}
             refValues={refByTrack[idx]}
             altValues={altByTrack[idx]}
-            variantIndex={variantIndex}
           />
         ))}
       </div>

@@ -22,12 +22,15 @@ interface AlphaGenomeRegionViewProps {
   chromosome: string;
   start: number;
   end: number;
+  /** Highlight a specific variant position with a vertical line */
+  variantPosition?: number;
 }
 
 export function AlphaGenomeRegionView({
   chromosome,
   start,
   end,
+  variantPosition,
 }: AlphaGenomeRegionViewProps) {
   const chrWithPrefix = chromosome.startsWith("chr")
     ? chromosome
@@ -157,16 +160,33 @@ export function AlphaGenomeRegionView({
       )}
 
       {/* Results */}
-      {data && <RegionTrackResults data={data} />}
+      {data && <RegionTrackResults data={data} variantPosition={variantPosition} intervalStart={interval?.start} intervalEnd={interval?.end} />}
     </section>
   );
 }
 
 function RegionTrackResults({
   data,
+  variantPosition,
+  intervalStart,
+  intervalEnd,
 }: {
   data: NonNullable<ReturnType<typeof useRegionTracks>["data"]>;
+  variantPosition?: number;
+  intervalStart?: number;
+  intervalEnd?: number;
 }) {
+  // Compute variant index within the track values array
+  const variantIndex = useMemo(() => {
+    if (variantPosition == null || intervalStart == null || intervalEnd == null) return undefined;
+    if (variantPosition < intervalStart || variantPosition > intervalEnd) return undefined;
+    const firstTrack = data.modalities[0] ? (data[data.modalities[0]] as TrackData | undefined) : undefined;
+    if (!firstTrack?.values?.length) return undefined;
+    const numPositions = firstTrack.values[0]?.length ?? firstTrack.values.length;
+    const frac = (variantPosition - intervalStart) / (intervalEnd - intervalStart);
+    return Math.round(frac * numPositions);
+  }, [variantPosition, intervalStart, intervalEnd, data]);
+
   return (
     <div className="space-y-4">
       {data.modalities.map((modality) => {
@@ -181,6 +201,7 @@ function RegionTrackResults({
             key={modality}
             modalityLabel={modalityLabel}
             track={track}
+            variantIndex={variantIndex}
           />
         );
       })}
@@ -191,9 +212,11 @@ function RegionTrackResults({
 function RegionModalityGroup({
   modalityLabel,
   track,
+  variantIndex,
 }: {
   modalityLabel: string;
   track: TrackData;
+  variantIndex?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
   const trackCount = track.tracks.length;
@@ -210,7 +233,15 @@ function RegionModalityGroup({
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="relative space-y-2">
+        {/* Full-height variant position line */}
+        {variantIndex != null && (
+          <div
+            className="absolute top-0 bottom-0 w-px border-l border-dashed border-red-500/60 z-10 pointer-events-none"
+            style={{ left: `${(variantIndex / (track.values[0]?.length || 1)) * 100}%` }}
+          />
+        )}
+
         {track.tracks.slice(0, displayCount).map((meta, idx) => (
           <TrackChart
             key={meta.biosample_name}

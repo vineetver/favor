@@ -3,20 +3,18 @@
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
-import { Label } from "@shared/components/ui/label";
 import { Switch } from "@shared/components/ui/switch";
 import {
-  Bell,
-  ChevronDown,
-  ChevronUp,
-  FileOutput,
+  CheckCircle2,
+  ChevronRight,
   Loader2,
   Mail,
   Play,
+  X,
 } from "lucide-react";
 import { useId, useState } from "react";
-import { getDataTypeLabel } from "../lib/format";
-import type { DataType, TypedValidateResponse } from "../types";
+import { formatNumber, getDataTypeLabel } from "../lib/format";
+import type { TypedValidateResponse } from "../types";
 
 // ============================================================================
 // Types
@@ -24,25 +22,17 @@ import type { DataType, TypedValidateResponse } from "../types";
 
 interface JobConfigurationProps {
   typedValidation: TypedValidateResponse;
-  dataType: DataType | string;
   isTypedCohort: boolean;
+  filename?: string;
   onSubmit: (config: JobConfig) => void;
   isSubmitting?: boolean;
+  error?: string | null;
   className?: string;
 }
 
 export interface JobConfig {
   includeNotFound: boolean;
   email?: string;
-  orgName?: string;
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-function formatNumber(num: number): string {
-  return new Intl.NumberFormat().format(num);
 }
 
 // ============================================================================
@@ -51,15 +41,16 @@ function formatNumber(num: number): string {
 
 export function JobConfiguration({
   typedValidation,
-  dataType,
   isTypedCohort,
+  filename,
   onSubmit,
   isSubmitting = false,
+  error,
   className,
 }: JobConfigurationProps) {
   const [includeNotFound, setIncludeNotFound] = useState(true);
   const [email, setEmail] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
   const switchId = useId();
   const emailId = useId();
 
@@ -71,40 +62,42 @@ export function JobConfiguration({
     });
   };
 
+  const rowCount = formatNumber(typedValidation.row_count_estimate);
+  const dataType = getDataTypeLabel(typedValidation.data_type);
+  const columnCount = typedValidation.schema_preview.length;
+
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-5", className)}>
-      {/* Section: Output Options */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          <FileOutput className="w-3.5 h-3.5" />
-          Output options
+    <form onSubmit={handleSubmit} className={cn("space-y-0", className)}>
+      {/* Hero — centered file summary */}
+      <div className="pt-4 pb-6 text-center">
+        <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 mb-4">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
         </div>
+        <h2 className="text-base font-semibold text-foreground">
+          Ready to process
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1.5">{filename}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {dataType}
+          {" · "}~{rowCount} rows
+          {isTypedCohort && ` · ${columnCount} columns mapped`}
+        </p>
+      </div>
 
-        {/* Typed cohort summary */}
-        {isTypedCohort && (
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-muted border border-border">
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{getDataTypeLabel(dataType)}</span>
-              <span className="ml-2">
-                {typedValidation.schema_preview.length} columns mapped
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Include Not Found Toggle — only for variant lists */}
+      {/* Options — clean divider-separated rows */}
+      <div className="border-t border-border divide-y divide-border">
+        {/* Include unmatched toggle — variant lists only */}
         {!isTypedCohort && (
-          <div className="flex items-start justify-between gap-4 p-4 rounded-lg bg-muted border border-border">
-            <div className="space-y-1">
-              <Label
-                htmlFor={switchId}
-                className="text-sm font-medium text-foreground cursor-pointer"
-              >
+          <label
+            htmlFor={switchId}
+            className="flex items-center justify-between gap-4 px-1 py-4 cursor-pointer"
+          >
+            <div>
+              <p className="text-sm font-medium text-foreground">
                 Include unmatched variants
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Output rows for variants not found in database.{" "}
-                <span className="text-muted-foreground/70">Increases output file size.</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Output rows for variants not found in database
               </p>
             </div>
             <Switch
@@ -113,36 +106,41 @@ export function JobConfiguration({
               onCheckedChange={setIncludeNotFound}
               disabled={isSubmitting}
             />
-          </div>
+          </label>
         )}
-      </div>
 
-      {/* Section: Notifications (Collapsed) */}
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setShowNotifications(!showNotifications)}
-          className="flex items-center justify-between w-full text-left"
-        >
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <Bell className="w-3.5 h-3.5" />
-            Notifications
-            <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
-          </div>
-          {showNotifications ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground/70" />
+        {/* Email notification — progressive disclosure */}
+        <div className="px-1 py-4">
+          {!showEmail ? (
+            <button
+              type="button"
+              onClick={() => setShowEmail(true)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Add email notification</span>
+              <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </button>
           ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground/70" />
-          )}
-        </button>
-
-        {showNotifications && (
-          <div className="p-4 rounded-lg bg-muted border border-border space-y-4">
             <div className="space-y-2">
-              <Label htmlFor={emailId} className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-muted-foreground/70" />
-                Email when complete
-              </Label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor={emailId}
+                  className="text-sm font-medium text-foreground"
+                >
+                  Email when complete
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmail(false);
+                    setEmail("");
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-0.5 -mr-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <Input
                 id={emailId}
                 type="email"
@@ -150,35 +148,40 @@ export function JobConfiguration({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
+                autoFocus
               />
-              <p className="text-xs text-muted-foreground">
-                We'll send a single email when your job finishes (success or failure).
-              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Submit Button - Always visible, right-aligned feel */}
-      <div className="pt-3 border-t border-border">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            ~{formatNumber(typedValidation.row_count_estimate)} rows to process
-          </div>
-          <Button type="submit" disabled={isSubmitting} size="lg">
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Starting...
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Start Processing
-              </>
-            )}
-          </Button>
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 mt-4">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
+      )}
+
+      {/* Submit */}
+      <div className="pt-6">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          size="lg"
+          className="w-full"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Starting...
+            </>
+          ) : (
+            <>
+              <Play className="h-4 w-4" />
+              Start Processing
+            </>
+          )}
+        </Button>
       </div>
     </form>
   );

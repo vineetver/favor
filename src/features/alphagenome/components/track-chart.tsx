@@ -18,8 +18,6 @@ interface TrackChartProps {
   refValues: number[];
   /** Alternate allele signal values (omit for region-only view) */
   altValues?: number[];
-  /** Index of variant position in the values array */
-  variantIndex?: number;
   /** Display label (tissue / biosample name) */
   label: string;
   height?: number;
@@ -34,7 +32,6 @@ interface DataPoint {
 export function TrackChart({
   refValues,
   altValues,
-  variantIndex,
   label,
   height,
 }: TrackChartProps) {
@@ -49,11 +46,6 @@ export function TrackChart({
     const alt = downsample(altValues!, MAX_POINTS);
     return ref.map((v, i) => ({ i, ref: v, alt: -alt[i] }));
   }, [refValues, altValues, hasAlt]);
-
-  const scaledVariantIndex =
-    variantIndex != null
-      ? Math.round((variantIndex / refValues.length) * data.length)
-      : undefined;
 
   return (
     <div>
@@ -97,16 +89,7 @@ export function TrackChart({
               />
             )}
 
-            {/* Variant position */}
-            {scaledVariantIndex != null && (
-              <ReferenceLine
-                x={scaledVariantIndex}
-                stroke="hsl(var(--foreground))"
-                strokeWidth={1}
-                strokeDasharray="4 2"
-                strokeOpacity={0.4}
-              />
-            )}
+            {/* Variant line is now rendered as a CSS overlay on the parent container */}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

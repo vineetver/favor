@@ -391,11 +391,10 @@ export function BatchWizard({ className }: BatchWizardProps) {
           )}
 
           {/* ================================================================ */}
-          {/* Validation + Configure Step */}
+          {/* Configure Step */}
           {/* ================================================================ */}
           {validation && step === "configuring" && !isCreating && (
-            <div className="space-y-6">
-              {/* Back button */}
+            <div className="max-w-lg mx-auto space-y-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -405,29 +404,14 @@ export function BatchWizard({ className }: BatchWizardProps) {
                 {isTypedCohort ? "Back to mapping" : "Upload different file"}
               </Button>
 
-              {/* Validation Summary */}
-              <ValidationSummary
-                typedValidation={validation}
-                filename={file?.name}
-              />
-
-              {/* Divider */}
-              <div className="border-t border-border" />
-
-              {/* Configuration */}
               <JobConfiguration
                 typedValidation={validation}
-                dataType={validation.data_type}
                 isTypedCohort={isTypedCohort}
+                filename={file?.name}
                 onSubmit={handleSubmit}
                 isSubmitting={isCreating}
+                error={error}
               />
-
-              {error && (
-                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3">
-                  <p className="text-sm text-destructive">{error}</p>
-                </div>
-              )}
             </div>
           )}
 

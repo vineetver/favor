@@ -384,7 +384,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
         const q = row.original.qtls;
         if (!q) return <Dash />;
         const strength: Strength = q.count >= 1000 ? "strong" : q.count >= 100 ? "moderate" : "low";
-        return <StrengthCell strength={strength} label={`${formatCount(q.count)} hits`} detail={`${q.count.toLocaleString()} QTL associations${q.significant ? `, ${q.significant} genome-wide significant` : ""}`} />;
+        return <StrengthCell strength={strength} label={`${formatCount(q.count)} hit${q.count !== 1 ? "s" : ""}`} detail={`${q.count.toLocaleString()} QTL associations${q.significant ? `, ${q.significant} genome-wide significant` : ""}`} />;
       },
     },
     {
