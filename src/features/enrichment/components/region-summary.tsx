@@ -32,7 +32,7 @@ const NAV_ITEMS: {
   isOverview?: boolean;
 }[] = [
   { key: null, slug: "overview", label: "Overview", hint: "Tissue evidence ranked by convergence across all data types", isOverview: true },
-  { key: "signals", slug: "tissue-signals", label: "Tissue Signals", hint: "cCRE epigenomic signal values across tissues" },
+  { key: "signals", slug: "tissue-signals", label: "cCRE Activity", hint: "cCRE epigenomic signal Z-scores across tissues" },
   { key: "chromatin_states", slug: "chromatin-states", label: "Chromatin States", hint: "Roadmap 25-state chromatin annotations" },
   { key: "enhancer_genes", slug: "enhancer-genes", label: "Enhancer-Genes", hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)" },
   { key: "accessibility_peaks", slug: "accessibility", label: "ATAC Peaks", hint: "ATAC-seq / DNase accessibility peaks" },

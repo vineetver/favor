@@ -144,6 +144,10 @@ export async function fetchCcreLinksByTissueGroup(gene: string): Promise<TissueG
   return fetchGrouped(`${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links?group_by=tissue_group`);
 }
 
+export async function fetchMethylationByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/methylation?group_by=tissue_group`);
+}
+
 // ---------------------------------------------------------------------------
 // Region Variants (variant-regulatory connections)
 // ---------------------------------------------------------------------------
@@ -557,6 +561,7 @@ export interface CcreGeneLinkRow {
   gene_symbol: string;
   source: string;
   tissue_name: string;
+  tissue_group?: string;
   score: number | null;
   effect_size?: number | null;
   method: string;
@@ -781,7 +786,10 @@ export interface MethylationRow {
 
 export interface FetchMethylationParams {
   tissue?: string;
+  tissue_group?: string;
   significant_only?: boolean;
+  sort_by?: string;
+  sort_dir?: "asc" | "desc";
   cursor?: string;
   limit?: number;
 }

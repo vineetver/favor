@@ -46,8 +46,7 @@ async function fetchGeneCcreLinksClient(
 
 function parseFilters(sp: URLSearchParams): GeneCcreLinksFilterOptions {
   const f: GeneCcreLinksFilterOptions = {};
-  const source = sp.get("source");
-  if (source) f.source = source;
+  f.source = sp.get("source") || "screen_v4";
   const method = sp.get("method");
   if (method) f.method = method;
   const tissue = sp.get("tissue");

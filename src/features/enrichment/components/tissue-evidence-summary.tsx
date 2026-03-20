@@ -80,7 +80,7 @@ export interface TissueEvidenceData {
 const DEPRIORITIZED_GROUPS = new Set(["Other", "Cell Line", "Stem Cell"]);
 
 const EVIDENCE_TYPES = [
-  { key: "signals", label: "Signals" },
+  { key: "signals", label: "cCRE Activity" },
   { key: "chromatin", label: "Chromatin" },
   { key: "accessibility", label: "Accessibility" },
   { key: "enhancers", label: "Enhancers" },
@@ -156,29 +156,24 @@ function classifyValue(value: number, strong: number, moderate: number): Strengt
   return "low";
 }
 
-const TIER_FILL: Record<Strength, number> = { strong: 85, moderate: 50, low: 18 };
-
 function StrengthCell({ strength, label, detail }: { strength: Strength; label: string; detail: string }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center gap-2 text-xs cursor-default">
-            <span className="w-10 h-1 rounded-full bg-primary/10 overflow-hidden shrink-0">
-              <span
-                className={cn(
-                  "block h-full rounded-full bg-primary",
-                  strength === "strong" && "opacity-80",
-                  strength === "moderate" && "opacity-45",
-                  strength === "low" && "opacity-20",
-                )}
-                style={{ width: `${TIER_FILL[strength]}%` }}
-              />
-            </span>
+          <span className="inline-flex items-center gap-1.5 text-xs cursor-default">
+            <span
+              className={cn(
+                "w-2 h-2 rounded-sm shrink-0",
+                strength === "strong" && "bg-primary opacity-90",
+                strength === "moderate" && "bg-primary opacity-50",
+                strength === "low" && "bg-primary opacity-15",
+              )}
+            />
             <span
               className={cn(
                 "whitespace-nowrap",
-                strength === "strong" && "text-foreground",
+                strength === "strong" && "text-foreground font-medium",
                 strength === "moderate" && "text-muted-foreground",
                 strength === "low" && "text-muted-foreground/50",
               )}
@@ -271,7 +266,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
     {
       id: "signals",
       accessorFn: (r) => r.signals?.max_value ?? null,
-      header: "Reg. Signals",
+      header: "cCRE Activity",
       meta: { description: "Epigenomic signal strength at candidate regulatory elements (cCREs). Strong = Z-score ≥ 5, Moderate = 3–5, Low = < 3." },
       enableSorting: true,
       sortingFn: nullsLast,
@@ -375,7 +370,7 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
     },
     {
       id: "qtls",
-      accessorFn: (r) => r.qtls?.count ?? null,
+      accessorFn: (r) => r.qtls?.max_value ?? null,
       header: "Expression QTLs",
       meta: { description: "eQTL/sQTL associations linking variants to gene expression changes in this tissue (GTEx, eQTL Catalogue, etc.)." },
       enableSorting: true,
@@ -383,13 +378,14 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       cell: ({ row }) => {
         const q = row.original.qtls;
         if (!q) return <Dash />;
-        const strength: Strength = q.count >= 1000 ? "strong" : q.count >= 100 ? "moderate" : "low";
-        return <StrengthCell strength={strength} label={`${formatCount(q.count)} hit${q.count !== 1 ? "s" : ""}`} detail={`${q.count.toLocaleString()} QTL associations${q.significant ? `, ${q.significant} genome-wide significant` : ""}`} />;
+        const strength = classifyValue(q.max_value, 8, 3);
+        const label = strength === "strong" ? "Highly sig." : strength === "moderate" ? "Significant" : `${formatCount(q.count)} hits`;
+        return <StrengthCell strength={strength} label={label} detail={`${q.count.toLocaleString()} QTL associations, best −log₁₀(p) = ${q.max_value.toFixed(1)}${q.significant ? `, ${q.significant} genome-wide significant` : ""}`} />;
       },
     },
     {
       id: "chrombpnet",
-      accessorFn: (r) => r.chrombpnet?.count ?? null,
+      accessorFn: (r) => r.chrombpnet?.max_value ?? null,
       header: "Deep Learning",
       meta: { description: "ChromBPNet deep learning predictions of how variants affect chromatin accessibility in this tissue." },
       enableSorting: true,
@@ -397,8 +393,9 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       cell: ({ row }) => {
         const c = row.original.chrombpnet;
         if (!c) return <Dash />;
-        const strength: Strength = c.count >= 4 ? "strong" : c.count >= 2 ? "moderate" : "low";
-        return <StrengthCell strength={strength} label={`${c.count} pred.`} detail={`${c.count.toLocaleString()} ChromBPNet variant effect predictions in this tissue`} />;
+        const strength = classifyValue(c.max_value, 4, 2);
+        const label = strength === "strong" ? "Strong effect" : strength === "moderate" ? "Moderate" : `${c.count} pred.`;
+        return <StrengthCell strength={strength} label={label} detail={`${c.count.toLocaleString()} ChromBPNet variant effect predictions in this tissue`} />;
       },
     },
     {

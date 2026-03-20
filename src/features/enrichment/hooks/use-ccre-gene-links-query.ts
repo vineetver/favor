@@ -16,6 +16,7 @@ interface CcreGeneLinksFilterOptions {
   source?: string;
   method?: string;
   tissue?: string;
+  tissue_group?: string;
   gene?: string;
   cursor?: string;
   limit?: number;
@@ -29,6 +30,7 @@ async function fetchCcreGeneLinksClient(
   if (filters.source) params.set("source", filters.source);
   if (filters.method) params.set("method", filters.method);
   if (filters.tissue) params.set("tissue", filters.tissue);
+  if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
   if (filters.gene) params.set("gene", filters.gene);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 50));
@@ -46,12 +48,13 @@ async function fetchCcreGeneLinksClient(
 
 function parseFilters(sp: URLSearchParams): CcreGeneLinksFilterOptions {
   const f: CcreGeneLinksFilterOptions = {};
-  const source = sp.get("source");
-  if (source) f.source = source;
+  f.source = sp.get("source") || "screen_v4";
   const method = sp.get("method");
   if (method) f.method = method;
   const tissue = sp.get("tissue");
   if (tissue) f.tissue = tissue;
+  const tissueGroup = sp.get("tissue_group");
+  if (tissueGroup) f.tissue_group = tissueGroup;
   const gene = sp.get("gene");
   if (gene) f.gene = gene;
   const cursor = sp.get("cursor");

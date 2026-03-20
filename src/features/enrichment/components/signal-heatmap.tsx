@@ -277,11 +277,11 @@ export function SignalHeatmap({ loc }: SignalHeatmapProps) {
         <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 className="text-sm font-medium text-foreground">
-              cCRE Signal Z-scores
+              cCRE Activity Heatmap
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Top {matrix.ccreIds.length} cCREs &times; {matrix.tissues.length}{" "}
-              biosamples. Values are Z-scores across all ENCODE biosamples.
+              biosamples. Z-scores across all ENCODE biosamples.
             </p>
           </div>
           <MarkSelector activeMark={activeMark} onMarkChange={setActiveMark} />

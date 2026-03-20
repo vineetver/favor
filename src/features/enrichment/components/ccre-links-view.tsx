@@ -32,16 +32,11 @@ import { TissueGroupBackButton } from "./tissue-group-back-button";
 // ---------------------------------------------------------------------------
 
 const SOURCES = [
-  { id: "all", label: "All Sources" },
-  { id: "chiapet", label: "ChIA-PET" },
   { id: "screen_v4", label: "ENCODE SCREEN" },
+  { id: "chiapet", label: "ChIA-PET" },
   { id: "eqtl_ccre", label: "cCRE eQTL" },
   { id: "crispr", label: "CRISPRi" },
 ] as const;
-
-function sourceLabel(raw: string): string {
-  return SOURCES.find((s) => s.id === raw)?.label ?? raw;
-}
 
 const METHOD_LABELS: Record<string, string> = {
   chiapet_link: "ChIA-PET",
@@ -123,7 +118,7 @@ function CcreLinksDetailView({
   initialData,
 }: Omit<CcreLinksViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
-  const activeSource = searchParams.get("source") || "all";
+  const activeSource = searchParams.get("source") || "screen_v4";
 
   const { data, pageInfo, isLoading, isFetching } = useGeneCcreLinksQuery({
     gene,
@@ -141,11 +136,7 @@ function CcreLinksDetailView({
   // Source dimension (segmented tabs)
   const handleSourceChange = useCallback((source: string) => {
     const params = new URLSearchParams(window.location.search);
-    if (source === "all") {
-      params.delete("source");
-    } else {
-      params.set("source", source);
-    }
+    params.set("source", source);
     params.delete("method");
     params.delete("cursor");
     updateClientUrl(`${window.location.pathname}?${params}`, false);
@@ -163,107 +154,85 @@ function CcreLinksDetailView({
   );
 
   // Columns (closure over openCcreSheet)
-  const activeColumns = useMemo((): ColumnDef<CcreLinkRow, unknown>[] => {
-    const cols: ColumnDef<CcreLinkRow, unknown>[] = [
-      {
-        id: "ccre_id",
-        accessorKey: "ccre_id",
-        header: "cCRE",
-        enableSorting: false,
-        meta: { description: "Candidate cis-regulatory element accession" } satisfies ColumnMeta,
-        cell: ({ getValue }) => {
-          const id = getValue() as string;
-          return (
-            <button
-              className="text-xs font-mono text-primary hover:underline cursor-pointer"
-              onClick={() => openCcreSheet(id)}
-            >
-              {id}
-            </button>
-          );
-        },
+  const activeColumns = useMemo((): ColumnDef<CcreLinkRow, unknown>[] => [
+    {
+      id: "ccre_id",
+      accessorKey: "ccre_id",
+      header: "cCRE",
+      enableSorting: false,
+      meta: { description: "Candidate cis-regulatory element accession" } satisfies ColumnMeta,
+      cell: ({ getValue }) => {
+        const id = getValue() as string;
+        return (
+          <button
+            className="text-xs font-mono text-primary hover:underline cursor-pointer"
+            onClick={() => openCcreSheet(id)}
+          >
+            {id}
+          </button>
+        );
       },
-    ];
-
-    if (activeSource === "all") {
-      cols.push({
-        id: "source",
-        accessorKey: "source",
-        header: "Source",
-        enableSorting: false,
-        meta: { description: "Data source: ChIA-PET, CRISPRi (experimental), ENCODE SCREEN (computational), or cCRE eQTL" } satisfies ColumnMeta,
-        cell: ({ getValue }) => (
-          <span className="text-xs text-muted-foreground">
-            {sourceLabel(getValue() as string)}
+    },
+    {
+      id: "method",
+      accessorKey: "method",
+      header: "Method",
+      enableSorting: false,
+      meta: { description: "Prediction or experimental method" } satisfies ColumnMeta,
+      cell: ({ getValue }) => (
+        <span className="text-xs text-muted-foreground">
+          {formatMethod(getValue() as string)}
+        </span>
+      ),
+    },
+    {
+      id: "tissue_name",
+      accessorKey: "tissue_name",
+      header: "Tissue",
+      enableSorting: false,
+      meta: { description: "Tissue or cell type where the linkage was observed" } satisfies ColumnMeta,
+      cell: ({ getValue }) => (
+        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+          {formatTissueName(getValue() as string)}
+        </span>
+      ),
+    },
+    {
+      id: "score",
+      accessorKey: "score",
+      header: "Score",
+      enableSorting: false,
+      meta: { description: "Linkage score (ChIA-PET/SCREEN) or −log₁₀(p) (eQTL)" } satisfies ColumnMeta,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        if (v == null) return <Dash />;
+        return (
+          <span className="text-xs tabular-nums text-foreground font-medium">
+            {v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4)}
           </span>
-        ),
-      });
-    }
-
-    cols.push(
-      {
-        id: "method",
-        accessorKey: "method",
-        header: "Method",
-        enableSorting: false,
-        meta: { description: "Prediction or experimental method" } satisfies ColumnMeta,
-        cell: ({ getValue }) => (
-          <span className="text-xs text-muted-foreground">
-            {formatMethod(getValue() as string)}
+        );
+      },
+    },
+    {
+      id: "effect_size",
+      accessorKey: "effect_size",
+      header: "Effect (β)",
+      enableSorting: false,
+      meta: { description: "Effect size (CRISPRi or eQTL). Positive = upregulation." } satisfies ColumnMeta,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        if (v == null) return <Dash />;
+        return (
+          <span className={cn(
+            "text-xs tabular-nums",
+            v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground",
+          )}>
+            {v > 0 ? "+" : ""}{v.toFixed(3)}
           </span>
-        ),
+        );
       },
-      {
-        id: "tissue_name",
-        accessorKey: "tissue_name",
-        header: "Tissue",
-        enableSorting: false,
-        meta: { description: "Tissue or cell type where the linkage was observed" } satisfies ColumnMeta,
-        cell: ({ getValue }) => (
-          <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
-            {formatTissueName(getValue() as string)}
-          </span>
-        ),
-      },
-      {
-        id: "score",
-        accessorKey: "score",
-        header: "Score",
-        enableSorting: false,
-        meta: { description: "Linkage score (ChIA-PET/SCREEN) or −log₁₀(p) (eQTL)" } satisfies ColumnMeta,
-        cell: ({ getValue }) => {
-          const v = getValue() as number | null;
-          if (v == null) return <Dash />;
-          return (
-            <span className="text-xs tabular-nums text-foreground font-medium">
-              {v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4)}
-            </span>
-          );
-        },
-      },
-      {
-        id: "effect_size",
-        accessorKey: "effect_size",
-        header: "Effect (β)",
-        enableSorting: false,
-        meta: { description: "Effect size (CRISPRi or eQTL). Positive = upregulation." } satisfies ColumnMeta,
-        cell: ({ getValue }) => {
-          const v = getValue() as number | null;
-          if (v == null) return <Dash />;
-          return (
-            <span className={cn(
-              "text-xs tabular-nums",
-              v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground",
-            )}>
-              {v > 0 ? "+" : ""}{v.toFixed(3)}
-            </span>
-          );
-        },
-      },
-    );
-
-    return cols;
-  }, [activeSource, openCcreSheet]);
+    },
+  ], [openCcreSheet]);
 
   // Method filter — only when ENCODE SCREEN
   const filters = useMemo((): ServerFilterConfig[] => {
@@ -281,9 +250,7 @@ function CcreLinksDetailView({
     return [];
   }, [activeSource]);
 
-  const hasActiveFilters = Boolean(
-    searchParams.get("source") || searchParams.get("method"),
-  );
+  const hasActiveFilters = Boolean(searchParams.get("method"));
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
 

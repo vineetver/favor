@@ -25,7 +25,7 @@ import type {
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useEnhancerGenesQuery } from "@features/enrichment/hooks/use-enhancer-genes-query";
-import { formatDist } from "@shared/utils/tissue-format";
+import { formatDist, formatTissueName } from "@shared/utils/tissue-format";
 import { tissueFilter } from "./filter-helpers";
 import { TissueGroupSummary } from "./tissue-group-summary";
 import type { TissueGroupMetricConfig } from "./tissue-group-summary";
@@ -235,7 +235,7 @@ const tissueCol: ColumnDef<EnhancerGeneRow, unknown> = {
   meta: { description: "Biosample tissue" } satisfies ColumnMeta,
   cell: ({ getValue }) => (
     <span className="text-sm text-muted-foreground truncate max-w-[180px] block">
-      {getValue() as string}
+      {formatTissueName(getValue() as string)}
     </span>
   ),
 };
@@ -418,11 +418,39 @@ async function fetchTissueAgg(
   method: string,
   tissueGroup?: string,
 ): Promise<TissueAggRow[]> {
-  const params = new URLSearchParams({
-    method,
-    group_by: "tissue_group",
-  });
-  if (tissueGroup) params.set("tissue_group", tissueGroup);
+  if (tissueGroup) {
+    // Inside a tissue group: fetch individual rows, aggregate by tissue_name
+    const params = new URLSearchParams({
+      method,
+      tissue_group: tissueGroup,
+      sort_by: "score",
+      sort_dir: "desc",
+      limit: "100",
+    });
+    const res = await fetch(
+      `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+    );
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const json: { data: EnhancerGeneRow[] } = await res.json();
+    const map = new Map<string, TissueAggRow>();
+    for (const r of json.data) {
+      const name = r.tissue_name;
+      const existing = map.get(name);
+      if (!existing) {
+        map.set(name, { tissue: name, max_value: r.score ?? 0, count: 1, top_item: r.gene_symbol });
+      } else {
+        existing.count++;
+        if ((r.score ?? 0) > existing.max_value) {
+          existing.max_value = r.score ?? 0;
+          existing.top_item = r.gene_symbol;
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.max_value - a.max_value);
+  }
+
+  // Default: group by tissue_group across all groups
+  const params = new URLSearchParams({ method, group_by: "tissue_group" });
   const res = await fetch(
     `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
   );
@@ -516,10 +544,10 @@ function TissueSummaryChart({
       <div className="rounded-lg border border-border overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border">
           <h3 className="text-sm font-medium text-foreground">
-            Top Tissues by {methodLabel} Score
+            Top {tissueGroup ? "Tissues" : "Tissue Groups"} by {methodLabel} Score
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Best prediction score per tissue across all {methodLabel} predictions
+            Best {methodLabel} score per {tissueGroup ? "tissue" : "tissue group"}{tissueGroup ? ` within ${tissueGroup}` : ""}
           </p>
         </div>
 
@@ -541,7 +569,7 @@ function TissueSummaryChart({
                       className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors truncate shrink-0 text-right pr-2"
                       style={{ width: 130 }}
                     >
-                      {row.tissue}
+                      {tissueGroup ? formatTissueName(row.tissue) : row.tissue}
                     </span>
 
                     {/* Dot plot area */}

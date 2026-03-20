@@ -27,7 +27,7 @@ import { TissueGroupBackButton } from "./tissue-group-back-button";
 const SIGNALS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Max Z-score",
   metricDescription: "Strongest epigenomic signal Z-score across all cCREs in this tissue group",
-  countLabel: "Elements",
+  countLabel: "cCREs",
   formatMetric: (v) => v.toFixed(1),
   showTopItem: true,
   topItemLabel: "Top cCRE",
@@ -108,12 +108,12 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     // ID matches API sort_by value
     id: "tissue_name",
     accessorKey: "tissue_name",
-    header: "Tissue",
-    meta: { description: "Tissue or biosample name" } satisfies ColumnMeta,
+    header: "Biosample",
+    meta: { description: "Specific biosample within the tissue group" } satisfies ColumnMeta,
     enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="text-sm text-muted-foreground truncate max-w-[160px] block">
-        {formatTissueName(getValue() as string)}
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground truncate max-w-[200px] block" title={row.original.subtissue_name || row.original.tissue_name}>
+        {formatTissueName(row.original.subtissue_name || row.original.tissue_name)}
       </span>
     ),
   },
@@ -243,7 +243,7 @@ export function TissueSignalsView({
       <TissueGroupSummary
         data={groupedData}
         metricConfig={SIGNALS_GROUP_CONFIG}
-        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalSignals.toLocaleString()} total elements`}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalSignals.toLocaleString()} total cCRE measurements`}
       />
     );
   }
@@ -344,8 +344,8 @@ function TissueSignalsDetailView({
 
   const subtitle =
     liveTotal != null
-      ? `${liveTotal.toLocaleString()} cCRE signal values across ${tissues.length} tissues`
-      : `cCRE signal values across ${tissues.length} tissues`;
+      ? `${liveTotal.toLocaleString()} cCRE activity measurements across ${tissues.length} biosamples`
+      : `cCRE activity measurements across ${tissues.length} biosamples`;
 
   return (
     <>

@@ -26,8 +26,8 @@ const VARIANT_NAV_GROUPS: NavGroup[] = [
       {
         key: "signals",
         slug: "tissue-signals",
-        label: "Signals",
-        hint: "cCRE epigenomic signal values across tissues",
+        label: "cCRE Activity",
+        hint: "cCRE epigenomic signal Z-scores across tissues",
       },
       {
         key: "chromatin_states",

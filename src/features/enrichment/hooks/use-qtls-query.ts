@@ -55,7 +55,8 @@ function parseFilters(sp: URLSearchParams): QtlFilterOptions {
   const gene = sp.get("gene");
   if (gene) f.gene = gene;
   if (sp.get("significant_only") === "true") f.significant_only = true;
-  const defaultSort = (source && SOURCE_DEFAULT_SORT[source]) || "neglog_pvalue";
+  f.source = source || "gtex";
+  const defaultSort = SOURCE_DEFAULT_SORT[f.source] || "neglog_pvalue";
   f.sort_by = sp.get("sort_by") || defaultSort;
   f.sort_dir = sp.get("sort_dir") || "desc";
   const cursor = sp.get("cursor");

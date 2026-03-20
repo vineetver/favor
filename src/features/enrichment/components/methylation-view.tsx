@@ -14,8 +14,12 @@ import { useMemo } from "react";
 import type {
   MethylationRow,
   PaginatedResponse,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useMethylationQuery } from "@features/enrichment/hooks/use-methylation-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Columns
@@ -141,16 +145,26 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
 // Filter config
 // ---------------------------------------------------------------------------
 
-function buildFilters(
-  tissues: string[],
-  tissueGroups: string[],
-): ServerFilterConfig[] {
+function buildFilters(tissues: string[]): ServerFilterConfig[] {
   return [
-    tissueGroupFilter(tissueGroups),
+    tissueGroupFilter(),
     tissueFilter(tissues),
     significantOnlyFilter(),
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Tissue group config
+// ---------------------------------------------------------------------------
+
+const METHYLATION_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best \u2212log\u2081\u2080(p)",
+  metricDescription: "Strongest differential methylation significance in this tissue group",
+  countLabel: "Observations",
+  formatMetric: (v) => v.toFixed(1),
+  sqrtScale: true,
+  showSignificant: true,
+};
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -161,6 +175,7 @@ interface MethylationViewProps {
   tissues: string[];
   totalCount: number;
   initialData?: PaginatedResponse<MethylationRow>;
+  groupedData?: TissueGroupRow[];
 }
 
 export function MethylationView({
@@ -168,7 +183,37 @@ export function MethylationView({
   tissues,
   totalCount,
   initialData,
+  groupedData,
 }: MethylationViewProps) {
+  const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={METHYLATION_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total observations`}
+      />
+    );
+  }
+
+  return (
+    <MethylationDetailView
+      ref_id={ref_id}
+      tissues={tissues}
+      totalCount={totalCount}
+      initialData={initialData}
+    />
+  );
+}
+
+function MethylationDetailView({
+  ref_id,
+  tissues,
+  totalCount,
+  initialData,
+}: Omit<MethylationViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 
   const { data, pageInfo, isLoading, isFetching } = useMethylationQuery({
@@ -176,17 +221,9 @@ export function MethylationView({
     initialData,
   });
 
-  const tissueGroups = useMemo(() => {
-    const groups = new Set<string>();
-    for (const row of data) {
-      if (row.tissue_group) groups.add(row.tissue_group);
-    }
-    return [...groups].sort();
-  }, [data]);
-
   const filters = useMemo(
-    () => buildFilters(tissues, tissueGroups),
-    [tissues, tissueGroups],
+    () => buildFilters(tissues),
+    [tissues],
   );
 
   const hasActiveFilters = Boolean(
@@ -216,27 +253,30 @@ export function MethylationView({
       : "Allele-specific DNA methylation across tissues";
 
   return (
-    <DataSurface
-      data={data}
-      columns={columns}
-      subtitle={subtitle}
-      searchPlaceholder="Search tissues..."
-      searchColumn="tissue_name"
-      exportable
-      exportFilename={`methylation-${ref_id}`}
-      filterable
-      filters={filters}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[25, 50, 100]}
-      emptyMessage="No methylation data found for this variant"
-    />
+    <>
+      <TissueGroupBackButton />
+      <DataSurface
+        data={data}
+        columns={columns}
+        subtitle={subtitle}
+        searchPlaceholder="Search tissues..."
+        searchColumn="tissue_name"
+        exportable
+        exportFilename={`methylation-${ref_id}`}
+        filterable
+        filters={filters}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[25, 50, 100]}
+        emptyMessage="No methylation data found for this variant"
+      />
+    </>
   );
 }

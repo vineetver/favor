@@ -21,6 +21,8 @@ import {
   fetchEnhancersByTissueGroup,
   fetchLoops,
   fetchLoopsByTissueGroup,
+  fetchMethylation,
+  fetchMethylationByTissueGroup,
   fetchQtls,
   fetchQtlsByTissueGroup,
   fetchRegionSummary,
@@ -29,6 +31,8 @@ import {
   fetchSignalsByTissueGroup,
   fetchTissueScores,
   fetchValidatedEnhancers,
+  fetchVariantAllelicImbalance,
+  fetchVariantAllelicImbalanceByTissueGroup,
 } from "@features/enrichment/api/region";
 
 const noFacets = { facets: [] as string[], count: 0 };
@@ -194,11 +198,11 @@ export async function loadAseData(loc: string, tissueGroup?: string) {
 // QTLs
 // ---------------------------------------------------------------------------
 
-export async function loadQtlsData(loc: string, tissueGroup?: string) {
+export async function loadQtlsData(loc: string, tissueGroup?: string, source = "gtex") {
   const [groupedData, initialData] = await Promise.all([
     !tissueGroup ? fetchQtlsByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
     tissueGroup
-      ? fetchQtls(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      ? fetchQtls(loc, { tissue_group: tissueGroup, source, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
@@ -281,6 +285,58 @@ export async function loadCcreGeneLinksData(ccreId: string, tissueGroup?: string
 
   return {
     totalCount: initialData?.page_info?.total_count ?? initialData?.page_info?.count ?? 0,
+    initialData: initialData ?? undefined,
+    groupedData,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Allelic Imbalance (variant-level, tissue-group-first)
+// ---------------------------------------------------------------------------
+
+export async function loadAllelicImbalanceData(loc: string, tissueGroup?: string) {
+  const [groupedData, initialData] = await Promise.all([
+    !tissueGroup ? fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    tissueGroup
+      ? fetchVariantAllelicImbalance(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  const tissues = initialData
+    ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
+    : [];
+  const marks = initialData
+    ? [...new Set(initialData.data.map((r) => r.mark))].sort()
+    : [];
+
+  return {
+    tissues,
+    marks,
+    totalCount: initialData?.page_info?.total_count ?? 0,
+    initialData: initialData ?? undefined,
+    groupedData,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Methylation (variant-level, tissue-group-first)
+// ---------------------------------------------------------------------------
+
+export async function loadMethylationData(loc: string, tissueGroup?: string) {
+  const [groupedData, initialData] = await Promise.all([
+    !tissueGroup ? fetchMethylationByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    tissueGroup
+      ? fetchMethylation(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  const tissues = initialData
+    ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
+    : [];
+
+  return {
+    tissues,
+    totalCount: initialData?.page_info?.total_count ?? 0,
     initialData: initialData ?? undefined,
     groupedData,
   };
