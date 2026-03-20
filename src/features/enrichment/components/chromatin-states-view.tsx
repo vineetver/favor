@@ -85,12 +85,9 @@ const STATE_CATEGORY_COLORS: Record<string, string> = {
   quiescent: "#94a3b8",      // slate
 };
 
-const INVISIBLE_COLORS = new Set(["white", "#fff", "#ffffff", ""]);
-
+/** Color by functional category — the API's state_color is a Roadmap
+ *  epigenome (biosample) color, not a state color, so we ignore it. */
 function stateColor(row: ChromatinStateRow): string {
-  if (row.state_color && !INVISIBLE_COLORS.has(row.state_color.toLowerCase())) {
-    return row.state_color;
-  }
   return STATE_CATEGORY_COLORS[row.state_category] ?? "#9ca3af";
 }
 
