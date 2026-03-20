@@ -74,6 +74,26 @@ function readableStateName(code: string, fallback: string): string {
   return READABLE_STATE[code] ?? fallback;
 }
 
+/** Roadmap 25-state standard colors keyed by state_category + state_code number. */
+const STATE_CATEGORY_COLORS: Record<string, string> = {
+  promoter: "#ef4444",        // red
+  enhancer: "#f59e0b",        // amber
+  transcription: "#22c55e",   // green
+  bivalent: "#a855f7",        // purple
+  repressed: "#6b7280",       // gray
+  heterochromatin: "#818cf8", // indigo
+  quiescent: "#94a3b8",      // slate
+};
+
+const INVISIBLE_COLORS = new Set(["white", "#fff", "#ffffff", ""]);
+
+function stateColor(row: ChromatinStateRow): string {
+  if (row.state_color && !INVISIBLE_COLORS.has(row.state_color.toLowerCase())) {
+    return row.state_color;
+  }
+  return STATE_CATEGORY_COLORS[row.state_category] ?? "#9ca3af";
+}
+
 // ---------------------------------------------------------------------------
 // ChromatinTrackViz — multi-tissue segment track
 // ---------------------------------------------------------------------------
@@ -118,6 +138,7 @@ function ChromatinTrackViz({
     const stateMap = new Map<string, { name: string; color: string }>();
 
     for (const row of rows) {
+      if (!row.tissue_name) continue; // skip rows with empty tissue
       const existing = byTissue.get(row.tissue_name);
       if (existing) existing.push(row);
       else byTissue.set(row.tissue_name, [row]);
@@ -125,7 +146,7 @@ function ChromatinTrackViz({
       if (!stateMap.has(row.state_code)) {
         stateMap.set(row.state_code, {
           name: readableStateName(row.state_code, row.state_name),
-          color: row.state_color,
+          color: stateColor(row),
         });
       }
     }
@@ -220,7 +241,7 @@ function ChromatinTrackViz({
                             style={{
                               left: `${left}%`,
                               width: `${width}%`,
-                              backgroundColor: seg.state_color || "#888",
+                              backgroundColor: stateColor(seg),
                             }}
                           />
                         </TooltipTrigger>
