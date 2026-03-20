@@ -156,7 +156,22 @@ function ChromatinTrackViz({
       .sort((a, b) => b[1].length - a[1].length)
       .slice(0, 8);
 
-    const legendEntries = [...stateMap.entries()]
+    const tissueEntries = sorted.map(([tissue, segs]) => ({ tissue, segs }));
+
+    // Build legend from only the states in displayed tissues
+    const displayedStates = new Map<string, { name: string; color: string }>();
+    for (const { segs } of tissueEntries) {
+      for (const seg of segs) {
+        if (!displayedStates.has(seg.state_code)) {
+          displayedStates.set(seg.state_code, {
+            name: readableStateName(seg.state_code, seg.state_name),
+            color: stateColor(seg),
+          });
+        }
+      }
+    }
+
+    const legendEntries = [...displayedStates.entries()]
       .sort((a, b) => {
         const numA = parseInt(a[0].replace(/\D/g, "")) || 0;
         const numB = parseInt(b[0].replace(/\D/g, "")) || 0;
@@ -165,7 +180,7 @@ function ChromatinTrackViz({
       .map(([code, info]) => ({ code, ...info }));
 
     return {
-      tissueRows: sorted.map(([tissue, segs]) => ({ tissue, segs })),
+      tissueRows: tissueEntries,
       legend: legendEntries,
     };
   }, [rows]);
@@ -225,12 +240,15 @@ function ChromatinTrackViz({
                 >
                   {formatTissueName(tissue)}
                 </span>
-                <div className="flex-1 h-8 relative bg-muted/20 rounded-sm">
+                <div className="flex-1 h-8 relative bg-muted/20 rounded-sm overflow-hidden">
                   {segs.map((seg, i) => {
-                    const left =
-                      ((seg.start - regionStart) / regionSpan) * 100;
+                    // Clamp segment to the visible region
+                    const clampedStart = Math.max(seg.start, regionStart);
+                    const clampedEnd = Math.min(seg.end, regionEnd);
+                    if (clampedStart >= clampedEnd) return null;
+                    const left = ((clampedStart - regionStart) / regionSpan) * 100;
                     const width = Math.max(
-                      ((seg.end - seg.start) / regionSpan) * 100,
+                      ((clampedEnd - clampedStart) / regionSpan) * 100,
                       0.5,
                     );
                     return (
