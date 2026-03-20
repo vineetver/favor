@@ -301,7 +301,7 @@ const columns: ColumnDef<ChromatinStateRow, unknown>[] = [
       <div className="flex items-center gap-2">
         <div
           className="w-3 h-3 rounded-sm border border-border/50 shrink-0"
-          style={{ backgroundColor: row.original.state_color || "#888" }}
+          style={{ backgroundColor: stateColor(row.original) }}
         />
         <span className="text-xs font-mono text-foreground">
           {row.original.state_code}
