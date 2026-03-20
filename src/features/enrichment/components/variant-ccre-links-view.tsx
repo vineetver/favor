@@ -19,8 +19,12 @@ import { useCallback, useMemo } from "react";
 import type {
   CcreGeneLinkRow,
   PaginatedResponse,
+  TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useCcreGeneLinksQuery } from "@features/enrichment/hooks/use-ccre-gene-links-query";
+import { TissueGroupSummary } from "./tissue-group-summary";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 // ---------------------------------------------------------------------------
 // Source & method config
@@ -192,6 +196,20 @@ const SCREEN_METHODS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Tissue group config
+// ---------------------------------------------------------------------------
+
+const CCRE_GENE_LINKS_GROUP_CONFIG: TissueGroupMetricConfig = {
+  metricLabel: "Best Score",
+  metricDescription: "Strongest linkage score across all sources in this tissue group",
+  countLabel: "Linkages",
+  formatMetric: (v) => (v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3)),
+  sqrtScale: true,
+  showTopItem: true,
+  topItemLabel: "Top Gene",
+};
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -199,15 +217,28 @@ interface VariantCcreLinksViewProps {
   ccreId: string;
   totalCount: number;
   initialData?: PaginatedResponse<CcreGeneLinkRow>;
+  groupedData?: TissueGroupRow[];
 }
 
 export function VariantCcreLinksView({
   ccreId,
   totalCount,
   initialData,
+  groupedData,
 }: VariantCcreLinksViewProps) {
   const searchParams = useClientSearchParams();
+  const activeTissueGroup = searchParams.get("tissue_group");
   const activeSource = searchParams.get("source") || "all";
+
+  if (groupedData?.length && !activeTissueGroup) {
+    return (
+      <TissueGroupSummary
+        data={groupedData}
+        metricConfig={CCRE_GENE_LINKS_GROUP_CONFIG}
+        subtitle={`${groupedData.length} tissue groups · ${totalCount.toLocaleString()} total gene linkages for ${ccreId}`}
+      />
+    );
+  }
 
   const { data, pageInfo, isLoading, isFetching } = useCcreGeneLinksQuery({
     ccreId,
@@ -286,28 +317,31 @@ export function VariantCcreLinksView({
       : `Gene linkages for ${ccreId}`;
 
   return (
-    <DataSurface
-      data={data}
-      columns={activeColumns}
-      subtitle={subtitle}
-      dimensions={[sourceDimension]}
-      searchPlaceholder="Search genes, tissues..."
-      searchColumn="gene_symbol"
-      exportable
-      exportFilename={`ccre-links-${activeSource}-${ccreId}`}
-      filterable={filters.length > 0}
-      filters={filters}
-      filterValues={tableState.filterValues}
-      onFilterChange={tableState.onFilterChange}
-      filterChips={tableState.filterChips}
-      onRemoveFilterChip={tableState.onRemoveFilterChip}
-      onClearFilters={tableState.onClearFilters}
-      loading={isLoading && data.length === 0}
-      transitioning={isFetching && data.length > 0}
-      serverPagination={tableState.pagination}
-      serverSort={tableState.serverSort}
-      pageSizeOptions={[50, 100]}
-      emptyMessage="No cCRE-gene linkages found"
-    />
+    <>
+      <TissueGroupBackButton />
+      <DataSurface
+        data={data}
+        columns={activeColumns}
+        subtitle={subtitle}
+        dimensions={[sourceDimension]}
+        searchPlaceholder="Search genes, tissues..."
+        searchColumn="gene_symbol"
+        exportable
+        exportFilename={`ccre-links-${activeSource}-${ccreId}`}
+        filterable={filters.length > 0}
+        filters={filters}
+        filterValues={tableState.filterValues}
+        onFilterChange={tableState.onFilterChange}
+        filterChips={tableState.filterChips}
+        onRemoveFilterChip={tableState.onRemoveFilterChip}
+        onClearFilters={tableState.onClearFilters}
+        loading={isLoading && data.length === 0}
+        transitioning={isFetching && data.length > 0}
+        serverPagination={tableState.pagination}
+        serverSort={tableState.serverSort}
+        pageSizeOptions={[50, 100]}
+        emptyMessage="No cCRE-gene linkages found"
+      />
+    </>
   );
 }

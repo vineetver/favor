@@ -18,6 +18,8 @@ export default async function VariantMethylationPage({
   const ref = result.selected.variant_vcf;
 
   const initialData = await fetchMethylation(ref, {
+    sort_by: "neglog_pvalue",
+    sort_dir: "desc",
     limit: 25,
   }).catch(() => null);
 

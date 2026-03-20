@@ -1,31 +1,20 @@
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { fetchChromBpnet } from "@features/enrichment/api/region";
+import { loadChromBpnetData } from "@features/enrichment/loaders";
 import { ChromBpnetView } from "@features/enrichment/components/chrombpnet-view";
 import { notFound } from "next/navigation";
 
-interface ChromBpnetPageProps {
-  params: Promise<{ vcf: string }>;
-}
-
-export default async function VariantChromBpnetPage({
+export default async function Page({
   params,
-}: ChromBpnetPageProps) {
+  searchParams,
+}: {
+  params: Promise<{ vcf: string }>;
+  searchParams: Promise<{ tissue_group?: string }>;
+}) {
   const { vcf } = await params;
-
+  const { tissue_group: tissueGroup } = await searchParams;
   const result = await fetchVariantWithCookie(vcf);
   if (!result) notFound();
-
-  const ref = result.selected.variant_vcf;
-
-  const initialData = await fetchChromBpnet(ref, { limit: 25 }).catch(
-    () => null,
-  );
-
-  return (
-    <ChromBpnetView
-      loc={ref}
-      totalCount={initialData?.page_info?.total_count ?? 0}
-      initialData={initialData ?? undefined}
-    />
-  );
+  const v = result.selected;
+  const data = await loadChromBpnetData(v.variant_vcf, tissueGroup);
+  return <ChromBpnetView loc={v.variant_vcf} {...data} />;
 }

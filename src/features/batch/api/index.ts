@@ -11,6 +11,7 @@ import type {
   CohortDeriveRequest,
   CohortDetail,
   CohortExportResponse,
+  CohortFilesResponse,
   CohortListResponse,
   CohortStatus,
   CohortStatusResponse,
@@ -19,6 +20,7 @@ import type {
   CreateCohortRequest,
   CreateCohortResponse,
   DeleteCohortResponse,
+  EnrichmentDiscoveryResponse,
   JobState,
   PresignRequest,
   PresignResponse,
@@ -193,6 +195,36 @@ export async function validateTypedCohort(request: ValidateRequest): Promise<Typ
       credentials: "include",
       body: JSON.stringify(request),
     }).then((res) => handleResponse<TypedValidateResponse>(res, "/cohorts/validate")),
+  );
+}
+
+/**
+ * Get presigned URLs for all output files (data, resolution, enrichment parquets).
+ */
+export async function getCohortFiles(
+  id: string,
+  tenantId?: string,
+): Promise<CohortFilesResponse> {
+  const params = new URLSearchParams();
+  if (tenantId) params.set("tenant_id", tenantId);
+  const qs = params.toString();
+  return withRetry(() =>
+    fetch(`${API_BASE}/cohorts/${encodeURIComponent(id)}/files${qs ? `?${qs}` : ""}`, {
+      credentials: "include",
+    }).then((res) =>
+      handleResponse<CohortFilesResponse>(res, `/cohorts/${id}/files`),
+    ),
+  );
+}
+
+/**
+ * Fetch available enrichment analyses and exportable tables.
+ */
+export async function fetchEnrichmentOptions(): Promise<EnrichmentDiscoveryResponse> {
+  return withRetry(() =>
+    fetch(`${API_BASE}/batch/enrichments`, { credentials: "include" }).then((res) =>
+      handleResponse<EnrichmentDiscoveryResponse>(res, "/batch/enrichments"),
+    ),
   );
 }
 

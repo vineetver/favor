@@ -175,15 +175,9 @@ export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps
   return (
     <TooltipProvider delayDuration={200}>
       <nav className="mb-6">
-        <div className="flex items-center gap-0 overflow-x-auto border-b border-border">
+        <div className="flex items-center gap-0 flex-wrap border-b border-border">
           {groups.map((group, gi) => (
             <div key={gi} className="flex items-center">
-              {/* Thin divider between groups */}
-              {gi > 0 && (
-                <span className="w-px h-4 bg-border mx-1 shrink-0" />
-              )}
-
-              {/* Tab items */}
               {group.items.map(({ key, alsoCount, slug, label, hint, hot }) => {
                 let count = key ? (summary.counts[key] ?? 0) : null;
                 if (count != null && alsoCount) {

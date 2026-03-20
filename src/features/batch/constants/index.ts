@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   Cog,
+  Layers,
   Loader2,
   SortAsc,
   StopCircle,
@@ -102,6 +103,13 @@ export const STAGE_CONFIG: Record<ProcessingStage, StageConfig> = {
     icon: Cog,
     color: "violet-500",
   },
+  ENRICHING: {
+    label: "Enriching",
+    shortLabel: "Enrich",
+    description: "Running enrichment packs",
+    icon: Layers,
+    color: "purple-500",
+  },
   DONE: {
     label: "Done",
     shortLabel: "Done",
@@ -117,6 +125,7 @@ export const STAGE_ORDER: ProcessingStage[] = [
   "RESOLVING",
   "SORTING",
   "PROCESSING",
+  "ENRICHING",
   "DONE",
 ];
 

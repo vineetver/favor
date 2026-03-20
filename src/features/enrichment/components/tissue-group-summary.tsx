@@ -2,7 +2,7 @@
 
 import { cn } from "@infra/utils";
 import type { TissueGroupRow } from "@features/enrichment/api/region";
-import { formatCount } from "@shared/utils/tissue-format";
+import { formatCount, formatTissueName } from "@shared/utils/tissue-format";
 import {
   Tooltip,
   TooltipContent,
@@ -109,7 +109,7 @@ export function TissueGroupSummary({
             >
               {/* Tissue name */}
               <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                {row.tissue_name}
+                {formatTissueName(row.tissue_name)}
               </span>
 
               {/* Metric bar */}

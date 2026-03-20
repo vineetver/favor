@@ -167,6 +167,8 @@ export function JobProgressCard({
         return `${formatNumber(progress.rows_resolved)} rows resolved`;
       case "PROCESSING":
         return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants processed`;
+      case "ENRICHING":
+        return `Enriching${progress.current_pack ? `: ${progress.current_pack}` : ""} (${progress.packs_completed ?? 0}/${progress.packs_total ?? 0})`;
       default:
         return progress.stage_description;
     }

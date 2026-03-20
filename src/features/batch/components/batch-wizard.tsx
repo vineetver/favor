@@ -292,6 +292,11 @@ export function BatchWizard({ className }: BatchWizardProps) {
           request.include_not_found = config.includeNotFound;
         }
 
+        // Enrichment packs (optional)
+        if (config.enrichments) {
+          request.enrichments = config.enrichments;
+        }
+
         const { id } = await createCohort(request);
         router.push(`/batch-annotation/jobs/${id}`);
       } catch (err) {
@@ -394,7 +399,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
           {/* Configure Step */}
           {/* ================================================================ */}
           {validation && step === "configuring" && !isCreating && (
-            <div className="max-w-lg mx-auto space-y-4">
+            <div className="max-w-2xl mx-auto space-y-4">
               <Button
                 variant="ghost"
                 size="sm"

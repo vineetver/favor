@@ -338,6 +338,14 @@ export function UploadDropzone({
         <p className="text-xs text-muted-foreground mt-5">
           CSV, TSV, TXT, VCF, Parquet &middot; {MAX_FILE_SIZE_MB}MB max &middot; Auto-detected
         </p>
+
+        {/* CLI note */}
+        <p className="text-[11px] text-muted-foreground/60 mt-3">
+          For genotype-scale data, use the{" "}
+          <a href="/docs" className="font-medium text-muted-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
+            FAVOR CLI
+          </a>
+        </p>
       </div>
     </label>
   );

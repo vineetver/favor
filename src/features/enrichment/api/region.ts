@@ -566,6 +566,7 @@ export interface FetchCcreGeneLinksParams {
   source?: string;
   method?: string;
   tissue?: string;
+  tissue_group?: string;
   gene?: string;
   cursor?: string;
   limit?: number;

@@ -195,20 +195,32 @@ export function RunningJobCard({
   className,
 }: RunningJobCardProps) {
   const { progress, eta } = job;
+  const isEnriching = progress.stage === "ENRICHING";
 
-  // Calculate stat percentages based on fetched count during PROCESSING
+  // Annotation stats (always available once past RESOLVING)
   const totalProcessed = progress.fetched || 0;
   const foundPercent = totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
   const notFoundPercent = totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
   const errorPercent = totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
 
-  // Get progress label based on stage
+  // Enrichment progress (only during ENRICHING)
+  const packsTotal = progress.packs_total ?? 0;
+  const packsCompleted = progress.packs_completed ?? 0;
+  const enrichmentPercent = packsTotal > 0 ? (packsCompleted / packsTotal) * 100 : 0;
+
+  // Display percent: enrichment progress during ENRICHING, annotation otherwise
+  const displayPercent = isEnriching ? enrichmentPercent : (progress.percent ?? 0);
+
   const getProgressLabel = () => {
     switch (progress.stage) {
       case "RESOLVING":
         return `${formatNumber(progress.rows_resolved)} rows`;
       case "PROCESSING":
         return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants`;
+      case "ENRICHING":
+        return progress.current_pack
+          ? `Enriching: ${progress.current_pack}`
+          : "Running enrichment packs";
       default:
         return progress.stage_description;
     }
@@ -228,7 +240,7 @@ export function RunningJobCard({
           </div>
           <StatusBadge variant="primary">
             <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-            Processing
+            {isEnriching ? "Enriching" : "Processing"}
           </StatusBadge>
         </div>
       </CardHeader>
@@ -237,38 +249,74 @@ export function RunningJobCard({
         {/* Pipeline visualization */}
         <ProcessingPipeline currentStage={progress.stage} />
 
-        {/* Progress bar with percentage */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-foreground">
-              {getProgressLabel()}
-            </span>
-            <span className="text-muted-foreground">{Math.min(100, Math.round(progress.percent ?? 0))}%</span>
-          </div>
-          <Progress value={Math.min(100, progress.percent ?? 0)} className="h-2" />
-        </div>
+        {isEnriching ? (
+          <>
+            {/* Phase 1: Annotation — done */}
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-xs font-medium text-emerald-800">Annotation complete</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-emerald-700 ml-5.5">
+                <span>{formatNumber(progress.found)} found</span>
+                <span>{formatNumber(progress.not_found)} not found</span>
+                {progress.errors > 0 && (
+                  <span className="text-destructive">{formatNumber(progress.errors)} errors</span>
+                )}
+              </div>
+            </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard
-            value={formatNumber(progress.found)}
-            label="Found"
-            percentage={`${foundPercent.toFixed(1)}%`}
-          />
-          <StatCard
-            value={formatNumber(progress.not_found)}
-            label="Not Found"
-            percentage={`${notFoundPercent.toFixed(1)}%`}
-          />
-          <StatCard
-            value={formatNumber(progress.errors)}
-            label="Errors"
-            percentage={`${errorPercent.toFixed(1)}%`}
-            variant={progress.errors > 0 ? "negative" : "default"}
-          />
-        </div>
+            {/* Phase 2: Enrichment — active */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">
+                  {getProgressLabel()}
+                </span>
+                <span className="text-muted-foreground">
+                  {packsCompleted}/{packsTotal} packs
+                </span>
+              </div>
+              <Progress value={Math.min(100, enrichmentPercent)} className="h-2" />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Annotation progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">
+                  {getProgressLabel()}
+                </span>
+                <span className="text-muted-foreground">
+                  {Math.min(100, Math.round(progress.percent ?? 0))}%
+                </span>
+              </div>
+              <Progress value={Math.min(100, progress.percent ?? 0)} className="h-2" />
+            </div>
 
-        {/* Footer info: Duration, ETA, Dedup */}
+            {/* Stats grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard
+                value={formatNumber(progress.found)}
+                label="Found"
+                percentage={`${foundPercent.toFixed(1)}%`}
+              />
+              <StatCard
+                value={formatNumber(progress.not_found)}
+                label="Not Found"
+                percentage={`${notFoundPercent.toFixed(1)}%`}
+              />
+              <StatCard
+                value={formatNumber(progress.errors)}
+                label="Errors"
+                percentage={`${errorPercent.toFixed(1)}%`}
+                variant={progress.errors > 0 ? "negative" : "default"}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Footer info */}
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
           <div className="flex items-center gap-3">
             <span>

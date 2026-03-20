@@ -4,6 +4,7 @@ import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Switch } from "@shared/components/ui/switch";
+import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
   ChevronRight,
@@ -12,9 +13,11 @@ import {
   Play,
   X,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
+import { fetchEnrichmentOptions } from "../api";
 import { formatNumber, getDataTypeLabel } from "../lib/format";
-import type { TypedValidateResponse } from "../types";
+import type { EnrichmentConfig, TypedValidateResponse } from "../types";
+import { EnrichmentPicker } from "./enrichment-pack-picker";
 
 // ============================================================================
 // Types
@@ -33,6 +36,7 @@ interface JobConfigurationProps {
 export interface JobConfig {
   includeNotFound: boolean;
   email?: string;
+  enrichments?: EnrichmentConfig;
 }
 
 // ============================================================================
@@ -54,11 +58,41 @@ export function JobConfiguration({
   const switchId = useId();
   const emailId = useId();
 
+  // Enrichment state
+  const [selectedAnalyses, setSelectedAnalyses] = useState<Set<string>>(new Set());
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
+  const [tissue, setTissue] = useState("");
+
+  // Fetch available enrichment options
+  const { data: enrichmentData, isLoading: isLoadingEnrichment } = useQuery({
+    queryKey: ["enrichment-options"],
+    queryFn: fetchEnrichmentOptions,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const toggleSet = useCallback((prev: Set<string>, key: string) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    let enrichments: EnrichmentConfig | undefined;
+    if (selectedAnalyses.size > 0 || selectedTables.size > 0) {
+      enrichments = {
+        tissue: tissue || undefined,
+        analyses: Array.from(selectedAnalyses).map((name) => ({ name })),
+        tables: Array.from(selectedTables).map((table) => ({ table })),
+      };
+    }
+
     onSubmit({
       includeNotFound,
       email: email.trim() || undefined,
+      enrichments,
     });
   };
 
@@ -83,6 +117,21 @@ export function JobConfiguration({
           {isTypedCohort && ` · ${columnCount} columns mapped`}
         </p>
       </div>
+
+      {/* Enrichment — border + padding handled inside (returns null when empty) */}
+      <EnrichmentPicker
+        analyses={enrichmentData?.analyses ?? []}
+        tables={enrichmentData?.exportable_tables ?? []}
+        isLoading={isLoadingEnrichment}
+        selectedAnalyses={selectedAnalyses}
+        selectedTables={selectedTables}
+        onToggleAnalysis={(name) => setSelectedAnalyses((prev) => toggleSet(prev, name))}
+        onToggleTable={(table) => setSelectedTables((prev) => toggleSet(prev, table))}
+        tissue={tissue}
+        onTissueChange={setTissue}
+        disabled={isSubmitting}
+        className="border-t border-border pt-5 pb-2"
+      />
 
       {/* Options — clean divider-separated rows */}
       <div className="border-t border-border divide-y divide-border">

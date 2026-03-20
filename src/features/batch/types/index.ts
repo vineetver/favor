@@ -35,6 +35,7 @@ export type ProcessingStage =
   | "RESOLVING"  // Reading input, resolving keys to VIDs
   | "SORTING"    // Sorting VIDs for cache locality
   | "PROCESSING" // Fetching variants AND writing output (merged FETCHING+WRITING)
+  | "ENRICHING"  // Running enrichment packs
   | "DONE";      // Complete
 
 // Structured error codes for actionable UX
@@ -186,6 +187,50 @@ export interface TypedValidateResponse {
 }
 
 // ============================================================================
+// Enrichment
+// ============================================================================
+
+export interface EnrichmentAnalysis {
+  name: string;
+  label: string;
+  description: string;
+  max_vids: number;
+  version: string;
+}
+
+export interface ExportableTable {
+  table: string;
+  label: string;
+  tissue_aware: boolean;
+}
+
+export interface EnrichmentDiscoveryResponse {
+  analyses: EnrichmentAnalysis[];
+  exportable_tables: ExportableTable[];
+}
+
+export interface EnrichmentConfig {
+  tissue?: string;
+  analyses: Array<{ name: string }>;
+  tables: Array<{ table: string }>;
+}
+
+// ============================================================================
+// Cohort Files (multi-file output)
+// ============================================================================
+
+export interface CohortFile {
+  label: string;
+  s3_key: string;
+  url: string;
+  expires_in_seconds: number;
+}
+
+export interface CohortFilesResponse {
+  files: CohortFile[];
+}
+
+// ============================================================================
 // (Legacy job creation types removed — use CreateCohortRequest with source: "upload")
 // ============================================================================
 
@@ -216,6 +261,11 @@ export interface JobProgress {
   percent?: number;       // Completion % (0-100)
   found_rate?: number;    // % of fetched that were found
   error_rate?: number;    // % of fetched with errors
+
+  // Enrichment progress (ENRICHING stage)
+  packs_total?: number;
+  packs_completed?: number;
+  current_pack?: string;
 }
 
 export interface JobInput {
@@ -409,6 +459,32 @@ export interface CohortDetail {
   capabilities?: string[];
   profile?: Record<string, unknown>;
   column_map?: ColumnMapping[];
+  // Enrichment (present when enrichments were requested)
+  enrichments?: EnrichmentConfig;
+  enrichment_result?: EnrichmentResult;
+}
+
+// ============================================================================
+// Enrichment Result (returned on completed cohorts)
+// ============================================================================
+
+export type EnrichmentFileStatus =
+  | { status: "success" }
+  | { status: "no_data" }
+  | { status: "Failed"; error: string };
+
+export interface EnrichmentFileResult {
+  label: string;
+  status: EnrichmentFileStatus;
+  row_count?: number;
+  s3_key?: string;
+  s3_bytes?: number;
+}
+
+export interface EnrichmentResult {
+  status: EnrichmentFileStatus;
+  duration_ms: number;
+  files: EnrichmentFileResult[];
 }
 
 export interface CohortProgress {
@@ -422,6 +498,9 @@ export interface CohortProgress {
   total_rows?: number;
   unique_vids?: number;
   duplicates?: number;
+  packs_total?: number;
+  packs_completed?: number;
+  current_pack?: string;
 }
 
 export interface CohortStatusResponse {
@@ -477,6 +556,8 @@ export interface CreateCohortRequest {
   // Typed cohort fields
   data_type?: DataType;
   column_map?: ColumnMapping[];
+  // Enrichment
+  enrichments?: EnrichmentConfig;
 }
 
 export interface CreateCohortResponse {
@@ -597,6 +678,9 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
             unique_vids: detail.progress.unique_vids,
             duplicates: detail.progress.duplicates,
             percent: detail.progress.percent,
+            packs_total: detail.progress.packs_total,
+            packs_completed: detail.progress.packs_completed,
+            current_pack: detail.progress.current_pack,
           }
         : {
             stage: "PROCESSING" as ProcessingStage,
@@ -637,6 +721,9 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
             unique_vids: detail.progress.unique_vids,
             duplicates: detail.progress.duplicates,
             percent: 100,
+            packs_total: detail.progress.packs_total,
+            packs_completed: detail.progress.packs_completed,
+            current_pack: detail.progress.current_pack,
           }
         : {
             stage: "DONE" as ProcessingStage,
@@ -697,6 +784,9 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
               unique_vids: detail.progress.unique_vids,
               duplicates: detail.progress.duplicates,
               percent: detail.progress.percent,
+              packs_total: detail.progress.packs_total,
+              packs_completed: detail.progress.packs_completed,
+              current_pack: detail.progress.current_pack,
             }
           : undefined,
         error_code: (detail.error_code as ErrorCode) ?? "INTERNAL_ERROR",
@@ -728,6 +818,9 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
               unique_vids: detail.progress.unique_vids,
               duplicates: detail.progress.duplicates,
               percent: detail.progress.percent,
+              packs_total: detail.progress.packs_total,
+              packs_completed: detail.progress.packs_completed,
+              current_pack: detail.progress.current_pack,
             }
           : undefined,
       };

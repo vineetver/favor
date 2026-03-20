@@ -165,10 +165,31 @@ export function useDuckDB(): UseDuckDBResult {
 
       await instance.db.registerFileBuffer("data.parquet", uint8Array);
 
+      // Check if the parquet has a nested "variant" struct (new schema).
+      // If so, unnest it into a flat view for backward compat with all queries.
+      const rawTable = `_raw_${tableName}`;
       await instance.conn.query(`
-        CREATE OR REPLACE TABLE ${tableName} AS
+        CREATE OR REPLACE TABLE ${rawTable} AS
         SELECT * FROM read_parquet('data.parquet')
       `);
+
+      // Detect variant struct column
+      const schemaResult = await instance.conn.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = '${rawTable}' AND column_name = 'variant'`
+      );
+      const hasVariantStruct = schemaResult.numRows > 0;
+
+      if (hasVariantStruct) {
+        await instance.conn.query(`
+          CREATE OR REPLACE VIEW ${tableName} AS
+          SELECT * EXCLUDE (variant), variant.* FROM ${rawTable}
+        `);
+      } else {
+        // No nesting — alias directly
+        await instance.conn.query(`
+          CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM ${rawTable}
+        `);
+      }
 
       return {
         fromCache,

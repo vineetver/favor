@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { formatTissueName } from "@shared/utils/tissue-format";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type {
   ServerFilterConfig,
@@ -108,11 +109,11 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Tissue",
-    meta: { description: "Tissue group (6 groups)" } satisfies ColumnMeta,
+    meta: { description: "Tissue or biosample name" } satisfies ColumnMeta,
     enableSorting: true,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[160px] block">
-        {getValue() as string}
+        {formatTissueName(getValue() as string)}
       </span>
     ),
   },
