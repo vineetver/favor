@@ -22,6 +22,11 @@ import type { RunContext } from "./tools/run";
 import type { VizSpec } from "./types";
 import { generateVizSpecs } from "./viz";
 
+/** Narrow unknown to indexable object — replaces unsafe `as Record<string, unknown>`. */
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
 // ---------------------------------------------------------------------------
 // Tool assembly
 // ---------------------------------------------------------------------------
@@ -81,15 +86,14 @@ export function createFavorAgent(
       for (let i = 0; i < toolResults.length; i++) {
         const tc = toolCalls[i];
         const tr = toolResults[i];
-        const output = tr.output as Record<string, unknown> | undefined;
-        if (!output || output.error) continue;
+        if (!isObj(tr.output) || tr.output.error) continue;
 
-        if (tc.toolName === "Run") {
-          const cmd = (tc.input as Record<string, unknown>)?.command as string;
+        if (tc.toolName === "Run" && isObj(tc.input)) {
+          const cmd = typeof tc.input.command === "string" ? tc.input.command : "";
           const vizResults = generateVizSpecs(
             `run_${cmd}`,
             tr.output,
-            tc.input as Record<string, unknown>,
+            tc.input,
             vizCollector.length,
           );
           vizCollector.push(...vizResults);
@@ -101,7 +105,7 @@ export function createFavorAgent(
           event: "agent_step",
           tools: toolCalls.map((tc) => tc.toolName),
           errors: toolResults
-            .filter((r) => (r.output as Record<string, unknown>)?.error)
+            .filter((r) => isObj(r.output) && r.output.error)
             .map((r) => r.toolName),
           tokens: usage,
           finishReason,

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RequireAuth } from "@shared/components/require-auth";
 import { JobDetailClient } from "./job-detail-client";
 
 export const metadata: Metadata = {
@@ -12,5 +13,9 @@ interface PageProps {
 
 export default async function JobDetailPage({ params }: PageProps) {
   const { job_id } = await params;
-  return <JobDetailClient jobId={job_id} />;
+  return (
+    <RequireAuth>
+      <JobDetailClient jobId={job_id} />
+    </RequireAuth>
+  );
 }

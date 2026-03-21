@@ -23,6 +23,7 @@ export async function getAIText(params: {
   const response = await fetch(`${AI_TEXT_API_BASE}?${searchParams}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     cache: "no-store",
   });
 
@@ -44,6 +45,7 @@ export async function generateAIText(
   const response = await fetch(`${AI_TEXT_API_BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(request),
   });
 

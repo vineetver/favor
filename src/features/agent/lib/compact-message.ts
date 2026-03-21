@@ -34,8 +34,7 @@ export async function compactMessageForStorage(
       if (raw.length < SIZE_THRESHOLD) return part;
 
       const toolName = getToolName(part);
-      const toolCallId =
-        (part as Record<string, unknown>).toolCallId as string | undefined;
+      const toolCallId = "toolCallId" in part ? part.toolCallId : undefined;
 
       // Store full output as artifact
       const artifact = await agentFetch<{ id: number }>(

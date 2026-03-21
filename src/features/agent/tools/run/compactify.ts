@@ -33,7 +33,8 @@ interface TruncationInfo {
 }
 
 /** Cast to satisfy ToolResultOutput's JSONValue constraint */
-type CompactValue = { type: "json"; value: null };
+type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue | undefined };
+type CompactValue = { type: "json"; value: JSONValue };
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -873,7 +874,7 @@ function compactCohortRows(rawRows: unknown[]): ColumnarRows {
 }
 
 function json(value: unknown): CompactValue {
-  return { type: "json", value: value as null };
+  return { type: "json", value: value as JSONValue };
 }
 
 function asArray(v: unknown): unknown[] {

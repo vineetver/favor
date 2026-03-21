@@ -5,6 +5,7 @@ import { classifyQuery } from "@features/agent/lib/query-classifier";
 import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
 import { getSynthesisModel, getSynthesisProviderOptions } from "@features/agent/lib/models";
 import { compactMessageForStorage } from "@features/agent/lib/compact-message";
+import { requireAuth } from "../_lib/require-auth";
 
 export const maxDuration = 120;
 
@@ -34,6 +35,9 @@ async function persistCompacted(
 }
 
 export async function POST(req: Request) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   const { messages, sessionId, synthesisModel } = await req.json();
 
   // Persist user message (write-ahead) — fire-and-forget

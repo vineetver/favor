@@ -8,7 +8,7 @@
  * compare_cohorts: Side-by-side cohort comparison
  */
 
-import { cohortFetch, agentFetch } from "../../../lib/api-client";
+import { cohortFetch, agentFetch, pollAnalyticsRun } from "../../../lib/api-client";
 import type { RunCommand } from "../types";
 import type { RunResultEnvelope } from "../run-result";
 import { okResult, partialResult, errorResult, catchToResult, TraceCollector } from "../run-result";
@@ -257,7 +257,6 @@ export async function handleGwasMinimal(
         },
       );
       // Poll for completion
-      const { pollAnalyticsRun } = await import("../../../lib/api-client");
       correctionResult = await pollAnalyticsRun(cohortId, submitResp.run_id) as unknown as Record<string, unknown>;
       tc.add({ step: "correctionDone", kind: "call", message: `Run ${submitResp.run_id} completed` });
     } catch (err) {
@@ -284,7 +283,6 @@ export async function handleGwasMinimal(
             timeout: 30_000,
           },
         );
-        const { pollAnalyticsRun } = await import("../../../lib/api-client");
         qcResult = await pollAnalyticsRun(cohortId, submitResp.run_id) as unknown as Record<string, unknown>;
       } catch (err) {
         tc.warn("gwas_qc_failed", `GWAS QC failed: ${err instanceof Error ? err.message : String(err)}`);

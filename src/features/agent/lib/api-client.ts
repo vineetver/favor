@@ -1,8 +1,6 @@
 import type { CohortStatusResponse } from "@features/batch/types";
 import { classifyApiError } from "../tools/run/error-classify";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "./constants";
 const DEFAULT_TIMEOUT = 30_000; // 30s per tool call
 
 // ---------------------------------------------------------------------------
@@ -71,22 +69,26 @@ export async function agentFetch<T>(
     "X-Idempotency-Key": idemKey,
   };
   if (typeof window === "undefined") {
+    let inRequestContext = false;
     try {
       const { cookies } = await import("next/headers");
       const cookieStore = await cookies();
+      inRequestContext = true;
       const cookieStr = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
         .join("; ");
       if (cookieStr) headers["Cookie"] = cookieStr;
     } catch {
-      // Not in a Next.js request context — skip
+      // Not in a Next.js request context (standalone script, eval, etc.)
+      // — fall back to API key so scripts can authenticate
+      if (process.env.FAVOR_API_KEY) {
+        headers["Authorization"] = `Bearer ${process.env.FAVOR_API_KEY}`;
+      }
     }
-
-    // Fallback: use API key when no cookies are available (eval, scripts)
-    if (!headers["Cookie"] && process.env.FAVOR_API_KEY) {
-      headers["Authorization"] = `Bearer ${process.env.FAVOR_API_KEY}`;
-    }
+    // In a request context, cookies are the only auth mechanism.
+    // Never fall back to the server API key for web requests.
+    void inRequestContext;
   }
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -128,7 +130,17 @@ export async function agentFetch<T>(
         throw err;
       }
 
-      return res.json();
+      const text = await res.text();
+      if (!text) return undefined as T; // empty response (204-like)
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        throw new AgentToolError(
+          502,
+          `Unexpected non-JSON response from ${path}: ${text.slice(0, 200)}`,
+          "The upstream API returned an invalid response. Try again.",
+        );
+      }
     } catch (err) {
       if (err instanceof AgentToolError) throw err;
 

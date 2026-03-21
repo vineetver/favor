@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RequireAuth } from "@shared/components/require-auth";
 import { JobsListClient } from "./jobs-list-client";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function BatchJobsPage() {
-  return <JobsListClient />;
+  return (
+    <RequireAuth>
+      <JobsListClient />
+    </RequireAuth>
+  );
 }

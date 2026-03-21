@@ -114,7 +114,6 @@ const MAX_STEPS = 8;
 // Factory
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createPrepareStep(
   sessionId: string,
   synthesisProviderOptions?: ProviderOptions,
@@ -142,8 +141,8 @@ export function createPrepareStep(
     ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const prepareStep: PrepareStepFunction<any> = async ({ stepNumber, steps }) => {
+  // PrepareStepFunction<any> — tool-type-agnostic; SDK interop requires this.
+  const prepareStep: PrepareStepFunction</* tools */ any> = async ({ stepNumber, steps }) => {
     const stepsData = steps as StepData[];
 
     // --- 1. First step: load state + agent view, inject into system prompt ---

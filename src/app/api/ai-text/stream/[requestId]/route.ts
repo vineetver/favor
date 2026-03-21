@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { requireAuth } from "../../../_lib/require-auth";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -12,6 +13,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ requestId: string }> },
 ) {
+  const { error } = await requireAuth(_request);
+  if (error) return error;
+
   const { requestId } = await params;
 
   const upstreamUrl = `${API_BASE}/ai-text/stream/${encodeURIComponent(requestId)}`;

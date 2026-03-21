@@ -83,8 +83,7 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
   if (lastTool) {
     const name = getToolName(lastTool).replace(/^tool-/, "");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const args = (lastTool as any).args as Record<string, unknown> | undefined;
+    const args = "input" in lastTool ? (lastTool.input as Record<string, unknown> | undefined) : undefined;
 
     switch (name) {
       case "Run": {
@@ -199,18 +198,17 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   // vizSpecs → chart components → ResponsiveContainer resize observer loops.
   const toolFingerprint = message.parts
     .filter(isToolUIPart)
-    .map((p) => `${getToolName(p)}:${(p as Record<string, unknown>).state}`)
+    .map((p) => `${getToolName(p)}:${"state" in p ? p.state : ""}`)
     .join("|");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allToolParts = useMemo(() =>
-    message.parts.filter(isToolUIPart).map((p: any) => ({
+    message.parts.filter(isToolUIPart).map((p) => ({
       type: p.type as string,
-      toolCallId: p.toolCallId as string | undefined,
+      toolCallId: "toolCallId" in p ? (p.toolCallId as string) : undefined,
       toolName: getToolName(p) as string,
-      state: p.state as string | undefined,
-      input: p.input as unknown,
-      output: p.output as unknown,
+      state: "state" in p ? (p.state as string) : undefined,
+      input: "input" in p ? p.input : undefined,
+      output: "output" in p ? p.output : undefined,
     })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [toolFingerprint],

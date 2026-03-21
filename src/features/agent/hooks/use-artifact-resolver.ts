@@ -1,9 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "../lib/constants";
 
 /**
  * Lazy artifact resolver with in-memory cache.

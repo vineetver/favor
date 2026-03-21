@@ -810,6 +810,7 @@ See system prompt for: intent selection by seed type, drug intent decision tree,
       const result = opts.output as RunResult;
       // Pass through errors, disambiguation, and empty results uncompacted (LLM needs full context)
       if (result.status === "error" || result.status === "needs_user" || result.status === "empty" || result.data?.error) {
+        // RunResult is JSON-serializable; `as unknown as null` matches SDK's JSONValue union (null is a member)
         return { type: "json" as const, value: result as unknown as null };
       }
       return compactRunForModel(cmd.command, result);

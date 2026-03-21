@@ -1,9 +1,7 @@
 "use client";
 
 import type { AgentSession, AgentMessage } from "./agent-api";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "./constants";
 
 async function sessionFetch<T>(
   path: string,
