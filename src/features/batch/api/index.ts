@@ -218,6 +218,18 @@ export async function getCohortFiles(
 }
 
 /**
+ * Fetch distinct tissue groups.
+ */
+export async function fetchTissueGroups(): Promise<string[]> {
+  const data = await withRetry(() =>
+    fetch(`${API_BASE}/tissues`, { credentials: "include" }).then((res) =>
+      handleResponse<Array<{ tissue_group: string }>>(res, "/tissues"),
+    ),
+  );
+  return [...new Set(data.map((t) => t.tissue_group))].sort();
+}
+
+/**
  * Fetch available enrichment analyses and exportable tables.
  */
 export async function fetchEnrichmentOptions(): Promise<EnrichmentDiscoveryResponse> {

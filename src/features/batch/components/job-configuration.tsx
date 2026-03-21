@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useId, useState } from "react";
-import { fetchEnrichmentOptions } from "../api";
+import { fetchEnrichmentOptions, fetchTissueGroups } from "../api";
 import { formatNumber, getDataTypeLabel } from "../lib/format";
 import type { EnrichmentConfig, TypedValidateResponse } from "../types";
 import { EnrichmentPicker } from "./enrichment-pack-picker";
@@ -63,11 +63,16 @@ export function JobConfiguration({
   const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
   const [tissue, setTissue] = useState("");
 
-  // Fetch available enrichment options
+  // Fetch available enrichment options + tissue groups
   const { data: enrichmentData, isLoading: isLoadingEnrichment } = useQuery({
     queryKey: ["enrichment-options"],
     queryFn: fetchEnrichmentOptions,
     staleTime: 5 * 60 * 1000,
+  });
+  const { data: tissueGroups = [] } = useQuery({
+    queryKey: ["tissue-groups"],
+    queryFn: fetchTissueGroups,
+    staleTime: 10 * 60 * 1000,
   });
 
   const toggleSet = useCallback((prev: Set<string>, key: string) => {
@@ -122,7 +127,9 @@ export function JobConfiguration({
       <EnrichmentPicker
         analyses={enrichmentData?.analyses ?? []}
         tables={enrichmentData?.exportable_tables ?? []}
+        tissueGroups={tissueGroups}
         isLoading={isLoadingEnrichment}
+        variantCount={typedValidation.row_count_estimate}
         selectedAnalyses={selectedAnalyses}
         selectedTables={selectedTables}
         onToggleAnalysis={(name) => setSelectedAnalyses((prev) => toggleSet(prev, name))}

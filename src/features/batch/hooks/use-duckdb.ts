@@ -163,14 +163,17 @@ export function useDuckDB(): UseDuckDBResult {
 
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      await instance.db.registerFileBuffer("data.parquet", uint8Array);
+      // Use a unique virtual filename per table to avoid buffer collisions
+      // when loading multiple parquets sequentially.
+      const virtualFile = `${tableName}.parquet`;
+      await instance.db.registerFileBuffer(virtualFile, uint8Array);
 
       // Check if the parquet has a nested "variant" struct (new schema).
       // If so, unnest it into a flat view for backward compat with all queries.
       const rawTable = `_raw_${tableName}`;
       await instance.conn.query(`
         CREATE OR REPLACE TABLE ${rawTable} AS
-        SELECT * FROM read_parquet('data.parquet')
+        SELECT * FROM read_parquet('${virtualFile}')
       `);
 
       // Detect variant struct column

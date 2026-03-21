@@ -10,31 +10,10 @@ import {
 } from "@shared/components/ui/select";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Check, Layers } from "lucide-react";
+import { formatNumber } from "../lib/format";
 import type { EnrichmentAnalysis, ExportableTable } from "../types";
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const TISSUE_OPTIONS = [
-  "Adipose",
-  "Blood",
-  "Brain",
-  "Breast",
-  "Colon",
-  "Heart",
-  "Kidney",
-  "Liver",
-  "Lung",
-  "Muscle",
-  "Ovary",
-  "Pancreas",
-  "Prostate",
-  "Skin",
-  "Stomach",
-  "Testis",
-  "Thyroid",
-];
+// No hardcoded constants — everything comes from the API
 
 // ============================================================================
 // Sub-components
@@ -46,51 +25,71 @@ function ToggleCard({
   selected,
   onToggle,
   disabled,
+  overLimit,
 }: {
   label: string;
   description?: string;
   selected: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  overLimit?: string;
 }) {
+  const isDisabled = disabled || !!overLimit;
+
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={disabled ? undefined : onToggle}
+      tabIndex={overLimit ? -1 : 0}
+      onClick={isDisabled ? undefined : onToggle}
       onKeyDown={(e) => {
-        if (!disabled && (e.key === "Enter" || e.key === " ")) {
+        if (!isDisabled && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           onToggle();
         }
       }}
       className={cn(
-        "relative flex flex-col gap-1 p-3.5 rounded-xl border text-left transition-all cursor-pointer",
+        "relative flex flex-col gap-1 p-3.5 rounded-xl border text-left transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-          ? "border-primary bg-primary/5 shadow-sm"
-          : "border-border hover:border-primary/30 hover:bg-accent/50",
+        overLimit
+          ? "border-border bg-muted/30 cursor-default opacity-60"
+          : selected
+            ? "border-primary bg-primary/5 shadow-sm cursor-pointer"
+            : "border-border hover:border-primary/30 hover:bg-accent/50 cursor-pointer",
         disabled && "opacity-50 cursor-not-allowed",
       )}
     >
-      <div
-        className={cn(
-          "absolute top-3 right-3 flex h-4.5 w-4.5 items-center justify-center rounded transition-all",
-          selected
-            ? "bg-primary text-white"
-            : "border border-border bg-background",
-        )}
-      >
-        {selected && <Check className="h-3 w-3" />}
-      </div>
+      {!overLimit && (
+        <div
+          className={cn(
+            "absolute top-3 right-3 flex h-4.5 w-4.5 items-center justify-center rounded transition-all",
+            selected
+              ? "bg-primary text-white"
+              : "border border-border bg-background",
+          )}
+        >
+          {selected && <Check className="h-3 w-3" />}
+        </div>
+      )}
 
-      <p className="text-sm font-medium text-foreground leading-tight pr-6">
+      <p className={cn(
+        "text-sm font-medium leading-tight pr-6",
+        overLimit ? "text-muted-foreground" : "text-foreground",
+      )}>
         {label}
       </p>
 
       {description && (
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+        <p className={cn(
+          "text-xs text-muted-foreground leading-relaxed",
+          !selected && !overLimit && "line-clamp-2",
+        )}>
           {description}
+        </p>
+      )}
+
+      {overLimit && (
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+          {overLimit}
         </p>
       )}
     </div>
@@ -104,7 +103,9 @@ function ToggleCard({
 interface EnrichmentPickerProps {
   analyses: EnrichmentAnalysis[];
   tables: ExportableTable[];
+  tissueGroups: string[];
   isLoading: boolean;
+  variantCount?: number;
   selectedAnalyses: Set<string>;
   selectedTables: Set<string>;
   onToggleAnalysis: (name: string) => void;
@@ -118,7 +119,9 @@ interface EnrichmentPickerProps {
 export function EnrichmentPicker({
   analyses,
   tables,
+  tissueGroups,
   isLoading,
+  variantCount,
   selectedAnalyses,
   selectedTables,
   onToggleAnalysis,
@@ -134,6 +137,13 @@ export function EnrichmentPicker({
   const totalSelected = selectedAnalyses.size + selectedTables.size;
 
   if (!isLoading && analyses.length === 0 && tables.length === 0) return null;
+
+  const getAnalysisLimit = (a: EnrichmentAnalysis): string | undefined => {
+    if (variantCount != null && a.max_vids > 0 && variantCount > a.max_vids) {
+      return `Requires ≤${formatNumber(a.max_vids)} variants (file has ~${formatNumber(variantCount)})`;
+    }
+    return undefined;
+  };
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -174,6 +184,7 @@ export function EnrichmentPicker({
                     selected={selectedAnalyses.has(a.name)}
                     onToggle={() => onToggleAnalysis(a.name)}
                     disabled={disabled}
+                    overLimit={getAnalysisLimit(a)}
                   />
                 ))}
               </div>
@@ -220,7 +231,7 @@ export function EnrichmentPicker({
               <SelectValue placeholder="All tissues" />
             </SelectTrigger>
             <SelectContent>
-              {TISSUE_OPTIONS.map((t) => (
+              {tissueGroups.map((t) => (
                 <SelectItem key={t} value={t}>
                   {t}
                 </SelectItem>

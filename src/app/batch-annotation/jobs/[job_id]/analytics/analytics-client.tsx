@@ -5,9 +5,12 @@ import { Card, CardContent } from "@shared/components/ui/card";
 import {
   JobAnalytics,
   useJobPolling,
+  getCohort,
 } from "@features/batch";
 import type { Job, JobOutput } from "@features/batch";
 import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
+import { IgvfLipidReport } from "@features/batch/components/igvf-lipid-report";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
@@ -15,6 +18,7 @@ import {
   Clock,
   Database,
   FileText,
+  FlaskConical,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,7 +35,7 @@ interface AnalyticsClientProps {
   jobId: string;
 }
 
-type ViewMode = "report" | "query";
+type ViewMode = "report" | "igvf" | "query";
 
 export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("report");
@@ -40,6 +44,18 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   const { job, isLoading, error } = useJobPolling({
     jobId,
   });
+
+  // Fetch cohort detail to detect enrichments (only when completed)
+  const { data: cohortDetail } = useQuery({
+    queryKey: ["cohort-detail-analytics", jobId],
+    queryFn: () => getCohort(jobId),
+    enabled: job?.state === "COMPLETED",
+    staleTime: 60_000,
+  });
+
+  const hasIgvfLipid = cohortDetail?.enrichments?.analyses?.some(
+    (a) => a.name === "igvf_lipid",
+  ) ?? false;
 
   // Loading state
   if (isLoading && !job) {
@@ -202,8 +218,22 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
                 }`}
               >
                 <FileText className="w-4 h-4" />
-                Report
+                Variant Report
               </button>
+              {hasIgvfLipid && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode("igvf")}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === "igvf"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <FlaskConical className="w-4 h-4" />
+                  IGVF Lipid Analysis
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setViewMode("query")}
@@ -227,6 +257,8 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
             jobId={jobId}
             filename={job?.input?.filename}
           />
+        ) : viewMode === "igvf" ? (
+          <IgvfLipidReport cohortId={jobId} dataUrl={output.url} />
         ) : (
           <JobAnalytics
             dataUrl={output.url}
