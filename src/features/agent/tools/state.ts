@@ -7,6 +7,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { fetchSessionState, type SessionState } from "../lib/session-state";
 import { cohortFetch, AgentToolError } from "../lib/api-client";
+import { json } from "./run/compactify";
 
 /** Internal column names to filter out */
 const INTERNAL_COLUMNS = new Set([
@@ -129,7 +130,4 @@ export function createStateTool(sessionId: string) {
   });
 }
 
-/** Type-safe JSON output for toModelOutput */
-function jsonOut(value: unknown) {
-  return { type: "json" as const, value: value as null };
-}
+const jsonOut = json;

@@ -151,12 +151,17 @@ export function createPrepareStep(
         const { state, version } = await fetchSessionState(sessionId);
         currentState = state;
         stateVersion = version;
-      } catch {
+      } catch (err) {
+        console.warn("[prepareStep] Failed to load session state:", err instanceof Error ? err.message : err);
         currentState = null;
       }
 
       // Fetch compact graph schema for prompt injection (non-fatal)
-      try { agentView = await schemaStore.getAgentView(); } catch { /* ignore */ }
+      try {
+        agentView = await schemaStore.getAgentView();
+      } catch (err) {
+        console.warn("[prepareStep] Failed to load agent view:", err instanceof Error ? err.message : err);
+      }
 
       const sys = buildSystemPrompt(currentState ?? undefined, agentView);
       systemPromptLength = sys.length;

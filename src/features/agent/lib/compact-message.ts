@@ -31,7 +31,8 @@ export async function compactMessageForStorage(
       if (output.error) return part; // errors stay inline
 
       const raw = JSON.stringify(output);
-      if (raw.length < SIZE_THRESHOLD) return part;
+      const sizeBytes = raw.length;
+      if (sizeBytes < SIZE_THRESHOLD) return part;
 
       const toolName = getToolName(part);
       const toolCallId = "toolCallId" in part ? part.toolCallId : undefined;

@@ -742,7 +742,7 @@ function PromptCard({
           className={cn(
             "ml-auto text-[10px] font-medium transition-colors duration-150",
             "text-transparent group-hover/card:text-muted-foreground/50",
-            "hover:text-primary! cursor-pointer",
+            "hover:text-primary cursor-pointer",
           )}
         >
           Edit
