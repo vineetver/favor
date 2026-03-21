@@ -3,8 +3,7 @@
 // src/features/genome-browser/components/browser-canvas/browser-canvas.tsx
 // Main canvas displaying Gosling tracks
 
-import { useMemo } from 'react'
-import dynamic from 'next/dynamic'
+import { type ComponentType, useEffect, useMemo, useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { Skeleton } from '@shared/components/ui/skeleton'
 import { cn } from '@infra/utils'
@@ -14,14 +13,7 @@ import type { GenomicRegion } from '../../types/state'
 import { isStaticTrack, isDynamicTrack } from '../../types/tracks'
 import { LINKING_ID } from '../../tracks/static/gene-annotation'
 
-// Dynamically import Gosling to avoid SSR issues
-const GoslingComponent = dynamic(
-  () => import('gosling.js').then(mod => mod.GoslingComponent),
-  {
-    ssr: false,
-    loading: () => <GoslingLoadingState />,
-  }
-)
+type GoslingComponentType = ComponentType<{ spec: unknown; padding?: number }>
 
 type BrowserCanvasProps = {
   className?: string
@@ -30,6 +22,14 @@ type BrowserCanvasProps = {
 export function BrowserCanvas({ className }: BrowserCanvasProps) {
   const { state } = useBrowser()
   const visibleTracks = useVisibleTracks()
+
+  // Runtime import — avoids webpack static resolution of gosling.js exports field
+  const [GoslingComponent, setGoslingComponent] = useState<GoslingComponentType | null>(null)
+  useEffect(() => {
+    import('gosling.js')
+      .then(mod => setGoslingComponent(() => mod.GoslingComponent as GoslingComponentType))
+      .catch(err => console.error('Failed to load gosling.js:', err))
+  }, [])
 
   // Build Gosling spec from active tracks
   const goslingSpec = useMemo(() => {
@@ -70,7 +70,7 @@ export function BrowserCanvas({ className }: BrowserCanvasProps) {
 
   return (
     <div className={cn("w-full h-full bg-background", className)}>
-      {goslingSpec ? (
+      {goslingSpec && GoslingComponent ? (
         <GoslingComponent
           spec={goslingSpec}
           padding={0}

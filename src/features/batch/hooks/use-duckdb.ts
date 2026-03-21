@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as duckdb from "@duckdb/duckdb-wasm";
+import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import {
   getCachedData,
   setCachedData,
@@ -13,8 +13,8 @@ import {
 // ============================================================================
 
 export interface DuckDBInstance {
-  db: duckdb.AsyncDuckDB;
-  conn: duckdb.AsyncDuckDBConnection;
+  db: AsyncDuckDB;
+  conn: AsyncDuckDBConnection;
 }
 
 export interface QueryResult {
@@ -64,6 +64,9 @@ export function useDuckDB(): UseDuckDBResult {
 
     const initPromise = (async () => {
       try {
+        // Runtime import — avoids webpack pulling in duckdb-node.cjs
+        const duckdb = await import("@duckdb/duckdb-wasm");
+
         // Use jsdelivr CDN for bundles
         const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
