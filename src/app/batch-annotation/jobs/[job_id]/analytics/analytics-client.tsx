@@ -146,8 +146,8 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
 
           <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
-              <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center mb-4">
-                <Clock className="w-8 h-8 text-warning" />
+              <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-amber-600" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Job Not Complete</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">

@@ -4,7 +4,7 @@
  */
 export function getDisabledSlugs<T>(
   data: T,
-  checks: Record<string, (data: T, extra?: any) => boolean>,
+  checks: Record<string, (data: T, extra?: Record<string, number>) => boolean>,
   extra?: Record<string, number>,
 ): string[] {
   const disabled: string[] = [];

@@ -16,8 +16,7 @@ export const PLOTLY_AXIS = {
 };
 
 /** Config with mode bar (for zoomable plots like Manhattan) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PLOTLY_CONFIG: any = {
+export const PLOTLY_CONFIG: Record<string, unknown> = {
   displayModeBar: true,
   displaylogo: false,
   responsive: true,
@@ -26,8 +25,7 @@ export const PLOTLY_CONFIG: any = {
 };
 
 /** Config with mode bar hidden (for static plots like forest, crosshair) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PLOTLY_CONFIG_STATIC: any = {
+export const PLOTLY_CONFIG_STATIC: Record<string, unknown> = {
   displayModeBar: false,
   displaylogo: false,
   responsive: true,

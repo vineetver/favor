@@ -6,15 +6,15 @@
 import type { ReactNode } from "react";
 
 // Type guards for validation
-export function isValidNumber(value: any): value is number {
+export function isValidNumber(value: unknown): value is number {
   return typeof value === "number" && !isNaN(value) && isFinite(value);
 }
 
-export function isValidString(value: any): value is string {
+export function isValidString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function isValidArray(value: any): value is any[] {
+export function isValidArray(value: unknown): value is unknown[] {
   return Array.isArray(value) && value.length > 0;
 }
 
@@ -63,29 +63,29 @@ export function parseStringToBoolean(value: string): boolean | null {
 
 // Nested object accessors for complex data structures
 export function safeNestedAccess<T>(
-  obj: any,
+  obj: unknown,
   path: string,
   defaultValue: T | null = null
 ): T | null {
   const keys = path.split('.');
-  let current = obj;
-  
+  let current: unknown = obj;
+
   for (const key of keys) {
     if (current == null || typeof current !== 'object') {
       return defaultValue;
     }
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
-  
-  return current !== undefined ? current : defaultValue;
+
+  return current !== undefined ? (current as T) : defaultValue;
 }
 
 // Constraint score accessors for gene data
 export function getConstraintScore(
-  gene: any,
+  gene: unknown,
   category: 'loeuf' | 'posterior' | 'shet' | 'damage' | 'gnomad',
   field: string
-): any {
+): unknown {
   return safeNestedAccess(gene, `constraint_scores.${category}.${field}`);
 }
 
