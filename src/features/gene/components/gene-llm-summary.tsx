@@ -56,7 +56,7 @@ export function GeneLLMSummary({ geneId }: GeneLLMSummaryProps) {
                 <button
                   onClick={handleCopy}
                   className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                  title="Copy to clipboard"
+                  aria-label="Copy summary to clipboard"
                 >
                   {copied ? (
                     <Check className="w-4 h-4" />
@@ -71,6 +71,7 @@ export function GeneLLMSummary({ geneId }: GeneLLMSummaryProps) {
             <button
               onClick={openChat}
               className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"
+              aria-label="Ask follow-up in FAVOR-GPT"
             >
               <MessageSquare className="w-4 h-4" />
               Ask follow-up

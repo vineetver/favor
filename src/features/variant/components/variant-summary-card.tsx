@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@shared/components/ui/card";
 import { Loader2 } from "lucide-react";

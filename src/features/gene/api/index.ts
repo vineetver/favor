@@ -178,30 +178,13 @@ export async function fetchPathwayEnrichment(
   seedGeneId: string,
 ): Promise<PathwayEnrichmentResponse | null> {
   try {
-    const [parentResponse, childrenResponse, genesResponse] = await Promise.all([
-      fetch(
-        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=5`,
-        { next: { revalidate: 300 } },
-      ),
-      fetch(
-        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=20`,
-        { next: { revalidate: 300 } },
-      ),
-      fetch(
-        `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}?include=edges&edgeTypes=PARTICIPATES_IN&direction=in&limitPerEdgeType=100`,
-        { next: { revalidate: 300 } },
-      ),
+    const base = `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}`;
+    const opts = { revalidate: 300 };
+    const [parentData, childrenData, genesData] = await Promise.all([
+      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=5`, opts),
+      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=20`, opts),
+      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PARTICIPATES_IN&direction=in&limitPerEdgeType=100`, opts),
     ]);
-
-    const parentData: PathwayRelationsResponse | null = parentResponse.ok
-      ? await parentResponse.json()
-      : null;
-    const childrenData: PathwayRelationsResponse | null = childrenResponse.ok
-      ? await childrenResponse.json()
-      : null;
-    const genesData: PathwayRelationsResponse | null = genesResponse.ok
-      ? await genesResponse.json()
-      : null;
 
     const parentRelations = getRelations(parentData);
     const childRelations = getRelations(childrenData);
