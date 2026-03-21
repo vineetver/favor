@@ -42,11 +42,6 @@ export type AsyncOperation =
   | { type: "running_variant_trail"; nodeId: string }
   | { type: "error"; operation: string; message: string };
 
-/** @deprecated Use AsyncOperation instead */
-export type ExpansionStatus =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; message: string };
 
 // =============================================================================
 // Explorer State (Discriminated Union)
@@ -66,8 +61,6 @@ export type ExplorerState =
       leftDrawerOpen: boolean;
       inspectorMode: InspectorMode;
       async: AsyncOperation;
-      /** @deprecated Use `async` instead. Kept for backward compatibility during migration. */
-      expansion: ExpansionStatus;
     };
 
 // Re-export for convenience (canonical definitions in config/)

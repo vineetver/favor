@@ -93,7 +93,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         className={cn(
           "fixed inset-y-0 right-0 z-50 md:hidden",
           "w-full max-w-sm",
-          "bg-white/95 backdrop-blur-xl",
+          "bg-background/95 backdrop-blur-xl",
           "shadow-2xl",
           "transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",

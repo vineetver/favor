@@ -156,7 +156,14 @@ export function useAgentChat() {
 
       try {
         const stored = await listMessagesClient(id);
-        const uiMessages = stored.map((m) => JSON.parse(m.content) as AgentUIMessage);
+        const uiMessages: AgentUIMessage[] = [];
+        for (const m of stored) {
+          try {
+            uiMessages.push(JSON.parse(m.content) as AgentUIMessage);
+          } catch {
+            console.warn("[useAgentChat] Skipping corrupted message in session", id);
+          }
+        }
         setMessages(uiMessages);
       } catch (err) {
         console.error("[useAgentChat] Failed to load session:", err);

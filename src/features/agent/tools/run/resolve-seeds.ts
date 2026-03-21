@@ -56,11 +56,17 @@ function normalizeLabel(label: string): string {
  * Resolve an array of SeedRefs into concrete EntityRefs.
  * Returns resolutions with metadata (confidence, strategy, candidates).
  */
+export interface ResolveResult {
+  resolutions: SeedResolution[];
+  unresolved: string[];
+}
+
 export async function resolveSeedsWithMeta(
   refs: SeedRef[],
   resolvedCache?: Record<string, EntityRef>,
-): Promise<SeedResolution[]> {
+): Promise<ResolveResult> {
   const resolutions: SeedResolution[] = [];
+  const unresolvedLabels: string[] = [];
 
   // Batch fuzzy labels for a single API call
   const fuzzyLabels: Array<{ index: number; label: string }> = [];
@@ -185,9 +191,11 @@ export async function resolveSeedsWithMeta(
               resolutions.push(searchRes);
             } else {
               console.warn(`[resolve-seeds] Fuzzy label "${label}" unresolved — dropped from seeds`);
+              unresolvedLabels.push(label);
             }
           } else if (meta?.type === "exact") {
             console.warn(`[resolve-seeds] Exact ref "${r.query}" not found in graph — dropped from seeds`);
+            unresolvedLabels.push(r.query);
           }
         }
       }
@@ -204,7 +212,7 @@ export async function resolveSeedsWithMeta(
     }
   }
 
-  return resolutions;
+  return { resolutions, unresolved: unresolvedLabels };
 }
 
 /**
@@ -215,7 +223,7 @@ export async function resolveSeeds(
   refs: SeedRef[],
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<EntityRef[]> {
-  const resolutions = await resolveSeedsWithMeta(refs, resolvedCache);
+  const { resolutions } = await resolveSeedsWithMeta(refs, resolvedCache);
   return resolutions.map((r) => r.entity);
 }
 
@@ -382,9 +390,9 @@ export async function resolveSeedsWithTypeHint(
   refs: SeedRef[],
   expectedType?: string,
   resolvedCache?: Record<string, EntityRef>,
-): Promise<SeedResolution[]> {
-  const resolutions = await resolveSeedsWithMeta(refs, resolvedCache);
-  if (!expectedType) return resolutions;
+): Promise<ResolveResult> {
+  const { resolutions, unresolved } = await resolveSeedsWithMeta(refs, resolvedCache);
+  if (!expectedType) return { resolutions, unresolved };
 
   const corrected: SeedResolution[] = [];
   for (const res of resolutions) {
@@ -395,7 +403,7 @@ export async function resolveSeedsWithTypeHint(
       corrected.push(reResolved ?? res);
     }
   }
-  return corrected;
+  return { resolutions: corrected, unresolved };
 }
 
 async function extractEntitiesFromArtifact(

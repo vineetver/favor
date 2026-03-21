@@ -25,10 +25,10 @@ export function DedupStats({ totalRows, uniqueVids, duplicates, className }: Ded
   }
 
   return (
-    <div className={cn("flex items-center gap-2 text-xs text-slate-500", className)}>
+    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
       <span>{formatNumber(uniqueVids)} unique</span>
-      <span className="text-slate-300">|</span>
-      <span className="text-slate-400">
+      <span className="text-muted-foreground/50">|</span>
+      <span className="text-muted-foreground">
         {formatNumber(duplicates)} duplicates ({duplicatePercent.toFixed(0)}%)
       </span>
     </div>

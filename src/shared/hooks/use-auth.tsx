@@ -55,8 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback((returnTo?: string) => {
-    const currentPath = returnTo ?? window.location.href;
-    window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(currentPath)}`;
+    const target = returnTo ?? window.location.href;
+    // Validate return URL is same-origin to prevent open redirect
+    let safeReturn: string;
+    try {
+      const url = new URL(target, window.location.origin);
+      safeReturn = url.origin === window.location.origin ? url.href : "/";
+    } catch {
+      safeReturn = "/";
+    }
+    window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(safeReturn)}`;
   }, []);
 
   const logout = useCallback(() => {

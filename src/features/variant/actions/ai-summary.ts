@@ -53,11 +53,19 @@ export async function getVariantSummary(
 /**
  * Server action to trigger AI summary generation for a variant
  */
+const MAX_PROMPT_LENGTH = 2000;
+
 export async function generateVariantSummary(params: {
   vcf: string;
   prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
+  if (typeof params.prompt !== "string" || params.prompt.length > MAX_PROMPT_LENGTH) {
+    throw new Error(`Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`);
+  }
+  if (typeof params.vcf !== "string" || params.vcf.length > 64) {
+    throw new Error("Invalid vcf identifier");
+  }
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
     headers: {

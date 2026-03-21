@@ -38,7 +38,7 @@ export function EtaDisplay({ eta, className }: EtaDisplayProps) {
   }
 
   return (
-    <span className={cn("text-xs text-slate-500", className)}>
+    <span className={cn("text-xs text-muted-foreground", className)}>
       {display}
     </span>
   );

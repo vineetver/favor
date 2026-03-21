@@ -873,7 +873,7 @@ function compactCohortRows(rawRows: unknown[]): ColumnarRows {
   return { columns, rows };
 }
 
-function json(value: unknown): CompactValue {
+export function json(value: unknown): CompactValue {
   return { type: "json", value: value as JSONValue };
 }
 

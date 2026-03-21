@@ -234,7 +234,7 @@ export function inferEdgeType(
 // Runtime intent map — merges static INTENT_CONFIG with schema searchAliases
 // ---------------------------------------------------------------------------
 
-const runtimeIntentMap = new Map<string, string>(
+let runtimeIntentMap = new Map<string, string>(
   Object.entries(INTENT_CONFIG).map(([k, v]) => [k, v.nodeType]),
 );
 
@@ -246,15 +246,20 @@ export function resolveIntentType(intent: string): string | undefined {
 /**
  * Walk nodeTypes[].searchAliases and register them in the runtime intent map.
  * Static INTENT_CONFIG entries are never overwritten — schema aliases only fill gaps.
+ * Builds a new Map and swaps atomically — safe across concurrent requests.
  */
 export function mergeSchemaAliases(schema: GraphSchemaResponse): void {
+  const next = new Map(runtimeIntentMap);
+  let changed = false;
   for (const nt of schema.nodeTypes) {
     if (!nt.searchAliases?.length) continue;
     for (const alias of nt.searchAliases) {
       const key = alias.toLowerCase().replace(/\s+/g, "_");
-      if (!runtimeIntentMap.has(key)) {
-        runtimeIntentMap.set(key, nt.nodeType);
+      if (!next.has(key)) {
+        next.set(key, nt.nodeType);
+        changed = true;
       }
     }
   }
+  if (changed) runtimeIntentMap = next;
 }

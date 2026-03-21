@@ -8,6 +8,9 @@ import {
   getTissueById,
   getSubtissueById,
   type ValidAssayType,
+  type TissueId,
+  type SubtissueId,
+  type AssayType,
 } from '../types/tissue'
 import { createTissueTrack } from '../tracks/dynamic/tissue-track'
 import { useBrowser } from '../state/browser-context'
@@ -60,9 +63,9 @@ export function useTissueSelection() {
       actions.removeTrack(trackId)
     } else {
       const source = {
-        tissue: tissue as any,
-        subtissue: subtissue as any,
-        assay: assay as any,
+        tissue: tissue as TissueId,
+        subtissue: subtissue as SubtissueId,
+        assay: assay as AssayType,
       }
       const trackDef = createTissueTrack(source)
       actions.addTissueTrack(trackDef, source)

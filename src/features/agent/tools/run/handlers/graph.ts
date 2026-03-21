@@ -58,8 +58,9 @@ export const TARGET_EDGE_MAP: Record<string, string> = {
 // Shared: human-readable labels for edge types and score fields
 // ---------------------------------------------------------------------------
 
-/** Map raw edge types → plain-English relationship descriptions */
-export const EDGE_HUMAN_LABEL: Record<string, string> = {
+/** Map raw edge types → plain-English relationship descriptions.
+ * Starts with curated entries; enriched atomically from schema on first fetch. */
+let edgeHumanLabels: Record<string, string> = {
   VARIANT_IMPLIES_GENE: "variant-to-gene link",
   GENE_ASSOCIATED_WITH_DISEASE: "gene–disease association",
   GENE_PARTICIPATES_IN_PATHWAY: "pathway membership",
@@ -109,7 +110,7 @@ export const SCORE_HUMAN_LABEL: Record<string, string> = {
 
 /** Human-readable label for an edge type (fallback: lowercase + de-underscore) */
 export function humanEdgeLabel(edgeType: string): string {
-  return EDGE_HUMAN_LABEL[edgeType] ?? edgeType.toLowerCase().replace(/_/g, " ");
+  return edgeHumanLabels[edgeType] ?? edgeType.toLowerCase().replace(/_/g, " ");
 }
 
 /** Human-readable label for a score field (fallback: lowercase + de-underscore) */
@@ -121,13 +122,18 @@ export function humanScoreLabel(scoreField: string): string {
 // Shared: schema-driven helpers (sort, keyFilters, labels, recovery)
 // ---------------------------------------------------------------------------
 
-/** Fill in EDGE_HUMAN_LABEL for edge types that lack a curated entry. */
+/** Fill in labels for edge types that lack a curated entry.
+ * Builds a new object and swaps atomically — safe across concurrent requests. */
 function enrichHumanLabels(schema: GraphSchemaResponse): void {
+  const next = { ...edgeHumanLabels };
+  let changed = false;
   for (const et of schema.edgeTypes) {
-    if (et.agentBriefing && !EDGE_HUMAN_LABEL[et.edgeType]) {
-      EDGE_HUMAN_LABEL[et.edgeType] = et.agentBriefing;
+    if (et.agentBriefing && !next[et.edgeType]) {
+      next[et.edgeType] = et.agentBriefing;
+      changed = true;
     }
   }
+  if (changed) edgeHumanLabels = next;
 }
 
 // Wire enrichHumanLabels into the store so it runs on every fresh schema fetch

@@ -393,7 +393,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       {/* Summary */}
       {disease.description && (
         <Card>
-          <CardHeader className="border-b border-slate-200">
+          <CardHeader className="border-b border-border">
             <CardTitle className="text-label">Summary</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-body leading-relaxed">
@@ -406,7 +406,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Basic Info Card */}
         <Card>
-          <CardHeader className="border-b border-slate-200">
+          <CardHeader className="border-b border-border">
             <CardTitle className="text-label">Basic Info</CardTitle>
           </CardHeader>
           <CardContent>
@@ -441,7 +441,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
 
         {/* Classification Card */}
         <Card>
-          <CardHeader className="border-b border-slate-200">
+          <CardHeader className="border-b border-border">
             <CardTitle className="text-label">Classification</CardTitle>
           </CardHeader>
           <CardContent>
@@ -462,8 +462,8 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                       className={cn(
                         "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
                         disease.isTherapeuticArea
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-slate-100 text-slate-600",
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {disease.isTherapeuticArea ? "Yes" : "No"}
@@ -479,8 +479,8 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
                       className={cn(
                         "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold",
                         disease.leaf
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-600",
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {disease.leaf ? "Yes" : "No"}
@@ -495,7 +495,7 @@ export function DiseaseOverview({ disease }: DiseaseOverviewProps) {
         {/* Ontology Sources Card */}
         {disease.ontology?.sources && (
           <Card>
-            <CardHeader className="border-b border-slate-200">
+            <CardHeader className="border-b border-border">
               <CardTitle className="text-label">Ontology Sources</CardTitle>
             </CardHeader>
             <CardContent>

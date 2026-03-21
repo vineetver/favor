@@ -9,7 +9,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         "text-card-foreground flex flex-col gap-6 rounded-2xl border border-border py-6",
         "bg-card",
         "shadow-sm",
-        "ring-1 ring-white/50 ring-inset",
+        "ring-1 ring-background/50 ring-inset",
         className,
       )}
       {...props}

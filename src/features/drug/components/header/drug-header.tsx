@@ -63,7 +63,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Drug Type */}
             {drug.drug_type && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-muted text-muted-foreground border border-border">
                 {drug.drug_type}
               </span>
             )}

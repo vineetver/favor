@@ -46,7 +46,7 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
             </span>
 
             {gene.gene_type && (
-              <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-medium">
+              <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
                 {gene.gene_type}
               </span>
             )}

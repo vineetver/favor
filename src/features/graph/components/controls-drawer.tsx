@@ -187,10 +187,6 @@ function ControlsDrawerInner({
   isExpanding,
   schema,
 }: ControlsDrawerProps) {
-  if (!open) {
-    return null;
-  }
-
   const totalEdges = Object.values(edgeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
   const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
 
@@ -208,6 +204,8 @@ function ControlsDrawerInner({
       }))
       .filter((item) => item.filterFields.length > 0);
   }, [schemaMap, edgeTypeCounts]);
+
+  if (!open) return null;
 
   return (
     <div className="w-72 border-r border-border bg-background flex flex-col overflow-hidden">
@@ -242,7 +240,7 @@ function ControlsDrawerInner({
                 <div className="text-xs text-muted-foreground">Nodes</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{totalEdges}</div>
+                <div className="text-2xl font-bold text-primary">{totalEdges}</div>
                 <div className="text-xs text-muted-foreground">Edges</div>
               </div>
             </div>

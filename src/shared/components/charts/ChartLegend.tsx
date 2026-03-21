@@ -11,7 +11,7 @@ export function ChartLegend({ items, title, className }: ChartLegendProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-4 text-xs text-slate-600",
+        "flex flex-wrap items-center gap-4 text-xs text-muted-foreground",
         className,
       )}
     >

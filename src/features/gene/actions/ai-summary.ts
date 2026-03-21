@@ -53,11 +53,19 @@ export async function getGeneSummary(
 /**
  * Server action to trigger AI summary generation for a gene
  */
+const MAX_PROMPT_LENGTH = 2000;
+
 export async function generateGeneSummary(params: {
   geneId: string;
   prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
+  if (typeof params.prompt !== "string" || params.prompt.length > MAX_PROMPT_LENGTH) {
+    throw new Error(`Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`);
+  }
+  if (typeof params.geneId !== "string" || params.geneId.length > 64) {
+    throw new Error("Invalid geneId");
+  }
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
     headers: {

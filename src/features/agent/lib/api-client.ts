@@ -69,11 +69,9 @@ export async function agentFetch<T>(
     "X-Idempotency-Key": idemKey,
   };
   if (typeof window === "undefined") {
-    let inRequestContext = false;
     try {
       const { cookies } = await import("next/headers");
       const cookieStore = await cookies();
-      inRequestContext = true;
       const cookieStr = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
@@ -81,14 +79,12 @@ export async function agentFetch<T>(
       if (cookieStr) headers["Cookie"] = cookieStr;
     } catch {
       // Not in a Next.js request context (standalone script, eval, etc.)
-      // — fall back to API key so scripts can authenticate
+      // — fall back to API key so scripts can authenticate.
+      // In a request context, cookies() succeeds and is the only auth mechanism.
       if (process.env.FAVOR_API_KEY) {
         headers["Authorization"] = `Bearer ${process.env.FAVOR_API_KEY}`;
       }
     }
-    // In a request context, cookies are the only auth mechanism.
-    // Never fall back to the server API key for web requests.
-    void inRequestContext;
   }
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -112,8 +108,7 @@ export async function agentFetch<T>(
         // Redirect to login on 401
         if (res.status === 401 && typeof window !== "undefined") {
           window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(window.location.href)}`;
-          // Return a never-resolving promise to prevent further execution
-          return new Promise<T>(() => {});
+          throw new AgentToolError(401, "Session expired — redirecting to login.");
         }
 
         const body = await res.text();

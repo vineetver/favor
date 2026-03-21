@@ -61,7 +61,7 @@ export function MobileSubNavigation({
         </Button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white border border-border rounded-xl shadow-lg shadow-border/50 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-popover border border-border rounded-xl shadow-lg shadow-border/50 max-h-64 overflow-y-auto">
             <div className="p-1.5">
               {items.map((item) => {
                 const isActive = isActiveItem(item.slug);

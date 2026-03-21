@@ -283,7 +283,7 @@ export async function handleExploreNeighbors(
 
     // Optionally run enrichment for pathways with 3+ seeds
     let enrichmentResult: Record<string, unknown> | null = null;
-    if (intents.includes("pathways" as TargetIntent) && resolvedSeeds.length >= 3) {
+    if (intents.some(i => i === "pathways") && resolvedSeeds.length >= 3) {
       try {
         tc.add({ step: "autoEnrich", kind: "call", message: "Auto-enrichment for pathways (3+ seeds)" });
         apiCalls++;

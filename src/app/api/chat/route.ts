@@ -1,4 +1,5 @@
 import { createAgentUIStreamResponse, ToolLoopAgent, stepCountIs, type UIMessage } from "ai";
+import { z } from "zod";
 import { createFavorAgent, createAgentTools } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
 import { classifyQuery } from "@features/agent/lib/query-classifier";
@@ -6,6 +7,14 @@ import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
 import { getSynthesisModel, getSynthesisProviderOptions } from "@features/agent/lib/models";
 import { compactMessageForStorage } from "@features/agent/lib/compact-message";
 import { requireAuth } from "../_lib/require-auth";
+
+const chatBodySchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant", "system"]),
+  }).passthrough()).min(1).max(200),
+  sessionId: z.string().max(128).regex(/^[\w-]+$/).nullable().optional(),
+  synthesisModel: z.enum(["fast", "thinking"]).optional(),
+});
 
 export const maxDuration = 120;
 
@@ -34,41 +43,58 @@ async function persistCompacted(
   }
 }
 
+const MAX_BODY_BYTES = 512_000; // 512 KB max request body
+
 export async function POST(req: Request) {
+  // Basic abuse prevention: reject oversized payloads before parsing
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+    return new Response(JSON.stringify({ error: "Request too large" }), { status: 413 });
+  }
+
   const { user, error } = await requireAuth(req);
   if (error) return error;
 
-  const { messages, sessionId, synthesisModel } = await req.json();
+  const raw = await req.json();
+  const parsed = chatBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({ error: "Invalid request body", issues: parsed.error.issues.map(i => i.message) }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  const { sessionId, synthesisModel } = parsed.data;
+  // Zod validates structure; cast to UIMessage[] for AI SDK compatibility
+  const messages = parsed.data.messages as unknown as UIMessage[];
 
   // Persist user message (write-ahead) — fire-and-forget
   if (sessionId) {
-    const lastUserMsg = [...messages].reverse().find((m: { role: string }) => m.role === "user");
-    if (lastUserMsg) {
+    const userMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (userMsg) {
       appendAgentMessage(sessionId, {
         role: "user",
-        content: JSON.stringify(lastUserMsg),
+        content: JSON.stringify(userMsg),
       }).catch((err) => console.error("[chat/route] Failed to persist user message:", err));
     }
   }
 
   // Extract last user message text for classification
-  const lastUserMsg = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
   const lastUserText = lastUserMsg?.parts
-    ?.filter((p: { type: string }) => p.type === "text")
-    ?.map((p: { text: string }) => p.text)
-    ?.join(" ") ?? lastUserMsg?.content ?? "";
+    ?.filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
+    ?.map((p) => p.text)
+    ?.join(" ") ?? "";
 
   // Detect if prior assistant turn contained an AskUser tool call
-  const lastAssistantMsg = [...messages].reverse().find((m: { role: string }) => m.role === "assistant");
+  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
   const pendingAskUser = !!(lastAssistantMsg?.parts ?? []).some(
-    (p: { type: string; toolName?: string }) =>
-      p.type === "tool-invocation" && p.toolName === "AskUser",
+    (p) => p.type === "tool-invocation" && "toolName" in p && p.toolName === "AskUser",
   );
 
   // Classify query for fast-path
   const route = classifyQuery(lastUserText, {
     resolvedEntities: {},
-    turnCount: messages.filter((m: { role: string }) => m.role === "user").length - 1,
+    turnCount: messages.filter((m) => m.role === "user").length - 1,
     pendingAskUser,
   });
 

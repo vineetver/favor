@@ -38,6 +38,8 @@ export interface EdgePropertyMeta {
 /** Callback to enrich human labels — injected by graph.ts to avoid circular dep */
 type EnrichFn = (schema: GraphSchemaResponse) => void;
 
+/** Module-level singleton — persists across warm serverless invocations (free caching),
+ * resets on cold starts (safe fallback). Graph schema is shared, not user-specific. */
 class SchemaStore {
   private full: { data: GraphSchemaResponse; ts: number } | null = null;
   private view: { data: AgentViewSchema | null; ts: number } = { data: null, ts: 0 };

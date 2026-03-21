@@ -28,7 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { InspectorPanelProps } from "../types/props";
 import type { ExplorerNode, ExplorerEdge } from "../types/node";
 import type { ProvenanceEvent } from "../types/provenance";
@@ -249,8 +249,8 @@ function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  // Build schema map once
-  const schemaMap = buildEdgeTypeStatsMap(schema);
+  // Build schema map once (memoized to avoid recomputing on every render)
+  const schemaMap = useMemo(() => buildEdgeTypeStatsMap(schema), [schema]);
 
   // Filter fields — meta.hidden + empty values
   const filteredFields = filterEdgeFields(fields, propertyMeta);

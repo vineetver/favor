@@ -47,7 +47,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                   ) : (
                     <span className={cn(
                       "h-2 w-2 rounded-full",
-                      isCurrent && "bg-white animate-pulse",
+                      isCurrent && "bg-background animate-pulse",
                       isPending && "bg-muted-foreground/40"
                     )} />
                   )}

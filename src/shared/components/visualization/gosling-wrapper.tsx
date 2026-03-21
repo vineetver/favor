@@ -30,7 +30,7 @@ export function GoslingWrapper({ spec, goslingRef }: GoslingWrapperProps) {
 
   if (error) {
     return (
-      <div className="h-96 flex items-center justify-center text-red-500">
+      <div className="h-96 flex items-center justify-center text-destructive">
         {error}
       </div>
     );
@@ -38,7 +38,7 @@ export function GoslingWrapper({ spec, goslingRef }: GoslingWrapperProps) {
 
   if (!GoslingComponent) {
     return (
-      <div className="h-96 flex items-center justify-center text-slate-500">
+      <div className="h-96 flex items-center justify-center text-muted-foreground">
         Loading visualization...
       </div>
     );

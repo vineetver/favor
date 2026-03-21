@@ -212,8 +212,7 @@ function SummaryTable({ data, title, showBaseline, onFilterClick, filterCtx }: {
   for (const c of numKeys.filter((c) => c.fmt === "float")) {
     let sw = 0, sv = 0;
     for (const r of data) { const v = r[c.k as keyof SummaryRow] as number | null; if (v != null) { sw += r.total; sv += v * r.total; } }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (totals as any)[c.k] = sw > 0 ? sv / sw : null;
+    (totals as unknown as Record<string, number | null>)[c.k] = sw > 0 ? sv / sw : null;
   }
 
   const renderRow = (row: SummaryRow, className?: string, isTotals?: boolean) =>

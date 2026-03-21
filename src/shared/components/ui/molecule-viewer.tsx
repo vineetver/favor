@@ -158,23 +158,23 @@ export function MoleculeViewer({
     <div className={`relative group ${className}`}>
       {loading && !error && (
         <div
-          className="flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200"
+          className="flex items-center justify-center bg-muted rounded-lg border border-border"
           style={{ width: `${width}px`, height: `${height}px` }}
         >
-          <div className="text-sm text-slate-500">Loading structure...</div>
+          <div className="text-sm text-muted-foreground">Loading structure...</div>
         </div>
       )}
 
       {error && (
         <div
-          className="flex flex-col items-center justify-center bg-slate-50 rounded-lg border border-slate-200 gap-2"
+          className="flex flex-col items-center justify-center bg-muted rounded-lg border border-border gap-2"
           style={{ width: `${width}px`, height: `${height}px` }}
         >
-          <AlertCircle className="w-8 h-8 text-slate-400" />
-          <div className="text-sm text-slate-500 text-center px-4">
+          <AlertCircle className="w-8 h-8 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground text-center px-4">
             Unable to render structure
           </div>
-          <div className="text-xs text-slate-400 font-mono max-w-[300px] break-all px-4">
+          <div className="text-xs text-muted-foreground font-mono max-w-[300px] break-all px-4">
             {smiles}
           </div>
         </div>
@@ -182,7 +182,7 @@ export function MoleculeViewer({
 
       <canvas
         ref={canvasRef}
-        className={`rounded-lg border border-slate-200 bg-white ${error || loading ? "hidden" : ""}`}
+        className={`rounded-lg border border-border bg-background ${error || loading ? "hidden" : ""}`}
         style={{ width: `${width}px`, height: `${height}px` }}
       />
 
@@ -196,8 +196,8 @@ export function MoleculeViewer({
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-green-600" />
-              <span className="text-green-600">Copied</span>
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-emerald-600">Copied</span>
             </>
           ) : (
             <>

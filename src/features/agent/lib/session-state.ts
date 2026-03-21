@@ -126,13 +126,13 @@ export function applyStateDelta(
 ): SessionState {
   const next = { ...state };
 
-  if (delta.active_cohort_id) {
-    // If cohort changed, invalidate stale schema
+  if (delta.active_cohort_id !== undefined) {
+    // If cohort changed (or cleared with "" / null), invalidate stale schema
     if (delta.active_cohort_id !== state.active_cohort_id) {
       next.schema_digest = null;
     }
-    next.active_cohort_id = delta.active_cohort_id;
-    next.mode = (next.pinned_entities?.length ?? 0) > 0 ? "mixed" : "cohort";
+    next.active_cohort_id = delta.active_cohort_id || null;
+    next.mode = (next.pinned_entities?.length ?? 0) > 0 ? "mixed" : next.active_cohort_id ? "cohort" : "graph";
   }
 
   if (delta.pinned_entities?.length) {

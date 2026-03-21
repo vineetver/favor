@@ -213,6 +213,81 @@ function buildQuerySteps(
 }
 
 // ---------------------------------------------------------------------------
+// Extract scored entities from batch query edges for a single step
+// ---------------------------------------------------------------------------
+
+function collectStepEntities(
+  stepEdges: Array<{ type: string; from: string; to: string; fields?: Record<string, unknown> }>,
+  nodes: Record<string, { entity: EntityRef; fields?: Record<string, unknown> }>,
+  ann: { targetType: string; defaultScoreField?: string },
+): ScoredEntity[] {
+  const targetEntities: ScoredEntity[] = [];
+  const seen = new Set<string>();
+  const supportMap = new Map<string, Set<string>>();
+  const scoreField = ann.defaultScoreField;
+
+  for (const edge of stepEdges) {
+    const fromType = edge.from.slice(0, Math.max(edge.from.indexOf(":"), 0)) || edge.from;
+    const toType = edge.to.slice(0, Math.max(edge.to.indexOf(":"), 0)) || edge.to;
+    const targetKey =
+      toType === ann.targetType ? edge.to
+      : fromType === ann.targetType ? edge.from
+      : null;
+    if (!targetKey) continue;
+
+    const sourceKey = targetKey === edge.to ? edge.from : edge.to;
+    let sources = supportMap.get(targetKey);
+    if (!sources) { sources = new Set(); supportMap.set(targetKey, sources); }
+    sources.add(sourceKey);
+
+    if (seen.has(targetKey)) continue;
+    seen.add(targetKey);
+
+    const node = nodes[targetKey];
+    if (!node?.entity) continue;
+
+    const f = edge.fields ?? {};
+    const score = (
+      (scoreField ? f[scoreField] : undefined) ??
+      f.overall_score ?? f.score ?? f.evidence_count
+    ) as number | undefined;
+
+    const edgeProperties: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(f)) {
+      if (v != null) edgeProperties[k] = v;
+    }
+
+    targetEntities.push({
+      ...node.entity,
+      rank: targetEntities.length + 1,
+      score: typeof score === "number" ? score : undefined,
+      ...(Object.keys(edgeProperties).length > 0 ? { edgeProperties } : {}),
+    });
+  }
+
+  // Annotate support count and re-sort if any target has > 1 source
+  const hasMultiSupport = [...supportMap.values()].some((s) => s.size > 1);
+  if (hasMultiSupport) {
+    for (const ent of targetEntities) {
+      const key = `${ent.type}:${ent.id}`;
+      const count = supportMap.get(key)?.size ?? 1;
+      if (count > 1) ent.supportCount = count;
+    }
+    targetEntities.sort((a, b) => {
+      const sa = a.supportCount ?? 1;
+      const sb = b.supportCount ?? 1;
+      if (sb !== sa) return sb - sa;
+      return (b.score ?? 0) - (a.score ?? 0);
+    });
+    for (let r = 0; r < targetEntities.length; r++) {
+      targetEntities[r].rank = r + 1;
+    }
+  }
+
+  return targetEntities;
+}
+
+// ---------------------------------------------------------------------------
 // Phase 3a: Execute via /graph/query (batch)
 // ---------------------------------------------------------------------------
 
@@ -268,93 +343,11 @@ async function executeViaQuery(
     const results: StepResult[] = [];
     for (const ann of intoSteps) {
       if (ann.edgeType === "none") {
-        results.push({
-          step: ann.userStepIndex,
-          intent: ann.intent,
-          edgeType: "none",
-          entities: [],
-        });
+        results.push({ step: ann.userStepIndex, intent: ann.intent, edgeType: "none", entities: [] });
         continue;
       }
-
       const stepEdges = edges.filter((e) => e.type === ann.edgeType);
-      const targetEntities: ScoredEntity[] = [];
-      const seen = new Set<string>();
-      // Track which source nodes connect to each target (for support count)
-      const supportMap = new Map<string, Set<string>>();
-
-      // Prefer this step's own default score field, then generic fallbacks
-      const scoreField = ann.defaultScoreField;
-
-      for (const edge of stepEdges) {
-        const fromColonIdx = edge.from.indexOf(":");
-        const fromType = fromColonIdx > 0 ? edge.from.slice(0, fromColonIdx) : edge.from;
-        const toColonIdx = edge.to.indexOf(":");
-        const toType = toColonIdx > 0 ? edge.to.slice(0, toColonIdx) : edge.to;
-        const targetKey =
-          toType === ann.targetType
-            ? edge.to
-            : fromType === ann.targetType
-              ? edge.from
-              : null;
-
-        if (!targetKey) continue;
-
-        // Track source for support count before dedup
-        const sourceKey = targetKey === edge.to ? edge.from : edge.to;
-        let sources = supportMap.get(targetKey);
-        if (!sources) { sources = new Set(); supportMap.set(targetKey, sources); }
-        sources.add(sourceKey);
-
-        if (seen.has(targetKey)) continue;
-        seen.add(targetKey);
-
-        const node = nodes[targetKey];
-        if (!node?.entity) continue;
-
-        const f = edge.fields ?? {};
-        const score = (
-          (scoreField ? f[scoreField] : undefined) ??
-          f.overall_score ??
-          f.score ??
-          f.evidence_count
-        ) as number | undefined;
-
-        // Collect all non-null edge properties — let the model see everything
-        const edgeProperties: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(f)) {
-          if (v != null) edgeProperties[k] = v;
-        }
-
-        targetEntities.push({
-          ...node.entity,
-          rank: targetEntities.length + 1,
-          score: typeof score === "number" ? score : undefined,
-          ...(Object.keys(edgeProperties).length > 0 ? { edgeProperties } : {}),
-        });
-      }
-
-      // Annotate support count and re-sort if any target has > 1 source
-      const hasMultiSupport = [...supportMap.values()].some((s) => s.size > 1);
-      if (hasMultiSupport) {
-        for (const ent of targetEntities) {
-          const key = `${ent.type}:${ent.id}`;
-          const count = supportMap.get(key)?.size ?? 1;
-          if (count > 1) ent.supportCount = count;
-        }
-        // Re-sort: support count desc, then score desc
-        targetEntities.sort((a, b) => {
-          const sa = a.supportCount ?? 1;
-          const sb = b.supportCount ?? 1;
-          if (sb !== sa) return sb - sa;
-          return (b.score ?? 0) - (a.score ?? 0);
-        });
-        // Re-assign ranks
-        for (let r = 0; r < targetEntities.length; r++) {
-          targetEntities[r].rank = r + 1;
-        }
-      }
-
+      const targetEntities = collectStepEntities(stepEdges, nodes, ann);
       const annotation = await edgeTypeAnnotation(ann.edgeType);
       results.push({
         step: ann.userStepIndex,

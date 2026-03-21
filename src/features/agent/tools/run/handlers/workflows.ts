@@ -505,12 +505,13 @@ export async function handleVariantProfile(
           }
         }
         if (!cohortData && hasVid && vcfRefs.length > 0) {
-          // Fetch a larger sample and filter client-side by vid
+          // Fetch enough rows to scan for target variants — use schema row count if available
+          const scanLimit = Math.min(ctx.schemaCache?.rowCount ?? 1000, 5000);
           rowResult = await cohortFetch<{ rows?: unknown[] }>(
             `/cohorts/${encodeURIComponent(cohortId)}/rows`,
             {
               method: "POST",
-              body: { limit: 100 },
+              body: { limit: scanLimit, select: ["vid", "rsid", "variant_vcf", "chromosome", "position", "ref", "alt", "cadd_phred", "gnomad_af", "clinvar_significance"] },
               timeout: 15_000,
             },
           ).catch(() => null);

@@ -113,8 +113,8 @@ function GwasVisualizationStub({ data }: { data: GwasAssociationRow[] }) {
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
-        <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
+        <div className="bg-muted rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-foreground">{stats.total}</div>
           <div className="text-xs text-muted-foreground">
             Total Associations
           </div>

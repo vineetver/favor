@@ -19,7 +19,7 @@ export async function handleExploreCompare(
   const tc = new TraceCollector();
 
   try {
-    const resolutions = await resolveSeedsWithMeta(cmd.seeds, resolvedCache);
+    const { resolutions } = await resolveSeedsWithMeta(cmd.seeds, resolvedCache);
     let resolved = resolutions.map((r) => r.entity);
     warnPartialResolution(cmd.seeds.length, resolved.length, tc);
     if (resolved.length < 2) {
@@ -35,7 +35,7 @@ export async function handleExploreCompare(
       const expectedSeedType = inferExpectedSeedType(schema, cmd.into, resolved);
       if (expectedSeedType) {
         tc.add({ step: "type_correction", kind: "decision", message: `Re-resolving seeds as ${expectedSeedType} (inferred from intents)` });
-        const reResolved = await resolveSeedsWithTypeHint(cmd.seeds, expectedSeedType, resolvedCache);
+        const { resolutions: reResolved } = await resolveSeedsWithTypeHint(cmd.seeds, expectedSeedType, resolvedCache);
         const reEntities = reResolved.map((r) => r.entity);
         const nowSameType = reEntities.every((e) => e.type === reEntities[0].type);
         if (nowSameType) {

@@ -44,7 +44,7 @@ export function PathogenicitySummary({ data }: PathogenicitySummaryProps) {
         </div>
         <div className="mt-3 h-3 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full relative">
           <div
-            className="absolute top-0 w-3 h-3 bg-white border-2 border-foreground rounded-full transform -translate-x-1/2"
+            className="absolute top-0 w-3 h-3 bg-background border-2 border-foreground rounded-full transform -translate-x-1/2"
             style={{ left: `${avgNormalisedScore * 100}%` }}
           />
         </div>

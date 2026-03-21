@@ -63,17 +63,6 @@ function stampProvenance(
   return result;
 }
 
-/** Convert AsyncOperation to legacy ExpansionStatus for backward compatibility */
-function asyncToExpansion(op: AsyncOperation): { status: "idle" } | { status: "loading" } | { status: "error"; message: string } {
-  switch (op.type) {
-    case "idle":
-      return { status: "idle" };
-    case "error":
-      return { status: "error", message: op.message };
-    default:
-      return { status: "loading" };
-  }
-}
 
 // =============================================================================
 // REDUCER
@@ -101,7 +90,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         leftDrawerOpen: true,
         inspectorMode: "closed",
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -115,7 +104,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         selection: DEFAULT_SELECTION,
         inspectorMode: "closed",
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -135,7 +124,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           edgeTypes: new Set([...state.filters.edgeTypes, ...action.templateEdgeTypes]),
         },
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -145,7 +134,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -163,7 +152,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -204,7 +193,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           provenance,
         },
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -214,7 +203,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -224,7 +213,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -234,7 +223,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -274,7 +263,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           provenance,
         },
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -284,7 +273,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
@@ -294,7 +283,7 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-        expansion: asyncToExpansion(asyncOp),
+
       };
     }
 
