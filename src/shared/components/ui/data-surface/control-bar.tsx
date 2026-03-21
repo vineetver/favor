@@ -51,7 +51,7 @@ export function ControlBar({
 
         {onFilterClick && (
           <Button
-            variant={hasActiveFilters ? "outline" : "outline"}
+            variant="outline"
             onClick={onFilterClick}
             className={cn(
               hasActiveFilters && "border-primary bg-primary/5 text-primary",

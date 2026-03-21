@@ -91,15 +91,3 @@ export async function fetchVariant(
     selected: response,
   };
 }
-
-/**
- * Legacy function - kept for backward compatibility
- * @deprecated Use fetchVariant instead
- */
-export async function fetchVariantsByRsid(
-  rsid: string,
-): Promise<Variant | null> {
-  if (!rsid) return null;
-  const result = await fetchVariant(rsid);
-  return result?.selected || null;
-}

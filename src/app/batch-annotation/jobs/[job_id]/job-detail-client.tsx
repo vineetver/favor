@@ -10,13 +10,12 @@ import {
   JobDetailView,
   useJobPolling,
 } from "@features/batch";
-import type { CohortDetail, CohortListItem, Job } from "@features/batch";
+import type { Job } from "@features/batch";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Copy,
   GitBranch,
   Loader2,
   Pause,

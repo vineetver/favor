@@ -5,6 +5,3 @@ export { useGeneSummary } from "./use-gene-summary";
 
 // Derived state hook
 export { usePPIDerivedState } from "./use-ppi-derived-state";
-
-// Legacy hooks (deprecated, will be removed)
-export { useContextOverlay } from "./use-context-overlay";

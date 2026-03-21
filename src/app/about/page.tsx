@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Badge } from "@shared/components/ui/badge";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import Link from "next/link";
 
