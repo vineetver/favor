@@ -430,6 +430,13 @@ function buildFdrUpdate(
 
 /** Threshold pass for non-base-editing datasets + global pred_overall */
 const SQL_THRESHOLD_PASS = `
+  -- Ensure columns exist even when base-editing path (buildFdrUpdate) was skipped
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS pred_overall BOOLEAN DEFAULT false;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS either_sig BOOLEAN DEFAULT false;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS efflux_fdr DOUBLE;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS uptake_fdr DOUBLE;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS efflux_neglog_p DOUBLE;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS uptake_neglog_p DOUBLE;
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS encode_mpra_sig BOOLEAN DEFAULT false;
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS finemapped_sig BOOLEAN DEFAULT false;
 
@@ -524,20 +531,6 @@ function geneListSQL(where: string): string {
   return `SELECT gene, count(*) as n FROM (
   SELECT unnest(genes) as gene FROM analysis ${andWhere(where, "genes IS NOT NULL AND len(genes) > 0")}
 ) GROUP BY gene HAVING count(*) >= 3 ORDER BY n DESC LIMIT 50`;
-}
-
-function afBoxplotSQL(where: string, sigCol: string): string {
-  const pops = ["AFR", "AMR", "EAS", "NFE", "SAS", "Global"];
-  const cols = ["af_afr", "af_amr", "af_eas", "af_nfe", "af_sas", "af_global"];
-  const unions = pops.map((pop, i) =>
-    `SELECT '${pop}' as population, ${cols[i]} as af, CASE WHEN ${sigCol} THEN 'Significant' ELSE 'Not significant' END as sig_group FROM analysis ${andWhere(where, `${cols[i]} IS NOT NULL`)}`
-  ).join("\n  UNION ALL ");
-  return `SELECT population, sig_group,
-  APPROX_QUANTILE(af, 0.05) as p5, APPROX_QUANTILE(af, 0.25) as q1,
-  APPROX_QUANTILE(af, 0.5) as median, APPROX_QUANTILE(af, 0.75) as q3,
-  APPROX_QUANTILE(af, 0.95) as p95, COUNT(*) as n
-FROM (${unions}) unpivoted
-GROUP BY population, sig_group ORDER BY population, sig_group`;
 }
 
 function prRawSQL(where: string, sigCol: string): string {

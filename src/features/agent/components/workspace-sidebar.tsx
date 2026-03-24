@@ -22,6 +22,8 @@ import type { CohortListItem } from "@features/batch/types";
 import { deleteCohort } from "@features/batch/api";
 import { useCohorts } from "@features/batch/hooks/use-cohorts";
 import { useSessions } from "../hooks/use-sessions";
+import { useQuotas } from "@shared/hooks/use-quotas";
+import { QuotaBar } from "@shared/components/quota-bar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,6 +111,9 @@ export function WorkspaceSidebar({
     deleteSession,
     refetch: refetchSessions,
   } = useSessions();
+
+  // ---- Quotas ----
+  const { quotas } = useQuotas();
 
   // ---- Cohorts (for prompt picker + tree deletion) ----
   const { cohorts, refetch: refetchCohorts } = useCohorts();
@@ -304,6 +309,16 @@ export function WorkspaceSidebar({
           )}
         </div>
       </div>
+
+      {/* Quota footer */}
+      {quotas.length > 0 && (
+        <div className="border-t border-border px-4 py-3">
+          <QuotaBar
+            quotas={quotas}
+            filter={["agent_messages_today", "concurrent_cohorts"]}
+          />
+        </div>
+      )}
 
       {/* Cohort prompt picker dialog */}
       <CohortPromptPicker

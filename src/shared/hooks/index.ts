@@ -18,3 +18,5 @@ export {
 } from "./use-client-search-params";
 
 export { AuthProvider, useAuth } from "./use-auth";
+
+export { useQuotas, useQuota, type Quota } from "./use-quotas";

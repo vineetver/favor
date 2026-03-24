@@ -33,6 +33,8 @@ import { useCallback, useMemo, useState } from "react";
 import { formatDate, formatNumber } from "../lib/format";
 import { deleteCohort } from "../api";
 import { useCohorts } from "../hooks/use-cohorts";
+import { useQuotas } from "@shared/hooks/use-quotas";
+import { QuotaBar } from "@shared/components/quota-bar";
 import type { CohortListItem, CohortStatus } from "../types";
 
 interface JobsDashboardProps {
@@ -386,6 +388,7 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
   const [sortOption, setSortOption] = useState<SortOption>("newest");
 
   const { cohorts, isLoading, refetch } = useCohorts();
+  const { quotas } = useQuotas();
 
   const handleRemove = useCallback(
     async (id: string) => {
@@ -473,6 +476,17 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
           </Button>
         </div>
       </CardHeader>
+
+      {/* Usage limits */}
+      {quotas.length > 0 && (
+        <div className="px-6 py-2.5 border-b border-border">
+          <QuotaBar
+            quotas={quotas}
+            filter={["concurrent_cohorts", "large_uploads_today", "small_uploads_today"]}
+            layout="row"
+          />
+        </div>
+      )}
 
       {/* Filters Bar */}
       {cohorts.length > 0 && (

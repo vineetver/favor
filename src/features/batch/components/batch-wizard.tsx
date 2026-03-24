@@ -31,6 +31,8 @@ import { ColumnMappingEditor } from "./column-mapping-editor";
 import { UploadDropzone } from "./upload-dropzone";
 import { ValidationSummary } from "./validation-summary";
 import { JobConfiguration, type JobConfig } from "./job-configuration";
+import { useQuotas } from "@shared/hooks/use-quotas";
+import { QuotaBar } from "@shared/components/quota-bar";
 
 // ============================================================================
 // Types
@@ -171,6 +173,7 @@ function StepIndicator({
 
 export function BatchWizard({ className }: BatchWizardProps) {
   const router = useRouter();
+  const { quotas } = useQuotas();
   const [step, setStep] = useState<UploadStep>("select");
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -351,15 +354,25 @@ export function BatchWizard({ className }: BatchWizardProps) {
           {/* Upload Step */}
           {/* ================================================================ */}
           {(step === "select" || step === "uploading" || step === "validating") && !validation && (
-            <UploadDropzone
-              onFileSelect={handleFileSelect}
-              uploadProgress={uploadProgress}
-              isUploading={isUploading}
-              isValidating={isValidating}
-              error={error}
-              selectedFile={file}
-              onClear={handleClear}
-            />
+            <div className="space-y-4">
+              <UploadDropzone
+                onFileSelect={handleFileSelect}
+                uploadProgress={uploadProgress}
+                isUploading={isUploading}
+                isValidating={isValidating}
+                error={error}
+                selectedFile={file}
+                onClear={handleClear}
+              />
+              {quotas.length > 0 && step === "select" && (
+                <QuotaBar
+                  quotas={quotas}
+                  filter={["large_uploads_today", "small_uploads_today", "concurrent_cohorts"]}
+                  layout="row"
+                  className="justify-center"
+                />
+              )}
+            </div>
           )}
 
           {/* ================================================================ */}
