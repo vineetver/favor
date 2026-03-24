@@ -10,9 +10,13 @@ import {
 } from "@shared/components/ui/card";
 import { Textarea } from "@shared/components/ui/textarea";
 import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@shared/components/ui/collapsible";
+import {
   AlertCircle,
   BarChart3,
-  ChevronDown,
   ChevronRight,
   Database,
   Download,
@@ -340,72 +344,65 @@ function QueryCard({
   isLoading: boolean;
   error: string | null;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h4 className="text-sm font-medium text-foreground">{query.name}</h4>
-          <p className="text-xs text-muted-foreground mt-0.5">{query.description}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onRun}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            Run
-          </Button>
-        </div>
-      </div>
-
-      {/* SQL Preview */}
-      {isExpanded && (
-        <div className="px-4 py-3 bg-muted border-b border-border">
-          <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-            {query.sql.trim()}
-          </pre>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="px-4 py-3 bg-rose-50 border-t border-rose-200">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
-            <p className="text-sm text-rose-700">{error}</p>
+    <Collapsible>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h4 className="text-sm font-medium text-foreground">{query.name}</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">{query.description}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <CollapsibleTrigger asChild>
+              <Button type="button" variant="ghost" size="sm">
+                <ChevronRight className="w-4 h-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
+              </Button>
+            </CollapsibleTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onRun}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              Run
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Results */}
-      {result && !error && (
-        <div className="border-t border-border">
-          <ResultTable result={result} />
-        </div>
-      )}
-    </div>
+        {/* SQL Preview */}
+        <CollapsibleContent>
+          <div className="px-4 py-3 bg-muted border-b border-border">
+            <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+              {query.sql.trim()}
+            </pre>
+          </div>
+        </CollapsibleContent>
+
+        {/* Error */}
+        {error && (
+          <div className="px-4 py-3 bg-rose-50 border-t border-rose-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-rose-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        {result && !error && (
+          <div className="border-t border-border">
+            <ResultTable result={result} />
+          </div>
+        )}
+      </div>
+    </Collapsible>
   );
 }
 

@@ -77,7 +77,7 @@ export const AgentQQPlot = memo(function AgentQQPlot({
               { x: 0, y: 0 },
               { x: maxVal, y: maxVal },
             ]}
-            stroke="#94a3b8"
+            stroke="var(--muted-foreground)"
             strokeDasharray="6 3"
             strokeWidth={1.5}
           />

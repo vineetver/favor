@@ -79,24 +79,24 @@ export const AgentEnrichmentPlot = memo(function AgentEnrichmentPlot({ spec }: {
         margin={{ top: 4, right: 40, left: 20, bottom: 4 }}
         barCategoryGap="20%"
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal stroke="#e2e8f0" />
+        <CartesianGrid strokeDasharray="3 3" horizontal stroke="var(--border)" />
         <XAxis
           type="number"
           domain={[0, "auto"]}
-          tick={{ fontSize: 11, fill: "#64748b" }}
+          tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
           label={{
             value: "-log10(adj. p-value)",
             position: "insideBottom",
             offset: -2,
             fontSize: 11,
-            fill: "#64748b",
+            fill: "var(--muted-foreground)",
           }}
         />
         <YAxis
           type="category"
           dataKey="label"
           width={180}
-          tick={{ fontSize: 11, fill: "#334155" }}
+          tick={{ fontSize: 11, fill: "var(--foreground)" }}
         />
         <Tooltip content={EnrichmentTooltipContent} />
         <Bar

@@ -152,9 +152,9 @@ const ENTITY_CONFIG: Record<
 
 const FALLBACK_ENTITY_CONFIG = {
   label: "OTHER",
-  textColor: "text-gray-700",
-  bgColor: "bg-gray-600",
-  borderColor: "border-gray-200",
+  textColor: "text-foreground",
+  bgColor: "bg-muted-foreground",
+  borderColor: "border-border",
 };
 
 function getEntityConfig(type: EntityType) {
@@ -633,7 +633,7 @@ export function UniversalSearch() {
 
                 {/* Text input */}
                 <ComboboxInput
-                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-slate-400 text-lg py-2 font-medium tracking-tight focus:outline-none"
+                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-muted-foreground text-lg py-2 font-medium tracking-tight focus:outline-none"
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}
@@ -678,7 +678,7 @@ export function UniversalSearch() {
 
               <button
                 type="submit"
-                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-[18px] transition-all duration-200 items-center justify-center shadow-lg shadow-slate-900/10 mr-1"
+                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-[18px] transition-all duration-200 items-center justify-center shadow-lg shadow-foreground/10 mr-1"
               >
                 {(isLoading || isPending) && isDropdownOpen ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
@@ -852,7 +852,7 @@ function PivotAnchorCard({
   const linkCounts = buildLinkCounts(anchor.links);
 
   return (
-    <div className="px-5 py-5 border-b border-border bg-gradient-to-br from-slate-50/80 to-white">
+    <div className="px-5 py-5 border-b border-border bg-gradient-to-br from-muted/80 to-card">
       {/* Entity name and type badge */}
       <div className="flex items-center gap-3 mb-2">
         <h3 className={cn("text-xl font-bold tracking-tight", config.textColor)}>

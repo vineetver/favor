@@ -3,8 +3,6 @@
  * These utilities help with consistent formatting of data values in tables and components
  */
 
-import type { ReactNode } from "react";
-
 // Type guards for validation
 export function isValidNumber(value: unknown): value is number {
   return typeof value === "number" && !isNaN(value) && isFinite(value);
@@ -34,6 +32,13 @@ export function formatPercentage(value: number, decimals: number = 1): string {
 /** Locale-aware integer formatting: 1234567 → "1,234,567" */
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat().format(num);
+}
+
+/** Smart numeric display: integers localized, tiny floats scientific, others fixed(3) */
+export function formatNumericValue(value: number): string {
+  if (Number.isInteger(value)) return value.toLocaleString();
+  if (Math.abs(value) < 0.01 && value !== 0) return value.toExponential(2);
+  return value.toFixed(3);
 }
 
 /** Whole-number percent from a 0-1 ratio: 0.5 → "50%" */

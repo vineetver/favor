@@ -45,6 +45,7 @@ import { VariantTrailResults } from "./variant-trail-results";
 import { buildEdgeTypeStatsMap, resolveScoreFields } from "../utils/schema-fields";
 import { filterEdgeFields, buildFieldLabelMap } from "../utils/edge-field-filter";
 import { displayEntityType, formatNodeId } from "../utils/display-names";
+import { formatNumericValue as formatNumber } from "@shared/utils/value-formatters";
 import type { GraphSchema } from "../types/schema";
 import type { SchemaPropertyMeta } from "../api";
 
@@ -103,12 +104,6 @@ function fieldLabel(key: string): string {
     .replace(/\bGo\b/g, "GO");
 }
 
-/** Format a numeric value for display */
-function formatNumber(value: number): string {
-  if (Number.isInteger(value)) return value.toLocaleString();
-  if (Math.abs(value) < 0.01 && value !== 0) return value.toExponential(2);
-  return value.toFixed(3);
-}
 
 /** Check if a field key represents PubMed IDs (pattern match) */
 function isPubmedField(key: string): boolean {
