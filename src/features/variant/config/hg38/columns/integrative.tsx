@@ -50,10 +50,10 @@ const percentileColumn: DerivedColumn = {
 
     return (
       <div className="flex items-center gap-3">
-        <span className="font-mono text-sm font-medium tabular-nums text-slate-900">
+        <span className="font-mono text-sm font-medium tabular-nums text-foreground">
           {pct.toFixed(2)}%
         </span>
-        <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${getColor(pct)}`}
             style={{ width: `${100 - pct}%` }}

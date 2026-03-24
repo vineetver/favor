@@ -53,7 +53,7 @@ function RotatedTick({ x, y, payload }: any) {
       y={y}
       dy={8}
       fontSize={11}
-      fill="#64748b"
+      fill="var(--muted-foreground)"
       textAnchor="end"
       transform={`rotate(-45, ${x}, ${y})`}
     >
@@ -159,7 +159,7 @@ export const BarChart = memo(function BarChart({
     return (
       <div
         className={cn(
-          "flex items-center justify-center h-64 text-slate-400",
+          "flex items-center justify-center h-64 text-muted-foreground",
           className,
         )}
       >
@@ -192,7 +192,7 @@ export const BarChart = memo(function BarChart({
             strokeDasharray="3 3"
             horizontal={isHorizontal}
             vertical={!isHorizontal}
-            stroke="#e2e8f0"
+            stroke="var(--border)"
           />
 
           {isHorizontal ? (
@@ -201,13 +201,13 @@ export const BarChart = memo(function BarChart({
                 type="number"
                 domain={[0, "auto"]}
                 tickFormatter={valueFormatter}
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               />
               <YAxis
                 type="category"
                 dataKey="label"
                 width={yAxisWidth}
-                tick={{ fontSize: 12, fill: "#334155" }}
+                tick={{ fontSize: 12, fill: "var(--foreground)" }}
               />
             </>
           ) : (
@@ -222,7 +222,7 @@ export const BarChart = memo(function BarChart({
                 type="number"
                 domain={[0, "auto"]}
                 tickFormatter={valueFormatter}
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               />
             </>
           )}

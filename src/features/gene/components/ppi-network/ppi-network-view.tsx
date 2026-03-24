@@ -71,8 +71,8 @@ interface NodeDetailPanelProps {
 
 const NodeDetailPanel = memo(function NodeDetailPanel({ node }: NodeDetailPanelProps) {
   return (
-    <div className="border-t border-slate-200">
-      <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-100">
+    <div className="border-t border-border">
+      <div className="px-6 py-2.5 border-b border-border bg-muted">
         <div className="text-body-sm font-medium text-subtle">
           Selected Node
         </div>
@@ -81,7 +81,7 @@ const NodeDetailPanel = memo(function NodeDetailPanel({ node }: NodeDetailPanelP
         <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-slate-900">
+              <span className="text-lg font-semibold text-foreground">
                 {node.label}
               </span>
               {node.isSeed && (
@@ -90,20 +90,20 @@ const NodeDetailPanel = memo(function NodeDetailPanel({ node }: NodeDetailPanelP
                 </span>
               )}
             </div>
-            <div className="text-xs font-mono text-slate-500">{node.id}</div>
+            <div className="text-xs font-mono text-muted-foreground">{node.id}</div>
           </div>
 
           {!node.isSeed && (
             <>
               <div className="space-y-1">
-                <div className="text-xs text-slate-500">Sources</div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-xs text-muted-foreground">Sources</div>
+                <div className="text-sm font-semibold text-foreground">
                   {node.numSources ?? "N/A"}
                 </div>
               </div>
               <div className="space-y-1">
-                <div className="text-xs text-slate-500">Experiments</div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-xs text-muted-foreground">Experiments</div>
+                <div className="text-sm font-semibold text-foreground">
                   {node.numExperiments ?? "N/A"}
                 </div>
               </div>
@@ -171,7 +171,7 @@ const GraphContainer = memo(function GraphContainer({
   onEdgeClick,
 }: GraphContainerProps) {
   return (
-    <div className="relative h-[600px] bg-slate-50/30">
+    <div className="relative h-[600px] bg-muted/30">
       <PPICytoscapeGraph
         elements={elements}
         layout={layout}
@@ -203,8 +203,8 @@ const GraphContainer = memo(function GraphContainer({
         />
       )}
       {/* Hint for interactions */}
-      <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm px-3 py-2">
-        <div className="text-xs text-slate-500 space-y-1">
+      <div className="absolute top-4 right-4 z-10 bg-card/90 backdrop-blur-sm rounded-lg border border-border shadow-sm px-3 py-2">
+        <div className="text-xs text-muted-foreground space-y-1">
           <div>Click an edge to explain the interaction</div>
           <div>Cmd/Ctrl+click nodes to compare</div>
         </div>
@@ -510,13 +510,13 @@ export function PPINetworkView({
 
   return (
     <>
-      <Card className={cn("border border-slate-200 py-0 gap-0", className)}>
-        <CardHeader className="border-b border-slate-200 px-6 py-5">
+      <Card className={cn("border border-border py-0 gap-0", className)}>
+        <CardHeader className="border-b border-border px-6 py-5">
           <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold text-slate-900">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Protein-Protein Interactions
             </CardTitle>
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-muted-foreground">
               {allEdges.length} interactions for {seedGeneSymbol}
             </div>
           </div>
@@ -524,11 +524,11 @@ export function PPINetworkView({
 
         <CardContent className="p-0">
           {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3 border-b border-slate-200 bg-slate-50/50">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3 border-b border-border bg-muted/50">
             <div className="flex flex-wrap items-center gap-4">
               {dimensions.map((dim, index) => (
                 <div key={`${dim.label}-${index}`} className="flex items-center gap-4">
-                  {index > 0 && <div className="h-5 w-px bg-slate-200" />}
+                  {index > 0 && <div className="h-5 w-px bg-border" />}
                   <DimensionSelector
                     label={dim.label}
                     options={dim.options}
@@ -549,7 +549,7 @@ export function PPINetworkView({
                 isLoading={isLoadingOverlay}
               />
 
-              <div className="h-5 w-px bg-slate-200" />
+              <div className="h-5 w-px bg-border" />
 
               {/* Edge Filter Popover */}
               <Popover>
@@ -603,7 +603,7 @@ export function PPINetworkView({
                       onRunClustering={handleRunClustering}
                     />
 
-                    <div className="border-t border-slate-200" />
+                    <div className="border-t border-border" />
 
                     {/* Hub Mode Toggle */}
                     <HubModeToggle
@@ -615,7 +615,7 @@ export function PPINetworkView({
                 </PopoverContent>
               </Popover>
 
-              <div className="h-5 w-px bg-slate-200" />
+              <div className="h-5 w-px bg-border" />
 
               <Button
                 variant="outline"

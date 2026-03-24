@@ -71,9 +71,9 @@ function ClusterControlsInner({
         <div className="flex items-center gap-2">
           <Network className={cn(
             "w-4 h-4",
-            clusterState.enabled ? "text-indigo-600" : "text-slate-400"
+            clusterState.enabled ? "text-indigo-600" : "text-muted-foreground"
           )} />
-          <span className="text-sm font-medium text-slate-700">Clustering</span>
+          <span className="text-sm font-medium text-foreground">Clustering</span>
           {clusterState.enabled && stats.numClusters > 0 && (
             <span className="px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded">
               {stats.numClusters} clusters
@@ -84,12 +84,12 @@ function ClusterControlsInner({
         {/* Enable toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="cluster-toggle" className="text-xs text-slate-600">
+            <Label htmlFor="cluster-toggle" className="text-xs text-muted-foreground">
               Enable clustering
             </Label>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                <Info className="w-3 h-3 text-muted-foreground cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
@@ -109,11 +109,11 @@ function ClusterControlsInner({
         {/* Algorithm selector - only show when enabled */}
         {clusterState.enabled && (
           <>
-            <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-slate-600">Algorithm</Label>
+                <Label className="text-xs text-muted-foreground">Algorithm</Label>
               </div>
-              <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              <div className="flex rounded-lg border border-border bg-muted p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -123,8 +123,8 @@ function ClusterControlsInner({
                       className={cn(
                         "h-7 px-3 text-xs rounded-md flex-1",
                         clusterState.algorithm === "louvain"
-                          ? "bg-white shadow-sm text-slate-900"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-transparent"
+                          ? "bg-card shadow-sm text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-transparent"
                       )}
                     >
                       Louvain
@@ -143,8 +143,8 @@ function ClusterControlsInner({
                       className={cn(
                         "h-7 px-3 text-xs rounded-md flex-1",
                         clusterState.algorithm === "label-propagation"
-                          ? "bg-white shadow-sm text-slate-900"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-transparent"
+                          ? "bg-card shadow-sm text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-transparent"
                       )}
                     >
                       Label Prop
@@ -159,19 +159,19 @@ function ClusterControlsInner({
 
             {/* Cluster stats and actions */}
             {stats.numClusters > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <div className="text-xs text-slate-500 space-y-0.5">
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div className="text-xs text-muted-foreground space-y-0.5">
                   <div className="flex justify-between">
                     <span>Clusters found:</span>
-                    <span className="font-medium text-slate-700">{stats.numClusters}</span>
+                    <span className="font-medium text-foreground">{stats.numClusters}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Avg size:</span>
-                    <span className="font-medium text-slate-700">{stats.avgSize.toFixed(1)}</span>
+                    <span className="font-medium text-foreground">{stats.avgSize.toFixed(1)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Largest:</span>
-                    <span className="font-medium text-slate-700">{stats.maxSize} nodes</span>
+                    <span className="font-medium text-foreground">{stats.maxSize} nodes</span>
                   </div>
                 </div>
 

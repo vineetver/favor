@@ -209,7 +209,7 @@ function PPIPathFinderInner({
           {paths.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-foreground">
                   {paths.length} path{paths.length !== 1 ? "s" : ""} found
                 </span>
                 {selectedPathIndex !== null && (
@@ -234,11 +234,11 @@ function PPIPathFinderInner({
                       "w-full p-3 rounded-lg border text-left transition-all",
                       selectedPathIndex === index
                         ? "border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                        : "border-border bg-card hover:border-border hover:bg-accent"
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-slate-500">
+                      <span className="text-xs font-medium text-muted-foreground">
                         Path {index + 1}
                       </span>
                       <span
@@ -271,7 +271,7 @@ function PPIPathFinderInner({
                                 ? "bg-rose-100 text-rose-700"
                                 : node.type === "Pathway"
                                   ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-700";
+                                  : "bg-muted text-foreground";
 
                         return (
                           <span key={node.id} className="flex items-center gap-1">
@@ -299,8 +299,8 @@ function PPIPathFinderInner({
 
           {/* Empty state */}
           {!isLoading && !error && paths.length === 0 && (
-            <div className="text-center py-8 text-sm text-slate-500">
-              <Route className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              <Route className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p>Enter a target gene to find interaction paths</p>
               <p className="text-xs mt-1">
                 Maximum {recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4} hops

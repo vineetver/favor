@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { cn } from "@infra/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { ChevronDown } from "lucide-react";
 
@@ -66,36 +71,62 @@ function AspectSection({
         <span className="text-xs text-muted-foreground/60">{terms.length}</span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        {visible.map((term, i) => (
-          <div key={i} className="flex items-baseline gap-2">
-            <span className="text-sm text-foreground leading-snug">{term}</span>
-            {goIds[i] && (
-              <ExternalLink
-                href={`https://www.ebi.ac.uk/QuickGO/term/${goIds[i]}`}
-                className="text-xs text-primary font-mono shrink-0 hover:underline"
-                iconSize="sm"
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="flex flex-col gap-1.5">
+          {visible.map((term, i) => (
+            <div key={i} className="flex items-baseline gap-2">
+              <span className="text-sm text-foreground leading-snug">{term}</span>
+              {goIds[i] && (
+                <ExternalLink
+                  href={`https://www.ebi.ac.uk/QuickGO/term/${goIds[i]}`}
+                  className="text-xs text-primary font-mono shrink-0 hover:underline"
+                  iconSize="sm"
+                >
+                  {goIds[i]}
+                </ExternalLink>
+              )}
+            </div>
+          ))}
+        </div>
+        {showToggle && (
+          <>
+            <CollapsibleContent>
+              <div className="flex flex-col gap-1.5">
+                {terms.slice(COLLAPSED_LIMIT).map((term, i) => {
+                  const idx = i + COLLAPSED_LIMIT;
+                  return (
+                    <div key={idx} className="flex items-baseline gap-2">
+                      <span className="text-sm text-foreground leading-snug">{term}</span>
+                      {goIds[idx] && (
+                        <ExternalLink
+                          href={`https://www.ebi.ac.uk/QuickGO/term/${goIds[idx]}`}
+                          className="text-xs text-primary font-mono shrink-0 hover:underline"
+                          iconSize="sm"
+                        >
+                          {goIds[idx]}
+                        </ExternalLink>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+            <CollapsibleTrigger asChild>
+              <button
+                className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                {goIds[i]}
-              </ExternalLink>
-            )}
-          </div>
-        ))}
-      </div>
-      {showToggle && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronDown
-            className={cn(
-              "h-3 w-3 transition-transform",
-              expanded && "rotate-180"
-            )}
-          />
-          {expanded ? "Show less" : `Show all ${terms.length}`}
-        </button>
-      )}
+                <ChevronDown
+                  className={cn(
+                    "h-3 w-3 transition-transform",
+                    expanded && "rotate-180"
+                  )}
+                />
+                {expanded ? "Show less" : `Show all ${terms.length}`}
+              </button>
+            </CollapsibleTrigger>
+          </>
+        )}
+      </Collapsible>
     </div>
   );
 }

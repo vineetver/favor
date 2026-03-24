@@ -13,7 +13,7 @@ const stats = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen relative overflow-hidden text-slate-900 selection:bg-purple-100 selection:text-purple-900">
+    <div className="min-h-screen relative overflow-hidden text-foreground selection:bg-purple-100 selection:text-purple-900">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 blur-[150px] mix-blend-multiply opacity-60"></div>
@@ -39,7 +39,7 @@ export default function HomePage() {
             </div> */}
 
             {/* Main Heading */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl font-semibold text-slate-900 tracking-tight mb-8">
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-semibold text-foreground tracking-tight mb-8">
               Functional Annotation of Variants <br />
               <span className="text-transparent bg-clip-text bg-linear-to-br from-violet-700 via-purple-700 to-fuchsia-700">
                 Online Resource
@@ -47,7 +47,7 @@ export default function HomePage() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed tracking-tight font-light">
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed tracking-tight font-light">
               An open-access portal for whole genome sequencing variant
               annotation. Accelerating variant interpretation and discovery.
             </p>
@@ -62,30 +62,30 @@ export default function HomePage() {
           <StatsTicker />
 
           {/* Divider */}
-          <div className="w-full max-w-xs mx-auto border-t border-slate-200 my-24"></div>
+          <div className="w-full max-w-xs mx-auto border-t border-border my-24"></div>
 
           {/* Batch Annotation Section */}
           <div className="w-full max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold tracking-tight text-slate-900 mb-4">
+              <h2 className="text-4xl font-bold tracking-tight text-foreground mb-4">
                 Batch Processing
               </h2>
-              <p className="text-slate-500 text-xl max-w-xl mx-auto">
+              <p className="text-muted-foreground text-xl max-w-xl mx-auto">
                 Upload VCF or CSV files for large-scale annotation.
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               {/* Documentation Card */}
-              <div className="bg-white rounded-[2.5rem] p-12 shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-between h-[500px] relative overflow-hidden group">
+              <div className="bg-card rounded-[2.5rem] p-12 shadow-2xl border border-border flex flex-col justify-between h-[500px] relative overflow-hidden group">
                 <div className="relative z-10">
-                  <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-8 text-slate-900">
+                  <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-8 text-foreground">
                     <FileText className="w-7 h-7" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+                  <h3 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
                     Documentation & Specs
                   </h3>
-                  <p className="text-slate-500 text-lg leading-relaxed pr-8">
+                  <p className="text-muted-foreground text-lg leading-relaxed pr-8">
                     Review the file formatting guidelines to ensure perfect
                     parsing of your variant data.
                   </p>
@@ -93,7 +93,7 @@ export default function HomePage() {
                 <div className="relative z-10 pt-8">
                   <Link
                     href="/docs"
-                    className="text-base font-semibold text-slate-900 flex items-center gap-2 hover:gap-3 transition-all"
+                    className="text-base font-semibold text-foreground flex items-center gap-2 hover:gap-3 transition-all"
                   >
                     Read Documentation <ArrowUpRight className="w-5 h-5" />
                   </Link>
@@ -105,9 +105,9 @@ export default function HomePage() {
               {/* Upload Card */}
               <Link
                 href="/batch-annotation"
-                className="bg-slate-900 text-white rounded-[2.5rem] p-12 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center text-center h-[500px] relative overflow-hidden cursor-pointer group transition-transform hover:scale-[1.01] duration-300"
+                className="bg-foreground text-white rounded-[2.5rem] p-12 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center text-center h-[500px] relative overflow-hidden cursor-pointer group transition-transform hover:scale-[1.01] duration-300"
               >
-                <div className="absolute inset-0 bg-linear-to-br from-slate-900 to-purple-900 opacity-50"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-foreground to-purple-900 opacity-50"></div>
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
 
                 <div className="relative z-10 flex flex-col items-center">
@@ -117,7 +117,7 @@ export default function HomePage() {
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">
                     Upload Dataset
                   </h3>
-                  <p className="text-slate-400 text-lg mb-10 max-w-sm">
+                  <p className="text-muted-foreground text-lg mb-10 max-w-sm">
                     Drag & drop your VCF file here, or click to browse.
                   </p>
                   <span className="inline-flex px-5 py-2.5 rounded-full bg-white/10 border border-white/5 text-sm font-medium backdrop-blur-md">
@@ -140,7 +140,7 @@ function StatsTicker() {
       {stats.map((stat, index) => (
         <div key={stat.id} className="flex items-center">
           {index > 0 && (
-            <div className="h-16 w-px bg-slate-200 mx-8 md:mx-16 hidden sm:block" />
+            <div className="h-16 w-px bg-border mx-8 md:mx-16 hidden sm:block" />
           )}
           <div className="text-center px-6 sm:px-0">
             <div className="text-stat-value mb-2">

@@ -31,6 +31,82 @@ export function formatPercentage(value: number, decimals: number = 1): string {
   return `${roundNumber(value * 100, decimals)}%`;
 }
 
+/** Locale-aware integer formatting: 1234567 → "1,234,567" */
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat().format(num);
+}
+
+/** Whole-number percent from a 0-1 ratio: 0.5 → "50%" */
+export function formatPercent(num: number): string {
+  return `${(num * 100).toFixed(0)}%`;
+}
+
+/** Human-readable byte size: 1024 → "1.0 KB" */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/** Relative time string: "2m ago", "3h ago", "Jan 5" */
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+}
+
+/** Locale time string: "02:30 PM" */
+export function formatTime(dateString: string): string {
+  return new Date(dateString).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Elapsed duration between two ISO timestamps: "2m 30s", "1h 5m" */
+export function formatDuration(startedAt: string, completedAt?: string): string {
+  const start = new Date(startedAt).getTime();
+  const end = completedAt ? new Date(completedAt).getTime() : Date.now();
+  const seconds = Math.floor((end - start) / 1000);
+
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+/** Compact count: 1234 → "1.2K", 1234567 → "1.2M" */
+export function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+/** Convert −log10(p) back to a display p-value string */
+export function formatPvalue(neglogp: number): string {
+  if (neglogp <= 0) return "1";
+  const p = Math.pow(10, -neglogp);
+  if (p < 0.001) return p.toExponential(1);
+  return p.toFixed(3);
+}
+
 // String utilities
 export function splitText(text: string, separator: string = ";"): string[] {
   return text.split(separator).filter(item => item.trim().length > 0);

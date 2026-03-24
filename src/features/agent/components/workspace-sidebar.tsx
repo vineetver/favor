@@ -61,30 +61,19 @@ function SidebarSection({
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronRightIcon
-          className={cn(
-            "size-3 transition-transform duration-200",
-            isOpen && "rotate-90",
-          )}
-        />
+    <Collapsible defaultOpen={defaultOpen} className="group">
+      <CollapsibleTrigger className="flex w-full items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+        <ChevronRightIcon className="size-3 transition-transform duration-200 group-data-[state=open]:rotate-90" />
         <span className="flex-1 text-left">{title}</span>
         {count != null && count > 0 && (
           <span className="size-7 flex items-center justify-center text-[10px] font-medium tabular-nums">
             {count}
           </span>
         )}
-      </button>
-      {isOpen && <div>{children}</div>}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{children}</CollapsibleContent>
+    </Collapsible>
   );
 }
 

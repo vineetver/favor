@@ -22,7 +22,7 @@ function ContextOverlaySelectorInner({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {isLoading && (
-        <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin" />
+        <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
       )}
       <DimensionSelector
         label="Overlay"

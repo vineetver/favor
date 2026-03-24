@@ -35,7 +35,7 @@ function HeaderTooltip({ content }: { content: ReactNode }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Info className="h-4 w-4 cursor-help flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors" />
+          <Info className="h-4 w-4 cursor-help flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors" />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-md">
           {content}
@@ -102,7 +102,7 @@ const CHROMATIN_CATEGORIES: Record<
   quiescent: {
     label: "Quiescent",
     color: "gray",
-    barClass: "bg-slate-400",
+    barClass: "bg-muted-foreground/60",
     description: "Inactive regions with low signal across all marks",
   },
 };
@@ -323,7 +323,7 @@ function ChromatinProgressBar({
       <span
         className={cn(
           "text-data w-12 text-right tabular-nums",
-          isEmpty ? "!text-slate-300" : "",
+          isEmpty ? "!text-muted-foreground/40" : "",
         )}
       >
         {value}/48
@@ -331,7 +331,7 @@ function ChromatinProgressBar({
       <div
         className={cn(
           "relative h-3 w-32 rounded-full overflow-hidden",
-          isEmpty ? "bg-slate-100" : "bg-slate-200",
+          isEmpty ? "bg-muted" : "bg-border",
         )}
       >
         {!isEmpty && (
@@ -359,14 +359,14 @@ function ChromatinStateRow({
   const tooltipContent = CHROMATIN_TOOLTIPS[state.id];
 
   return (
-    <div className="flex items-center gap-4 py-3 px-4 hover:bg-slate-50/50 transition-colors">
+    <div className="flex items-center gap-4 py-3 px-4 hover:bg-accent/50 transition-colors">
       <div className="w-28 flex-shrink-0 flex items-center gap-1.5">
-        <span className="font-semibold text-base text-slate-900">
+        <span className="font-semibold text-base text-foreground">
           {state.name}
         </span>
         {tooltipContent && <HeaderTooltip content={tooltipContent} />}
       </div>
-      <div className="flex-1 text-base text-slate-500">{state.description}</div>
+      <div className="flex-1 text-base text-muted-foreground">{state.description}</div>
       <ChromatinProgressBar value={value} category={state.category} />
     </div>
   );
@@ -385,11 +385,11 @@ function ChromatinCategoryGroup({
   const cat = CHROMATIN_CATEGORIES[categoryKey];
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden">
+    <div className="border border-border rounded-xl overflow-hidden">
       <div className={cn("px-4 py-3 text-label", BADGE_COLORS[cat.color])}>
         {cat.label}
       </div>
-      <div className="divide-y divide-slate-200 bg-white">
+      <div className="divide-y divide-border bg-card">
         {states.map((state) => (
           <ChromatinStateRow
             key={state.id}

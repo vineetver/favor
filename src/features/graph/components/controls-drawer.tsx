@@ -1,6 +1,11 @@
 "use client";
 
 import { Button } from "@shared/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import { Slider } from "@shared/components/ui/slider";
 import {
   Activity,
@@ -55,23 +60,26 @@ function CollapsibleSection({ title, defaultOpen = true, badge, children }: Coll
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-border last:border-b-0">
-      <button
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">{title}</span>
-          {badge}
-        </div>
-        {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        )}
-      </button>
-      {isOpen && <div className="px-4 pb-4">{children}</div>}
-    </div>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border last:border-b-0">
+      <CollapsibleTrigger asChild>
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">{title}</span>
+            {badge}
+          </div>
+          {isOpen ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="px-4 pb-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 

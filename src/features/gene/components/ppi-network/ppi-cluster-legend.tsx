@@ -29,12 +29,12 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
     <div
       className={cn(
         "absolute bottom-4 left-4 z-10",
-        "bg-white/95 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm",
+        "bg-card/95 backdrop-blur-sm rounded-lg border border-border shadow-sm",
         "p-3 max-w-[200px]",
         className
       )}
     >
-      <div className="text-xs font-medium text-slate-700 mb-2">
+      <div className="text-xs font-medium text-foreground mb-2">
         Clusters ({stats.numClusters})
       </div>
       <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
@@ -54,23 +54,23 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
                   borderColor: colors.border,
                 }}
               />
-              <span className="text-slate-600 truncate">
+              <span className="text-muted-foreground truncate">
                 {nodeIds.length} nodes
                 {isCollapsed && (
-                  <span className="text-slate-400 ml-1">(collapsed)</span>
+                  <span className="text-muted-foreground ml-1">(collapsed)</span>
                 )}
               </span>
             </div>
           );
         })}
         {clusterEntries.length > 8 && (
-          <div className="text-[10px] text-slate-400 pt-1">
+          <div className="text-[10px] text-muted-foreground pt-1">
             +{clusterEntries.length - 8} more clusters
           </div>
         )}
         {/* Unclustered nodes */}
         {unclusteredCount > 0 && (
-          <div className="flex items-center gap-2 text-xs pt-1 border-t border-slate-100 mt-1">
+          <div className="flex items-center gap-2 text-xs pt-1 border-t border-border mt-1">
             <div
               className="w-3 h-3 rounded-sm border-2 shrink-0"
               style={{
@@ -78,7 +78,7 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
                 borderColor: "#94a3b8",
               }}
             />
-            <span className="text-slate-500 truncate">
+            <span className="text-muted-foreground truncate">
               {unclusteredCount} unclustered
             </span>
           </div>

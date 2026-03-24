@@ -587,11 +587,11 @@ export function UniversalSearch() {
             value={null}
             onChange={(val) => val && handleSelectSuggestion(val)}
           >
-            <div className="relative flex flex-col sm:flex-row items-center bg-white p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-white/80 ring-1 ring-border">
+            <div className="relative flex flex-col sm:flex-row items-center bg-card p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-card/80 ring-1 ring-border">
               <div className="grid grid-cols-2 bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
                 <div
                   className={cn(
-                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ease-out",
+                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-background rounded-xl shadow-sm transition-all duration-300 ease-out",
                     genome === "hg38" ? "left-1" : "right-1",
                   )}
                 />
@@ -692,7 +692,7 @@ export function UniversalSearch() {
             {isDropdownOpen && (
               <ComboboxOptions
                 static
-                className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white border border-border shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
+                className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-card border border-border shadow-2xl focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
                 style={{ maxHeight: "calc(100vh - 400px)" }}
               >
                 {/* Loading bar */}

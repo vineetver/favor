@@ -146,7 +146,7 @@ for (const nodeType of Object.keys(NODE_META)) {
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <div style="width:14px;height:14px;border-radius:50%;border:2.5px solid ${meta.border};background:${meta.bg};flex-shrink:0"></div>
       <span style="font-size:14px;font-weight:700">${meta.label}</span>
-      <span style="font-size:11px;opacity:0.5">${connected.length} edge types</span>
+      <span style="font-size:11px;color:var(--muted-foreground)">${connected.length} edge types</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:4px">
       ${allSources.map((s) => `<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--muted);color:var(--muted-foreground);font-weight:500;white-space:nowrap">${s}</span>`).join("")}

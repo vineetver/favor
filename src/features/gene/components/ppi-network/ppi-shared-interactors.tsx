@@ -127,7 +127,7 @@ function PPISharedInteractorsInner({
           {/* Selected genes */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">
+              <span className="text-sm font-medium text-foreground">
                 Selected Genes ({selectedGenes.length})
               </span>
               {selectedGenes.length > 0 && (
@@ -135,7 +135,7 @@ function PPISharedInteractorsInner({
                   variant="ghost"
                   size="sm"
                   onClick={handleClearAll}
-                  className="h-7 text-xs text-slate-500"
+                  className="h-7 text-xs text-muted-foreground"
                 >
                   <Trash2 className="w-3 h-3 mr-1" />
                   Clear all
@@ -163,7 +163,7 @@ function PPISharedInteractorsInner({
                 ))}
               </div>
             ) : (
-              <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center text-sm text-slate-500">
+              <div className="p-4 border border-dashed border-border rounded-lg text-center text-sm text-muted-foreground">
                 Click nodes in the graph while holding Cmd/Ctrl to select genes
               </div>
             )}
@@ -190,7 +190,7 @@ function PPISharedInteractorsInner({
           </Button>
 
           {selectedGenes.length < 2 && selectedGenes.length > 0 && (
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Select at least 2 genes to find shared interactors
             </p>
           )}
@@ -206,7 +206,7 @@ function PPISharedInteractorsInner({
           {hasSearched && !isLoading && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-foreground">
                   {sharedNeighbors.length} shared interactor{sharedNeighbors.length !== 1 ? "s" : ""} found
                 </span>
               </div>
@@ -216,14 +216,14 @@ function PPISharedInteractorsInner({
                   {sharedNeighbors.map((neighbor) => (
                     <div
                       key={neighbor.neighbor.id}
-                      className="p-3 rounded-lg border border-slate-200 bg-white hover:border-purple-200 hover:bg-purple-50/50 transition-colors"
+                      className="p-3 rounded-lg border border-border bg-card hover:border-purple-200 hover:bg-primary/5 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-medium text-slate-900">
+                          <div className="font-medium text-foreground">
                             {neighbor.neighbor.label}
                           </div>
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">
+                          <div className="text-xs text-muted-foreground font-mono mt-0.5">
                             {neighbor.neighbor.id}
                           </div>
                         </div>
@@ -237,7 +237,7 @@ function PPISharedInteractorsInner({
                         {neighbor.support.map((s, idx) => (
                           <span
                             key={`${s.from.id}-${idx}`}
-                            className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded"
+                            className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground rounded"
                           >
                             {s.from.label}
                           </span>
@@ -263,8 +263,8 @@ function PPISharedInteractorsInner({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 text-sm text-slate-500">
-                  <GitMerge className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                <div className="text-center py-6 text-sm text-muted-foreground">
+                  <GitMerge className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p>No shared interactors found</p>
                   <p className="text-xs mt-1">
                     These genes may not share common interaction partners
@@ -276,8 +276,8 @@ function PPISharedInteractorsInner({
 
           {/* Empty state */}
           {!hasSearched && !isLoading && !error && selectedGenes.length === 0 && (
-            <div className="text-center py-8 text-sm text-slate-500">
-              <GitMerge className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              <GitMerge className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p>Select genes from the graph to compare</p>
               <p className="text-xs mt-1">
                 Hold Cmd/Ctrl and click nodes

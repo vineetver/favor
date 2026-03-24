@@ -1,4 +1,16 @@
 /**
+ * Tissue/biosample formatting utilities.
+ *
+ * Generic formatters (formatCount, formatPvalue) live in
+ * @shared/utils/value-formatters and are re-exported here so existing
+ * imports from "tissue-format" keep working.
+ */
+
+export { formatCount, formatPvalue } from "./value-formatters";
+
+// ── Tissue-specific helpers ──────────────────────────────────────
+
+/**
  * Format raw tissue/biosample names from various data sources into
  * human-readable labels.
  *
@@ -20,7 +32,7 @@ export const TISSUE_GROUPS = [
 
 /**
  * Map a fine-grained tissue name to one of the 18 standard tissue groups.
- * Uses prefix matching for GTEx-style names ("Brain Amygdala" → "Brain")
+ * Uses prefix matching for GTEx-style names ("Brain Amygdala" -> "Brain")
  * and exact matching for known names.
  */
 const TISSUE_GROUP_PREFIXES: [string, string][] = [
@@ -40,31 +52,15 @@ const TISSUE_GROUP_PREFIXES: [string, string][] = [
 ];
 
 export function inferTissueGroup(tissueName: string): string {
-  // If the row already has tissue_group, prefer that
   for (const [prefix, group] of TISSUE_GROUP_PREFIXES) {
     if (tissueName.startsWith(prefix)) return group;
   }
   return "Other";
 }
 
-/** Format large numbers: 1234 → "1.2K", 1234567 → "1.2M" */
-export function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
 /** Format enhancer/link scores: exponential below 0.01, 2 decimals above */
 export function fmtScore(v: number): string {
   return v < 0.01 ? v.toExponential(0) : v.toFixed(2);
-}
-
-/** Convert −log₁₀(p) back to p-value string */
-export function formatPvalue(neglogp: number): string {
-  if (neglogp <= 0) return "1";
-  const p = Math.pow(10, -neglogp);
-  if (p < 0.001) return p.toExponential(1);
-  return p.toFixed(3);
 }
 
 /** Format genomic distance: bp / kb / Mb */

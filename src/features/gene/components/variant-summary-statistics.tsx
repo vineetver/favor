@@ -422,7 +422,7 @@ export function VariantSummaryStatistics({
                 <li>Rare allele frequency (AF &lt; 0.1%)</li>
                 <li>Located in exonic (coding) regions</li>
               </ul>
-              <p className="text-slate-400 text-xs pt-1">All three criteria must be met.</p>
+              <p className="text-muted-foreground text-xs pt-1">All three criteria must be met.</p>
             </div>
           }
         />

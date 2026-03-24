@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@infra/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
+import { useState } from "react";
 
 export function TechCard({
   name,
@@ -24,7 +29,8 @@ export function TechCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasOverflow = details.length > headlineCount;
-  const visible = expanded ? details : details.slice(0, headlineCount);
+  const headline = details.slice(0, headlineCount);
+  const overflow = details.slice(headlineCount);
 
   return (
     <motion.div
@@ -41,32 +47,50 @@ export function TechCard({
           {statLabel}
         </p>
       </div>
-      <ul className="mt-3 space-y-1">
-        {visible.map((d) => (
-          <li
-            key={d}
-            className="text-xs text-muted-foreground flex items-baseline gap-1.5"
-          >
-            <span className="w-1 h-1 rounded-full bg-muted-foreground/40 shrink-0 mt-1.5" />
-            {d}
-          </li>
-        ))}
-      </ul>
-      {hasOverflow && (
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          {expanded ? "Show less" : `${details.length - headlineCount} more ops`}
-          <ChevronDown
-            className={cn(
-              "w-3 h-3 transition-transform",
-              expanded && "rotate-180",
-            )}
-          />
-        </button>
-      )}
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <ul className="mt-3 space-y-1">
+          {headline.map((d) => (
+            <li
+              key={d}
+              className="text-xs text-muted-foreground flex items-baseline gap-1.5"
+            >
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/40 shrink-0 mt-1.5" />
+              {d}
+            </li>
+          ))}
+        </ul>
+        {hasOverflow && (
+          <>
+            <CollapsibleContent>
+              <ul className="space-y-1">
+                {overflow.map((d) => (
+                  <li
+                    key={d}
+                    className="text-xs text-muted-foreground flex items-baseline gap-1.5"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40 shrink-0 mt-1.5" />
+                    {d}
+                  </li>
+                ))}
+              </ul>
+            </CollapsibleContent>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                {expanded ? "Show less" : `${details.length - headlineCount} more ops`}
+                <ChevronDown
+                  className={cn(
+                    "w-3 h-3 transition-transform",
+                    expanded && "rotate-180",
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+          </>
+        )}
+      </Collapsible>
     </motion.div>
   );
 }

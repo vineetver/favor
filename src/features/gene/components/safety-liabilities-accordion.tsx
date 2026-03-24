@@ -8,6 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
@@ -94,10 +99,10 @@ function formatStudyName(name: string): string {
   const expansions: Record<string, string> = {
     "TOX21": "Tox21",
     "ATG": "Attagene",
-    "BLA": "β-lactamase",
+    "BLA": "\u03B2-lactamase",
     "LUC": "Luciferase",
-    "ERa": "ERα",
-    "ERb": "ERβ",
+    "ERa": "ER\u03B1",
+    "ERb": "ER\u03B2",
     "AR": "Androgen Receptor",
     "GR": "Glucocorticoid Receptor",
     "PR": "Progesterone Receptor",
@@ -229,8 +234,8 @@ export function SafetyLiabilitiesAccordion({
       onChange: setDirectionFilter,
       options: [
         { value: "all", label: `All (${liabilities?.length ?? 0})` },
-        { value: "increase", label: `Risk ↑ (${directionCounts.increase})` },
-        { value: "decrease", label: `Risk ↓ (${directionCounts.decrease})` },
+        { value: "increase", label: `Risk \u2191 (${directionCounts.increase})` },
+        { value: "decrease", label: `Risk \u2193 (${directionCounts.decrease})` },
         { value: "mixed", label: `Variable (${directionCounts.mixed})` },
       ],
     },
@@ -456,50 +461,58 @@ export function SafetyLiabilitiesAccordion({
                       <div className="space-y-2">
                         {realStudies.map((study, index) => {
                           const studyKey = `${study.name || "study"}-${index}`;
-                          const isExpanded = expandedStudies[studyKey];
+                          const isExpanded = expandedStudies[studyKey] ?? false;
 
                           return (
-                            <div key={studyKey} className="border border-border/60 rounded-lg overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => setExpandedStudies((prev) => ({ ...prev, [studyKey]: !prev[studyKey] }))}
-                                className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
-                              >
-                                <div className="text-left min-w-0">
-                                  <div className="text-[13px] font-medium text-foreground">
-                                    {formatStudyName(study.name || "")}
-                                  </div>
-                                  <div className="text-[11px] text-muted-foreground">
-                                    {getStudyTypeDescription(study.type) || "Assay"}
-                                  </div>
-                                </div>
-                                {isExpanded ? (
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                )}
-                              </button>
-                              {isExpanded && study.description && (() => {
-                                const parsed = formatStudyDescription(study.description);
-                                if (!parsed) return null;
-                                return (
-                                  <div className="px-4 py-3 border-t border-border/60 bg-muted/30 space-y-2">
-                                    <div className="text-[13px] text-muted-foreground leading-relaxed">
-                                      {parsed.text}
+                            <Collapsible
+                              key={studyKey}
+                              open={isExpanded}
+                              onOpenChange={(open) => setExpandedStudies((prev) => ({ ...prev, [studyKey]: open }))}
+                              className="border border-border/60 rounded-lg overflow-hidden"
+                            >
+                              <CollapsibleTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
+                                >
+                                  <div className="text-left min-w-0">
+                                    <div className="text-[13px] font-medium text-foreground">
+                                      {formatStudyName(study.name || "")}
                                     </div>
-                                    {parsed.variants.length > 0 && (
-                                      <div className="flex flex-wrap gap-1">
-                                        {parsed.variants.map((v) => (
-                                          <span key={v} className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                                            {v}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
+                                    <div className="text-[11px] text-muted-foreground">
+                                      {getStudyTypeDescription(study.type) || "Assay"}
+                                    </div>
                                   </div>
-                                );
-                              })()}
-                            </div>
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  )}
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                {study.description && (() => {
+                                  const parsed = formatStudyDescription(study.description);
+                                  if (!parsed) return null;
+                                  return (
+                                    <div className="px-4 py-3 border-t border-border/60 bg-muted/30 space-y-2">
+                                      <div className="text-[13px] text-muted-foreground leading-relaxed">
+                                        {parsed.text}
+                                      </div>
+                                      {parsed.variants.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {parsed.variants.map((v) => (
+                                            <span key={v} className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                                              {v}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </CollapsibleContent>
+                            </Collapsible>
                           );
                         })}
                       </div>

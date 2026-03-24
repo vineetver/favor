@@ -58,9 +58,9 @@ function EdgeFilterControlsInner({
         <div className="flex items-center gap-2">
           <Filter className={cn(
             "w-4 h-4",
-            hasActiveFilter ? "text-indigo-600" : "text-slate-400"
+            hasActiveFilter ? "text-indigo-600" : "text-muted-foreground"
           )} />
-          <span className="text-sm font-medium text-slate-700">Edge Filters</span>
+          <span className="text-sm font-medium text-foreground">Edge Filters</span>
           {hasActiveFilter && (
             <span className="px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded">
               Active
@@ -72,10 +72,10 @@ function EdgeFilterControlsInner({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-slate-600">Min. Sources</Label>
+              <Label className="text-xs text-muted-foreground">Min. Sources</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[200px]">
                   <p className="text-xs">
@@ -85,7 +85,7 @@ function EdgeFilterControlsInner({
                 </TooltipContent>
               </Tooltip>
             </div>
-            <span className="text-xs font-medium text-slate-700 tabular-nums">
+            <span className="text-xs font-medium text-foreground tabular-nums">
               {filter.minSources === 0 ? "All" : `${filter.minSources}+`}
             </span>
           </div>
@@ -97,7 +97,7 @@ function EdgeFilterControlsInner({
             step={1}
             className="w-full"
           />
-          <div className="flex justify-between text-[10px] text-slate-400">
+          <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>All</span>
             <span>4+</span>
           </div>
@@ -107,10 +107,10 @@ function EdgeFilterControlsInner({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-slate-600">Min. Experiments</Label>
+              <Label className="text-xs text-muted-foreground">Min. Experiments</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[200px]">
                   <p className="text-xs">
@@ -120,7 +120,7 @@ function EdgeFilterControlsInner({
                 </TooltipContent>
               </Tooltip>
             </div>
-            <span className="text-xs font-medium text-slate-700 tabular-nums">
+            <span className="text-xs font-medium text-foreground tabular-nums">
               {filter.minExperiments === 0 ? "All" : `${filter.minExperiments}+`}
             </span>
           </div>
@@ -132,21 +132,21 @@ function EdgeFilterControlsInner({
             step={1}
             className="w-full"
           />
-          <div className="flex justify-between text-[10px] text-slate-400">
+          <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>All</span>
             <span>{Math.min(maxExperiments, 50)}+</span>
           </div>
         </div>
 
         {/* Grey Out Toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="grey-out-toggle" className="text-xs text-slate-600">
+            <Label htmlFor="grey-out-toggle" className="text-xs text-muted-foreground">
               Grey out (vs hide)
             </Label>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                <Info className="w-3 h-3 text-muted-foreground cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
