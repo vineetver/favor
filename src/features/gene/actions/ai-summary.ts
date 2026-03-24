@@ -53,7 +53,7 @@ export async function getGeneSummary(
 /**
  * Server action to trigger AI summary generation for a gene
  */
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 12000;
 
 export async function generateGeneSummary(params: {
   geneId: string;
