@@ -25,24 +25,24 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
   return (
     <div
       className={cn(
-        "border-t border-slate-200 bg-white",
+        "border-t border-border bg-card",
         className,
       )}
     >
       {/* Header */}
-      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+      <div className="px-6 py-3 border-b border-border bg-muted flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-700">
+          <Info className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">
             Explain this interaction
           </span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-slate-200 rounded transition-colors"
+          className="p-1 hover:bg-accent rounded transition-colors"
           aria-label="Close panel"
         >
-          <X className="w-4 h-4 text-slate-500" />
+          <X className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
 
@@ -51,36 +51,36 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         {/* Interaction summary */}
         <div className="flex items-center gap-2 text-lg">
           <span className="font-semibold text-indigo-600">{edge.sourceSymbol}</span>
-          <span className="text-slate-400">⟷</span>
-          <span className="font-semibold text-slate-700">{edge.targetSymbol}</span>
+          <span className="text-muted-foreground">⟷</span>
+          <span className="font-semibold text-foreground">{edge.targetSymbol}</span>
         </div>
 
         {/* Evidence stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Database className="w-3.5 h-3.5" />
               Sources
             </div>
-            <div className="text-xl font-semibold text-slate-900">
+            <div className="text-xl font-semibold text-foreground">
               {edge.numSources ?? "N/A"}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <FlaskConical className="w-3.5 h-3.5" />
               Experiments
             </div>
-            <div className="text-xl font-semibold text-slate-900">
+            <div className="text-xl font-semibold text-foreground">
               {edge.numExperiments ?? "N/A"}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <FileText className="w-3.5 h-3.5" />
               Publications
             </div>
-            <div className="text-xl font-semibold text-slate-900">
+            <div className="text-xl font-semibold text-foreground">
               {edge.pubmedIds?.length ?? 0}
             </div>
           </div>
@@ -89,14 +89,14 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         {/* Confidence scores */}
         {edge.confidenceScores.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Confidence Scores
             </div>
             <div className="flex items-center gap-2">
-              <div className="text-sm text-slate-700">
+              <div className="text-sm text-foreground">
                 Average: <span className="font-semibold">{formatConfidenceScore(edge.confidenceScores)}</span>
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-muted-foreground">
                 ({edge.confidenceScores.length} score{edge.confidenceScores.length !== 1 ? "s" : ""})
               </div>
             </div>
@@ -106,18 +106,18 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         {/* Sources list */}
         {edge.sources.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Supporting Databases
             </div>
             <div className="flex flex-wrap gap-2">
               {edge.sources.map((source, idx) => (
                 <span
                   key={`${source.name}-${idx}`}
-                  className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-700"
+                  className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground"
                 >
                   {source.name}
                   {source.experimentCount !== undefined && (
-                    <span className="ml-1.5 text-slate-400">
+                    <span className="ml-1.5 text-muted-foreground">
                       ({source.experimentCount})
                     </span>
                   )}
@@ -130,7 +130,7 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         {/* Detection methods */}
         {edge.detectionMethods && edge.detectionMethods.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Detection Methods
             </div>
             <div className="flex flex-wrap gap-2">
@@ -143,7 +143,7 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
                 </span>
               ))}
               {edge.detectionMethods.length > 5 && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   +{edge.detectionMethods.length - 5} more
                 </span>
               )}
@@ -154,7 +154,7 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         {/* Publications */}
         {edge.pubmedIds && edge.pubmedIds.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Key Publications
             </div>
             <div className="flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
                 </ExternalLink>
               ))}
               {edge.pubmedIds.length > 5 && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   +{edge.pubmedIds.length - 5} more
                 </span>
               )}
@@ -177,7 +177,7 @@ function PPIEdgeDetailPanelInner({ edge, onClose, className }: PPIEdgeDetailPane
         )}
 
         {/* External links */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-3">
+        <div className="pt-2 border-t border-border flex flex-wrap gap-3">
           <ExternalLink
             href={`https://www.ebi.ac.uk/intact/query/${encodeURIComponent(edge.sourceSymbol)}%20AND%20${encodeURIComponent(edge.targetSymbol)}`}
             className="text-xs text-primary hover:underline"

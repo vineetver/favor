@@ -163,11 +163,11 @@ function PPIPathFinderInner({
 
           {/* Search input */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg">
                 <span className="font-semibold text-indigo-600">{seedGeneSymbol}</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
               <div className="flex-1">
                 <Input
                   placeholder="Enter gene symbol (e.g., TP53)"
@@ -285,7 +285,7 @@ function PPIPathFinderInner({
                               {node.label}
                             </span>
                             {nodeIndex < path.nodes.length - 1 && (
-                              <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                              <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
                             )}
                           </span>
                         );

@@ -2,6 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { Button } from "@shared/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@shared/components/ui/collapsible";
 import { cn } from "@infra/utils";
 import {
   ChevronRightIcon,

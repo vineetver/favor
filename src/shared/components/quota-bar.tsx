@@ -21,50 +21,55 @@ function QuotaIndicator({ quota }: { quota: Quota }) {
   const label = formatQuotaLabel(quota.name);
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-muted-foreground truncate">
-                {label}
-              </span>
-              <span
-                className={cn(
-                  "shrink-0 text-[11px] tabular-nums",
-                  isExhausted
-                    ? "text-destructive font-medium"
-                    : isWarning
-                      ? "text-amber-600"
-                      : "text-muted-foreground",
-                )}
-              >
-                {remaining} left
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-border overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  isExhausted
-                    ? "bg-destructive"
-                    : isWarning
-                      ? "bg-amber-500"
-                      : "bg-primary/60",
-                )}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-            <span className="text-[10px] text-muted-foreground/60">
-              Resets {quota.resets}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex flex-col gap-1 min-w-0" role="group" aria-label={label}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground truncate">
+              {label}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 text-[11px] tabular-nums",
+                isExhausted
+                  ? "text-destructive font-medium"
+                  : isWarning
+                    ? "text-amber-600"
+                    : "text-muted-foreground",
+              )}
+            >
+              {remaining} left
             </span>
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          {quota.used} of {quota.limit} used
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          <div
+            className="h-1.5 rounded-full bg-border overflow-hidden"
+            role="progressbar"
+            aria-valuenow={quota.used}
+            aria-valuemin={0}
+            aria-valuemax={quota.limit}
+            aria-label={`${label}: ${quota.used} of ${quota.limit} used`}
+          >
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                isExhausted
+                  ? "bg-destructive"
+                  : isWarning
+                    ? "bg-amber-500"
+                    : "bg-primary/60",
+              )}
+              style={{ width: `${Math.min(pct, 100)}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-muted-foreground/60">
+            Resets {quota.resets}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">
+        {quota.used} of {quota.limit} used
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -79,46 +84,51 @@ function QuotaIndicatorCompact({ quota }: { quota: Quota }) {
   const label = formatQuotaLabel(quota.name);
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="shrink-0 text-[11px] text-muted-foreground truncate">
-              {label}
-            </span>
-            <div className="flex-1 min-w-8 h-1.5 rounded-full bg-border overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  isExhausted
-                    ? "bg-destructive"
-                    : isWarning
-                      ? "bg-amber-500"
-                      : "bg-primary/60",
-                )}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-            <span
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="shrink-0 text-[11px] text-muted-foreground truncate">
+            {label}
+          </span>
+          <div
+            className="flex-1 min-w-8 h-1.5 rounded-full bg-border overflow-hidden"
+            role="progressbar"
+            aria-valuenow={quota.used}
+            aria-valuemin={0}
+            aria-valuemax={quota.limit}
+            aria-label={`${label}: ${quota.used} of ${quota.limit} used`}
+          >
+            <div
               className={cn(
-                "shrink-0 text-[11px] tabular-nums",
+                "h-full rounded-full transition-all",
                 isExhausted
-                  ? "text-destructive font-medium"
+                  ? "bg-destructive"
                   : isWarning
-                    ? "text-amber-600"
-                    : "text-muted-foreground",
+                    ? "bg-amber-500"
+                    : "bg-primary/60",
               )}
-            >
-              {quota.used}/{quota.limit}
-            </span>
+              style={{ width: `${Math.min(pct, 100)}%` }}
+            />
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          <p>{quota.used} of {quota.limit} used</p>
-          <p className="opacity-70">Resets {quota.resets}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          <span
+            className={cn(
+              "shrink-0 text-[11px] tabular-nums",
+              isExhausted
+                ? "text-destructive font-medium"
+                : isWarning
+                  ? "text-amber-600"
+                  : "text-muted-foreground",
+            )}
+          >
+            {quota.used}/{quota.limit}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">
+        <p>{quota.used} of {quota.limit} used</p>
+        <p className="opacity-70">Resets {quota.resets}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -150,18 +160,20 @@ export function QuotaBar({
   const Indicator = layout === "row" ? QuotaIndicatorCompact : QuotaIndicator;
 
   return (
-    <div
-      className={cn(
-        layout === "row"
-          ? "flex items-center gap-4"
-          : "flex flex-col gap-2.5",
-        className,
-      )}
-    >
-      {visible.map((q) => (
-        <Indicator key={q.name} quota={q} />
-      ))}
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <div
+        className={cn(
+          layout === "row"
+            ? "flex flex-wrap items-center gap-x-4 gap-y-2"
+            : "flex flex-col gap-2.5",
+          className,
+        )}
+      >
+        {visible.map((q) => (
+          <Indicator key={q.name} quota={q} />
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
 
