@@ -18,11 +18,13 @@ export type EntityType =
   | "cell_types";
 
 export type MatchTier =
+  | "NameExact"
   | "Prefix"
   | "FuzzyOrContains"
   | "Related";
 
 export type MatchReason =
+  | "name_exact"
   | "prefix"
   | "fuzzy"
   | "pivot";
@@ -74,6 +76,27 @@ export interface SearchResults {
       entity_type: EntityType;
     };
   };
+}
+
+// Variant Prefix API Types (RocksDB-backed, covers all 8.9B variants)
+export interface VariantPrefixResult {
+  vcf: string;
+  rsid?: string;
+  gene?: string;
+  caddPhred?: number;
+  gnomadAf?: number;
+}
+
+export interface VariantPrefixRsidMatch {
+  rsid: string;
+  variant_vcfs: string[];
+}
+
+export interface VariantPrefixResponse {
+  pattern: "vcf" | "rsid_prefix" | "partial_vcf";
+  results: VariantPrefixResult[];
+  rsid_matches?: VariantPrefixRsidMatch[];
+  has_more: boolean;
 }
 
 // API Request Parameters

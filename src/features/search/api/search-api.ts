@@ -3,6 +3,7 @@ import type {
   SearchResults,
   TypeaheadParams,
   TypeaheadResponse,
+  VariantPrefixResponse,
 } from "../types/api";
 
 const API_BASE_URL =
@@ -47,6 +48,38 @@ export async function fetchTypeahead(
 
   if (!response.ok) {
     throw new Error(`Typeahead request failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch variant prefix matches from RocksDB (covers all 8.9B variants)
+ * Fires in parallel with typeahead for variant-shaped queries
+ */
+export async function fetchVariantPrefix(params: {
+  q: string;
+  limit?: number;
+  signal?: AbortSignal;
+}): Promise<VariantPrefixResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.append("q", params.q);
+  if (params.limit !== undefined) {
+    searchParams.append("limit", params.limit.toString());
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/variants/prefix?${searchParams.toString()}`,
+    {
+      headers: { Accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+      signal: params.signal,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Variant prefix failed: ${response.statusText}`);
   }
 
   return response.json();

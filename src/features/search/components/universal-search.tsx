@@ -344,14 +344,14 @@ export function UniversalSearch() {
 
   const handleSelectSuggestion = useCallback(
     (suggestion: TypeaheadSuggestion) => {
+      // Always anchor for pivot exploration (click path)
       startTransition(() => {
         setSearchState((prev) => ({
           mode: "selected",
-          query: "",  // Clear query after selection
+          query: "",
           anchors: [...prev.anchors, suggestion],
         }));
         setHighlightedIndex(-1);
-        // Keep dropdown open to show pivot results
       });
     },
     [],
@@ -435,6 +435,19 @@ export function UniversalSearch() {
     return true;
   }, [searchState, genome, router, clearTypeahead, clearPivot]);
 
+  /** Navigate directly to the best suggestion's entity page */
+  const navigateToSuggestion = useCallback(
+    (suggestion: TypeaheadSuggestion) => {
+      const url = getEntityUrl(suggestion.entity_type, suggestion.id, { genome });
+      router.push(url);
+      clearTypeahead();
+      clearPivot();
+      setSearchState({ mode: "idle", query: "", anchors: [] });
+      setIsDropdownOpen(false);
+    },
+    [genome, router, clearTypeahead, clearPivot],
+  );
+
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
@@ -458,19 +471,23 @@ export function UniversalSearch() {
         }
       }
 
-      // Fall back to selecting first typeahead suggestion (if any)
-      // Note: If Combobox has a highlighted option, this won't be reached
-      // because Combobox will fire onChange instead
+      // Enter navigates to best suggestion if it has a page
       if (typeaheadResults && typeaheadResults.total_count > 0) {
         for (const group of typeaheadResults.groups) {
           if (group.suggestions.length > 0) {
-            handleSelectSuggestion(group.suggestions[0]);
+            const best = group.suggestions[0];
+            if (hasEntityPage(best.entity_type)) {
+              navigateToSuggestion(best);
+              return;
+            }
+            // No entity page → anchor for pivot
+            handleSelectSuggestion(best);
             return;
           }
         }
       }
 
-      // No suggestions - do nothing (graceful handling of zero results)
+      // No suggestions - do nothing
     },
     [
       searchState,
@@ -479,6 +496,7 @@ export function UniversalSearch() {
       router,
       clearTypeahead,
       handleSelectSuggestion,
+      navigateToSuggestion,
       query,
       navigateToAnchor,
     ],
@@ -646,28 +664,10 @@ export function UniversalSearch() {
                     }
 
                     if (e.key === "Enter") {
-                      // In selected mode: always handle navigation ourselves
-                      if (searchState.mode === "selected") {
-                        e.preventDefault();
-                        handleSubmit(e as unknown as FormEvent);
-                        return;
-                      }
-
-                      // In typing mode with routable query (VCF/rsID): handle direct routing
-                      if (searchState.mode === "typing" && isRoutableQuery(query)) {
-                        e.preventDefault();
-                        handleSubmit(e as unknown as FormEvent);
-                        return;
-                      }
-
-                      // In typing mode with no suggestions: do nothing
-                      if (searchState.mode === "typing" && (!typeaheadResults || typeaheadResults.total_count === 0)) {
-                        e.preventDefault();
-                        return;
-                      }
-
-                      // Otherwise: let Combobox handle Enter (selects highlighted option)
-                      // Combobox will fire onChange with the highlighted item
+                      // Always handle Enter ourselves — never let Combobox anchor
+                      // Click = explore (pivot), Enter = go (navigate)
+                      e.preventDefault();
+                      handleSubmit(e as unknown as FormEvent);
                     }
                   }}
                   placeholder={searchState.anchors.length > 0 ? "Continue searching..." : "Search genes, variants, diseases, drugs, pathways..."}
@@ -806,6 +806,20 @@ export function UniversalSearch() {
                     </div>
                   )}
                 </div>
+
+                {/* Hint bar — show when there are results */}
+                {searchState.mode === "typing" && (bestMatch || groupedTypeaheadSuggestions.length > 0) && (
+                  <div className="flex items-center justify-end gap-4 px-4 py-2 border-t border-border bg-muted/50 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">↵</kbd>
+                      go to page
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">click</kbd>
+                      explore connections
+                    </span>
+                  </div>
+                )}
               </ComboboxOptions>
             )}
           </Combobox>
