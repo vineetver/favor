@@ -260,6 +260,25 @@ function QtlForestPlot({
     return m * 1.15 || 1; // 15% padding, fallback to 1 if no data
   }, [genes]);
 
+  // When filtered to one tissue group, color by individual tissue instead
+  const colorByTissue = Boolean(tissueGroup);
+
+  // Collect legend items — must be above early returns (Rules of Hooks)
+  const legendItems = useMemo(() => {
+    if (colorByTissue) {
+      // Individual tissues within the group
+      const names = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueName)))).sort();
+      return names.map((n) => ({ label: formatTissueName(n), color: hashStringColor(n) }));
+    }
+    // Tissue groups
+    const groups = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueGroup)))).sort((a, b) => {
+      const ai = (TISSUE_GROUPS as readonly string[]).indexOf(a);
+      const bi = (TISSUE_GROUPS as readonly string[]).indexOf(b);
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+    });
+    return groups.map((g) => ({ label: g, color: getTissueGroupColor(g) }));
+  }, [genes, colorByTissue]);
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-hidden">
@@ -285,25 +304,6 @@ function QtlForestPlot({
   const labelW = 90;
   const toPercent = (effect: number) => ((effect + maxAbs) / (2 * maxAbs)) * 100;
   const zeroPct = 50; // center
-
-  // When filtered to one tissue group, color by individual tissue instead
-  const colorByTissue = Boolean(tissueGroup);
-
-  // Collect legend items
-  const legendItems = useMemo(() => {
-    if (colorByTissue) {
-      // Individual tissues within the group
-      const names = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueName)))).sort();
-      return names.map((n) => ({ label: formatTissueName(n), color: hashStringColor(n) }));
-    }
-    // Tissue groups
-    const groups = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueGroup)))).sort((a, b) => {
-      const ai = (TISSUE_GROUPS as readonly string[]).indexOf(a);
-      const bi = (TISSUE_GROUPS as readonly string[]).indexOf(b);
-      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
-    });
-    return groups.map((g) => ({ label: g, color: getTissueGroupColor(g) }));
-  }, [genes, colorByTissue]);
 
   return (
     <TooltipProvider delayDuration={100}>
