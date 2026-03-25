@@ -41,44 +41,36 @@ function pct(n: number, total: number): string {
 //   outer: fine-grained annotation (Exonic, Intronic, UTR, …)
 // ============================================================================
 
-function LocationSunburst({ counts, total }: { counts: Counts; total: number }) {
+function LocationTreemap({ counts, total }: { counts: Counts; total: number }) {
   const cats = [
-    { label: "Exonic", parent: "Coding", value: get(counts, "locExonic"), color: "#7c3aed" },
-    { label: "Splicing", parent: "Coding", value: get(counts, "locSplicing"), color: "#a78bfa" },
-    { label: "Intronic", parent: "Non-coding", value: get(counts, "locIntronic"), color: "#64748b" },
-    { label: "Intergenic", parent: "Non-coding", value: get(counts, "locIntergenic"), color: "#94a3b8" },
-    { label: "UTR", parent: "Regulatory", value: get(counts, "locUtr"), color: "#0891b2" },
-    { label: "Upstream", parent: "Regulatory", value: get(counts, "locUpstream"), color: "#06b6d4" },
-    { label: "Downstream", parent: "Regulatory", value: get(counts, "locDownstream"), color: "#22d3ee" },
-    { label: "ncRNA", parent: "Non-coding", value: get(counts, "locNcrna"), color: "#cbd5e1" },
+    { label: "Exonic", parent: "Protein-coding", value: get(counts, "locExonic"), color: "#7c3aed" },
+    { label: "Splicing", parent: "Protein-coding", value: get(counts, "locSplicing"), color: "#a78bfa" },
+    { label: "Intronic", parent: "Genic non-coding", value: get(counts, "locIntronic"), color: "#2563eb" },
+    { label: "UTR", parent: "Genic non-coding", value: get(counts, "locUtr"), color: "#60a5fa" },
+    { label: "ncRNA", parent: "Genic non-coding", value: get(counts, "locNcrna"), color: "#93c5fd" },
+    { label: "Upstream", parent: "Outside genes", value: get(counts, "locUpstream"), color: "#94a3b8" },
+    { label: "Downstream", parent: "Outside genes", value: get(counts, "locDownstream"), color: "#a1a1aa" },
+    { label: "Intergenic", parent: "Outside genes", value: get(counts, "locIntergenic"), color: "#cbd5e1" },
   ].filter((d) => d.value > 0);
 
   if (cats.length === 0) return null;
 
-  // Build parent totals
-  const parentMap: Record<string, number> = {};
-  for (const c of cats) parentMap[c.parent] = (parentMap[c.parent] ?? 0) + c.value;
-
   const parentColors: Record<string, string> = {
-    Coding: "#7c3aed",
-    "Non-coding": "#64748b",
-    Regulatory: "#0891b2",
+    "Protein-coding": "#ede9fe",
+    "Genic non-coding": "#dbeafe",
+    "Outside genes": "#f1f5f9",
   };
 
-  const labels = [
-    ...Object.keys(parentMap),
-    ...cats.map((c) => c.label),
-  ];
-  const parents = [
-    ...Object.keys(parentMap).map(() => ""),
-    ...cats.map((c) => c.parent),
-  ];
-  const values = [
-    ...Object.values(parentMap),
-    ...cats.map((c) => c.value),
-  ];
+  // Compute parent totals for branchvalues:"total"
+  const parentTotals: Record<string, number> = {};
+  for (const c of cats) parentTotals[c.parent] = (parentTotals[c.parent] ?? 0) + c.value;
+  const parentKeys = Object.keys(parentTotals);
+
+  const labels = [...parentKeys, ...cats.map((c) => c.label)];
+  const parents = [...parentKeys.map(() => ""), ...cats.map((c) => c.parent)];
+  const values = [...parentKeys.map((k) => parentTotals[k]), ...cats.map((c) => c.value)];
   const colors = [
-    ...Object.keys(parentMap).map((k) => parentColors[k] ?? "#94a3b8"),
+    ...parentKeys.map((k) => parentColors[k] ?? "#f5f5f5"),
     ...cats.map((c) => c.color),
   ];
 
@@ -86,21 +78,22 @@ function LocationSunburst({ counts, total }: { counts: Counts; total: number }) 
     <Plot
       data={[
         {
-          type: "sunburst" as const,
+          type: "treemap" as const,
           labels,
           parents,
           values,
           branchvalues: "total" as const,
-          marker: { colors },
-          textinfo: "label+percent",
+          marker: { colors, line: { width: 2, color: "white" } },
+          texttemplate: "<b>%{label}</b><br>%{value:,}",
           hovertemplate: "<b>%{label}</b><br>%{value:,} variants (%{percentRoot:.1%})<extra></extra>",
-        },
+          pathbar: { visible: false },
+        } as Partial<Plotly.PlotData>,
       ]}
       layout={{
         font: PLOTLY_FONT,
         paper_bgcolor: "transparent",
-        height: 340,
-        margin: { l: 0, r: 0, t: 0, b: 0 },
+        height: 320,
+        margin: { l: 4, r: 4, t: 24, b: 4 },
       }}
       config={PLOTLY_CONFIG_STATIC}
       style={{ width: "100%" }}
@@ -633,64 +626,68 @@ export function VariantSummaryStatistics({
         />
       </div>
 
-      {/* Row 1: Composition */}
+      {/* 1. Where do variants land? */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard
           title="Genomic Location"
-          subtitle="Where variants land — coding, non-coding, or regulatory context"
+          subtitle="Where variants fall — protein-coding, genic non-coding, or outside genes"
         >
-          <LocationSunburst counts={counts!} total={total} />
+          <LocationTreemap counts={counts!} total={total} />
         </ChartCard>
 
         <ChartCard
           title="Allele Frequency Spectrum"
-          subtitle="Distribution across frequency bins — shape reveals selection pressure"
+          subtitle="Rare-heavy distribution signals purifying selection"
         >
           <FrequencySpectrum counts={counts!} />
         </ChartCard>
       </div>
 
-      {/* Row 2: Functional Impact */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {hasConsequence && (
-          <ChartCard
-            title="Functional Consequence"
-            subtitle="Exonic variant effects — stacking reveals mutation mechanism (SNV vs Indel)"
-          >
-            <ConsequenceChart counts={counts!} />
-          </ChartCard>
-        )}
+      {/* 2. What do they do? */}
+      {(hasConsequence || hasClinvar) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {hasConsequence && (
+            <ChartCard
+              title="Functional Consequence"
+              subtitle="SNV vs Indel stacking reveals mutation mechanism — frameshifts are indel-driven"
+            >
+              <ConsequenceChart counts={counts!} />
+            </ChartCard>
+          )}
 
-        {hasClinvar && (
-          <ChartCard
-            title="Clinical Significance"
-            subtitle="ClinVar annotations — diverging axis shows actionability balance"
-          >
-            <ClinvarDiverging counts={counts!} />
-          </ChartCard>
-        )}
-      </div>
+          {hasClinvar && (
+            <ChartCard
+              title="Clinical Significance"
+              subtitle="ClinVar actionability — pathogenic right, benign left"
+            >
+              <ClinvarDiverging counts={counts!} />
+            </ChartCard>
+          )}
+        </div>
+      )}
 
-      {/* Row 3: Predictions + Fingerprint */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {hasPredictions && (
-          <ChartCard
-            title="Computational Predictions"
-            subtitle="Tools flagging variants as damaging — concordance suggests real signal"
-          >
-            <PredictionLollipop counts={counts!} total={total} />
-          </ChartCard>
-        )}
+      {/* 3. What do algorithms say? */}
+      {(hasPredictions || hasApc) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {hasPredictions && (
+            <ChartCard
+              title="Computational Predictions"
+              subtitle="Tool concordance — similar counts across tools suggests real signal"
+            >
+              <PredictionLollipop counts={counts!} total={total} />
+            </ChartCard>
+          )}
 
-        {hasApc && (
-          <ChartCard
-            title="Functional Fingerprint"
-            subtitle="aPC domain enrichment — shows what characterizes this region"
-          >
-            <FunctionalRadar counts={counts!} total={total} />
-          </ChartCard>
-        )}
-      </div>
+          {hasApc && (
+            <ChartCard
+              title="Functional Fingerprint"
+              subtitle="aPC + regulatory enrichment — reveals what characterizes this region"
+            >
+              <FunctionalRadar counts={counts!} total={total} />
+            </ChartCard>
+          )}
+        </div>
+      )}
     </div>
   );
 }

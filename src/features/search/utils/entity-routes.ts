@@ -53,7 +53,7 @@ export function getEntityUrl(
     case "side_effects":
       return `/side-effect/${id}`;
 
-    case "ccres":
+    case "ccre":
       return `/ccre/${id}`;
 
     case "metabolites":
@@ -76,18 +76,21 @@ export function getEntityUrl(
   }
 }
 
+/** Entity types that have dedicated detail pages */
+export const ENTITY_TYPES_WITH_PAGES: EntityType[] = [
+  "variants",
+  "genes",
+  "diseases",
+  "drugs",
+  "phenotypes",
+  "ccre",
+];
+
 /**
  * Check if an entity type has a dedicated page
  */
 export function hasEntityPage(type: EntityType): boolean {
-  // Variants, genes, diseases, and drugs have dedicated pages
-  // Other types use pivot explorer for now
-  return (
-    type === "variants" ||
-    type === "genes" ||
-    type === "diseases" ||
-    type === "drugs"
-  );
+  return (ENTITY_TYPES_WITH_PAGES as string[]).includes(type);
 }
 
 /**
@@ -105,7 +108,7 @@ export function getEntityLabel(type: EntityType, singular = false): string {
     entities: { singular: "Entity", plural: "Entities" },
     go_terms: { singular: "GO Term", plural: "GO Terms" },
     side_effects: { singular: "Side Effect", plural: "Side Effects" },
-    ccres: { singular: "cCRE", plural: "cCREs" },
+    ccre: { singular: "cCRE", plural: "cCREs" },
     metabolites: { singular: "Metabolite", plural: "Metabolites" },
     signals: { singular: "Signal", plural: "Signals" },
     protein_domains: { singular: "Domain", plural: "Domains" },

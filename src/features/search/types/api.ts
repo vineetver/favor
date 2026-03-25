@@ -10,7 +10,7 @@ export type EntityType =
   | "entities"
   | "go_terms"
   | "side_effects"
-  | "ccres"
+  | "ccre"
   | "metabolites"
   | "signals"
   | "protein_domains"

@@ -2,6 +2,7 @@
 
 // Entity utilities (existing)
 export {
+  ENTITY_TYPES_WITH_PAGES,
   getEntityLabel,
   getEntityUrl,
   hasEntityPage,

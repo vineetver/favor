@@ -28,7 +28,11 @@ import {
   parseQuery,
   preloadVariantDebounced,
 } from "../utils";
-import { getEntityUrl, hasEntityPage } from "../utils/entity-routes";
+import {
+  ENTITY_TYPES_WITH_PAGES,
+  getEntityUrl,
+  hasEntityPage,
+} from "../utils/entity-routes";
 
 type GenomeBuild = "hg38" | "hg19";
 
@@ -112,8 +116,8 @@ const ENTITY_CONFIG: Record<
     bgColor: "bg-yellow-600",
     borderColor: "border-yellow-200",
   },
-  ccres: {
-    label: "cCREs",
+  ccre: {
+    label: "CANDIDATE CIS-REGULATORY ELEMENTS",
     textColor: "text-teal-700",
     bgColor: "bg-teal-600",
     borderColor: "border-teal-200",
@@ -173,7 +177,7 @@ const LINK_LABELS: Record<string, string> = {
   entities: "entities",
   go_terms: "GO terms",
   side_effects: "side effects",
-  ccres: "cCREs",
+  ccre: "cCREs",
   metabolites: "metabolites",
   signals: "signals",
   protein_domains: "domains",
@@ -262,6 +266,7 @@ export function UniversalSearch() {
     debounce: 300,
     limit: 5, // Request 5 so after best match deduplication, we still show 4
     includeLinks: true,
+    types: ENTITY_TYPES_WITH_PAGES, // Only search entity types with dedicated pages
   });
 
   // Pivot expansion hook - only active in selected mode
@@ -657,7 +662,7 @@ export function UniversalSearch() {
 
                 {/* Text input */}
                 <ComboboxInput
-                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-muted-foreground text-lg py-2 font-medium tracking-tight focus:outline-none"
+                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-muted-foreground/50 text-lg py-2 font-medium tracking-tight focus:outline-none"
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onFocus={handleFocus}

@@ -1,2 +1,2 @@
-export { DrugHeader } from "./header/drug-header";
-export { DrugOverview } from "./overview/drug-overview";
+export { DrugHeader } from "./drug-header";
+export { DrugPage } from "./drug-page";
