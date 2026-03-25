@@ -1,4 +1,9 @@
-export * from "./api/disease";
-export * from "./components/header/disease-header";
-export * from "./components/overview/disease-overview";
-export * from "./types";
+export { fetchDiseaseEntity } from "./api/disease";
+export { DiseaseHeader, DiseasePage } from "./components";
+export type {
+  GraphDisease,
+  DiseaseEntityResponse,
+  EdgeCounts,
+  EdgeRelations,
+  EdgeRow,
+} from "./types";
