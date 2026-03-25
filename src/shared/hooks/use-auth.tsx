@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { API_BASE } from "@/config/api";
+import { getQueryClient } from "@/app/providers";
 
 interface AuthUser {
   sub: string;
@@ -82,7 +83,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    setUser(null); // Clear immediately so UI reflects logout before redirect
+    setUser(null);
+    // Nuke all cached data so the next user never sees stale tenant data.
+    // React Query cache lives in memory — clear it synchronously.
+    getQueryClient().clear();
+    // IndexedDB caches (parquet, DuckDB data) persist across sessions.
+    // Fire-and-forget cleanup; the redirect will complete before these finish,
+    // but the caches will be gone by the time someone logs back in.
+    import("@features/batch/lib/data-cache").then((m) => m.clearDataCache()).catch(() => {});
+    import("@features/batch/lib/parquet-cache").then((m) => m.clearParquetCache()).catch(() => {});
     window.location.href = `${API_BASE}/auth/logout`;
   }, []);
 

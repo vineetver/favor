@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/agent/:path*",
-    "/batch-annotation/jobs/:path*",
+    "/batch-annotation/:path*",
     "/settings/:path*",
     "/api/chat/:path*",
     "/api/ai-text/:path*",

@@ -24,9 +24,13 @@ export async function GET(
   };
 
   const apiKey = process.env.FAVOR_API_KEY;
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: "SSE proxy not configured" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
   }
+  headers["Authorization"] = `Bearer ${apiKey}`;
 
   const upstream = await fetch(upstreamUrl, { headers });
 
