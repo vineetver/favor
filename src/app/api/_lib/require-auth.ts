@@ -1,17 +1,17 @@
 import { API_BASE } from "@/config/api";
 
+const IS_DEV = process.env.NODE_ENV !== "production";
+
 /**
  * Verify the caller is authenticated by forwarding cookies to the backend.
  *
- * Strategy:
- * 1. Forward request cookies (works when frontend and backend share a domain)
- * 2. Fall back to FAVOR_API_KEY (cross-origin dev/staging where the session
- *    cookie is on the backend domain and never reaches the Next.js server)
+ * Production: cookie forwarding only (frontend and backend share .genohub.org)
+ * Development: cookie forwarding first, then FAVOR_API_KEY fallback
+ *   (cross-origin localhost where session cookie doesn't reach Next.js)
  */
 export async function getAuthUser(
   req: Request,
 ): Promise<{ sub: string; email?: string } | null> {
-  // Try cookie-based auth first (same-domain deploys)
   const cookie = req.headers.get("cookie");
   if (cookie) {
     try {
@@ -23,23 +23,26 @@ export async function getAuthUser(
         if (data?.sub) return data;
       }
     } catch {
-      // Fall through to API key
+      // Fall through
     }
   }
 
-  // Cross-origin fallback: use server API key to verify identity
-  const apiKey = process.env.FAVOR_API_KEY;
-  if (apiKey) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.sub) return data;
+  // Dev-only fallback: API key auth when cross-origin cookies don't work.
+  // NOT safe for production — authenticates as the key owner, not the user.
+  if (IS_DEV) {
+    const apiKey = process.env.FAVOR_API_KEY;
+    if (apiKey) {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.sub) return data;
+        }
+      } catch {
+        // Auth failed entirely
       }
-    } catch {
-      // Auth failed entirely
     }
   }
 
