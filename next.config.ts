@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
   // Temporarily disable React Strict Mode to debug Gosling double-render
   reactStrictMode: false,
   async rewrites() {
+    // WARNING: This rewrite proxies requests through Next.js, which does NOT
+    // forward browser cookies. Authenticated endpoints must call API_BASE
+    // directly with `credentials: "include"` — never go through /api/v1/.
+    // This rewrite exists only for legacy/public endpoints.
     return [
       {
         source: "/api/v1/:path*",

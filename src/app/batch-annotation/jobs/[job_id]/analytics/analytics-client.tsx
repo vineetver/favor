@@ -45,17 +45,21 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
     jobId,
   });
 
-  // Fetch cohort detail to detect enrichments (only when completed)
+  // Fetch cohort detail with fresh presigned URLs (include_urls=true).
+  // Presigned S3 URLs expire — always refetch to avoid stale 403s.
   const { data: cohortDetail } = useQuery({
     queryKey: ["cohort-detail-analytics", jobId],
-    queryFn: () => getCohort(jobId),
+    queryFn: () => getCohort(jobId, true),
     enabled: job?.state === "COMPLETED",
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   const hasIgvfLipid = cohortDetail?.enrichments?.analyses?.some(
     (a) => a.name === "igvf_lipid",
   ) ?? false;
+
+  // Use fresh URL from cohort detail — NOT from polling cache which may have expired
+  const freshDataUrl = cohortDetail?.output?.url;
 
   // Loading state
   if (isLoading && !job) {
@@ -124,7 +128,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   const isCompleted = job?.state === "COMPLETED";
   const output = job ? getJobOutput(job) : undefined;
 
-  // Job not completed state
+  // Job not completed
   if (!isCompleted || !output) {
     return (
       <div className="min-h-screen relative overflow-hidden text-foreground">
@@ -250,22 +254,25 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
           </div>
         </div>
 
-        {/* Analytics Component */}
-        {viewMode === "report" ? (
-          <JobAnalyticsReport
-            dataUrl={output.url}
-            jobId={jobId}
-            filename={job?.input?.filename}
-          />
-        ) : viewMode === "igvf" ? (
-          <IgvfLipidReport cohortId={jobId} dataUrl={output.url} />
-        ) : (
-          <JobAnalytics
-            dataUrl={output.url}
-            jobId={jobId}
-            filename={job?.input?.filename}
-          />
-        )}
+        {/* Analytics Component — prefer freshDataUrl, fall back to polling URL */}
+        {(() => {
+          const dataUrl = freshDataUrl || output.url;
+          return viewMode === "report" ? (
+            <JobAnalyticsReport
+              dataUrl={dataUrl}
+              jobId={jobId}
+              filename={job?.input?.filename}
+            />
+          ) : viewMode === "igvf" ? (
+            <IgvfLipidReport cohortId={jobId} dataUrl={dataUrl} />
+          ) : (
+            <JobAnalytics
+              dataUrl={dataUrl}
+              jobId={jobId}
+              filename={job?.input?.filename}
+            />
+          );
+        })()}
       </main>
     </div>
   );

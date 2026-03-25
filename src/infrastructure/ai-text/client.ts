@@ -64,27 +64,53 @@ export function subscribeToStream(
   onEvent: (event: AITextStreamEvent) => void,
   onError?: (error: Error) => void,
 ): () => void {
-  const eventSource = new EventSource(
-    `/api/ai-text/stream/${requestId}`,
-  );
+  const MAX_RETRIES = 3;
+  let attempt = 0;
+  let currentSource: EventSource | null = null;
+  let closed = false;
 
-  eventSource.addEventListener("status", (event) => {
-    try {
-      const data = JSON.parse(event.data) as AITextStreamEvent;
-      onEvent(data);
+  function connect() {
+    if (closed) return;
 
-      if (data.status === "completed" || data.status === "failed") {
-        eventSource.close();
+    const eventSource = new EventSource(
+      `/api/ai-text/stream/${requestId}`,
+    );
+    currentSource = eventSource;
+
+    eventSource.addEventListener("status", (event) => {
+      attempt = 0; // reset on successful event
+      try {
+        const data = JSON.parse(event.data) as AITextStreamEvent;
+        onEvent(data);
+
+        if (data.status === "completed" || data.status === "failed") {
+          closed = true;
+          eventSource.close();
+        }
+      } catch (error) {
+        onError?.(new Error(`Failed to parse SSE event: ${error}`));
       }
-    } catch (error) {
-      onError?.(new Error(`Failed to parse SSE event: ${error}`));
-    }
-  });
+    });
 
-  eventSource.onerror = () => {
-    onError?.(new Error("SSE connection error"));
-    eventSource.close();
+    eventSource.onerror = () => {
+      eventSource.close();
+      if (closed) return;
+
+      if (attempt < MAX_RETRIES) {
+        attempt++;
+        const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+        setTimeout(connect, delay);
+      } else {
+        closed = true;
+        onError?.(new Error("SSE connection failed after retries"));
+      }
+    };
+  }
+
+  connect();
+
+  return () => {
+    closed = true;
+    currentSource?.close();
   };
-
-  return () => eventSource.close();
 }

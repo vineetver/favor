@@ -36,6 +36,15 @@ export default async function VariantRegulatoryOverviewPage({
   const loc = `${v.chromosome}-${v.position}-${v.position}`;
   const ref = v.variant_vcf;
 
+  const catchNull = (label: string) => (err: unknown) => {
+    console.error(`[variant-regulatory] ${label} failed:`, err);
+    return null;
+  };
+  const catchEmpty = (label: string) => (err: unknown) => {
+    console.error(`[variant-regulatory] ${label} failed:`, err);
+    return [] as never[];
+  };
+
   const [
     signals,
     chromatin,
@@ -50,18 +59,18 @@ export default async function VariantRegulatoryOverviewPage({
     summary,
     targetGenes,
   ] = await Promise.all([
-    fetchSignalsByTissueGroup(loc).catch(() => []),
-    fetchChromatinByTissueGroup(loc).catch(() => []),
-    fetchEnhancersByTissueGroup(loc).catch(() => []),
-    fetchAccessibilityByTissueGroup(loc).catch(() => []),
-    fetchLoopsByTissueGroup(loc).catch(() => []),
-    fetchAseByTissueGroup(loc).catch(() => []),
-    fetchQtlsByTissueGroup(loc).catch(() => []),
-    fetchChromBpnetByTissueGroup(loc).catch(() => []),
-    fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []),
-    fetchCrisprByTissueGroup(loc).catch(() => []),
-    fetchRegionSummary(loc).catch(() => null),
-    fetchTargetGenes(ref, 50).catch(() => []),
+    fetchSignalsByTissueGroup(loc).catch(catchEmpty("signals")),
+    fetchChromatinByTissueGroup(loc).catch(catchEmpty("chromatin")),
+    fetchEnhancersByTissueGroup(loc).catch(catchEmpty("enhancers")),
+    fetchAccessibilityByTissueGroup(loc).catch(catchEmpty("accessibility")),
+    fetchLoopsByTissueGroup(loc).catch(catchEmpty("loops")),
+    fetchAseByTissueGroup(loc).catch(catchEmpty("ase")),
+    fetchQtlsByTissueGroup(loc).catch(catchEmpty("qtls")),
+    fetchChromBpnetByTissueGroup(loc).catch(catchEmpty("chrombpnet")),
+    fetchVariantAllelicImbalanceByTissueGroup(loc).catch(catchEmpty("allelicImbalance")),
+    fetchCrisprByTissueGroup(loc).catch(catchEmpty("crispr")),
+    fetchRegionSummary(loc).catch(catchNull("regionSummary")),
+    fetchTargetGenes(ref, 50).catch(catchEmpty("targetGenes")),
   ]);
 
   const evidence: TissueEvidenceData = {

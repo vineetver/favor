@@ -1,6 +1,18 @@
 "use server";
 
 import { API_BASE } from "@/config/api";
+import { cookies } from "next/headers";
+
+async function assertAuthenticated(): Promise<void> {
+  const cookieStore = await cookies();
+  const cookie = cookieStore.toString();
+  if (!cookie) throw new Error("Unauthorized");
+
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: { Cookie: cookie },
+  });
+  if (!res.ok) throw new Error("Unauthorized");
+}
 
 export interface AITextData {
   content: string | null;
@@ -59,6 +71,8 @@ export async function generateVariantSummary(params: {
   prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
+  await assertAuthenticated();
+
   if (typeof params.prompt !== "string" || params.prompt.length > MAX_PROMPT_LENGTH) {
     throw new Error(`Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`);
   }

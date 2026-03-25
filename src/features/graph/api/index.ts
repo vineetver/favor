@@ -76,6 +76,7 @@ export async function fetchSubgraph(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         seeds: options.seeds,
         maxDepth: options.maxDepth ?? 1,
@@ -125,6 +126,7 @@ export async function fetchPreview(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         ids,
         fields: fields?.slice(0, 20),
@@ -236,6 +238,7 @@ export async function fetchGraphQuery(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body),
       next: { revalidate: 300 },
     });
@@ -276,6 +279,7 @@ export async function fetchCentrality(
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -349,6 +353,7 @@ export async function fetchPaths(
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 300 },
     });
 
@@ -402,6 +407,7 @@ export async function fetchIntersection(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         entities,
         edgeType,
@@ -498,6 +504,7 @@ export async function fetchSchemaProperties(
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -519,6 +526,7 @@ export async function fetchGraphSchema(): Promise<GraphSchemaResponse | null> {
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -553,6 +561,7 @@ export async function fetchGraphStats(): Promise<GraphStatsResponse | null> {
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -603,6 +612,7 @@ export async function searchEntities(
 
   try {
     const response = await fetch(url, {
+      credentials: "include",
       next: { revalidate: 60 },
     });
 
@@ -688,12 +698,13 @@ export async function fetchConnections(options: {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         from: options.from,
         to: options.to,
-        limitPerType: options.limitPerType ?? 10,
-        includeReverse: options.includeReverse ?? true,
-        includeFieldMeta: true,
+        limit_per_type: options.limitPerType ?? 10,
+        include_reverse: options.includeReverse ?? true,
+        include_field_meta: true,
       }),
       signal: options.signal,
     });
@@ -739,7 +750,7 @@ export async function fetchEdgePage(options: {
   const params = new URLSearchParams();
   params.set("from", options.from);
   params.set("to", options.to);
-  params.set("edgeType", options.edgeType);
+  params.set("edge_type", options.edgeType);
   params.set("limit", String(options.limit ?? 25));
   params.set("includeFieldMeta", "true");
   if (options.cursor) params.set("cursor", options.cursor);
@@ -747,7 +758,7 @@ export async function fetchEdgePage(options: {
   const url = `${API_BASE}/graph/edge?${params.toString()}`;
 
   try {
-    const response = await fetch(url, { signal: options.signal });
+    const response = await fetch(url, { credentials: "include", signal: options.signal });
 
     if (!response.ok) {
       console.error(`Edge page fetch failed: ${response.status}`);

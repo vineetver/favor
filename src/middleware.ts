@@ -11,7 +11,7 @@ import type { NextRequest } from "next/server";
  * Cookie presence is a heuristic: authenticated users always have session
  * cookies set by the backend auth callback.
  */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   // Authenticated users always have at least one session cookie.
   // Skip middleware if any cookies exist — actual validation is at the API layer.
   if (request.cookies.size > 0) return NextResponse.next();

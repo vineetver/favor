@@ -66,15 +66,28 @@ export async function POST(req: Request) {
   const { sessionId, synthesisModel } = parsed.data;
   // Zod validates structure; cast to UIMessage[] for AI SDK compatibility
   const messages = parsed.data.messages as unknown as UIMessage[];
+  const effectiveSessionId = sessionId ?? `ephemeral-${Date.now()}`;
 
-  // Persist user message (write-ahead) — fire-and-forget
-  if (sessionId) {
+  // Persist user message (write-ahead) with retry
+  {
     const userMsg = [...messages].reverse().find((m) => m.role === "user");
     if (userMsg) {
-      appendAgentMessage(sessionId, {
-        role: "user",
-        content: JSON.stringify(userMsg),
-      }).catch((err) => console.error("[chat/route] Failed to persist user message:", err));
+      const payload = { role: "user" as const, content: JSON.stringify(userMsg) };
+      const persistWithRetry = async (retries = 2, delayMs = 500) => {
+        for (let i = 0; i <= retries; i++) {
+          try {
+            await appendAgentMessage(effectiveSessionId, payload);
+            return;
+          } catch (err) {
+            if (i === retries) {
+              console.error("[chat/route] Failed to persist user message after retries:", err);
+            } else {
+              await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+            }
+          }
+        }
+      };
+      persistWithRetry();
     }
   }
 
@@ -98,8 +111,6 @@ export async function POST(req: Request) {
     pendingAskUser,
   });
 
-  const effectiveSessionId = sessionId ?? `ephemeral-${Date.now()}`;
-
   // Fast-path: explanation-only (no tools, single LLM call)
   if (route.type === "explanation_only") {
     const synthProviderOpts = getSynthesisProviderOptions(synthesisModel);
@@ -116,13 +127,11 @@ export async function POST(req: Request) {
     return createAgentUIStreamResponse({
       agent: fastAgent,
       uiMessages: messages,
-      onFinish: sessionId
-        ? ({ responseMessage }) => {
-            persistCompacted(sessionId, responseMessage).catch((err) =>
-              console.error("[chat/route] Failed to persist assistant message:", err),
-            );
-          }
-        : undefined,
+      onFinish: ({ responseMessage }) => {
+          persistCompacted(effectiveSessionId, responseMessage).catch((err) =>
+            console.error("[chat/route] Failed to persist assistant message:", err),
+          );
+        },
     });
   }
 
@@ -132,12 +141,10 @@ export async function POST(req: Request) {
   return createAgentUIStreamResponse({
     agent,
     uiMessages: messages,
-    onFinish: sessionId
-      ? ({ responseMessage }) => {
-          persistCompacted(sessionId, responseMessage, getVizSpecs()).catch((err) =>
-            console.error("[chat/route] Failed to persist assistant message:", err),
-          );
-        }
-      : undefined,
+    onFinish: ({ responseMessage }) => {
+        persistCompacted(effectiveSessionId, responseMessage, getVizSpecs()).catch((err) =>
+          console.error("[chat/route] Failed to persist assistant message:", err),
+        );
+      },
   });
 }

@@ -1,6 +1,7 @@
 import type { ApiKeyItem, CreateApiKeyRequest, CreateApiKeyResponse } from "./types";
 
 import { API_BASE } from "@/config/api";
+import { handle401 } from "@infra/api/handle-auth-error";
 
 class ApiKeyError extends Error {
   constructor(
@@ -14,6 +15,9 @@ class ApiKeyError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    if (handle401(response.status)) {
+      return new Promise<T>(() => {}); // redirect in progress, never resolves
+    }
     let message = `HTTP ${response.status}`;
     try {
       const body = await response.json();
@@ -51,6 +55,7 @@ export async function deleteApiKey(id: string): Promise<void> {
     credentials: "include",
   });
   if (!res.ok) {
+    if (handle401(res.status)) return; // redirect in progress
     let message = `HTTP ${res.status}`;
     try {
       const body = await res.json();

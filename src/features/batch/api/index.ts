@@ -22,14 +22,13 @@ import type {
   DeleteCohortResponse,
   EnrichmentDiscoveryResponse,
   JobState,
-  PresignRequest,
-  PresignResponse,
   TypedValidateResponse,
   ValidateRequest,
   ValidateResponse,
 } from "../types";
 
 import { API_BASE } from "@/config/api";
+import { handle401 } from "@infra/api/handle-auth-error";
 
 // ============================================================================
 // Error Classes
@@ -65,6 +64,9 @@ function getContentType(filename: string): string {
 
 async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
   if (!response.ok) {
+    if (handle401(response.status)) {
+      return new Promise<T>(() => {}); // redirect in progress, never resolves
+    }
     let message = `HTTP ${response.status}`;
     let details: unknown;
 
@@ -113,32 +115,25 @@ async function withRetry<T>(
 // ============================================================================
 
 /**
- * Step 1: Get presigned URL for file upload
+ * Upload a file directly to the API (single request, no S3 presign needed).
+ * Returns the input_uri for downstream cohort creation.
  */
-export async function presignUpload(request: PresignRequest): Promise<PresignResponse> {
-  return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/presign-upload`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        ...request,
-        content_type: request.content_type || getContentType(request.filename),
-      }),
-    }).then((res) => handleResponse<PresignResponse>(res, "/cohorts/presign-upload")),
-  );
-}
-
-/**
- * Step 2: Upload file directly to S3 using presigned URL
- */
-export async function uploadFileToS3(
-  uploadUrl: string,
+export async function uploadFile(
   file: File,
   onProgress?: (percent: number) => void,
-): Promise<void> {
+  signal?: AbortSignal,
+): Promise<{ input_uri: string }> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
+
+    // Wire AbortSignal → XHR abort
+    const onAbort = () => xhr.abort();
+    signal?.addEventListener("abort", onAbort);
 
     xhr.upload.addEventListener("progress", (e) => {
       if (e.lengthComputable && onProgress) {
@@ -147,24 +142,39 @@ export async function uploadFileToS3(
     });
 
     xhr.addEventListener("load", () => {
+      signal?.removeEventListener("abort", onAbort);
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new BatchApiError(xhr.status, "Invalid JSON response", "/cohorts/upload"));
+        }
       } else {
-        reject(new BatchApiError(xhr.status, `Upload failed`, "S3 Upload"));
+        reject(new BatchApiError(xhr.status, xhr.responseText.slice(0, 500), "/cohorts/upload"));
       }
     });
 
     xhr.addEventListener("error", () => {
-      reject(new BatchApiError(0, "Network error during upload", "S3 Upload"));
+      signal?.removeEventListener("abort", onAbort);
+      reject(new BatchApiError(0, "Network error during upload", "/cohorts/upload"));
     });
 
     xhr.addEventListener("abort", () => {
-      reject(new BatchApiError(0, "Upload was aborted", "S3 Upload"));
+      signal?.removeEventListener("abort", onAbort);
+      // Distinguish user-initiated abort (via signal) from other aborts
+      if (signal?.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+      } else {
+        reject(new BatchApiError(0, "Upload was aborted", "/cohorts/upload"));
+      }
     });
 
-    xhr.open("PUT", uploadUrl);
-    xhr.setRequestHeader("Content-Type", getContentType(file.name));
-    xhr.send(file);
+    const form = new FormData();
+    form.append("file", file);
+
+    xhr.open("POST", `${API_BASE}/cohorts/upload`);
+    xhr.withCredentials = true;
+    xhr.send(form);
   });
 }
 
@@ -187,13 +197,17 @@ export async function validateFile(request: ValidateRequest): Promise<ValidateRe
  * Same endpoint — backend discriminates based on detected content.
  * Returns typed validation with schema preview and column mapping suggestions.
  */
-export async function validateTypedCohort(request: ValidateRequest): Promise<TypedValidateResponse> {
+export async function validateTypedCohort(
+  request: ValidateRequest,
+  signal?: AbortSignal,
+): Promise<TypedValidateResponse> {
   return withRetry(() =>
     fetch(`${API_BASE}/cohorts/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(request),
+      signal,
     }).then((res) => handleResponse<TypedValidateResponse>(res, "/cohorts/validate")),
   );
 }
@@ -353,10 +367,17 @@ export async function getCohortStatus(
 export async function deleteCohort(
   id: string,
 ): Promise<DeleteCohortResponse> {
-  return fetch(`${API_BASE}/cohorts/${id}`, {
+  const res = await fetch(`${API_BASE}/cohorts/${id}`, {
     method: "DELETE",
     credentials: "include",
-  }).then((res) => handleResponse<DeleteCohortResponse>(res, `/cohorts/${id}`));
+  });
+
+  // DELETE is idempotent — 404 means already gone.
+  if (res.status === 404) {
+    return { id, action: "deleted" };
+  }
+
+  return handleResponse<DeleteCohortResponse>(res, `/cohorts/${id}`);
 }
 
 /**

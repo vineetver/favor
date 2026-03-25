@@ -55,7 +55,7 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
     xrefs.push({
       label: "EFO",
       id: disease.efo_id,
-      href: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes/${encodeURIComponent(`http://www.ebi.ac.uk/efo/${disease.efo_id}`)}`,
+      href: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes/${encodeURIComponent("http://www.ebi.ac.uk/efo/" + disease.efo_id)}`,
     });
   }
   if (disease.omim_id) {

@@ -22,10 +22,14 @@ interface QuotaResponse {
 // ---------------------------------------------------------------------------
 
 import { API_BASE } from "@/config/api";
+import { handle401 } from "@infra/api/handle-auth-error";
 
 async function fetchQuotas(): Promise<Quota[]> {
   const res = await fetch(`${API_BASE}/quotas`, { credentials: "include" });
-  if (!res.ok) throw new Error(`Quota fetch failed: ${res.status}`);
+  if (!res.ok) {
+    if (handle401(res.status)) return []; // redirect in progress
+    throw new Error(`Quota fetch failed: ${res.status}`);
+  }
   const data: QuotaResponse = await res.json();
   return data.quotas;
 }
@@ -38,8 +42,9 @@ export function useQuotas() {
   const query = useQuery({
     queryKey: ["quotas"],
     queryFn: fetchQuotas,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 0,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: "always",
     retry: 1,
   });
 
@@ -47,6 +52,7 @@ export function useQuotas() {
     quotas: query.data ?? [],
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error : null,
+    refetch: query.refetch,
   };
 }
 

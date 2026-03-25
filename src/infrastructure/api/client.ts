@@ -10,6 +10,7 @@ export async function fetchJson<T>(
 
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json", ...headers },
+    credentials: "include",
     next: { revalidate },
   });
 

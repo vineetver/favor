@@ -39,18 +39,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/auth/me`, { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then((data) => {
-        if (data?.sub) setUser(data);
-      })
-      .catch(() => {
-        // Not authenticated — that's fine
-      })
-      .finally(() => setIsLoading(false));
+    let attempt = 0;
+    const maxRetries = 2;
+
+    function tryFetchAuth() {
+      fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+        .then((res) => {
+          if (res.ok) return res.json();
+          // 401/403 = genuinely not authenticated, don't retry
+          return null;
+        })
+        .then((data) => {
+          if (data?.sub) setUser(data);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          // Network error — retry before giving up
+          if (attempt < maxRetries) {
+            attempt++;
+            setTimeout(tryFetchAuth, 1000 * attempt);
+          } else {
+            // Give up — leave user as null but stop loading
+            setIsLoading(false);
+          }
+        });
+    }
+
+    tryFetchAuth();
   }, []);
 
   const login = useCallback((returnTo?: string) => {
@@ -67,8 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    // Navigate directly so the browser follows the full redirect chain
-    // (including Auth0's /v2/logout) with proper cookies on each domain
+    setUser(null); // Clear immediately so UI reflects logout before redirect
     window.location.href = `${API_BASE}/auth/logout`;
   }, []);
 

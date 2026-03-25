@@ -16,6 +16,8 @@ export async function setVariantSelectionCookie(
     maxAge: 60 * 60 * 24 * 365,
     path: "/",
     sameSite: "lax",
+    httpOnly: true,
+    secure: true,
   });
 
   return { success: true };
