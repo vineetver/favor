@@ -155,15 +155,18 @@ export async function uploadFile(
       }
     });
 
+    let networkErrored = false;
+
     xhr.addEventListener("error", () => {
+      networkErrored = true;
       signal?.removeEventListener("abort", onAbort);
       reject(new BatchApiError(0, "Network error during upload", "/cohorts/upload"));
     });
 
     xhr.addEventListener("abort", () => {
       signal?.removeEventListener("abort", onAbort);
-      // Notify caller so they can clean up partial uploads (e.g. orphaned S3 files)
-      onAborted?.();
+      // Only notify for intentional aborts, not network error cascades
+      if (!networkErrored) onAborted?.();
       if (signal?.aborted) {
         reject(new DOMException("Aborted", "AbortError"));
       } else {
