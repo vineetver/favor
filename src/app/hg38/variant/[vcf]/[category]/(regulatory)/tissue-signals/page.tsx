@@ -16,7 +16,7 @@ export default async function Page({
   const result = await fetchVariantWithCookie(vcf);
   if (!result) notFound();
   const v = result.selected;
-  const loc = `chr${v.chromosome}:${v.position}-${v.position}`;
+  const loc = `${v.chromosome}-${v.position}-${v.position}`;
   const basePath = `/hg38/variant/${encodeURIComponent(vcf)}/regulatory`;
   const data = await loadTissueSignalsData(loc, tissueGroup);
   return (

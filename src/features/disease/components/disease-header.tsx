@@ -1,5 +1,13 @@
 import { Fragment } from "react";
 import { cn } from "@infra/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@shared/components/ui/breadcrumb";
 import type { GraphDisease } from "../types";
 
 interface DiseaseHeaderProps {
@@ -78,11 +86,17 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
   return (
     <div className="py-8 space-y-3">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-3 text-breadcrumb">
-        <span className="text-subtle">Diseases</span>
-        <span className="text-border">▸</span>
-        <span className="text-breadcrumb-mono">{disease.id}</span>
-      </div>
+      <Breadcrumb>
+        <BreadcrumbList className="text-xs font-semibold tracking-wide uppercase">
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Diseases</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage className="font-mono">{disease.id}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* Title */}
       <h1 className="text-page-title">{titleCase(disease.disease_name)}</h1>
@@ -92,7 +106,7 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
           {metaParts.map((part, i) => (
             <Fragment key={i}>
-              {i > 0 && <span className="text-border">·</span>}
+              {i > 0 && <span className="text-muted-foreground/40">·</span>}
               <span
                 className={cn(
                   part === "Cancer" && "text-destructive font-medium",

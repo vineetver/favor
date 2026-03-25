@@ -33,7 +33,7 @@ export default async function VariantRegulatoryOverviewPage({
   if (!result) notFound();
 
   const v = result.selected;
-  const loc = `chr${v.chromosome}:${v.position}-${v.position}`;
+  const loc = `${v.chromosome}-${v.position}-${v.position}`;
   const ref = v.variant_vcf;
 
   const [

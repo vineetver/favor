@@ -42,7 +42,7 @@ export async function fetchPerturbSeq(
 export async function fetchCrisprByTissueGroup(
   loc: string,
 ): Promise<TissueGroupRow[]> {
-  const url = perturbUrl(loc, "crispr", { group_by: "tissue_group" });
+  const url = perturbUrl(loc, "crispr", { group_by: "tissue" });
   const res = await fetchJson<{ data: { group_key: string; max_value: number; count: number; significant?: number }[] }>(url);
   return res.data.map((r) => ({
     tissue_name: r.group_key,

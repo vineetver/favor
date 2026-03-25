@@ -1,6 +1,14 @@
 "use client";
 
 import type { Gene } from "@features/gene/types";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@shared/components/ui/breadcrumb";
 import { Button } from "@shared/components/ui/button";
 import { Download, Share2 } from "lucide-react";
 
@@ -12,16 +20,18 @@ interface GeneHeaderProps {
 export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
   return (
     <div className="py-8">
-      {/* Breadcrumb Row */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          {genome.toUpperCase()}
-        </span>
-        <span className="text-border">·</span>
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Gene
-        </span>
-      </div>
+      {/* Breadcrumb */}
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList className="text-xs font-semibold tracking-wide uppercase">
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">{genome.toUpperCase()}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Gene</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* Main Content Row */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">

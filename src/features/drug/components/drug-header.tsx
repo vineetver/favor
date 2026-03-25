@@ -1,5 +1,13 @@
 import { Fragment } from "react";
 import { cn } from "@infra/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@shared/components/ui/breadcrumb";
 import type { GraphDrug } from "../types";
 
 interface DrugHeaderProps {
@@ -46,11 +54,17 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
   return (
     <div className="py-8 space-y-3">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-3 text-breadcrumb">
-        <span className="text-subtle">Drugs</span>
-        <span className="text-border">▸</span>
-        <span className="text-breadcrumb-mono">{drug.id}</span>
-      </div>
+      <Breadcrumb>
+        <BreadcrumbList className="text-xs font-semibold tracking-wide uppercase">
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Drugs</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage className="font-mono">{drug.id}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* Title */}
       <h1 className="text-page-title">{titleCase(drug.drug_name)}</h1>
@@ -60,7 +74,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
           {metaParts.map((part, i) => (
             <Fragment key={i}>
-              {i > 0 && <span className="text-border">·</span>}
+              {i > 0 && <span className="text-muted-foreground/40">/</span>}
               <span
                 className={cn(
                   part === "Withdrawn" && "text-destructive font-medium",
@@ -72,7 +86,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
           ))}
           {drug.black_box_warning && (
             <>
-              <span className="text-border">·</span>
+              <span className="text-muted-foreground/40">/</span>
               <span className="text-amber-600 dark:text-amber-400 font-medium">
                 Black Box Warning
               </span>

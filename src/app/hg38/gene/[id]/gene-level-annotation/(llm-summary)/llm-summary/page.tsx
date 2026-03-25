@@ -28,7 +28,7 @@ export default async function GeneLLMSummaryPage({
 
   // Build loc from gene coordinates for region-based queries
   const loc = gene
-    ? `${gene.chromosome}:${gene.start_position}-${gene.end_position}`
+    ? `${gene.chromosome}-${gene.start_position}-${gene.end_position}`
     : null;
 
   const [regionSummary, signals, chromatin, enhancers, accessibility, loops, ccreLinks, crispr] =

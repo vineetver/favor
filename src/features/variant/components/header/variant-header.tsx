@@ -4,6 +4,14 @@ import type { VariantFetchResult } from "@features/variant/api";
 import { setVariantSelectionCookie } from "@features/variant/actions/variant-selection";
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@shared/components/ui/breadcrumb";
 import { Download, MapPin, Share2 } from "lucide-react";
 import { useOptimistic, useTransition } from "react";
 
@@ -70,16 +78,18 @@ export function VariantHeader({
 
   return (
     <div className="py-8">
-      {/* Breadcrumb Row */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          {genome.toUpperCase()}
-        </span>
-        <span className="text-border">·</span>
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Variant
-        </span>
-      </div>
+      {/* Breadcrumb */}
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList className="text-xs font-semibold tracking-wide uppercase">
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">{genome.toUpperCase()}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Variant</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* Main Content Row */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
