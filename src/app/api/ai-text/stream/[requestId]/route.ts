@@ -23,14 +23,21 @@ export async function GET(
     Accept: "text/event-stream",
   };
 
-  const apiKey = process.env.FAVOR_API_KEY;
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "SSE proxy not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+  // Forward user's session cookie so the backend can scope the stream to the tenant.
+  // Falls back to FAVOR_API_KEY only if cookies are unavailable (e.g., dev mode).
+  const cookie = _request.headers.get("cookie");
+  if (cookie) {
+    headers["Cookie"] = cookie;
+  } else {
+    const apiKey = process.env.FAVOR_API_KEY;
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "SSE proxy not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    headers["Authorization"] = `Bearer ${apiKey}`;
   }
-  headers["Authorization"] = `Bearer ${apiKey}`;
 
   const upstream = await fetch(upstreamUrl, { headers });
 

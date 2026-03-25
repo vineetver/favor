@@ -3,7 +3,7 @@
 import { API_BASE } from "@/config/api";
 import { cookies } from "next/headers";
 
-async function assertAuthenticated(): Promise<void> {
+async function getAuthCookie(): Promise<string> {
   const cookieStore = await cookies();
   const cookie = cookieStore.toString();
   if (!cookie) throw new Error("Unauthorized");
@@ -12,6 +12,7 @@ async function assertAuthenticated(): Promise<void> {
     headers: { Cookie: cookie },
   });
   if (!res.ok) throw new Error("Unauthorized");
+  return cookie;
 }
 
 export interface AITextData {
@@ -41,11 +42,12 @@ export async function getVariantSummary(
     content_type: "summary",
   });
 
+  const cookieStore = await cookies();
   const response = await fetch(`${API_BASE}/ai-text?${searchParams}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.FAVOR_API_KEY}`,
+      Cookie: cookieStore.toString(),
     },
     cache: "no-store",
   });
@@ -71,7 +73,7 @@ export async function generateVariantSummary(params: {
   prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
-  await assertAuthenticated();
+  const cookie = await getAuthCookie();
 
   if (typeof params.prompt !== "string" || params.prompt.length > MAX_PROMPT_LENGTH) {
     throw new Error(`Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`);
@@ -83,7 +85,7 @@ export async function generateVariantSummary(params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.FAVOR_API_KEY}`,
+      Cookie: cookie,
     },
     body: JSON.stringify({
       entity_type: "variant",

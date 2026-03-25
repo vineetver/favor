@@ -76,7 +76,6 @@ export async function fetchSubgraph(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         seeds: options.seeds,
         maxDepth: options.maxDepth ?? 1,
@@ -126,7 +125,6 @@ export async function fetchPreview(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         ids,
         fields: fields?.slice(0, 20),
@@ -238,7 +236,6 @@ export async function fetchGraphQuery(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(body),
       next: { revalidate: 300 },
     });
@@ -279,7 +276,6 @@ export async function fetchCentrality(
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -353,7 +349,6 @@ export async function fetchPaths(
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 300 },
     });
 
@@ -407,7 +402,6 @@ export async function fetchIntersection(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         entities,
         edgeType,
@@ -504,7 +498,6 @@ export async function fetchSchemaProperties(
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -526,7 +519,6 @@ export async function fetchGraphSchema(): Promise<GraphSchemaResponse | null> {
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -561,7 +553,6 @@ export async function fetchGraphStats(): Promise<GraphStatsResponse | null> {
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 3600 },
     });
 
@@ -612,7 +603,6 @@ export async function searchEntities(
 
   try {
     const response = await fetch(url, {
-      credentials: "include",
       next: { revalidate: 60 },
     });
 

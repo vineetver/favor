@@ -34,7 +34,7 @@ export async function fetchDrugEntity(
   try {
     const response = await fetch(
       `${API_BASE}/graph/Drug/${encodeURIComponent(chemblId)}?${params}`,
-      { credentials: "include", signal: controller.signal, next: { revalidate: 300 } },
+      { signal: controller.signal, next: { revalidate: 300 } },
     );
 
     if (!response.ok) return null;

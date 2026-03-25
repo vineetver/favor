@@ -146,7 +146,7 @@ export const geneInfoAndIdsColumns = [
       description: "UCSC ID (from HGNC).",
     }),
     cell: cell.link(
-      (val) => `http://genome.ucsc.edu/cgi-bin/hgGene?hgg_gene=${val}&org=human`,
+      (val) => `https://genome.ucsc.edu/cgi-bin/hgGene?hgg_gene=${val}&org=human`,
     ),
   }),
 
@@ -169,7 +169,7 @@ export const geneInfoAndIdsColumns = [
     }),
     cell: cell.link(
       (val) =>
-        `http://genome.ucsc.edu/cgi-bin/hgTracks?org=human&position=${val}`,
+        `https://genome.ucsc.edu/cgi-bin/hgTracks?org=human&position=${val}`,
     ),
   }),
 

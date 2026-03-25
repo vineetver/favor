@@ -34,7 +34,7 @@ export async function fetchDiseaseEntity(
   try {
     const response = await fetch(
       `${API_BASE}/graph/Disease/${encodeURIComponent(diseaseId)}?${params}`,
-      { credentials: "include", signal: controller.signal, next: { revalidate: 300 } },
+      { signal: controller.signal, next: { revalidate: 300 } },
     );
 
     if (!response.ok) return null;

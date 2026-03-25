@@ -14,9 +14,12 @@ export async function fetchJson<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
+    // No credentials here — this runs server-side (SSR/ISR) where Node.js has
+    // no cookie jar. Adding credentials: "include" would silently disable the
+    // Next.js Data Cache, killing ISR for all public endpoints.
+    // Client-side callers (hooks) use their own fetch with credentials.
     const response = await fetch(url, {
       headers: { "Content-Type": "application/json", ...headers },
-      credentials: "include",
       signal: controller.signal,
       next: { revalidate },
     });
