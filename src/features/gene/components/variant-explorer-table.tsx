@@ -125,12 +125,15 @@ const VARIANT_FILTERS: ServerFilterConfig[] = [
 
 interface VariantExplorerTableProps {
   gene: string;
+  /** When set, uses ?region= instead of ?gene= for the variant scan API */
+  region?: string;
   initialData?: Variant[];
   initialPaginationInfo?: ServerPaginationInfo;
 }
 
 export function VariantExplorerTable({
   gene,
+  region,
   initialData = [],
   initialPaginationInfo,
 }: VariantExplorerTableProps) {
@@ -141,6 +144,7 @@ export function VariantExplorerTable({
     prefetchNext,
   } = useVariantScanQuery({
     gene,
+    region,
     initialData: initialData.length > 0
       ? {
           data: initialData,

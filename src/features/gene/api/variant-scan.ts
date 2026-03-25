@@ -9,6 +9,8 @@ const API_BASE =
 // ============================================================================
 
 export interface VariantScanFilterOptions {
+  /** When "region", uses ?region= instead of ?gene= */
+  scope?: "gene" | "region";
   limit?: number;
   cursor?: string;
   sort_by?: string;
@@ -92,11 +94,15 @@ function appendArray(
 }
 
 function buildVariantScanUrl(
-  gene: string,
+  geneOrRegion: string,
   options: VariantScanFilterOptions = {},
 ): string {
   const params = new URLSearchParams();
-  params.set("gene", gene);
+  if (options.scope === "region") {
+    params.set("region", geneOrRegion);
+  } else {
+    params.set("gene", geneOrRegion);
+  }
   params.set("limit", String(options.limit ?? 20));
 
   if (options.cursor) params.set("cursor", options.cursor);
@@ -144,15 +150,15 @@ function buildVariantScanUrl(
 // ============================================================================
 
 /**
- * Fetch paginated variants for a gene.
- * Uses GET /variants?gene=...
+ * Fetch paginated variants for a gene or region.
+ * Uses GET /variants?gene=... or GET /variants?region=...
  */
 export async function fetchVariantScan(
-  gene: string,
+  geneOrRegion: string,
   options: VariantScanFilterOptions = {},
 ): Promise<VariantScanResult> {
   try {
-    const url = buildVariantScanUrl(gene, options);
+    const url = buildVariantScanUrl(geneOrRegion, options);
     const response = await fetchOrNull<VariantScanApiResponse>(url);
 
     if (!response?.data) {

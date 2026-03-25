@@ -54,6 +54,12 @@ export function getRouteForQuery(
         shouldPreload: false,
       };
 
+    case "region":
+      return {
+        path: `/${genome}/region/${encodeURIComponent(parsed.normalized)}/regulatory/overview`,
+        shouldPreload: false,
+      };
+
     case "gene":
       // TODO: Implement gene routing
       // return {

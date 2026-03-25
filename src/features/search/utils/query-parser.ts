@@ -8,6 +8,7 @@ import type {
   QueryType,
 } from "../types/query";
 import { looksLikeVCF, parseVCF } from "./vcf-parser";
+import { looksLikeRegion, parseRegion } from "@features/region/utils/parse-region";
 
 /**
  * Parse user query and identify its type
@@ -61,7 +62,22 @@ export function parseQuery(query: string): ParsedQuery {
     } as ParsedVariantQuery;
   }
 
-  // 4. Check if it looks like a partial VCF (user still typing)
+  // 4. Check for genomic region pattern (chr-start-end, 3 parts all numeric)
+  // Must come before looksLikeVCF which would misclassify "1-10001-20002" as partial VCF
+  if (looksLikeRegion(trimmed)) {
+    const region = parseRegion(trimmed);
+    if (region) {
+      return {
+        type: "region",
+        raw: query,
+        normalized: region.loc,
+        isValid: true,
+        confidence: "high",
+      };
+    }
+  }
+
+  // 5. Check if it looks like a partial VCF (user still typing)
   if (looksLikeVCF(trimmed)) {
     return {
       type: "variant_vcf",
@@ -72,7 +88,7 @@ export function parseQuery(query: string): ParsedQuery {
     } as ParsedVariantQuery;
   }
 
-  // 5. ChEMBL ID pattern (drugs)
+  // 6. ChEMBL ID pattern (drugs)
   if (/^CHEMBL\d+$/i.test(trimmed)) {
     return {
       type: "drug",
@@ -83,7 +99,7 @@ export function parseQuery(query: string): ParsedQuery {
     };
   }
 
-  // 6. Disease ontology ID patterns (MONDO, HPO, EFO, ORPHA, etc.)
+  // 7. Disease ontology ID patterns (MONDO, HPO, EFO, ORPHA, etc.)
   if (/^(MONDO|HPO?|EFO|ORPHA|DOID|OMIM|ICD10|ICD11)[:_]\d+$/i.test(trimmed)) {
     return {
       type: "disease",
@@ -94,7 +110,7 @@ export function parseQuery(query: string): ParsedQuery {
     };
   }
 
-  // 7. Gene-like pattern (all uppercase, short)
+  // 8. Gene-like pattern (all uppercase, short)
   if (/^[A-Z][A-Z0-9-]{1,10}$/.test(trimmed)) {
     return {
       type: "gene",
@@ -105,7 +121,7 @@ export function parseQuery(query: string): ParsedQuery {
     };
   }
 
-  // 8. Everything else is unknown (could be pathway, etc.)
+  // 9. Everything else is unknown (could be pathway, etc.)
   return {
     type: "unknown",
     raw: query,

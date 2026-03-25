@@ -7,7 +7,7 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { cn } from "@infra/utils";
-import { ArrowRight, Loader2, Search, X } from "lucide-react";
+import { ArrowRight, Loader2, MapPin, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
@@ -279,12 +279,18 @@ export function UniversalSearch() {
     expandedLimit: 50,
   });
 
-  // Sync typeahead query only when in typing mode
+  // Is the current query a direct-routable region like "1-10001-20002"?
+  const parsedQuery = parseQuery(query);
+  const isRegionQuery = parsedQuery.type === "region" && parsedQuery.isValid;
+
+  // Sync typeahead query only when in typing mode — skip for regions (not searchable)
   useEffect(() => {
-    if (searchState.mode === "typing") {
+    if (searchState.mode === "typing" && !isRegionQuery) {
       setTypeaheadQuery(deferredQuery);
+    } else if (isRegionQuery) {
+      clearTypeahead();
     }
-  }, [deferredQuery, searchState.mode, setTypeaheadQuery]);
+  }, [deferredQuery, searchState.mode, setTypeaheadQuery, isRegionQuery, clearTypeahead]);
 
   // Sync pivot anchor when in selected mode (use last anchor for pivot queries)
   useEffect(() => {
@@ -323,9 +329,9 @@ export function UniversalSearch() {
     setHighlightedIndex(-1);
   }, [searchState.anchors.length]);
 
-  // Preload variant data when user types a complete VCF (only in typing mode)
+  // Preload variant data when user types a complete VCF (only in typing mode, not for regions)
   useEffect(() => {
-    if (searchState.mode !== "typing") return;
+    if (searchState.mode !== "typing" || isRegionQuery) return;
 
     const parsed = parseQuery(query);
     if (
@@ -336,7 +342,7 @@ export function UniversalSearch() {
         // Silently fail - preloading is optional optimization
       });
     }
-  }, [query, searchState.mode]);
+  }, [query, searchState.mode, isRegionQuery]);
 
   const handleGenomeChange = useCallback((value: GenomeBuild) => {
     setGenome(value);
@@ -707,7 +713,31 @@ export function UniversalSearch() {
                   {/* TYPING MODE: Show typeahead suggestions */}
                   {searchState.mode === "typing" && (
                     <>
-                      {isTypeaheadLoading && groupedTypeaheadSuggestions.length === 0 ? (
+                      {/* Region query — show direct navigation prompt, skip typeahead */}
+                      {isRegionQuery ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSubmit(new Event("submit") as unknown as FormEvent)}
+                          className="w-full text-left px-5 py-5 hover:bg-muted transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                              <MapPin className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-foreground">
+                                Navigate to region
+                              </div>
+                              <div className="text-sm text-muted-foreground font-mono">
+                                {parsedQuery.normalized}
+                              </div>
+                            </div>
+                            <kbd className="px-2 py-1 rounded bg-muted border border-border font-mono text-xs text-muted-foreground">
+                              Enter
+                            </kbd>
+                          </div>
+                        </button>
+                      ) : isTypeaheadLoading && groupedTypeaheadSuggestions.length === 0 ? (
                         <div className="py-8 px-6 text-center text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                           <div className="text-sm">Searching...</div>

@@ -77,6 +77,8 @@ function getQueryKey(gene: string, filters: VariantScanFilterOptions) {
 
 interface UseVariantScanQueryOptions {
   gene: string;
+  /** When set, uses ?region= instead of ?gene= */
+  region?: string;
   initialData?: {
     data: Variant[];
     hasMore: boolean;
@@ -104,26 +106,30 @@ interface UseVariantScanQueryResult {
  */
 export function useVariantScanQuery({
   gene,
+  region,
   initialData,
 }: UseVariantScanQueryOptions): UseVariantScanQueryResult {
   const searchParams = useClientSearchParams();
   const queryClient = useQueryClient();
   const isFirstMount = useRef(true);
 
+  const scope = region ? "region" : "gene";
+  const target = region ?? gene;
+
   const filters = useMemo(
-    () => parseFiltersFromUrl(searchParams),
-    [searchParams],
+    () => ({ ...parseFiltersFromUrl(searchParams), scope: scope as "gene" | "region" }),
+    [searchParams, scope],
   );
 
   const queryKey = useMemo(
-    () => getQueryKey(gene, filters),
-    [gene, filters],
+    () => getQueryKey(target, filters),
+    [target, filters],
   );
 
   const query = useQuery({
     queryKey,
     queryFn: async ({ signal }) => {
-      const result = await fetchVariantScan(gene, filters);
+      const result = await fetchVariantScan(target, filters);
       if (signal?.aborted) throw new Error("Aborted");
       return result;
     },
@@ -157,10 +163,10 @@ export function useVariantScanQuery({
       cursor: nextCursor,
     };
 
-    const nextQueryKey = getQueryKey(gene, nextFilters);
+    const nextQueryKey = getQueryKey(target, nextFilters);
     queryClient.prefetchQuery({
       queryKey: nextQueryKey,
-      queryFn: () => fetchVariantScan(gene, nextFilters),
+      queryFn: () => fetchVariantScan(target, nextFilters),
       staleTime: 5 * 60 * 1000,
     });
   };

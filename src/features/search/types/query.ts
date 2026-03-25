@@ -6,6 +6,7 @@ export type QueryType =
   | "variant_vcf"
   | "variant_rsid"
   | "gene"
+  | "region"
   | "disease"
   | "drug"
   | "pathway"
