@@ -17,7 +17,8 @@ import {
   Loader2,
   StopCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useTick } from "../hooks/use-tick";
 import { JOB_STATE_CONFIG } from "../constants";
 import { formatBytes, formatDuration, formatNumber, formatTime } from "../lib/format";
 import type { Job, JobProgress } from "../types";
@@ -88,22 +89,12 @@ function LiveDuration({
   startedAt: string;
   completedAt?: string;
 }) {
-  const [duration, setDuration] = useState(() =>
-    formatDuration(startedAt, completedAt),
+  const tick = useTick();
+  const duration = useMemo(
+    () => formatDuration(startedAt, completedAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [startedAt, completedAt, completedAt ? 0 : tick],
   );
-
-  useEffect(() => {
-    if (completedAt) {
-      setDuration(formatDuration(startedAt, completedAt));
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setDuration(formatDuration(startedAt));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [startedAt, completedAt]);
 
   return <span>{duration}</span>;
 }

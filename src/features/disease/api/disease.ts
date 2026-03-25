@@ -28,15 +28,20 @@ export async function fetchDiseaseEntity(
     limitPerEdgeType: "200",
   });
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
   try {
     const response = await fetch(
       `${API_BASE}/graph/Disease/${encodeURIComponent(diseaseId)}?${params}`,
-      { credentials: "include", next: { revalidate: 300 } },
+      { credentials: "include", signal: controller.signal, next: { revalidate: 300 } },
     );
 
     if (!response.ok) return null;
     return await response.json();
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

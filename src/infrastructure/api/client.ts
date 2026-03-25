@@ -2,23 +2,38 @@ import { ApiError, type AsyncData, type FetchOptions } from "./types";
 
 const DEFAULT_REVALIDATE = 3600; // 1 hour
 
+const DEFAULT_TIMEOUT = 15_000; // 15 seconds
+
 export async function fetchJson<T>(
   url: string,
   options: FetchOptions = {},
 ): Promise<T> {
-  const { revalidate = DEFAULT_REVALIDATE, headers = {} } = options;
+  const { revalidate = DEFAULT_REVALIDATE, timeout = DEFAULT_TIMEOUT, headers = {} } = options;
 
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...headers },
-    credentials: "include",
-    next: { revalidate },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText, url);
+  try {
+    const response = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...headers },
+      credentials: "include",
+      signal: controller.signal,
+      next: { revalidate },
+    });
+
+    if (!response.ok) {
+      throw new ApiError(response.status, response.statusText, url);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ApiError(408, `Request timeout after ${timeout}ms`, url);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 export async function fetchWithState<T>(

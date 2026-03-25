@@ -14,7 +14,7 @@ import { basicColumns } from "@features/variant/config/hg38/columns/basic";
 import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
 import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -443,48 +443,40 @@ export function JobAnalyticsReport({
   className,
 }: JobAnalyticsReportProps) {
   const { query, loadParquet, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  type ReportLoadState =
+    | { type: "init" }
+    | { type: "loading_data" }
+    | { type: "generating" }
+    | { type: "ready"; report: ReportData }
+    | { type: "error"; message: string };
+  const [state, setState] = useState<ReportLoadState>({ type: "init" });
+  const loadStartedRef = useRef(false);
 
   useEffect(() => {
-    if (!isReady || dataLoaded) return;
+    if (!isReady || loadStartedRef.current) return;
+    loadStartedRef.current = true;
+    setState({ type: "loading_data" });
     loadParquet(dataUrl, "variants", `cohort:${jobId}:data`)
-      .then(() => setDataLoaded(true))
+      .then(async () => {
+        setState({ type: "generating" });
+        const report = await generateReportData(query);
+        setState({ type: "ready", report });
+      })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load data");
-        setIsLoading(false);
+        setState({ type: "error", message: err instanceof Error ? err.message : "Failed to load data" });
       });
-  }, [isReady, dataUrl, loadParquet, dataLoaded, jobId]);
-
-  const runReport = useCallback(async () => {
-    if (!dataLoaded) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      setReport(await generateReportData(query));
-    } catch (err) {
-      console.error("Report generation error:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate report");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [query, dataLoaded]);
-
-  useEffect(() => {
-    if (dataLoaded) runReport();
-  }, [dataLoaded, runReport]);
+  }, [isReady, dataUrl, loadParquet, jobId, query]);
 
   // Loading
-  if (dbLoading || !dataLoaded || isLoading) {
+  if (dbLoading || state.type === "init" || state.type === "loading_data" || state.type === "generating") {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20">
         <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
         <p className="text-sm font-medium text-foreground">
           {dbLoading
             ? "Initializing analytics engine..."
-            : !dataLoaded
+            : state.type === "loading_data"
               ? "Loading data..."
               : "Generating report..."}
         </p>
@@ -493,15 +485,15 @@ export function JobAnalyticsReport({
   }
 
   // Error
-  if (error || dbError) {
+  if (state.type === "error" || dbError) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20">
         <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
           <AlertCircle className="w-6 h-6 text-rose-600" />
         </div>
         <p className="text-sm font-semibold text-foreground mb-2">Report generation failed</p>
-        <p className="text-sm text-muted-foreground max-w-md mb-4">{error || dbError}</p>
-        <Button variant="outline" onClick={runReport}>
+        <p className="text-sm text-muted-foreground max-w-md mb-4">{state.type === "error" ? state.message : dbError}</p>
+        <Button variant="outline" onClick={() => { loadStartedRef.current = false; setState({ type: "init" }); }}>
           <RefreshCw className="w-4 h-4" />
           Retry
         </Button>
@@ -509,7 +501,8 @@ export function JobAnalyticsReport({
     );
   }
 
-  if (!report) return null;
+  if (state.type !== "ready") return null;
+  const report = state.report;
   const s = report.summary;
 
   return (

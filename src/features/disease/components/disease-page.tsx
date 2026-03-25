@@ -60,12 +60,12 @@ function getRows(
   return relations?.[type]?.rows ?? [];
 }
 
-function ep<T = unknown>(row: EdgeRow, key: string): T {
-  return row.link.props[key] as T;
+function ep<T = unknown>(row: EdgeRow, key: string): T | undefined {
+  return row.link.props[key] as T | undefined;
 }
 
-function nb<T = unknown>(row: EdgeRow, key: string): T {
-  return (row.neighbor as Record<string, unknown>)[key] as T;
+function nb<T = unknown>(row: EdgeRow, key: string): T | undefined {
+  return (row.neighbor as Record<string, unknown>)[key] as T | undefined;
 }
 
 function phaseLabel(phase: unknown): string {

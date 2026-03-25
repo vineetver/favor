@@ -21,7 +21,8 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useTick } from "../hooks/use-tick";
 import { ERROR_RECOVERY_CONFIG, JOB_STATE_CONFIG } from "../constants";
 import { formatBytes, formatDuration, formatNumber, formatTime } from "../lib/format";
 import type {
@@ -73,22 +74,13 @@ function LiveDuration({
   startedAt: string;
   completedAt?: string;
 }) {
-  const [duration, setDuration] = useState(() =>
-    formatDuration(startedAt, completedAt)
+  // Uses a single global interval shared across all LiveDuration instances
+  const tick = useTick();
+  const duration = useMemo(
+    () => formatDuration(startedAt, completedAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick drives re-compute for live durations
+    [startedAt, completedAt, completedAt ? 0 : tick],
   );
-
-  useEffect(() => {
-    if (completedAt) {
-      setDuration(formatDuration(startedAt, completedAt));
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setDuration(formatDuration(startedAt));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [startedAt, completedAt]);
 
   return <span>{duration}</span>;
 }

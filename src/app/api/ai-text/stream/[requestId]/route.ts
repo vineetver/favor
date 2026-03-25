@@ -31,7 +31,10 @@ export async function GET(
   const upstream = await fetch(upstreamUrl, { headers });
 
   if (!upstream.ok || !upstream.body) {
-    return new Response(upstream.statusText, { status: upstream.status });
+    return new Response(
+      JSON.stringify({ error: `Stream request failed (${upstream.status})` }),
+      { status: upstream.status, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   return new Response(upstream.body, {

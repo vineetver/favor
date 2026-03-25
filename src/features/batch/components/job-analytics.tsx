@@ -485,6 +485,22 @@ function CustomQuery({
 }
 
 // ============================================================================
+// Data loading state machines
+// ============================================================================
+
+type DataLoadState =
+  | { type: "idle" }
+  | { type: "loading" }
+  | { type: "error"; message: string }
+  | { type: "ready"; cache: LoadDataResult };
+
+type QueryRunState =
+  | { type: "idle" }
+  | { type: "loading" }
+  | { type: "error"; message: string }
+  | { type: "success"; result: QueryResult };
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -496,74 +512,55 @@ export function JobAnalytics({
 }: JobAnalyticsProps) {
   const { isLoading: isInitializing, isReady, error: initError, loadParquet, query, clearCache } = useDuckDB();
 
-  // Single state for the data-loading lifecycle (was 4 separate useStates)
-  type DataLoadState =
-    | { type: "idle" }
-    | { type: "loading" }
-    | { type: "error"; message: string }
-    | { type: "ready"; cache: LoadDataResult };
   const [dataState, setDataState] = useState<DataLoadState>({ type: "idle" });
+  const [queryStates, setQueryStates] = useState<Record<string, QueryRunState>>({});
+  const [customQueryState, setCustomQueryState] = useState<QueryRunState>({ type: "idle" });
 
-  // Derive booleans for existing rendering code
+  // Derive for existing rendering code
   const isLoadingData = dataState.type === "loading";
   const loadError = dataState.type === "error" ? dataState.message : null;
   const cacheInfo = dataState.type === "ready" ? dataState.cache : null;
 
-  // Per-query states: one Record instead of three
-  type QueryRunState =
-    | { type: "idle" }
-    | { type: "loading" }
-    | { type: "error"; message: string }
-    | { type: "success"; result: QueryResult };
-  const [queryStates, setQueryStates] = useState<Record<string, QueryRunState>>({});
+  const { queryResults, loadingQueries, queryErrors } = useMemo(() => {
+    const results: Record<string, QueryResult | null> = {};
+    const loading: Record<string, boolean> = {};
+    const errors: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(queryStates)) {
+      results[k] = v.type === "success" ? v.result : null;
+      loading[k] = v.type === "loading";
+      errors[k] = v.type === "error" ? v.message : null;
+    }
+    return { queryResults: results, loadingQueries: loading, queryErrors: errors };
+  }, [queryStates]);
 
-  // Custom query state: single discriminated union instead of 3 vars
-  const [customQueryState, setCustomQueryState] = useState<QueryRunState>({ type: "idle" });
-
-  // Derive for existing rendering code
-  const queryResults = useMemo(() => {
-    const out: Record<string, QueryResult | null> = {};
-    for (const [k, v] of Object.entries(queryStates)) {
-      out[k] = v.type === "success" ? v.result : null;
-    }
-    return out;
-  }, [queryStates]);
-  const loadingQueries = useMemo(() => {
-    const out: Record<string, boolean> = {};
-    for (const [k, v] of Object.entries(queryStates)) {
-      out[k] = v.type === "loading";
-    }
-    return out;
-  }, [queryStates]);
-  const queryErrors = useMemo(() => {
-    const out: Record<string, string | null> = {};
-    for (const [k, v] of Object.entries(queryStates)) {
-      out[k] = v.type === "error" ? v.message : null;
-    }
-    return out;
-  }, [queryStates]);
   const customResult = customQueryState.type === "success" ? customQueryState.result : null;
   const customError = customQueryState.type === "error" ? customQueryState.message : null;
   const isCustomLoading = customQueryState.type === "loading";
 
-  // Load Parquet file when DuckDB is ready
+  // Load parquet data — extracted so both init and cache-clear can call it
+  const loadData = useCallback(async () => {
+    setDataState({ type: "loading" });
+    try {
+      const result = await loadParquet(dataUrl, "variants", `cohort:${jobId}:data`);
+      setDataState({ type: "ready", cache: result });
+    } catch (err) {
+      setDataState({ type: "error", message: err instanceof Error ? err.message : "Failed to load data" });
+    }
+  }, [loadParquet, dataUrl, jobId]);
+
+  // Trigger on mount when DuckDB is ready
   const loadStartedRef = useRef(false);
   useEffect(() => {
     if (isReady && !loadStartedRef.current) {
       loadStartedRef.current = true;
-      setDataState({ type: "loading" });
-      loadParquet(dataUrl, "variants", `cohort:${jobId}:data`)
-        .then((result) => setDataState({ type: "ready", cache: result }))
-        .catch((err) => setDataState({ type: "error", message: err.message }));
+      loadData();
     }
-  }, [isReady, loadParquet, dataUrl, jobId]);
+  }, [isReady, loadData]);
 
-  // Handle cache clear and reload
   const handleClearCache = useCallback(async () => {
     await clearCache();
-    loadStartedRef.current = false;
-    setDataState({ type: "idle" });
-  }, [clearCache]);
+    loadData();
+  }, [clearCache, loadData]);
 
   // Run a preset query
   const runPresetQuery = useCallback(
@@ -655,14 +652,23 @@ export function JobAnalytics({
           <p className="text-sm text-rose-600 max-w-md text-center">
             {initError || loadError}
           </p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </Button>
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry
+            </Button>
+            {dataUrl && (
+              <Button variant="outline" asChild>
+                <a href={dataUrl} download>
+                  <Download className="w-4 h-4" />
+                  Download Raw Data
+                </a>
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );

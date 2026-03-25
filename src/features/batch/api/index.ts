@@ -122,6 +122,7 @@ export async function uploadFile(
   file: File,
   onProgress?: (percent: number) => void,
   signal?: AbortSignal,
+  onAborted?: (partialUri?: string) => void,
 ): Promise<{ input_uri: string }> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -161,7 +162,8 @@ export async function uploadFile(
 
     xhr.addEventListener("abort", () => {
       signal?.removeEventListener("abort", onAbort);
-      // Distinguish user-initiated abort (via signal) from other aborts
+      // Notify caller so they can clean up partial uploads (e.g. orphaned S3 files)
+      onAborted?.();
       if (signal?.aborted) {
         reject(new DOMException("Aborted", "AbortError"));
       } else {

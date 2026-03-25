@@ -92,10 +92,17 @@ export function isVariantInDatabase(normalized: string): boolean {
 }
 
 /**
- * Clear preload cache
+ * Clear entire preload cache
  */
 export function clearPreloadCache(): void {
   preloadCache.clear();
+}
+
+/**
+ * Invalidate a single cached variant by its normalized key
+ */
+export function invalidatePreloadedVariant(normalized: string): void {
+  preloadCache.delete(normalized);
 }
 
 /**
