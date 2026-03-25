@@ -1,8 +1,7 @@
 import { fetchOrNull } from "@infra/api";
 import type { VariantCounts } from "@features/gene/api/variant-statistics";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 export interface RegionBin {
   chromosome: string;

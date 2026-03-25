@@ -10,8 +10,7 @@ import type {
   FetchMaveParams,
 } from "./types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 function perturbUrl(loc: string, endpoint: string, params: Record<string, unknown> = {}): string {
   const qs = buildParams(params);

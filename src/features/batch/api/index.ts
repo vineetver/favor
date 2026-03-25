@@ -29,7 +29,7 @@ import type {
   ValidateResponse,
 } from "../types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+import { API_BASE } from "@/config/api";
 
 // ============================================================================
 // Error Classes

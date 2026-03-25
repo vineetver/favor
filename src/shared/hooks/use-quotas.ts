@@ -21,7 +21,7 @@ interface QuotaResponse {
 // Fetch
 // ---------------------------------------------------------------------------
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+import { API_BASE } from "@/config/api";
 
 async function fetchQuotas(): Promise<Quota[]> {
   const res = await fetch(`${API_BASE}/quotas`, { credentials: "include" });

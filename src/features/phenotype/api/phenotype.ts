@@ -1,7 +1,6 @@
 import type { PhenotypeEntityResponse } from "../types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 /** Edge types to fetch for the phenotype detail page */
 const PHENOTYPE_EDGE_TYPES = [

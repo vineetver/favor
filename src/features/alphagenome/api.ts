@@ -11,7 +11,7 @@ import type {
   VariantTrackResult,
 } from "./types";
 
-const API_BASE = "/api/v1";
+import { API_BASE } from "@/config/api";
 const PREDICT_BASE = `${API_BASE}/predict`;
 const POLL_INTERVAL_MS = 10_000;
 

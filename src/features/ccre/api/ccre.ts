@@ -1,7 +1,6 @@
 import type { CcreEntityResponse } from "../types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 /** Edge types to fetch for the cCRE detail page */
 const CCRE_EDGE_TYPES = [

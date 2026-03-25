@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { API_BASE } from "@/config/api";
 import {
   Tooltip,
   TooltipContent,
@@ -424,9 +425,6 @@ function load3Dmol(): Promise<$3Dmol> {
   });
   return mol3dPromise;
 }
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 const AlphaFoldViewer = memo(function AlphaFoldViewer({
   uniprotId,

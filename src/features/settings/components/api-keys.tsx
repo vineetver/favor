@@ -479,8 +479,8 @@ export function ApiKeysSection() {
         <div className="rounded-lg border border-border bg-muted/30 p-4">
           <p className="text-xs font-medium text-foreground mb-2">Usage</p>
           <code className="block text-xs font-mono text-muted-foreground bg-muted rounded-md p-3 overflow-x-auto">
-            curl -H &quot;Authorization: Bearer favor_sk_...&quot;
-            {" "}http://localhost:8000/api/v1/agent/sessions
+            curl -H &quot;Authorization: Bearer favor_sk_...&quot;{" "}
+            {process.env.NEXT_PUBLIC_API_URL || "/api/v1"}/agent/sessions
           </code>
         </div>
       )}

@@ -6,8 +6,7 @@ import type {
   VariantPrefixResponse,
 } from "../types/api";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 /**
  * Fetch typeahead suggestions for fast autocomplete
@@ -33,7 +32,7 @@ export async function fetchTypeahead(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/typeahead?${searchParams.toString()}`,
+    `${API_BASE}/typeahead?${searchParams.toString()}`,
     {
       headers: {
         Accept: "application/json",
@@ -69,7 +68,7 @@ export async function fetchVariantPrefix(params: {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/variants/prefix?${searchParams.toString()}`,
+    `${API_BASE}/variants/prefix?${searchParams.toString()}`,
     {
       headers: { Accept: "application/json" },
       credentials: "include",
@@ -134,7 +133,7 @@ export async function fetchSearch(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/pivot?${searchParams.toString()}`,
+    `${API_BASE}/pivot?${searchParams.toString()}`,
     {
       headers: {
         Accept: "application/json",
@@ -181,7 +180,7 @@ export async function fetchPivotExpansion(params: {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/pivot?${searchParams.toString()}`,
+    `${API_BASE}/pivot?${searchParams.toString()}`,
     {
       headers: {
         Accept: "application/json",

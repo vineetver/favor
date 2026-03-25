@@ -1,6 +1,6 @@
 import type { ApiKeyItem, CreateApiKeyRequest, CreateApiKeyResponse } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 class ApiKeyError extends Error {
   constructor(

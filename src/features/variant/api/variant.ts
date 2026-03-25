@@ -1,8 +1,7 @@
 import type { Variant, VariantSingleResponse, AmbiguousVariantResponse } from "@features/variant/types";
 import { fetchOrNull } from "@infra/api";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/config/api";
 
 /**
  * Detect if identifier is rsID (e.g., rs7412) or VCF format (e.g., 19-44908684-T-C)

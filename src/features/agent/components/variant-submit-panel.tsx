@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { API_BASE } from "@/config/api";
 import { Button } from "@shared/components/ui/button";
 import { Textarea } from "@shared/components/ui/textarea";
 import {
@@ -67,7 +68,6 @@ function parseVariantLines(text: string): string[] {
 // Async cohort creation (POST → poll → materialize)
 // ---------------------------------------------------------------------------
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 const POLL_INTERVAL_MS = 1_500;
 const POLL_TIMEOUT_MS = 120_000;
 
