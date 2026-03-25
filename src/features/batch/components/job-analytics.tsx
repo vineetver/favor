@@ -25,7 +25,7 @@ import {
   RefreshCw,
   Table,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDuckDB, type QueryResult, type LoadDataResult } from "../hooks/use-duckdb";
 
 // ============================================================================
@@ -495,59 +495,86 @@ export function JobAnalytics({
   className,
 }: JobAnalyticsProps) {
   const { isLoading: isInitializing, isReady, error: initError, loadParquet, query, clearCache } = useDuckDB();
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [cacheInfo, setCacheInfo] = useState<LoadDataResult | null>(null);
 
-  // Query results state
-  const [queryResults, setQueryResults] = useState<Record<string, QueryResult | null>>({});
-  const [queryErrors, setQueryErrors] = useState<Record<string, string | null>>({});
-  const [loadingQueries, setLoadingQueries] = useState<Record<string, boolean>>({});
+  // Single state for the data-loading lifecycle (was 4 separate useStates)
+  type DataLoadState =
+    | { type: "idle" }
+    | { type: "loading" }
+    | { type: "error"; message: string }
+    | { type: "ready"; cache: LoadDataResult };
+  const [dataState, setDataState] = useState<DataLoadState>({ type: "idle" });
 
-  // Custom query state
-  const [customResult, setCustomResult] = useState<QueryResult | null>(null);
-  const [customError, setCustomError] = useState<string | null>(null);
-  const [isCustomLoading, setIsCustomLoading] = useState(false);
+  // Derive booleans for existing rendering code
+  const isLoadingData = dataState.type === "loading";
+  const loadError = dataState.type === "error" ? dataState.message : null;
+  const cacheInfo = dataState.type === "ready" ? dataState.cache : null;
+
+  // Per-query states: one Record instead of three
+  type QueryRunState =
+    | { type: "idle" }
+    | { type: "loading" }
+    | { type: "error"; message: string }
+    | { type: "success"; result: QueryResult };
+  const [queryStates, setQueryStates] = useState<Record<string, QueryRunState>>({});
+
+  // Custom query state: single discriminated union instead of 3 vars
+  const [customQueryState, setCustomQueryState] = useState<QueryRunState>({ type: "idle" });
+
+  // Derive for existing rendering code
+  const queryResults = useMemo(() => {
+    const out: Record<string, QueryResult | null> = {};
+    for (const [k, v] of Object.entries(queryStates)) {
+      out[k] = v.type === "success" ? v.result : null;
+    }
+    return out;
+  }, [queryStates]);
+  const loadingQueries = useMemo(() => {
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(queryStates)) {
+      out[k] = v.type === "loading";
+    }
+    return out;
+  }, [queryStates]);
+  const queryErrors = useMemo(() => {
+    const out: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(queryStates)) {
+      out[k] = v.type === "error" ? v.message : null;
+    }
+    return out;
+  }, [queryStates]);
+  const customResult = customQueryState.type === "success" ? customQueryState.result : null;
+  const customError = customQueryState.type === "error" ? customQueryState.message : null;
+  const isCustomLoading = customQueryState.type === "loading";
 
   // Load Parquet file when DuckDB is ready
+  const loadStartedRef = useRef(false);
   useEffect(() => {
-    if (isReady && !dataLoaded && !isLoadingData) {
-      setIsLoadingData(true);
-      loadParquet(dataUrl)
-        .then((result) => {
-          setCacheInfo(result);
-          setDataLoaded(true);
-          setIsLoadingData(false);
-        })
-        .catch((err) => {
-          setLoadError(err.message);
-          setIsLoadingData(false);
-        });
+    if (isReady && !loadStartedRef.current) {
+      loadStartedRef.current = true;
+      setDataState({ type: "loading" });
+      loadParquet(dataUrl, "variants", `cohort:${jobId}:data`)
+        .then((result) => setDataState({ type: "ready", cache: result }))
+        .catch((err) => setDataState({ type: "error", message: err.message }));
     }
-  }, [isReady, dataLoaded, isLoadingData, loadParquet, dataUrl]);
+  }, [isReady, loadParquet, dataUrl, jobId]);
 
   // Handle cache clear and reload
   const handleClearCache = useCallback(async () => {
     await clearCache();
-    setCacheInfo(null);
-    setDataLoaded(false);
+    loadStartedRef.current = false;
+    setDataState({ type: "idle" });
   }, [clearCache]);
 
   // Run a preset query
   const runPresetQuery = useCallback(
     async (queryDef: PresetQuery) => {
-      setLoadingQueries((prev) => ({ ...prev, [queryDef.id]: true }));
-      setQueryErrors((prev) => ({ ...prev, [queryDef.id]: null }));
-
+      setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "loading" } }));
       try {
         const result = await query(queryDef.sql);
-        setQueryResults((prev) => ({ ...prev, [queryDef.id]: result }));
+        setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "success", result } }));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Query failed";
-        setQueryErrors((prev) => ({ ...prev, [queryDef.id]: message }));
-      } finally {
-        setLoadingQueries((prev) => ({ ...prev, [queryDef.id]: false }));
+        setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "error", message } }));
       }
     },
     [query],
@@ -556,17 +583,13 @@ export function JobAnalytics({
   // Run custom query
   const runCustomQuery = useCallback(
     async (sql: string) => {
-      setIsCustomLoading(true);
-      setCustomError(null);
-
+      setCustomQueryState({ type: "loading" });
       try {
         const result = await query(sql);
-        setCustomResult(result);
+        setCustomQueryState({ type: "success", result });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Query failed";
-        setCustomError(message);
-      } finally {
-        setIsCustomLoading(false);
+        setCustomQueryState({ type: "error", message });
       }
     },
     [query],

@@ -32,21 +32,33 @@ export interface UseDuckDBResult {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
-  loadParquet: (url: string, tableName?: string) => Promise<LoadDataResult>;
+  /**
+   * Load a Parquet file into DuckDB from a URL.
+   * @param url - Presigned URL to fetch (may expire)
+   * @param tableName - DuckDB table/view name (default: "variants")
+   * @param cacheKey - Stable key for IndexedDB cache. Use this to survive URL changes
+   *                   (e.g. `cohort:${id}:data`). Falls back to `url` if omitted.
+   */
+  loadParquet: (url: string, tableName?: string, cacheKey?: string) => Promise<LoadDataResult>;
   query: (sql: string) => Promise<QueryResult>;
   getTableSchema: (tableName: string) => Promise<QueryResult>;
   getTables: () => Promise<string[]>;
   clearCache: () => Promise<void>;
 }
 
+// Single state machine instead of 3 booleans (isLoading/isReady/error).
+// Eliminates 2 extra renders per init — one setState instead of two.
+type DuckDBStatus =
+  | { type: "loading" }
+  | { type: "ready" }
+  | { type: "error"; message: string };
+
 // ============================================================================
 // Hook
 // ============================================================================
 
 export function useDuckDB(): UseDuckDBResult {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<DuckDBStatus>({ type: "loading" });
   const instanceRef = useRef<DuckDBInstance | null>(null);
   const initPromiseRef = useRef<Promise<DuckDBInstance> | null>(null);
 
@@ -117,16 +129,10 @@ export function useDuckDB(): UseDuckDBResult {
 
     initDuckDB()
       .then(() => {
-        if (mounted) {
-          setIsReady(true);
-          setIsLoading(false);
-        }
+        if (mounted) setStatus({ type: "ready" });
       })
       .catch((err) => {
-        if (mounted) {
-          setError(err.message);
-          setIsLoading(false);
-        }
+        if (mounted) setStatus({ type: "error", message: err.message });
       });
 
     return () => {
@@ -135,15 +141,17 @@ export function useDuckDB(): UseDuckDBResult {
   }, [initDuckDB]);
 
   // Load Parquet file from URL (with IndexedDB caching)
-  const loadParquet = useCallback(async (url: string, tableName = "variants"): Promise<LoadDataResult> => {
+  const loadParquet = useCallback(async (url: string, tableName = "variants", cacheKey?: string): Promise<LoadDataResult> => {
     const instance = await initDuckDB();
+    // Use stable cacheKey when provided so the cache survives presigned URL changes
+    const effectiveCacheKey = cacheKey ?? url;
 
     try {
       let arrayBuffer: ArrayBuffer;
       let fromCache = false;
 
-      // Check IndexedDB cache first
-      const cached = await getCachedData(url);
+      // Check IndexedDB cache first (keyed by stable cacheKey, not ephemeral URL)
+      const cached = await getCachedData(effectiveCacheKey);
 
       if (cached) {
         arrayBuffer = cached;
@@ -158,8 +166,8 @@ export function useDuckDB(): UseDuckDBResult {
         arrayBuffer = await response.arrayBuffer();
         console.log(`[DuckDB] Fetched Parquet from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
 
-        // Store in cache for next time (don't await - do it in background)
-        setCachedData(url, arrayBuffer).catch((err) => {
+        // Store in cache with stable key (don't await - do it in background)
+        setCachedData(effectiveCacheKey, arrayBuffer).catch((err) => {
           console.warn("[DuckDB] Failed to cache Parquet data:", err);
         });
       }
@@ -284,9 +292,9 @@ export function useDuckDB(): UseDuckDBResult {
   }, [query]);
 
   return {
-    isLoading,
-    isReady,
-    error,
+    isLoading: status.type === "loading",
+    isReady: status.type === "ready",
+    error: status.type === "error" ? status.message : null,
     loadParquet,
     query,
     getTableSchema,

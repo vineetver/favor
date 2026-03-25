@@ -15,7 +15,7 @@ import {
 } from "@shared/components/ui/charts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { AlertCircle, Download, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCohortFiles } from "../api";
 import { VariantDrawer } from "../components/variant-drawer";
 import { useDuckDB } from "../hooks/use-duckdb";
@@ -820,31 +820,35 @@ function CrossDatasetContext({ data, onFilterClick }: { data: CrossDatasetData; 
 
 type LoadStage = "loading_data" | "fetching_urls" | "loading_enrichment" | "analyzing";
 
+// One state var instead of 5 (report, isLoading, stage, error, loadStarted).
+// Each transition is a single setState — no cascading renders.
+type IgvfLoadState =
+  | { type: "idle" }
+  | { type: "loading"; stage: LoadStage }
+  | { type: "error"; message: string }
+  | { type: "ready"; report: IgvfReportData };
+
 function useIgvfData(cohortId: string, dataUrl: string) {
   const { query, loadParquet, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
-  const [report, setReport] = useState<IgvfReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stage, setStage] = useState<LoadStage>("loading_data");
-  const [error, setError] = useState<string | null>(null);
-  const [loadStarted, setLoadStarted] = useState(false);
+  const [state, setState] = useState<IgvfLoadState>({ type: "idle" });
+  const loadStartedRef = useRef(false);
 
   const loadAll = useCallback(async () => {
     if (!isReady) return;
-    setIsLoading(true); setError(null);
+    setState({ type: "loading", stage: "loading_data" });
     try {
-      setStage("loading_data");
-      await loadParquet(dataUrl, "variants");
+      await loadParquet(dataUrl, "variants", `cohort:${cohortId}:data`);
 
-      setStage("fetching_urls");
+      setState({ type: "loading", stage: "fetching_urls" });
       const files = await getCohortFiles(cohortId);
 
-      setStage("loading_enrichment");
+      setState({ type: "loading", stage: "loading_enrichment" });
       const loaded: Array<{ label: string; rows: number }> = [];
       for (const label of ENRICHMENT_LABELS) {
         const file = files.files.find((f) => f.label === `${label}.parquet` || f.label === label);
         if (file) {
           try {
-            await loadParquet(file.url, label);
+            await loadParquet(file.url, label, `cohort:${cohortId}:${label}`);
             const r = await query(`SELECT count(*) as n FROM ${label}`);
             const cnt = r.rows[0]?.n;
             loaded.push({ label, rows: typeof cnt === "number" ? cnt : typeof cnt === "bigint" ? Number(cnt) : 0 });
@@ -854,16 +858,30 @@ function useIgvfData(cohortId: string, dataUrl: string) {
         }
       }
 
-      setStage("analyzing");
-      setReport(await generateIgvfReport(query, loaded));
+      setState({ type: "loading", stage: "analyzing" });
+      const report = await generateIgvfReport(query, loaded);
+      setState({ type: "ready", report });
     } catch (err) {
       console.error("[IGVF]", err);
-      setError(err instanceof Error ? err.message : "Failed");
-    } finally { setIsLoading(false); }
+      setState({ type: "error", message: err instanceof Error ? err.message : "Failed" });
+    }
   }, [isReady, cohortId, dataUrl, loadParquet, query]);
 
-  useEffect(() => { if (isReady && !loadStarted) { setLoadStarted(true); loadAll(); } }, [isReady, loadStarted, loadAll]);
-  return { report, isLoading: dbLoading || isLoading, stage, error: error || dbError, retry: loadAll, query };
+  useEffect(() => {
+    if (isReady && !loadStartedRef.current) {
+      loadStartedRef.current = true;
+      loadAll();
+    }
+  }, [isReady, loadAll]);
+
+  return {
+    report: state.type === "ready" ? state.report : null,
+    isLoading: dbLoading || state.type === "loading",
+    stage: state.type === "loading" ? state.stage : ("loading_data" as LoadStage),
+    error: dbError || (state.type === "error" ? state.message : null),
+    retry: loadAll,
+    query,
+  };
 }
 
 // ============================================================================
@@ -872,15 +890,13 @@ function useIgvfData(cohortId: string, dataUrl: string) {
 
 export function IgvfLipidReport({ cohortId, dataUrl, className }: { cohortId: string; dataUrl: string; className?: string }) {
   const { report, isLoading, stage, error, retry, query } = useIgvfData(cohortId, dataUrl);
-  const [activeDataset, setActiveDataset] = useState<DatasetId | null>(null);
+  // User's explicit selection; null = use default (first available)
+  const [selectedDataset, setSelectedDataset] = useState<DatasetId | null>(null);
   const [variantFilter, setVariantFilter] = useState<VariantFilter | null>(null);
 
-  // Default to first available dataset
-  useEffect(() => {
-    if (report && !activeDataset && report.availableDatasets.length > 0) {
-      setActiveDataset(report.availableDatasets[0]);
-    }
-  }, [report, activeDataset]);
+  // Derive active dataset — falls through to first available when no explicit selection.
+  // No useEffect cascade needed.
+  const activeDataset = selectedDataset ?? (report?.availableDatasets[0] ?? null);
 
   if (isLoading) {
     const labels: Record<LoadStage, string> = {
@@ -929,7 +945,7 @@ export function IgvfLipidReport({ cohortId, dataUrl, className }: { cohortId: st
       <h2 className="text-base font-semibold text-foreground mb-4">Per-Dataset Analysis</h2>
       {report.availableDatasets.length > 1 && (
         <div className="mb-6 print:hidden">
-          <SegmentedControl value={activeDataset ?? report.availableDatasets[0]} onChange={setActiveDataset} options={datasetLabels} />
+          <SegmentedControl value={activeDataset!} onChange={setSelectedDataset} options={datasetLabels} />
         </div>
       )}
       {/* Screen: show active tab only. Print: show all datasets. */}

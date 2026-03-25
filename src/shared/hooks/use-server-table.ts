@@ -111,7 +111,8 @@ export function useServerTable({
 }: UseServerTableOptions): UseServerTableReturn {
   const pathname = usePathname();
   const searchParams = useClientSearchParams();
-  const [isPending, setIsPending] = useState(false);
+  // Removed: fake isPending with setTimeout(100ms) caused 2 wasted renders per filter.
+  // The URL update is synchronous — no loading state needed.
 
   // ============================================================================
   // Local State for Text Inputs (immediate UI feedback)
@@ -189,12 +190,7 @@ export function useServerTable({
 
       const newUrl = params.toString() ? `${pathname}?${params}` : pathname;
 
-      // Update URL without Next.js server navigation
       updateClientUrl(newUrl, false);
-
-      // Show loading state briefly (optional, for UX feedback)
-      setIsPending(true);
-      setTimeout(() => setIsPending(false), 100);
     },
     [pathname, searchParams, serverPagination],
   );
@@ -458,7 +454,7 @@ export function useServerTable({
     filterChips,
     onRemoveFilterChip: handleRemoveFilterChip,
     onClearFilters: handleClearFilters,
-    loading: isPending,
+    loading: false,
     pagination,
     serverSort,
   };

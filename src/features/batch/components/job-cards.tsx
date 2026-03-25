@@ -195,7 +195,7 @@ export function RunningJobCard({
   className,
 }: RunningJobCardProps) {
   const { progress, eta } = job;
-  const isEnriching = progress.stage === "ENRICHING";
+  const isEnriching = progress.stage === "Enriching";
 
   // Annotation stats (always available once past RESOLVING)
   const totalProcessed = progress.fetched || 0;
@@ -213,11 +213,11 @@ export function RunningJobCard({
 
   const getProgressLabel = () => {
     switch (progress.stage) {
-      case "RESOLVING":
+      case "Resolving":
         return `${formatNumber(progress.rows_resolved)} rows`;
-      case "PROCESSING":
+      case "Processing":
         return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants`;
-      case "ENRICHING":
+      case "Enriching":
         return progress.current_pack
           ? `Enriching: ${progress.current_pack}`
           : "Running enrichment packs";

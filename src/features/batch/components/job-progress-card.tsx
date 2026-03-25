@@ -163,11 +163,11 @@ export function JobProgressCard({
   const getProgressDisplay = () => {
     if (!progress) return null;
     switch (progress.stage) {
-      case "RESOLVING":
+      case "Resolving":
         return `${formatNumber(progress.rows_resolved)} rows resolved`;
-      case "PROCESSING":
+      case "Processing":
         return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants processed`;
-      case "ENRICHING":
+      case "Enriching":
         return `Enriching${progress.current_pack ? `: ${progress.current_pack}` : ""} (${progress.packs_completed ?? 0}/${progress.packs_total ?? 0})`;
       default:
         return progress.stage_description;

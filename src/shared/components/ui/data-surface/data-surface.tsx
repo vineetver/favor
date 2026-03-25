@@ -80,24 +80,19 @@ export function DataSurface<TData, TValue>({
   defaultSort,
   renderExpandedRow,
 }: DataSurfaceProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>(() => {
-    if (serverSort?.sortBy) {
-      return [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }];
-    }
+  // Client-only sorting (used when no serverSort). Server-driven sorting is derived below.
+  const [localSorting, setLocalSorting] = React.useState<SortingState>(() => {
     if (defaultSort) {
       return [{ id: defaultSort.column, desc: defaultSort.direction === "desc" }];
     }
     return [];
   });
 
-  // Sync sorting state when server sort changes (e.g., back/forward navigation)
-  React.useEffect(() => {
-    if (!serverSort) return;
-    const next: SortingState = serverSort.sortBy
-      ? [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }]
-      : [];
-    setSorting(next);
-  }, [serverSort?.sortBy, serverSort?.sortDir]);
+  // Derive sorting from serverSort when present — no effect cascade needed.
+  const sorting: SortingState = serverSort?.sortBy
+    ? [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }]
+    : localSorting;
+
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
@@ -274,27 +269,27 @@ export function DataSurface<TData, TValue>({
     ? Math.max(defaultPageSize, 50)
     : defaultPageSize;
 
-  // Intercept sorting changes for server-side sort
+  // Server-side: extract sort intent and delegate to serverSort callback.
+  // Client-side: update local state directly (setLocalSorting).
   const handleSortingChange: React.Dispatch<
     React.SetStateAction<SortingState>
   > = React.useCallback(
     (updaterOrValue) => {
-      setSorting((prev) => {
-        const next =
-          typeof updaterOrValue === "function"
-            ? updaterOrValue(prev)
-            : updaterOrValue;
-        if (serverSort) {
-          if (next.length > 0) {
-            serverSort.onSortChange(next[0].id, next[0].desc);
-          } else {
-            serverSort.onSortChange("", false);
-          }
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
+      if (serverSort) {
+        if (next.length > 0) {
+          serverSort.onSortChange(next[0].id, next[0].desc);
+        } else {
+          serverSort.onSortChange("", false);
         }
-        return next;
-      });
+      } else {
+        setLocalSorting(next);
+      }
     },
-    [serverSort],
+    [serverSort, sorting],
   );
 
   const table = useReactTable({
@@ -305,7 +300,7 @@ export function DataSurface<TData, TValue>({
       columnFilters,
       globalFilter,
     },
-    onSortingChange: serverSort ? handleSortingChange : setSorting,
+    onSortingChange: handleSortingChange,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),

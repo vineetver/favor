@@ -1,8 +1,7 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { presignUpload, uploadFileToS3 } from "../api";
+import { uploadFile } from "../api";
 
 interface UseBatchUploadOptions {
   onSuccess?: (inputUri: string) => void;
@@ -18,34 +17,22 @@ interface UseBatchUploadResult {
 }
 
 /**
- * Hook for handling file upload to S3 via presigned URL
+ * Hook for uploading a file via POST /cohorts/upload (single request).
  */
 export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUploadResult {
   const { onSuccess, onError } = options;
   const [uploadProgress, setUploadProgress] = useState(0);
-
-  const presignMutation = useMutation({
-    mutationFn: presignUpload,
-  });
-
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const uploadFile = useCallback(
+  const upload = useCallback(
     async (file: File): Promise<string> => {
       setIsUploading(true);
       setError(null);
       setUploadProgress(0);
 
       try {
-        // Step 1: Get presigned URL
-        const { upload_url, input_uri } = await presignMutation.mutateAsync({
-          filename: file.name,
-          content_type: file.type || "application/octet-stream",
-        });
-
-        // Step 2: Upload file to S3
-        await uploadFileToS3(upload_url, file, setUploadProgress);
+        const { input_uri } = await uploadFile(file, setUploadProgress);
 
         setIsUploading(false);
         onSuccess?.(input_uri);
@@ -58,7 +45,7 @@ export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUpl
         throw uploadError;
       }
     },
-    [presignMutation, onSuccess, onError],
+    [onSuccess, onError],
   );
 
   const reset = useCallback(() => {
@@ -68,7 +55,7 @@ export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUpl
   }, []);
 
   return {
-    uploadFile,
+    uploadFile: upload,
     uploadProgress,
     isUploading,
     error,

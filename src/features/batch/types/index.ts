@@ -29,14 +29,14 @@ export type KeyType = "AUTO" | "VID" | "RSID" | "VCF";
 
 export type OutputRowStatus = "FOUND" | "NOT_FOUND" | "INVALID" | "ERROR";
 
-// Processing stages - shows pipeline progress (4 stages)
+// Processing stages — matches backend stage strings exactly (parse, don't translate)
 export type ProcessingStage =
-  | "QUEUED"     // Waiting for worker pickup
-  | "RESOLVING"  // Reading input, resolving keys to VIDs
-  | "SORTING"    // Sorting VIDs for cache locality
-  | "PROCESSING" // Fetching variants AND writing output (merged FETCHING+WRITING)
-  | "ENRICHING"  // Running enrichment packs
-  | "DONE";      // Complete
+  | "Queued"
+  | "Resolving"
+  | "Sorting"
+  | "Processing"
+  | "Enriching"
+  | "Done";
 
 // Structured error codes for actionable UX
 export type ErrorCode =
@@ -54,16 +54,10 @@ export type ErrorCode =
   | "INTERNAL_ERROR";        // Unknown error
 
 // ============================================================================
-// Presign Upload
+// Upload
 // ============================================================================
 
-export interface PresignRequest {
-  filename: string;
-  content_type?: string;
-}
-
-export interface PresignResponse {
-  upload_url: string;
+export interface UploadResponse {
   input_uri: string;
 }
 
@@ -73,13 +67,10 @@ export interface PresignResponse {
 
 export interface ValidateRequest {
   input_uri: string;
-  dry_run_lookups?: boolean;
-  hint_format?: InputFormat;
-  hint_delimiter?: string;
-  hint_has_header?: boolean;
-  hint_key_column?: string;
   hint_data_type?: DataType;
-  hint_column_map?: ColumnMapping[];
+  hint_column_map?: Record<string, string>;
+  hint_format?: InputFormat;
+  hint_has_header?: boolean;
 }
 
 export interface KeyTypeStats {
@@ -555,7 +546,7 @@ export interface CreateCohortRequest {
   metadata?: Record<string, unknown>;
   // Typed cohort fields
   data_type?: DataType;
-  column_map?: ColumnMapping[];
+  column_map?: Record<string, string>;
   // Enrichment
   enrichments?: EnrichmentConfig;
 }
@@ -621,10 +612,55 @@ export interface BatchWorkflowState {
 // Cohort → Job Mapper (backward compat for job detail UI)
 // ============================================================================
 
+/** Parse backend stage string into ProcessingStage (fallback to "Processing"). */
+function parseStage(raw: string | undefined): ProcessingStage {
+  if (!raw) return "Processing";
+  // Backend sends Title Case: "Processing", "Resolving", etc.
+  // Accept any casing gracefully.
+  const stages: Record<string, ProcessingStage> = {
+    queued: "Queued", resolving: "Resolving", sorting: "Sorting",
+    processing: "Processing", enriching: "Enriching", done: "Done",
+  };
+  return stages[raw.toLowerCase()] ?? "Processing";
+}
+
 /**
  * Map CohortDetail (new API) → Job (legacy discriminated union).
  * Allows existing UI components to keep consuming the Job type.
  */
+// ============================================================================
+// Wizard State Machine (Make Invalid States Unrepresentable)
+// ============================================================================
+
+/**
+ * Each variant carries exactly the data available at that step.
+ * No null checks — if you're in 'configuring', validation exists by construction.
+ */
+export type WizardState =
+  | { step: "idle"; error?: string }
+  | { step: "uploading"; file: File; progress: number }
+  | { step: "validating"; file: File; inputUri: string }
+  | { step: "mapping"; file: File; inputUri: string; validation: TypedValidateResponse }
+  | { step: "configuring"; file: File; inputUri: string; validation: TypedValidateResponse; columnMap: ColumnMapping[] | null; error?: string }
+  | { step: "creating"; file: File; inputUri: string; validation: TypedValidateResponse; columnMap: ColumnMapping[] | null };
+
+export type WizardAction =
+  | { type: "FILE_SELECTED"; file: File }
+  | { type: "UPLOAD_PROGRESS"; progress: number }
+  | { type: "UPLOAD_DONE"; inputUri: string }
+  | { type: "UPLOAD_FAILED"; error: string }
+  | { type: "VALIDATION_DONE"; validation: TypedValidateResponse }
+  | { type: "VALIDATION_FAILED"; error: string }
+  | { type: "MAPPING_CONFIRMED"; columnMap: ColumnMapping[] }
+  | { type: "BACK_TO_MAPPING" }
+  | { type: "CREATING" }
+  | { type: "CREATE_FAILED"; error: string }
+  | { type: "RESET" };
+
+// ============================================================================
+// Cohort → Job Mapper (backward compat for job detail UI)
+// ============================================================================
+
 export function cohortDetailToJob(detail: CohortDetail): Job {
   // Map cohort status → job state
   const stateMap: Record<CohortStatus, JobState> = {
@@ -666,7 +702,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
     case "RUNNING": {
       const progress: JobProgress = detail.progress
         ? {
-            stage: (detail.progress.stage as ProcessingStage) ?? "PROCESSING",
+            stage: parseStage(detail.progress.stage),
             stage_description: detail.progress.stage ?? "Processing",
             rows_resolved: detail.progress.rows_resolved,
             bytes_read: 0,
@@ -683,7 +719,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
             current_pack: detail.progress.current_pack,
           }
         : {
-            stage: "PROCESSING" as ProcessingStage,
+            stage: "Processing" as ProcessingStage,
             stage_description: "Processing",
             rows_resolved: 0,
             bytes_read: 0,
@@ -709,7 +745,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
     case "COMPLETED": {
       const progress: JobProgress = detail.progress
         ? {
-            stage: "DONE" as ProcessingStage,
+            stage: "Done" as ProcessingStage,
             stage_description: "Done",
             rows_resolved: detail.progress.rows_resolved,
             bytes_read: 0,
@@ -726,7 +762,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
             current_pack: detail.progress.current_pack,
           }
         : {
-            stage: "DONE" as ProcessingStage,
+            stage: "Done" as ProcessingStage,
             stage_description: "Done",
             rows_resolved: 0,
             bytes_read: 0,
@@ -772,7 +808,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
         completed_at: detail.completed_at ?? detail.updated_at,
         progress: detail.progress
           ? {
-              stage: (detail.progress.stage as ProcessingStage) ?? "DONE",
+              stage: parseStage(detail.progress.stage),
               stage_description: detail.progress.stage ?? "Failed",
               rows_resolved: detail.progress.rows_resolved,
               bytes_read: 0,
@@ -806,7 +842,7 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
         completed_at: detail.completed_at ?? detail.updated_at,
         progress: detail.progress
           ? {
-              stage: (detail.progress.stage as ProcessingStage) ?? "DONE",
+              stage: parseStage(detail.progress.stage),
               stage_description: detail.progress.stage ?? "Cancelled",
               rows_resolved: detail.progress.rows_resolved,
               bytes_read: 0,

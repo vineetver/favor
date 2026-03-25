@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDate, formatNumber } from "../lib/format";
 import { deleteCohort } from "../api";
 import { useCohorts } from "../hooks/use-cohorts";
@@ -387,15 +388,26 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
 
-  const { cohorts, isLoading, refetch } = useCohorts();
-  const { quotas } = useQuotas();
+  const queryClient = useQueryClient();
+  const { cohorts, isLoading, refetch, removeFromCache } = useCohorts();
+  const { quotas, refetch: refetchQuotas } = useQuotas();
 
   const handleRemove = useCallback(
     async (id: string) => {
-      await deleteCohort(id);
-      refetch();
+      // Optimistically remove from UI immediately
+      removeFromCache(id);
+      try {
+        await deleteCohort(id);
+        // Remove orphaned individual cohort queries — data is gone, don't refetch
+        queryClient.removeQueries({ queryKey: ["cohort-status", id] });
+        queryClient.removeQueries({ queryKey: ["cohort-detail", id] });
+        refetchQuotas(); // Quota freed — update the bar
+      } catch {
+        // Revert on failure by refetching
+        refetch();
+      }
     },
-    [refetch],
+    [removeFromCache, refetch, refetchQuotas, queryClient],
   );
 
   // Status counts

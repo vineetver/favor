@@ -37,6 +37,7 @@ export function useCohortPolling({
     },
     refetchOnWindowFocus: true,
     staleTime: 0,
+    gcTime: 0,
   });
 
   return {

@@ -438,7 +438,7 @@ const prioritizedVariantColumns: ColumnDef<PrioritizedVariant>[] = [
 
 export function JobAnalyticsReport({
   dataUrl,
-  jobId: _jobId,
+  jobId,
   filename: _filename,
   className,
 }: JobAnalyticsReportProps) {
@@ -450,13 +450,13 @@ export function JobAnalyticsReport({
 
   useEffect(() => {
     if (!isReady || dataLoaded) return;
-    loadParquet(dataUrl, "variants")
+    loadParquet(dataUrl, "variants", `cohort:${jobId}:data`)
       .then(() => setDataLoaded(true))
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load data");
         setIsLoading(false);
       });
-  }, [isReady, dataUrl, loadParquet, dataLoaded]);
+  }, [isReady, dataUrl, loadParquet, dataLoaded, jobId]);
 
   const runReport = useCallback(async () => {
     if (!dataLoaded) return;

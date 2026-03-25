@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listCohorts } from "../api";
-import type { CohortListItem, CohortStatus } from "../types";
+import type { CohortListItem, CohortListResponse, CohortStatus } from "../types";
 
 interface UseCohortsOptions {
   statusFilter?: CohortStatus;
@@ -13,14 +13,19 @@ interface UseCohortsResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
+  /** Optimistically remove a cohort from the cache (call after delete). */
+  removeFromCache: (id: string) => void;
 }
 
 /**
- * Hook to list cohorts from the API, replacing localStorage-based job tracking.
- * Refetches every 5s when there are non-terminal cohorts.
+ * Hook to list cohorts from the API.
+ * - Always refetches on mount and window focus (staleTime: 0)
+ * - Polls every 5s while any cohort is non-terminal
+ * - gcTime: 0 prevents stale data from persisting across navigations
  */
 export function useCohorts(options: UseCohortsOptions = {}): UseCohortsResult {
   const { statusFilter } = options;
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["cohorts", statusFilter],
@@ -33,7 +38,6 @@ export function useCohorts(options: UseCohortsOptions = {}): UseCohortsResult {
       const data = query.state.data;
       if (!data) return 5000;
 
-      // Refetch if any cohorts are non-terminal
       const hasActive = data.cohorts.some(
         (c) =>
           c.status === "queued" ||
@@ -43,20 +47,37 @@ export function useCohorts(options: UseCohortsOptions = {}): UseCohortsResult {
       );
       return hasActive ? 5000 : false;
     },
-    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     staleTime: 0,
+    gcTime: 0, // Don't keep stale data across navigations
   });
 
-  // Exclude derived cohorts — they have no job data and can't be viewed directly.
-  // Derived cohorts are accessed via their parent cohort instead.
+  // Exclude derived cohorts — accessed via parent cohort instead.
   const cohorts = (query.data?.cohorts ?? []).filter(
     (c) => c.source !== "derived",
   );
+
+  const removeFromCache = (id: string) => {
+    // Optimistically remove from all cohort query caches
+    queryClient.setQueriesData<CohortListResponse>(
+      { queryKey: ["cohorts"] },
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          cohorts: old.cohorts.filter((c) => c.id !== id),
+          count: old.count - 1,
+        };
+      },
+    );
+  };
 
   return {
     cohorts,
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error : null,
     refetch: () => query.refetch(),
+    removeFromCache,
   };
 }

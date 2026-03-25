@@ -93,7 +93,7 @@ export async function updateSessionState(
     `/agent/sessions/${sessionId}/state`,
     {
       method: "PUT",
-      body: { version, state },
+      body: { expected_version: version, state },
     },
   );
 }

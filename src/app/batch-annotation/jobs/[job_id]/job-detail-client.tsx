@@ -11,7 +11,7 @@ import {
   useJobPolling,
 } from "@features/batch";
 import type { Job } from "@features/batch";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface JobDetailClientProps {
   jobId: string;
@@ -105,15 +105,21 @@ function RefreshIndicator({
 
 export function JobDetailClient({ jobId }: JobDetailClientProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const { job, isLoading, error, refetch } = useJobPolling({
+  const { job, isLoading, error, dataUpdatedAt, refetch } = useJobPolling({
     jobId,
     enabled: !isPaused,
   });
+
+  // Derived — no useState needed. Stable reference via useMemo.
+  const lastUpdated = useMemo(
+    () => (dataUpdatedAt ? new Date(dataUpdatedAt) : null),
+    [dataUpdatedAt],
+  );
 
   // Fetch cohort detail for the label (the jobId in the URL is actually the cohort ID)
   const { data: cohort } = useQuery({
@@ -136,13 +142,6 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     (c) => c.source === "derived" && c.parent_id === jobId,
   );
 
-  // Track last update time
-  useEffect(() => {
-    if (job) {
-      setLastUpdated(new Date());
-    }
-  }, [job]);
-
   const handleCancel = useCallback(async () => {
     if (!jobId) return;
 
@@ -151,7 +150,14 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
 
     try {
       await deleteCohort(jobId);
-      refetch();
+      // Await all invalidations so isCancelling stays true until fresh data arrives.
+      // Without this, the cancel button briefly reappears with stale "RUNNING" data.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cohort-status", jobId] }),
+        queryClient.invalidateQueries({ queryKey: ["cohort-detail", jobId] }),
+        queryClient.invalidateQueries({ queryKey: ["quotas"] }),
+        queryClient.invalidateQueries({ queryKey: ["cohorts"] }),
+      ]);
     } catch (err) {
       const message =
         err instanceof BatchApiError ? err.message : "Failed to cancel job";
@@ -159,7 +165,7 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     } finally {
       setIsCancelling(false);
     }
-  }, [jobId, refetch]);
+  }, [jobId, queryClient]);
 
   const handleDownload = useCallback(() => {
     if (job?.state === "COMPLETED" && job.output?.url) {

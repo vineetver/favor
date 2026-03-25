@@ -10,7 +10,7 @@ interface UseBatchValidateOptions {
 }
 
 interface UseBatchValidateResult {
-  validate: (inputUri: string, dryRunLookups?: boolean) => Promise<ValidateResponse>;
+  validate: (inputUri: string) => Promise<ValidateResponse>;
   validation: ValidateResponse | null;
   isValidating: boolean;
   error: Error | null;
@@ -33,10 +33,9 @@ export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatc
     },
   });
 
-  const validate = async (inputUri: string, dryRunLookups = true) => {
+  const validate = async (inputUri: string) => {
     return mutation.mutateAsync({
       input_uri: inputUri,
-      dry_run_lookups: dryRunLookups,
     });
   };
 
