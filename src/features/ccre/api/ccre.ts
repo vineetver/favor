@@ -27,7 +27,7 @@ export async function fetchCcreEntity(
   try {
     const response = await fetch(
       `${API_BASE}/graph/cCRE/${encodeURIComponent(ccreId)}?${params}`,
-      { next: { revalidate: 300 } },
+      { credentials: "include", next: { revalidate: 300 } },
     );
 
     if (!response.ok) return null;

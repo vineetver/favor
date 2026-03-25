@@ -75,6 +75,7 @@ async function fetchPrediction<T>(
   const res = await fetch(`${PREDICT_BASE}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(body),
     signal,
   });
@@ -102,7 +103,7 @@ async function fetchPrediction<T>(
     await abortableSleep(POLL_INTERVAL_MS, signal);
     let poll: Response;
     try {
-      poll = await fetch(resolvePollUrl(job.poll_url), { signal });
+      poll = await fetch(resolvePollUrl(job.poll_url), { credentials: "include", signal });
     } catch (e) {
       if (signal?.aborted) throw e; // let React Query handle abort
       throw new Error("Lost connection to AlphaGenome service");

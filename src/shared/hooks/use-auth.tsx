@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // but the caches will be gone by the time someone logs back in.
     import("@features/batch/lib/data-cache").then((m) => m.clearDataCache()).catch(() => {});
     import("@features/batch/lib/parquet-cache").then((m) => m.clearParquetCache()).catch(() => {});
+    import("@features/batch/hooks/use-duckdb").then((m) => m.destroyDuckDB()).catch(() => {});
     window.location.href = `${API_BASE}/auth/logout`;
   }, []);
 

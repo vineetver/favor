@@ -52,6 +52,24 @@ type DuckDBStatus =
   | { type: "error"; message: string };
 
 // ============================================================================
+// Module-level singleton — allows logout to destroy in-memory tables
+// ============================================================================
+
+let sharedInstance: DuckDBInstance | null = null;
+
+/** Tear down the in-memory DuckDB instance so no tables leak across user sessions. */
+export async function destroyDuckDB(): Promise<void> {
+  if (!sharedInstance) return;
+  try {
+    await sharedInstance.conn.close();
+    await sharedInstance.db.terminate();
+  } catch {
+    // Best-effort cleanup
+  }
+  sharedInstance = null;
+}
+
+// ============================================================================
 // Hook
 // ============================================================================
 
@@ -109,6 +127,7 @@ export function useDuckDB(): UseDuckDBResult {
 
         const instance = { db, conn };
         instanceRef.current = instance;
+        sharedInstance = instance;
 
         return instance;
       } catch (err) {
