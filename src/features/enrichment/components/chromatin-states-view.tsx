@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import {
@@ -103,7 +104,8 @@ async function fetchTrackData(loc: string, tissueGroup?: string): Promise<Chroma
   });
   if (tissueGroup) params.set("tissue_group", tissueGroup);
   const res = await fetch(
-    `/api/v1/regions/${encodeURIComponent(loc)}/chromatin-states?${params}`,
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?${params}`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json = await res.json();

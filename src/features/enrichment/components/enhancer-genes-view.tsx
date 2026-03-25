@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import {
@@ -428,7 +429,8 @@ async function fetchTissueAgg(
       limit: "100",
     });
     const res = await fetch(
-      `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+      `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+      { credentials: "include" },
     );
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const json: { data: EnhancerGeneRow[] } = await res.json();
@@ -452,7 +454,8 @@ async function fetchTissueAgg(
   // Default: group by tissue_group across all groups
   const params = new URLSearchParams({ method, group_by: "tissue_group" });
   const res = await fetch(
-    `/api/v1/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+      { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json: { data: TissueAggRaw[] } = await res.json();

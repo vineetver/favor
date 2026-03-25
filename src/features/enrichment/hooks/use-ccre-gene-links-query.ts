@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
@@ -36,7 +37,8 @@ async function fetchCcreGeneLinksClient(
   params.set("limit", String(filters.limit ?? 50));
 
   const res = await fetch(
-    `/api/v1/ccres/${encodeURIComponent(ccreId)}/gene-links?${params}`,
+    `${API_BASE}/ccres/${encodeURIComponent(ccreId)}/gene-links?${params}`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();

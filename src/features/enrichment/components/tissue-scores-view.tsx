@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import { Dash } from "@shared/components/ui/dash";
 import { VariantCell } from "@shared/components/ui/variant-cell";
@@ -37,7 +38,7 @@ async function fetchClient(
   if (filters.sort_dir) params.set("sort_dir", filters.sort_dir);
   if (filters.cursor) params.set("cursor", filters.cursor);
   params.set("limit", String(filters.limit ?? 25));
-  const res = await fetch(`/api/v1/variants/${encodeURIComponent(ref)}/tissue-scores?${params}`);
+  const res = await fetch(`${API_BASE}/variants/${encodeURIComponent(ref)}/tissue-scores?${params}`, { credentials: "include" });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }

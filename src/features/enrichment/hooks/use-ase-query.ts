@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
@@ -38,7 +39,8 @@ async function fetchAseClient(
   params.set("limit", String(filters.limit ?? 25));
 
   const res = await fetch(
-    `/api/v1/regions/${encodeURIComponent(loc)}/ase?${params}`,
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/ase?${params}`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();

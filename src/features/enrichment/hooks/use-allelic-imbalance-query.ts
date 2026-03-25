@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
@@ -38,7 +39,8 @@ async function fetchAllelicImbalanceClient(
   params.set("limit", String(filters.limit ?? 25));
 
   const res = await fetch(
-    `/api/v1/variants/${encodeURIComponent(ref)}/allelic-imbalance?${params}`,
+    `${API_BASE}/variants/${encodeURIComponent(ref)}/allelic-imbalance?${params}`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();

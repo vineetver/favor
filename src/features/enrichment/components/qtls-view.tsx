@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import { Dash } from "@shared/components/ui/dash";
@@ -164,7 +165,7 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
 async function fetchForestData(ref: string, source: string, tissueGroup?: string): Promise<QtlRow[]> {
   const params = new URLSearchParams({ source, limit: "100", sort_by: "neglog_pvalue", sort_dir: "desc" });
   if (tissueGroup) params.set("tissue_group", tissueGroup);
-  const res = await fetch(`/api/v1/variants/${encodeURIComponent(ref)}/qtls?${params}`);
+  const res = await fetch(`${API_BASE}/variants/${encodeURIComponent(ref)}/qtls?${params}`, { credentials: "include" });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json = await res.json();
   return json.data;

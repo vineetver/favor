@@ -19,18 +19,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["gosling.js", "@duckdb/duckdb-wasm"],
   // Temporarily disable React Strict Mode to debug Gosling double-render
   reactStrictMode: false,
-  async rewrites() {
-    // WARNING: This rewrite proxies requests through Next.js, which does NOT
-    // forward browser cookies. Authenticated endpoints must call API_BASE
-    // directly with `credentials: "include"` — never go through /api/v1/.
-    // This rewrite exists only for legacy/public endpoints.
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${apiUrl}/:path*`,
-      },
-    ];
-  },
+  // Rewrite rule removed: all API calls now use API_BASE directly with
+  // `credentials: "include"` so session cookies reach the backend.
+  // The old /api/v1/ proxy silently dropped auth cookies because they
+  // were set on the backend domain, not the Next.js domain.
 };
 
 export default nextConfig;

@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { Badge } from "@shared/components/ui/badge";
 import {
   Sheet,
@@ -25,7 +26,8 @@ import type { CcreDetail } from "@features/enrichment/api/region";
 
 async function fetchCcre(ccreId: string): Promise<CcreDetail> {
   const res = await fetch(
-    `/api/v1/ccres/${encodeURIComponent(ccreId)}?signal_limit=10&gene_limit=10`,
+    `${API_BASE}/ccres/${encodeURIComponent(ccreId)}?signal_limit=10&gene_limit=10`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();

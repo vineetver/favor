@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/config/api";
 import { cn } from "@infra/utils";
 import {
   Tooltip,
@@ -34,7 +35,8 @@ type MarkKey = (typeof MARKS)[number]["key"];
 async function fetchHeatmapData(loc: string): Promise<SignalRow[]> {
   const params = new URLSearchParams({ top_ccres: "25" });
   const res = await fetch(
-    `/api/v1/regions/${encodeURIComponent(loc)}/signals?${params}`,
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/signals?${params}`,
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json = await res.json();
