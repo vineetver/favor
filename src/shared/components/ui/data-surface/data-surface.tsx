@@ -88,10 +88,13 @@ export function DataSurface<TData, TValue>({
     return [];
   });
 
-  // Derive sorting from serverSort when present — no effect cascade needed.
-  const sorting: SortingState = serverSort?.sortBy
-    ? [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }]
-    : localSorting;
+  const sorting = React.useMemo<SortingState>(
+    () =>
+      serverSort?.sortBy
+        ? [{ id: serverSort.sortBy, desc: serverSort.sortDir === "desc" }]
+        : localSorting,
+    [serverSort?.sortBy, serverSort?.sortDir, localSorting],
+  );
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],

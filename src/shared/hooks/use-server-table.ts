@@ -111,8 +111,6 @@ export function useServerTable({
 }: UseServerTableOptions): UseServerTableReturn {
   const pathname = usePathname();
   const searchParams = useClientSearchParams();
-  // Removed: fake isPending with setTimeout(100ms) caused 2 wasted renders per filter.
-  // The URL update is synchronous — no loading state needed.
 
   // ============================================================================
   // Local State for Text Inputs (immediate UI feedback)

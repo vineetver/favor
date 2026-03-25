@@ -115,7 +115,6 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
     enabled: !isPaused,
   });
 
-  // Derived — no useState needed. Stable reference via useMemo.
   const lastUpdated = useMemo(
     () => (dataUpdatedAt ? new Date(dataUpdatedAt) : null),
     [dataUpdatedAt],

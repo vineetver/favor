@@ -46,8 +46,6 @@ export interface UseDuckDBResult {
   clearCache: () => Promise<void>;
 }
 
-// Single state machine instead of 3 booleans (isLoading/isReady/error).
-// Eliminates 2 extra renders per init — one setState instead of two.
 type DuckDBStatus =
   | { type: "loading" }
   | { type: "ready" }

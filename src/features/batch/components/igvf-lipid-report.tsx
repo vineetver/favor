@@ -820,8 +820,6 @@ function CrossDatasetContext({ data, onFilterClick }: { data: CrossDatasetData; 
 
 type LoadStage = "loading_data" | "fetching_urls" | "loading_enrichment" | "analyzing";
 
-// One state var instead of 5 (report, isLoading, stage, error, loadStarted).
-// Each transition is a single setState — no cascading renders.
 type IgvfLoadState =
   | { type: "idle" }
   | { type: "loading"; stage: LoadStage }
@@ -890,12 +888,9 @@ function useIgvfData(cohortId: string, dataUrl: string) {
 
 export function IgvfLipidReport({ cohortId, dataUrl, className }: { cohortId: string; dataUrl: string; className?: string }) {
   const { report, isLoading, stage, error, retry, query } = useIgvfData(cohortId, dataUrl);
-  // User's explicit selection; null = use default (first available)
   const [selectedDataset, setSelectedDataset] = useState<DatasetId | null>(null);
   const [variantFilter, setVariantFilter] = useState<VariantFilter | null>(null);
 
-  // Derive active dataset — falls through to first available when no explicit selection.
-  // No useEffect cascade needed.
   const activeDataset = selectedDataset ?? (report?.availableDatasets[0] ?? null);
 
   if (isLoading) {

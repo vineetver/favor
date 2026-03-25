@@ -74,8 +74,6 @@ export function useJobPolling({
   const detail = detailQuery.data ?? null;
   const statusData = statusQuery.data;
 
-  // Memoize to avoid creating new object references on every render.
-  // The old code used `new Date().toISOString()` inline — new ref every render → infinite loops downstream.
   const job: Job | null = useMemo(() => {
     if (detail) {
       return cohortDetailToJob(detail);
@@ -97,8 +95,7 @@ export function useJobPolling({
     return null;
   }, [detail, statusData]);
 
-  // Lifecycle callbacks — only fire once per terminal state, and only with full detail.
-  // Also invalidate quotas immediately so the quota bar reflects freed slots.
+  // Fire once per terminal state. Also invalidates quotas so the bar reflects freed slots.
   const firedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!job || !detail) return;
