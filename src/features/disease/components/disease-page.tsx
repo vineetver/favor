@@ -744,6 +744,11 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     accessorKey: "variantId",
     header: "Variant",
     enableSorting: true,
+    filterFn: (row, _columnId, filterValue: string) => {
+      const q = filterValue.toLowerCase();
+      return row.original.variantId.toLowerCase().includes(q) ||
+        row.original.rsId.toLowerCase().includes(q);
+    },
     cell: ({ row }) => {
       const display = row.original.rsId || row.original.variantId;
       return (
@@ -1237,7 +1242,7 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
               : "Sorted by -log₁₀(P), most significant first"
           }
           searchPlaceholder="Search variants..."
-          searchColumn="rsId"
+          searchColumn="variant"
           exportable
           exportFilename={`${disease.id}-variants`}
           defaultPageSize={25}
