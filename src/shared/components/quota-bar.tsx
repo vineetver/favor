@@ -14,11 +14,31 @@ import type { Quota } from "@shared/hooks/use-quotas";
 // ---------------------------------------------------------------------------
 
 function QuotaIndicator({ quota }: { quota: Quota }) {
-  const pct = quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
-  const isWarning = pct >= 80;
-  const isExhausted = pct >= 100;
-  const remaining = Math.max(0, quota.limit - quota.used);
+  const unlimited = quota.limit < 0;
+  const pct = !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
+  const isWarning = !unlimited && pct >= 80;
+  const isExhausted = !unlimited && pct >= 100;
   const label = formatQuotaLabel(quota.name);
+
+  if (unlimited) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex flex-col gap-1 min-w-0" role="group" aria-label={label}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] text-muted-foreground truncate">{label}</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground">Unlimited</span>
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {quota.used} used — no limit
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  const remaining = Math.max(0, quota.limit - quota.used);
 
   return (
     <Tooltip>
@@ -78,10 +98,27 @@ function QuotaIndicator({ quota }: { quota: Quota }) {
 // ---------------------------------------------------------------------------
 
 function QuotaIndicatorCompact({ quota }: { quota: Quota }) {
-  const pct = quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
-  const isWarning = pct >= 80;
-  const isExhausted = pct >= 100;
+  const unlimited = quota.limit < 0;
+  const pct = !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
+  const isWarning = !unlimited && pct >= 80;
+  const isExhausted = !unlimited && pct >= 100;
   const label = formatQuotaLabel(quota.name);
+
+  if (unlimited) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0 text-[11px] text-muted-foreground truncate">{label}</span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">Unlimited</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {quota.used} used — no limit
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
     <Tooltip>

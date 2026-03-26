@@ -280,6 +280,7 @@ export function UniversalSearch() {
     expandingType,
     fetchMoreForType,
   } = usePivotExpansion({
+    types: ENTITY_TYPES_WITH_PAGES,
     limit: 5,
     expandedLimit: 50,
   });

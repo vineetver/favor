@@ -35,6 +35,7 @@ export interface SubgraphEdge {
   };
   evidence?: {
     pubmedIds?: string[];
+    sources?: string[];
   };
 }
 
@@ -354,15 +355,81 @@ export async function fetchPaths(
 
     if (!response.ok) {
       if (response.status === 404) return null;
-      console.error(`Paths fetch failed: ${response.status}`);
+      const body = await response.text().catch(() => "");
+      console.error(`Paths fetch failed: ${response.status}`, body);
       return null;
     }
 
-    return await response.json();
+    const raw = await response.json();
+    return parsePathsResponse(raw);
   } catch (error) {
     console.error("Paths fetch error:", error);
     return null;
   }
+}
+
+/**
+ * The paths API returns a compact format:
+ *   nodes: { "Gene:ID": ["Gene","ID","LABEL","subtitle"], ... }
+ *   paths[].nodes: ["Gene:ID", ...]
+ *   paths[].edges: [["EDGE_TYPE","direction"], ...]
+ *
+ * Parse into the typed PathResult/PathNode/PathEdge objects.
+ */
+function parsePathsResponse(raw: Record<string, unknown>): PathsResponse {
+  const data = raw.data as Record<string, unknown>;
+  const nodeColumns = (data.nodeColumns ?? []) as string[];
+  const nodeLookup = (data.nodes ?? {}) as Record<string, unknown[]>;
+
+  const resolveNode = (key: string): PathNode => {
+    const row = nodeLookup[key];
+    if (row && nodeColumns.length > 0) {
+      const typeIdx = nodeColumns.indexOf("type");
+      const idIdx = nodeColumns.indexOf("id");
+      const labelIdx = nodeColumns.indexOf("label");
+      return {
+        type: String(row[typeIdx] ?? ""),
+        id: String(row[idIdx] ?? key),
+        label: String(row[labelIdx] ?? key),
+      };
+    }
+    // Fallback: parse "Type:ID" key
+    const [type, ...rest] = key.split(":");
+    return { type, id: rest.join(":") || key, label: rest.join(":") || key };
+  };
+
+  const rawPaths = (data.paths ?? []) as Array<Record<string, unknown>>;
+
+  const paths: PathResult[] = rawPaths.map((p, i) => {
+    const nodeKeys = (p.nodes ?? []) as string[];
+    const edgeTuples = (p.edges ?? []) as unknown[][];
+    const nodes = nodeKeys.map(resolveNode);
+
+    const edges: PathEdge[] = edgeTuples.map((tuple, ei) => ({
+      type: String(tuple[0] ?? ""),
+      from: nodes[ei] ?? resolveNode(nodeKeys[ei] ?? ""),
+      to: nodes[ei + 1] ?? resolveNode(nodeKeys[ei + 1] ?? ""),
+    }));
+
+    return {
+      rank: i + 1,
+      length: edgeTuples.length,
+      pathText: String(p.text ?? ""),
+      nodes,
+      edges,
+    };
+  });
+
+  const fromKey = String(data.from ?? "");
+  const toKey = String(data.to ?? "");
+
+  return {
+    data: {
+      from: resolveNode(fromKey),
+      to: resolveNode(toKey),
+      paths,
+    },
+  };
 }
 
 // =============================================================================
@@ -692,15 +759,16 @@ export async function fetchConnections(options: {
       body: JSON.stringify({
         from: options.from,
         to: options.to,
-        limit_per_type: options.limitPerType ?? 10,
-        include_reverse: options.includeReverse ?? true,
-        include_field_meta: true,
+        limitPerType: options.limitPerType ?? 10,
+        includeReverse: options.includeReverse ?? true,
+        includeFieldMeta: true,
       }),
       signal: options.signal,
     });
 
     if (!response.ok) {
-      console.error(`Connections fetch failed: ${response.status}`);
+      const body = await response.text().catch(() => "");
+      console.error(`Connections fetch failed: ${response.status}`, body);
       return null;
     }
 

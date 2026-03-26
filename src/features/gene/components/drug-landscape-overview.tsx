@@ -98,6 +98,20 @@ function formatTDL(tdl: string | null): string {
   return tdl.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Title-case ALL CAPS drug names (e.g. "BAZEDOXIFENE" → "Bazedoxifene") */
+function formatDrugName(name: string): string {
+  if (name === name.toUpperCase() && name.length > 2) {
+    return name.charAt(0) + name.slice(1).toLowerCase();
+  }
+  return name;
+}
+
+/** Replace underscores and title-case (e.g. "Nuclear_Hormone_Receptor" → "Nuclear Hormone Receptor") */
+function formatSnakeLabel(s: string | null): string {
+  if (!s) return "—";
+  return s.replace(/_/g, " ");
+}
+
 // ---------------------------------------------------------------------------
 // Data extraction
 // ---------------------------------------------------------------------------
@@ -421,28 +435,10 @@ export function DrugLandscapeOverview({
                             isSelected && "bg-accent/70",
                           )}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[13px] font-medium text-foreground leading-snug line-clamp-1">
-                                {d.drugName}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                {d.actionType && (
-                                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", ACTION_COLORS[d.actionType] ?? "bg-muted-foreground/40")} />
-                                    {formatAction(d.actionType)}
-                                  </span>
-                                )}
-                                {d.dispositionType && (
-                                  <span className="text-[10px] text-muted-foreground capitalize">
-                                    {d.dispositionType.replace(/_/g, " ")}
-                                  </span>
-                                )}
-                                {d.isPrimaryTarget && (
-                                  <span className="text-[10px] text-primary font-medium">Primary</span>
-                                )}
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 min-w-0">
+                              {formatDrugName(d.drugName)}
+                            </span>
                             {d.maxClinicalPhase !== null && (
                               <span className={cn("text-[11px] font-medium tabular-nums shrink-0", phase.color)}>
                                 {phase.label}
@@ -484,7 +480,7 @@ export function DrugLandscapeOverview({
                     {/* ─ Title ─ */}
                     <div className="space-y-2">
                       <h3 className="text-[15px] font-semibold text-foreground leading-snug">
-                        {selected.drugName}
+                        {formatDrugName(selected.drugName)}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         {selected.actionType && (
@@ -557,7 +553,7 @@ export function DrugLandscapeOverview({
                             <span className="text-[11px] text-muted-foreground">Target class</span>
                           </Tip>
                           <div className="text-sm font-semibold text-foreground">
-                            {selected.receptorFamily}
+                            {formatSnakeLabel(selected.receptorFamily)}
                           </div>
                         </div>
                       )}
@@ -573,7 +569,7 @@ export function DrugLandscapeOverview({
                     {/* ─ Mechanism ─ */}
                     {selected.mechanismOfAction && (
                       <div className="space-y-1">
-                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           Mechanism of action
                         </span>
                         <p className="text-[13px] text-foreground">
@@ -585,7 +581,7 @@ export function DrugLandscapeOverview({
                     {/* ─ Target info ─ */}
                     {(selected.targetName || selected.targetDevelopmentLevel) && (
                       <div className="space-y-2">
-                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           Target information
                         </span>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
@@ -611,7 +607,7 @@ export function DrugLandscapeOverview({
                     {selected.diseaseNames.length > 0 && (
                       <div className="space-y-1.5">
                         <Tip content="Diseases for which this drug targets this gene.">
-                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             Indications
                           </span>
                         </Tip>
@@ -636,7 +632,7 @@ export function DrugLandscapeOverview({
                     {/* ─ Sources ─ */}
                     {selected.sources.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           Data sources
                         </span>
                         <div className="flex flex-wrap gap-1">

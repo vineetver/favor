@@ -67,15 +67,34 @@ function extractDetectionMethodsFromProps(props: Record<string, unknown>): strin
 }
 
 /**
- * Extract PubMed IDs from props object
+ * Extract PubMed IDs from structured fields or from gene function text.
+ * The API doesn't return a dedicated pmids array, but function descriptions
+ * contain references like {ECO:...|PubMed:12345}.
  */
 function extractPubmedIdsFromProps(props: Record<string, unknown>): string[] {
   const pubmedRaw = props.pmids ?? props.pubmed_ids ?? props.publications ?? [];
-
   if (Array.isArray(pubmedRaw)) {
     return pubmedRaw.map((p) => String(p)).filter((p) => /^\d+$/.test(p));
   }
   return [];
+}
+
+function extractPubmedIdsFromFunctionText(props: Record<string, unknown>): string[] {
+  // Try structured fields first
+  const structured = extractPubmedIdsFromProps(props);
+  if (structured.length > 0) return structured;
+
+  // Fall back: extract PubMed:NNNNN from gene function text
+  const ids = new Set<string>();
+  for (const key of ["src_gene_function", "dst_gene_function"]) {
+    const text = props[key];
+    if (typeof text === "string") {
+      for (const match of text.matchAll(/PubMed:(\d+)/g)) {
+        ids.add(match[1]);
+      }
+    }
+  }
+  return [...ids];
 }
 
 /**
@@ -120,27 +139,29 @@ export function extractPPIEdgesFromSubgraph(
   return ppiEdges
     .map((edge) => {
       const props = edge.props ?? {};
+      const ev = edge.evidence ?? {};
 
-      // Use actual edge endpoints - NOT always seed→neighbor
-      // This preserves neighbor↔neighbor edges (cross-connections)
       const sourceNode = nodeMap.get(edge.from.id);
       const targetNode = nodeMap.get(edge.to.id);
 
-      // Extract edge properties
-      const numSources = typeof props.num_sources === "number" ? props.num_sources : null;
-      const numExperiments = typeof props.num_experiments === "number" ? props.num_experiments : null;
+      // Sources live in evidence.sources (string[]), not in props
+      const evidenceSources = Array.isArray(ev.sources) ? ev.sources : [];
+      const sources: PPIEvidenceSource[] = evidenceSources.map((s: unknown) =>
+        typeof s === "string" ? { name: s } : { name: "Unknown" },
+      );
 
-      const confidenceScoresRaw = props.confidence_scores;
-      const confidenceScores = Array.isArray(confidenceScoresRaw)
-        ? confidenceScoresRaw.filter((v): v is number => typeof v === "number")
-        : [];
+      const numSources = sources.length || null;
+      const numExperiments = typeof props.evidence_count === "number" ? props.evidence_count : null;
 
-      // Extract provenance data
-      const sources = extractSourcesFromProps(props);
+      // Build confidence from ot_mi_score and/or string_combined_score (0-1000 → 0-1)
+      const confidenceScores: number[] = [];
+      if (typeof props.ot_mi_score === "number") confidenceScores.push(props.ot_mi_score);
+      if (typeof props.string_combined_score === "number") confidenceScores.push(props.string_combined_score / 1000);
+
       const detectionMethods = extractDetectionMethodsFromProps(props);
-      const pubmedIds = extractPubmedIdsFromProps(props);
+      // No structured pubmed_ids in the API — extract from gene function text if present
+      const pubmedIds = extractPubmedIdsFromFunctionText(props);
 
-      // Use actual edge endpoints for proper cross-connection support
       const edgeId = `ppi-${edge.from.id}-${edge.to.id}`;
 
       return {
@@ -155,6 +176,10 @@ export function extractPPIEdgesFromSubgraph(
         sources,
         detectionMethods,
         pubmedIds,
+        // Attach raw props for the detail panel
+        _props: props,
+        _confidenceClass: typeof props.confidence_class === "string" ? props.confidence_class : null,
+        _interactionType: typeof props.interaction_type === "string" ? props.interaction_type : null,
       } satisfies PPIEdge;
     })
     .sort((a, b) => {

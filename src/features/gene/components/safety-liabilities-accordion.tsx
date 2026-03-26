@@ -501,8 +501,8 @@ export function SafetyLiabilitiesAccordion({
                                       </div>
                                       {parsed.variants.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
-                                          {parsed.variants.map((v) => (
-                                            <span key={v} className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                                          {[...new Set(parsed.variants)].map((v, i) => (
+                                            <span key={`${i}-${v}`} className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                                               {v}
                                             </span>
                                           ))}

@@ -71,10 +71,7 @@ function PPISharedInteractorsInner({
 
     try {
       // Fetch shared interactors using the intersection API
-      // NOTE: direction="out" assumes INTERACTS_WITH edges are stored as Gene → Gene
-      // For undirected PPI, this works because the API stores edges bidirectionally.
-      // If the API changes to store edges unidirectionally, we may need to query
-      // both directions or use direction="both" if supported.
+      // direction="out" — PPI edges are stored bidirectionally.
       const result = await fetchIntersection(
         selectedGenes.map((g) => ({ type: "Gene", id: g.id })),
         "GENE_INTERACTS_WITH_GENE",

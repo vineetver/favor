@@ -103,10 +103,9 @@ function PPIPathFinderInner({
       // For PPI-only: use ppi-{from}-{to} format (bidirectional)
       // For other recipes: edges may not exist in PPI graph, only highlight Gene nodes
       //
-      // NOTE: Non-PPI edges (TARGETS, PARTICIPATES_IN, etc.) won't exist in the
-      // PPI network graph which only contains INTERACTS_WITH edges. For therapeutic
-      // and mechanism recipes, we highlight the Gene nodes that are in the path,
-      // but intermediate Drug/Disease/Pathway nodes may not be visible in the PPI view.
+      // Non-PPI edges won't exist in the PPI graph which only contains
+      // GENE_INTERACTS_WITH_GENE edges. For non-PPI recipes, we highlight
+      // Gene nodes in the path; intermediate nodes may not be visible.
       const edgeIds: string[] = [];
 
       if (recipe === "ppi-only") {
@@ -117,7 +116,7 @@ function PPIPathFinderInner({
         }
       } else {
         // For non-PPI recipes, only try to match edges where both nodes are Genes
-        // These might be INTERACTS_WITH edges that exist in the PPI graph
+        // Match Gene↔Gene edges that may exist in the PPI graph
         for (const edge of path.edges) {
           if (edge.from.type === "Gene" && edge.to.type === "Gene") {
             edgeIds.push(`ppi-${edge.from.id}-${edge.to.id}`);
@@ -274,7 +273,7 @@ function PPIPathFinderInner({
                                   : "bg-muted text-foreground";
 
                         return (
-                          <span key={node.id} className="flex items-center gap-1">
+                          <span key={`${nodeIndex}-${node.id}`} className="flex items-center gap-1">
                             <span
                               className={cn(
                                 "px-2 py-0.5 rounded text-xs font-medium",

@@ -692,6 +692,7 @@ function ExplorerCytoscapeInner({
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
 
       hoverTimerRef.current = setTimeout(() => {
+        if (edge.removed() || !edge.inside()) return;
         applyEdgeHoverHighlight(cy, edge);
 
         const container = cy.container();

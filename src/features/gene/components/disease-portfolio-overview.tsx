@@ -77,17 +77,17 @@ type DiseaseEdge = {
 
 const LINK_STRENGTH: Record<string, { label: string; tip: string; dot: string }> = {
   causal: {
-    label: "Known cause",
+    label: "Causal",
     tip: "This gene is an established cause of this disease, confirmed by expert review (e.g. ClinGen, OMIM).",
     dot: "bg-emerald-500",
   },
   implicated: {
-    label: "Strong evidence",
+    label: "Implicated",
     tip: "Functional or clinical evidence links this gene to this disease (e.g. Orphanet, CIViC, PharmGKB), but not yet classified as a confirmed cause.",
     dot: "bg-amber-500",
   },
   associated: {
-    label: "Statistical link",
+    label: "Associated",
     tip: "A statistical association was found in large-scale studies (e.g. GWAS), but no direct causal mechanism has been confirmed.",
     dot: "bg-blue-500",
   },
@@ -95,17 +95,17 @@ const LINK_STRENGTH: Record<string, { label: string; tip: string; dot: string }>
 
 const CONFIDENCE: Record<string, { label: string; tip: string; dots: number }> = {
   high: {
-    label: "Strong evidence",
+    label: "High confidence",
     tip: "Multiple independent sources confirm this link with high confidence.",
     dots: 3,
   },
   medium: {
-    label: "Moderate evidence",
+    label: "Moderate confidence",
     tip: "Supported by some evidence, but not yet confirmed by multiple high-quality sources.",
     dots: 2,
   },
   low: {
-    label: "Preliminary",
+    label: "Low confidence",
     tip: "Based on limited evidence. Requires further validation.",
     dots: 1,
   },
@@ -558,7 +558,6 @@ export function DiseasePortfolioOverview({
                     </div>
                     {items.map((d) => {
                       const isSelected = d.id === selectedId;
-                      const link = LINK_STRENGTH[d.causalityLevel ?? ""];
 
                       return (
                         <button
@@ -574,23 +573,9 @@ export function DiseasePortfolioOverview({
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <div className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">
+                              <span className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">
                                 {d.label}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                {link && (
-                                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", link.dot)} />
-                                    {link.label}
-                                  </span>
-                                )}
-                                {d.isCancer && (
-                                  <span className="text-[10px] text-red-500/80">Cancer</span>
-                                )}
-                                {d.isRare && (
-                                  <span className="text-[10px] text-violet-500/80">Rare</span>
-                                )}
-                              </div>
+                              </span>
                             </div>
                             <ScoreBar value={d.otScore} />
                           </div>

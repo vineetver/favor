@@ -18,7 +18,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@shared/components/ui/popover";
+import Link from "next/link";
 import { memo, useMemo, useState, useCallback } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@shared/components/ui/sheet";
 import type { EntityRef, SubgraphEdge } from "../../api";
 import {
   createEdgeMap,
@@ -64,69 +71,105 @@ import {
   type Selection,
 } from "./types";
 
-// Memoized detail panel to prevent re-renders when hover state changes
-interface NodeDetailPanelProps {
-  node: PPINode;
+// Node detail sheet — gene info with link to FAVOR gene page
+interface NodeDetailSheetProps {
+  node: PPINode | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const NodeDetailPanel = memo(function NodeDetailPanel({ node }: NodeDetailPanelProps) {
+const NodeDetailSheet = memo(function NodeDetailSheet({ node, open, onOpenChange }: NodeDetailSheetProps) {
   return (
-    <div className="border-t border-border">
-      <div className="px-6 py-2.5 border-b border-border bg-muted">
-        <div className="text-body-sm font-medium text-subtle">
-          Selected Node
-        </div>
-      </div>
-      <div className="px-6 py-4">
-        <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-foreground">
-                {node.label}
-              </span>
-              {node.isSeed && (
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
-                  Seed Gene
-                </span>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-[420px] sm:w-[480px] overflow-y-auto">
+        {node && (
+          <>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <span className="text-lg font-semibold text-foreground">{node.label}</span>
+                {node.isSeed && (
+                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                    Seed
+                  </span>
+                )}
+              </SheetTitle>
+              <div className="text-xs font-mono text-muted-foreground">{node.id}</div>
+            </SheetHeader>
+
+            <div className="space-y-6 pt-6">
+              {/* Interaction stats */}
+              {!node.isSeed && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Sources</div>
+                    <div className="text-xl font-semibold text-foreground">
+                      {node.numSources ?? "N/A"}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Experiments</div>
+                    <div className="text-xl font-semibold text-foreground">
+                      {node.numExperiments ?? "N/A"}
+                    </div>
+                  </div>
+                </div>
               )}
+
+              {/* FAVOR gene page */}
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  FAVOR
+                </div>
+                <Link
+                  href={`/hg38/gene/${encodeURIComponent(node.id)}`}
+                  className="block rounded-lg border border-border p-4 hover:bg-muted transition-colors"
+                >
+                  <div className="text-sm font-medium text-primary">
+                    View full gene page for {node.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Variants, regulatory elements, expression, pathways, and more
+                  </div>
+                </Link>
+              </div>
+
+              {/* External links */}
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  External Resources
+                </div>
+                <div className="flex flex-col gap-2">
+                  <ExternalLink
+                    href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${encodeURIComponent(node.id)}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Ensembl Gene Summary
+                  </ExternalLink>
+                  <ExternalLink
+                    href={`https://www.genecards.org/cgi-bin/carddisp.pl?gene=${encodeURIComponent(node.label)}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    GeneCards
+                  </ExternalLink>
+                  <ExternalLink
+                    href={`https://www.uniprot.org/uniprotkb?query=${encodeURIComponent(node.label)}+AND+organism_id:9606`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    UniProt
+                  </ExternalLink>
+                  <ExternalLink
+                    href={`https://www.ncbi.nlm.nih.gov/gene/?term=${encodeURIComponent(node.label)}[sym]+AND+human[orgn]`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    NCBI Gene
+                  </ExternalLink>
+                </div>
+              </div>
             </div>
-            <div className="text-xs font-mono text-muted-foreground">{node.id}</div>
-          </div>
-
-          {!node.isSeed && (
-            <>
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">Sources</div>
-                <div className="text-sm font-semibold text-foreground">
-                  {node.numSources ?? "N/A"}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">Experiments</div>
-                <div className="text-sm font-semibold text-foreground">
-                  {node.numExperiments ?? "N/A"}
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="ml-auto flex items-center gap-3">
-            <ExternalLink
-              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${encodeURIComponent(node.id)}`}
-              className="text-sm text-primary hover:underline"
-            >
-              View on Ensembl
-            </ExternalLink>
-            <ExternalLink
-              href={`https://www.genecards.org/cgi-bin/carddisp.pl?gene=${encodeURIComponent(node.label)}`}
-              className="text-sm text-primary hover:underline"
-            >
-              View on GeneCards
-            </ExternalLink>
-          </div>
-        </div>
-      </div>
-    </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 });
 
@@ -222,7 +265,7 @@ export function PPINetworkView({
   relations,
   className,
 }: PPINetworkViewProps) {
-  const [limit, setLimit] = useState("25");
+  const [limit, setLimit] = useState("100");
   const [layout, setLayout] = useState<LayoutType>("cose-bilkent");
   const [hoveredNode, setHoveredNode] = useState<PPINode | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
@@ -432,10 +475,6 @@ export function PPINetworkView({
     },
     [],
   );
-
-  const handleCloseEdgePanel = useCallback(() => {
-    setSelection({ type: "none" });
-  }, []);
 
   // Hub panel handlers
   const handleHubClick = useCallback((geneId: string) => {
@@ -664,16 +703,7 @@ export function PPINetworkView({
             onEdgeClick={handleEdgeClick}
           />
 
-          {/* Edge Detail Panel - "Explain this edge" */}
-          {selectedEdge && (
-            <PPIEdgeDetailPanel
-              edge={selectedEdge}
-              onClose={handleCloseEdgePanel}
-            />
-          )}
-
-          {/* Node Detail Panel - shown when no edge selected */}
-          {selectedNode && !selectedEdge && <NodeDetailPanel node={selectedNode} />}
+          {/* Edge/Node detail sheets rendered outside card below */}
 
           {/* Hub Analysis Panel - shown in hub color mode */}
           {colorMode === "hub" && (
@@ -686,6 +716,20 @@ export function PPINetworkView({
           )}
         </CardContent>
       </Card>
+
+      {/* Edge Detail Sheet */}
+      <PPIEdgeDetailPanel
+        edge={selectedEdge}
+        open={selection.type === "edge"}
+        onOpenChange={(open) => { if (!open) setSelection({ type: "none" }); }}
+      />
+
+      {/* Node Detail Sheet */}
+      <NodeDetailSheet
+        node={selectedNode}
+        open={selection.type === "node"}
+        onOpenChange={(open) => { if (!open) setSelection({ type: "none" }); }}
+      />
 
       {/* Tooltip - only re-renders when hover state changes */}
       <PPINodeTooltip node={hoveredNode} position={hoverPosition} />

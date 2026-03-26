@@ -150,38 +150,68 @@ function extractPgxEdges(relations: unknown, edges?: unknown): PgxEdge[] {
     else if (Array.isArray(byType)) rows = byType as any[];
   }
 
-  return rows
-    .map((row: any, idx: number): PgxEdge | null => {
-      const neighbor = row?.neighbor ?? row?.target ?? {};
-      const link = row?.link ?? row?.edge ?? {};
-      const props = link?.props ?? link ?? {};
-      const rawId = neighbor?.id ?? row?.neighbor_id ?? row?.id;
-      if (!rawId) return null;
+  // Parse individual rows
+  const parsed: PgxEdge[] = [];
+  for (let idx = 0; idx < rows.length; idx++) {
+    const row = rows[idx];
+    const neighbor = row?.neighbor ?? row?.target ?? {};
+    const link = row?.link ?? row?.edge ?? {};
+    const props = link?.props ?? link ?? {};
+    const rawId = neighbor?.id ?? row?.neighbor_id ?? row?.id;
+    if (!rawId) continue;
 
-      const id = `${rawId}_${idx}`;
+    parsed.push({
+      id: `${rawId}_${idx}`,
+      drugName: String(props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
+      drugSubtitle: typeof neighbor?.subtitle === "string" ? neighbor.subtitle : null,
+      evidenceOrigin: props.evidence_origin ?? null,
+      cancerTypes: Array.isArray(props.cancer_types) ? props.cancer_types.filter(Boolean) : [],
+      variantNames: Array.isArray(props.variant_names) ? props.variant_names.filter(Boolean) : [],
+      hgvsExpressions: Array.isArray(props.hgvs_expressions) ? props.hgvs_expressions.filter(Boolean) : [],
+      evidenceStatements: Array.isArray(props.evidence_statements) ? props.evidence_statements.filter(Boolean) : [],
+      ampCategory: props.amp_category ?? null,
+      bestEvidenceLevel: props.best_evidence_level ?? null,
+      fdaCompanionTest: props.fda_companion_test === true,
+      evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
+      confidenceClass: props.confidence_class ?? null,
+      pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
+      sources: Array.isArray(props.sources) ? props.sources : [],
+      nccnGuideline: typeof props.nccn_guideline === "string" ? props.nccn_guideline : null,
+    });
+  }
 
-      return {
-        id,
-        drugName: String(props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
-        drugSubtitle: typeof neighbor?.subtitle === "string" ? neighbor.subtitle : null,
-        evidenceOrigin: props.evidence_origin ?? null,
-        cancerTypes: Array.isArray(props.cancer_types) ? props.cancer_types.filter(Boolean) : [],
-        variantNames: Array.isArray(props.variant_names) ? props.variant_names.filter(Boolean) : [],
-        hgvsExpressions: Array.isArray(props.hgvs_expressions) ? props.hgvs_expressions.filter(Boolean) : [],
-        evidenceStatements: Array.isArray(props.evidence_statements) ? props.evidence_statements.filter(Boolean) : [],
-        ampCategory: props.amp_category ?? null,
-        bestEvidenceLevel: props.best_evidence_level ?? null,
-        fdaCompanionTest: props.fda_companion_test === true,
-        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
-        confidenceClass: props.confidence_class ?? null,
-        pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
-        sources: Array.isArray(props.sources) ? props.sources : [],
-        nccnGuideline: typeof props.nccn_guideline === "string" ? props.nccn_guideline : null,
-      };
-    })
-    .filter((d): d is PgxEdge => d !== null)
+  // Merge rows with the same drug name (case-insensitive).
+  // Keep the row with the best evidence level; combine arrays.
+  const merged = new Map<string, PgxEdge>();
+  for (const edge of parsed) {
+    const key = edge.drugName.toLowerCase();
+    const existing = merged.get(key);
+    if (!existing) {
+      // Title-case the name for display consistency
+      edge.drugName = edge.drugName.charAt(0).toUpperCase() + edge.drugName.slice(1).toLowerCase();
+      merged.set(key, edge);
+      continue;
+    }
+    // Merge: keep better evidence level, combine arrays
+    const eRank = EVIDENCE_LEVELS[existing.bestEvidenceLevel ?? ""]?.rank ?? 0;
+    const nRank = EVIDENCE_LEVELS[edge.bestEvidenceLevel ?? ""]?.rank ?? 0;
+    if (nRank > eRank) existing.bestEvidenceLevel = edge.bestEvidenceLevel;
+    existing.evidenceCount += edge.evidenceCount;
+    if (edge.fdaCompanionTest) existing.fdaCompanionTest = true;
+    existing.cancerTypes = [...new Set([...existing.cancerTypes, ...edge.cancerTypes])];
+    existing.variantNames = [...new Set([...existing.variantNames, ...edge.variantNames])];
+    existing.hgvsExpressions = [...new Set([...existing.hgvsExpressions, ...edge.hgvsExpressions])];
+    existing.evidenceStatements = [...existing.evidenceStatements, ...edge.evidenceStatements];
+    existing.pubmedIds = [...new Set([...existing.pubmedIds, ...edge.pubmedIds])];
+    existing.sources = [...new Set([...existing.sources, ...edge.sources])];
+    if (!existing.nccnGuideline && edge.nccnGuideline) existing.nccnGuideline = edge.nccnGuideline;
+    if (!existing.ampCategory && edge.ampCategory) existing.ampCategory = edge.ampCategory;
+    if (!existing.evidenceOrigin && edge.evidenceOrigin) existing.evidenceOrigin = edge.evidenceOrigin;
+    if (!existing.drugSubtitle && edge.drugSubtitle) existing.drugSubtitle = edge.drugSubtitle;
+  }
+
+  return Array.from(merged.values())
     .sort((a, b) => {
-      // Sort by evidence level (A > B > C > ...), then evidence count
       const aRank = EVIDENCE_LEVELS[a.bestEvidenceLevel ?? ""]?.rank ?? 0;
       const bRank = EVIDENCE_LEVELS[b.bestEvidenceLevel ?? ""]?.rank ?? 0;
       const diff = bRank - aRank;
@@ -477,7 +507,7 @@ export function PharmacogenomicsOverview({
                     {selected.variantNames.length > 0 && (
                       <div className="space-y-1.5">
                         <Tip content="Specific genetic variants or molecular profiles associated with altered drug response.">
-                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             Associated variants
                           </span>
                         </Tip>
@@ -509,7 +539,7 @@ export function PharmacogenomicsOverview({
                     {/* ─ Cancer types ─ */}
                     {selected.cancerTypes.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           Cancer types
                         </span>
                         <div className="flex flex-wrap gap-1">
@@ -529,7 +559,7 @@ export function PharmacogenomicsOverview({
                     {selected.evidenceStatements.length > 0 && (
                       <div className="space-y-2">
                         <Tip content="Expert-curated evidence statements describing how this gene affects drug response.">
-                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             Evidence
                           </span>
                         </Tip>
@@ -555,7 +585,7 @@ export function PharmacogenomicsOverview({
                     {selected.nccnGuideline && (
                       <div className="space-y-1">
                         <Tip content="NCCN (National Comprehensive Cancer Network) clinical practice guideline referenced for this drug-gene pair.">
-                          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             NCCN guideline
                           </span>
                         </Tip>
@@ -566,7 +596,7 @@ export function PharmacogenomicsOverview({
                     {/* ─ Sources ─ */}
                     {selected.sources.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           Data sources
                         </span>
                         <div className="flex flex-wrap gap-1">

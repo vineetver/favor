@@ -138,39 +138,23 @@ export interface PathRecipeConfig {
   nodeTypes: string[];
 }
 
-/**
- * Path recipe definitions
- *
- * Edge directions in the graph:
- * - INTERACTS_WITH: Gene ↔ Gene (bidirectional PPI)
- * - PARTICIPATES_IN: Gene → Pathway
- * - PART_OF: Pathway → Pathway (hierarchy)
- * - TARGETS: Drug → Gene
- * - KNOWN_TO_TARGET: Drug → Gene
- * - INDICATED_FOR: Drug → Disease
- * - APPROVED_FOR: Drug → Disease
- * - IMPLICATED_IN: Gene → Disease
- */
 export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
   'ppi-only': {
     label: 'PPI Only',
     description: 'Protein-protein interactions only',
-    edgeTypes: ['INTERACTS_WITH'],
+    edgeTypes: ['GENE_INTERACTS_WITH_GENE'],
     nodeTypes: ['Gene'],
   },
   'mechanism': {
     label: 'Mechanism',
     description: 'Include pathways and biological processes',
-    edgeTypes: ['INTERACTS_WITH', 'PARTICIPATES_IN', 'PART_OF'],
-    nodeTypes: ['Gene', 'Pathway', 'BiologicalProcess'],
+    edgeTypes: ['GENE_INTERACTS_WITH_GENE', 'GENE_PARTICIPATES_IN_PATHWAY', 'PATHWAY_PART_OF_PATHWAY'],
+    nodeTypes: ['Gene', 'Pathway'],
   },
   'therapeutic': {
     label: 'Therapeutic',
     description: 'Find drug-mediated paths between genes',
-    // Only drug-specific edges to force paths through Drug nodes
-    // Excludes INTERACTS_WITH to avoid shorter Gene→Gene paths
-    // Typical path: Gene ← Drug → Disease ← Drug → Gene
-    edgeTypes: ['TARGETS', 'KNOWN_TO_TARGET', 'INDICATED_FOR', 'APPROVED_FOR'],
+    edgeTypes: ['DRUG_ACTS_ON_GENE', 'GENE_AFFECTS_DRUG_RESPONSE', 'DRUG_INDICATED_FOR_DISEASE'],
     nodeTypes: ['Gene', 'Drug', 'Disease'],
   },
 };
@@ -347,6 +331,12 @@ export interface PPIEdge {
   sources: PPIEvidenceSource[];
   detectionMethods?: string[];
   pubmedIds?: string[];
+  /** Raw props from the API for the detail panel */
+  _props?: Record<string, unknown>;
+  /** Categorical confidence (low/medium/high/very_high) */
+  _confidenceClass?: string | null;
+  /** Interaction type (physical/functional_association) */
+  _interactionType?: string | null;
 }
 
 /**
