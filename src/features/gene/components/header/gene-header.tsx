@@ -9,8 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@shared/components/ui/breadcrumb";
-import { Button } from "@shared/components/ui/button";
-import { Download, Share2 } from "lucide-react";
+import { ShareButton } from "@shared/components/share-button";
 
 interface GeneHeaderProps {
   gene: Gene;
@@ -34,10 +33,8 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
       </Breadcrumb>
 
       {/* Main Content Row */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-        {/* Left Side */}
+      <div className="flex items-start justify-between gap-6">
         <div className="space-y-4">
-          {/* Title */}
           <div className="flex items-baseline gap-3 flex-wrap">
             <h1 className="text-page-title">{gene.gene_symbol}</h1>
             <span className="text-lg font-mono text-muted-foreground">
@@ -45,7 +42,6 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
             </span>
           </div>
 
-          {/* Gene Info Row */}
           <div className="flex items-center gap-4 flex-wrap text-sm">
             {gene.gene_name && (
               <span className="text-body">{gene.gene_name}</span>
@@ -63,17 +59,7 @@ export function GeneHeader({ gene, genome = "hg38" }: GeneHeaderProps) {
           </div>
         </div>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" aria-label="Share gene">
-            <Share2 className="w-5 h-5" />
-          </Button>
-
-          <Button variant="outline">
-            <Download />
-            Generate Report
-          </Button>
-        </div>
+        <ShareButton label={gene.gene_symbol} />
       </div>
     </div>
   );

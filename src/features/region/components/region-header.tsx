@@ -2,8 +2,7 @@
 
 import type { ParsedRegion } from "../utils/parse-region";
 import { formatRegionSize } from "../utils/parse-region";
-import { Button } from "@shared/components/ui/button";
-import { Share2 } from "lucide-react";
+import { ShareButton } from "@shared/components/share-button";
 
 interface RegionHeaderProps {
   region: ParsedRegion;
@@ -26,9 +25,8 @@ export function RegionHeader({ region, genome = "hg38" }: RegionHeaderProps) {
         </span>
       </div>
 
-      {/* Main Row */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-        {/* Left */}
+      {/* Main Content Row */}
+      <div className="flex items-start justify-between gap-6">
         <div className="space-y-4">
           <div className="flex items-baseline gap-3 flex-wrap">
             <h1 className="text-page-title font-mono">
@@ -43,12 +41,7 @@ export function RegionHeader({ region, genome = "hg38" }: RegionHeaderProps) {
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" aria-label="Share region">
-            <Share2 className="w-5 h-5" />
-          </Button>
-        </div>
+        <ShareButton label={`${region.chromosome}:${region.start}-${region.end}`} />
       </div>
     </div>
   );
