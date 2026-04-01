@@ -11,10 +11,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Function", slug: "function" },
       { text: "Expression", slug: "expression" },
       { text: "Protein Structure", slug: "protein-structure" },
-      {
-        text: "Protein-Protein Interactions",
-        slug: "protein-protein-interactions",
-      },
       { text: "Pathways", slug: "pathways" },
 
       { text: "Human Phenotype", slug: "human-phenotype" },
@@ -44,6 +40,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "Function", slug: "function" },
           { text: "Expression", slug: "expression" },
           { text: "Protein Structure", slug: "protein-structure" },
+          { text: "Pathways", slug: "pathways" },
           {
             text: "Constraints and Haploinsufficiency",
             slug: "constraints-and-heplo",
@@ -65,7 +62,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
             text: "Interaction Neighborhood",
             slug: "interaction-neighborhood",
           },
-          { text: "Pathways", slug: "pathway-leverage-map" },
+          { text: "Pathway Leverage Map", slug: "pathway-leverage-map" },
         ],
       },
     ],
@@ -83,6 +80,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Drug Landscape", slug: "drug-landscape" },
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
       { text: "Chemical Probes", slug: "chemical-probes" },
+      { text: "Target Enabling Package (TEP)", slug: "tep" },
       { text: "Safety Liabilities", slug: "safety-liabilities" },
       { text: "Cancer Hallmarks", slug: "cancer-hallmarks" },
       { text: "Somatic Alterations", slug: "somatic-alterations" },

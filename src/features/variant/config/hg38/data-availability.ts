@@ -22,21 +22,15 @@ export const variantDataChecks: Record<string, DataCheck> = {
 
   // Clinical & Disease
   clinvar: (v) => hasAny(v.clinvar),
-  pharmacogenomics: (v) => false, // OpenTargets-only — always fetched client-side; disable when no clinvar signal
   "somatic-mutation": (v) => hasAny(v.cosmic),
 
   // Pathogenicity & Scores
-  "variant-effects": (v) =>
-    !!v.main?.cadd?.phred || !!v.alphamissense?.max_pathogenicity,
   "protein-function": (v) =>
     hasAny(v.main?.protein_predictions) || hasAny(v.dbnsfp),
   "protein-structure": (v) =>
     (v.alphamissense?.predictions?.length ?? 0) > 0,
   conservation: (v) => hasAny(v.main?.conservation),
   "splice-ai": (v) => !!v.gnomad_exome?.functional?.spliceai_ds_max || !!v.gnomad_genome?.functional?.spliceai_ds_max,
-  consequences: (v) =>
-    (v.genecode?.transcripts?.length ?? 0) > 0 ||
-    (v.refseq?.exonic_details?.length ?? 0) > 0,
 
   // Regulatory & Epigenetics
   epigenetics: (v) => hasAny(v.epigenetic_phred) || hasAny(v.main?.encode),

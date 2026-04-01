@@ -6,7 +6,6 @@ import { geneFunctionColumns, geneFunctionGroup } from "./columns/function";
 import { geneHumanPhenotypeColumns, geneHumanPhenotypeGroup } from "./columns/human-phenotype";
 import { geneAnimalPhenotypeColumns, geneAnimalPhenotypeGroup } from "./columns/animal-phenotype";
 import { geneExpressionColumns, geneExpressionGroup } from "./columns/expression";
-import { geneProteinInteractionsColumns, geneProteinInteractionsGroup } from "./columns/protein-interactions";
 import { genePathwaysColumns, genePathwaysGroup } from "./columns/pathways";
 import { geneConstraintsColumns, geneConstraintsGroup } from "./columns/constraints";
 import { geneTractabilityTargetClassColumns, geneTractabilityTargetClassGroup } from "./columns/tractability-and-target-class";
@@ -27,8 +26,6 @@ export {
   geneAnimalPhenotypeGroup,
   geneExpressionColumns,
   geneExpressionGroup,
-  geneProteinInteractionsColumns,
-  geneProteinInteractionsGroup,
   genePathwaysColumns,
   genePathwaysGroup,
   geneConstraintsColumns,

@@ -28,10 +28,6 @@ export const geneDataChecks: Record<string, DataCheck> = {
     !!g.function_description || hasAny(g.go) || hasAny(g.pathways),
   expression: (g) => hasAny(g.gtex) || hasAny(g.rna_expression),
   "protein-structure": (g) => !!g.uniprot_id,
-  "protein-protein-interactions": (g) =>
-    !!g.interactions_int_act ||
-    !!g.interactions_bio_grid ||
-    !!g.interactions_consensus_path_db,
   pathways: (g) => hasAny(g.pathways),
   "human-phenotype": (g) => hasAny(g.disease_phenotype),
   "animal-phenotype": (g) => hasAny(g.model_organisms),

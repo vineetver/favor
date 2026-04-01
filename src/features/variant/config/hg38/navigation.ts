@@ -18,12 +18,10 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
       { text: "Somatic Mutation", slug: "somatic-mutation" },
       // Pathogenicity & Scores
-      { text: "Pathogenicity", slug: "variant-effects" },
       { text: "Protein Function", slug: "protein-function" },
       { text: "Protein Structure", slug: "protein-structure" },
       { text: "Conservation", slug: "conservation" },
       { text: "SpliceAI", slug: "splice-ai" },
-      { text: "Consequences (VEP)", slug: "consequences" },
       // GWAS & Association
       { text: "GWAS Catalog", slug: "gwas-catalog" },
       { text: "GWAS Fine-Mapping", slug: "credible-sets" },
@@ -73,12 +71,10 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         name: "Pathogenicity & Scores",
         defaultExpanded: true,
         items: [
-          { text: "Pathogenicity", slug: "variant-effects" },
           { text: "Protein Function", slug: "protein-function" },
           { text: "Protein Structure", slug: "protein-structure" },
           { text: "Conservation", slug: "conservation" },
           { text: "SpliceAI", slug: "splice-ai" },
-          { text: "Consequences (VEP)", slug: "consequences" },
         ],
       },
       {

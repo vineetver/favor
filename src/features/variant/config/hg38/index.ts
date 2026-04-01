@@ -93,10 +93,3 @@ export {
   type ViewConfig,
   type VisualizationProps,
 } from "@infra/table/column-builder";
-// Open Targets columns (exported separately as they use different data types)
-export { openTargetsConsequencesColumns } from "./columns/open-targets-consequences";
-export { openTargetsCredibleSetsColumns } from "./columns/open-targets-credible-sets";
-export { openTargetsEvidencesColumns } from "./columns/open-targets-evidences";
-export { openTargetsL2GColumns } from "./columns/open-targets-l2g";
-export { openTargetsPharmacogenomicsColumns } from "./columns/open-targets-pharmacogenomics";
-export { openTargetsVariantEffectsColumns } from "./columns/open-targets-variant-effects";
