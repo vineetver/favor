@@ -183,11 +183,12 @@ export function VariantCcreLinksView({
   const activeTissueGroup = searchParams.get("tissue_group");
 
   if (groupedData?.length && !activeTissueGroup) {
+    const total = groupedData.reduce((s, r) => s + r.count, 0);
     return (
       <TissueGroupSummary
         data={groupedData}
         metricConfig={CCRE_GENE_LINKS_GROUP_CONFIG}
-        subtitle={`${groupedData.length} tissue groups · ${totalCount.toLocaleString()} total gene linkages for ${ccreId}`}
+        subtitle={`${ccreId} · ${groupedData.length} tissue groups · ${total.toLocaleString()} gene linkages`}
       />
     );
   }
@@ -246,7 +247,9 @@ function VariantCcreLinksDetailView({
 
   const hasActiveFilters = Boolean(searchParams.get("method"));
   const liveTotal =
-    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+    pageInfo.totalCount
+    ?? (!pageInfo.hasMore ? pageInfo.count || undefined : undefined)
+    ?? (hasActiveFilters ? undefined : totalCount || undefined);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,
@@ -262,18 +265,19 @@ function VariantCcreLinksDetailView({
   });
 
   const sourceInfo = SOURCES.find((s) => s.id === activeSource);
-  const subtitle =
-    liveTotal != null
-      ? `${liveTotal.toLocaleString()} ${sourceInfo?.label ?? ""} gene linkages for ${ccreId}`
-      : `Gene linkages for ${ccreId}`;
 
   return (
     <>
       <TissueGroupBackButton />
+      <p className="text-sm text-muted-foreground mb-3">
+        {liveTotal != null
+          ? `${liveTotal.toLocaleString()} ${sourceInfo?.label ?? ""} gene linkages for cCRE `
+          : `${sourceInfo?.label ?? ""} gene linkages for cCRE `}
+        <span className="font-mono font-medium text-foreground">{ccreId}</span>
+      </p>
       <DataSurface
         data={data}
         columns={linkColumns}
-        subtitle={subtitle}
         dimensions={[sourceDimension]}
         searchPlaceholder="Search genes, tissues..."
         searchColumn="gene_symbol"

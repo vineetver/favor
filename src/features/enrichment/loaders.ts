@@ -10,6 +10,7 @@ import {
   fetchAse,
   fetchAseByTissueGroup,
   fetchCcreGeneLinks,
+  fetchCcreGeneLinksByTissueGroup,
   fetchCcreLinksByTissueGroup,
   fetchChromBpnet,
   fetchChromBpnetByTissueGroup,
@@ -277,7 +278,7 @@ export async function loadTissueScoresData(loc: string) {
 
 export async function loadCcreGeneLinksData(ccreId: string, tissueGroup?: string) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchCcreLinksByTissueGroup(ccreId).catch(() => []) : Promise.resolve([]),
+    !tissueGroup ? fetchCcreGeneLinksByTissueGroup(ccreId).catch(() => []) : Promise.resolve([]),
     tissueGroup
       ? fetchCcreGeneLinks(ccreId, { tissue_group: tissueGroup, limit: 50 }).catch(() => null)
       : Promise.resolve(null),

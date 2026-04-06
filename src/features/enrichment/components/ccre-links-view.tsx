@@ -98,11 +98,12 @@ export function CcreLinksView({
   const activeTissueGroup = searchParams.get("tissue_group");
 
   if (groupedData?.length && !activeTissueGroup) {
+    const total = groupedData.reduce((s, r) => s + r.count, 0);
     return (
       <TissueGroupSummary
         data={groupedData}
         metricConfig={CCRE_LINKS_GROUP_CONFIG}
-        subtitle={`${groupedData.length} tissue groups \u00b7 ${totalCount.toLocaleString()} total linkages`}
+        subtitle={`${groupedData.length} tissue groups · ${total.toLocaleString()} total linkages`}
       />
     );
   }
@@ -252,7 +253,9 @@ function CcreLinksDetailView({
 
   const hasActiveFilters = Boolean(searchParams.get("method"));
   const liveTotal =
-    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+    pageInfo.totalCount
+    ?? (!pageInfo.hasMore ? pageInfo.count || undefined : undefined)
+    ?? (hasActiveFilters ? undefined : totalCount || undefined);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,

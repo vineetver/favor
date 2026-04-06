@@ -1,148 +1,133 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Search, UploadCloud, Bot } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Prose, Callout, Step } from "./_components/doc-primitives";
+import { Prose } from "./_components/doc-primitives";
+import { StatBanner } from "./_components/stat-banner";
 
 export const metadata: Metadata = {
   title: "Documentation | FAVOR",
   description:
-    "FAVOR documentation: an AI-powered scientific intelligence platform for whole genome variant functional annotation.",
+    "FAVOR (Functional Annotation of Variants Online Resource). Open-access platform for whole-genome variant functional annotation and knowledge graph exploration.",
 };
 
-const guides = [
-  {
-    title: "Search & Explore",
-    description: "Find variants, genes, diseases, and drugs across the knowledge graph.",
-    href: "/docs/search",
-    icon: Search,
-  },
-  {
-    title: "Batch Annotation",
-    description: "Upload files for large-scale variant annotation and cohort analysis.",
-    href: "/docs/batch-annotation",
-    icon: UploadCloud,
-  },
-  {
-    title: "AI Agent",
-    description: "Use FAVOR-GPT for natural-language analysis and exploration.",
-    href: "/docs/agent",
-    icon: Bot,
-  },
+/* ------------------------------------------------------------------ */
+/*  Data                                                               */
+/* ------------------------------------------------------------------ */
+
+const stats = [
+  { value: "8.9B", label: "Variants", detail: "SNVs + indels across GRCh38" },
+  { value: "232", label: "Annotations", detail: "Per variant, from 30+ sources" },
+  { value: "14.8M", label: "Knowledge graph entities", detail: "Genes, diseases, drugs, and more" },
+  { value: "191M+", label: "Graph edges", detail: "66 relationship types" },
 ];
+
+const guides = [
+  { title: "Data & Annotations", description: "232 annotation dimensions across 18 categories. Full catalog of scores, frequencies, and regulatory data.", href: "/docs/data" },
+  { title: "Search & Explore", description: "Query by variant, gene, region, or rsID across the knowledge graph.", href: "/docs/search" },
+  { title: "Batch Annotation", description: "Upload variant lists for large-scale annotation and cohort analysis.", href: "/docs/batch-annotation" },
+  { title: "FAVOR CLI", description: "Command-line tool for whole-genome functional analysis at scale.", href: "/cli" },
+  { title: "FAVOR-GPT", description: "Ask questions in natural language. Search, filter, run statistics, build visualizations.", href: "/docs/agent" },
+];
+
+const deepDives = [
+  { title: "Architecture", href: "/docs/architecture", description: "Six databases, sub-10ms lookups" },
+  { title: "Knowledge Graph", href: "/docs/knowledge-graph", description: "14.8M entities, 66 edge types, graph traversal engine" },
+  { title: "Agent System", href: "/docs/agent-system", description: "Tool surface, reliability pipeline, self-correction" },
+  { title: "Batch Pipeline", href: "/docs/batch-pipeline", description: "Upload-to-insight in minutes, key resolution, enrichment" },
+  { title: "Search Engine", href: "/docs/search-engine", description: "5-tier scoring cascade, cross-type resolution" },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
 
 export default function DocsPage() {
   return (
     <div>
+      {/* ── Hero ── */}
       <Prose>
-        <h1>FAVOR Documentation</h1>
+        <h1>What is FAVOR?</h1>
         <p>
-          FAVOR annotates all <strong>8.9 billion</strong> variants in the human
-          genome (GRCh38) with 232 dimensions from 30+ sources. It combines
-          functional annotation, a 14.8M-entity knowledge graph, and an AI agent
-          into a single research platform.
+          <strong>Functional Annotation of Variants Online Resource (FAVOR)</strong> is
+          an open-access web portal that assembles functional annotation data for
+          every variant in the human genome from a variety of sources and displays
+          the information through a web interface, command-line tool, and research
+          agent.
         </p>
-
-        <h2>What FAVOR covers</h2>
+        <p>
+          FAVOR provides functional annotations for all <strong>8.9 billion</strong>{" "}
+          possible single-nucleotide variants plus <strong>~80 million</strong>{" "}
+          observed indels across the GRCh38 reference, covering{" "}
+          <strong>232 annotation dimensions</strong> from{" "}
+          <strong>30+ sources</strong> including allele frequencies, pathogenicity
+          predictions, conservation, epigenetics, and regulatory elements. The
+          platform also includes a <strong>14.8-million-entity knowledge
+          graph</strong> linking variants, genes, diseases, and drugs.
+        </p>
       </Prose>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Entity</th>
-              <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Scale</th>
-              <th className="text-left py-2.5 font-semibold text-foreground">Sources</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { entity: "Variants", scale: "8.8B SNVs + 80M indels", sources: "232 annotations from gnomAD, ClinVar, CADD, LINSIGHT, and 26 more" },
-              { entity: "Genes", scale: "Gene-level annotations", sources: "Functional summaries, cross-entity relationships" },
-              { entity: "Diseases", scale: "Disease-variant-gene links", sources: "ClinVar, GWAS Catalog, curated sources" },
-              { entity: "Drugs", scale: "Drug-target-gene-disease", sources: "PharmGKB, ChEMBL, OpenTargets" },
-              { entity: "Knowledge graph", scale: "14.8M entities, 191M+ edges", sources: "66 edge types across 40+ authoritative sources" },
-            ].map((row) => (
-              <tr key={row.entity} className="border-b border-border last:border-0">
-                <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.entity}</td>
-                <td className="py-3 pr-4 text-muted-foreground whitespace-nowrap align-top">{row.scale}</td>
-                <td className="py-3 text-muted-foreground">{row.sources}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mt-6">
+        <StatBanner stats={stats} />
       </div>
 
-      <Prose>
-        <h2>Getting started</h2>
-      </Prose>
-
-      <div className="mt-2 mb-8">
-        <Step number={1} title="Discover">
-          Search for a gene, variant, disease, or drug from the homepage.
-          Results update as you type.
-        </Step>
-        <Step number={2} title="Inspect">
-          Review annotations and linked entities on detail pages. Pivot to
-          related entities.
-        </Step>
-        <Step number={3} title="Ask FAVOR-GPT">
-          Open the{" "}
-          <Link href="/agent" className="text-primary hover:underline">
-            AI Agent
-          </Link>{" "}
-          for natural-language variant ranking, graph traversal, and statistical
-          tests.
-        </Step>
-        <Step number={4} title="Scale">
-          Use{" "}
-          <Link href="/batch-annotation" className="text-primary hover:underline">
-            Batch Annotation
-          </Link>{" "}
-          to upload files for cohort-level annotation, filtering, analytics, and
-          export.
-        </Step>
+      {/* ── Guides ── */}
+      <div className="mt-10">
+        <Prose>
+          <h2>Get started</h2>
+        </Prose>
       </div>
 
-      <Prose>
-        <Callout variant="warning" title="Interpretation guidance">
-          FAVOR is a decision-support and exploration layer. Confirm high-impact
-          findings with primary sources and domain expertise. Treat absent data
-          as unknown coverage, not negative evidence.
-        </Callout>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {guides.map((guide) => (
+          <Link key={guide.href} href={guide.href} className="block group">
+            <Card className="h-full transition-colors group-hover:border-primary/40">
+              <CardHeader>
+                <CardTitle className="text-sm">{guide.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {guide.description}
+                </p>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  Read guide <ArrowRight className="w-3 h-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
 
-        <h2>Portal guides</h2>
-      </Prose>
+      {/* ── Deep dives ── */}
+      <div className="mt-10">
+        <Prose>
+          <h2>Engineering deep dives</h2>
+        </Prose>
+      </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {guides.map((guide) => {
-          const Icon = guide.icon;
-          return (
-            <Link key={guide.href} href={guide.href} className="block group">
-              <Card className="h-full border border-border transition-colors group-hover:border-primary/40">
-                <CardHeader className="space-y-2 pb-2">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="w-4.5 h-4.5" />
-                  </div>
-                  <CardTitle className="text-sm">{guide.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {guide.description}
-                  </p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                    Read guide <ArrowRight className="w-3 h-3" />
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {deepDives.map((dd) => (
+          <Link key={dd.href} href={dd.href} className="block group">
+            <Card className="h-full transition-colors group-hover:border-primary/40">
+              <CardHeader>
+                <CardTitle className="text-sm">{dd.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {dd.description}
+                </p>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  Deep dive <ArrowRight className="w-3 h-3" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );

@@ -342,7 +342,7 @@ export function UploadDropzone({
         {/* CLI note */}
         <p className="text-[11px] text-muted-foreground/60 mt-3">
           For genotype-scale data, use the{" "}
-          <a href="/docs" className="font-medium text-muted-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
+          <a href="/cli" className="font-medium text-muted-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
             FAVOR CLI
           </a>
         </p>

@@ -7,7 +7,7 @@ import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { siteConfig } from "@/config/site";
-import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
+import { NAV_ITEMS, type NavItem, MORE_ITEMS } from "./nav-items";
 import { PageNavDrawer } from "./page-nav-drawer";
 
 interface MobileDrawerProps {
@@ -132,12 +132,12 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                 />
               ))}
 
-              {/* Resources Section */}
+              {/* More Section */}
               <div className="pt-6 mt-6 border-t border-border">
                 <span className="block px-5 py-2 text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                  Resources
+                  More
                 </span>
-                {RESOURCES.map((item) => (
+                {MORE_ITEMS.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}

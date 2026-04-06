@@ -16,8 +16,10 @@ export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
   {
     label: "Portal Guide",
     items: [
+      { title: "Data & Annotations", href: "/docs/data" },
       { title: "Search & Explore", href: "/docs/search" },
       { title: "Batch Annotation", href: "/docs/batch-annotation" },
+      { title: "FAVOR CLI", href: "/cli" },
       { title: "AI Agent", href: "/docs/agent" },
     ],
   },

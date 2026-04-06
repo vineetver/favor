@@ -143,6 +143,10 @@ export async function fetchCcreLinksByTissueGroup(gene: string): Promise<TissueG
   return fetchGrouped(`${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links?group_by=tissue_group`);
 }
 
+export async function fetchCcreGeneLinksByTissueGroup(ccreId: string): Promise<TissueGroupRow[]> {
+  return fetchGrouped(`${API_BASE}/ccres/${encodeURIComponent(ccreId)}/gene-links?group_by=tissue_group`);
+}
+
 export async function fetchMethylationByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
   return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/methylation?group_by=tissue_group`);
 }

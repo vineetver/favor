@@ -15,7 +15,7 @@ import { ChevronDown, LogOut, Menu, Settings, Sparkles, User } from "lucide-reac
 import Link from "next/link";
 import { useState } from "react";
 import { MobileDrawer } from "./mobile-drawer";
-import { NAV_ITEMS, type NavItem, RESOURCES } from "./nav-items";
+import { NAV_ITEMS, type NavItem, MORE_ITEMS } from "./nav-items";
 import { useScrolled } from "./use-navbar";
 
 function NavLink({ item }: { item: NavItem }) {
@@ -23,7 +23,7 @@ function NavLink({ item }: { item: NavItem }) {
     <Link
       href={item.href}
       className={cn(
-        "px-5 py-2 text-base font-medium rounded-full",
+        "relative px-5 py-2 text-base font-medium rounded-full",
         "text-muted-foreground transition-all duration-300",
         "hover:text-foreground hover:bg-primary/10",
       )}
@@ -33,6 +33,11 @@ function NavLink({ item }: { item: NavItem }) {
       })}
     >
       {item.label}
+      {item.label === "CLI" && (
+        <span className="absolute -top-1 -right-2 px-1.5 py-1 text-[8px] font-bold uppercase leading-none rounded-full bg-primary text-primary-foreground tracking-wide">
+          New
+        </span>
+      )}
     </Link>
   );
 }
@@ -137,7 +142,7 @@ export function Navbar() {
                         "focus:outline-none",
                       )}
                     >
-                      Resources
+                      More
                       <ChevronDown className="w-3.5 h-3.5 opacity-40 transition-opacity group-hover:opacity-100" />
                     </button>
                   </DropdownMenuTrigger>
@@ -146,7 +151,7 @@ export function Navbar() {
                     sideOffset={8}
                     className="w-52 p-1.5 rounded-xl"
                   >
-                    {RESOURCES.map((item) => (
+                    {MORE_ITEMS.map((item) => (
                       <DropdownMenuItem key={item.label} asChild>
                         <Link
                           href={item.href}
