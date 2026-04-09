@@ -110,7 +110,7 @@ export default function SearchEngineDocsPage() {
             Every result comes back with a confidence level and a short
             reason for why the match happened. &ldquo;Exact identifier
             match&rdquo; is not the same as &ldquo;edit distance two from
-            your input&rdquo;, and search refuses to pretend they are.
+            your input&rdquo;.
           </p>
           <p>
             The reason this matters is that downstream code needs to make
@@ -127,11 +127,6 @@ export default function SearchEngineDocsPage() {
       <section>
         <Prose>
           <h2 id="modes">Three ways it is used</h2>
-          <p>
-            Same engine, same matching rules, three different consumers.
-            Each one has its own latency target and result shape, so the
-            serving layer exposes three modes.
-          </p>
         </Prose>
         <div className="mt-4 space-y-3">
           {[

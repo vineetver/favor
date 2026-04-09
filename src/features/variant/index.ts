@@ -10,9 +10,8 @@ export { VariantHeader } from "./components/header/variant-header";
 export { CredibleSetsTable } from "./components/graph/credible-sets-table";
 export { L2GTable } from "./components/graph/l2g-table";
 export { PharmacogenomicsTable } from "./components/graph/pharmacogenomics-table";
-export { VariantSummary } from "./components/variant-summary";
-export { VariantSummaryCard } from "./components/variant-summary-card";
-export { VariantSummarySkeleton } from "./components/variant-summary-skeleton";
+// LLM summary
+export { VariantLLMSummary } from "./components/variant-llm-summary";
 // Config
 export * from "./config/hg38";
 // Hooks

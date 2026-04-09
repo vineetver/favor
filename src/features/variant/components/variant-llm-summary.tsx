@@ -1,6 +1,7 @@
 "use client";
 
-import { useVariantChat } from "@features/variant/hooks/use-variant-chat";
+import { useCallback, useMemo } from "react";
+import { useAskFollowUp } from "@features/agent/hooks/use-ask-follow-up";
 import { useVariantSummary } from "@features/variant/hooks/use-variant-summary";
 import type { Variant } from "@features/variant/types/variant";
 import {
@@ -8,7 +9,6 @@ import {
   type VariantPromptContext,
 } from "@features/variant/utils/build-variant-prompt";
 import { LLMSummaryCard } from "@shared/components/llm-summary-card";
-import { useMemo } from "react";
 
 interface VariantLLMSummaryProps {
   variant: Variant;
@@ -23,7 +23,7 @@ export function VariantLLMSummary({
   context,
   modelId = "gpt-4o-mini",
 }: VariantLLMSummaryProps) {
-  const { openChat } = useVariantChat();
+  const askFollowUp = useAskFollowUp();
 
   const prompt = useMemo(
     () => buildVariantPrompt(variant, context),
@@ -36,11 +36,21 @@ export function VariantLLMSummary({
     modelId,
   });
 
+  const onAskFollowUp = useCallback(() => {
+    if (state.status !== "completed") return;
+    askFollowUp({
+      kind: "variant",
+      id: variant.variant_vcf,
+      displayName: variant.variant_vcf,
+      summary: state.summary,
+    });
+  }, [askFollowUp, state, variant.variant_vcf]);
+
   return (
     <LLMSummaryCard
       state={state}
       retry={retry}
-      onAskFollowUp={openChat}
+      onAskFollowUp={onAskFollowUp}
       titleStripPattern={TITLE_STRIP}
     />
   );

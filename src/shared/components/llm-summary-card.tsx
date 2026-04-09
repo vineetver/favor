@@ -88,7 +88,7 @@ export function LLMSummaryCard({
                 <div className="w-px h-4 bg-border" />
               </>
             )}
-            {onAskFollowUp && (
+            {onAskFollowUp && state.status === "completed" && (
               <button
                 onClick={onAskFollowUp}
                 className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"

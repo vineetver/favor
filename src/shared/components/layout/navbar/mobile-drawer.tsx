@@ -3,7 +3,7 @@
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import { Logo } from "@shared/components/ui/logo";
-import { ArrowRight, ArrowUpRight, X } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { siteConfig } from "@/config/site";
@@ -18,11 +18,9 @@ interface MobileDrawerProps {
 function MobileNavLink({
   item,
   onClose,
-  showArrow,
 }: {
   item: NavItem;
   onClose: () => void;
-  showArrow?: boolean;
 }) {
   return (
     <Link
@@ -41,7 +39,6 @@ function MobileNavLink({
       })}
     >
       {item.label}
-      {showArrow && <ArrowRight className="w-5 h-5 text-primary" />}
     </Link>
   );
 }
@@ -141,7 +138,6 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                   key={item.label}
                   item={item}
                   onClose={onClose}
-                  showArrow={item.label === "Annotator"}
                 />
               ))}
 

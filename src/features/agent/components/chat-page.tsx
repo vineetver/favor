@@ -1,7 +1,8 @@
 "use client";
 
 import { isToolUIPart, getToolName, type UIMessage } from "ai";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   Conversation,
@@ -26,6 +27,7 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
+  type PromptInputMessage,
 } from "@shared/components/ai-elements/prompt-input";
 import { Shimmer } from "@shared/components/ai-elements/shimmer";
 import { Spinner } from "@shared/components/ui/spinner";
@@ -42,6 +44,7 @@ import {
 import {
   CopyIcon,
   DnaIcon,
+  MessageSquareIcon,
   PanelLeftIcon,
   PlusIcon,
   ThumbsUpIcon,
@@ -68,6 +71,11 @@ import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "
 import { isArtifactRef } from "../lib/compact-message";
 import { generateVizSpecs } from "../viz";
 import { useAgentChat } from "../hooks/use-agent-chat";
+import {
+  buildFollowUpMessage,
+  consumeFollowUp,
+  type SummarySeed,
+} from "../lib/follow-up";
 
 // ---------------------------------------------------------------------------
 // Follow-up suggestions
@@ -395,6 +403,64 @@ export function ChatPage() {
     [send],
   );
 
+  // ─────────────────────────────────────────────────────────────────────
+  // URL-driven entry points: ?session=<id> hydrates a saved session,
+  // ?seed=<uuid> consumes a one-time follow-up payload from sessionStorage
+  // and parks it as a "pending context" so the user can type their actual
+  // question before anything is dispatched. Both URL params strip themselves
+  // once handled so refreshes don't replay them.
+  // ─────────────────────────────────────────────────────────────────────
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const handledSeedRef = useRef<string | null>(null);
+  const handledSessionRef = useRef<string | null>(null);
+  const [pendingSeed, setPendingSeed] = useState<SummarySeed | null>(null);
+
+  useEffect(() => {
+    const sessionParam = searchParams.get("session");
+    if (
+      sessionParam &&
+      sessionParam !== sessionId &&
+      handledSessionRef.current !== sessionParam
+    ) {
+      handledSessionRef.current = sessionParam;
+      loadSession(sessionParam);
+      return;
+    }
+
+    const seedParam = searchParams.get("seed");
+    if (!seedParam || handledSeedRef.current === seedParam) return;
+    handledSeedRef.current = seedParam;
+
+    const seed = consumeFollowUp(seedParam);
+    // Always strip the param so a refresh doesn't try to re-consume.
+    router.replace(pathname);
+
+    if (!seed) return;
+    setPendingSeed(seed);
+  }, [searchParams, sessionId, loadSession, router, pathname]);
+
+  // Wrap submit so the pending seed (if any) is prepended to whatever the
+  // user typed. The seed is dropped after the first dispatch so subsequent
+  // messages are plain.
+  const handleSubmit = useCallback(
+    (message: PromptInputMessage) => {
+      if (!pendingSeed) {
+        submit(message);
+        return;
+      }
+      submit({
+        ...message,
+        text: buildFollowUpMessage(pendingSeed, message.text),
+      });
+      setPendingSeed(null);
+    },
+    [submit, pendingSeed],
+  );
+
+  const dismissPendingSeed = useCallback(() => setPendingSeed(null), []);
+
   return (
     <div className="flex h-full w-full">
       {/* Mobile sidebar (Sheet) */}
@@ -600,13 +666,39 @@ export function ChatPage() {
               </div>
             )}
 
+            {/* Pending follow-up context — set when the user arrived via
+                /agent?seed=<uuid> from an LLM summary page. The summary is
+                attached to the next message they send. */}
+            {pendingSeed && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-xs text-foreground animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <MessageSquareIcon className="size-3.5 shrink-0 text-primary" />
+                <span className="flex-1 truncate">
+                  Following up on {pendingSeed.kind}{" "}
+                  <span className="font-medium">{pendingSeed.displayName}</span>
+                  <span className="text-muted-foreground"> — summary attached</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={dismissPendingSeed}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                  aria-label="Discard follow-up context"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              </div>
+            )}
+
             <PromptInput
-              onSubmit={submit}
+              onSubmit={handleSubmit}
               className="[&_[data-slot=input-group]]:rounded-2xl [&_[data-slot=input-group]]:shadow-[0_2px_12px_rgba(0,0,0,0.08)] [&_[data-slot=input-group]]:border-border [&_[data-slot=input-group]]:bg-card"
             >
               <PromptInputBody>
                 <PromptInputTextarea
-                  placeholder="Ask about genes, variants, diseases, drugs..."
+                  placeholder={
+                    pendingSeed
+                      ? "What would you like to know about this summary?"
+                      : "Ask about genes, variants, diseases, drugs..."
+                  }
                   disabled={isSubmitted}
                   onPaste={onPaste}
                   className="min-h-12"
