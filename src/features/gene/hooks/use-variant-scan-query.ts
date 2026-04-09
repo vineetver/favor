@@ -5,63 +5,24 @@ import { useClientSearchParams } from "@shared/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import {
+  ARRAY_FIELDS,
+  NUMERIC_FIELDS,
+  SORTABLE_COLUMNS,
   fetchVariantScan,
+  nextSearchParamsToUrlSearchParams,
+  parseVariantScanFiltersFromUrl,
   type VariantScanFilterOptions,
 } from "../api/variant-scan";
 
-// ============================================================================
-// URL -> Filter Parsing
-// ============================================================================
-
-function parseFiltersFromUrl(
-  searchParams: URLSearchParams,
-): VariantScanFilterOptions {
-  const filters: VariantScanFilterOptions = {};
-
-  // Page size
-  const pageSize = searchParams.get("page_size");
-  filters.limit = pageSize ? Number(pageSize) : 20;
-
-  // Cursor
-  const cursor = searchParams.get("cursor");
-  if (cursor) filters.cursor = cursor;
-
-  // Region type
-  const regionType = searchParams.get("region_type");
-  if (regionType) filters.gencode_region_type = [regionType];
-
-  // Consequence
-  const consequence = searchParams.get("consequence");
-  if (consequence) filters.gencode_consequence = [consequence];
-
-  // ClinVar
-  const clinvar = searchParams.get("clinvar");
-  if (clinvar) filters.clinvar_clnsig = [clinvar];
-
-  // SIFT
-  const sift = searchParams.get("sift");
-  if (sift) filters.sift_cat = [sift];
-
-  // PolyPhen
-  const polyphen = searchParams.get("polyphen");
-  if (polyphen) filters.polyphen_cat = [polyphen];
-
-  // AlphaMissense
-  const alphamissense = searchParams.get("alphamissense");
-  if (alphamissense) filters.alphamissense_class = [alphamissense];
-
-  // gnomAD AF range
-  const afMin = searchParams.get("af_min");
-  if (afMin) filters.gnomad_genome_af_min = Number(afMin);
-  const afMax = searchParams.get("af_max");
-  if (afMax) filters.gnomad_genome_af_max = Number(afMax);
-
-  // CADD Phred min
-  const caddMin = searchParams.get("cadd_min");
-  if (caddMin) filters.cadd_phred_min = Number(caddMin);
-
-  return filters;
-}
+// Re-export URL helpers (defined in the server-safe API client) so existing
+// callers can keep importing them from this module.
+export {
+  ARRAY_FIELDS,
+  NUMERIC_FIELDS,
+  SORTABLE_COLUMNS,
+  nextSearchParamsToUrlSearchParams,
+  parseVariantScanFiltersFromUrl,
+};
 
 // ============================================================================
 // Query Key
@@ -117,7 +78,10 @@ export function useVariantScanQuery({
   const target = region ?? gene;
 
   const filters = useMemo(
-    () => ({ ...parseFiltersFromUrl(searchParams), scope: scope as "gene" | "region" }),
+    () => ({
+      ...parseVariantScanFiltersFromUrl(searchParams),
+      scope: scope as "gene" | "region",
+    }),
     [searchParams, scope],
   );
 

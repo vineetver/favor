@@ -1,88 +1,73 @@
 // src/features/genome-browser/types/tracks.ts
-// Track definition types for the genome browser
+// Track definition types for the genome browser.
+//
+// Why our own GoslingTrackSpec instead of importing Track from gosling.js?
+// gosling.js's public entrypoint only re-exports `GoslingSpec` and
+// `TemplateTrackDef` — the inner Track / OverlaidTracks types are not
+// surfaced. We use a permissive structural type for tracks and a single
+// well-typed cast at the spec-builder boundary (see browser-canvas.tsx).
 
 import type { LucideIcon } from 'lucide-react'
-import type { TissueSource } from './tissue'
 import type { GenomicRegion } from './state'
+import type { TissueSource } from './tissue'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRACK CATEGORIES
+// CATEGORIES
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackCategory =
-  | 'annotation'      // Gene, transcript
-  | 'clinical'        // ClinVar, AlphaMissense
-  | 'functional'      // CADD, GERP, conservation
-  | 'epigenetics'     // Histone marks, accessibility
-  | 'regulatory'      // eQTLs, CRISPR, chromatin loops
-  | 'gwas'            // Association signals
-  | 'tissue-specific' // Dynamic tissue tracks
+  | 'annotation'
+  | 'integrative'
+  | 'clinical'
+  | 'conservation'
+  | 'epigenetics'
+  | 'mappability'
+  | 'nucleotide-diversity'
+  | 'regulatory'
+  | 'links'
+  | 'other'
+  | 'tissue-specific'
 
 export const TRACK_CATEGORY_LABELS: Record<TrackCategory, string> = {
-  annotation: 'Annotation',
-  clinical: 'Clinical',
-  functional: 'Functional',
+  annotation: 'Gene Annotation',
+  integrative: 'Integrative',
+  clinical: 'Clinical Significance',
+  conservation: 'Conservation',
   epigenetics: 'Epigenetics',
-  regulatory: 'Regulatory',
-  gwas: 'GWAS',
+  mappability: 'Mappability',
+  'nucleotide-diversity': 'Local Nucleotide Diversity',
+  regulatory: 'Regulatory Elements',
+  links: 'Single Cell / Tissue Links',
+  other: 'Other',
   'tissue-specific': 'Tissue-Specific',
 }
 
 export const TRACK_CATEGORY_ORDER: TrackCategory[] = [
   'annotation',
+  'integrative',
   'clinical',
-  'functional',
+  'conservation',
   'epigenetics',
   'regulatory',
-  'gwas',
+  'links',
+  'mappability',
+  'nucleotide-diversity',
+  'other',
   'tissue-specific',
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GOSLING SPEC TYPES (permissive - Gosling has flexible schema)
+// GOSLING SPEC SHIM
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Gosling track specification - using permissive type since Gosling.js has
-// a very flexible schema with many optional properties and nested tracks
-export type GoslingTrackSpec = Record<string, unknown> & {
-  data?: Record<string, unknown>
-  mark?: string
-  tracks?: GoslingTrackSpec[]
-  width?: number
-  height?: number
-  title?: string
-}
-
-// Full Gosling view spec
-export type GoslingViewSpec = {
-  tracks: GoslingTrackSpec[]
-  layout?: 'linear' | 'circular'
-  xDomain?: { chromosome: string; interval?: [number, number] }
-  linkingId?: string
-  alignment?: 'stack' | 'overlay'
-  width?: number
-  height?: number
-  centerRadius?: number
-  [key: string]: unknown
-}
-
-// Complete Gosling spec
-export type GoslingSpec = {
-  title?: string
-  subtitle?: string
-  description?: string
-  views?: GoslingViewSpec[]
-  tracks?: GoslingTrackSpec[]
-  layout?: 'linear' | 'circular'
-  xDomain?: { chromosome: string; interval?: [number, number] }
-  linkingId?: string
-  assembly?: 'hg38' | 'hg19' | 'hg18' | 'mm10' | 'mm9'
-  style?: {
-    background?: string
-    outlineWidth?: number
-    [key: string]: unknown
-  }
-  [key: string]: unknown
+/**
+ * Permissive structural type for a single Gosling track spec.
+ * Gosling's schema is heavily union-based and not exported from the package
+ * root, so we keep an indexable shape and let the spec builder cast at the
+ * boundary into the real `GoslingSpec` type.
+ */
+export type GoslingTrackSpec = {
+  readonly [key: string]: unknown
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,20 +81,27 @@ export type BaseTrackDefinition = {
   category: TrackCategory
   defaultHeight: number
   icon: LucideIcon
-  curated?: boolean // Whether to show in curated section
+  curated?: boolean
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STATIC TRACK - Spec known at build time
+// STATIC TRACK
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A static track is one whose spec(s) are known at build time.
+ *
+ * `specs` is always an array because some production tracks (eQTLs Overlay,
+ * CRISPR Overlay, ChIA-PET Overlay) are composites of multiple stacked sub-
+ * tracks. Single-spec tracks just use a one-element array.
+ */
 export type StaticTrack = BaseTrackDefinition & {
   kind: 'static'
-  spec: GoslingTrackSpec
+  specs: readonly GoslingTrackSpec[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DYNAMIC TRACK - Spec generated from parameters
+// DYNAMIC TRACK
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type DynamicTrackParams = {
@@ -125,12 +117,11 @@ export type DynamicTrack = BaseTrackDefinition & {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UNION OF ALL TRACK TYPES
+// UNION + GUARDS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackDefinition = StaticTrack | DynamicTrack
 
-// Type guards
 export function isStaticTrack(track: TrackDefinition): track is StaticTrack {
   return track.kind === 'static'
 }
@@ -140,7 +131,7 @@ export function isDynamicTrack(track: TrackDefinition): track is DynamicTrack {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRACK VISIBILITY STATE
+// VISIBILITY
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackVisibility =
@@ -148,13 +139,14 @@ export type TrackVisibility =
   | { state: 'hidden' }
   | { state: 'loading' }
 
-// Type guards
-export function isVisible(visibility: TrackVisibility): visibility is Extract<TrackVisibility, { state: 'visible' }> {
+export function isVisible(
+  visibility: TrackVisibility
+): visibility is Extract<TrackVisibility, { state: 'visible' }> {
   return visibility.state === 'visible'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACTIVE TRACK - Combines definition + runtime state
+// ACTIVE TRACK
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ActiveTrack = {
@@ -163,7 +155,6 @@ export type ActiveTrack = {
   height: number
 }
 
-// Helper to create an active track from a definition
 export function createActiveTrack(
   definition: TrackDefinition,
   order: number
@@ -176,7 +167,7 @@ export function createActiveTrack(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRACK COLLECTION - Pre-built track sets
+// COLLECTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackCollection = {

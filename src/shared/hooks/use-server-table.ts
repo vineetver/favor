@@ -22,9 +22,11 @@ import {
 export interface ServerFilterConfig {
   id: string;
   label: string;
-  type: "select" | "text";
+  type: "select" | "multiselect" | "text";
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
+  /** Section heading in the filter drawer (drawer groups filters by section) */
+  section?: string;
   /** Custom label formatter for filter chips */
   chipLabel?: (value: string) => string;
 }
@@ -119,6 +121,13 @@ export function useServerTable({
   // Create text filter map for quick lookup
   const textFilterIds = useMemo(
     () => new Set(filters.filter((f) => f.type === "text").map((f) => f.id)),
+    [filters],
+  );
+
+  // Multiselect filter map for array round-trip via URL (comma-separated)
+  const multiselectFilterIds = useMemo(
+    () =>
+      new Set(filters.filter((f) => f.type === "multiselect").map((f) => f.id)),
     [filters],
   );
 
@@ -225,6 +234,13 @@ export function useServerTable({
 
   const handleFilterChange = useCallback(
     (filterId: string, value: unknown) => {
+      // Multiselect: encode array as comma-separated string in URL
+      if (multiselectFilterIds.has(filterId)) {
+        const arr = Array.isArray(value) ? value.map(String).filter(Boolean) : [];
+        updateUrl(filterId, arr.join(","));
+        return;
+      }
+
       const strValue = String(value ?? "");
 
       if (textFilterIds.has(filterId)) {
@@ -241,7 +257,7 @@ export function useServerTable({
         updateUrl(filterId, strValue);
       }
     },
-    [textFilterIds, updateUrl],
+    [textFilterIds, multiselectFilterIds, updateUrl],
   );
 
   const handleRemoveFilterChip = useCallback(
@@ -249,6 +265,29 @@ export function useServerTable({
       // Cancel pending debounced update
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+
+      // Multiselect chips are namespaced as `${filterId}::${value}` — drop just that value.
+      if (chipId.includes("::")) {
+        const [filterId, value] = chipId.split("::");
+        if (!filterId || value === undefined) return;
+        const params = new URLSearchParams(searchParams.toString());
+        const current = (params.get(filterId) ?? "")
+          .split(",")
+          .filter(Boolean);
+        const next = current.filter((v) => v !== value);
+        if (next.length) {
+          params.set(filterId, next.join(","));
+        } else {
+          params.delete(filterId);
+        }
+        if (serverPagination) {
+          params.delete("cursor");
+          cursorHistory.current = [];
+        }
+        const newUrl = params.toString() ? `${pathname}?${params}` : pathname;
+        updateClientUrl(newUrl, false);
+        return;
       }
 
       // Clear local state for text filters
@@ -259,7 +298,7 @@ export function useServerTable({
       // Update URL immediately
       updateUrl(chipId, "");
     },
-    [textFilterIds, updateUrl],
+    [textFilterIds, updateUrl, searchParams, pathname, serverPagination],
   );
 
   const handleClearFilters = useCallback(() => {
@@ -285,7 +324,7 @@ export function useServerTable({
   // Computed Values (derived state, not stored)
   // ============================================================================
 
-  // Combined filter values: local for text (instant), URL for select (current state)
+  // Combined filter values: local for text (instant), URL for select/multiselect
   const filterValues = useMemo(() => {
     const values: Record<string, unknown> = {};
 
@@ -293,6 +332,10 @@ export function useServerTable({
       if (filter.type === "text") {
         // Text filters: use local state for instant feedback
         values[filter.id] = localTextFilters[filter.id] ?? "";
+      } else if (filter.type === "multiselect") {
+        // Multiselect: parse comma-separated URL value into array
+        const raw = searchParams.get(filter.id);
+        values[filter.id] = raw ? raw.split(",").filter(Boolean) : [];
       } else {
         // Select filters: read from current URL (source of truth)
         values[filter.id] = searchParams.get(filter.id) ?? "";
@@ -302,11 +345,26 @@ export function useServerTable({
     return values;
   }, [filters, localTextFilters, searchParams]);
 
-  // Generate filter chips from current values
+  // Generate filter chips from current values.
+  // Multiselect emits one chip per selected value so users can drop values individually.
+  // Chip ids are namespaced as `${filterId}::${value}` so onRemoveFilterChip can route them.
   const filterChips = useMemo((): FilterChip[] => {
     const chips: FilterChip[] = [];
 
     for (const filter of filters) {
+      if (filter.type === "multiselect") {
+        const arr = (filterValues[filter.id] as string[]) ?? [];
+        for (const v of arr) {
+          const opt = filter.options?.find((o) => o.value === v);
+          chips.push({
+            id: `${filter.id}::${v}`,
+            label: filter.label,
+            value: filter.chipLabel?.(v) ?? opt?.label ?? v,
+          });
+        }
+        continue;
+      }
+
       const value = filterValues[filter.id] as string;
       if (!value) continue;
 

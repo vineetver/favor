@@ -10,6 +10,7 @@ import { Skeleton } from '@shared/components/ui/skeleton'
 import { cn } from '@infra/utils'
 import { useBrowser } from '../../state/browser-context'
 import { getTracksGroupedByCategory, getAllTracks } from '../../tracks/registry'
+import type { StaticTrack, TrackCategory } from '../../types/tracks'
 import { SearchTracks } from './search-tracks'
 import { CategoryList } from './category-list'
 import { TissueSelector } from './tissue-selector'
@@ -33,7 +34,7 @@ export function TrackSelector({ className }: TrackSelectorProps) {
     if (!search.trim()) return allTracksGrouped
 
     const searchLower = search.toLowerCase()
-    const filtered = new Map<typeof allTracksGrouped extends Map<infer K, infer V> ? K : never, typeof allTracks>()
+    const filtered = new Map<TrackCategory, StaticTrack[]>()
 
     for (const [category, tracks] of allTracksGrouped) {
       const matchingTracks = tracks.filter(
@@ -57,9 +58,9 @@ export function TrackSelector({ className }: TrackSelectorProps) {
   const totalCount = allTracks.length
 
   return (
-    <div className={cn("sticky top-0 flex flex-col bg-muted/30 h-[calc(100vh-200px)] max-h-[800px]", className)}>
+    <div className={cn("flex flex-col bg-muted/30", className)}>
       {/* Header with track count */}
-      <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <span className="font-semibold text-foreground">Tracks</span>
         <Badge variant="secondary" className="text-xs">
           {visibleCount}/{totalCount}
@@ -67,12 +68,12 @@ export function TrackSelector({ className }: TrackSelectorProps) {
       </div>
 
       {/* Search */}
-      <div className="p-4 pb-2 shrink-0">
+      <div className="p-4 pb-2">
         <SearchTracks value={search} onChange={setSearch} />
       </div>
 
       {/* Tab toggle: Individual / Collections */}
-      <div className="px-4 pb-2 shrink-0">
+      <div className="px-4 pb-2">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'individual' | 'collections')}>
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="individual">Individual</TabsTrigger>
@@ -81,26 +82,26 @@ export function TrackSelector({ className }: TrackSelectorProps) {
         </Tabs>
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 min-h-0 overflow-auto">
-        <div className="p-2">
-          {activeTab === 'individual' ? (
-            <>
-              {/* Category list */}
-              <CategoryList tracks={filteredTracksGrouped} />
+      {/* Content — grows naturally with the page, no inner scroll cap */}
+      <div className="p-2">
+        {activeTab === 'individual' ? (
+          <>
+            {/* Category list */}
+            <CategoryList tracks={filteredTracksGrouped} />
 
-              {/* Divider before tissue section */}
-              <div className="flex items-center gap-2 px-3 py-4">
-                <div className="flex-1 h-px bg-border" />
-              </div>
+            {/* Divider before tissue section */}
+            <div className="flex items-center gap-2 px-3 py-4">
+              <div className="flex-1 h-px bg-border" />
+            </div>
 
-              {/* Tissue-specific tracks */}
+            {/* Tissue-specific tracks — opens the side-panel picker */}
+            <div className="px-1">
               <TissueSelector />
-            </>
-          ) : (
-            <CollectionsList />
-          )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <CollectionsList />
+        )}
       </div>
     </div>
   )

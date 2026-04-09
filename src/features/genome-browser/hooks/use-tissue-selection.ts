@@ -1,85 +1,92 @@
-"use client";
+'use client'
 
 // src/features/genome-browser/hooks/use-tissue-selection.ts
-// Hook for managing tissue/subtissue/assay selection state
+//
+// Stateless helpers for toggling tissue-specific dynamic tracks.
+//
+// The picker UI manages its own filter state (tissue / assay / search). This
+// hook exposes only the small mutation-and-query surface that talks to the
+// browser context, so the picker stays a pure presentation component.
 
-import { useState, useMemo, useCallback } from 'react'
-import {
-  getTissueById,
-  getSubtissueById,
-  type ValidAssayType,
-  type TissueId,
-  type SubtissueId,
-  type AssayType,
-} from '../types/tissue'
-import { createTissueTrack } from '../tracks/dynamic/tissue-track'
+import { useCallback, useMemo } from 'react'
+import { createTissueSource } from '../types/tissue'
+import { createTissueTrack, tissueTrackId } from '../tracks/dynamic/tissue-track'
 import { useBrowser } from '../state/browser-context'
+import { isDynamicTrack, type ActiveTrack } from '../types/tracks'
 
-export function useTissueSelection() {
-  const { actions, selectors } = useBrowser()
-  const [tissue, setTissue] = useState<string | null>(null)
-  const [subtissue, setSubtissue] = useState<string | null>(null)
+export type ActiveTissueTrack = {
+  id: string
+  tissue: string
+  subtissue: string
+  assay: string
+}
 
-  // Get subtissues for selected tissue
-  const subtissues = useMemo(() => {
-    if (!tissue) return []
-    const tissueData = getTissueById(tissue)
-    return tissueData?.subtissues ?? []
-  }, [tissue])
+export function useTissueTracks() {
+  const { state, actions, selectors } = useBrowser()
 
-  // Get available assays for selected subtissue
-  const availableAssays = useMemo(() => {
-    if (!tissue || !subtissue) return []
-    const subtissueData = getSubtissueById(tissue, subtissue)
-    return subtissueData?.availableAssays ?? []
-  }, [tissue, subtissue])
+  /**
+   * Active dynamic (tissue) tracks, exposed in selection-friendly form so
+   * the picker can render the "selected pills" row without poking at the
+   * full TrackDefinition union.
+   */
+  const activeTissueTracks = useMemo<ActiveTissueTrack[]>(() => {
+    if (state.status !== 'ready') return []
+    return state.tracks
+      .filter(
+        (t): t is ActiveTrack & { definition: ReturnType<typeof createTissueTrack> } =>
+          isDynamicTrack(t.definition)
+      )
+      .filter(t => t.visibility.state === 'visible')
+      .map(t => ({
+        id: t.definition.id,
+        tissue: t.definition.source.tissue as string,
+        subtissue: t.definition.source.subtissue as string,
+        assay: t.definition.source.assay as string,
+      }))
+  }, [state])
 
-  // Handle tissue change - reset subtissue
-  const handleTissueChange = useCallback((value: string) => {
-    setTissue(value)
-    setSubtissue(null)
-  }, [])
+  const isAssayActive = useCallback(
+    (tissue: string, subtissue: string, assay: string): boolean => {
+      const source = createTissueSource(tissue, subtissue, assay)
+      if (!source) return false
+      return selectors.isTrackVisible(tissueTrackId(source))
+    },
+    [selectors]
+  )
 
-  // Handle subtissue change
-  const handleSubtissueChange = useCallback((value: string) => {
-    setSubtissue(value)
-  }, [])
-
-  // Check if assay is active
-  const isAssayActive = useCallback((assay: ValidAssayType): boolean => {
-    if (!tissue || !subtissue) return false
-    const trackId = `${tissue}-${subtissue}-${assay}`
-    return selectors.isTrackVisible(trackId)
-  }, [tissue, subtissue, selectors])
-
-  // Toggle assay track
-  const toggleAssay = useCallback((assay: ValidAssayType) => {
-    if (!tissue || !subtissue) return
-
-    const trackId = `${tissue}-${subtissue}-${assay}`
-    const isActive = selectors.isTrackVisible(trackId)
-
-    if (isActive) {
-      actions.removeTrack(trackId)
-    } else {
-      const source = {
-        tissue: tissue as TissueId,
-        subtissue: subtissue as SubtissueId,
-        assay: assay as AssayType,
+  const toggleAssay = useCallback(
+    (tissue: string, subtissue: string, assay: string) => {
+      const source = createTissueSource(tissue, subtissue, assay)
+      if (!source) return
+      const id = tissueTrackId(source)
+      if (selectors.isTrackVisible(id)) {
+        actions.removeTrack(id)
+        return
       }
-      const trackDef = createTissueTrack(source)
-      actions.addTissueTrack(trackDef, source)
+      const track = createTissueTrack(source)
+      actions.addTissueTrack(track, source)
+    },
+    [actions, selectors]
+  )
+
+  const removeById = useCallback(
+    (id: string) => {
+      actions.removeTrack(id)
+    },
+    [actions]
+  )
+
+  const clearAll = useCallback(() => {
+    for (const t of activeTissueTracks) {
+      actions.removeTrack(t.id)
     }
-  }, [tissue, subtissue, actions, selectors])
+  }, [activeTissueTracks, actions])
 
   return {
-    tissue,
-    subtissue,
-    subtissues,
-    availableAssays,
-    handleTissueChange,
-    handleSubtissueChange,
+    activeTissueTracks,
     isAssayActive,
     toggleAssay,
+    removeById,
+    clearAll,
   }
 }

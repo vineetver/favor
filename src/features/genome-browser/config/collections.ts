@@ -1,76 +1,88 @@
 // src/features/genome-browser/config/collections.ts
-// Pre-built track collections for common workflows
+// Pre-built track collections for common analysis workflows.
+// All track IDs must exist in the registry.
 
 import type { TrackCollection } from '../types/tracks'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TRACK COLLECTIONS
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const TRACK_COLLECTIONS: Record<string, TrackCollection> = {
+  'minimal': {
+    id: 'minimal',
+    name: 'Minimal',
+    description: 'Just gene annotations.',
+    trackIds: ['gene-annotation'],
+  },
   'clinical-essential': {
     id: 'clinical-essential',
     name: 'Clinical Essential',
-    description: 'Core tracks for variant interpretation',
-    trackIds: ['gene-annotation', 'clinvar', 'cadd', 'alphamissense'],
+    description:
+      'Core tracks for variant interpretation: genes, ClinVar, CADD, AlphaMissense.',
+    trackIds: [
+      'gene-annotation',
+      'clinvar',
+      'cadd-a',
+      'cadd-c',
+      'cadd-g',
+      'cadd-t',
+      'alphamissense-a',
+      'alphamissense-c',
+      'alphamissense-g',
+      'alphamissense-t',
+    ],
   },
   'regulatory-analysis': {
     id: 'regulatory-analysis',
     name: 'Regulatory Analysis',
-    description: 'Epigenomic and regulatory elements',
-    trackIds: ['gene-annotation', 'ccre'],
+    description:
+      'Genes, cCREs, aggregated epigenetic signal, and ChIA-PET / Hi-C loops.',
+    trackIds: [
+      'gene-annotation',
+      'ccre',
+      'h3k27ac',
+      'h3k4me3',
+      'atac',
+      'dnase',
+      'ctcf',
+      'chromatin-arc',
+    ],
   },
   'variant-impact': {
     id: 'variant-impact',
     name: 'Variant Impact',
-    description: 'Pathogenicity predictions and conservation',
-    trackIds: ['gene-annotation', 'cadd', 'gerp', 'phylop', 'clinvar'],
+    description: 'Pathogenicity predictions and conservation context.',
+    trackIds: [
+      'gene-annotation',
+      'clinvar',
+      'cadd-a',
+      'cadd-c',
+      'cadd-g',
+      'cadd-t',
+      'gerpn',
+      'gerpr',
+      'gnocchi',
+    ],
   },
-  'minimal': {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Just gene annotations',
-    trackIds: ['gene-annotation'],
+  'perturbation': {
+    id: 'perturbation',
+    name: 'Perturbation Evidence',
+    description: 'CRISPR functional screens and eQTLs linked to genes.',
+    trackIds: ['gene-annotation', 'ccre', 'crispr-arc', 'eqtl-arc'],
   },
 }
 
 export type CollectionId = keyof typeof TRACK_COLLECTIONS
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COLLECTION ACCESSORS
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Get all collection IDs
- */
-export function getCollectionIds(): CollectionId[] {
-  return Object.keys(TRACK_COLLECTIONS) as CollectionId[]
-}
-
-/**
- * Get a collection by ID
- */
 export function getCollectionById(id: string): TrackCollection | undefined {
   return TRACK_COLLECTIONS[id as CollectionId]
 }
 
-/**
- * Get all collections as an array
- */
 export function getAllCollections(): TrackCollection[] {
   return Object.values(TRACK_COLLECTIONS)
 }
 
-/**
- * Get collections that don't require tissue selection
- */
 export function getStandardCollections(): TrackCollection[] {
   return Object.values(TRACK_COLLECTIONS).filter(c => !c.requiresTissue)
 }
 
-/**
- * Get collections that require tissue selection
- */
 export function getTissueCollections(): TrackCollection[] {
   return Object.values(TRACK_COLLECTIONS).filter(c => c.requiresTissue === true)
 }

@@ -1,5 +1,13 @@
 // src/features/genome-browser/types/tissue.ts
-// Tissue-related types for dynamic track creation
+// Tissue source types — drives off the production TissueConfig
+// (see src/features/genome-browser/config/tissue-config.ts).
+
+import {
+  TissueConfig,
+  type AssayInfo,
+  type SubtissueInfo,
+  getSubtissueByName,
+} from '../config/tissue-config'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BRANDED TYPES
@@ -10,312 +18,147 @@ type Brand<T, B> = T & { [__brand]: B }
 
 export type TissueId = Brand<string, 'TissueId'>
 export type SubtissueId = Brand<string, 'SubtissueId'>
-export type AssayType = Brand<string, 'AssayType'>
+export type AssayName = Brand<string, 'AssayName'>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ASSAY TYPES
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const ASSAY_TYPES = [
-  'h3k27ac',
-  'h3k4me3',
-  'h3k4me1',
-  'h3k27me3',
-  'h3k9me3',
-  'h3k36me3',
-  'atac-seq',
-  'dnase-seq',
-  'ctcf',
-  'pol2',
-] as const
-
-export type ValidAssayType = typeof ASSAY_TYPES[number]
-
-export function isValidAssayType(value: string): value is ValidAssayType {
-  return ASSAY_TYPES.includes(value as ValidAssayType)
-}
-
-export const ASSAY_LABELS: Record<ValidAssayType, string> = {
-  'h3k27ac': 'H3K27ac',
-  'h3k4me3': 'H3K4me3',
-  'h3k4me1': 'H3K4me1',
-  'h3k27me3': 'H3K27me3',
-  'h3k9me3': 'H3K9me3',
-  'h3k36me3': 'H3K36me3',
-  'atac-seq': 'ATAC-seq',
-  'dnase-seq': 'DNase-seq',
-  'ctcf': 'CTCF',
-  'pol2': 'Pol II',
-}
-
-export const ASSAY_DESCRIPTIONS: Record<ValidAssayType, string> = {
-  'h3k27ac': 'Active enhancers and promoters',
-  'h3k4me3': 'Active promoters',
-  'h3k4me1': 'Enhancers (poised and active)',
-  'h3k27me3': 'Polycomb repression',
-  'h3k9me3': 'Heterochromatin',
-  'h3k36me3': 'Transcribed gene bodies',
-  'atac-seq': 'Open chromatin accessibility',
-  'dnase-seq': 'DNase hypersensitive sites',
-  'ctcf': 'CTCF binding / insulators',
-  'pol2': 'RNA Polymerase II binding',
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TISSUE SOURCE - For dynamic track creation
+// TISSUE SOURCE — fully qualifies a dynamic tissue track
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TissueSource = {
-  tissue: TissueId
-  subtissue: SubtissueId
-  assay: AssayType
+  readonly tissue: TissueId
+  readonly subtissue: SubtissueId
+  readonly assay: AssayName
+  readonly bigwigUrl: string
 }
 
-// Helper to create a tissue source
+/**
+ * Construct a tissue source by looking the assay up in TissueConfig.
+ * Returns null if the tissue/subtissue/assay combo is missing or has no
+ * bigwig URL — the dynamic track factory only emits tracks for renderable
+ * (bigwig-backed) signals.
+ */
 export function createTissueSource(
   tissue: string,
   subtissue: string,
   assay: string
 ): TissueSource | null {
-  if (!isValidAssayType(assay)) return null
+  const assayInfo = findAssay(tissue, subtissue, assay)
+  if (!assayInfo?.bigwig) return null
   return {
     tissue: tissue as TissueId,
     subtissue: subtissue as SubtissueId,
-    assay: assay as AssayType,
+    assay: assay as AssayName,
+    bigwigUrl: assayInfo.bigwig,
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TISSUE GROUPS (Aligned with existing GTEx tissue groups)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export type TissueGroup = {
-  id: string
-  name: string
-  tissues: TissueMetadata[]
+function findAssay(
+  tissue: string,
+  subtissue: string,
+  assay: string
+): AssayInfo | undefined {
+  const sub = getSubtissueByName(tissue, subtissue)
+  return sub?.assays.find(a => a.name === assay)
 }
-
-export type TissueMetadata = {
-  id: string
-  label: string
-  subtissues: SubtissueMetadata[]
-}
-
-export type SubtissueMetadata = {
-  id: string
-  label: string
-  availableAssays: ValidAssayType[]
-}
-
-// Tissue groups configuration (subset based on ENCODE/Roadmap data availability)
-export const TISSUE_GROUPS: TissueGroup[] = [
-  {
-    id: 'nervous-system',
-    name: 'Nervous System',
-    tissues: [
-      {
-        id: 'brain',
-        label: 'Brain',
-        subtissues: [
-          { id: 'neuron', label: 'Neuron', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'astrocyte', label: 'Astrocyte', availableAssays: ['h3k27ac', 'h3k4me3'] },
-          { id: 'microglia', label: 'Microglia', availableAssays: ['h3k27ac', 'atac-seq'] },
-          { id: 'oligodendrocyte', label: 'Oligodendrocyte', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'cardiovascular',
-    name: 'Cardiovascular',
-    tissues: [
-      {
-        id: 'heart',
-        label: 'Heart',
-        subtissues: [
-          { id: 'cardiomyocyte', label: 'Cardiomyocyte', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'cardiac-fibroblast', label: 'Cardiac Fibroblast', availableAssays: ['h3k27ac'] },
-        ],
-      },
-      {
-        id: 'blood-vessel',
-        label: 'Blood Vessel',
-        subtissues: [
-          { id: 'endothelial', label: 'Endothelial', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'smooth-muscle', label: 'Smooth Muscle', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'digestive',
-    name: 'Digestive',
-    tissues: [
-      {
-        id: 'liver',
-        label: 'Liver',
-        subtissues: [
-          { id: 'hepatocyte', label: 'Hepatocyte', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq', 'dnase-seq'] },
-        ],
-      },
-      {
-        id: 'colon',
-        label: 'Colon',
-        subtissues: [
-          { id: 'epithelial', label: 'Epithelial', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-        ],
-      },
-      {
-        id: 'pancreas',
-        label: 'Pancreas',
-        subtissues: [
-          { id: 'islet', label: 'Islet', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'acinar', label: 'Acinar', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'immune-hematologic',
-    name: 'Immune & Hematologic',
-    tissues: [
-      {
-        id: 'blood',
-        label: 'Blood',
-        subtissues: [
-          { id: 't-cell', label: 'T Cell', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'b-cell', label: 'B Cell', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'monocyte', label: 'Monocyte', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'nk-cell', label: 'NK Cell', availableAssays: ['h3k27ac', 'atac-seq'] },
-        ],
-      },
-      {
-        id: 'spleen',
-        label: 'Spleen',
-        subtissues: [
-          { id: 'splenic', label: 'Splenic', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'reproductive',
-    name: 'Reproductive',
-    tissues: [
-      {
-        id: 'breast',
-        label: 'Breast',
-        subtissues: [
-          { id: 'epithelial', label: 'Epithelial', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'myoepithelial', label: 'Myoepithelial', availableAssays: ['h3k27ac'] },
-        ],
-      },
-      {
-        id: 'ovary',
-        label: 'Ovary',
-        subtissues: [
-          { id: 'ovarian', label: 'Ovarian', availableAssays: ['h3k27ac', 'atac-seq'] },
-        ],
-      },
-      {
-        id: 'prostate',
-        label: 'Prostate',
-        subtissues: [
-          { id: 'epithelial', label: 'Epithelial', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'respiratory',
-    name: 'Respiratory',
-    tissues: [
-      {
-        id: 'lung',
-        label: 'Lung',
-        subtissues: [
-          { id: 'alveolar', label: 'Alveolar', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'bronchial', label: 'Bronchial', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'integumentary',
-    name: 'Integumentary',
-    tissues: [
-      {
-        id: 'skin',
-        label: 'Skin',
-        subtissues: [
-          { id: 'keratinocyte', label: 'Keratinocyte', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-          { id: 'melanocyte', label: 'Melanocyte', availableAssays: ['h3k27ac'] },
-          { id: 'fibroblast', label: 'Fibroblast', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'musculoskeletal',
-    name: 'Musculoskeletal',
-    tissues: [
-      {
-        id: 'muscle',
-        label: 'Muscle',
-        subtissues: [
-          { id: 'skeletal', label: 'Skeletal', availableAssays: ['h3k27ac', 'h3k4me3', 'atac-seq'] },
-        ],
-      },
-      {
-        id: 'bone',
-        label: 'Bone',
-        subtissues: [
-          { id: 'osteoblast', label: 'Osteoblast', availableAssays: ['h3k27ac'] },
-        ],
-      },
-    ],
-  },
-]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER FUNCTIONS
+// ASSAY DISPLAY METADATA
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getTissueById(tissueId: string): TissueMetadata | undefined {
-  for (const group of TISSUE_GROUPS) {
-    const tissue = group.tissues.find(t => t.id === tissueId)
-    if (tissue) return tissue
-  }
-  return undefined
+/**
+ * Color per assay — used for both the dynamic Gosling track and the UI
+ * indicator next to each assay checkbox.
+ */
+export const ASSAY_COLORS: Record<string, string> = {
+  dnase: '#2563eb',
+  ctcf: '#dc2626',
+  h3k4me3: '#16a34a',
+  h3k27ac: '#ca8a04',
+  atac: '#7c3aed',
+  h3k4me1: '#ea580c',
+  h3k27me3: '#0891b2',
 }
 
-export function getSubtissueById(tissueId: string, subtissueId: string): SubtissueMetadata | undefined {
-  const tissue = getTissueById(tissueId)
-  if (!tissue) return undefined
-  return tissue.subtissues.find(st => st.id === subtissueId)
+export const ASSAY_LABELS: Record<string, string> = {
+  dnase: 'DNase',
+  ctcf: 'CTCF',
+  h3k4me3: 'H3K4me3',
+  h3k27ac: 'H3K27ac',
+  atac: 'ATAC',
+  h3k4me1: 'H3K4me1',
+  h3k27me3: 'H3K27me3',
+  ccres: 'cCREs',
 }
 
-export function getAvailableAssays(tissueId: string, subtissueId: string): ValidAssayType[] {
-  const subtissue = getSubtissueById(tissueId, subtissueId)
-  return subtissue?.availableAssays ?? []
+export const ASSAY_DESCRIPTIONS: Record<string, string> = {
+  dnase: 'DNase hypersensitive sites — chromatin accessibility',
+  ctcf: 'CTCF binding — insulator / loop boundaries',
+  h3k4me3: 'H3K4me3 — active promoters',
+  h3k27ac: 'H3K27ac — active enhancers and promoters',
+  atac: 'ATAC-seq — open chromatin',
+  h3k4me1: 'H3K4me1 — primed and active enhancers',
+  h3k27me3: 'H3K27me3 — Polycomb repression',
 }
 
-export function formatTissue(tissueId: string): string {
-  const tissue = getTissueById(tissueId)
-  return tissue?.label ?? tissueId
+export function assayColor(assay: string): string {
+  return ASSAY_COLORS[assay.toLowerCase()] ?? '#6b7280'
 }
 
-export function formatSubtissue(subtissueId: string): string {
-  // Simple capitalization since we don't have context of which tissue
-  return subtissueId
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+export function assayLabel(assay: string): string {
+  return ASSAY_LABELS[assay.toLowerCase()] ?? assay.toUpperCase()
 }
 
-export function formatTissueSource(source: TissueSource): string {
-  const tissue = formatTissue(source.tissue as string)
-  const subtissue = formatSubtissue(source.subtissue as string)
-  const assay = ASSAY_LABELS[source.assay as ValidAssayType] ?? source.assay
-  return `${assay} (${tissue} - ${subtissue})`
+// ─────────────────────────────────────────────────────────────────────────────
+// LISTING HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Top-level tissues, in TissueConfig order. */
+export function listTissues(): string[] {
+  return Object.keys(TissueConfig)
+}
+
+/** Subtissues for a given tissue (or empty array if unknown). */
+export function listSubtissues(tissue: string): SubtissueInfo[] {
+  return TissueConfig[tissue] ?? []
+}
+
+/**
+ * Renderable assays for a (tissue, subtissue) pair — only assays that have
+ * a bigwig URL. Skips ccres because they're rendered via the static cCRE
+ * track, not as a tissue-specific signal.
+ */
+export function listRenderableAssays(
+  tissue: string,
+  subtissue: string
+): AssayInfo[] {
+  const sub = getSubtissueByName(tissue, subtissue)
+  if (!sub) return []
+  return sub.assays.filter(a => Boolean(a.bigwig))
+}
+
+/**
+ * Format a long subtissue name for display in select dropdowns.
+ * The TissueConfig uses very long descriptive subtissue names like
+ * "dorsolateral prefrontal cortex, male adult (89 years)..."; this just
+ * capitalizes the first letter.
+ */
+export function formatSubtissue(name: string): string {
+  if (!name) return ''
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+export function formatTissue(tissue: string): string {
+  return tissue
+}
+
+/**
+ * Sanitize a subtissue name into a stable, URL-safe slug used in track IDs.
+ * Matches master's `assayTrackId` slug logic so saved track IDs stay stable.
+ */
+export function sanitizeSubtissue(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
 }

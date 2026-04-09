@@ -69,6 +69,8 @@ export interface FilterConfig {
   type: "select" | "multiselect" | "range" | "text";
   options?: DimensionOption[];
   placeholder?: string;
+  /** Section heading. Filters with the same section render together under that heading. */
+  section?: string;
 }
 
 export interface ColumnMeta {

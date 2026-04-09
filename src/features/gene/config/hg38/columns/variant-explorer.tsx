@@ -18,6 +18,26 @@ import {
 
 const col = createColumns<Variant>();
 
+/**
+ * Locally re-id and enable sorting on a shared column without mutating it.
+ * Lets us point a column at the API `sort_by` enum (e.g., remap
+ * `apc_conservation_v2` → `apc_conservation`) only inside this table.
+ */
+function withSort<T>(
+  column: ColumnDef<T>,
+  apiSortId?: string,
+): ColumnDef<T> {
+  // Spread cast: TanStack's ColumnDef is a discriminated union and a generic
+  // spread loses the discriminator. We know we're keeping the same shape and
+  // only flipping enableSorting + id, so cast at the boundary.
+  const next = {
+    ...column,
+    id: apiSortId ?? column.id ?? "",
+    enableSorting: true,
+  };
+  return next as ColumnDef<T>;
+}
+
 // Custom genes column — truncates long transcript lists, full text on hover
 const genesColumn = col.display("genes", {
   header: "Genes",
@@ -64,7 +84,10 @@ const genesColumn = col.display("genes", {
   },
 });
 
-// Compose columns from existing variant column definitions
+// Compose columns from existing variant column definitions.
+// `withSort(col, apiSortId?)` flags a column server-sortable and (optionally)
+// rebrands its id to match the API `sort_by` enum so the URL/sort signal
+// roundtrips cleanly. See SORTABLE_COLUMNS in use-variant-scan-query.ts.
 export const variantExplorerColumns: ColumnDef<Variant>[] = [
   // Core identification
   basicColumns[0] as ColumnDef<Variant>, // variant_vcf
@@ -81,25 +104,37 @@ export const variantExplorerColumns: ColumnDef<Variant>[] = [
   proteinFunctionColumns[1] as ColumnDef<Variant>, // AlphaMissense class
   proteinFunctionColumns[2] as ColumnDef<Variant>, // SIFT
   proteinFunctionColumns[3] as ColumnDef<Variant>, // PolyPhen
-  // Allele frequencies
-  basicColumns[4] as ColumnDef<Variant>, // bravo_af
+  // Allele frequencies — server-sortable
+  withSort(basicColumns[4] as ColumnDef<Variant>), // bravo_af
   basicColumns[2] as ColumnDef<Variant>, // bravo filter_status
-  basicColumns[7] as ColumnDef<Variant>, // gnomad_genome_af
-  basicColumns[6] as ColumnDef<Variant>, // gnomad_exome_af
+  withSort(basicColumns[7] as ColumnDef<Variant>), // gnomad_genome_af
+  withSort(basicColumns[6] as ColumnDef<Variant>), // gnomad_exome_af
   basicColumns[5] as ColumnDef<Variant>, // tg_all
   // Regulatory
   functionalClassColumns[4] as ColumnDef<Variant>, // cage_promoter
   functionalClassColumns[5] as ColumnDef<Variant>, // cage_enhancer
   functionalClassColumns[6] as ColumnDef<Variant>, // genehancer
-  // Integrative scores
-  integrativeColumns[10] as ColumnDef<Variant>, // linsight
-  integrativeColumns[11] as ColumnDef<Variant>, // fathmm_xf
-  // aPC scores
+  // Integrative scores — server-sortable (already match API enum)
+  withSort(integrativeColumns[10] as ColumnDef<Variant>), // linsight
+  withSort(integrativeColumns[11] as ColumnDef<Variant>), // fathmm_xf
+  // aPC scores — re-id where needed to match API enum
   apcColumns.proteinFunction as ColumnDef<Variant>,
-  apcColumns.conservation as ColumnDef<Variant>,
+  withSort(
+    apcColumns.conservation as ColumnDef<Variant>,
+    "apc_conservation",
+  ),
   apcColumns.epigeneticsActive as ColumnDef<Variant>,
-  // SpliceAI
-  spliceAiColumns[0] as ColumnDef<Variant>,
+  // CADD — server-sortable
+  withSort(integrativeColumns[9] as ColumnDef<Variant>), // cadd_phred
+  // SpliceAI / Pangolin / AlphaMissense — re-id'd to API enum names
+  withSort(spliceAiColumns[0] as ColumnDef<Variant>, "pangolin_max_exome"), // pangolin_largest_ds_exome
+  withSort(spliceAiColumns[1] as ColumnDef<Variant>, "pangolin_max_genome"), // pangolin_largest_ds_genome
+  withSort(spliceAiColumns[2] as ColumnDef<Variant>, "splice_ai_max_exome"), // spliceai_ds_max_exome
+  withSort(spliceAiColumns[3] as ColumnDef<Variant>, "splice_ai_max_genome"), // spliceai_ds_max_genome
+  withSort(
+    proteinFunctionColumns[7] as ColumnDef<Variant>, // am_pathogenicity
+    "alpha_missense_max",
+  ),
   // COSMIC
   somaticMutationColumns[0] as ColumnDef<Variant>, // aa
   somaticMutationColumns[1] as ColumnDef<Variant>, // cds

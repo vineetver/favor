@@ -1,19 +1,21 @@
 // src/features/genome-browser/tracks/static/gene-annotation.ts
-// Gene annotation track using Gosling server data
+// GENCODE gene annotation track from the public Gosling tileset server.
+// Renders strand-aware gene bodies (rule + triangle markers), exon boxes,
+// and gene name labels. Identical structure to the master implementation.
 
 import { Dna } from 'lucide-react'
 import type { StaticTrack, GoslingTrackSpec } from '../../types/tracks'
+import { LINKING_ID } from '../constants'
 
-// Shared linking ID for track synchronization
-export const LINKING_ID = 'genome-browser-main'
+const GENE_ANNOTATION_URL =
+  'https://server.gosling-lang.org/api/v1/tileset_info/?d=gene-annotation'
 
-// Gene annotation track from Gosling server with exon structure
 const geneAnnotationSpec: GoslingTrackSpec = {
   id: 'gene-annotation',
-  title: 'Genes (GENCODE)',
   alignment: 'overlay',
+  title: 'Gene Annotation (GENCODE)',
   data: {
-    url: 'https://server.gosling-lang.org/api/v1/tileset_info/?d=gene-annotation',
+    url: GENE_ANNOTATION_URL,
     type: 'beddb',
     genomicFields: [
       { index: 1, name: 'start' },
@@ -29,67 +31,105 @@ const geneAnnotationSpec: GoslingTrackSpec = {
     ],
   },
   tracks: [
+    // Forward-strand triangle marker at the gene end
     {
       dataTransform: [
         { type: 'filter', field: 'type', oneOf: ['gene'] },
+        { type: 'filter', field: 'strand', oneOf: ['+'] },
       ],
+      mark: 'triangleRight',
+      x: { field: 'end', type: 'genomic', axis: 'top', linkingId: LINKING_ID },
+      size: { value: 15 },
+    },
+    // Gene name labels
+    {
+      dataTransform: [{ type: 'filter', field: 'type', oneOf: ['gene'] }],
       mark: 'text',
       text: { field: 'name', type: 'nominal' },
-      x: {
-        field: 'start',
-        type: 'genomic',
-        linkingId: LINKING_ID,
-      },
-      xe: { field: 'end', type: 'genomic', linkingId: LINKING_ID },
-      style: { dy: -12, textFontSize: 10 },
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      xe: { field: 'end', type: 'genomic' },
+      style: { dy: -15 },
     },
-    {
-      dataTransform: [
-        { type: 'filter', field: 'type', oneOf: ['exon'] },
-      ],
-      mark: 'rect',
-      x: {
-        field: 'start',
-        type: 'genomic',
-        linkingId: LINKING_ID,
-      },
-      xe: { field: 'end', type: 'genomic', linkingId: LINKING_ID },
-      size: { value: 10 },
-    },
+    // Reverse-strand triangle marker at the gene start
     {
       dataTransform: [
         { type: 'filter', field: 'type', oneOf: ['gene'] },
+        { type: 'filter', field: 'strand', oneOf: ['-'] },
+      ],
+      mark: 'triangleLeft',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      size: { value: 15 },
+      style: { align: 'right' },
+    },
+    // Exon rectangles
+    {
+      dataTransform: [{ type: 'filter', field: 'type', oneOf: ['exon'] }],
+      mark: 'rect',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      size: { value: 15 },
+      xe: { field: 'end', type: 'genomic' },
+    },
+    // Forward-strand directional rule
+    {
+      dataTransform: [
+        { type: 'filter', field: 'type', oneOf: ['gene'] },
+        { type: 'filter', field: 'strand', oneOf: ['+'] },
       ],
       mark: 'rule',
-      x: {
-        field: 'start',
-        type: 'genomic',
-        linkingId: LINKING_ID,
-      },
-      xe: { field: 'end', type: 'genomic', linkingId: LINKING_ID },
-      strokeWidth: { value: 2 },
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      strokeWidth: { value: 3 },
+      xe: { field: 'end', type: 'genomic' },
+      style: { linePattern: { type: 'triangleRight', size: 5 } },
+    },
+    // Reverse-strand directional rule
+    {
+      dataTransform: [
+        { type: 'filter', field: 'type', oneOf: ['gene'] },
+        { type: 'filter', field: 'strand', oneOf: ['-'] },
+      ],
+      mark: 'rule',
+      x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
+      strokeWidth: { value: 3 },
+      xe: { field: 'end', type: 'genomic' },
+      style: { linePattern: { type: 'triangleLeft', size: 5 } },
     },
   ],
   row: { field: 'strand', type: 'nominal', domain: ['+', '-'] },
-  color: { value: '#64748b' },
+  color: {
+    field: 'strand',
+    type: 'nominal',
+    domain: ['+', '-'],
+    range: ['#7585FF', '#FF8A85'],
+  },
+  visibility: [
+    {
+      operation: 'less-than',
+      measure: 'width',
+      threshold: '|xe-x|',
+      transitionPadding: 10,
+      target: 'mark',
+    },
+  ],
   tooltip: [
+    { field: 'start', type: 'genomic', alt: 'Start Position' },
+    { field: 'end', type: 'genomic', alt: 'End Position' },
     { field: 'name', type: 'nominal', alt: 'Gene Name' },
     { field: 'strand', type: 'nominal', alt: 'Strand' },
-    { field: 'start', type: 'genomic', alt: 'Gene Start' },
-    { field: 'end', type: 'genomic', alt: 'Gene End' },
   ],
-  width: 900,
-  height: 80,
+  opacity: { value: 0.8 },
+  width: 350,
+  height: 100,
 }
 
 export const geneAnnotationTrack: StaticTrack = {
   kind: 'static',
   id: 'gene-annotation',
   name: 'Gene Annotation',
-  description: 'GENCODE gene annotations with exon structure',
+  description:
+    'GENCODE gene annotations: gene bodies, exons, strand orientation, and labels.',
   category: 'annotation',
-  defaultHeight: 80,
+  defaultHeight: 100,
   icon: Dna,
   curated: true,
-  spec: geneAnnotationSpec,
+  specs: [geneAnnotationSpec],
 }

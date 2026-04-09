@@ -8,15 +8,15 @@ interface LoadingStateProps {
   columns?: number;
 }
 
-export function LoadingState({ rows = 5, columns = 4 }: LoadingStateProps) {
+export function LoadingState({ rows = 8, columns = 4 }: LoadingStateProps) {
   return (
     <div className="overflow-hidden">
       <table className="min-w-full">
         <thead>
           <tr className="border-b border-border">
             {Array.from({ length: columns }).map((_, i) => (
-              <th key={i} className="px-6 py-3 bg-muted/50">
-                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+              <th key={i} className="px-4 py-2.5 bg-muted/50">
+                <div className="h-3 w-16 bg-muted rounded animate-pulse" />
               </th>
             ))}
           </tr>
@@ -25,9 +25,9 @@ export function LoadingState({ rows = 5, columns = 4 }: LoadingStateProps) {
           {Array.from({ length: rows }).map((_, rowIdx) => (
             <tr key={rowIdx} className="border-b border-border/50">
               {Array.from({ length: columns }).map((_, colIdx) => (
-                <td key={colIdx} className="px-6 py-3">
+                <td key={colIdx} className="px-4 py-2.5">
                   <div
-                    className="h-4 bg-muted rounded animate-pulse"
+                    className="h-3 bg-muted rounded animate-pulse"
                     style={{ width: `${65 + ((rowIdx * 7 + colIdx * 13) % 30)}%` }}
                   />
                 </td>

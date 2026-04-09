@@ -26,12 +26,18 @@ const filterStatus = categories([
 export const basicColumns = [
   col.accessor("variant_vcf", {
     accessor: "variant_vcf",
-    header: "Variant",
+    header: "Variant (VCF)",
     description: tooltip({
-      title: "Variant ID",
+      title: "Variant (VCF)",
       description: "Unique variant identifier in chr-pos-ref-alt format.",
     }),
-    cell: cell.text(),
+    cell: ({ getValue }) => {
+      const v = getValue();
+      if (v === null || v === undefined) return "-";
+      return (
+        <span className="font-mono whitespace-nowrap">{String(v)}</span>
+      );
+    },
   }),
 
   col.accessor("rsid", {
