@@ -212,11 +212,16 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: "Max Z",
     meta: { description: "Maximum Z-score across all available assays for this biosample" } satisfies ColumnMeta,
     enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="text-sm font-medium tabular-nums text-foreground">
-        {(getValue() as number).toFixed(2)}
-      </span>
-    ),
+    cell: ({ getValue }) => {
+      const value = getValue() as number | null;
+      if (value == null)
+        return <span className="text-muted-foreground/40">&mdash;</span>;
+      return (
+        <span className="text-sm font-medium tabular-nums text-foreground">
+          {value.toFixed(2)}
+        </span>
+      );
+    },
   },
 ];
 

@@ -3,7 +3,7 @@
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import { Logo } from "@shared/components/ui/logo";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { siteConfig } from "@/config/site";
@@ -102,9 +102,22 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-            <Link href="/" onClick={onClose}>
-              <Logo className="h-7 w-auto" />
-            </Link>
+            <div className="flex items-center gap-2.5">
+              <Link href="/" onClick={onClose}>
+                <Logo className="h-7 w-auto" />
+              </Link>
+              <span
+                className={cn(
+                  "inline-flex items-center",
+                  "h-[18px] px-2 rounded-full",
+                  "text-[10px] font-bold uppercase tracking-wider leading-none",
+                  "bg-primary/10 text-primary",
+                )}
+                aria-label="Beta version"
+              >
+                Beta
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -161,8 +174,24 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-5 border-t border-border">
-            <div className="flex items-center justify-between">
+          <div className="px-6 py-5 border-t border-border space-y-3">
+            <a
+              href="https://favor.genohub.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className={cn(
+                "flex items-center justify-between",
+                "px-5 py-3 rounded-xl",
+                "text-sm font-medium text-muted-foreground",
+                "transition-colors duration-200",
+                "hover:text-foreground hover:bg-primary/10",
+              )}
+            >
+              Looking for the stable site? favor.genohub.org
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+            <div className="flex items-center justify-between px-5">
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                 {siteConfig.version}
               </span>

@@ -11,7 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
-import { ChevronDown, LogOut, Menu, Settings, Sparkles, User } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  LogOut,
+  Menu,
+  Settings,
+  Sparkles,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { MobileDrawer } from "./mobile-drawer";
@@ -108,10 +116,34 @@ export function Navbar() {
         <div className="max-w-page mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-between h-10 relative">
             {/* Left: Brand */}
-            <div className="flex-1 flex justify-start z-10">
+            <div className="flex-1 flex justify-start items-center z-10">
               <Link href="/" className="flex items-center group">
                 <Logo className="h-8 w-auto transition-transform duration-300 group-hover:scale-105" />
               </Link>
+              <span
+                className={cn(
+                  "ml-3 inline-flex items-center",
+                  "h-[18px] px-2 rounded-full",
+                  "text-[10px] font-bold uppercase tracking-wider leading-none",
+                  "bg-primary/10 text-primary",
+                )}
+                aria-label="Beta version"
+              >
+                Beta
+              </span>
+              <a
+                href="https://favor.genohub.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "hidden lg:inline-flex items-center gap-1 ml-4",
+                  "text-xs font-medium",
+                  "text-muted-foreground hover:text-foreground transition-colors",
+                )}
+              >
+                Stable site
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </a>
             </div>
 
             {/* Center: Navigation */}

@@ -274,7 +274,7 @@ export interface SignalRow {
   has_ctcf?: boolean;
   has_h3k27ac?: boolean;
   has_h3k4me3?: boolean;
-  max_signal: number;
+  max_signal: number | null;
   ccre_classification: string;
 }
 

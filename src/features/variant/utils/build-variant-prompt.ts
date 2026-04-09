@@ -7,6 +7,8 @@ import type { Variant } from "../types/variant";
 export interface VariantPromptContext {
   /** GWAS catalog hits */
   gwas?: GwasSummary;
+  /** Top fine-mapped credible set memberships by PIP */
+  credibleSets?: CredibleSetSummary[];
   /** Genes regulated by this variant (QTL, enhancer, ChromBPNet evidence) */
   targetGenes?: TargetGeneSummary[];
   /** QTL associations grouped by tissue */
@@ -21,6 +23,16 @@ export interface VariantPromptContext {
   allelicImbalanceTissues?: TissueStat[];
   /** Methylation grouped by tissue */
   methylationTissues?: TissueStat[];
+}
+
+export interface CredibleSetSummary {
+  trait: string | null;
+  studyId: string;
+  studyType: string;
+  pip: number;
+  setSize: number | null;
+  method: string | null;
+  isLead: boolean;
 }
 
 export interface GwasSummary {
@@ -84,7 +96,7 @@ export function buildVariantPrompt(
   push(sections, regulatoryAnnotations(variant));
 
   if (context) {
-    push(sections, gwasSection(context.gwas));
+    push(sections, traitAssociations(context.gwas, context.credibleSets));
     push(sections, targetGenesSection(context.targetGenes));
     push(sections, tissueEvidenceSection(context));
     push(sections, regionEvidenceSection(context.regionCounts));
@@ -161,9 +173,19 @@ function pathogenicityScores(v: Variant): string | null {
   const lines: string[] = [];
   const m = v.main;
 
-  if (m?.cadd?.phred != null && m.cadd.phred > 10) {
+  // Strategy: include ALL available scores so the LLM has the full picture.
+  // Weak/below-threshold values are annotated as "(weak)" so the model
+  // knows not to overinterpret them, but the data isn't dropped entirely
+  // (the prompt's "mention all scores >= 10" rule would otherwise miss
+  // borderline-significant evidence).
+  const annotate = (value: number, threshold: number, label = "weak") =>
+    value < threshold ? ` (${label})` : "";
+
+  if (m?.cadd?.phred != null) {
     lines.push("## Pathogenicity Scores");
-    lines.push(`- CADD Phred: ${m.cadd.phred.toFixed(1)}`);
+    lines.push(
+      `- CADD Phred: ${m.cadd.phred.toFixed(1)}${annotate(m.cadd.phred, 10)}`,
+    );
   }
 
   if (m?.protein_predictions) {
@@ -179,28 +201,36 @@ function pathogenicityScores(v: Variant): string | null {
 
   if (m?.conservation) {
     const c = m.conservation;
-    if ((c.mamphylop != null && c.mamphylop > 2) || (c.verphylop != null && c.verphylop > 2)) {
+    if (c.mamphylop != null || c.verphylop != null) {
       heading(lines, "## Pathogenicity Scores");
       const s: string[] = [];
-      if (c.mamphylop != null) s.push(`mammalian: ${c.mamphylop.toFixed(2)}`);
-      if (c.verphylop != null) s.push(`vertebrate: ${c.verphylop.toFixed(2)}`);
+      if (c.mamphylop != null) {
+        s.push(`mammalian: ${c.mamphylop.toFixed(2)}${annotate(c.mamphylop, 2)}`);
+      }
+      if (c.verphylop != null) {
+        s.push(`vertebrate: ${c.verphylop.toFixed(2)}${annotate(c.verphylop, 2)}`);
+      }
       lines.push(`- PhyloP: ${s.join(", ")}`);
     }
   }
 
-  if (m?.gerp?.rs != null && m.gerp.rs > 2) {
+  if (m?.gerp?.rs != null) {
     heading(lines, "## Pathogenicity Scores");
-    lines.push(`- GERP++: ${m.gerp.rs.toFixed(2)}`);
+    lines.push(`- GERP++: ${m.gerp.rs.toFixed(2)}${annotate(m.gerp.rs, 2)}`);
   }
 
-  if (v.linsight != null && v.linsight > 0.5) {
+  if (v.linsight != null) {
     heading(lines, "## Pathogenicity Scores");
-    lines.push(`- LINSIGHT: ${v.linsight.toFixed(3)}`);
+    lines.push(
+      `- LINSIGHT: ${v.linsight.toFixed(3)}${annotate(v.linsight, 0.5)}`,
+    );
   }
 
-  if (v.fathmm_xf != null && v.fathmm_xf > 0.5) {
+  if (v.fathmm_xf != null) {
     heading(lines, "## Pathogenicity Scores");
-    lines.push(`- FATHMM-XF: ${v.fathmm_xf.toFixed(3)}`);
+    lines.push(
+      `- FATHMM-XF: ${v.fathmm_xf.toFixed(3)}${annotate(v.fathmm_xf, 0.5)}`,
+    );
   }
 
   return lines.length > 1 ? lines.join("\n") : null;
@@ -270,17 +300,43 @@ function regulatoryAnnotations(v: Variant): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Extended Context: GWAS
+// Extended Context: Trait Associations (GWAS + fine-mapping combined)
 // ---------------------------------------------------------------------------
 
-function gwasSection(gwas: GwasSummary | undefined): string | null {
-  if (!gwas || !gwas.totalAssociations) return null;
+function traitAssociations(
+  gwas: GwasSummary | undefined,
+  credibleSets: CredibleSetSummary[] | undefined,
+): string | null {
+  const hasGwas = gwas && gwas.totalAssociations;
+  const hasCs = credibleSets && credibleSets.length > 0;
+  if (!hasGwas && !hasCs) return null;
 
-  const lines = ["## GWAS Associations"];
-  lines.push(`- ${gwas.totalAssociations} associations, ${gwas.uniqueTraits} traits, ${gwas.uniqueStudies} studies`);
+  const lines = ["## Trait Associations"];
 
-  for (const hit of gwas.top.slice(0, 5)) {
-    lines.push(`- ${hit.trait} (p=${hit.pvalue.toExponential(1)})`);
+  if (hasGwas) {
+    lines.push(
+      `- GWAS Catalog: ${gwas.totalAssociations} associations across ${gwas.uniqueTraits} traits, ${gwas.uniqueStudies} studies`,
+    );
+    for (const hit of gwas.top.slice(0, 5)) {
+      lines.push(`  - ${hit.trait} (p=${hit.pvalue.toExponential(1)})`);
+    }
+  }
+
+  if (hasCs) {
+    // Show top fine-mapped sets — surface lead-variant status and small sets
+    // because those are the high-confidence inclusions worth narrating
+    lines.push(
+      `- Fine-mapped credible sets: ${credibleSets.length} top memberships`,
+    );
+    for (const cs of credibleSets.slice(0, 5)) {
+      const traitLabel = cs.trait || cs.studyId;
+      const setSize = cs.setSize != null ? `set=${cs.setSize}` : "set=?";
+      const method = cs.method ? `, ${cs.method}` : "";
+      const lead = cs.isLead ? ", lead" : "";
+      lines.push(
+        `  - ${traitLabel} [${cs.studyType}] PIP=${cs.pip.toFixed(3)}, ${setSize}${method}${lead}`,
+      );
+    }
   }
 
   return lines.join("\n");
@@ -387,16 +443,67 @@ function regionEvidenceSection(counts: RegionCounts | undefined): string | null 
 // ---------------------------------------------------------------------------
 
 function instructions(): string {
-  return `**Instructions**: Based on the variant data above, provide a comprehensive summary:
+  return `---
 
-1. **Overview**: What is this variant, where is it located, and what gene(s) does it affect?
-2. **Clinical Significance**: Pathogenicity classification, associated conditions, somatic relevance.
-3. **Functional Impact**: Predicted effects from scores, protein impact, and conservation.
-4. **Regulatory Evidence**: Is this variant in a regulatory element? What tissues show activity? QTL associations? Target genes it may regulate?
-5. **Population Context**: Allele frequency, population-specific patterns.
-6. **Key Takeaways**: 2-3 bullet points highlighting the most important and unique findings.
+You are an expert genomic variant analyst with deep knowledge of molecular biology, population genetics, and clinical genomics. Your role is to tell the story of each variant using clear, accessible language that connects the data into a coherent biological narrative.
 
-Emphasize the regulatory and tissue-specific context — this is what makes each variant biologically unique. Be concise but insightful.`;
+**Data Fidelity**
+- ONLY use data explicitly provided above — never invent or assume values
+- If a section has no relevant evidence, write a single sentence acknowledging that and move on. Do not pad, do not fabricate, do not generate placeholder content
+- Preserve database citations when referencing specific data points (e.g., "gnomAD v4", "ClinVar", "GWAS Catalog", "OpenTargets")
+- Format inline citations after mentioning each score, e.g.: "CADD PHRED 25 (Kircher et al., 2014; Rentzsch et al., 2018)"
+
+**PHRED Scale Interpretation**
+Many scores use PHRED scaling, which represents the probability of being in the top percentile:
+- PHRED 10 = top 10% (90th percentile)
+- PHRED 15 = top 3.2% (96.8th percentile)
+- PHRED 20 = top 1% (99th percentile)
+- PHRED 30 = top 0.1% (99.9th percentile)
+When mentioning PHRED-scaled scores, explain what percentile they represent.
+
+**Mention ALL Significant Scores**
+- For PHRED-scaled scores (CADD, aPC-*, etc.), you MUST mention and interpret every score >= 10
+- DO NOT cherry-pick only 1–2 scores when multiple significant scores are present
+- The executive summary and section breakdowns must reflect the FULL picture of significant evidence
+
+**AlphaMissense Notation**
+Protein variants like "R176C" should be interpreted as [Original AA][Position][New AA]:
+- R176C = Arginine at position 176 changed to Cysteine
+- Always explain this notation when first mentioning the protein variant
+
+**Output Structure**
+
+Begin with a single compelling 3–5 sentence paragraph (no header, no bullets, just flowing prose) that synthesizes the most important findings across ALL categories. Connect the biological dots — for example: "This rare variant changes a critical amino acid in a highly conserved region, with multiple predictors suggesting it disrupts protein function, and has been linked to LDL cholesterol levels in genome-wide studies."
+
+After the opening paragraph, use #### section headers in this exact order. Skip any section where no relevant data was provided above (or write one sentence stating so):
+
+#### Variant Identity & Genomic Context
+What this variant is, where it sits, what gene(s) it affects, and the molecular consequence.
+
+#### Clinical Significance
+ClinVar interpretation, associated conditions, drug response, somatic relevance from COSMIC.
+
+#### Predicted Functional Impact
+Coding consequences and computational predictors: CADD, SIFT, PolyPhen, AlphaMissense, conservation, splicing. For purely intergenic variants, write a single sentence noting that protein-impact predictors do not apply.
+
+#### Regulatory Evidence
+Whether the variant lies in a regulatory element (cCRE, enhancer, promoter), which tissues show activity, target genes via QTL/ChromBPNet/enhancer-gene links, and any allelic-imbalance evidence. For coding variants in protein-altering positions with no regulatory annotation, write a single sentence noting so.
+
+#### Trait Associations
+GWAS Catalog hits and fine-mapped credible set memberships. Highlight top traits by significance and any high-PIP credible set inclusions (PIP ≥ 0.5).
+
+#### Population Genetics
+gnomAD allele frequency, ancestry-specific patterns from 1000 Genomes, rarity interpretation.
+
+#### Bottom Line
+Two or three bullet points capturing the most actionable insights — what makes this variant biologically unique.
+
+**Style**
+- Write narrative sentences that connect ideas, not bullet lists (except in Bottom Line)
+- Translate technical terms into plain English (e.g., "nonsynonymous SNV" → "a DNA change that alters the protein sequence")
+- Bold key findings
+- Use variant format chr-pos-ref-alt (e.g., "19-44908822-C-T")
+- Be concise but insightful — explain WHY scores matter, not just WHAT they are`;
 }
 
 // ---------------------------------------------------------------------------

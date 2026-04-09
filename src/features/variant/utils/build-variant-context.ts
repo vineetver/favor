@@ -1,10 +1,15 @@
+import type { CredibleSetSignal } from "@features/variant/api/credible-sets-graph";
 import type { GwasResult } from "@features/variant/api/gwas";
 import type {
   RegionSummary,
   TargetGeneEvidence,
   TissueGroupRow,
 } from "@features/enrichment/api/region";
-import type { VariantPromptContext, TissueStat } from "./build-variant-prompt";
+import type {
+  CredibleSetSummary,
+  TissueStat,
+  VariantPromptContext,
+} from "./build-variant-prompt";
 
 /**
  * Transforms raw API responses into a compact VariantPromptContext
@@ -12,6 +17,7 @@ import type { VariantPromptContext, TissueStat } from "./build-variant-prompt";
  */
 export function buildVariantContext(raw: {
   gwas: GwasResult | null;
+  credibleSets?: CredibleSetSignal[];
   targetGenes: TargetGeneEvidence[];
   qtls: TissueGroupRow[];
   regionSummary: RegionSummary | null;
@@ -22,6 +28,7 @@ export function buildVariantContext(raw: {
 }): VariantPromptContext {
   return {
     gwas: compactGwas(raw.gwas),
+    credibleSets: compactCredibleSets(raw.credibleSets),
     targetGenes: compactTargetGenes(raw.targetGenes),
     qtlTissues: toTissueStats(raw.qtls),
     regionCounts: raw.regionSummary?.counts,
@@ -30,6 +37,47 @@ export function buildVariantContext(raw: {
     allelicImbalanceTissues: toTissueStats(raw.allelicImbalance),
     methylationTissues: toTissueStats(raw.methylation),
   };
+}
+
+/**
+ * Pick the top-N credible sets by PIP, deduped by (study × method × set size)
+ * so we don't show 20 near-identical inclusions of the same locus. Prefers
+ * sets where the variant is the lead.
+ */
+function compactCredibleSets(
+  signals: CredibleSetSignal[] | undefined,
+): CredibleSetSummary[] | undefined {
+  if (!signals?.length) return undefined;
+
+  const sorted = [...signals]
+    .filter((s) => s.posteriorProbability != null)
+    .sort((a, b) => {
+      const pa = a.posteriorProbability ?? 0;
+      const pb = b.posteriorProbability ?? 0;
+      if (pb !== pa) return pb - pa;
+      // tiebreak: prefer leads, then smaller credible sets
+      if (a.isLead !== b.isLead) return a.isLead ? -1 : 1;
+      return (a.numCredible95 ?? Infinity) - (b.numCredible95 ?? Infinity);
+    });
+
+  const seen = new Set<string>();
+  const out: CredibleSetSummary[] = [];
+  for (const s of sorted) {
+    const key = `${s.studyId}|${s.methodName ?? ""}|${s.numCredible95 ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      trait: s.reportedTrait,
+      studyId: s.studyId,
+      studyType: s.studyType,
+      pip: s.posteriorProbability as number,
+      setSize: s.numCredible95,
+      method: s.methodName,
+      isLead: s.isLead,
+    });
+    if (out.length >= 8) break;
+  }
+  return out.length ? out : undefined;
 }
 
 function compactGwas(result: GwasResult | null) {
