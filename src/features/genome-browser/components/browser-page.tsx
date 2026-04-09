@@ -57,17 +57,16 @@ export function BrowserPage({
 
   return (
     <BrowserProvider initialRegion={initialRegion} initialTracks={initialTracks}>
-      <div className={cn("flex flex-col", className)}>
-        {/* Control bar */}
+      <div className={cn('flex flex-col w-full', className)}>
         <ControlBar initialRegion={initialRegion} />
 
-        {/* Main content area */}
-        <div className="flex min-h-[600px] w-full overflow-hidden">
-          {/* Track selector (left panel) */}
+        {/* Main content area — grows to fill the viewport. The canvas needs
+            min-w-0 so it can shrink inside the flex row; overflow on the
+            row is hidden but the canvas itself lets Gosling render its
+            full extent (axis labels live in the inner padding). */}
+        <div className="flex w-full overflow-hidden">
           <TrackSelector className="w-72 shrink-0 border-r border-border" />
-
-          {/* Browser canvas (main area) */}
-          <BrowserCanvas className="flex-1 min-w-0 overflow-hidden" />
+          <BrowserCanvas className="flex-1 min-w-0" />
         </div>
       </div>
     </BrowserProvider>

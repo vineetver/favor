@@ -300,9 +300,9 @@ function TissuePickerContent() {
         </div>
       </SheetHeader>
 
-      {/* ROW A — search + assay multi-filter */}
-      <div className="flex items-center gap-3 px-5 py-3">
-        <div className="relative flex-1">
+      {/* ROW A — search + assay multi-filter (stacked so neither clips) */}
+      <div className="px-5 pt-3 space-y-2">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             ref={searchInputRef}
@@ -320,7 +320,7 @@ function TissuePickerContent() {
       </div>
 
       {/* ROW B — count + active toggle + reset */}
-      <div className="flex items-center gap-3 px-5 pb-3 text-xs text-muted-foreground">
+      <div className="flex items-center gap-3 px-5 py-3 text-xs text-muted-foreground">
         <span>
           {sampleCount.toLocaleString()} sample{sampleCount === 1 ? '' : 's'}
         </span>
@@ -470,7 +470,7 @@ function AssayFilterRow({ tissue, selected, onToggle }: AssayFilterRowProps) {
   }, [tissue])
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       {available.map(assay => {
         const active = selected.has(assay)
         return (
@@ -530,27 +530,27 @@ const SubtissueRow = memo(function SubtissueRow({
   return (
     <li
       className={cn(
-        'relative flex items-start gap-4 px-5 py-3 hover:bg-muted/40 transition-colors',
+        'relative px-5 py-2.5 hover:bg-muted/40 transition-colors',
         !isLast && 'border-b border-border/40'
       )}
     >
       {hasActive && (
         <span
           aria-hidden
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-foreground"
+          className="absolute left-1.5 top-3.5 h-1.5 w-1.5 rounded-full bg-foreground"
         />
       )}
 
-      <div className="min-w-0 flex-1">
-        <div className="text-sm text-foreground leading-snug">{location}</div>
-        {qualifier && (
-          <div className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
-            {qualifier}
-          </div>
-        )}
+      <div className="min-w-0 text-sm text-foreground leading-snug truncate">
+        {location}
       </div>
+      {qualifier && (
+        <div className="min-w-0 text-xs text-muted-foreground leading-snug truncate mt-0.5">
+          {qualifier}
+        </div>
+      )}
 
-      <div className="flex items-center gap-1 shrink-0 pt-0.5">
+      <div className="flex flex-wrap items-center gap-1 mt-2">
         {renderable.map(assay => (
           <AssayToggle
             key={assay.name}

@@ -115,10 +115,10 @@ export function getCuratedTracks(): StaticTrack[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Tracks shown when the browser first loads. Keep this short — every default
- * track triggers a tile fetch on mount.
+ * Tracks shown when the browser first loads. Just gene annotation — every
+ * additional default track is a tile fetch the user didn't ask for.
  */
-export const DEFAULT_TRACK_IDS = ['gene-annotation', 'ccre', 'clinvar'] as const
+export const DEFAULT_TRACK_IDS = ['gene-annotation'] as const
 
 export function getDefaultTracks(): StaticTrack[] {
   return DEFAULT_TRACK_IDS.map(id => TRACK_REGISTRY[id]).filter(
