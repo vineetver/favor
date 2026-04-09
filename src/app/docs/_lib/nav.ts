@@ -1,6 +1,8 @@
 export interface DocsNavItem {
   title: string;
   href: string;
+  /** Optional sub-items, revealed when the parent or any child is active. */
+  children?: DocsNavItem[];
 }
 
 export interface DocsNavGroup {
@@ -16,10 +18,13 @@ export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
   {
     label: "Portal Guide",
     items: [
-      { title: "Data & Annotations", href: "/docs/data" },
+      {
+        title: "Data & Annotations",
+        href: "/docs/data",
+        children: [{ title: "Changelog", href: "/docs/data/changelog" }],
+      },
       { title: "Search & Explore", href: "/docs/search" },
       { title: "Batch Annotation", href: "/docs/batch-annotation" },
-      { title: "FAVOR CLI", href: "/cli" },
       { title: "AI Agent", href: "/docs/agent" },
     ],
   },

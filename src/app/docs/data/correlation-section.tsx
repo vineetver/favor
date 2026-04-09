@@ -180,7 +180,7 @@ export function CorrelationSection() {
     <>
       <div className="mt-10">
         <Prose>
-          <h2>Annotation correlation structure</h2>
+          <h2 id="correlation">Annotation correlation structure</h2>
           <p>
             The heatmap below shows pairwise Pearson correlations between individual
             and integrative functional annotations. Circle size and color encode

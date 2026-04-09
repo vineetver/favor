@@ -2,8 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Prose } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { SystemArchDiagram } from "../_components/system-arch-diagram";
 import { StatBanner } from "../_components/stat-banner";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "how-it-connects", label: "How it all connects" },
+  { id: "engines", label: "Six engines" },
+  { id: "why", label: "Why it's built this way" },
+  { id: "ai-native-api", label: "AI-native API" },
+  { id: "production", label: "Production numbers" },
+  { id: "security", label: "Security model" },
+  { id: "deep-dives", label: "Deep dives" },
+];
 
 export const metadata: Metadata = {
   title: "Architecture | FAVOR Docs",
@@ -151,6 +162,8 @@ const deepDives = [
 export default function ArchitectureDocsPage() {
   return (
     <div className="space-y-12">
+      <DocsToc items={TOC_ITEMS} />
+
       {/* Hero */}
       <div>
         <Prose>
@@ -177,7 +190,7 @@ export default function ArchitectureDocsPage() {
       {/* System overview */}
       <section>
         <Prose>
-          <h2>How it all connects</h2>
+          <h2 id="how-it-connects">How it all connects</h2>
         </Prose>
         <ul className="mt-3 space-y-1.5">
           {[
@@ -201,7 +214,7 @@ export default function ArchitectureDocsPage() {
       {/* Storage engines */}
       <section>
         <Prose>
-          <h2>Six engines. One job each.</h2>
+          <h2 id="engines">Six engines. One job each.</h2>
           <p>
             Each engine handles exactly one access pattern it&apos;s best at.
             S3 Parquet is the canonical source. Every engine is a materialized
@@ -255,7 +268,7 @@ export default function ArchitectureDocsPage() {
       {/* Design decisions */}
       <section>
         <Prose>
-          <h2>Why it&apos;s built this way</h2>
+          <h2 id="why">Why it&apos;s built this way</h2>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {decisions.map((d) => (
@@ -281,7 +294,7 @@ export default function ArchitectureDocsPage() {
       {/* AI-native API (summary — detail lives in /docs/agent-system) */}
       <section>
         <Prose>
-          <h2>AI-native API</h2>
+          <h2 id="ai-native-api">AI-native API</h2>
           <p>
             99 endpoints designed so AI agents can act on data, not just read
             it. Every error includes a recovery plan as a ready-to-execute API
@@ -296,7 +309,7 @@ export default function ArchitectureDocsPage() {
       {/* Proof */}
       <section>
         <Prose>
-          <h2>Production numbers</h2>
+          <h2 id="production">Production numbers</h2>
         </Prose>
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
@@ -318,7 +331,7 @@ export default function ArchitectureDocsPage() {
       {/* Security */}
       <section>
         <Prose>
-          <h2>Security model</h2>
+          <h2 id="security">Security model</h2>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
@@ -351,7 +364,7 @@ export default function ArchitectureDocsPage() {
       {/* Deep dives */}
       <section>
         <Prose>
-          <h2>Deep dives</h2>
+          <h2 id="deep-dives">Deep dives</h2>
           <p>
             If you only read one next:{" "}
             <strong>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { StatBanner } from "../_components/stat-banner";
 import { DataFlowDiagram } from "../_components/data-flow-diagram";
 import {
@@ -8,6 +9,16 @@ import {
   FlowNode,
   FlowConnector,
 } from "../_components/flow-diagram";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "parsing", label: "Smart query parsing" },
+  { id: "cascade", label: "Matching cascade" },
+  { id: "modes", label: "Three search modes" },
+  { id: "response", label: "Response structure" },
+  { id: "performance", label: "Performance engineering" },
+  { id: "agent-integration", label: "Agent integration" },
+  { id: "decisions", label: "Design decisions" },
+];
 
 export const metadata: Metadata = {
   title: "Search Engine | FAVOR Docs",
@@ -18,6 +29,8 @@ export const metadata: Metadata = {
 export default function SearchEngineDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       {/* Hero */}
       <div>
         <Prose>
@@ -52,7 +65,7 @@ export default function SearchEngineDocsPage() {
       {/* Smart query parsing */}
       <section>
         <Prose>
-          <h2>Smart query parsing</h2>
+          <h2 id="parsing">Smart query parsing</h2>
           <p>
             The parser classifies every query before it touches Elasticsearch.
             Three outcomes, in order of preference:
@@ -94,7 +107,7 @@ export default function SearchEngineDocsPage() {
       {/* Matching cascade */}
       <section>
         <Prose>
-          <h2>Matching cascade</h2>
+          <h2 id="cascade">Matching cascade</h2>
           <p>
             Priority-ordered matching across 6 tiers (0&ndash;5).
             Higher-confidence strategies execute first. Every result carries a
@@ -146,7 +159,7 @@ export default function SearchEngineDocsPage() {
       {/* Three search modes — clean table */}
       <section>
         <Prose>
-          <h2>Three search modes</h2>
+          <h2 id="modes">Three search modes</h2>
           <p>
             Same matching cascade and index infrastructure, three consumers
             with different latency targets and result shapes.
@@ -203,7 +216,7 @@ export default function SearchEngineDocsPage() {
       {/* Response structure */}
       <section>
         <Prose>
-          <h2>Response structure</h2>
+          <h2 id="response">Response structure</h2>
           <p>
             Every result is a structured record. The agent uses{" "}
             <code>match_tier</code> to decide whether to proceed or
@@ -241,7 +254,7 @@ export default function SearchEngineDocsPage() {
       {/* Performance — top 3 prominent, rest collapsible */}
       <section>
         <Prose>
-          <h2>Performance engineering</h2>
+          <h2 id="performance">Performance engineering</h2>
           <p>
             Sub-50ms latency from deliberate engineering at every layer.
           </p>
@@ -293,7 +306,7 @@ export default function SearchEngineDocsPage() {
       {/* Agent integration — consolidated, references cascade */}
       <section>
         <Prose>
-          <h2>Agent integration</h2>
+          <h2 id="agent-integration">Agent integration</h2>
           <p>
             The{" "}
             <Link href="/docs/agent-system">agent</Link> converts natural
@@ -318,7 +331,7 @@ export default function SearchEngineDocsPage() {
       {/* Design decisions */}
       <section>
         <Prose>
-          <h2>Design decisions</h2>
+          <h2 id="decisions">Design decisions</h2>
         </Prose>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">

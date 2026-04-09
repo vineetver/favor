@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "capabilities", label: "What it can do" },
+  { id: "getting-started", label: "Getting started" },
+  { id: "example-prompts", label: "Example prompts" },
+  { id: "operations", label: "Available operations" },
+];
 
 export const metadata: Metadata = {
   title: "AI Agent | FAVOR Docs",
@@ -37,6 +45,8 @@ function Prompt({ children }: { children: string }) {
 export default function AgentDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       <Prose>
         <h1>AI Agent (FAVOR-GPT)</h1>
         <p>
@@ -48,7 +58,7 @@ export default function AgentDocsPage() {
 
       {/* Capabilities */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 id="capabilities" className="text-lg font-semibold text-foreground">
           What it can do
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -87,7 +97,7 @@ export default function AgentDocsPage() {
 
       {/* Getting started */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 id="getting-started" className="text-lg font-semibold text-foreground">
           Getting started
         </h2>
         <div className="space-y-3">
@@ -144,7 +154,7 @@ export default function AgentDocsPage() {
 
       {/* Example prompts */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 id="example-prompts" className="text-lg font-semibold text-foreground">
           Example prompts
         </h2>
         <div className="space-y-2">
@@ -159,7 +169,7 @@ export default function AgentDocsPage() {
 
       {/* Operations */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 id="operations" className="text-lg font-semibold text-foreground">
           Available operations
         </h2>
         <div className="overflow-x-auto">

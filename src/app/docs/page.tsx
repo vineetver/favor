@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@shared/components/ui/card";
 import { Prose } from "./_components/doc-primitives";
+import { DocsToc, type TocItem } from "./_components/docs-toc";
 import { StatBanner } from "./_components/stat-banner";
 
 export const metadata: Metadata = {
@@ -35,6 +36,11 @@ const guides = [
   { title: "FAVOR-GPT", description: "Ask questions in natural language. Search, filter, run statistics, build visualizations.", href: "/docs/agent" },
 ];
 
+const TOC_ITEMS: TocItem[] = [
+  { id: "get-started", label: "Get started" },
+  { id: "deep-dives", label: "Engineering deep dives" },
+];
+
 const deepDives = [
   { title: "Architecture", href: "/docs/architecture", description: "Six databases, sub-10ms lookups" },
   { title: "Knowledge Graph", href: "/docs/knowledge-graph", description: "14.8M entities, 66 edge types, graph traversal engine" },
@@ -50,6 +56,8 @@ const deepDives = [
 export default function DocsPage() {
   return (
     <div>
+      <DocsToc items={TOC_ITEMS} />
+
       {/* ── Hero ── */}
       <Prose>
         <h1>What is FAVOR?</h1>
@@ -79,7 +87,7 @@ export default function DocsPage() {
       {/* ── Guides ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Get started</h2>
+          <h2 id="get-started">Get started</h2>
         </Prose>
       </div>
 
@@ -106,7 +114,7 @@ export default function DocsPage() {
       {/* ── Deep dives ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Engineering deep dives</h2>
+          <h2 id="deep-dives">Engineering deep dives</h2>
         </Prose>
       </div>
 

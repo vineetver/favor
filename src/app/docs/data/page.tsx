@@ -2,8 +2,24 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { AnnotationCatalog } from "./annotation-catalog";
 import { CorrelationSection } from "./correlation-section";
+
+/* ------------------------------------------------------------------ */
+/*  Table of contents                                                  */
+/* ------------------------------------------------------------------ */
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "variant-set", label: "Variant set" },
+  { id: "gene-based-annotation", label: "Gene-based annotation" },
+  { id: "apcs", label: "Annotation PCs" },
+  { id: "apc-calculation", label: "How aPCs are calculated" },
+  { id: "correlation", label: "Annotation correlation" },
+  { id: "annotation-catalog", label: "Annotation catalog" },
+  { id: "tissue-data", label: "Tissue & cell-type data" },
+  { id: "data-sources", label: "Data sources" },
+];
 
 export const metadata: Metadata = {
   title: "Data & Annotations | FAVOR Docs",
@@ -18,6 +34,8 @@ export const metadata: Metadata = {
 export default function DataAnnotationsPage() {
   return (
     <div>
+      <DocsToc items={TOC_ITEMS} />
+
       {/* ── Hero ── */}
       <Prose>
         <h1>Data & Annotations</h1>
@@ -33,7 +51,7 @@ export default function DataAnnotationsPage() {
       {/* ── Variant set ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Variant set</h2>
+          <h2 id="variant-set">Variant set</h2>
           <p>
             The current FAVOR database contains a total
             of <strong>8,892,915,237</strong> variants: all
@@ -46,7 +64,7 @@ export default function DataAnnotationsPage() {
       {/* ── Gene-based annotation figure ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Gene-based annotation</h2>
+          <h2 id="gene-based-annotation">Gene-based annotation</h2>
         </Prose>
       </div>
 
@@ -87,7 +105,7 @@ export default function DataAnnotationsPage() {
       {/* ── Annotation Principal Components ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Annotation principal components (aPCs)</h2>
+          <h2 id="apcs">Annotation principal components (aPCs)</h2>
           <p>
             It is often helpful to have a single metric summarizing multiple similar
             annotations measuring the same underlying biological function. Annotation
@@ -140,7 +158,7 @@ export default function DataAnnotationsPage() {
       {/* ── aPC calculation steps ── */}
       <div className="mt-10">
         <Prose>
-          <h2>How aPCs are calculated</h2>
+          <h2 id="apc-calculation">How aPCs are calculated</h2>
         </Prose>
       </div>
 
@@ -245,7 +263,7 @@ export default function DataAnnotationsPage() {
       {/* ── Full annotation catalog ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Full annotation catalog</h2>
+          <h2 id="annotation-catalog">Full annotation catalog</h2>
           <p>
             Every variant in FAVOR carries annotations across the following
             categories. Fields marked <strong>NEW</strong> were added after the
@@ -259,7 +277,7 @@ export default function DataAnnotationsPage() {
       {/* ── Tissue-specific data packs ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Tissue and cell-type specific data</h2>
+          <h2 id="tissue-data">Tissue and cell-type specific data</h2>
           <p>
             In addition to the per-variant annotations above, FAVOR provides
             tissue and cell-type specific datasets as separate downloadable
@@ -301,11 +319,15 @@ export default function DataAnnotationsPage() {
       {/* ── Data sources ── */}
       <div className="mt-10">
         <Prose>
-          <h2>Data sources and versions</h2>
+          <h2 id="data-sources">Data sources and versions</h2>
           <p>
             Annotations are drawn from the following sources, harmonized onto
             GRCh38 coordinates. This includes sources for both per-variant annotations
-            and the tissue-specific data packs above.
+            and the tissue-specific data packs above. See the{" "}
+            <Link href="/docs/data/changelog" className="text-primary hover:underline">
+              data changelog
+            </Link>{" "}
+            for the history of source bumps and pipeline changes across releases.
           </p>
         </Prose>
       </div>

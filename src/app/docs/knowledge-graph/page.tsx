@@ -2,7 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { StatBanner } from "../_components/stat-banner";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "entity-network", label: "Entity network" },
+  { id: "backbone", label: "Platform backbone" },
+  { id: "use-cases", label: "What researchers do with it" },
+  { id: "traversal", label: "Traversal engine" },
+  { id: "query-anatomy", label: "Query anatomy" },
+  { id: "relationships", label: "Relationship types" },
+  { id: "construction", label: "How it's built" },
+  { id: "explore-more", label: "Explore more" },
+];
 import { DataFlowDiagram } from "../_components/data-flow-diagram";
 import {
   FlowDiagram,
@@ -76,6 +88,8 @@ const traversalOps = [
 export default function KnowledgeGraphDocsPage() {
   return (
     <div className="space-y-12">
+      <DocsToc items={TOC_ITEMS} />
+
       {/* Hero */}
       <div>
         <Prose>
@@ -103,7 +117,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Schema network graph */}
       <section>
         <Prose>
-          <h2>Entity network</h2>
+          <h2 id="entity-network">Entity network</h2>
           <p>
             16 entity types connected by 52 relationship types across 6 domains.
             Hover any node to see its data sources. Hover an edge to see the
@@ -118,7 +132,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Platform backbone */}
       <section>
         <Prose>
-          <h2>Platform backbone</h2>
+          <h2 id="backbone">Platform backbone</h2>
           <p>
             Every major capability draws from the graph.
           </p>
@@ -153,7 +167,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Use cases */}
       <section>
         <Prose>
-          <h2>What researchers do with it</h2>
+          <h2 id="use-cases">What researchers do with it</h2>
         </Prose>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -190,7 +204,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Traversal engine */}
       <section>
         <Prose>
-          <h2>Traversal engine</h2>
+          <h2 id="traversal">Traversal engine</h2>
           <p>
             Compressed Sparse Row (CSR): two flat arrays (edge targets +
             offsets). Neighbors live in one contiguous block, so traversal is
@@ -233,7 +247,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Query pipeline */}
       <section>
         <Prose>
-          <h2>Query anatomy</h2>
+          <h2 id="query-anatomy">Query anatomy</h2>
           <p>
             Every graph query follows the same five-stage execution path,
             entirely in-process with zero network hops.
@@ -262,7 +276,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Domain coverage */}
       <section>
         <Prose>
-          <h2>52 relationship types across 6 domains</h2>
+          <h2 id="relationships">52 relationship types across 6 domains</h2>
           <p>
             Every edge carries typed evidence: association scores, statistical
             measures, source attribution, and clinical confidence levels.
@@ -346,7 +360,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Graph engineering */}
       <section>
         <Prose>
-          <h2>How it&apos;s built</h2>
+          <h2 id="construction">How it&apos;s built</h2>
         </Prose>
         <div className="mt-4">
           <FlowDiagram>
@@ -395,7 +409,7 @@ export default function KnowledgeGraphDocsPage() {
       {/* Explore more */}
       <section>
         <Prose>
-          <h2>Explore more</h2>
+          <h2 id="explore-more">Explore more</h2>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {[

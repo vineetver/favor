@@ -2,6 +2,19 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "navigate", label: "Navigate" },
+  { id: "upload", label: "Upload your file" },
+  { id: "validation", label: "Validation & preview" },
+  { id: "mapping", label: "Map columns" },
+  { id: "results", label: "Results ready" },
+  { id: "analytics-open", label: "Open Analytics" },
+  { id: "analytics-dashboard", label: "Analytics dashboard" },
+  { id: "ai-agent", label: "Ask the AI agent" },
+  { id: "jobs", label: "Jobs dashboard" },
+];
 
 export const metadata: Metadata = {
   title: "Batch Annotation | FAVOR Docs",
@@ -52,6 +65,8 @@ function Frame({
 export default function BatchAnnotationDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       <Prose>
         <h1>Batch Annotation</h1>
         <p>
@@ -67,7 +82,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={1} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="navigate" className="text-lg font-semibold text-foreground">
             Navigate to Batch Annotation
           </h2>
         </div>
@@ -85,7 +100,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={2} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="upload" className="text-lg font-semibold text-foreground">
             Upload your file
           </h2>
         </div>
@@ -103,7 +118,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={3} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="validation" className="text-lg font-semibold text-foreground">
             Validation &amp; preview
           </h2>
         </div>
@@ -121,7 +136,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={4} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="mapping" className="text-lg font-semibold text-foreground">
             Map columns
           </h2>
         </div>
@@ -139,7 +154,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={5} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="results" className="text-lg font-semibold text-foreground">
             Results ready
           </h2>
         </div>
@@ -157,7 +172,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={6} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="analytics-open" className="text-lg font-semibold text-foreground">
             Open Analytics
           </h2>
         </div>
@@ -175,7 +190,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={7} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="analytics-dashboard" className="text-lg font-semibold text-foreground">
             Analytics dashboard
           </h2>
         </div>
@@ -193,7 +208,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={8} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="ai-agent" className="text-lg font-semibold text-foreground">
             Ask the AI agent
           </h2>
         </div>
@@ -211,7 +226,7 @@ export default function BatchAnnotationDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={9} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="jobs" className="text-lg font-semibold text-foreground">
             Jobs dashboard
           </h2>
         </div>

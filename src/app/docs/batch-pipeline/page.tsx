@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { StatBanner } from "../_components/stat-banner";
 import { DataFlowDiagram } from "../_components/data-flow-diagram";
 import {
@@ -8,6 +9,17 @@ import {
   FlowNode,
   FlowConnector,
 } from "../_components/flow-diagram";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "what-you-can-upload", label: "What you can upload" },
+  { id: "upload-to-insight", label: "Upload to insight" },
+  { id: "what-makes-it-fast", label: "What makes it fast" },
+  { id: "speed", label: "Speed" },
+  { id: "key-resolution", label: "Key resolution" },
+  { id: "what-you-get-back", label: "What you get back" },
+  { id: "cohort-ready", label: "Once your cohort is ready" },
+  { id: "knowledge-graph", label: "Connected to knowledge graph" },
+];
 
 export const metadata: Metadata = {
   title: "Batch Pipeline | FAVOR Docs",
@@ -18,6 +30,8 @@ export const metadata: Metadata = {
 export default function BatchPipelineDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       {/* Hero */}
       <div>
         <Prose>
@@ -47,7 +61,7 @@ export default function BatchPipelineDocsPage() {
       {/* Supported inputs */}
       <section>
         <Prose>
-          <h2>What you can upload</h2>
+          <h2 id="what-you-can-upload">What you can upload</h2>
           <p>
             Format, delimiters, columns, and identifier types are all
             auto-detected. Mixed identifier formats within a single file are
@@ -84,7 +98,7 @@ export default function BatchPipelineDocsPage() {
       {/* Pipeline */}
       <section>
         <Prose>
-          <h2>Upload to insight</h2>
+          <h2 id="upload-to-insight">Upload to insight</h2>
           <p>
             Five stages, fully streaming and stateless. Files go to cloud
             storage, workers pull chunks in parallel, output lands as queryable
@@ -177,7 +191,7 @@ export default function BatchPipelineDocsPage() {
       {/* What makes it fast */}
       <section>
         <Prose>
-          <h2>What makes it fast</h2>
+          <h2 id="what-makes-it-fast">What makes it fast</h2>
           <p>
             No single bottleneck gates the system. Storage I/O, decoding, and
             output generation are all pipelined and parallelized.
@@ -213,7 +227,7 @@ export default function BatchPipelineDocsPage() {
       {/* Speed — moved up to follow "What makes it fast" */}
       <section>
         <Prose>
-          <h2>Speed</h2>
+          <h2 id="speed">Speed</h2>
           <p>
             10,000+ records/sec per worker with horizontal scaling. Priority
             queues ensure small jobs never wait behind large ones.
@@ -235,7 +249,7 @@ export default function BatchPipelineDocsPage() {
       {/* Key resolution */}
       <section>
         <Prose>
-          <h2>Key resolution</h2>
+          <h2 id="key-resolution">Key resolution</h2>
           <p>
             Mixed identifier formats in a single file. Each row classified and
             resolved independently.
@@ -258,7 +272,7 @@ export default function BatchPipelineDocsPage() {
       {/* What you get back */}
       <section>
         <Prose>
-          <h2>What you get back</h2>
+          <h2 id="what-you-get-back">What you get back</h2>
           <p>
             232 dimensions per variant. Original columns preserved alongside
             the full annotation payload.
@@ -294,7 +308,7 @@ export default function BatchPipelineDocsPage() {
       {/* Post-annotation */}
       <section>
         <Prose>
-          <h2>Once your cohort is ready</h2>
+          <h2 id="cohort-ready">Once your cohort is ready</h2>
           <p>
             Everything runs in one place against the same dataset. No separate
             exports or analysis environments.
@@ -330,7 +344,7 @@ export default function BatchPipelineDocsPage() {
       {/* Knowledge graph connection */}
       <section>
         <Prose>
-          <h2>Connected to the knowledge graph</h2>
+          <h2 id="knowledge-graph">Connected to the knowledge graph</h2>
           <p>
             The{" "}
             <Link href="/docs/agent-system">AI agent</Link> cross-references

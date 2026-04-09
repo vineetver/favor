@@ -1,9 +1,25 @@
 import type { Metadata } from "next";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
 import { StatBanner } from "../_components/stat-banner";
 import { DataFlowDiagram } from "../_components/data-flow-diagram";
 import { TechCard } from "../_components/tech-card";
 import { AgentArchDiagram } from "../_components/agent-arch-diagram";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "what-it-solves", label: "What it solves" },
+  { id: "architecture", label: "Architecture" },
+  { id: "tools", label: "Five-tool surface" },
+  { id: "domains", label: "Four domains" },
+  { id: "reliability", label: "Reliability pipeline" },
+  { id: "errors", label: "Self-correcting errors" },
+  { id: "data-quality", label: "Data-quality recovery" },
+  { id: "guardrails", label: "Keeping the model on track" },
+  { id: "example", label: "Example run" },
+  { id: "sessions", label: "Session persistence" },
+  { id: "viz", label: "Visualization engine" },
+  { id: "philosophy", label: "Design philosophy" },
+];
 
 export const metadata: Metadata = {
   title: "AI Agent | FAVOR Docs",
@@ -14,6 +30,8 @@ export const metadata: Metadata = {
 export default function AgentSystemDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       {/* Hero */}
       <div>
         <Prose>
@@ -40,7 +58,7 @@ export default function AgentSystemDocsPage() {
       {/* What it solves */}
       <section>
         <Prose>
-          <h2>What it solves</h2>
+          <h2 id="what-it-solves">What it solves</h2>
         </Prose>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -74,7 +92,7 @@ export default function AgentSystemDocsPage() {
       {/* Architecture */}
       <section>
         <Prose>
-          <h2>Architecture</h2>
+          <h2 id="architecture">Architecture</h2>
           <p>
             Tool-loop: observe workspace state, select a tool, execute through
             the reliability pipeline, collect results, decide whether to call
@@ -90,7 +108,7 @@ export default function AgentSystemDocsPage() {
       {/* Five-tool surface */}
       <section>
         <Prose>
-          <h2>Five-tool surface</h2>
+          <h2 id="tools">Five-tool surface</h2>
           <p>
             Five non-overlapping tools. Each one does exactly one job, describes
             itself to the model, and stays out of the others&apos; way.
@@ -127,7 +145,7 @@ export default function AgentSystemDocsPage() {
       {/* Command domains */}
       <section>
         <Prose>
-          <h2>Four domains, one command surface</h2>
+          <h2 id="domains">Four domains, one command surface</h2>
           <p>
             Run is one door into four kinds of work. You tell it what
             you&apos;re trying to do (cohort, analyze, graph, or
@@ -210,7 +228,7 @@ export default function AgentSystemDocsPage() {
       {/* Reliability pipeline */}
       <section>
         <Prose>
-          <h2>Reliability pipeline</h2>
+          <h2 id="reliability">Reliability pipeline</h2>
           <p>
             Every agent request returns either results or a ready-to-run fix.
           </p>
@@ -282,7 +300,7 @@ export default function AgentSystemDocsPage() {
       {/* Error handling */}
       <section>
         <Prose>
-          <h2>Self-correcting error handling</h2>
+          <h2 id="errors">Self-correcting error handling</h2>
           <p>
             Every failure is classified, tagged with a hint, and paired with a
             recovery action the agent can execute immediately.
@@ -328,7 +346,7 @@ export default function AgentSystemDocsPage() {
       {/* Data-quality auto-recovery */}
       <section>
         <Prose>
-          <h2>Data-quality auto-recovery</h2>
+          <h2 id="data-quality">Data-quality auto-recovery</h2>
           <p>
             Not all failures are crashes. Many are &ldquo;the data can&apos;t
             support the question.&rdquo; We detect those early and return a
@@ -367,7 +385,7 @@ export default function AgentSystemDocsPage() {
       {/* Model guardrails */}
       <section>
         <Prose>
-          <h2>Keeping the model on track</h2>
+          <h2 id="guardrails">Keeping the model on track</h2>
         </Prose>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -400,7 +418,7 @@ export default function AgentSystemDocsPage() {
       {/* Example run */}
       <section>
         <Prose>
-          <h2>Example run</h2>
+          <h2 id="example">Example run</h2>
           <p>
             A single user question triggers multi-step tool execution with
             self-correction.
@@ -478,7 +496,7 @@ export default function AgentSystemDocsPage() {
       {/* Session persistence */}
       <section>
         <Prose>
-          <h2>Session persistence</h2>
+          <h2 id="sessions">Session persistence</h2>
           <p>
             Sessions, messages, tool calls, and artifacts persisted in
             PostgreSQL with optimistic concurrency. Large tool outputs compacted
@@ -504,7 +522,7 @@ export default function AgentSystemDocsPage() {
       {/* Visualization engine */}
       <section>
         <Prose>
-          <h2>Visualization engine</h2>
+          <h2 id="viz">Visualization engine</h2>
           <p>
             Every chart is produced by a deterministic mapper: same tool output
             always makes the same chart. If the data is insufficient, the mapper
@@ -538,7 +556,7 @@ export default function AgentSystemDocsPage() {
       {/* Design philosophy */}
       <section>
         <Prose>
-          <h2>Design philosophy</h2>
+          <h2 id="philosophy">Design philosophy</h2>
         </Prose>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">

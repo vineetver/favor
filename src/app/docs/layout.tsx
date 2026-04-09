@@ -21,11 +21,18 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-10 xl:gap-14">
+        <div className="flex flex-col lg:flex-row gap-10 xl:gap-12">
           <div className="hidden lg:block">
             <DocsSidebar />
           </div>
-          <div className="min-w-0 flex-1 max-w-4xl">{children}</div>
+          <div className="min-w-0 flex-1 max-w-3xl [&_:is(h2,h3)[id]]:scroll-mt-24">
+            {children}
+          </div>
+          <aside
+            id="docs-toc-slot"
+            aria-label="On this page"
+            className="hidden xl:block w-48 shrink-0"
+          />
         </div>
       </div>
     </div>

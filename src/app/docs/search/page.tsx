@@ -3,6 +3,16 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@infra/utils";
 import { Prose, Callout } from "../_components/doc-primitives";
+import { DocsToc, type TocItem } from "../_components/docs-toc";
+
+const TOC_ITEMS: TocItem[] = [
+  { id: "start-here", label: "Start here" },
+  { id: "typeahead", label: "Typeahead results" },
+  { id: "anchor-expand", label: "Anchor + expand" },
+  { id: "incremental", label: "Incremental expansion" },
+  { id: "relevance", label: "Why this is relevant" },
+  { id: "batch-resolve", label: "Batch resolve" },
+];
 
 export const metadata: Metadata = {
   title: "Search & Explore | FAVOR Docs",
@@ -53,6 +63,8 @@ function Frame({
 export default function SearchDocsPage() {
   return (
     <div className="space-y-14">
+      <DocsToc items={TOC_ITEMS} />
+
       <Prose>
         <h1>Search & Explore</h1>
         <p>
@@ -67,7 +79,9 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={1} />
-          <h2 className="text-lg font-semibold text-foreground">Start here</h2>
+          <h2 id="start-here" className="text-lg font-semibold text-foreground">
+            Start here
+          </h2>
         </div>
         <Frame caption="Type anything — gene symbol, rsID, disease name, drug, or VCF coordinate.">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +97,7 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={2} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="typeahead" className="text-lg font-semibold text-foreground">
             Typeahead results
           </h2>
         </div>
@@ -101,7 +115,7 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={3} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="anchor-expand" className="text-lg font-semibold text-foreground">
             Anchor + expand
           </h2>
         </div>
@@ -119,7 +133,7 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={4} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="incremental" className="text-lg font-semibold text-foreground">
             Incremental expansion
           </h2>
         </div>
@@ -137,7 +151,7 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={5} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="relevance" className="text-lg font-semibold text-foreground">
             Why this is relevant
           </h2>
         </div>
@@ -155,7 +169,7 @@ export default function SearchDocsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-2.5">
           <Marker n={6} />
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 id="batch-resolve" className="text-lg font-semibold text-foreground">
             Batch resolve
           </h2>
         </div>
