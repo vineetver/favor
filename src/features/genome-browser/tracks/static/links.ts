@@ -331,182 +331,126 @@ function betweenLinkLayer(opts: {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED GENE-ANNOTATION CONSTANTS
+//
+// Each sub-track in the gene annotation overlay layer needs the same `data`
+// block, the same row/color encoding, and the same width-visibility rule.
+// Hoisting them as shared constants drops the file from ~626 to ~370 lines.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GENE_ANNO_DATA = {
+  url: GENE_ANNOTATION_URL,
+  type: 'beddb',
+  genomicFields: [
+    { index: 1, name: 'start' },
+    { index: 2, name: 'end' },
+  ],
+  valueFields: [
+    { index: 5, name: 'strand', type: 'nominal' },
+    { index: 3, name: 'name', type: 'nominal' },
+  ],
+  exonIntervalFields: [
+    { index: 12, name: 'start' },
+    { index: 13, name: 'end' },
+  ],
+} as const
+
+const GENE_ANNO_BASE = {
+  data: GENE_ANNO_DATA,
+  opacity: { value: 0.8 },
+} as const
+
+const GENE_ANNO_STRAND_BASE = {
+  ...GENE_ANNO_BASE,
+  row: { field: 'strand', type: 'nominal', domain: ['+', '-'] },
+  color: {
+    field: 'strand',
+    type: 'nominal',
+    domain: ['+', '-'],
+    range: ['#7585FF', '#FF8A85'],
+  },
+  visibility: [
+    {
+      operation: 'less-than',
+      measure: 'width',
+      threshold: '|xe-x|',
+      transitionPadding: 10,
+      target: 'mark',
+    },
+  ],
+} as const
+
+const FILTER_FORWARD = [
+  { type: 'filter', field: 'type', oneOf: ['gene'] },
+  { type: 'filter', field: 'strand', oneOf: ['+'] },
+] as const
+
+const FILTER_REVERSE = [
+  { type: 'filter', field: 'type', oneOf: ['gene'] },
+  { type: 'filter', field: 'strand', oneOf: ['-'] },
+] as const
+
+const FILTER_GENES = [
+  { type: 'filter', field: 'type', oneOf: ['gene'] },
+] as const
+
+const FILTER_EXONS = [
+  { type: 'filter', field: 'type', oneOf: ['exon'] },
+] as const
+
 const geneAnnotationLayer: GoslingTrackSpec = {
   alignment: 'overlay',
   tracks: [
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      row: { field: 'strand', type: 'nominal', domain: ['+', '-'] },
-      color: {
-        field: 'strand',
-        type: 'nominal',
-        domain: ['+', '-'],
-        range: ['#7585FF', '#FF8A85'],
-      },
-      visibility: [
-        {
-          operation: 'less-than',
-          measure: 'width',
-          threshold: '|xe-x|',
-          transitionPadding: 10,
-          target: 'mark',
-        },
-      ],
-      opacity: { value: 0.8 },
-      dataTransform: [
-        { type: 'filter', field: 'type', oneOf: ['gene'] },
-        { type: 'filter', field: 'strand', oneOf: ['+'] },
-      ],
+      ...GENE_ANNO_STRAND_BASE,
+      dataTransform: FILTER_FORWARD,
       mark: 'triangleRight',
       x: { field: 'end', type: 'genomic', axis: 'none', linkingId: LINKING_ID },
       size: { value: 15 },
     },
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      dataTransform: [{ type: 'filter', field: 'type', oneOf: ['gene'] }],
+      ...GENE_ANNO_BASE,
+      dataTransform: FILTER_GENES,
       mark: 'text',
       text: { field: 'name', type: 'nominal' },
       x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
       xe: { field: 'end', type: 'genomic' },
       style: { dy: -15 },
-      opacity: { value: 0.8 },
     },
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      dataTransform: [
-        { type: 'filter', field: 'type', oneOf: ['gene'] },
-        { type: 'filter', field: 'strand', oneOf: ['-'] },
-      ],
+      ...GENE_ANNO_STRAND_BASE,
+      dataTransform: FILTER_REVERSE,
       mark: 'triangleLeft',
       x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
       size: { value: 15 },
       style: { align: 'right' },
-      opacity: { value: 0.8 },
     },
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      dataTransform: [{ type: 'filter', field: 'type', oneOf: ['exon'] }],
+      ...GENE_ANNO_BASE,
+      dataTransform: FILTER_EXONS,
       mark: 'rect',
       x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
       size: { value: 15 },
       xe: { field: 'end', type: 'genomic' },
-      opacity: { value: 0.8 },
     },
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      dataTransform: [
-        { type: 'filter', field: 'type', oneOf: ['gene'] },
-        { type: 'filter', field: 'strand', oneOf: ['+'] },
-      ],
+      ...GENE_ANNO_STRAND_BASE,
+      dataTransform: FILTER_FORWARD,
       mark: 'rule',
       x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
       strokeWidth: { value: 3 },
       xe: { field: 'end', type: 'genomic' },
       style: { linePattern: { type: 'triangleRight', size: 5 } },
-      opacity: { value: 0.8 },
     },
     {
-      data: {
-        url: GENE_ANNOTATION_URL,
-        type: 'beddb',
-        genomicFields: [
-          { index: 1, name: 'start' },
-          { index: 2, name: 'end' },
-        ],
-        valueFields: [
-          { index: 5, name: 'strand', type: 'nominal' },
-          { index: 3, name: 'name', type: 'nominal' },
-        ],
-        exonIntervalFields: [
-          { index: 12, name: 'start' },
-          { index: 13, name: 'end' },
-        ],
-      },
-      dataTransform: [
-        { type: 'filter', field: 'type', oneOf: ['gene'] },
-        { type: 'filter', field: 'strand', oneOf: ['-'] },
-      ],
+      ...GENE_ANNO_STRAND_BASE,
+      dataTransform: FILTER_REVERSE,
       mark: 'rule',
       x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
       strokeWidth: { value: 3 },
       xe: { field: 'end', type: 'genomic' },
       style: { linePattern: { type: 'triangleLeft', size: 5 } },
-      opacity: { value: 0.8 },
     },
   ],
   width: 700,

@@ -12,7 +12,7 @@ import {
 } from '@shared/components/ui/tooltip'
 import { cn } from '@infra/utils'
 import type { ActiveTrack } from '../../types/tracks'
-import { useBrowser } from '../../state/browser-context'
+import { useBrowserActions } from '../../state/browser-context'
 
 type TrackHeaderProps = {
   track: ActiveTrack
@@ -25,7 +25,7 @@ export function TrackHeader({
   dragHandleProps,
   className,
 }: TrackHeaderProps) {
-  const { actions } = useBrowser()
+  const actions = useBrowserActions()
   const Icon = track.definition.icon
 
   const handleHeightChange = (delta: number) => {

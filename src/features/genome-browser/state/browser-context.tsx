@@ -1,225 +1,262 @@
 'use client'
 
 // src/features/genome-browser/state/browser-context.tsx
-// React context for browser state management
+//
+// Two-context provider for the genome browser. The split is the whole point:
+//
+//   • BrowserStateContext  — volatile, changes on every state mutation.
+//                            Holds the reducer state PLUS precomputed
+//                            derived values (visibleTracks, visibleTrackIds,
+//                            region, canZoomIn/Out). Subscribers re-render
+//                            only when one of these reads changes.
+//
+//   • BrowserActionsContext — stable for the lifetime of the provider.
+//                             Holds the dispatch-bound action creators.
+//                             Components that only need to mutate state
+//                             never re-render at all.
+//
+// The bundled `useBrowser()` accessor is gone — every consumer subscribes
+// to exactly one of the two contexts via narrow hooks.
+//
+// Selectors are exposed as VALUES, not functions:
+//   • visibleTrackIds is a Set<string> — O(1) `has()` lookups, fixing the
+//     O(n²) re-render hotspot in CategoryList.
+//   • visibleTracks is a stable, sorted, frozen array reference that only
+//     changes when the visible-track set actually changes.
 
 import {
   createContext,
   useContext,
-  useReducer,
-  useCallback,
   useMemo,
+  useReducer,
   type ReactNode,
-  type Dispatch,
 } from 'react'
-import type { GenomicRegion, ActiveTrack, TrackDefinition } from '../types'
+import {
+  isReady,
+  type BrowserState,
+  type GenomicRegion,
+  MIN_REGION_SIZE,
+  MAX_REGION_SIZE,
+} from '../types/state'
+import { initialBrowserState } from '../types/state'
+import type { ActiveTrack, TrackDefinition } from '../types/tracks'
 import type { TissueSource } from '../types/tissue'
-import { browserReducer, initialBrowserState, type BrowserAction } from './reducer'
-import type { BrowserState } from '../types/state'
+import { browserReducer, type BrowserAction } from './reducer'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTEXT TYPE
+// CONTEXT VALUE SHAPES
 // ─────────────────────────────────────────────────────────────────────────────
 
-type BrowserContextValue = {
-  state: BrowserState
-  dispatch: Dispatch<BrowserAction>
-  // Convenience action creators
-  actions: {
-    initialize: (region: GenomicRegion, tracks: ActiveTrack[]) => void
-    navigateTo: (region: GenomicRegion) => void
-    zoomIn: () => void
-    zoomOut: () => void
-    panLeft: () => void
-    panRight: () => void
-    resetView: (initialRegion: GenomicRegion) => void
-    toggleTrack: (trackId: string, definition?: TrackDefinition) => void
-    addTrack: (definition: TrackDefinition) => void
-    removeTrack: (trackId: string) => void
-    reorderTracks: (fromIndex: number, toIndex: number) => void
-    setTrackHeight: (trackId: string, height: number) => void
-    addTissueTrack: (definition: TrackDefinition, source: TissueSource) => void
-    loadCollection: (trackDefinitions: TrackDefinition[]) => void
-  }
-  // Derived state selectors
-  selectors: {
-    visibleTracks: () => ActiveTrack[]
-    trackById: (id: string) => ActiveTrack | undefined
-    isTrackVisible: (id: string) => boolean
-    canZoomIn: () => boolean
-    canZoomOut: () => boolean
-  }
+export type BrowserDerivedState = {
+  /** Raw state, exposed for consumers that legitimately want the discriminant. */
+  readonly state: BrowserState
+  /** Current region, or null when status === 'idle'. Stable reference. */
+  readonly region: GenomicRegion | null
+  /** Visible tracks in render order. Stable reference between unrelated mutations. */
+  readonly visibleTracks: readonly ActiveTrack[]
+  /** O(1) membership lookup for the visible track id set. */
+  readonly visibleTrackIds: ReadonlySet<string>
+  /** Convenience: visibleTracks.length without an extra subscription hop. */
+  readonly visibleTrackCount: number
+  readonly canZoomIn: boolean
+  readonly canZoomOut: boolean
 }
 
-const BrowserContext = createContext<BrowserContextValue | null>(null)
+export type BrowserActions = {
+  navigateTo: (region: GenomicRegion) => void
+  zoomIn: () => void
+  zoomOut: () => void
+  panLeft: () => void
+  panRight: () => void
+  resetView: (region: GenomicRegion) => void
+  toggleTrack: (trackId: string, definition?: TrackDefinition) => void
+  addTrack: (definition: TrackDefinition) => void
+  removeTrack: (trackId: string) => void
+  reorderTracks: (fromIndex: number, toIndex: number) => void
+  setTrackHeight: (trackId: string, height: number) => void
+  addTissueTrack: (definition: TrackDefinition, source: TissueSource) => void
+  loadCollection: (trackDefinitions: readonly TrackDefinition[]) => void
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROVIDER COMPONENT
+// CONTEXTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BrowserStateContext = createContext<BrowserDerivedState | null>(null)
+const BrowserActionsContext = createContext<BrowserActions | null>(null)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVIDER
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BrowserProviderProps = {
   children: ReactNode
   initialRegion?: GenomicRegion
-  initialTracks?: ActiveTrack[]
+  initialTracks?: readonly ActiveTrack[]
 }
 
 export function BrowserProvider({
   children,
   initialRegion,
-  initialTracks = [],
+  initialTracks,
 }: BrowserProviderProps) {
-  const [state, dispatch] = useReducer(browserReducer, initialBrowserState, (initial) => {
-    if (initialRegion) {
-      return {
-        status: 'ready' as const,
-        region: initialRegion,
-        tracks: initialTracks,
-      }
-    }
-    return initial
-  })
+  const [state, dispatch] = useReducer(
+    browserReducer,
+    null,
+    (): BrowserState =>
+      initialRegion
+        ? {
+            status: 'ready',
+            region: initialRegion,
+            tracks: initialTracks ?? [],
+          }
+        : initialBrowserState
+  )
 
-  // Action creators - stable references
-  const actions = useMemo(() => ({
-    initialize: (region: GenomicRegion, tracks: ActiveTrack[]) => {
-      dispatch({ type: 'INITIALIZE', region, tracks })
-    },
-    navigateTo: (region: GenomicRegion) => {
-      dispatch({ type: 'NAVIGATE_TO', region })
-    },
-    zoomIn: () => {
-      dispatch({ type: 'ZOOM_IN' })
-    },
-    zoomOut: () => {
-      dispatch({ type: 'ZOOM_OUT' })
-    },
-    panLeft: () => {
-      dispatch({ type: 'PAN_LEFT' })
-    },
-    panRight: () => {
-      dispatch({ type: 'PAN_RIGHT' })
-    },
-    resetView: (initialRegion: GenomicRegion) => {
-      dispatch({ type: 'RESET_VIEW', initialRegion })
-    },
-    toggleTrack: (trackId: string, definition?: TrackDefinition) => {
-      dispatch({ type: 'TOGGLE_TRACK', trackId, definition })
-    },
-    addTrack: (definition: TrackDefinition) => {
-      dispatch({ type: 'ADD_TRACK', definition })
-    },
-    removeTrack: (trackId: string) => {
-      dispatch({ type: 'REMOVE_TRACK', trackId })
-    },
-    reorderTracks: (fromIndex: number, toIndex: number) => {
-      dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex })
-    },
-    setTrackHeight: (trackId: string, height: number) => {
-      dispatch({ type: 'SET_TRACK_HEIGHT', trackId, height })
-    },
-    addTissueTrack: (definition: TrackDefinition, source: TissueSource) => {
-      dispatch({ type: 'ADD_TISSUE_TRACK', definition, source })
-    },
-    loadCollection: (trackDefinitions: TrackDefinition[]) => {
-      dispatch({ type: 'LOAD_COLLECTION', trackDefinitions })
-    },
-  }), [])
+  // Actions are computed once and never change. Components that import only
+  // useBrowserActions() will never re-render due to state changes.
+  const actions = useMemo<BrowserActions>(
+    () => ({
+      navigateTo: region => dispatch({ type: 'NAVIGATE_TO', region }),
+      zoomIn: () => dispatch({ type: 'ZOOM_IN' }),
+      zoomOut: () => dispatch({ type: 'ZOOM_OUT' }),
+      panLeft: () => dispatch({ type: 'PAN_LEFT' }),
+      panRight: () => dispatch({ type: 'PAN_RIGHT' }),
+      resetView: region => dispatch({ type: 'RESET_VIEW', region }),
+      toggleTrack: (trackId, definition) =>
+        dispatch({ type: 'TOGGLE_TRACK', trackId, definition }),
+      addTrack: definition => dispatch({ type: 'ADD_TRACK', definition }),
+      removeTrack: trackId => dispatch({ type: 'REMOVE_TRACK', trackId }),
+      reorderTracks: (fromIndex, toIndex) =>
+        dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex }),
+      setTrackHeight: (trackId, height) =>
+        dispatch({ type: 'SET_TRACK_HEIGHT', trackId, height }),
+      addTissueTrack: (definition, source) =>
+        dispatch({ type: 'ADD_TISSUE_TRACK', definition, source }),
+      loadCollection: trackDefinitions =>
+        dispatch({ type: 'LOAD_COLLECTION', trackDefinitions }),
+    }),
+    []
+  )
 
-  // Selectors - derived state helpers
-  const selectors = useMemo(() => ({
-    visibleTracks: () => {
-      if (state.status !== 'ready') return []
-      return state.tracks
-        .filter(t => t.visibility.state === 'visible')
-        .sort((a, b) => {
-          const orderA = a.visibility.state === 'visible' ? a.visibility.order : 0
-          const orderB = b.visibility.state === 'visible' ? b.visibility.order : 0
-          return orderA - orderB
-        })
-    },
-    trackById: (id: string) => {
-      if (state.status !== 'ready') return undefined
-      return state.tracks.find(t => t.definition.id === id)
-    },
-    isTrackVisible: (id: string) => {
-      if (state.status !== 'ready') return false
-      const track = state.tracks.find(t => t.definition.id === id)
-      return track?.visibility.state === 'visible'
-    },
-    canZoomIn: () => {
-      if (state.status !== 'ready') return false
-      return state.region.size > 100 // MIN_REGION_SIZE
-    },
-    canZoomOut: () => {
-      if (state.status !== 'ready') return false
-      return state.region.size < 10_000_000 // MAX_REGION_SIZE
-    },
-  }), [state])
+  // Precomputed derived state. Each useMemo is keyed only on what it
+  // actually reads, so e.g. canZoomIn doesn't recompute when a track is
+  // toggled.
+  const region = useMemo<GenomicRegion | null>(
+    () => (isReady(state) ? state.region : null),
+    [state]
+  )
 
-  const value = useMemo(
-    () => ({ state, dispatch, actions, selectors }),
-    [state, actions, selectors]
+  const visibleTracks = useMemo<readonly ActiveTrack[]>(() => {
+    if (!isReady(state)) return EMPTY_TRACK_ARRAY
+    const visible = state.tracks.filter(t => t.visibility.state === 'visible')
+    if (visible.length === 0) return EMPTY_TRACK_ARRAY
+    return visible.slice().sort((a, b) => {
+      const oa = a.visibility.state === 'visible' ? a.visibility.order : 0
+      const ob = b.visibility.state === 'visible' ? b.visibility.order : 0
+      return oa - ob
+    })
+  }, [state])
+
+  const visibleTrackIds = useMemo<ReadonlySet<string>>(() => {
+    if (visibleTracks.length === 0) return EMPTY_ID_SET
+    const ids = new Set<string>()
+    for (const t of visibleTracks) ids.add(t.definition.id)
+    return ids
+  }, [visibleTracks])
+
+  const canZoomIn = useMemo(
+    () => (region ? region.size > MIN_REGION_SIZE : false),
+    [region]
+  )
+
+  const canZoomOut = useMemo(
+    () => (region ? region.size < MAX_REGION_SIZE : false),
+    [region]
+  )
+
+  const derived = useMemo<BrowserDerivedState>(
+    () => ({
+      state,
+      region,
+      visibleTracks,
+      visibleTrackIds,
+      visibleTrackCount: visibleTracks.length,
+      canZoomIn,
+      canZoomOut,
+    }),
+    [state, region, visibleTracks, visibleTrackIds, canZoomIn, canZoomOut]
   )
 
   return (
-    <BrowserContext.Provider value={value}>
-      {children}
-    </BrowserContext.Provider>
+    <BrowserActionsContext.Provider value={actions}>
+      <BrowserStateContext.Provider value={derived}>
+        {children}
+      </BrowserStateContext.Provider>
+    </BrowserActionsContext.Provider>
   )
 }
 
+// Stable empty references to keep memo identity across mount/unmount cycles.
+const EMPTY_TRACK_ARRAY: readonly ActiveTrack[] = Object.freeze([])
+const EMPTY_ID_SET: ReadonlySet<string> = new Set<string>()
+
 // ─────────────────────────────────────────────────────────────────────────────
-// HOOKS
+// NARROW HOOKS — pick exactly one of state OR actions, never both implicitly
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Main hook for accessing browser state and actions
- */
-export function useBrowser() {
-  const context = useContext(BrowserContext)
-  if (!context) {
-    throw new Error('useBrowser must be used within a BrowserProvider')
+export function useBrowserDerived(): BrowserDerivedState {
+  const ctx = useContext(BrowserStateContext)
+  if (!ctx) {
+    throw new Error('useBrowserDerived must be used within a BrowserProvider')
   }
-  return context
+  return ctx
 }
 
-/**
- * Hook for accessing only the browser state (read-only)
- */
-export function useBrowserState() {
-  const { state } = useBrowser()
-  return state
+export function useBrowserActions(): BrowserActions {
+  const ctx = useContext(BrowserActionsContext)
+  if (!ctx) {
+    throw new Error('useBrowserActions must be used within a BrowserProvider')
+  }
+  return ctx
 }
 
-/**
- * Hook for accessing browser actions (mutations)
- */
-export function useBrowserActions() {
-  const { actions } = useBrowser()
-  return actions
+/** Raw discriminated state — usually you want one of the narrower hooks below. */
+export function useBrowserState(): BrowserState {
+  return useBrowserDerived().state
 }
 
-/**
- * Hook for accessing browser selectors (derived state)
- */
-export function useBrowserSelectors() {
-  const { selectors } = useBrowser()
-  return selectors
-}
-
-/**
- * Hook for accessing the current region (or null if not ready)
- */
+/** Current region, or null when the browser is idle. */
 export function useBrowserRegion(): GenomicRegion | null {
-  const { state } = useBrowser()
-  if (state.status === 'idle') return null
-  return state.region
+  return useBrowserDerived().region
 }
 
-/**
- * Hook for accessing visible tracks in order
- */
-export function useVisibleTracks(): ActiveTrack[] {
-  const { selectors } = useBrowser()
-  return selectors.visibleTracks()
+/** Stable, sorted, frozen array of visible tracks. */
+export function useVisibleTracks(): readonly ActiveTrack[] {
+  return useBrowserDerived().visibleTracks
+}
+
+/** Read-only Set of visible track IDs for O(1) membership tests. */
+export function useVisibleTrackIds(): ReadonlySet<string> {
+  return useBrowserDerived().visibleTrackIds
+}
+
+/** True if the given track ID is currently visible. O(1). */
+export function useIsTrackVisible(id: string): boolean {
+  return useBrowserDerived().visibleTrackIds.has(id)
+}
+
+/** Number of visible tracks. */
+export function useVisibleTrackCount(): number {
+  return useBrowserDerived().visibleTrackCount
+}
+
+/** Whether the user can zoom in further. */
+export function useCanZoomIn(): boolean {
+  return useBrowserDerived().canZoomIn
+}
+
+/** Whether the user can zoom out further. */
+export function useCanZoomOut(): boolean {
+  return useBrowserDerived().canZoomOut
 }

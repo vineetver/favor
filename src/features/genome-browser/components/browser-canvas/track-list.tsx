@@ -6,7 +6,10 @@
 import { useState, useCallback } from 'react'
 import { TooltipProvider } from '@shared/components/ui/tooltip'
 import { cn } from '@infra/utils'
-import { useVisibleTracks, useBrowser } from '../../state/browser-context'
+import {
+  useVisibleTracks,
+  useBrowserActions,
+} from '../../state/browser-context'
 import { TrackHeader } from './track-header'
 
 type TrackListProps = {
@@ -15,7 +18,7 @@ type TrackListProps = {
 
 export function TrackList({ className }: TrackListProps) {
   const visibleTracks = useVisibleTracks()
-  const { actions } = useBrowser()
+  const actions = useBrowserActions()
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 

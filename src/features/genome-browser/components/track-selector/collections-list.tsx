@@ -3,42 +3,41 @@
 // src/features/genome-browser/components/track-selector/collections-list.tsx
 // List of pre-built track collections
 
+import { useCallback } from 'react'
 import { FolderOpen, Check, Lock } from 'lucide-react'
 import { cn } from '@infra/utils'
 import { getAllCollections } from '../../config/collections'
 import { getTrackById } from '../../tracks/registry'
-import { useBrowser } from '../../state/browser-context'
+import {
+  useBrowserActions,
+  useVisibleTrackIds,
+} from '../../state/browser-context'
 import type { TrackCollection } from '../../types/tracks'
 
 type CollectionsListProps = {
   className?: string
 }
 
+const COLLECTIONS = getAllCollections()
+
 export function CollectionsList({ className }: CollectionsListProps) {
-  const { actions, selectors, state } = useBrowser()
-  const collections = getAllCollections()
+  const actions = useBrowserActions()
+  const visibleIds = useVisibleTrackIds()
+  const collections = COLLECTIONS
 
-  const loadCollection = (collection: TrackCollection) => {
-    if (state.status !== 'ready') return
-
-    // Get all track definitions for the collection
-    const trackDefinitions = collection.trackIds
-      .map(id => getTrackById(id))
-      .filter((def): def is NonNullable<typeof def> => def !== undefined)
-
-    // Use the reducer action to load the collection
-    actions.loadCollection(trackDefinitions)
-  }
+  const loadCollection = useCallback(
+    (collection: TrackCollection) => {
+      const trackDefinitions = collection.trackIds
+        .map(id => getTrackById(id))
+        .filter((def): def is NonNullable<typeof def> => def !== undefined)
+      actions.loadCollection(trackDefinitions)
+    },
+    [actions]
+  )
 
   const isCollectionActive = (collection: TrackCollection): boolean => {
-    if (state.status !== 'ready') return false
-
-    const visibleIds = new Set(selectors.visibleTracks().map(t => t.definition.id))
-    const collectionIds = new Set(collection.trackIds)
-
-    // Check if all collection tracks are visible
-    if (collectionIds.size !== visibleIds.size) return false
-    for (const id of collectionIds) {
+    if (collection.trackIds.length !== visibleIds.size) return false
+    for (const id of collection.trackIds) {
       if (!visibleIds.has(id)) return false
     }
     return true

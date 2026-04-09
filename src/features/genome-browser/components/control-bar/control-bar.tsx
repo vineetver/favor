@@ -13,7 +13,13 @@ import {
 import { Skeleton } from '@shared/components/ui/skeleton'
 import { TooltipProvider } from '@shared/components/ui/tooltip'
 import { cn } from '@infra/utils'
-import { useBrowser } from '../../state/browser-context'
+import {
+  useBrowserActions,
+  useBrowserRegion,
+  useCanZoomIn,
+  useCanZoomOut,
+  useVisibleTrackCount,
+} from '../../state/browser-context'
 import { RegionDisplay } from '../shared/region-display'
 import { ToolbarButton } from '../shared/toolbar-button'
 import type { GenomicRegion } from '../../types/state'
@@ -24,18 +30,14 @@ type ControlBarProps = {
 }
 
 export function ControlBar({ className, initialRegion }: ControlBarProps) {
-  const { state, actions, selectors } = useBrowser()
+  const region = useBrowserRegion()
+  const actions = useBrowserActions()
+  const canZoomIn = useCanZoomIn()
+  const canZoomOut = useCanZoomOut()
+  const visibleCount = useVisibleTrackCount()
 
-  if (state.status === 'idle' || state.status === 'loading') {
+  if (!region) {
     return <ControlBarSkeleton className={className} />
-  }
-
-  if (state.status === 'error') {
-    return (
-      <div className={cn("flex items-center justify-between px-4 py-2 border-b border-border bg-card", className)}>
-        <span className="text-sm text-destructive">{state.error.message}</span>
-      </div>
-    )
   }
 
   return (
@@ -43,19 +45,19 @@ export function ControlBar({ className, initialRegion }: ControlBarProps) {
       "flex items-center justify-between px-4 py-2 border-b border-border bg-card",
       className
     )}>
-      <RegionDisplay region={state.region} />
+      <RegionDisplay region={region} />
 
       <div className="flex items-center gap-1">
         <TooltipProvider delayDuration={300}>
           <ToolbarButton
             icon={ChevronLeft}
             label="Pan left"
-            onClick={() => actions.panLeft()}
+            onClick={actions.panLeft}
           />
           <ToolbarButton
             icon={ChevronRight}
             label="Pan right"
-            onClick={() => actions.panRight()}
+            onClick={actions.panRight}
           />
 
           <div className="w-px h-4 bg-border mx-1" />
@@ -63,14 +65,14 @@ export function ControlBar({ className, initialRegion }: ControlBarProps) {
           <ToolbarButton
             icon={ZoomOut}
             label="Zoom out"
-            onClick={() => actions.zoomOut()}
-            disabled={!selectors.canZoomOut()}
+            onClick={actions.zoomOut}
+            disabled={!canZoomOut}
           />
           <ToolbarButton
             icon={ZoomIn}
             label="Zoom in"
-            onClick={() => actions.zoomIn()}
-            disabled={!selectors.canZoomIn()}
+            onClick={actions.zoomIn}
+            disabled={!canZoomIn}
           />
 
           {initialRegion && (
@@ -84,7 +86,7 @@ export function ControlBar({ className, initialRegion }: ControlBarProps) {
       </div>
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>{selectors.visibleTracks().length} tracks</span>
+        <span>{visibleCount} tracks</span>
       </div>
     </div>
   )

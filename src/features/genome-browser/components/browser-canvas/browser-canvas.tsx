@@ -1,26 +1,22 @@
+'use client'
+
 // src/features/genome-browser/components/browser-canvas/browser-canvas.tsx
 //
 // Renders the active set of tracks via Gosling.js.
 //
-// Responsibilities:
-//   1. Read state from BrowserContext (region + visible tracks).
-//   2. Build a single GoslingSpec by flattening the tracks' `specs[]`
-//      arrays into one stacked view, sharing a linkingId so all tracks
-//      pan/zoom together.
-//   3. Mount via the lazy GoslingMount (next/dynamic, ssr:false).
-//
-// The spec construction lives here (not in the registry) because it
-// depends on runtime state — the current region and the user's track
-// selection.
-
-'use client'
+// Subscriptions are deliberately narrow: just the region and the visible-track
+// list. Track height edits and reorders go through `visibleTracks` (a stable
+// reference until something inside actually changes), so the spec is rebuilt
+// only when something the canvas cares about has moved.
 
 import { useMemo } from 'react'
-import { AlertCircle } from 'lucide-react'
 import type { GoslingSpec } from 'gosling.js'
 import { cn } from '@infra/utils'
 import { Skeleton } from '@shared/components/ui/skeleton'
-import { useBrowser, useVisibleTracks } from '../../state/browser-context'
+import {
+  useBrowserRegion,
+  useVisibleTracks,
+} from '../../state/browser-context'
 import {
   isStaticTrack,
   isDynamicTrack,
@@ -36,43 +32,23 @@ type BrowserCanvasProps = {
 }
 
 export function BrowserCanvas({ className }: BrowserCanvasProps) {
-  const { state } = useBrowser()
+  const region = useBrowserRegion()
   const visibleTracks = useVisibleTracks()
 
-  const goslingSpec = useMemo(() => {
-    if (state.status !== 'ready') return null
-    if (visibleTracks.length === 0) return null
-    return buildGoslingSpec(state.region, visibleTracks)
-  }, [state, visibleTracks])
+  const goslingSpec = useMemo<GoslingSpec | null>(() => {
+    if (!region || visibleTracks.length === 0) return null
+    return buildGoslingSpec(region, visibleTracks)
+  }, [region, visibleTracks])
 
-  if (state.status === 'idle' || state.status === 'loading') {
+  if (!region) {
     return <BrowserCanvasSkeleton className={className} />
-  }
-
-  if (state.status === 'error') {
-    return (
-      <div
-        className={cn(
-          'flex flex-col items-center justify-center gap-4 p-8',
-          className
-        )}
-      >
-        <AlertCircle className="h-12 w-12 text-destructive" />
-        <div className="text-center">
-          <p className="font-medium text-foreground">{state.error.message}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Please try refreshing the page or selecting a different region.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   if (visibleTracks.length === 0 || !goslingSpec) {
     return (
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-4 p-8',
+          'flex flex-col items-center justify-center gap-2 p-8',
           className
         )}
       >
@@ -104,31 +80,27 @@ export function BrowserCanvas({ className }: BrowserCanvasProps) {
  *   • Composite static tracks (e.g. eQTL Overlay) end up as multiple
  *     stacked Gosling tracks under the user's single toggle.
  *
- * The cast at the bottom is the only type assertion: our internal
- * `GoslingTrackSpec` is a permissive Record shape, but the GoslingComponent
- * prop wants the real `GoslingSpec` discriminated union which gosling.js
- * doesn't expose at the track level.
+ * The `as unknown as GoslingSpec` cast at the bottom is the only type
+ * assertion in this file: our internal `GoslingTrackSpec` is a permissive
+ * Record shape because Gosling's track-level types are not exported from
+ * the package root.
  */
 function buildGoslingSpec(
   region: GenomicRegion,
   tracks: readonly ActiveTrack[]
 ): GoslingSpec {
   const trackSpecs: GoslingTrackSpec[] = []
-  const seenIds = new Set<string>()
 
   for (const track of tracks) {
-    if (track.visibility.state !== 'visible') continue
-    if (seenIds.has(track.definition.id)) continue
-    seenIds.add(track.definition.id)
-
     if (isStaticTrack(track.definition)) {
-      // Composite tracks contribute multiple stacked sub-tracks; the user's
-      // height slider applies to the first one only (matches master).
-      track.definition.specs.forEach((spec, index) => {
+      // Composite static tracks contribute several stacked sub-tracks. The
+      // user's height slider applies to the first one only (matches master).
+      const specs = track.definition.specs
+      for (let i = 0; i < specs.length; i++) {
         trackSpecs.push(
-          index === 0 ? { ...spec, height: track.height } : { ...spec }
+          i === 0 ? { ...specs[i], height: track.height } : { ...specs[i] }
         )
-      })
+      }
       continue
     }
 
@@ -143,10 +115,10 @@ function buildGoslingSpec(
     }
   }
 
-  // Note: do NOT set `style.background = 'transparent'` here. Gosling
-  // renders into a PIXI canvas; an unset/transparent background falls back
-  // to PIXI's black clearColor. Letting Gosling apply its 'light' theme
-  // (passed via the GoslingMount prop) keeps the canvas white.
+  // Note: do NOT set `style.background = 'transparent'` here. Gosling renders
+  // into a PIXI canvas; an unset/transparent background falls back to PIXI's
+  // black clearColor. The 'light' theme passed via GoslingMount keeps the
+  // canvas white.
   const rootSpec = {
     assembly: 'hg38',
     layout: 'linear',
@@ -174,7 +146,7 @@ function buildGoslingSpec(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOADING / SKELETON
+// SKELETON
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function BrowserCanvasSkeleton({ className }: { className?: string }) {

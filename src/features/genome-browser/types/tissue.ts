@@ -1,13 +1,21 @@
 // src/features/genome-browser/types/tissue.ts
+//
 // Tissue source types — drives off the production TissueConfig
 // (see src/features/genome-browser/config/tissue-config.ts).
+//
+// Public surface:
+//   • TissueSource         — fully qualified, bigwig-backed selection
+//   • createTissueSource() — boundary parser; returns null on miss
+//   • assayColor / assayLabel — display helpers
+//   • listTissues          — top-level tissue names
+//   • formatSubtissue / sanitizeSubtissue — display & ID helpers used by
+//     the dynamic track factory
+//
+// Anything else (subtissue listing, renderable-assay listing, etc.) is
+// handled by the picker via the static TissueConfig import directly.
 
-import {
-  TissueConfig,
-  type AssayInfo,
-  type SubtissueInfo,
-  getSubtissueByName,
-} from '../config/tissue-config'
+import { TissueConfig, getSubtissueByName } from '../config/tissue-config'
+import type { AssayInfo } from '../config/tissue-config'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BRANDED TYPES
@@ -62,14 +70,10 @@ function findAssay(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ASSAY DISPLAY METADATA
+// DISPLAY METADATA
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Color per assay — used for both the dynamic Gosling track and the UI
- * indicator next to each assay checkbox.
- */
-export const ASSAY_COLORS: Record<string, string> = {
+const ASSAY_COLORS: Readonly<Record<string, string>> = {
   dnase: '#2563eb',
   ctcf: '#dc2626',
   h3k4me3: '#16a34a',
@@ -79,7 +83,7 @@ export const ASSAY_COLORS: Record<string, string> = {
   h3k27me3: '#0891b2',
 }
 
-export const ASSAY_LABELS: Record<string, string> = {
+const ASSAY_LABELS: Readonly<Record<string, string>> = {
   dnase: 'DNase',
   ctcf: 'CTCF',
   h3k4me3: 'H3K4me3',
@@ -88,16 +92,6 @@ export const ASSAY_LABELS: Record<string, string> = {
   h3k4me1: 'H3K4me1',
   h3k27me3: 'H3K27me3',
   ccres: 'cCREs',
-}
-
-export const ASSAY_DESCRIPTIONS: Record<string, string> = {
-  dnase: 'DNase hypersensitive sites — chromatin accessibility',
-  ctcf: 'CTCF binding — insulator / loop boundaries',
-  h3k4me3: 'H3K4me3 — active promoters',
-  h3k27ac: 'H3K27ac — active enhancers and promoters',
-  atac: 'ATAC-seq — open chromatin',
-  h3k4me1: 'H3K4me1 — primed and active enhancers',
-  h3k27me3: 'H3K27me3 — Polycomb repression',
 }
 
 export function assayColor(assay: string): string {
@@ -109,38 +103,18 @@ export function assayLabel(assay: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LISTING HELPERS
+// HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Top-level tissues, in TissueConfig order. */
+/** Top-level tissues in TissueConfig order. */
 export function listTissues(): string[] {
   return Object.keys(TissueConfig)
 }
 
-/** Subtissues for a given tissue (or empty array if unknown). */
-export function listSubtissues(tissue: string): SubtissueInfo[] {
-  return TissueConfig[tissue] ?? []
-}
-
 /**
- * Renderable assays for a (tissue, subtissue) pair — only assays that have
- * a bigwig URL. Skips ccres because they're rendered via the static cCRE
- * track, not as a tissue-specific signal.
- */
-export function listRenderableAssays(
-  tissue: string,
-  subtissue: string
-): AssayInfo[] {
-  const sub = getSubtissueByName(tissue, subtissue)
-  if (!sub) return []
-  return sub.assays.filter(a => Boolean(a.bigwig))
-}
-
-/**
- * Format a long subtissue name for display in select dropdowns.
- * The TissueConfig uses very long descriptive subtissue names like
- * "dorsolateral prefrontal cortex, male adult (89 years)..."; this just
- * capitalizes the first letter.
+ * Capitalize the first letter of a long subtissue name. Used by the dynamic
+ * track factory for the on-canvas track title; the picker has its own
+ * splitter for typographic hierarchy.
  */
 export function formatSubtissue(name: string): string {
   if (!name) return ''
@@ -153,7 +127,8 @@ export function formatTissue(tissue: string): string {
 
 /**
  * Sanitize a subtissue name into a stable, URL-safe slug used in track IDs.
- * Matches master's `assayTrackId` slug logic so saved track IDs stay stable.
+ * Identical to master's `assayTrackId` slug logic so saved query-string
+ * track lists keep working across deploys.
  */
 export function sanitizeSubtissue(name: string): string {
   return name

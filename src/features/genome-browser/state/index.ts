@@ -1,18 +1,17 @@
 // src/features/genome-browser/state/index.ts
-// Barrel export for state management
+// Narrow barrel — only what's actually consumed outside the module.
 
 export {
   BrowserProvider,
-  useBrowser,
   useBrowserState,
   useBrowserActions,
-  useBrowserSelectors,
   useBrowserRegion,
   useVisibleTracks,
+  useVisibleTrackIds,
+  useVisibleTrackCount,
+  useIsTrackVisible,
+  useCanZoomIn,
+  useCanZoomOut,
 } from './browser-context'
 
-export {
-  browserReducer,
-  initialBrowserState,
-  type BrowserAction,
-} from './reducer'
+export type { BrowserAction } from './reducer'

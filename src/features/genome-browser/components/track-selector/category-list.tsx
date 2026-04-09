@@ -3,7 +3,7 @@
 // src/features/genome-browser/components/track-selector/category-list.tsx
 // Collapsible list of tracks grouped by category
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import {
   Collapsible,
@@ -15,39 +15,45 @@ import { cn } from '@infra/utils'
 import type { StaticTrack, TrackCategory } from '../../types/tracks'
 import { TRACK_CATEGORY_LABELS } from '../../types/tracks'
 import { TrackItem } from './track-item'
-import { useBrowser } from '../../state/browser-context'
+import {
+  useBrowserActions,
+  useVisibleTrackIds,
+} from '../../state/browser-context'
 
 type CategoryListProps = {
   tracks: Map<TrackCategory, StaticTrack[]>
   className?: string
 }
 
+const DEFAULT_OPEN: ReadonlySet<TrackCategory> = new Set(['annotation', 'clinical'])
+
 export function CategoryList({ tracks, className }: CategoryListProps) {
-  const { selectors, actions } = useBrowser()
+  const visibleIds = useVisibleTrackIds()
+  const actions = useBrowserActions()
   const [openCategories, setOpenCategories] = useState<Set<TrackCategory>>(
-    new Set(['annotation', 'clinical'])
+    () => new Set(DEFAULT_OPEN)
   )
 
-  const toggleCategory = (category: TrackCategory) => {
+  const toggleCategory = useCallback((category: TrackCategory) => {
     setOpenCategories(prev => {
       const next = new Set(prev)
-      if (next.has(category)) {
-        next.delete(category)
-      } else {
-        next.add(category)
-      }
+      if (next.has(category)) next.delete(category)
+      else next.add(category)
       return next
     })
-  }
+  }, [])
 
   return (
     <TooltipProvider delayDuration={400}>
-      <div className={cn("space-y-1", className)}>
+      <div className={cn('space-y-1', className)}>
         {Array.from(tracks.entries()).map(([category, categoryTracks]) => {
           const isOpen = openCategories.has(category)
-          const activeCount = categoryTracks.filter(t =>
-            selectors.isTrackVisible(t.id)
-          ).length
+          // O(n) filter where n is the per-category count, but each lookup
+          // is now O(1) thanks to the visibleIds Set.
+          let activeCount = 0
+          for (const t of categoryTracks) {
+            if (visibleIds.has(t.id)) activeCount++
+          }
 
           return (
             <Collapsible
@@ -59,8 +65,8 @@ export function CategoryList({ tracks, className }: CategoryListProps) {
                 <div className="flex items-center gap-2">
                   <ChevronRight
                     className={cn(
-                      "h-4 w-4 transition-transform",
-                      isOpen && "rotate-90"
+                      'h-4 w-4 transition-transform',
+                      isOpen && 'rotate-90'
                     )}
                   />
                   <span>{TRACK_CATEGORY_LABELS[category]}</span>
@@ -78,7 +84,7 @@ export function CategoryList({ tracks, className }: CategoryListProps) {
                   <TrackItem
                     key={track.id}
                     track={track}
-                    isActive={selectors.isTrackVisible(track.id)}
+                    isActive={visibleIds.has(track.id)}
                     onToggle={() => actions.toggleTrack(track.id, track)}
                   />
                 ))}

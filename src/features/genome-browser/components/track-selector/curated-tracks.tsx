@@ -8,15 +8,21 @@ import { TooltipProvider } from '@shared/components/ui/tooltip'
 import { cn } from '@infra/utils'
 import { getCuratedTracks } from '../../tracks/registry'
 import { TrackItem } from './track-item'
-import { useBrowser } from '../../state/browser-context'
+import {
+  useBrowserActions,
+  useVisibleTrackIds,
+} from '../../state/browser-context'
 
 type CuratedTracksProps = {
   className?: string
 }
 
+const CURATED_TRACKS = getCuratedTracks()
+
 export function CuratedTracks({ className }: CuratedTracksProps) {
-  const { selectors, actions } = useBrowser()
-  const curatedTracks = getCuratedTracks()
+  const visibleIds = useVisibleTrackIds()
+  const actions = useBrowserActions()
+  const curatedTracks = CURATED_TRACKS
 
   if (curatedTracks.length === 0) {
     return null
@@ -34,7 +40,7 @@ export function CuratedTracks({ className }: CuratedTracksProps) {
             <TrackItem
               key={track.id}
               track={track}
-              isActive={selectors.isTrackVisible(track.id)}
+              isActive={visibleIds.has(track.id)}
               onToggle={() => actions.toggleTrack(track.id, track)}
             />
           ))}

@@ -1,131 +1,100 @@
 'use client'
 
 // src/features/genome-browser/hooks/use-url-sync.ts
-// Sync browser state with URL parameters
+//
+// Bidirectional URL sync for the browser state.
+//
+// On mount: parse `?region=...&tracks=...` and replay into the reducer.
+// On state change: debounce-write the same params back. The debounce
+// effect depends on the reducer state directly — there is no intermediate
+// `updateUrl` callback that would force the timer to reset on every render.
 
-import { useEffect, useCallback } from 'react'
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useBrowser } from '../state/browser-context'
+import { useEffect } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
+  useBrowserActions,
+  useBrowserDerived,
+} from '../state/browser-context'
+import {
+  formatRegion,
   parseRegionParam,
   parseTracksParam,
-  formatRegion,
 } from '../utils/region-parser'
 import { getTrackById } from '../tracks/registry'
-import { createActiveTrack } from '../types/tracks'
 
 type UseUrlSyncOptions = {
   enabled?: boolean
 }
 
-/**
- * Syncs browser state with URL search parameters
- *
- * URL format:
- * ?region=chr17:41196312-41276312&tracks=gene-annotation,clinvar,h3k27ac
- */
-export function useUrlSync(options: UseUrlSyncOptions = {}) {
-  const { enabled = true } = options
-  const { state, actions } = useBrowser()
+const URL_DEBOUNCE_MS = 300
+
+export function useUrlSync({ enabled = true }: UseUrlSyncOptions = {}) {
+  const { state, region, visibleTracks } = useBrowserDerived()
+  const actions = useBrowserActions()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Parse URL on mount and restore state
+  // Restore from URL on mount only.
   useEffect(() => {
-    if (!enabled) return
-    if (state.status !== 'ready') return
+    if (!enabled || state.status !== 'ready') return
 
     const regionParam = searchParams.get('region')
-    const tracksParam = searchParams.get('tracks')
-
-    // Restore region from URL
     if (regionParam) {
-      const parsedRegion = parseRegionParam(regionParam)
-      if (parsedRegion) {
-        actions.navigateTo(parsedRegion)
-      }
+      const parsed = parseRegionParam(regionParam)
+      if (parsed) actions.navigateTo(parsed)
     }
 
-    // Restore tracks from URL
+    const tracksParam = searchParams.get('tracks')
     if (tracksParam) {
-      const trackIds = parseTracksParam(tracksParam)
-      for (const trackId of trackIds) {
-        const trackDef = getTrackById(trackId)
-        if (trackDef) {
-          actions.addTrack(trackDef)
-        }
+      for (const id of parseTracksParam(tracksParam)) {
+        const def = getTrackById(id)
+        if (def) actions.addTrack(def)
       }
     }
-    // Only run on mount
+    // Mount-only restore — intentionally not depending on the params.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled])
 
-  // Update URL when state changes
-  const updateUrl = useCallback(() => {
-    if (!enabled) return
-    if (state.status !== 'ready') return
-
-    const params = new URLSearchParams()
-
-    // Add region
-    params.set('region', formatRegion(state.region, { commas: false }))
-
-    // Add visible track IDs
-    const visibleTrackIds = state.tracks
-      .filter(t => t.visibility.state === 'visible')
-      .sort((a, b) => {
-        const orderA = a.visibility.state === 'visible' ? a.visibility.order : 0
-        const orderB = b.visibility.state === 'visible' ? b.visibility.order : 0
-        return orderA - orderB
-      })
-      .map(t => t.definition.id)
-
-    if (visibleTrackIds.length > 0) {
-      params.set('tracks', visibleTrackIds.join(','))
-    }
-
-    // Update URL without triggering navigation
-    const newUrl = `${pathname}?${params.toString()}`
-    router.replace(newUrl, { scroll: false })
-  }, [enabled, state, pathname, router])
-
-  // Debounced URL update
+  // Debounced URL writeback. Re-runs only when the data the URL actually
+  // depends on changes (region + visible-track set).
   useEffect(() => {
-    if (!enabled) return
-    if (state.status !== 'ready') return
+    if (!enabled || !region) return
 
-    const timeoutId = setTimeout(updateUrl, 300)
-    return () => clearTimeout(timeoutId)
-  }, [enabled, state, updateUrl])
+    const handle = setTimeout(() => {
+      const params = new URLSearchParams()
+      params.set('region', formatRegion(region, { commas: false }))
+      if (visibleTracks.length > 0) {
+        params.set(
+          'tracks',
+          visibleTracks.map(t => t.definition.id).join(',')
+        )
+      }
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }, URL_DEBOUNCE_MS)
 
-  return { updateUrl }
+    return () => clearTimeout(handle)
+  }, [enabled, region, visibleTracks, pathname, router])
 }
 
 /**
- * Generate a shareable URL for the current browser state
+ * Build a shareable URL for the current browser state. Pure read; safe to
+ * call from event handlers (e.g. "Copy link" button).
  */
 export function useShareableUrl(): string | null {
-  const { state } = useBrowser()
+  const { region, visibleTracks } = useBrowserDerived()
   const pathname = usePathname()
 
-  if (state.status !== 'ready') return null
+  if (!region) return null
 
   const params = new URLSearchParams()
-  params.set('region', formatRegion(state.region, { commas: false }))
-
-  const visibleTrackIds = state.tracks
-    .filter(t => t.visibility.state === 'visible')
-    .map(t => t.definition.id)
-
-  if (visibleTrackIds.length > 0) {
-    params.set('tracks', visibleTrackIds.join(','))
+  params.set('region', formatRegion(region, { commas: false }))
+  if (visibleTracks.length > 0) {
+    params.set('tracks', visibleTracks.map(t => t.definition.id).join(','))
   }
 
-  // Get full URL (works on client side)
   if (typeof window !== 'undefined') {
     return `${window.location.origin}${pathname}?${params.toString()}`
   }
-
   return `${pathname}?${params.toString()}`
 }

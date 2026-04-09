@@ -69,10 +69,15 @@ function createBigwigSpec(params: DynamicTrackParams): GoslingTrackSpec {
 
 /**
  * Stable, URL-safe ID for a tissue-specific track.
- * Format matches master so existing query-string track lists keep working.
+ *
+ * Format: `dynamic_{tissue}_{assay}_{subtissue-slug}`. The tissue prefix
+ * eliminates a class of collisions where two tissues would otherwise share
+ * a subtissue name (the current TissueConfig has none, but the format is
+ * cheap to make robust).
  */
 export function tissueTrackId(source: TissueSource): string {
-  return `dynamic_${source.assay}_${sanitizeSubtissue(source.subtissue)}`
+  const tissue = String(source.tissue).toLowerCase()
+  return `dynamic_${tissue}_${source.assay}_${sanitizeSubtissue(source.subtissue)}`
 }
 
 export function createTissueTrack(source: TissueSource): DynamicTrack {

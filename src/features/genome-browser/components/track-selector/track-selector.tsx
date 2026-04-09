@@ -8,7 +8,7 @@ import { Badge } from '@shared/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 import { Skeleton } from '@shared/components/ui/skeleton'
 import { cn } from '@infra/utils'
-import { useBrowser } from '../../state/browser-context'
+import { useBrowserState, useVisibleTrackCount } from '../../state/browser-context'
 import { getTracksGroupedByCategory, getAllTracks } from '../../tracks/registry'
 import type { StaticTrack, TrackCategory } from '../../types/tracks'
 import { SearchTracks } from './search-tracks'
@@ -20,23 +20,25 @@ type TrackSelectorProps = {
   className?: string
 }
 
+// Cached registry slices — these never change at runtime, so we lift them
+// out of the component entirely. Otherwise every render re-creates the Map.
+const ALL_TRACKS_GROUPED = getTracksGroupedByCategory()
+const ALL_TRACKS_COUNT = getAllTracks().length
+
 export function TrackSelector({ className }: TrackSelectorProps) {
-  const { state, selectors } = useBrowser()
+  const state = useBrowserState()
+  const visibleCount = useVisibleTrackCount()
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'individual' | 'collections'>('individual')
 
-  // Get all tracks grouped by category
-  const allTracksGrouped = useMemo(() => getTracksGroupedByCategory(), [])
-  const allTracks = useMemo(() => getAllTracks(), [])
-
   // Filter tracks based on search
   const filteredTracksGrouped = useMemo(() => {
-    if (!search.trim()) return allTracksGrouped
+    if (!search.trim()) return ALL_TRACKS_GROUPED
 
     const searchLower = search.toLowerCase()
     const filtered = new Map<TrackCategory, StaticTrack[]>()
 
-    for (const [category, tracks] of allTracksGrouped) {
+    for (const [category, tracks] of ALL_TRACKS_GROUPED) {
       const matchingTracks = tracks.filter(
         track =>
           track.name.toLowerCase().includes(searchLower) ||
@@ -48,14 +50,11 @@ export function TrackSelector({ className }: TrackSelectorProps) {
     }
 
     return filtered
-  }, [allTracksGrouped, search])
+  }, [search])
 
-  if (state.status === 'idle' || state.status === 'loading') {
+  if (state.status === 'idle') {
     return <TrackSelectorSkeleton className={className} />
   }
-
-  const visibleCount = selectors.visibleTracks().length
-  const totalCount = allTracks.length
 
   return (
     <div className={cn("flex flex-col bg-muted/30", className)}>
@@ -63,7 +62,7 @@ export function TrackSelector({ className }: TrackSelectorProps) {
       <div className="flex items-center justify-between p-4 border-b border-border">
         <span className="font-semibold text-foreground">Tracks</span>
         <Badge variant="secondary" className="text-xs">
-          {visibleCount}/{totalCount}
+          {visibleCount}/{ALL_TRACKS_COUNT}
         </Badge>
       </div>
 

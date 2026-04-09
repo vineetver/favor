@@ -4,54 +4,60 @@
 //
 // Stateless helpers for toggling tissue-specific dynamic tracks.
 //
-// The picker UI manages its own filter state (tissue / assay / search). This
-// hook exposes only the small mutation-and-query surface that talks to the
-// browser context, so the picker stays a pure presentation component.
+// All callbacks have empty dep arrays — they read from the precomputed
+// `visibleTrackIds` Set in BrowserStateContext (O(1) lookups) and call
+// stable action creators from BrowserActionsContext.
+//
+// `activeTissueTracks` is derived from the visible-tracks list and is
+// memoized at the provider level, so subscribing to it does NOT cause
+// the picker to re-render when an unrelated track is toggled.
 
 import { useCallback, useMemo } from 'react'
+import {
+  useBrowserActions,
+  useVisibleTracks,
+  useVisibleTrackIds,
+} from '../state/browser-context'
+import { isDynamicTrack } from '../types/tracks'
 import { createTissueSource } from '../types/tissue'
-import { createTissueTrack, tissueTrackId } from '../tracks/dynamic/tissue-track'
-import { useBrowser } from '../state/browser-context'
-import { isDynamicTrack, type ActiveTrack } from '../types/tracks'
+import {
+  createTissueTrack,
+  tissueTrackId,
+} from '../tracks/dynamic/tissue-track'
 
 export type ActiveTissueTrack = {
-  id: string
-  tissue: string
-  subtissue: string
-  assay: string
+  readonly id: string
+  readonly tissue: string
+  readonly subtissue: string
+  readonly assay: string
 }
 
 export function useTissueTracks() {
-  const { state, actions, selectors } = useBrowser()
+  const visibleTracks = useVisibleTracks()
+  const visibleTrackIds = useVisibleTrackIds()
+  const actions = useBrowserActions()
 
-  /**
-   * Active dynamic (tissue) tracks, exposed in selection-friendly form so
-   * the picker can render the "selected pills" row without poking at the
-   * full TrackDefinition union.
-   */
-  const activeTissueTracks = useMemo<ActiveTissueTrack[]>(() => {
-    if (state.status !== 'ready') return []
-    return state.tracks
-      .filter(
-        (t): t is ActiveTrack & { definition: ReturnType<typeof createTissueTrack> } =>
-          isDynamicTrack(t.definition)
-      )
-      .filter(t => t.visibility.state === 'visible')
-      .map(t => ({
+  const activeTissueTracks = useMemo<readonly ActiveTissueTrack[]>(() => {
+    const out: ActiveTissueTrack[] = []
+    for (const t of visibleTracks) {
+      if (!isDynamicTrack(t.definition)) continue
+      out.push({
         id: t.definition.id,
         tissue: t.definition.source.tissue as string,
         subtissue: t.definition.source.subtissue as string,
         assay: t.definition.source.assay as string,
-      }))
-  }, [state])
+      })
+    }
+    return out
+  }, [visibleTracks])
 
   const isAssayActive = useCallback(
     (tissue: string, subtissue: string, assay: string): boolean => {
       const source = createTissueSource(tissue, subtissue, assay)
       if (!source) return false
-      return selectors.isTrackVisible(tissueTrackId(source))
+      return visibleTrackIds.has(tissueTrackId(source))
     },
-    [selectors]
+    [visibleTrackIds]
   )
 
   const toggleAssay = useCallback(
@@ -59,14 +65,13 @@ export function useTissueTracks() {
       const source = createTissueSource(tissue, subtissue, assay)
       if (!source) return
       const id = tissueTrackId(source)
-      if (selectors.isTrackVisible(id)) {
+      if (visibleTrackIds.has(id)) {
         actions.removeTrack(id)
         return
       }
-      const track = createTissueTrack(source)
-      actions.addTissueTrack(track, source)
+      actions.addTissueTrack(createTissueTrack(source), source)
     },
-    [actions, selectors]
+    [actions, visibleTrackIds]
   )
 
   const removeById = useCallback(
@@ -80,7 +85,7 @@ export function useTissueTracks() {
     for (const t of activeTissueTracks) {
       actions.removeTrack(t.id)
     }
-  }, [activeTissueTracks, actions])
+  }, [actions, activeTissueTracks])
 
   return {
     activeTissueTracks,

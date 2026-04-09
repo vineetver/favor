@@ -2,103 +2,107 @@
 
 // src/features/genome-browser/components/track-selector/tissue-picker.tsx
 //
-// Sheet-based tissue track picker.
+// "Quiet Panel" tissue track picker.
 //
-// Design goals (vs. the old slop):
-//   • Side panel, not modal — the genome browser stays visible behind it
-//     so the user sees what they're adding tracks to.
-//   • Single flat scroll list — no nested accordions. Each row is one
-//     subtissue with all renderable assays as inline toggleable colored
-//     chips, so adding/removing a track is one click, not three.
-//   • Filter rail at the top — tissue chips and assay chips, both with
-//     live counts. Plus a free-text search over subtissue display names.
-//   • Active selection rail — currently active tissue tracks shown as
-//     removable pills above the list, so the user always sees what they
-//     have without scrolling.
-//   • Default scope is one tissue at a time. Showing 742 subtissues at
-//     once is overwhelming and slow; the first tissue auto-selects.
+// Design principles (Apple-engineer brief from the user):
+//   • Side panel, not modal — the canvas behind it stays visible.
+//   • Hierarchy from typography and whitespace, not from boxed cards.
+//   • One accent color (the foreground); data colors only where they
+//     identify actual data, never decoration.
+//   • The icon belongs nowhere — neither the trigger nor the header.
+//   • Two rows of chrome max above the list.
 //
 // State ownership:
-//   • Filter / search state lives in this component (transient UI state).
-//   • Selection state lives in BrowserContext via useTissueTracks().
+//   • Local UI state (current tissue tab, search query, assay multi-filter)
+//     lives in this component.
+//   • Selection state lives in BrowserContext via `useTissueTracks()`.
+//   • Indices over `TissueConfig` are pure module-level constants.
+//
+// Re-render budget:
+//   • Typing in the search box should not re-render `BrowserCanvas` —
+//     guaranteed by the BrowserContext split (see browser-context.tsx).
+//   • Toggling one assay should re-render only the affected `SubtissueRow`
+//     and the footer count — guaranteed by `React.memo` on the row.
 
-import { useMemo, useState, useCallback, type ReactNode } from 'react'
-import { Check, FlaskConical, Search, X } from 'lucide-react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { Check, ChevronDown, Search, X } from 'lucide-react'
 import { cn } from '@infra/utils'
 import { Button } from '@shared/components/ui/button'
 import { Input } from '@shared/components/ui/input'
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
   SheetTrigger,
 } from '@shared/components/ui/sheet'
 import { ScrollArea } from '@shared/components/ui/scroll-area'
-import { Badge } from '@shared/components/ui/badge'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@shared/components/ui/tooltip'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@shared/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@shared/components/ui/command'
 import {
   TissueConfig,
-  type SubtissueInfo,
   type AssayInfo,
+  type SubtissueInfo,
 } from '../../config/tissue-config'
 import {
   assayColor,
   assayLabel,
-  formatSubtissue,
   listTissues,
 } from '../../types/tissue'
 import { useTissueTracks } from '../../hooks/use-tissue-selection'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRECOMPUTED INDICES
+// MODULE-LEVEL INDICES
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// `TissueConfig` is a static import. Building these indices once at module
+// load is faster than recomputing them per render and the cost is negligible
+// (~1ms total for 6 tissues × 742 subtissues). Doing it inside a `useMemo`
+// would re-run on every component mount and lose the cache.
 
-/**
- * Built once at module load. Maps tissue → all subtissues that have at
- * least one renderable (bigwig-backed) assay, plus the per-tissue assay
- * coverage so the assay-filter chips know what to show.
- */
-type TissueIndex = {
-  tissue: string
-  subtissues: SubtissueInfo[]
-  assayCoverage: Set<string>
-  totalRenderableTracks: number
+type TissueEntry = {
+  readonly tissue: string
+  /** Subtissues that have at least one bigwig-backed assay. */
+  readonly subtissues: readonly SubtissueInfo[]
+  /** Assay names that exist in this tissue and have a bigwig URL. */
+  readonly assayCoverage: ReadonlySet<string>
 }
 
-const TISSUE_INDEX: TissueIndex[] = listTissues().map(tissue => {
-  const allSubs = TissueConfig[tissue] ?? []
-  const subtissues = allSubs.filter(s => s.assays.some(a => Boolean(a.bigwig)))
-  const assayCoverage = new Set<string>()
-  let total = 0
+const TISSUE_INDEX: readonly TissueEntry[] = listTissues().map(tissue => {
+  const all = TissueConfig[tissue] ?? []
+  const subtissues = all.filter(s => s.assays.some(a => Boolean(a.bigwig)))
+  const coverage = new Set<string>()
   for (const sub of subtissues) {
     for (const assay of sub.assays) {
-      if (assay.bigwig) {
-        assayCoverage.add(assay.name)
-        total += 1
-      }
+      if (assay.bigwig) coverage.add(assay.name)
     }
   }
-  return {
-    tissue,
-    subtissues,
-    assayCoverage,
-    totalRenderableTracks: total,
-  }
+  return { tissue, subtissues, assayCoverage: coverage }
 })
 
-const TOTAL_RENDERABLE_TRACKS = TISSUE_INDEX.reduce(
-  (acc, t) => acc + t.totalRenderableTracks,
-  0
+const TISSUE_BY_NAME: ReadonlyMap<string, TissueEntry> = new Map(
+  TISSUE_INDEX.map(t => [t.tissue, t])
 )
 
-const ALL_ASSAYS: string[] = (() => {
+const ALL_ASSAYS: readonly string[] = (() => {
   const set = new Set<string>()
   for (const t of TISSUE_INDEX) {
     for (const a of t.assayCoverage) set.add(a)
@@ -107,7 +111,38 @@ const ALL_ASSAYS: string[] = (() => {
 })()
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUBLIC TRIGGER (button shown in the sidebar)
+// SUBTISSUE NAME PARSING
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// TissueConfig labels look like:
+//   "dorsolateral prefrontal cortex, female adult (87 years) with mild
+//    cognitive impairment"
+//
+// Split into a primary "location" line and an optional "qualifier" line so
+// the row has typographic hierarchy instead of one long monoline.
+
+type SplitName = {
+  readonly location: string
+  readonly qualifier: string | null
+}
+
+function splitSubtissueName(name: string): SplitName {
+  const idx = name.indexOf(', ')
+  if (idx === -1) {
+    return { location: capitalize(name), qualifier: null }
+  }
+  return {
+    location: capitalize(name.slice(0, idx)),
+    qualifier: name.slice(idx + 2),
+  }
+}
+
+function capitalize(s: string): string {
+  return s.length === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC TRIGGER — sidebar entry
 // ─────────────────────────────────────────────────────────────────────────────
 
 type TissuePickerTriggerProps = {
@@ -117,38 +152,26 @@ type TissuePickerTriggerProps = {
 export function TissuePickerTrigger({ className }: TissuePickerTriggerProps) {
   const [open, setOpen] = useState(false)
   const { activeTissueTracks } = useTissueTracks()
-  const activeCount = activeTissueTracks.length
+  const count = activeTissueTracks.length
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           className={cn(
-            'group w-full flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent',
+            'w-full justify-start h-9 px-3 font-medium text-sm',
             className
           )}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <FlaskConical className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="font-medium text-foreground">
-                Tissue-specific tracks
-              </div>
-              <div className="text-xs text-muted-foreground truncate">
-                {TOTAL_RENDERABLE_TRACKS.toLocaleString()} signals across{' '}
-                {TISSUE_INDEX.length} tissues
-              </div>
-            </div>
-          </div>
-          {activeCount > 0 && (
-            <Badge variant="default" className="shrink-0 tabular-nums">
-              {activeCount}
-            </Badge>
+          <span className="flex-1 text-left">Tissue signals</span>
+          {count > 0 && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              · {count}
+            </span>
           )}
-        </button>
+        </Button>
       </SheetTrigger>
       <TissuePickerContent />
     </Sheet>
@@ -156,7 +179,7 @@ export function TissuePickerTrigger({ className }: TissuePickerTriggerProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PICKER BODY
+// PICKER CONTENT
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TissuePickerContent() {
@@ -168,178 +191,306 @@ function TissuePickerContent() {
     clearAll,
   } = useTissueTracks()
 
-  const [tissueFilter, setTissueFilter] = useState<string>(
-    TISSUE_INDEX[0]?.tissue ?? ''
+  const [tissueName, setTissueName] = useState<string>(
+    () => TISSUE_INDEX[0]?.tissue ?? ''
   )
-  const [assayFilter, setAssayFilter] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-
-  const currentTissue = useMemo(
-    () => TISSUE_INDEX.find(t => t.tissue === tissueFilter),
-    [tissueFilter]
+  const [assayFilter, setAssayFilter] = useState<ReadonlySet<string>>(
+    () => new Set()
   )
+  const [activeOnly, setActiveOnly] = useState(false)
 
-  // Subtissues filtered by search and (optionally) by assay availability.
-  // We do this synchronously — even at 742 subtissues × 6 tissues this is
-  // sub-millisecond on a modern machine.
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  // ⌘K focuses the search input.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  const currentTissue = TISSUE_BY_NAME.get(tissueName)
+
+  // Per-subtissue active assay set, derived once and shared with each row.
+  const activeAssaysBySubtissue = useMemo<
+    ReadonlyMap<string, ReadonlySet<string>>
+  >(() => {
+    const map = new Map<string, Set<string>>()
+    for (const t of activeTissueTracks) {
+      let bucket = map.get(t.subtissue)
+      if (!bucket) {
+        bucket = new Set<string>()
+        map.set(t.subtissue, bucket)
+      }
+      bucket.add(t.assay)
+    }
+    return map
+  }, [activeTissueTracks])
+
+  // Subtissues for the current tissue, filtered by search / assay / active.
   const filteredSubtissues = useMemo(() => {
-    if (!currentTissue) return [] as SubtissueInfo[]
+    if (!currentTissue) return [] as readonly SubtissueInfo[]
     const q = search.trim().toLowerCase()
+    const filterAssays = assayFilter
+    const onlyActive = activeOnly
+
     return currentTissue.subtissues.filter(sub => {
       if (q && !sub.name.toLowerCase().includes(q)) return false
-      if (assayFilter) {
-        const hasAssay = sub.assays.some(
-          a => a.name === assayFilter && Boolean(a.bigwig)
-        )
-        if (!hasAssay) return false
+
+      if (filterAssays.size > 0) {
+        let hasAny = false
+        for (const a of sub.assays) {
+          if (a.bigwig && filterAssays.has(a.name)) {
+            hasAny = true
+            break
+          }
+        }
+        if (!hasAny) return false
       }
+
+      if (onlyActive) {
+        const bucket = activeAssaysBySubtissue.get(sub.name)
+        if (!bucket || bucket.size === 0) return false
+      }
+
       return true
     })
-  }, [currentTissue, search, assayFilter])
+  }, [currentTissue, search, assayFilter, activeOnly, activeAssaysBySubtissue])
+
+  const handleToggleAssayFilter = useCallback((assay: string) => {
+    setAssayFilter(prev => {
+      const next = new Set(prev)
+      if (next.has(assay)) next.delete(assay)
+      else next.add(assay)
+      return next
+    })
+  }, [])
+
+  const handleResetFilters = useCallback(() => {
+    setSearch('')
+    setAssayFilter(new Set())
+    setActiveOnly(false)
+  }, [])
+
+  const filterIsDirty = search !== '' || assayFilter.size > 0 || activeOnly
+  const sampleCount = filteredSubtissues.length
 
   return (
     <SheetContent
       side="right"
       showOverlay={false}
+      showClose={false}
       className="w-full sm:max-w-2xl flex flex-col gap-0 p-0"
     >
-      <SheetHeader className="px-6 pt-6 pb-4 border-b border-border space-y-1">
+      {/* HEADER — one line. Title + tissue popover + ⌘K hint + close */}
+      <SheetHeader className="px-5 py-3 border-b border-border space-y-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <FlaskConical className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <SheetTitle className="text-left">
-              Tissue-specific tracks
-            </SheetTitle>
-            <SheetDescription className="text-left">
-              {TOTAL_RENDERABLE_TRACKS.toLocaleString()} epigenomic signals
-              across {TISSUE_INDEX.length} tissues — toggle any combination.
-            </SheetDescription>
-          </div>
+          <SheetTitle className="text-base font-semibold flex-1 text-left">
+            Tissue signals
+          </SheetTitle>
+          <TissuePopover value={tissueName} onChange={setTissueName} />
+          <KbdHint label="⌘K" />
+          <CloseButton />
         </div>
       </SheetHeader>
 
-      {/* Active selection rail */}
-      {activeTissueTracks.length > 0 && (
-        <div className="px-6 pt-4 pb-3 border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-medium text-muted-foreground">
-              Active ({activeTissueTracks.length})
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onClick={clearAll}
-            >
-              Clear all
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {activeTissueTracks.map(t => (
-              <ActivePill
-                key={t.id}
-                tissue={t.tissue}
-                subtissue={t.subtissue}
-                assay={t.assay}
-                onRemove={() => removeById(t.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Search input */}
-      <div className="px-6 pt-4 pb-3 border-b border-border">
-        <div className="relative">
+      {/* ROW A — search + assay multi-filter */}
+      <div className="flex items-center gap-3 px-5 py-3">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder={`Search ${currentTissue?.subtissues.length ?? 0} ${currentTissue?.tissue ?? ''} samples…`}
+            ref={searchInputRef}
             value={search}
             onChange={e => setSearch(e.target.value)}
+            placeholder={`Search ${currentTissue?.subtissues.length ?? 0} ${tissueName.toLowerCase()} samples…`}
             className="pl-9 h-9"
           />
         </div>
+        <AssayFilterRow
+          tissue={currentTissue}
+          selected={assayFilter}
+          onToggle={handleToggleAssayFilter}
+        />
       </div>
 
-      {/* Tissue filter chips */}
-      <FilterChipRow
-        label="Tissue"
-        items={TISSUE_INDEX.map(t => ({
-          id: t.tissue,
-          label: t.tissue,
-          count: t.totalRenderableTracks,
-        }))}
-        value={tissueFilter}
-        onChange={id => {
-          setTissueFilter(id)
-          setSearch('')
-        }}
-      />
-
-      {/* Assay filter chips */}
-      <FilterChipRow
-        label="Assay"
-        items={[
-          { id: '__all', label: 'All', count: undefined },
-          ...ALL_ASSAYS.filter(a =>
-            currentTissue?.assayCoverage.has(a) ?? false
-          ).map(a => ({
-            id: a,
-            label: assayLabel(a),
-            count: undefined,
-            color: assayColor(a),
-          })),
-        ]}
-        value={assayFilter ?? '__all'}
-        onChange={id => setAssayFilter(id === '__all' ? null : id)}
-      />
-
-      {/* Subtissue list */}
-      <div className="flex items-center justify-between px-6 pt-3 pb-2 text-xs text-muted-foreground">
+      {/* ROW B — count + active toggle + reset */}
+      <div className="flex items-center gap-3 px-5 pb-3 text-xs text-muted-foreground">
         <span>
-          {filteredSubtissues.length.toLocaleString()} sample
-          {filteredSubtissues.length === 1 ? '' : 's'}
-          {currentTissue && ` in ${currentTissue.tissue}`}
+          {sampleCount.toLocaleString()} sample{sampleCount === 1 ? '' : 's'}
         </span>
-        {(search || assayFilter) && (
+        {activeTissueTracks.length > 0 && (
+          <>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setActiveOnly(v => !v)}
+              className={cn(
+                'transition-colors',
+                activeOnly
+                  ? 'text-foreground font-medium'
+                  : 'hover:text-foreground'
+              )}
+            >
+              {activeTissueTracks.length} selected
+            </button>
+          </>
+        )}
+        <span className="flex-1" />
+        {filterIsDirty && (
           <button
             type="button"
-            onClick={() => {
-              setSearch('')
-              setAssayFilter(null)
-            }}
-            className="text-primary hover:underline"
+            onClick={handleResetFilters}
+            className="text-foreground hover:underline"
           >
-            Reset filters
+            Reset
           </button>
         )}
       </div>
 
+      {/* LIST */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="px-4 pb-6">
-          {filteredSubtissues.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No samples match these filters.
-            </div>
-          ) : (
-            <ul className="space-y-1">
-              {filteredSubtissues.map(sub => (
-                <SubtissueRow
-                  key={sub.name}
-                  subtissue={sub}
-                  tissue={currentTissue!.tissue}
-                  assayFilter={assayFilter}
-                  isAssayActive={isAssayActive}
-                  onToggle={toggleAssay}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
+        {sampleCount === 0 ? (
+          <div className="py-16 text-center text-sm text-muted-foreground">
+            No samples match these filters.
+          </div>
+        ) : (
+          <ul>
+            {filteredSubtissues.map((sub, i) => (
+              <SubtissueRow
+                key={sub.name}
+                tissue={tissueName}
+                subtissue={sub}
+                isLast={i === filteredSubtissues.length - 1}
+                activeAssays={
+                  activeAssaysBySubtissue.get(sub.name) ?? EMPTY_STRING_SET
+                }
+                isAssayActive={isAssayActive}
+                onToggle={toggleAssay}
+              />
+            ))}
+          </ul>
+        )}
       </ScrollArea>
+
+      {/* FOOTER */}
+      {activeTissueTracks.length > 0 && (
+        <div className="flex items-center justify-between gap-3 border-t border-border px-5 h-11 shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {activeTissueTracks.length} tissue track
+            {activeTissueTracks.length === 1 ? '' : 's'} active
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAll}
+            className="h-7 px-2 text-xs"
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
     </SheetContent>
+  )
+}
+
+const EMPTY_STRING_SET: ReadonlySet<string> = new Set<string>()
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TISSUE POPOVER (in header)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type TissuePopoverProps = {
+  value: string
+  onChange: (tissue: string) => void
+}
+
+function TissuePopover({ value, onChange }: TissuePopoverProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs font-medium gap-1"
+        >
+          {value}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-56 p-0">
+        <Command>
+          <CommandInput placeholder="Switch tissue…" className="h-9" />
+          <CommandList>
+            <CommandEmpty>No tissue.</CommandEmpty>
+            {TISSUE_INDEX.map(t => (
+              <CommandItem
+                key={t.tissue}
+                value={t.tissue}
+                onSelect={selected => {
+                  onChange(selected)
+                  setOpen(false)
+                }}
+                className="text-sm"
+              >
+                <span className="flex-1">{t.tissue}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {t.subtissues.length}
+                </span>
+                {t.tissue === value && <Check className="h-3.5 w-3.5 ml-1" />}
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASSAY FILTER ROW (multi-select)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type AssayFilterRowProps = {
+  tissue: TissueEntry | undefined
+  selected: ReadonlySet<string>
+  onToggle: (assay: string) => void
+}
+
+function AssayFilterRow({ tissue, selected, onToggle }: AssayFilterRowProps) {
+  const available = useMemo(() => {
+    if (!tissue) return ALL_ASSAYS
+    return ALL_ASSAYS.filter(a => tissue.assayCoverage.has(a))
+  }, [tissue])
+
+  return (
+    <div className="flex items-center gap-1">
+      {available.map(assay => {
+        const active = selected.has(assay)
+        return (
+          <button
+            key={assay}
+            type="button"
+            onClick={() => onToggle(assay)}
+            aria-pressed={active}
+            className={cn(
+              'h-7 px-2 rounded text-[11px] font-medium tabular-nums transition-colors',
+              active
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            )}
+          >
+            {assayLabel(assay)}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -348,200 +499,145 @@ function TissuePickerContent() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type SubtissueRowProps = {
-  subtissue: SubtissueInfo
   tissue: string
-  assayFilter: string | null
+  subtissue: SubtissueInfo
+  isLast: boolean
+  activeAssays: ReadonlySet<string>
   isAssayActive: (tissue: string, subtissue: string, assay: string) => boolean
   onToggle: (tissue: string, subtissue: string, assay: string) => void
 }
 
-function SubtissueRow({
-  subtissue,
+const SubtissueRow = memo(function SubtissueRow({
   tissue,
-  assayFilter,
-  isAssayActive,
+  subtissue,
+  isLast,
+  activeAssays,
   onToggle,
 }: SubtissueRowProps) {
-  const renderable = subtissue.assays.filter(
-    (a): a is AssayInfo & { bigwig: string } => Boolean(a.bigwig)
+  const renderable = useMemo(
+    () =>
+      subtissue.assays.filter(
+        (a): a is AssayInfo & { bigwig: string } => Boolean(a.bigwig)
+      ),
+    [subtissue]
   )
-  const visible = assayFilter
-    ? renderable.filter(a => a.name === assayFilter)
-    : renderable
 
-  if (visible.length === 0) return null
+  if (renderable.length === 0) return null
+
+  const { location, qualifier } = splitSubtissueName(subtissue.name)
+  const hasActive = activeAssays.size > 0
 
   return (
-    <li className="group rounded-lg border border-transparent px-3 py-2.5 hover:border-border hover:bg-accent/30 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="text-sm leading-snug text-foreground">
-            {formatSubtissue(subtissue.name)}
+    <li
+      className={cn(
+        'relative flex items-start gap-4 px-5 py-3 hover:bg-muted/40 transition-colors',
+        !isLast && 'border-b border-border/40'
+      )}
+    >
+      {hasActive && (
+        <span
+          aria-hidden
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-foreground"
+        />
+      )}
+
+      <div className="min-w-0 flex-1">
+        <div className="text-sm text-foreground leading-snug">{location}</div>
+        {qualifier && (
+          <div className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
+            {qualifier}
           </div>
-        </div>
+        )}
       </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {visible.map(assay => {
-          const active = isAssayActive(tissue, subtissue.name, assay.name)
-          return (
-            <AssayChip
-              key={assay.name}
-              assayName={assay.name}
-              active={active}
-              onClick={() => onToggle(tissue, subtissue.name, assay.name)}
-            />
-          )
-        })}
+
+      <div className="flex items-center gap-1 shrink-0 pt-0.5">
+        {renderable.map(assay => (
+          <AssayToggle
+            key={assay.name}
+            tissue={tissue}
+            subtissueName={subtissue.name}
+            assayName={assay.name}
+            active={activeAssays.has(assay.name)}
+            onToggle={onToggle}
+          />
+        ))}
       </div>
     </li>
   )
-}
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CHIP PRIMITIVES
+// ASSAY TOGGLE — monochrome letterform button with color underline when active
 // ─────────────────────────────────────────────────────────────────────────────
 
-type AssayChipProps = {
+type AssayToggleProps = {
+  tissue: string
+  subtissueName: string
   assayName: string
   active: boolean
-  onClick: () => void
+  onToggle: (tissue: string, subtissue: string, assay: string) => void
 }
 
-function AssayChip({ assayName, active, onClick }: AssayChipProps) {
-  const color = assayColor(assayName)
-  const label = assayLabel(assayName)
+const AssayToggle = memo(function AssayToggle({
+  tissue,
+  subtissueName,
+  assayName,
+  active,
+  onToggle,
+}: AssayToggleProps) {
+  const handleClick = useCallback(() => {
+    onToggle(tissue, subtissueName, assayName)
+  }, [onToggle, tissue, subtissueName, assayName])
+
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all',
-        active
-          ? 'border-transparent text-white shadow-sm'
-          : 'border-border bg-background text-muted-foreground hover:border-foreground/40 hover:text-foreground'
-      )}
-      style={
-        active
-          ? { backgroundColor: color }
-          : { color: undefined }
-      }
+      onClick={handleClick}
       aria-pressed={active}
+      className={cn(
+        'relative h-7 px-2 rounded text-[11px] font-medium tabular-nums transition-colors',
+        active
+          ? 'bg-foreground text-background'
+          : 'border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40'
+      )}
     >
-      {active ? (
-        <Check className="h-3 w-3" />
-      ) : (
+      {assayLabel(assayName)}
+      {active && (
         <span
-          className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: color }}
+          aria-hidden
+          className="absolute left-1 right-1 -bottom-px h-0.5 rounded-full"
+          style={{ backgroundColor: assayColor(assayName) }}
         />
       )}
-      {label}
     </button>
   )
-}
+})
 
-type FilterChipRowProps = {
-  label: string
-  value: string
-  onChange: (id: string) => void
-  items: ReadonlyArray<{
-    id: string
-    label: string
-    count?: number
-    color?: string
-  }>
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// SMALL CHROME PRIMITIVES
+// ─────────────────────────────────────────────────────────────────────────────
 
-function FilterChipRow({ label, value, onChange, items }: FilterChipRowProps) {
+function KbdHint({ label }: { label: string }) {
   return (
-    <div className="px-6 py-2 border-b border-border/60">
-      <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 scrollbar-none">
-        <span className="text-xs font-medium text-muted-foreground shrink-0 mr-1">
-          {label}
-        </span>
-        {items.map(item => {
-          const active = item.id === value
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onChange(item.id)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap shrink-0 transition-colors',
-                active
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-muted-foreground hover:border-foreground/40 hover:text-foreground'
-              )}
-            >
-              {item.color && (
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-              )}
-              {item.label}
-              {item.count !== undefined && (
-                <span
-                  className={cn(
-                    'tabular-nums',
-                    active ? 'text-primary-foreground/80' : 'text-muted-foreground/70'
-                  )}
-                >
-                  {item.count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <span className="text-[10px] text-muted-foreground border border-border rounded px-1 py-0.5 font-medium tracking-wider">
+      {label}
+    </span>
   )
 }
 
-type ActivePillProps = {
-  tissue: string
-  subtissue: string
-  assay: string
-  onRemove: () => void
-}
-
-function ActivePill({ tissue, subtissue, assay, onRemove }: ActivePillProps) {
-  const color = assayColor(assay)
-  const label = assayLabel(assay)
+// SheetContent's built-in close has fixed positioning that conflicts with our
+// inline header layout, so we render our own close button via SheetClose.
+function CloseButton() {
   return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className="group/pill inline-flex max-w-full items-center gap-1.5 rounded-full border border-transparent pl-2 pr-1 py-1 text-xs font-medium text-white shadow-sm"
-            style={{ backgroundColor: color }}
-          >
-            <span className="truncate max-w-[10rem]">
-              {tissue} · {label}
-            </span>
-            <button
-              type="button"
-              onClick={onRemove}
-              aria-label={`Remove ${label} from ${tissue}`}
-              className="rounded-full p-0.5 hover:bg-black/20"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs">
-          <div className="font-medium">
-            {tissue} — {label}
-          </div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            {formatSubtissue(subtissue)}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <SheetClose asChild>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 w-7 p-0"
+        aria-label="Close"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </SheetClose>
   )
 }
-
-// Re-export of unused symbol prevents tree-shaking warning when consumers
-// only import the trigger.
-export type { ReactNode }
