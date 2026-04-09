@@ -80,7 +80,8 @@ function pivotToMatrix(rows: SignalRow[]): HeatmapMatrix {
     }
     tissueSet.add(row.tissue_name);
     cells.set(`${row.ccre_id}|${row.tissue_name}`, row);
-    if (row.max_signal > maxSignal) maxSignal = row.max_signal;
+    const sig = row.max_signal ?? 0;
+    if (sig > maxSignal) maxSignal = sig;
   }
 
   // Sort tissues by total signal (most active first)
@@ -88,7 +89,7 @@ function pivotToMatrix(rows: SignalRow[]): HeatmapMatrix {
   for (const row of rows) {
     tissueTotal.set(
       row.tissue_name,
-      (tissueTotal.get(row.tissue_name) ?? 0) + row.max_signal,
+      (tissueTotal.get(row.tissue_name) ?? 0) + (row.max_signal ?? 0),
     );
   }
   const tissues = [...tissueSet].sort(
@@ -101,7 +102,7 @@ function pivotToMatrix(rows: SignalRow[]): HeatmapMatrix {
     return sorted.length > 0 ? quantile(sorted, 0.95) : 0;
   };
 
-  const p95 = computeP95(rows.map((r) => r.max_signal));
+  const p95 = computeP95(rows.map((r) => r.max_signal ?? 0));
 
   const markP95: Record<string, number> = { max_signal: p95 };
   for (const mark of ["dnase", "atac", "ctcf", "h3k27ac", "h3k4me3"]) {

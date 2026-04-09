@@ -10,10 +10,13 @@ import type { NextRequest } from "next/server";
  * This is defense-in-depth — API routes also enforce auth via requireAuth().
  * Cookie presence is a heuristic: authenticated users always have session
  * cookies set by the backend auth callback.
+ *
+ * Next 16 renamed the "middleware" file convention to "proxy". The exported
+ * function name changed from `middleware` to `proxy` to match.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Authenticated users always have at least one session cookie.
-  // Skip middleware if any cookies exist — actual validation is at the API layer.
+  // Skip if any cookies exist — actual validation is at the API layer.
   if (request.cookies.size > 0) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
