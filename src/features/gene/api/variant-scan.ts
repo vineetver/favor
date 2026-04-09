@@ -94,10 +94,12 @@ function appendArray(
   key: string,
   values: string[] | undefined,
 ) {
+  // Backend expects comma-separated values for array params, NOT repeated
+  // keys (`?k=a&k=b` returns 400). This matches the URL state convention
+  // used by useServerTable + parseVariantScanFiltersFromUrl, so the format
+  // is consistent end-to-end.
   if (values?.length) {
-    for (const val of values) {
-      params.append(key, val);
-    }
+    params.set(key, values.join(","));
   }
 }
 
