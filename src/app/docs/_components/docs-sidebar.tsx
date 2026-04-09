@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@infra/utils";
-import { DOCS_NAV_GROUPS, type DocsNavItem } from "../_lib/nav";
+import {
+  DOCS_NAV_GROUPS,
+  type DocsNavGroup,
+  type DocsNavItem,
+} from "../_lib/nav";
 
 export function DocsSidebar() {
   const pathname = usePathname();
@@ -11,24 +15,37 @@ export function DocsSidebar() {
   return (
     <aside className="w-full lg:w-48 shrink-0">
       <nav className="lg:sticky lg:top-24 space-y-6">
-        {DOCS_NAV_GROUPS.map((group) => (
-          <div key={group.label}>
-            <p className="px-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              {group.label}
-            </p>
-            <div className="mt-2 space-y-0.5">
-              {group.items.map((item) => (
-                <SidebarItem
-                  key={item.href}
-                  item={item}
-                  pathname={pathname}
-                />
-              ))}
+        {DOCS_NAV_GROUPS.map((group) => {
+          if (group.contextual && !isGroupActive(group, pathname)) {
+            return null;
+          }
+          return (
+            <div key={group.label}>
+              <p className="px-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                {group.label}
+              </p>
+              <div className="mt-2 space-y-0.5">
+                {group.items.map((item) => (
+                  <SidebarItem
+                    key={item.href}
+                    item={item}
+                    pathname={pathname}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
     </aside>
+  );
+}
+
+function isGroupActive(group: DocsNavGroup, pathname: string): boolean {
+  return group.items.some(
+    (item) =>
+      pathname === item.href ||
+      (item.children?.some((c) => pathname === c.href) ?? false),
   );
 }
 

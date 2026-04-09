@@ -1,22 +1,22 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
 import {
+  BaseEdge,
+  type Edge,
+  EdgeLabelRenderer,
+  type EdgeProps,
+  type EdgeTypes,
+  getSmoothStepPath,
+  Handle,
+  MarkerType,
+  type Node,
+  type NodeProps,
+  type NodeTypes,
+  Position,
   ReactFlow,
   ReactFlowProvider,
-  Handle,
-  EdgeLabelRenderer,
-  BaseEdge,
-  getSmoothStepPath,
-  type Node,
-  type Edge,
-  type EdgeProps,
-  type NodeTypes,
-  type EdgeTypes,
-  type NodeProps,
-  Position,
-  MarkerType,
 } from "@xyflow/react";
+import { useEffect, useMemo, useState } from "react";
 import "@xyflow/react/dist/base.css";
 
 /* -------------------------------------------------------------------------- */
@@ -33,9 +33,7 @@ function CoreNode({ data }: NodeProps<Node<CoreNodeData>>) {
   return (
     <div
       className={`rounded-xl border px-4 py-2.5 shadow-sm ${
-        data.accent
-          ? "border-primary/30 bg-primary/5"
-          : "border-border bg-card"
+        data.accent ? "border-primary/30 bg-primary/5" : "border-border bg-card"
       }`}
     >
       <Handle type="target" position={Position.Top} style={handleStyle} />
@@ -68,7 +66,12 @@ function ToolNode({ data }: NodeProps<Node<ToolNodeData>>) {
   return (
     <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 shadow-sm min-w-[90px] text-center">
       <Handle type="target" position={Position.Top} style={handleStyle} />
-      <Handle type="target" position={Position.Left} id="left" style={handleStyle} />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        style={handleStyle}
+      />
       <p className="text-[13px] font-bold text-primary leading-tight">
         {data.title}
       </p>
@@ -78,7 +81,12 @@ function ToolNode({ data }: NodeProps<Node<ToolNodeData>>) {
         </p>
       )}
       <Handle type="source" position={Position.Bottom} style={handleStyle} />
-      <Handle type="source" position={Position.Right} id="right" style={handleStyle} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        style={handleStyle}
+      />
     </div>
   );
 }
@@ -334,10 +342,10 @@ const initialNodes: Node[] = [
 
   // Domains (4 cols, 170px gap)
   {
-    id: "d-cohort",
+    id: "d-variant-list",
     type: "core",
     position: { x: LEFT + 10, y: ROW[4] },
-    data: { title: "Cohort", subtitle: "5 ops" },
+    data: { title: "Variant list", subtitle: "5 ops" },
     draggable: false,
     selectable: false,
   },
@@ -491,14 +499,14 @@ const initialEdges: Edge[] = [
   }),
 
   // Pipeline to domains
-  edge("e-hand-cohort", "p-handler", "d-cohort"),
+  edge("e-hand-variant-list", "p-handler", "d-variant-list"),
   edge("e-hand-analytics", "p-handler", "d-analytics"),
   edge("e-hand-graph", "p-handler", "d-graph"),
   edge("e-hand-workspace", "p-handler", "d-workspace"),
 
   // Domains to output — Cohort, Analytics, and Graph all produce charts + artifacts
-  edge("e-cohort-viz", "d-cohort", "o-viz"),
-  edge("e-cohort-art", "d-cohort", "o-artifacts"),
+  edge("e-variant-list-viz", "d-variant-list", "o-viz"),
+  edge("e-variant-list-art", "d-variant-list", "o-artifacts"),
   edge("e-analytics-viz", "d-analytics", "o-viz"),
   edge("e-analytics-art", "d-analytics", "o-artifacts"),
   edge("e-graph-viz", "d-graph", "o-viz"),
@@ -545,7 +553,7 @@ function DiagramInner() {
 const DLX = 10;
 const DLEFT = 160;
 //              Query  Agent  Resolve       Fetch        Stores       Response
-const DROW = [0,     80,    170,          280,         390,         490];
+const DROW = [0, 80, 170, 280, 390, 490];
 
 /* thick data-pipe: solid, heavy, primary */
 const pipeStyle = {
@@ -653,7 +661,7 @@ const dataNodes: Node[] = [
     id: "d-search",
     type: "tool",
     position: { x: DLEFT + 70, y: DROW[2] },
-    data: { title: "Search", detail: "\"Alzheimer\" → exact IDs" },
+    data: { title: "Search", detail: '"Alzheimer" → exact IDs' },
     draggable: false,
     selectable: false,
   },
@@ -702,10 +710,10 @@ const dataNodes: Node[] = [
     selectable: false,
   },
   {
-    id: "d-cohort",
+    id: "d-variant-list",
     type: "core",
     position: { x: DLEFT + 420, y: DROW[4] },
-    data: { title: "Cohort engine", subtitle: "filter · analytics" },
+    data: { title: "Variant list engine", subtitle: "filter · analytics" },
     draggable: false,
     selectable: false,
   },
@@ -774,7 +782,7 @@ const dataEdges: Edge[] = [
     style: { ...pipeStyle, opacity: 0.45 },
     markerEnd: pipeMarker,
   }),
-  edge("de-run-cohort", "d-run", "d-cohort", {
+  edge("de-run-variant-list", "d-run", "d-variant-list", {
     style: pipeStyle,
     markerEnd: pipeMarker,
   }),
@@ -788,7 +796,7 @@ const dataEdges: Edge[] = [
     style: thinStyle,
     markerEnd: thinMarker,
   }),
-  edge("de-cohort-resp", "d-cohort", "d-response", {
+  edge("de-variant-list-resp", "d-variant-list", "d-response", {
     style: thinStyle,
     markerEnd: thinMarker,
   }),
@@ -846,6 +854,7 @@ export function AgentArchDiagram() {
       <div className="flex justify-end">
         <div className="inline-flex items-center p-0.5 bg-muted rounded-lg">
           <button
+            type="button"
             onClick={() => setView("arch")}
             className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
               view === "arch"
@@ -856,6 +865,7 @@ export function AgentArchDiagram() {
             Architecture
           </button>
           <button
+            type="button"
             onClick={() => setView("data")}
             className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
               view === "data"
@@ -867,7 +877,9 @@ export function AgentArchDiagram() {
           </button>
         </div>
       </div>
-      <div className={`w-full rounded-xl border border-border bg-muted/30 overflow-hidden ${view === "arch" ? "h-[540px]" : "h-[580px]"}`}>
+      <div
+        className={`w-full rounded-xl border border-border bg-muted/30 overflow-hidden ${view === "arch" ? "h-[540px]" : "h-[580px]"}`}
+      >
         {mounted ? (
           <ReactFlowProvider key={view}>
             {view === "arch" ? <DiagramInner /> : <DataFlowDiagramInner />}

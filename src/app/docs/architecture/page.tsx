@@ -1,157 +1,122 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { Prose } from "../_components/doc-primitives";
 import { DocsToc, type TocItem } from "../_components/docs-toc";
-import { SystemArchDiagram } from "../_components/system-arch-diagram";
 import { StatBanner } from "../_components/stat-banner";
 
 const TOC_ITEMS: TocItem[] = [
-  { id: "how-it-connects", label: "How it all connects" },
-  { id: "engines", label: "Six engines" },
-  { id: "why", label: "Why it's built this way" },
-  { id: "ai-native-api", label: "AI-native API" },
-  { id: "production", label: "Production numbers" },
-  { id: "security", label: "Security model" },
-  { id: "deep-dives", label: "Deep dives" },
+  { id: "mission", label: "What we are building" },
+  { id: "access-patterns", label: "Access patterns" },
+  { id: "components", label: "Components" },
+  { id: "why", label: "Why this shape" },
+  { id: "stability", label: "Stability" },
 ];
 
 export const metadata: Metadata = {
   title: "Architecture | FAVOR Docs",
   description:
-    "System architecture: six specialized databases, AI-native API design, and the engineering behind annotating 8.9 billion genetic variants — served at <10ms lookups, <50ms search, sub-1s analytics.",
+    "How FAVOR is built. The access patterns, the components, and the stack behind 8.9 billion variants, 232 dimensions, and half a million genomes.",
 };
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const engines = [
+const stats = [
+  { value: "8.9B", label: "DNA variants", detail: "SNVs and indels across GRCh38" },
+  { value: "232", label: "Annotations per variant" },
+  { value: "~100ms", label: "API P99", detail: "Over the wire" },
+  { value: "120", label: "API endpoints" },
+];
+
+const patterns = [
   {
-    name: "RocksDB",
-    purpose: "Point lookups",
-    details: [
-      "Bloom + ribbon filters reject 99.9% of misses without touching disk",
-      "Custom binary format lets you jump to any of 232 fields by byte offset",
-      "Batched multi-get hits 50k+ lookups/sec on NVMe with zero heap allocations",
-    ],
+    name: "Point lookups at billion scale",
+    body: "Any variant, any annotation, answered in milliseconds. Bloom and ribbon filters skip misses without touching disk.",
   },
   {
-    name: "ClickHouse",
-    purpose: "Columnar analytics",
-    details: [
-      "MergeTree with LZ4 + delta encoding, 232 columns at ~6 bytes/row",
-      "A query touching 3 columns reads just 1.3% of the data",
-      "Materialized views at gene/region level eliminate re-scans",
-    ],
+    name: "Batch multi-get at streaming throughput",
+    body: "Pipelined, pre-sorted point lookups at around 10,000 variants per second per instance. Random reads become sequential reads, and batch uploads scale horizontally from there.",
   },
   {
-    name: "PostgreSQL",
-    purpose: "Transactions & auth",
-    details: [
-      "System of record for accounts, sessions, cohorts, API keys, and audit log",
-      "Argon2id hashing, RBAC with admin/researcher/viewer roles",
-      "pgvector for cosine-similarity over entity embeddings",
-    ],
+    name: "Range scans over sorted coordinates",
+    body: "A region query like chr17:43,000,000-43,200,000 is a single sequential read, because everything is sorted by chromosome and position. Powers the genome browser, gene pages, and the region explorer.",
   },
   {
-    name: "Kuzu",
-    purpose: "Graph traversal",
-    details: [
-      "Embedded, so zero network hops and zero serialization overhead",
-      "BFS fan-out, shortest paths, Jaccard similarity, Fisher's enrichment",
-      "3-hop expansion across 2k nodes in <15ms, shipped as ~40KB",
-    ],
+    name: "Interval overlap queries",
+    body: "Which regulatory elements overlap a variant. Which credible sets contain a position. Which genes a region falls inside. A variant resolves against thousands of intervals in one indexed step.",
   },
   {
-    name: "Elasticsearch",
-    purpose: "Full-text search",
-    details: [
-      "5-tier scoring cascade: exact > prefix > n-gram > fuzzy > synonym",
-      "Cross-type anchor + pivot for ambiguous queries",
-      "Batch resolution: 50 free-text inputs linked in one call",
-    ],
+    name: "Columnar scans with predicate pushdown",
+    body: "Aggregate a few columns across the full genome without reading the rest. Filters and bounds get pushed to the storage layer, so it only touches the fields and row groups the query needs.",
   },
   {
-    name: "S3 Data Lake",
-    purpose: "Source of truth",
-    details: [
-      "Parquet columnar encoding, 25x compression ratio",
-      "Every engine is a materialized view, rebuildable from the lake",
-      "Versioned manifests track partitions, row counts, and checksums",
-    ],
+    name: "Top-K ranked retrieval",
+    body: "Rank a variant list by any numeric annotation and return the top ten, without sorting every row. Powers variant prioritization, search ranking, and the most-relevant views on gene and region pages.",
+  },
+  {
+    name: "Materialized aggregates",
+    body: "Gene-level variant density, per-tissue signal averages, regional constraint scores. Precomputed at release time, so a gene page never scans billions of rows at request time. Storage traded for latency.",
+  },
+  {
+    name: "Full-text, fuzzy, and vector search",
+    body: "Three layers over the same entity index. Exact and alias matches first, then typo-tolerant fuzzy matching, then vector similarity on entity embeddings for meaning matches a string search cannot catch. Every result carries a confidence tier.",
+  },
+  {
+    name: "Graph traversal and pattern matching",
+    body: "BFS, shortest path, Jaccard similarity, centrality, enrichment, and subgraph pattern matching against a biomedical network. Runs in the same process as the API, so multi-hop queries do not pay a network round-trip per hop.",
+  },
+  {
+    name: "Scatter-gather and pub-sub",
+    body: "A single variant page fans out across several databases at once. RocksDB returns the 232 annotations. Kuzu walks the surrounding genes, diseases, and drugs. ClickHouse pulls overlapping cCREs, enhancer-gene links, chromatin states, tissue signals. Others join when the page needs them. All run in parallel; the API waits for the slowest and merges the results.",
   },
 ];
 
-const decisions = [
+const components = [
   {
-    q: "Why six databases instead of one?",
-    claim: "No single database handles all five access patterns well.",
-    mechanism: "Each engine owns one pattern: RocksDB for sub-ms lookups, ClickHouse for columnar scans, Kuzu for graph traversal. S3 Parquet is the canonical source.",
-    tradeoff: "Operational surface area of six engines, offset by each being a rebuildable materialized view.",
+    name: "Web frontend",
+    body: "Renders the portal: entity pages, region views, the batch annotation workspace, and the agent chat. Owns no data. Every read goes through the API.",
+    built: "Next.js, React, TypeScript, D3, WebGL",
   },
   {
-    q: "30TB to 1.2TB: how?",
-    claim: "Parquet columnar encoding collapses sparse, categorical data.",
-    mechanism: "~60% null columns collapse to 1-bit. Run-length encoding crushes categoricals with <50 distinct values. A 3-column query reads 1.3% of data.",
-    tradeoff: "Encoding overhead on write; amortized by weekly batch ingest.",
+    name: "API layer",
+    body: "The only thing that talks to storage. Handles routing, auth, request parsing, and the scatter-gather across serving engines described above. Web, CLI, and agent all go through here. This is also where cross-engine joins happen.",
+    built: "Rust, Tokio, Arrow, gRPC, REST, SSE, NATS",
   },
   {
-    q: "How do six databases stay in sync?",
-    claim: "They don't talk to each other.",
-    mechanism: "Each engine runs idempotent ETL against the same S3 manifest — a versioned file listing every partition and checksum.",
-    tradeoff: "Eventual consistency (minutes), acceptable for weekly-refresh scientific data.",
+    name: "Storage layer",
+    body: "A Parquet lake on object storage is the source of truth. Several serving engines sit in front of it as materialized views, each tuned for one access pattern: point lookup, columnar scan, full-text, vector similarity, graph traversal, and a transactional path for user data.",
+    built: "RocksDB, ClickHouse, Kuzu, PostgreSQL, Elasticsearch, Parquet, Roaring bitmaps",
   },
   {
-    q: "Why NATS over Kafka?",
-    claim: "Three worker types and hours of retention. Kafka is overkill.",
-    mechanism: "NATS gives at-least-once delivery with idempotent processing, consumer groups, replay, and dead-letter queues in a ~30MB binary.",
-    tradeoff: "No infinite log replay; fine for ephemeral job coordination.",
+    name: "Batch workers",
+    body: "Long-running jobs do not run inside the API process. They run in a worker pool that pulls from a message bus, processes in parallel, and writes results back. Batch annotation, enrichment, and analytics runs all land here.",
+    built: "Rust, NATS, DataFusion, Arrow, Parquet",
   },
   {
-    q: "What if a worker crashes?",
-    claim: "30s ack timeout, then the job gets reassigned.",
-    mechanism: "Output paths are deterministic — reprocessing produces identical results. Long jobs checkpoint every 10M rows.",
-    tradeoff: "Up to 30s wasted work on crash; checkpointing caps replay cost.",
+    name: "CLI",
+    body: "A second path into the platform for users who need to run analyses on their own hardware, on HPC, or inside protected hospital infrastructure where the web portal is not an option. Reads the same Parquet data the web path reads.",
+    built: "Rust, DataFusion, Arrow, Parquet, Nextflow",
   },
   {
-    q: "Why embedded Kuzu over Neo4j?",
-    claim: "20M nodes, 152M edges fit in-process. No network hop.",
-    mechanism: "Traversal drops from ~50ms/hop to sub-150ms end-to-end. Read-heavy with weekly batch ingest — no write-scaling needed.",
-    tradeoff: "Single-machine ceiling; current graph size is well within it.",
-  },
-  {
-    q: "Why RocksDB over Redis?",
-    claim: "8.9B × 232 annotations won't fit in RAM.",
-    mechanism: "Disk-backed with bloom + ribbon filters rejecting 99.9% of misses. Custom binary encoding makes any field accessible by byte offset.",
-    tradeoff: "Slightly higher tail latency than RAM; bloom + ribbon filters keep p99 under 10ms.",
+    name: "Agent runtime",
+    body: "Sits between a user question and the rest of the platform. Plans a step, calls a tool through the API, checks the result, and either continues, retries with a fix, or asks a precise question.",
+    built: "Python, TypeScript",
   },
 ];
 
-const deepDives = [
+const rationale = [
   {
-    title: "Knowledge Graph",
-    href: "/docs/knowledge-graph",
-    description:
-      "20M nodes, 152M edges. BFS traversal, shortest paths, Jaccard similarity, enrichment analysis.",
+    title: "No single database handles every access pattern well",
+    body: "Point lookup, columnar scan, full-text search, and graph traversal are four different storage problems. Each engine owns the one it is good at. Running several engines is the price we pay for keeping each one simple.",
   },
   {
-    title: "Agent System",
-    href: "/docs/agent-system",
-    description:
-      "5 tools, 20+ commands. Schema validation, stuck-loop detection, token budgeting.",
+    title: "Rust where latency matters, Python and TypeScript where iteration matters",
+    body: "The API and the CLI are Rust. The web platform is TypeScript. The agents are Python and TypeScript. Each language is used where it earns its keep.",
   },
   {
-    title: "Batch Pipeline",
-    href: "/docs/batch-pipeline",
-    description:
-      "100k variants/sec. Zero-alloc decoding, checkpointing, dual-format output.",
-  },
-  {
-    title: "Search Engine",
-    href: "/docs/search-engine",
-    description:
-      "5-tier scoring cascade. Anchor + pivot, batch resolution, sub-50ms p99.",
+    title: "The AI agent is a real user of the API, not a wrapper around it",
+    body: "Errors come back with a fix the agent can run directly. Column-name typos get corrected. Ambiguous requests get a precise question back instead of a guess. Improvements to the API benefit both humans and agents.",
   },
 ];
 
@@ -168,12 +133,6 @@ export default function ArchitectureDocsPage() {
       <div>
         <Prose>
           <h1>Architecture</h1>
-          <p>
-            One API to annotate, search, analyze, and traverse every known
-            human genetic variant. 8.9 billion records across 232 scientific
-            dimensions, served through six specialized database engines at
-            interactive speed.
-          </p>
         </Prose>
         <div className="mt-6">
           <StatBanner
@@ -190,208 +149,97 @@ export default function ArchitectureDocsPage() {
       {/* System overview */}
       <section>
         <Prose>
-          <h2 id="how-it-connects">How it all connects</h2>
-        </Prose>
-        <ul className="mt-3 space-y-1.5">
-          {[
-            "Frontend never touches databases.",
-            "Workers never serve HTTP.",
-            "API layer owns all routing and business logic.",
-            "Services coordinate via message subjects and S3 manifests.",
-            "No shared mutable state. Data flows one direction.",
-          ].map((rule) => (
-            <li key={rule} className="flex items-start gap-2 text-sm text-foreground">
-              <span className="mt-1 block h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-              {rule}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6">
-          <SystemArchDiagram />
-        </div>
-      </section>
-
-      {/* Storage engines */}
-      <section>
-        <Prose>
-          <h2 id="engines">Six engines. One job each.</h2>
+          <h2 id="access-patterns">Access patterns</h2>
           <p>
-            Each engine handles exactly one access pattern it&apos;s best at.
-            S3 Parquet is the canonical source. Every engine is a materialized
-            view rebuildable from the data lake.
+            FAVOR is not one system with one shape of query. It is a small
+            collection of engines, each built for one access pattern.
+            These are the patterns the platform has to serve.
           </p>
-        </Prose>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground whitespace-nowrap">
-                  Engine
-                </th>
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground whitespace-nowrap">
-                  Pattern
-                </th>
-                <th className="text-left py-2.5 font-semibold text-foreground">
-                  How &amp; why
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {engines.map((e) => (
-                <tr
-                  key={e.name}
-                  className="border-b border-border last:border-0"
-                >
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">
-                    {e.name}
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground whitespace-nowrap align-top">
-                    {e.purpose}
-                  </td>
-                  <td className="py-3 text-muted-foreground leading-relaxed">
-                    <ul className="space-y-0.5 list-none p-0 m-0">
-                      {e.details.map((d) => (
-                        <li key={d} className="flex items-start gap-1.5">
-                          <span className="mt-[7px] block h-1 w-1 rounded-full bg-muted-foreground/40 shrink-0" />
-                          {d}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Design decisions */}
-      <section>
-        <Prose>
-          <h2 id="why">Why it&apos;s built this way</h2>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {decisions.map((d) => (
+          {patterns.map((p) => (
             <div
-              key={d.q}
+              key={p.name}
               className="rounded-xl border border-border bg-card p-5"
             >
-              <p className="text-sm font-semibold text-foreground mb-3">{d.q}</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {d.claim}
-              </p>
-              <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
-                {d.mechanism}
-              </p>
-              <p className="text-xs text-muted-foreground/70 mt-2 italic">
-                Tradeoff: {d.tradeoff}
+              <p className="text-sm font-semibold text-foreground">{p.name}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                {p.body}
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* AI-native API (summary — detail lives in /docs/agent-system) */}
+      {/* Components */}
       <section>
         <Prose>
-          <h2 id="ai-native-api">AI-native API</h2>
+          <h2 id="components">Components and boundaries</h2>
           <p>
-            99 endpoints designed so AI agents can act on data, not just read
-            it. Every error includes a recovery plan as a ready-to-execute API
-            call. Column names auto-correct. Graph directions auto-infer. Wire
-            format is columnar (20x smaller than naive JSON). See the full
-            breakdown in the{" "}
-            <a href="/docs/agent-system">Agent System deep dive</a>.
+            The platform is a handful of components with strict rules about
+            what each one is allowed to talk to. The rules matter more than
+            any single component: they are what keep failures local and what
+            let any one part be rewritten without touching the others.
           </p>
         </Prose>
-      </section>
-
-      {/* Proof */}
-      <section>
-        <Prose>
-          <h2 id="production">Production numbers</h2>
-        </Prose>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {[
-            { metric: "<10ms", label: "Point lookup p99", detail: "RocksDB + bloom/ribbon filters" },
-            { metric: "<50ms", label: "Search p95", detail: "Elasticsearch 5-tier cascade" },
-            { metric: "<1s", label: "Analytics typical", detail: "ClickHouse columnar scan" },
-            { metric: "<150ms", label: "Graph traversal", detail: "Kuzu in-process BFS" },
-            { metric: "100%", label: "Rebuildable", detail: "Every engine from S3 manifest" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-lg font-bold text-foreground tabular-nums">{s.metric}</p>
-              <p className="text-xs font-medium text-foreground mt-0.5">{s.label}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{s.detail}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Security */}
-      <section>
-        <Prose>
-          <h2 id="security">Security model</h2>
-        </Prose>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {[
-            {
-              title: "Identity",
-              body: "API keys (Argon2id-hashed, shown once at creation) or signed session cookies (HttpOnly, Secure, 24h sliding window). Both resolve to the same internal identity.",
-            },
-            {
-              title: "Authorization",
-              body: "Three roles: admin, researcher, viewer. Enforced at middleware before any database query. Researchers create cohorts and run agents. Admins manage keys and audit logs.",
-            },
-            {
-              title: "Data isolation",
-              body: "User data scoped by mandatory tenant filters. Scientific data (8.9B variants, knowledge graph) is shared, immutable, and has no write API.",
-            },
-          ].map((c) => (
+        <div className="mt-4 space-y-3">
+          {components.map((c) => (
             <div
-              key={c.title}
+              key={c.name}
               className="rounded-xl border border-border bg-card p-5"
             >
-              <p className="text-sm font-semibold text-foreground">{c.title}</p>
-              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+              <p className="text-sm font-semibold text-foreground">{c.name}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                 {c.body}
+              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground/70">
+                <span className="font-medium">Built with</span>{" "}
+                <span className="font-mono">{c.built}</span>
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Deep dives */}
+      {/* Why this shape */}
       <section>
         <Prose>
-          <h2 id="deep-dives">Deep dives</h2>
+          <h2 id="why">Why this shape</h2>
+        </Prose>
+        <div className="mt-4 space-y-3">
+          {rationale.map((r) => (
+            <div
+              key={r.title}
+              className="rounded-xl border border-border bg-card p-5"
+            >
+              <p className="text-sm font-semibold text-foreground">{r.title}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                {r.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Stability */}
+      <section>
+        <Prose>
+          <h2 id="stability">Stability</h2>
           <p>
-            If you only read one next:{" "}
-            <strong>
-              <a href="/docs/knowledge-graph">Knowledge Graph</a>
-            </strong>
+            The public API, portal URLs, documented annotation columns,
+            and the release notes are the stability contract. Everything
+            on this page describes current internals. Components can be
+            renamed, merged, split, or replaced as the platform grows. For
+            user-visible changes, read the{" "}
+            <Link
+              href="/docs/release-notes"
+              className="text-primary hover:underline"
+            >
+              release notes
+            </Link>
             .
           </p>
         </Prose>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {deepDives.map((d) => (
-            <Link
-              key={d.href}
-              href={d.href}
-              className="group block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
-            >
-              <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                {d.title}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-                {d.description}
-              </p>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                Read more <ArrowRight className="w-3 h-3" />
-              </span>
-            </Link>
-          ))}
-        </div>
       </section>
     </div>
   );

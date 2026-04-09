@@ -2,372 +2,184 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose, Callout } from "../_components/doc-primitives";
 import { DocsToc, type TocItem } from "../_components/docs-toc";
-import { StatBanner } from "../_components/stat-banner";
-import { DataFlowDiagram } from "../_components/data-flow-diagram";
-import {
-  FlowDiagram,
-  FlowNode,
-  FlowConnector,
-} from "../_components/flow-diagram";
 
 const TOC_ITEMS: TocItem[] = [
-  { id: "parsing", label: "Smart query parsing" },
-  { id: "cascade", label: "Matching cascade" },
-  { id: "modes", label: "Three search modes" },
-  { id: "response", label: "Response structure" },
-  { id: "performance", label: "Performance engineering" },
-  { id: "agent-integration", label: "Agent integration" },
-  { id: "decisions", label: "Design decisions" },
+  { id: "what-it-does", label: "What it does" },
+  { id: "kinds-of-queries", label: "Kinds of queries" },
+  { id: "confidence", label: "Why confidence matters" },
+  { id: "modes", label: "Three ways it is used" },
+  { id: "agent", label: "How the agent uses it" },
 ];
 
 export const metadata: Metadata = {
   title: "Search Engine | FAVOR Docs",
   description:
-    "How FAVOR resolves messy human queries to normalized entity IDs across 16 types and 14.8M entities in under 50ms.",
+    "How FAVOR resolves human queries to entities across the knowledge graph. A short description of the design, not a stability contract.",
 };
 
 export default function SearchEngineDocsPage() {
   return (
-    <div className="space-y-14">
+    <div className="space-y-12">
       <DocsToc items={TOC_ITEMS} />
 
-      {/* Hero */}
       <div>
         <Prose>
           <h1>Search Engine</h1>
           <p>
-            Resolves messy human queries &mdash; misspelled gene names, mixed
-            identifier formats, disease ontology codes &mdash; to exact entity
-            IDs across 14.8M entities in &lt;50ms. Every UI typeahead, pivot
-            explorer, and{" "}
-            <Link href="/docs/agent-system">agent</Link> disambiguation
-            routes through this system.
-          </p>
-          <p>
-            <strong>
-              Every resolution includes why it matched and how confident we
-              are, so downstream systems never guess.
-            </strong>
+            Search turns what a human typed into a specific thing in the
+            graph. A gene, a variant, a disease, a drug. It is the layer
+            every typeahead, entity explorer, and{" "}
+            <Link href="/docs/agent">AI agent</Link> disambiguation runs
+            through.
           </p>
         </Prose>
-        <div className="mt-6">
-          <StatBanner
-            stats={[
-              { value: "<50ms", label: "Latency", detail: "P95 typeahead response" },
-              { value: "14.8M", label: "Entities", detail: "Indexed across 16 types" },
-              { value: "6", label: "Confidence Tiers", detail: "Exact ID to discovery pivot (0–5)" },
-              { value: "50", label: "Batch Inputs", detail: "Resolved per single call" },
-            ]}
-          />
-        </div>
+
+        <Callout variant="info" title="Engineering notes, not a contract">
+          This page describes how search is designed. The exact match
+          strategies and ranking can change. For the user facing guide,
+          see{" "}
+          <Link href="/docs/search">Search and Explore</Link>.
+        </Callout>
       </div>
 
-      {/* Smart query parsing */}
       <section>
         <Prose>
-          <h2 id="parsing">Smart query parsing</h2>
+          <h2 id="what-it-does">What it does</h2>
           <p>
-            The parser classifies every query before it touches Elasticsearch.
-            Three outcomes, in order of preference:
+            Search has one job: take messy input and hand back the right
+            entity, or a short list of candidates, with enough context for
+            the caller to decide what to do next. A caller here is a
+            typeahead in the portal, a graph explorer, or the AI agent
+            resolving a name before it traverses.
+          </p>
+          <p>
+            The hard part is not speed. The hard part is that the same
+            input can mean different things. &ldquo;BRCA1&rdquo; is a gene.
+            &ldquo;Metformin&rdquo; is a drug. &ldquo;Alzheimer&rdquo; is a
+            disease with several close relatives. Search has to return
+            something useful for all of these without guessing.
           </p>
         </Prose>
-        <div className="mt-4">
-          <FlowDiagram>
-            <FlowNode
-              icon="crosshair"
-              title="Structured → deterministic"
-              subtitle="VCF coordinates (chr:pos:ref:alt), rsIDs, ChEMBL IDs, ontology codes (MONDO, HPO, OMIM, etc.) resolve directly. No Elasticsearch, no ambiguity."
-              index={0}
-            />
-            <FlowConnector label="no pattern match" />
-            <FlowNode
-              icon="dna"
-              title="Ambiguous → ranked options"
-              subtitle="Short uppercase tokens (2–6 chars) classified as likely gene symbols and routed to symbol-first matching with ranked results."
-              index={1}
-            />
-            <FlowConnector label="no heuristic match" />
-            <FlowNode
-              icon="search"
-              title="Free text → Elasticsearch"
-              subtitle="Multi-field search with n-gram tokenization and fuzziness. Each result carries a confidence tier (0–5)."
-              index={2}
-            />
-          </FlowDiagram>
+      </section>
+
+      <section>
+        <Prose>
+          <h2 id="kinds-of-queries">Kinds of queries</h2>
+          <p>
+            Most of the design comes down to recognising what kind of input
+            a caller gave you, because different inputs need different
+            strategies.
+          </p>
+        </Prose>
+        <div className="mt-4 space-y-3">
+          {[
+            {
+              title: "Structured identifiers",
+              body: "VCF coordinates, rsIDs, ChEMBL identifiers, ontology codes. These have exactly one correct answer. Search recognises them by shape and resolves directly without going through fuzzy matching.",
+            },
+            {
+              title: "Short symbolic tokens",
+              body: "Uppercase strings that look like gene symbols. Search prefers symbol matches first, because that is what a scientist almost always means when they type six uppercase letters.",
+            },
+            {
+              title: "Free text",
+              body: "Everything else. Names, partial names, typos, common misspellings. This is where fuzzy matching earns its place, but always after the cleaner strategies have been tried.",
+            },
+          ].map((c) => (
+            <div
+              key={c.title}
+              className="rounded-xl border border-border bg-card p-5"
+            >
+              <p className="text-sm font-semibold text-foreground">{c.title}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                {c.body}
+              </p>
+            </div>
+          ))}
         </div>
-        <div className="mt-6">
-          <Callout variant="tip" title="40% of queries skip Elasticsearch entirely">
-            A VCF coordinate has exactly one correct resolution. Pre-routing
-            eliminates ambiguity and drops latency to near-zero for structured
-            identifiers.
-          </Callout>
+        <p className="mt-4 text-xs text-muted-foreground">
+          The rule is simple: cheaper and more certain strategies run
+          first. Fuzzy matching is a fallback, not the default.
+        </p>
+      </section>
+
+      <section>
+        <Prose>
+          <h2 id="confidence">Why confidence matters</h2>
+          <p>
+            Every result comes back with a confidence level and a short
+            reason for why the match happened. &ldquo;Exact identifier
+            match&rdquo; is not the same as &ldquo;edit distance two from
+            your input&rdquo;, and search refuses to pretend they are.
+          </p>
+          <p>
+            The reason this matters is that downstream code needs to make
+            different decisions based on how sure we are. A typeahead can
+            show low confidence matches as suggestions. An AI agent
+            resolving a name before running an expensive traversal should
+            stop and ask if the match is weak. By returning the reason
+            alongside the result, search lets each caller decide for
+            itself where to draw the line.
+          </p>
+        </Prose>
+      </section>
+
+      <section>
+        <Prose>
+          <h2 id="modes">Three ways it is used</h2>
+          <p>
+            Same engine, same matching rules, three different consumers.
+            Each one has its own latency target and result shape, so the
+            serving layer exposes three modes.
+          </p>
+        </Prose>
+        <div className="mt-4 space-y-3">
+          {[
+            {
+              title: "Typeahead",
+              body: "The search bar in the portal. Fires on every keystroke, has to feel instant, and returns a handful of top candidates grouped by type.",
+            },
+            {
+              title: "Entity explorer",
+              body: "Used when a result has been selected and the caller wants to see the entity in its neighbourhood. Returns more results per type and is cacheable, because the same entity view is often reloaded.",
+            },
+            {
+              title: "Batch resolution",
+              body: "Used by the AI agent and by bulk imports. Several names in, several resolved entities out, all in a single round trip with confidence on each.",
+            },
+          ].map((c) => (
+            <div
+              key={c.title}
+              className="rounded-xl border border-border bg-card p-5"
+            >
+              <p className="text-sm font-semibold text-foreground">{c.title}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                {c.body}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Matching cascade */}
       <section>
         <Prose>
-          <h2 id="cascade">Matching cascade</h2>
-          <p>
-            Priority-ordered matching across 6 tiers (0&ndash;5).
-            Higher-confidence strategies execute first. Every result carries a
-            numeric <code>match_tier</code> and a categorical{" "}
-            <code>match_reason</code> so consumers know exactly why a result
-            appeared.
-          </p>
-        </Prose>
-        <div className="mt-4">
-          <FlowDiagram>
-            <FlowNode
-              icon="fingerprint"
-              title="Tier 0 — Exact ID"
-              subtitle="Direct identifier lookup. rsID, ChEMBL, ontology code. Zero ambiguity."
-              index={0}
-            />
-            <FlowConnector label="no match → try next" />
-            <FlowNode
-              icon="check-circle"
-              title="Tier 1 — Exact name / alias"
-              subtitle="Case-insensitive match on primary label and known aliases."
-              index={1}
-            />
-            <FlowConnector label="no match → try next" />
-            <FlowNode
-              icon="search"
-              title="Tier 2–3 — Prefix / partial"
-              subtitle="Partial inputs and compound names. Scored by coverage and position."
-              index={2}
-            />
-            <FlowConnector label="no match → try next" />
-            <FlowNode
-              icon="compass"
-              title="Tier 4 — Typo-tolerant"
-              subtitle='Edit-distance matching. Catches "BRAC1" → BRCA1. Only fires when higher tiers return empty.'
-              index={3}
-            />
-            <FlowConnector label="entity resolved → optionally" />
-            <FlowNode
-              icon="network"
-              title="Tier 5 — Discovery pivot"
-              subtitle="Graph-backed expansion discovers connected entities. Lowest confidence, highest discovery value."
-              index={4}
-            />
-          </FlowDiagram>
-        </div>
-      </section>
-
-      {/* Three search modes — clean table */}
-      <section>
-        <Prose>
-          <h2 id="modes">Three search modes</h2>
-          <p>
-            Same matching cascade and index infrastructure, three consumers
-            with different latency targets and result shapes.
-          </p>
-        </Prose>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Mode</th>
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Used by</th>
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground whitespace-nowrap">Latency goal</th>
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Returns</th>
-                <th className="text-left py-2.5 font-semibold text-foreground whitespace-nowrap">Cache policy</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                {
-                  mode: "Typeahead",
-                  usedBy: "Search bar, all text inputs",
-                  latency: "<50ms P95",
-                  returns: "Top 5 per entity type, grouped and ranked",
-                  cache: "no-store (always fresh)",
-                },
-                {
-                  mode: "Pivot / Anchor",
-                  usedBy: "Entity explorer, graph UI",
-                  latency: "<200ms",
-                  returns: "Link counts per type, 5→50 on expand",
-                  cache: "5-min stale-while-revalidate",
-                },
-                {
-                  mode: "Batch Resolution",
-                  usedBy: "Agent, bulk imports",
-                  latency: "<100ms",
-                  returns: "1–50 inputs → entity IDs with tier + reason",
-                  cache: "per-request",
-                },
-              ].map((row) => (
-                <tr key={row.mode} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.mode}</td>
-                  <td className="py-3 pr-4 text-muted-foreground align-top">{row.usedBy}</td>
-                  <td className="py-3 pr-4 text-muted-foreground whitespace-nowrap align-top">{row.latency}</td>
-                  <td className="py-3 pr-4 text-muted-foreground align-top">{row.returns}</td>
-                  <td className="py-3 text-muted-foreground align-top whitespace-nowrap">{row.cache}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Response structure */}
-      <section>
-        <Prose>
-          <h2 id="response">Response structure</h2>
-          <p>
-            Every result is a structured record. The agent uses{" "}
-            <code>match_tier</code> to decide whether to proceed or
-            disambiguate. The UI uses <code>link_counts</code> for connection
-            density.
-          </p>
-        </Prose>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Field</th>
-                <th className="text-left py-2.5 font-semibold text-foreground">Purpose</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { field: "Entity type", purpose: "One of 16 types (gene, variant, disease, drug, pathway, phenotype, etc.)" },
-                { field: "Display name", purpose: "Render-ready label and subtitle. No post-processing needed." },
-                { field: "Match tier (0–5)", purpose: "Numeric confidence. Tier 0: certain. Tier 4+: guessing. Sets auto-accept thresholds." },
-                { field: "Match reason", purpose: "How the match was made: id_exact, name_exact, prefix, ngram, fuzzy, alias, pivot." },
-                { field: "Link counts", purpose: 'Outgoing edges by relationship type. Powers "why this result" explanations and the pivot UI.' },
-                { field: "Portal scope", purpose: "Which graph portal (BioKG, LipidKG, custom) the result belongs to. Enables multi-graph deployments without changing clients." },
-              ].map((row) => (
-                <tr key={row.field} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.field}</td>
-                  <td className="py-3 text-muted-foreground">{row.purpose}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Performance — top 3 prominent, rest collapsible */}
-      <section>
-        <Prose>
-          <h2 id="performance">Performance engineering</h2>
-          <p>
-            Sub-50ms latency from deliberate engineering at every layer.
-          </p>
-        </Prose>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground whitespace-nowrap">Technique</th>
-                <th className="text-left py-2.5 font-semibold text-foreground">Impact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { tech: "AbortController dedup", impact: "Each keystroke aborts the previous in-flight request. Fast typists eliminate most wasted round-trips." },
-                { tech: "Request ID versioning", impact: "Monotonic counter ensures stale responses are silently discarded, even if they arrive out of order." },
-                { tech: "Incremental expansion + cache", impact: "Start with 5 results per type, expand to 50 on demand. Typeahead: no-store. Pivot: 5-min stale-while-revalidate." },
-              ].map((row) => (
-                <tr key={row.tech} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.tech}</td>
-                  <td className="py-3 text-muted-foreground">{row.impact}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <details className="mt-4 rounded-xl border border-border bg-card">
-          <summary className="px-4 py-3 text-sm font-medium text-foreground cursor-pointer hover:bg-accent/50 rounded-xl transition-colors">
-            More performance details
-          </summary>
-          <div className="px-4 pb-4 overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <tbody>
-                {[
-                  { tech: "Callback ref debounce", impact: "Prevents debounce timer reset on re-renders. 150ms interval stays stable across component lifecycles." },
-                  { tech: "Best-match dedup", impact: 'Top result promoted to "best match" position, removed from grouped results below.' },
-                ].map((row) => (
-                  <tr key={row.tech} className="border-b border-border last:border-0">
-                    <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.tech}</td>
-                    <td className="py-3 text-muted-foreground">{row.impact}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      </section>
-
-      {/* Agent integration — consolidated, references cascade */}
-      <section>
-        <Prose>
-          <h2 id="agent-integration">Agent integration</h2>
+          <h2 id="agent">How the agent uses it</h2>
           <p>
             The{" "}
-            <Link href="/docs/agent-system">agent</Link> converts natural
-            language entity references to graph-ready IDs through batch
-            resolution &mdash; same cascade, same tiers, same quality.
-            Improvements to search benefit both human users and agent accuracy.
+            <Link href="/docs/agent">AI agent</Link> does not roll its own
+            entity resolution. When it sees a name in your question, it
+            calls batch resolution and gets back the candidates with
+            confidence. If confidence is high it moves on. If confidence is
+            low it asks you which one you meant. This keeps the agent from
+            silently walking down the wrong branch of the graph.
+          </p>
+          <p>
+            Improvements to search therefore improve the agent at the same
+            time. The two are not separate systems.
           </p>
         </Prose>
-        <div className="mt-4">
-          <DataFlowDiagram
-            title="Agent entity resolution"
-            steps={[
-              { label: "Natural language", detail: "\"BRCA1\", \"breast cancer\", \"Trastuzumab\"" },
-              { label: "Batch resolve", detail: "All references in one call" },
-              { label: "Confidence check", detail: "Tier 0–1: auto-proceed. Tier 2+: evaluate or ask user." },
-              { label: "Graph-ready IDs", detail: "Exact entity IDs for traversal" },
-            ]}
-          />
-        </div>
       </section>
 
-      {/* Design decisions */}
-      <section>
-        <Prose>
-          <h2 id="decisions">Design decisions</h2>
-        </Prose>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">Decision</th>
-                <th className="text-left py-2.5 font-semibold text-foreground">Rationale</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { dec: "Cascade over single-pass", rat: "Interpretable confidence tiers for downstream decision-making. Always know WHY something matched." },
-                { dec: "Pre-route before Elasticsearch", rat: "Structured identifiers have deterministic resolutions. 40% of queries skip full-text entirely." },
-                { dec: "Separate typeahead from pivot", rat: "Typeahead: speed problem. Pivot: discovery problem. Each optimizes independently." },
-              ].map((row) => (
-                <tr key={row.dec} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">{row.dec}</td>
-                  <td className="py-3 text-muted-foreground">{row.rat}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <section>
-        <Callout variant="info" title="Deep dive, not user guide">
-          This page covers the engineering behind search. For a practical
-          guide, see the{" "}
-          <Link href="/docs/search" className="text-primary hover:underline">
-            Search &amp; Explore
-          </Link>{" "}
-          portal guide.
-        </Callout>
-      </section>
     </div>
   );
 }

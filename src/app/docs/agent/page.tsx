@@ -1,46 +1,40 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose, Callout } from "../_components/doc-primitives";
+import { Callout, Prose } from "../_components/doc-primitives";
 import { DocsToc, type TocItem } from "../_components/docs-toc";
 
 const TOC_ITEMS: TocItem[] = [
-  { id: "capabilities", label: "What it can do" },
+  { id: "capabilities", label: "Best uses" },
   { id: "getting-started", label: "Getting started" },
+  { id: "how-to-ask", label: "How to ask" },
   { id: "example-prompts", label: "Example prompts" },
   { id: "operations", label: "Available operations" },
+  { id: "limits", label: "Limits" },
 ];
 
 export const metadata: Metadata = {
   title: "AI Agent | FAVOR Docs",
   description:
-    "How to use FAVOR-GPT effectively for variant analysis, cohort exploration, and graph queries.",
+    "How to use FAVOR-GPT effectively for variant list analysis, graph exploration, and follow-up statistics.",
 };
-
-/* ------------------------------------------------------------------ */
-/*  Layout primitives                                                  */
-/* ------------------------------------------------------------------ */
 
 function Card({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="rounded-xl border border-border p-4 space-y-2">
+    <div className="space-y-2 rounded-xl border border-border p-4">
       <p className="text-sm font-semibold text-foreground">{title}</p>
-      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
     </div>
   );
 }
 
 function Prompt({ children }: { children: string }) {
   return (
-    <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-muted/60">
-      <span className="text-primary text-sm mt-px shrink-0">&rsaquo;</span>
+    <div className="flex items-start gap-2.5 rounded-lg bg-muted/60 px-3.5 py-2.5">
+      <span className="mt-px shrink-0 text-sm text-primary">&rsaquo;</span>
       <p className="text-sm text-foreground">{children}</p>
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Page                                                               */
-/* ------------------------------------------------------------------ */
 
 export default function AgentDocsPage() {
   return (
@@ -50,54 +44,46 @@ export default function AgentDocsPage() {
       <Prose>
         <h1>AI Agent (FAVOR-GPT)</h1>
         <p>
-          Ask questions in plain English. FAVOR-GPT picks the right tools, runs
-          them against your data, and returns results with charts, tables, and
-          explanations &mdash; no code required.
+          FAVOR-GPT is the conversational layer on top of FAVOR. It is most
+          useful when your question is multi-step: find the right entities,
+          inspect a variant list, run an analysis, then turn the result into a
+          table or chart without leaving the same session.
         </p>
       </Prose>
 
-      {/* Capabilities */}
       <section className="space-y-4">
         <h2 id="capabilities" className="text-lg font-semibold text-foreground">
-          What it can do
+          Best uses
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Card
-            title="Signal to mechanism"
-            desc="Drug repurposing, target identification, enrichment, and phenotype mapping via natural language."
-
+            title="Variant list follow-up"
+            desc="Start from a batch-annotated variant list, rank variants, filter by annotations, and ask for summary analyses."
           />
           <Card
-            title="Variant prioritization"
-            desc="Annotate and rank by any score. Composite scoring with normalization and weighted multi-criteria ranking."
-
+            title="Graph exploration"
+            desc="Compare genes, diseases, drugs, and variants, then walk paths and neighbourhoods in the knowledge graph."
           />
           <Card
             title="Statistical analysis"
-            desc="Async PCA, regression (linear, logistic, elastic net), clustering, correlation, hypothesis tests, and GWAS QC."
-
+            desc="Run PCA, regression, clustering, correlations, hypothesis tests, and QC workflows when the question needs actual computation."
           />
           <Card
-            title="Cross-session memory"
-            desc="Pin entities, save findings, and continue conversations across sessions with full context."
-
+            title="Reusable sessions"
+            desc="Keep one session open while you refine the question. Entities, variant lists, and prior results stay in context across turns."
           />
           <Card
-            title="Visualization"
-            desc="Bar, scatter, distribution, heatmap, QQ plots, network diagrams &mdash; deterministic charts from tool outputs."
-
-          />
-          <Card
-            title="Multi-step composition"
-            desc="Chain graph exploration, cohort queries, statistical analysis, and chart generation in a single conversation."
-
+            title="Output generation"
+            desc="Turn tool outputs into tables, plots, and concise summaries without manually exporting intermediate results."
           />
         </div>
       </section>
 
-      {/* Getting started */}
       <section className="space-y-4">
-        <h2 id="getting-started" className="text-lg font-semibold text-foreground">
+        <h2
+          id="getting-started"
+          className="text-lg font-semibold text-foreground"
+        >
           Getting started
         </h2>
         <div className="space-y-3">
@@ -120,7 +106,7 @@ export default function AgentDocsPage() {
               title: "Set your context",
               desc: (
                 <>
-                  Select a cohort from a{" "}
+                  Select a variant list from a{" "}
                   <Link
                     href="/docs/batch-annotation"
                     className="text-primary hover:underline"
@@ -133,12 +119,12 @@ export default function AgentDocsPage() {
             },
             {
               n: 3,
-              title: "Ask questions",
-              desc: "Request analyses, comparisons, or explorations. The agent picks tools, runs them, and synthesizes results.",
+              title: "Ask for a concrete operation",
+              desc: "Request a comparison, ranking, plot, QC pass, or statistical test so the agent can choose the right tool path.",
             },
           ].map((step) => (
             <div key={step.n} className="flex items-start gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 {step.n}
               </span>
               <div>
@@ -152,34 +138,77 @@ export default function AgentDocsPage() {
         </div>
       </section>
 
-      {/* Example prompts */}
       <section className="space-y-4">
-        <h2 id="example-prompts" className="text-lg font-semibold text-foreground">
-          Example prompts
+        <h2 id="how-to-ask" className="text-lg font-semibold text-foreground">
+          How to ask
         </h2>
-        <div className="space-y-2">
-          <Prompt>Set cohort &lt;id&gt; and show top 10 variants by CADD.</Prompt>
-          <Prompt>Give me a QC summary and flag potential data-quality issues.</Prompt>
-          <Prompt>Compare BRCA1 and TP53 for shared disease neighbors.</Prompt>
-          <Prompt>Find paths from BRCA1 to breast cancer and summarize shortest links.</Prompt>
-          <Prompt>Run PCA on numeric features and explain principal components.</Prompt>
-          <Prompt>Create a cohort from these variants: rs123, rs456, rs789</Prompt>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card
+            title="Name the variant list or entity"
+            desc="The agent is more reliable when you anchor the conversation on a concrete variant list, gene, disease, or variant set."
+          />
+          <Card
+            title="Ask for an operation"
+            desc="Use verbs like compare, rank, summarize, test, plot, or explain so the agent can choose the right tool sequence."
+          />
+          <Card
+            title="State the output shape"
+            desc="If you want a table, chart, shortlist, or QC summary, say that explicitly. It reduces back-and-forth."
+          />
+          <Card
+            title="Keep related work in one session"
+            desc="A single session works better than restarting, because the agent can build on previous variant list selections and findings."
+          />
         </div>
       </section>
 
-      {/* Operations */}
+      <section className="space-y-4">
+        <h2
+          id="example-prompts"
+          className="text-lg font-semibold text-foreground"
+        >
+          Example prompts
+        </h2>
+        <div className="space-y-2">
+          <Prompt>
+            Set variant list &lt;id&gt; and show the top 10 variants by CADD
+            with consequence and ClinVar labels.
+          </Prompt>
+          <Prompt>
+            Give me a QC summary for this variant list and flag possible
+            data-quality issues before analysis.
+          </Prompt>
+          <Prompt>
+            Compare BRCA1 and TP53 for shared disease neighbours and show the
+            strongest links.
+          </Prompt>
+          <Prompt>
+            Find paths from BRCA1 to breast cancer and summarize the shortest
+            evidence-backed routes.
+          </Prompt>
+          <Prompt>
+            Run PCA on the numeric annotations in this variant list and explain
+            the first two components.
+          </Prompt>
+          <Prompt>
+            Create a variant list from these variants: rs123, rs456, rs789, then
+            rank them by deleteriousness.
+          </Prompt>
+        </div>
+      </section>
+
       <section className="space-y-4">
         <h2 id="operations" className="text-lg font-semibold text-foreground">
           Available operations
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 font-semibold text-foreground">
+                <th className="py-2.5 pr-4 text-left font-semibold text-foreground">
                   Domain
                 </th>
-                <th className="text-left py-2.5 font-semibold text-foreground">
+                <th className="py-2.5 text-left font-semibold text-foreground">
                   Operations
                 </th>
               </tr>
@@ -187,12 +216,12 @@ export default function AgentDocsPage() {
             <tbody>
               {[
                 {
-                  domain: "Cohort",
-                  ops: "Query rows, filter/sort, group-by aggregation, derive sub-cohorts, composite scoring, variant prioritization, export",
+                  domain: "Variant list",
+                  ops: "Query rows, filter and sort, group-by aggregation, derive sub-lists, composite scoring, variant prioritization, export",
                 },
                 {
                   domain: "Analytics",
-                  ops: "Regression (linear, logistic, elastic net), PCA, clustering, correlation, hypothesis testing, GWAS QC",
+                  ops: "Regression, PCA, clustering, correlation, hypothesis testing, GWAS QC",
                 },
                 {
                   domain: "Graph",
@@ -200,14 +229,14 @@ export default function AgentDocsPage() {
                 },
                 {
                   domain: "Workspace",
-                  ops: "Pin entities, switch cohorts, save memories across sessions",
+                  ops: "Pin entities, switch variant lists, and save memories across sessions",
                 },
               ].map((row) => (
                 <tr
                   key={row.domain}
                   className="border-b border-border last:border-0"
                 >
-                  <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap align-top">
+                  <td className="whitespace-nowrap py-3 pr-4 align-top font-medium text-foreground">
                     {row.domain}
                   </td>
                   <td className="py-3 text-muted-foreground">{row.ops}</td>
@@ -218,35 +247,38 @@ export default function AgentDocsPage() {
         </div>
       </section>
 
-      {/* Tips */}
       <section className="space-y-4">
         <Callout variant="tip" title="Tips">
-          <ul className="list-disc pl-4 space-y-1 mt-1">
+          <ul className="mt-1 list-disc space-y-1 pl-4">
             <li>
-              Start with a cohort or entity context &mdash; the agent works best
-              when it knows what data you're working with.
+              Start with a variant list or entity context. The agent works best
+              when it knows what data you are working with.
             </li>
             <li>
               Exact column names are faster, but close matches auto-correct.
             </li>
             <li>
-              Keep the same session for related analyses &mdash; context
+              Keep the same session for related analyses so the working context
               accumulates across turns.
             </li>
             <li>
-              Plain labels like "BRCA1" work for graph queries &mdash; the agent
-              resolves them automatically.
+              Plain labels like "BRCA1" work for graph queries. The agent will
+              resolve them automatically.
             </li>
           </ul>
         </Callout>
+      </section>
 
+      <section className="space-y-4">
+        <h2 id="limits" className="text-lg font-semibold text-foreground">
+          Limits
+        </h2>
         <Callout variant="warning" title="Interpretation">
           FAVOR-GPT is a decision-support tool, not a diagnostic system. Treat
           outputs as hypotheses to validate, not conclusions to cite.
         </Callout>
       </section>
 
-      {/* Engineering link */}
       <section>
         <Callout variant="info" title="Engineering deep-dive">
           For the tool architecture, planning loop, and error recovery behind

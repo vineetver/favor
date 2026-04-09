@@ -8,6 +8,12 @@ export interface DocsNavItem {
 export interface DocsNavGroup {
   label: string;
   items: DocsNavItem[];
+  /**
+   * If true, the group only renders when the current pathname matches one
+   * of its items. Used to keep the sidebar clean on casual pages but let
+   * readers hop between related pages once they are inside the section.
+   */
+  contextual?: boolean;
 }
 
 export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
@@ -18,18 +24,19 @@ export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
   {
     label: "Portal Guide",
     items: [
-      {
-        title: "Data & Annotations",
-        href: "/docs/data",
-        children: [{ title: "Changelog", href: "/docs/data/changelog" }],
-      },
+      { title: "Data & Annotations", href: "/docs/data" },
       { title: "Search & Explore", href: "/docs/search" },
       { title: "Batch Annotation", href: "/docs/batch-annotation" },
       { title: "AI Agent", href: "/docs/agent" },
     ],
   },
   {
-    label: "Deep Dives",
+    label: "Release notes",
+    items: [{ title: "Release notes", href: "/docs/release-notes" }],
+  },
+  {
+    label: "Under the hood",
+    contextual: true,
     items: [
       { title: "Architecture", href: "/docs/architecture" },
       { title: "Knowledge Graph", href: "/docs/knowledge-graph" },
@@ -40,7 +47,17 @@ export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
   },
 ];
 
-/** Flat list for mobile pill bar */
-export const DOCS_NAV_ITEMS: DocsNavItem[] = DOCS_NAV_GROUPS.flatMap(
-  (g) => g.items,
+/**
+ * Flat list for the mobile pill bar. Contextual groups are excluded so
+ * casual pages stay clean, matching the sidebar behaviour on desktop.
+ */
+export const DOCS_NAV_ITEMS: DocsNavItem[] = DOCS_NAV_GROUPS
+  .filter((g) => !g.contextual)
+  .flatMap((g) => g.items);
+
+/** All hrefs belonging to contextual groups, used to decide when to reveal them. */
+export const CONTEXTUAL_HREFS: Set<string> = new Set(
+  DOCS_NAV_GROUPS
+    .filter((g) => g.contextual)
+    .flatMap((g) => g.items.map((i) => i.href)),
 );
