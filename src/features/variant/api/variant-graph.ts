@@ -48,11 +48,16 @@ export interface VariantGraphResponse {
 /**
  * Fetch a variant entity from the knowledge graph with edge data.
  * Mirrors the fetchDiseaseEntity / fetchGene pattern.
+ *
+ * @param neighborModes optional per-edge-type neighbor expansion (e.g.
+ *   { SIGNAL_HAS_VARIANT: "full" }) — inlines the full neighbor node in the
+ *   edge summary instead of the default summary projection.
  */
 export async function fetchVariantGraph(
   vcf: string,
   edgeTypes: string[],
   limitPerEdgeType = 500,
+  neighborModes?: Record<string, "full" | "standard" | "summary">,
 ): Promise<VariantGraphResponse | null> {
   if (!vcf) return null;
 
@@ -62,6 +67,14 @@ export async function fetchVariantGraph(
     edgeTypes: edgeTypes.join(","),
     limitPerEdgeType: String(limitPerEdgeType),
   });
+  if (neighborModes && Object.keys(neighborModes).length > 0) {
+    params.set(
+      "neighborMode",
+      Object.entries(neighborModes)
+        .map(([et, mode]) => `${et}=${mode}`)
+        .join(","),
+    );
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15_000);

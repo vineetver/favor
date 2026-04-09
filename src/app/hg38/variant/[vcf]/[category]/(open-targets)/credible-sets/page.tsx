@@ -1,12 +1,8 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import {
-  fetchVariantGraph,
-  getEdgeRows,
-  ep,
-  nb,
-} from "@features/variant/api/variant-graph";
-import { CredibleSetsTable } from "@features/variant/components/graph/credible-sets-table";
+import { fetchVariantSignals } from "@features/variant/api/credible-sets-graph";
+import { CredibleSetsPlot } from "@features/variant/components/credible-sets-plot";
 import type { CredibleSetRow } from "@features/variant/components/graph/credible-sets-table";
+import { CredibleSetsTable } from "@features/variant/components/graph/credible-sets-table";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 interface CredibleSetsPageProps {
@@ -15,6 +11,15 @@ interface CredibleSetsPageProps {
     category: string;
   }>;
 }
+
+const STUDY_TYPE_LABELS: Record<string, string> = {
+  gwas: "GWAS",
+  eqtl: "eQTL",
+  pqtl: "pQTL",
+  sqtl: "sQTL",
+  tuqtl: "tuQTL",
+  sceqtl: "sc-eQTL",
+};
 
 export default async function CredibleSetsPage({
   params,
@@ -26,26 +31,37 @@ export default async function CredibleSetsPage({
 
   const variantVcf = result.selected.variant_vcf;
 
-  const graph = await fetchVariantGraph(variantVcf, [
-    "VARIANT_ASSOCIATED_WITH_STUDY",
-  ]);
+  const signals = await fetchVariantSignals(variantVcf);
 
-  const edgeRows = getEdgeRows(graph, "VARIANT_ASSOCIATED_WITH_STUDY");
-
-  const rows: CredibleSetRow[] = edgeRows.map((row, i) => ({
-    id: nb<string>(row, "id") ?? `study-${i}`,
-    studyId: nb<string>(row, "id") ?? "",
-    studyTrait: (ep<string>(row, "study_trait") ?? ""),
-    studyTitle: (ep<string>(row, "study_title") ?? ""),
-    traitName: (ep<string>(row, "trait_name") ?? ""),
-    pValueMlog: ep<number>(row, "p_value_mlog") ?? null,
-    orBeta: ep<number>(row, "or_beta") ?? null,
-    riskAllele: ep<string>(row, "risk_allele") ?? "",
-    source: (nb<string>(row, "type") ?? "Study"),
+  const rows: CredibleSetRow[] = signals.map((s) => ({
+    id: s.signalId,
+    signalId: s.signalId,
+    studyId: s.studyId,
+    studyType: s.studyType,
+    studyTypeLabel: STUDY_TYPE_LABELS[s.studyType] ?? s.studyType,
+    reportedTrait: s.reportedTrait,
+    methodName: s.methodName,
+    numCredible95: s.numCredible95,
+    numVariants: s.numVariants,
+    region: s.region,
+    logBayesFactor: s.logBayesFactor,
+    posteriorProbability: s.posteriorProbability,
+    confidence: s.confidence,
+    isLead: s.isLead,
   }));
 
-  // Sort by pValueMlog descending (most significant first)
-  rows.sort((a, b) => (b.pValueMlog ?? -Infinity) - (a.pValueMlog ?? -Infinity));
+  // Sort by PIP desc, tiebreak on log BF (many high-PIP leads share PIP≈1.0)
+  rows.sort((a, b) => {
+    const pa = a.posteriorProbability ?? -Infinity;
+    const pb = b.posteriorProbability ?? -Infinity;
+    if (pb !== pa) return pb - pa;
+    return (b.logBayesFactor ?? -Infinity) - (a.logBayesFactor ?? -Infinity);
+  });
 
-  return <CredibleSetsTable data={rows} />;
+  return (
+    <div className="space-y-4">
+      <CredibleSetsPlot variantVcf={variantVcf} />
+      <CredibleSetsTable data={rows} />
+    </div>
+  );
 }

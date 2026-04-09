@@ -4,32 +4,23 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
   {
     name: "Global Annotation",
     slug: "global-annotation",
-    // Flat list for mobile navigation (backward compatible)
-    // Ordered by clinical impact and actionability
+    // Flat list for mobile navigation (backward compatible).
+    // Mirrors the grouped order below.
     subCategories: [
-      // Overview - context first
+      // Overview
       { text: "Variant Summary", slug: "llm-summary" },
       { text: "Basic Information", slug: "basic" },
       { text: "Functional Class", slug: "functional-class" },
       { text: "Integrative Score", slug: "integrative" },
-      // Clinical & Disease - high priority
+      // Clinical & Disease
       { text: "Clinvar", slug: "clinvar" },
-      { text: "Disease Evidence", slug: "evidences" },
       { text: "Pharmacogenomics", slug: "pharmacogenomics" },
       { text: "Somatic Mutation", slug: "somatic-mutation" },
-      // Pathogenicity & Scores
+      // Predicted Impact
       { text: "Protein Function", slug: "protein-function" },
       { text: "Protein Structure", slug: "protein-structure" },
-      { text: "Conservation", slug: "conservation" },
       { text: "SpliceAI", slug: "splice-ai" },
-      // GWAS & Association
-      { text: "GWAS Catalog", slug: "gwas-catalog" },
-      { text: "GWAS Fine-Mapping", slug: "credible-sets" },
-      { text: "Locus-to-Gene", slug: "l2g-scores" },
-      // Regulatory & Epigenetics
-      { text: "Epigenetics", slug: "epigenetics" },
-      { text: "Chromatin State", slug: "chromatin-state" },
-      { text: "Transcription Factors", slug: "transcription-factors" },
+      { text: "Conservation", slug: "conservation" },
       // Population Genetics
       { text: "Allele Frequency", slug: "allele-frequency" },
       {
@@ -40,11 +31,18 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         text: "Expected Rate of De Novo Mutation",
         slug: "expected-rate-of-de-novo-mutation",
       },
+      // GWAS & Genetic Association
+      { text: "GWAS Catalog", slug: "gwas-catalog" },
+      { text: "GWAS Fine-Mapping", slug: "credible-sets" },
+      { text: "Locus-to-Gene", slug: "l2g-scores" },
+      // Regulatory & Epigenetics
+      { text: "Chromatin State", slug: "chromatin-state" },
+      { text: "Epigenetics", slug: "epigenetics" },
+      { text: "Transcription Factors", slug: "transcription-factors" },
       // Technical
       { text: "Mappability", slug: "mappability" },
     ],
-    // Grouped structure for desktop sidebar
-    // Ordered by clinical impact and actionability
+    // Grouped structure for desktop sidebar.
     showIcons: false,
     groups: [
       {
@@ -62,19 +60,33 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         defaultExpanded: true,
         items: [
           { text: "Clinvar", slug: "clinvar" },
-          { text: "Disease Evidence", slug: "evidences" },
           { text: "Pharmacogenomics", slug: "pharmacogenomics" },
           { text: "Somatic Mutation", slug: "somatic-mutation" },
         ],
       },
       {
-        name: "Pathogenicity & Scores",
+        name: "Predicted Impact",
         defaultExpanded: true,
         items: [
           { text: "Protein Function", slug: "protein-function" },
           { text: "Protein Structure", slug: "protein-structure" },
-          { text: "Conservation", slug: "conservation" },
           { text: "SpliceAI", slug: "splice-ai" },
+          { text: "Conservation", slug: "conservation" },
+        ],
+      },
+      {
+        name: "Population Genetics",
+        defaultExpanded: true,
+        items: [
+          { text: "Allele Frequency", slug: "allele-frequency" },
+          {
+            text: "Local Nucleotide Diversity",
+            slug: "local-nucleotide-diversity",
+          },
+          {
+            text: "Expected Rate of De Novo Mutation",
+            slug: "expected-rate-of-de-novo-mutation",
+          },
         ],
       },
       {
@@ -90,26 +102,15 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
         name: "Regulatory & Epigenetics",
         defaultExpanded: true,
         items: [
-          { text: "Epigenetics", slug: "epigenetics" },
           { text: "Chromatin State", slug: "chromatin-state" },
+          { text: "Epigenetics", slug: "epigenetics" },
           { text: "Transcription Factors", slug: "transcription-factors" },
-        ],
-      },
-      {
-        name: "Population Genetics",
-        defaultExpanded: true,
-        items: [
-          { text: "Allele Frequency", slug: "allele-frequency" },
-          { text: "Local Nucleotide Diversity", slug: "local-nucleotide-diversity" },
-          { text: "Expected Rate of De Novo Mutation", slug: "expected-rate-of-de-novo-mutation" },
         ],
       },
       {
         name: "Technical",
         defaultExpanded: true,
-        items: [
-          { text: "Mappability", slug: "mappability" },
-        ],
+        items: [{ text: "Mappability", slug: "mappability" }],
       },
     ],
   },

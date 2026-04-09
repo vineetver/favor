@@ -7,7 +7,6 @@ export { ChromatinStateView } from "./components/chromatin-state-view";
 export { GencodeExonicInfo } from "./components/gencode-exonic-info";
 export { VariantHeader } from "./components/header/variant-header";
 // Graph-based components
-export { EvidencesTable } from "./components/graph/evidences-table";
 export { CredibleSetsTable } from "./components/graph/credible-sets-table";
 export { L2GTable } from "./components/graph/l2g-table";
 export { PharmacogenomicsTable } from "./components/graph/pharmacogenomics-table";

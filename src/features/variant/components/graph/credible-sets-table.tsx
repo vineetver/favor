@@ -1,22 +1,28 @@
 "use client";
 
-import { DataSurface } from "@shared/components/ui/data-surface";
 import { createColumns, tooltip } from "@infra/table/column-builder";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 // ============================================================================
-// Row type
+// Row type — matches the Signal shape from fetchVariantSignals
 // ============================================================================
 
 export interface CredibleSetRow {
   id: string;
+  signalId: string;
   studyId: string;
-  studyTrait: string;
-  studyTitle: string;
-  traitName: string;
-  pValueMlog: number | null;
-  orBeta: number | null;
-  riskAllele: string;
-  source: string;
+  studyType: string;
+  studyTypeLabel: string;
+  reportedTrait: string | null;
+  methodName: string | null;
+  numCredible95: number | null;
+  numVariants: number | null;
+  region: string | null;
+  logBayesFactor: number | null;
+  posteriorProbability: number | null;
+  confidence: string | null;
+  isLead: boolean;
 }
 
 // ============================================================================
@@ -25,100 +31,186 @@ export interface CredibleSetRow {
 
 const col = createColumns<CredibleSetRow>();
 
+/** PIP formatted to 3 decimals with a colored bar for visual scan */
+function pipCell(pip: number | null) {
+  if (pip == null) return <span className="text-muted-foreground">-</span>;
+  const pct = Math.round(pip * 100);
+  const strong = pip >= 0.95;
+  return (
+    <div className="flex items-center gap-2 min-w-[110px]">
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[60px]">
+        <div
+          className={strong ? "h-full bg-rose-500" : "h-full bg-amber-500"}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-xs tabular-nums text-foreground">
+        {pip.toFixed(3)}
+      </span>
+    </div>
+  );
+}
+
 const credibleSetsColumns = [
-  col.display("studyTrait", {
-    header: "Study Trait",
+  // 1. Trait — biological meaning. Lead rows get a subtle ★ prefix so we
+  //    can drop the standalone Lead column entirely.
+  col.display("reportedTrait", {
+    header: "Trait",
     description: tooltip({
-      title: "Study Trait",
+      title: "Reported Trait",
       description:
-        "The trait or phenotype associated with this variant in the GWAS study.",
+        "Trait or phenotype from the underlying GWAS study. A ★ marks rows where this variant is the lead (top) variant in the credible set. QTL-typed signals may not have a human-readable trait.",
     }),
     cell: ({ row }) => {
-      const val = row.original.studyTrait || row.original.traitName;
-      if (!val) return <span className="text-muted-foreground">-</span>;
-      return val.length > 70 ? (
-        <span title={val} className="cursor-help">
-          {val.slice(0, 70)}...
-        </span>
-      ) : (
-        <span>{val}</span>
+      const t = row.original.reportedTrait;
+      const isLead = row.original.isLead;
+      const display = t
+        ? t.length > 52
+          ? `${t.slice(0, 52)}…`
+          : t
+        : null;
+      return (
+        <div className="flex items-center gap-1.5 min-w-0">
+          {isLead && (
+            <span
+              className="text-rose-500 text-xs leading-none shrink-0"
+              title="Lead variant in this credible set"
+              aria-label="Lead variant"
+            >
+              ★
+            </span>
+          )}
+          {display && (
+            <span
+              className="text-foreground truncate"
+              title={t ?? undefined}
+            >
+              {display}
+            </span>
+          )}
+        </div>
       );
     },
   }),
 
-  col.display("studyTitle", {
-    header: "Study Title",
+  // 2. Study type — GWAS / eQTL / pQTL / etc.
+  col.display("studyTypeLabel", {
+    header: "Type",
     description: tooltip({
-      title: "Study Title",
-      description: "Title of the GWAS study reporting this association.",
+      title: "Underlying Study Type",
+      description:
+        "Type of underlying analysis — GWAS, eQTL, pQTL, sQTL, tuQTL, or single-cell eQTL.",
+    }),
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {row.original.studyTypeLabel}
+      </span>
+    ),
+  }),
+
+  // 3. PIP — probability this variant is causal in the set
+  col.display("posteriorProbability", {
+    header: "PIP",
+    description: tooltip({
+      title: "Posterior Inclusion Probability",
+      description:
+        "Probability that this variant is the causal variant within the credible set. PIP ≥ 0.95 marks a confident inclusion.",
+    }),
+    cell: ({ row }) => pipCell(row.original.posteriorProbability),
+  }),
+
+  // 4. Credible set size — number of variants in the 95% credible set.
+  //    A value of 1 = unambiguously fine-mapped to this variant.
+  col.display("numCredible95", {
+    header: "Set size",
+    description: tooltip({
+      title: "95% credible set size",
+      description:
+        "Number of variants in the 95% credible set. 1 = the variant is unambiguously fine-mapped; larger sets mean the causal variant could be any of several candidates.",
     }),
     cell: ({ row }) => {
-      const val = row.original.studyTitle;
-      if (!val) return <span className="text-muted-foreground">-</span>;
-      return val.length > 60 ? (
-        <span title={val} className="cursor-help">
-          {val.slice(0, 60)}...
+      const cs = row.original.numCredible95;
+      if (cs == null) return null;
+      return (
+        <span className="font-mono text-sm tabular-nums text-foreground">
+          {cs.toLocaleString()}
         </span>
-      ) : (
-        <span>{val}</span>
       );
     },
   }),
 
-  col.display("pValueMlog", {
-    header: "-log\u2081\u2080(P)",
+  // 5. Method — SuSiE / PICS
+  col.display("methodName", {
+    header: "Method",
     description: tooltip({
-      title: "-log\u2081\u2080(P-value)",
+      title: "Fine-mapping Method",
       description:
-        "Negative log base 10 of the association p-value. Higher values indicate stronger statistical significance.",
+        "Method used to produce the credible set (SuSiE, SuSiE-inf, or PICS).",
     }),
     cell: ({ row }) => {
-      const val = row.original.pValueMlog;
-      if (val === null) return <span className="text-muted-foreground">-</span>;
-      return <span className="font-mono text-sm">{val.toFixed(2)}</span>;
+      const m = row.original.methodName;
+      if (!m) return <span className="text-muted-foreground">—</span>;
+      return <span className="text-xs text-foreground">{m}</span>;
     },
   }),
 
-  col.display("orBeta", {
-    header: "OR/Beta",
+  // 6. Study — which specific study (GCST linkout)
+  col.display("studyId", {
+    header: "Study",
     description: tooltip({
-      title: "Odds Ratio / Beta",
-      description:
-        "Effect size of the variant-trait association. For binary traits this is an odds ratio; for quantitative traits it is the beta coefficient.",
+      title: "Underlying Study",
+      description: "Study accession. Links to GWAS Catalog for GCST… IDs.",
     }),
     cell: ({ row }) => {
-      const val = row.original.orBeta;
-      if (val === null) return <span className="text-muted-foreground">-</span>;
-      return <span className="font-mono text-sm">{val.toFixed(4)}</span>;
+      const s = row.original.studyId;
+      if (!s) return <span className="text-muted-foreground">—</span>;
+      if (s.startsWith("GCST")) {
+        return (
+          <ExternalLink
+            href={`https://www.ebi.ac.uk/gwas/studies/${s}`}
+            className="font-mono text-xs"
+          >
+            {s}
+          </ExternalLink>
+        );
+      }
+      return (
+        <span className="font-mono text-xs text-muted-foreground">{s}</span>
+      );
     },
   }),
 
-  col.display("riskAllele", {
-    header: "Risk Allele",
+  // 7. Region — locus
+  col.display("region", {
+    header: "Region",
     description: tooltip({
-      title: "Risk Allele",
-      description: "The allele associated with increased trait risk or effect.",
+      title: "Locus Region",
+      description: "Genomic region of the credible set (chr:start-end).",
     }),
     cell: ({ row }) => {
-      const val = row.original.riskAllele;
-      if (!val) return <span className="text-muted-foreground">-</span>;
-      return <span className="font-mono text-sm">{val}</span>;
+      const r = row.original.region;
+      if (!r) return <span className="text-muted-foreground">—</span>;
+      return <span className="font-mono text-xs text-muted-foreground">{r}</span>;
     },
   }),
 
-  col.display("source", {
-    header: "Source",
+  // 8. log BF — technical / Bayesian evidence strength
+  col.display("logBayesFactor", {
+    header: "log BF",
     description: tooltip({
-      title: "Source",
+      title: "log Bayes Factor",
       description:
-        "The entity type of the linked study node in the knowledge graph.",
+        "log₁₀ Bayes factor for the credible set. Higher = stronger evidence for a causal signal at this locus.",
     }),
     cell: ({ row }) => {
-      const val = row.original.source;
-      if (!val) return <span className="text-muted-foreground">-</span>;
-      return <span className="text-sm">{val}</span>;
+      const v = row.original.logBayesFactor;
+      if (v == null) return <span className="text-muted-foreground">—</span>;
+      return (
+        <span className="font-mono text-sm tabular-nums">{v.toFixed(1)}</span>
+      );
     },
   }),
+
 ];
 
 // ============================================================================
@@ -134,13 +226,14 @@ export function CredibleSetsTable({ data }: CredibleSetsTableProps) {
     <DataSurface
       data={data}
       columns={credibleSetsColumns}
-      title="GWAS Fine-Mapping"
-      subtitle="GWAS study associations for this variant from the FAVOR knowledge graph"
-      searchPlaceholder="Search traits or studies..."
-      searchColumn="studyTrait"
+      title="Fine-mapped credible sets"
+      subtitle={`${data.length.toLocaleString()} credible set memberships via SIGNAL_HAS_VARIANT (SuSiE / PICS from OpenTargets)`}
+      searchPlaceholder="Search traits, studies, regions..."
+      searchColumn="reportedTrait"
       exportable
       exportFilename="credible-sets"
       defaultPageSize={10}
+      emptyMessage="No fine-mapped credible sets found for this variant"
     />
   );
 }

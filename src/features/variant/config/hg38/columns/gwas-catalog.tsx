@@ -1,53 +1,12 @@
 import type { GwasAssociationRow } from "@features/variant/types/gwas";
-import {
-  Badge,
-  categories,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { createColumns, tooltip } from "@infra/table/column-builder";
 import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<GwasAssociationRow>();
 
-// Variant context categories
-const variantContextCategories = categories([
-  {
-    label: "Missense",
-    match: "missense_variant",
-    color: "amber",
-    description: "Variant causes amino acid change in protein",
-  },
-  {
-    label: "Synonymous",
-    match: "synonymous_variant",
-    color: "gray",
-    description: "Variant does not change amino acid",
-  },
-  {
-    label: "Intron",
-    match: "intron_variant",
-    color: "blue",
-    description: "Variant located in intron",
-  },
-  {
-    label: "Intergenic",
-    match: "intergenic_variant",
-    color: "stone",
-    description: "Variant located between genes",
-  },
-  {
-    label: "Regulatory",
-    match: /regulatory_region/,
-    color: "violet",
-    description: "Variant affects regulatory region",
-  },
-  {
-    label: "UTR",
-    match: /utr_variant/,
-    color: "cyan",
-    description: "Variant in untranslated region",
-  },
-]);
+// ---------------------------------------------------------------------------
+// Formatting helpers
+// ---------------------------------------------------------------------------
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   "-": "⁻",
@@ -74,88 +33,47 @@ function formatPValue(pval: number | null): string {
   if (pval === null || pval === undefined) return "-";
   if (pval === 0) return "0";
   if (pval >= 0.01) return pval.toFixed(4);
-  // For small p-values, use mantissa × 10^exp format
   const exp = Math.floor(Math.log10(Math.abs(pval)));
   const mantissa = pval / Math.pow(10, exp);
-  return `${mantissa.toFixed(1)}×10${toSuperscript(exp)}`;
+  return `${mantissa.toFixed(2)}×10${toSuperscript(exp)}`;
 }
 
-function formatMlogP(mlog: number | null): string {
-  if (mlog === null) return "-";
-  return mlog.toFixed(2);
+/** Significance stars for p-value — standard genomics convention */
+function sigStars(pval: number | null): string {
+  if (pval === null || pval === undefined) return "";
+  if (pval < 5e-8) return "***"; // genome-wide
+  if (pval < 1e-5) return "**"; // suggestive
+  if (pval < 0.05) return "*"; // nominal
+  return "";
 }
+
+/** Extract short form of first author name (e.g. "Smith AB" or "Smith") */
+function formatAuthor(author: string | null): string {
+  if (!author) return "-";
+  return author.length > 18 ? `${author.slice(0, 18)}…` : author;
+}
+
+/**
+ * Parse the leading numeric value from a GWAS Catalog effect_size string.
+ * GWAS Catalog stores OR and beta in a single free-text field, often with
+ * trailing units like "12.300 unit increase". We only care about the number
+ * for directional and magnitude encoding.
+ */
+function parseEffect(val: string): { num: number; sign: 1 | -1 | 0 } | null {
+  const m = val.match(/-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/);
+  if (!m) return null;
+  const num = Number(m[0]);
+  if (!Number.isFinite(num)) return null;
+  const sign = num > 0 ? 1 : num < 0 ? -1 : 0;
+  return { num, sign };
+}
+
+// ---------------------------------------------------------------------------
+// Columns — ordered by actionability (strongest signals first)
+// ---------------------------------------------------------------------------
 
 export const gwasCatalogColumns = [
-  col.display("diseaseTrait", {
-    header: "Disease/Trait",
-    description: tooltip({
-      title: "Disease/Trait",
-      description:
-        "The disease or trait associated with this variant from the GWAS Catalog.",
-      citation: "NHGRI-EBI GWAS Catalog",
-    }),
-    cell: ({ row }) => {
-      const val = row.original.diseaseTrait || row.original.trait;
-      if (!val) return "-";
-      return val.length > 50 ? (
-        <span title={val} className="cursor-help">
-          {val.slice(0, 50)}...
-        </span>
-      ) : (
-        <span>{val}</span>
-      );
-    },
-  }),
-
-  col.display("mappedGene", {
-    header: "Gene",
-    description: tooltip({
-      title: "Mapped Gene",
-      description:
-        "Gene symbol mapped to this variant based on genomic location.",
-    }),
-    cell: ({ row }) => {
-      const gene = row.original.mappedGene;
-      if (!gene) return "-";
-      return (
-        <span className="font-medium text-primary">{gene}</span>
-      );
-    },
-  }),
-
-  col.display("pvalueMlog", {
-    header: "−log₁₀(p)",
-    description: tooltip({
-      title: "-log10(P-value)",
-      description:
-        "Negative log10 of the p-value. Higher values indicate stronger association.",
-      guides: [
-        { threshold: "> 8", meaning: "Genome-wide significant (p < 5e-8)" },
-        { threshold: "5-8", meaning: "Suggestive significance" },
-        { threshold: "< 5", meaning: "Below typical GWAS threshold" },
-      ],
-    }),
-    cell: ({ row }) => {
-      const mlog = row.original.pvalueMlog;
-      if (mlog === null) return "-";
-      const color = mlog > 8 ? "emerald" : mlog > 5 ? "amber" : "gray";
-      return <Badge color={color}>{formatMlogP(mlog)}</Badge>;
-    },
-  }),
-
-  col.display("pvalue", {
-    header: "P-value",
-    description: tooltip({
-      title: "P-value",
-      description: "Statistical significance of the association.",
-    }),
-    cell: ({ row }) => (
-      <span className="font-mono text-sm">
-        {formatPValue(row.original.pvalue)}
-      </span>
-    ),
-  }),
-
+  // 1. Risk allele — what to look for
   col.display("riskAllele", {
     header: "Risk Allele",
     description: tooltip({
@@ -166,41 +84,28 @@ export const gwasCatalogColumns = [
     cell: ({ row }) => {
       const val = row.original.riskAllele;
       if (!val) return "-";
-      // Extract just the allele if in format "rs123-A"
-      const allele = val.includes("-") ? val.split("-").pop() : val;
       return (
-        <span className="font-mono font-medium text-rose-600">{allele}</span>
+        <span className="font-mono font-medium text-rose-600">{val}</span>
       );
     },
   }),
 
-  col.display("effectSize", {
-    header: "OR/Beta",
+  // 2. Mapped gene — what it hits
+  col.display("mappedGene", {
+    header: "Mapped Gene",
     description: tooltip({
-      title: "Effect Size (OR or Beta)",
+      title: "Mapped Gene",
       description:
-        "Odds ratio for binary traits or beta coefficient for quantitative traits.",
+        "Gene symbol mapped to this variant based on genomic location.",
     }),
     cell: ({ row }) => {
-      const val = row.original.effectSize;
-      if (!val) return "-";
-      return <span className="font-mono text-sm">{val}</span>;
+      const gene = row.original.mappedGene;
+      if (!gene) return "-";
+      return <span className="font-medium text-primary">{gene}</span>;
     },
   }),
 
-  col.display("confidenceInterval", {
-    header: "95% CI",
-    description: tooltip({
-      title: "95% Confidence Interval",
-      description: "95% confidence interval for the effect size estimate.",
-    }),
-    cell: ({ row }) => {
-      const val = row.original.confidenceInterval;
-      if (!val) return "-";
-      return <span className="font-mono text-sm text-muted-foreground">{val}</span>;
-    },
-  }),
-
+  // 3. Risk allele frequency — how common
   col.display("riskAlleleFrequency", {
     header: "RAF",
     description: tooltip({
@@ -212,45 +117,126 @@ export const gwasCatalogColumns = [
       if (!val) return "-";
       const freq = parseFloat(val);
       if (Number.isNaN(freq)) return val;
-      return <span className="font-mono text-sm">{freq.toFixed(4)}</span>;
+      return <span className="font-mono text-sm tabular-nums">{freq.toFixed(3)}</span>;
     },
   }),
 
-  col.display("variantContext", {
-    header: "Context",
+  // 4. Effect size — how strong, with direction arrow
+  col.display("effectSize", {
+    header: "OR/Beta",
     description: tooltip({
-      title: "Variant Context",
-      description: "Functional consequence of the variant.",
-      categories: variantContextCategories,
+      title: "Effect Size (OR or Beta)",
+      description:
+        "Odds ratio (binary traits) or beta coefficient (quantitative traits). ▲ = positive association, ▼ = negative. Rose highlight marks strong effects (|value| ≥ 1).",
     }),
     cell: ({ row }) => {
-      const val = row.original.variantContext;
+      const val = row.original.effectSize;
       if (!val) return "-";
-      const color = variantContextCategories.getColor(val);
-      const label = val.replace(/_/g, " ").replace(/variant/gi, "").trim();
-      return <Badge color={color}>{label}</Badge>;
+      const parsed = parseEffect(val);
+      if (!parsed) {
+        return <span className="font-mono text-sm tabular-nums">{val}</span>;
+      }
+      const { num, sign } = parsed;
+      const strong = Math.abs(num) >= 1;
+      const colorClass = strong
+        ? "text-rose-600"
+        : "text-muted-foreground";
+      const arrow = sign > 0 ? "▲" : sign < 0 ? "▼" : "→";
+      return (
+        <span className={`font-mono text-sm tabular-nums ${colorClass}`}>
+          {Math.abs(num).toFixed(3)}
+          <span className="ml-1 text-[10px]">{arrow}</span>
+        </span>
+      );
     },
   }),
 
-  col.display("firstAuthor", {
-    header: "First Author",
+  // 5. P-value — is it real
+  col.display("pvalue", {
+    header: "P-value",
     description: tooltip({
-      title: "First Author",
-      description: "First author of the GWAS study.",
+      title: "P-value",
+      description:
+        "Statistical significance of the association. *** p<5e−8 (genome-wide), ** p<1e−5, * p<0.05.",
+    }),
+    cell: ({ row }) => {
+      const pval = row.original.pvalue;
+      if (pval === null) return "-";
+      const stars = sigStars(pval);
+      return (
+        <span className="font-mono text-sm tabular-nums">
+          {formatPValue(pval)}
+          {stars && (
+            <span className="text-rose-500 ml-0.5" title="Genome-wide significant">
+              {stars}
+            </span>
+          )}
+        </span>
+      );
+    },
+  }),
+
+  // 6. Confidence interval — uncertainty around effect
+  col.display("confidenceInterval", {
+    header: "95% CI",
+    description: tooltip({
+      title: "95% Confidence Interval",
+      description: "95% confidence interval for the effect size estimate.",
+    }),
+    cell: ({ row }) => {
+      const val = row.original.confidenceInterval;
+      if (!val) return "-";
+      return (
+        <span className="font-mono text-xs text-muted-foreground">{val}</span>
+      );
+    },
+  }),
+
+  // 7. Reported trait — what the study measured
+  col.display("diseaseTrait", {
+    header: "Reported Trait",
+    description: tooltip({
+      title: "Reported Trait",
+      description:
+        "The disease or trait as reported by the original GWAS study.",
+      citation: "NHGRI-EBI GWAS Catalog",
+    }),
+    cell: ({ row }) => {
+      const val = row.original.trait || row.original.diseaseTrait;
+      if (!val) return "-";
+      return val.length > 48 ? (
+        <span title={val} className="cursor-help">
+          {val.slice(0, 48)}…
+        </span>
+      ) : (
+        <span>{val}</span>
+      );
+    },
+  }),
+
+  // 8. Study first author — who reported it
+  col.display("firstAuthor", {
+    header: "Study",
+    description: tooltip({
+      title: "Study First Author",
+      description: "First author of the GWAS study that reported this association.",
     }),
     cell: ({ row }) => {
       const val = row.original.firstAuthor;
       if (!val) return "-";
-      // Truncate long author names
-      const name = val.length > 20 ? `${val.slice(0, 20)}...` : val;
-      return <span title={val}>{name}</span>;
+      return (
+        <span className="text-sm text-muted-foreground" title={val}>
+          {formatAuthor(val)}
+        </span>
+      );
     },
   }),
 
+  // 9. Publication — where to read more
   col.display("pubmedId", {
-    header: "PubMed",
+    header: "Publication",
     description: tooltip({
-      title: "PubMed ID",
+      title: "PubMed Publication",
       description: "Link to the original publication in PubMed.",
     }),
     cell: ({ row }) => {
@@ -259,65 +245,11 @@ export const gwasCatalogColumns = [
       return (
         <ExternalLink
           href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}`}
-          className="font-mono text-sm"
+          className="font-mono text-xs"
         >
-          {pmid}
+          PMID:{pmid}
         </ExternalLink>
       );
-    },
-  }),
-
-  col.display("studyAccession", {
-    header: "Study",
-    description: tooltip({
-      title: "GWAS Catalog Study Accession",
-      description: "Link to the study page in GWAS Catalog.",
-      citation: "NHGRI-EBI GWAS Catalog",
-    }),
-    cell: ({ row }) => {
-      const accession = row.original.studyAccession;
-      if (!accession) return "-";
-      return (
-        <ExternalLink
-          href={`https://www.ebi.ac.uk/gwas/studies/${accession}`}
-          className="font-mono text-sm"
-        >
-          {accession}
-        </ExternalLink>
-      );
-    },
-  }),
-
-  col.display("rsid", {
-    header: "rsID",
-    description: tooltip({
-      title: "dbSNP rsID",
-      description: "Reference SNP identifier from dbSNP.",
-    }),
-    cell: ({ row }) => {
-      const rsid = row.original.rsid;
-      if (!rsid) return "-";
-      return (
-        <ExternalLink
-          href={`https://www.ncbi.nlm.nih.gov/snp/${rsid}`}
-          className="font-mono text-sm"
-        >
-          {rsid}
-        </ExternalLink>
-      );
-    },
-  }),
-
-  col.display("region", {
-    header: "Region",
-    description: tooltip({
-      title: "Cytogenetic Region",
-      description: "Cytogenetic band location of the variant.",
-    }),
-    cell: ({ row }) => {
-      const val = row.original.region;
-      if (!val) return "-";
-      return <span className="font-mono text-sm text-muted-foreground">{val}</span>;
     },
   }),
 ];
