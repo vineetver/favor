@@ -17,6 +17,7 @@ import {
 } from "@shared/components/ui/tooltip";
 import { Info, Check } from "lucide-react";
 import { Plot, PLOTLY_FONT, PLOTLY_CONFIG_STATIC } from "@shared/components/ui/charts";
+import { BrowserPage } from "@features/genome-browser";
 import type { ColumnDef } from "@tanstack/react-table";
 import type {
   GraphCcre,
@@ -710,7 +711,14 @@ export function CcrePage({ ccre, counts, relations }: CcrePageProps) {
       label: "Overlapping Variants",
       count: counts?.VARIANT_OVERLAPS_CCRE,
     },
+    { value: "browser", label: "Genome Browser", count: undefined },
   ];
+
+  // Genome browser region — pad 5kb each side for context (cCREs are ~150–350 bp)
+  const span = ccre.end_position - ccre.start_position;
+  const browserPadding = Math.max(5000, span * 10);
+  const browserStart = Math.max(0, ccre.start_position - browserPadding);
+  const browserEnd = ccre.end_position + browserPadding;
 
   return (
     <Tabs
@@ -774,6 +782,14 @@ export function CcrePage({ ccre, counts, relations }: CcrePageProps) {
           exportFilename={`${ccre.id}-overlapping-variants`}
           defaultPageSize={25}
           emptyMessage="No overlapping variants found"
+        />
+      </TabsContent>
+
+      <TabsContent value="browser" className="pt-2">
+        <BrowserPage
+          chromosome={`chr${ccre.chromosome}`}
+          start={browserStart}
+          end={browserEnd}
         />
       </TabsContent>
     </Tabs>

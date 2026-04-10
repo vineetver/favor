@@ -91,6 +91,19 @@ function SignalCell({ value }: { value: number | null }) {
 // Columns — tissue_name and max_signal are server-sortable (IDs match API)
 // ---------------------------------------------------------------------------
 
+/** Full-form labels for cCRE classification codes */
+const CCRE_CLASS_LABELS: Record<string, string> = {
+  "PLS": "Promoter-Like",
+  "pELS": "Proximal Enhancer-Like",
+  "dELS": "Distal Enhancer-Like",
+  "DLS": "Distal Promoter-Like",
+  "CA-CTCF": "Accessible + CTCF",
+  "CA-H3K4me3": "Accessible + H3K4me3",
+  "CA-TF": "Accessible + TF",
+  "CA": "Accessible Only",
+  "TF": "TF Only",
+};
+
 const signalColumns: ColumnDef<SignalRow, unknown>[] = [
   {
     id: "ccre_id",
@@ -98,10 +111,13 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     header: "cCRE",
     meta: { description: "ENCODE candidate cis-Regulatory Element accession" } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-foreground">
-        {getValue() as string}
-      </span>
+    cell: ({ row }) => (
+      <div>
+        <span className="font-mono text-xs text-foreground">{row.original.ccre_id}</span>
+        <span className="block text-[10px] text-muted-foreground tabular-nums">
+          {row.original.start.toLocaleString()}&ndash;{row.original.end.toLocaleString()}
+        </span>
+      </div>
     ),
   },
   {
@@ -121,12 +137,17 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "ccre_classification",
     accessorKey: "ccre_classification",
     header: "Class",
-    meta: { description: "PLS (promoter-like), pELS/dELS (enhancer-like), CTCF-only, DNase-H3K4me3" } satisfies ColumnMeta,
+    meta: { description: "PLS = Promoter-Like, pELS = Proximal Enhancer-Like, dELS = Distal Enhancer-Like" } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => {
       const val = getValue() as string;
+      if (!val) return <span className="text-muted-foreground/40">&mdash;</span>;
+      const fullForm = CCRE_CLASS_LABELS[val];
       return (
-        <span className="text-xs text-muted-foreground">{val || "&mdash;"}</span>
+        <span className="text-xs text-muted-foreground" title={fullForm ?? val}>
+          <span className="font-medium text-foreground">{val}</span>
+          {fullForm && <span className="hidden sm:inline text-muted-foreground"> {fullForm}</span>}
+        </span>
       );
     },
   },
@@ -324,23 +345,25 @@ function TissueSignalsDetailView({
     setSheetOpen(true);
   }, []);
 
-  // Override cCRE column to be clickable
+  // Override cCRE column to be clickable + show coordinates
   const columnsWithSheet = useMemo(() => {
     return signalColumns.map((col) => {
       if (col.id === "ccre_id") {
         return {
           ...col,
-          cell: ({ getValue }: { getValue: () => unknown }) => {
-            const id = getValue() as string;
-            return (
+          cell: ({ row }: { row: { original: SignalRow } }) => (
+            <div>
               <button
                 className="font-mono text-xs text-primary hover:underline cursor-pointer"
-                onClick={() => openCcreSheet(id)}
+                onClick={() => openCcreSheet(row.original.ccre_id)}
               >
-                {id}
+                {row.original.ccre_id}
               </button>
-            );
-          },
+              <span className="block text-[10px] text-muted-foreground tabular-nums">
+                {row.original.start.toLocaleString()}&ndash;{row.original.end.toLocaleString()}
+              </span>
+            </div>
+          ),
         };
       }
       return col;

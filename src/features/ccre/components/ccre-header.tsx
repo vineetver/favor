@@ -92,12 +92,6 @@ export function CcreHeader({ ccre, counts }: CcreHeaderProps) {
             </span>
           </Link>
         )}
-        <Link
-          href={`/hg38/variant/region?loc=${encodeURIComponent(regionLoc)}`}
-          className="hover:text-foreground transition-colors"
-        >
-          Genome Browser
-        </Link>
       </div>
     </div>
   );
