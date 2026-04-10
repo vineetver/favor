@@ -142,21 +142,28 @@ function ConfidenceBadge({ value }: { value: string }) {
 }
 
 const CAUSALITY_COLORS: Record<string, string> = {
-  causal: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  confirmed: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   implicated: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   associated: "bg-muted text-muted-foreground",
 };
 
+/** Map legacy "causal" from the API to "confirmed" for display */
+function normalizeCausality(value: string): string {
+  if (value.toLowerCase() === "causal") return "confirmed";
+  return value;
+}
+
 function CausalityBadge({ value }: { value: string }) {
   if (!value) return <span className="text-muted-foreground">—</span>;
+  const display = normalizeCausality(value);
   return (
     <span
       className={cn(
         "inline-flex px-1.5 py-0.5 rounded text-xs font-medium capitalize",
-        CAUSALITY_COLORS[value] ?? CAUSALITY_COLORS.associated,
+        CAUSALITY_COLORS[display] ?? CAUSALITY_COLORS.associated,
       )}
     >
-      {value}
+      {display}
     </span>
   );
 }
@@ -494,7 +501,7 @@ const geneColumns: ColumnDef<GeneRow>[] = [
     header: () => (
       <span className="inline-flex items-center">
         Causality
-        <Hint text="'causal' = established Mendelian cause with curated human evidence. 'implicated' = functional/clinical evidence short of definitive. 'associated' = statistical only." />
+        <Hint text="'confirmed' = established Mendelian cause with curated human evidence. 'implicated' = functional/clinical evidence short of definitive. 'associated' = statistical only." />
       </span>
     ),
     enableSorting: true,
@@ -1043,7 +1050,7 @@ const relatedDiseaseColumns: ColumnDef<RelatedDiseaseRow>[] = [
   {
     id: "causalGenes",
     accessorKey: "causalGenes",
-    header: "Causal Genes",
+    header: "Confirmed Genes",
     enableSorting: true,
     cell: ({ row }) =>
       row.original.causalGenes != null
