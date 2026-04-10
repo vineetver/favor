@@ -12,7 +12,6 @@ import {
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
 import {
-  ArrowUpRight,
   ChevronDown,
   LogOut,
   Menu,
@@ -131,19 +130,6 @@ export function Navbar() {
               >
                 Beta
               </span>
-              <a
-                href="https://favor.genohub.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "hidden lg:inline-flex items-center gap-1 ml-4",
-                  "text-xs font-medium",
-                  "text-muted-foreground hover:text-foreground transition-colors",
-                )}
-              >
-                Stable site
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
             </div>
 
             {/* Center: Navigation */}

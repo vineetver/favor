@@ -11,10 +11,10 @@ const API_DOCS_URL = (() => {
 })();
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "About", href: "/about" },
   { label: "Documentation", href: "/docs" },
-  { label: "CLI", href: "/cli" },
   { label: "API", href: API_DOCS_URL, external: true },
+  { label: "CLI", href: "/cli" },
+  { label: "About", href: "/about" },
   { label: "Forums", href: "https://discussion.genohub.org", external: true },
 ];
 
