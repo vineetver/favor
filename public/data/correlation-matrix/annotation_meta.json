@@ -1,0 +1,1556 @@
+[
+  {
+    "path": "bravo.bravo_af",
+    "label": "bravo_bravo_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.af",
+    "label": "gnomad_exome_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.af_xx",
+    "label": "gnomad_exome_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.af_xy",
+    "label": "gnomad_exome_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.afr.af",
+    "label": "gnomad_exome_afr_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.afr.af_xx",
+    "label": "gnomad_exome_afr_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.afr.af_xy",
+    "label": "gnomad_exome_afr_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.ami.af",
+    "label": "gnomad_exome_ami_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.ami.af_xx",
+    "label": "gnomad_exome_ami_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.ami.af_xy",
+    "label": "gnomad_exome_ami_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.amr.af",
+    "label": "gnomad_exome_amr_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.amr.af_xx",
+    "label": "gnomad_exome_amr_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.amr.af_xy",
+    "label": "gnomad_exome_amr_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.asj.af",
+    "label": "gnomad_exome_asj_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.asj.af_xx",
+    "label": "gnomad_exome_asj_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.asj.af_xy",
+    "label": "gnomad_exome_asj_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.eas.af",
+    "label": "gnomad_exome_eas_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.eas.af_xx",
+    "label": "gnomad_exome_eas_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.eas.af_xy",
+    "label": "gnomad_exome_eas_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.fin.af",
+    "label": "gnomad_exome_fin_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.fin.af_xx",
+    "label": "gnomad_exome_fin_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.fin.af_xy",
+    "label": "gnomad_exome_fin_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.mid.af",
+    "label": "gnomad_exome_mid_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.mid.af_xx",
+    "label": "gnomad_exome_mid_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.mid.af_xy",
+    "label": "gnomad_exome_mid_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.nfe.af",
+    "label": "gnomad_exome_nfe_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.nfe.af_xx",
+    "label": "gnomad_exome_nfe_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.nfe.af_xy",
+    "label": "gnomad_exome_nfe_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.sas.af",
+    "label": "gnomad_exome_sas_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.sas.af_xx",
+    "label": "gnomad_exome_sas_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.populations.sas.af_xy",
+    "label": "gnomad_exome_sas_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.af",
+    "label": "gnomad_genome_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.af_xx",
+    "label": "gnomad_genome_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.af_xy",
+    "label": "gnomad_genome_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.afr.af",
+    "label": "gnomad_genome_afr_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.afr.af_xx",
+    "label": "gnomad_genome_afr_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.afr.af_xy",
+    "label": "gnomad_genome_afr_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.ami.af",
+    "label": "gnomad_genome_ami_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.ami.af_xx",
+    "label": "gnomad_genome_ami_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.ami.af_xy",
+    "label": "gnomad_genome_ami_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.amr.af",
+    "label": "gnomad_genome_amr_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.amr.af_xx",
+    "label": "gnomad_genome_amr_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.amr.af_xy",
+    "label": "gnomad_genome_amr_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.asj.af",
+    "label": "gnomad_genome_asj_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.asj.af_xx",
+    "label": "gnomad_genome_asj_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.asj.af_xy",
+    "label": "gnomad_genome_asj_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.eas.af",
+    "label": "gnomad_genome_eas_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.eas.af_xx",
+    "label": "gnomad_genome_eas_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.eas.af_xy",
+    "label": "gnomad_genome_eas_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.fin.af",
+    "label": "gnomad_genome_fin_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.fin.af_xx",
+    "label": "gnomad_genome_fin_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.fin.af_xy",
+    "label": "gnomad_genome_fin_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.mid.af",
+    "label": "gnomad_genome_mid_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.mid.af_xx",
+    "label": "gnomad_genome_mid_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.mid.af_xy",
+    "label": "gnomad_genome_mid_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.nfe.af",
+    "label": "gnomad_genome_nfe_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.nfe.af_xx",
+    "label": "gnomad_genome_nfe_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.nfe.af_xy",
+    "label": "gnomad_genome_nfe_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.sas.af",
+    "label": "gnomad_genome_sas_af",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.sas.af_xx",
+    "label": "gnomad_genome_sas_af_xx",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.populations.sas.af_xy",
+    "label": "gnomad_genome_sas_af_xy",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_afr",
+    "label": "tg_tg_afr",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_all",
+    "label": "tg_tg_all",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_amr",
+    "label": "tg_tg_amr",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_eas",
+    "label": "tg_tg_eas",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_eur",
+    "label": "tg_tg_eur",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "tg.tg_sas",
+    "label": "tg_tg_sas",
+    "dtype": "float",
+    "category": "AlleleFrequency",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.faf.faf95_max",
+    "label": "gnomad_exome_faf_faf95_max",
+    "dtype": "float",
+    "category": "FilteringAF",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.faf.faf99_max",
+    "label": "gnomad_exome_faf_faf99_max",
+    "dtype": "float",
+    "category": "FilteringAF",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.faf.faf95_max",
+    "label": "gnomad_genome_faf_faf95_max",
+    "dtype": "float",
+    "category": "FilteringAF",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_genome.faf.faf99_max",
+    "label": "gnomad_genome_faf_faf99_max",
+    "dtype": "float",
+    "category": "FilteringAF",
+    "scale": "frequency"
+  },
+  {
+    "path": "gnomad_exome.functional.pangolin_largest_ds",
+    "label": "gnomad_exome_functional_pangolin_largest_ds",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_exome.functional.revel_max",
+    "label": "gnomad_exome_functional_revel_max",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_exome.functional.spliceai_ds_max",
+    "label": "gnomad_exome_functional_spliceai_ds_max",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_genome.functional.pangolin_largest_ds",
+    "label": "gnomad_genome_functional_pangolin_largest_ds",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_genome.functional.revel_max",
+    "label": "gnomad_genome_functional_revel_max",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_genome.functional.spliceai_ds_max",
+    "label": "gnomad_genome_functional_spliceai_ds_max",
+    "dtype": "float",
+    "category": "GnomadFunctional",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.bstatistic",
+    "label": "conservation_bstatistic",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.mamphcons",
+    "label": "conservation_mamphcons",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.mamphylop",
+    "label": "conservation_mamphylop",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.priphcons",
+    "label": "conservation_priphcons",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.priphylop",
+    "label": "conservation_priphylop",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.verphcons",
+    "label": "conservation_verphcons",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.conservation.verphylop",
+    "label": "conservation_verphylop",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.gerp.n",
+    "label": "gerp_n",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.gerp.rs",
+    "label": "gerp_rs",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.gerp.s",
+    "label": "gerp_s",
+    "dtype": "float",
+    "category": "Conservation",
+    "scale": "continuous"
+  },
+  {
+    "path": "apc.conservation_v2",
+    "label": "apc_conservation_v2",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.epigenetics",
+    "label": "apc_epigenetics",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.epigenetics_active",
+    "label": "apc_epigenetics_active",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.epigenetics_repressed",
+    "label": "apc_epigenetics_repressed",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.epigenetics_transcription",
+    "label": "apc_epigenetics_transcription",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.local_nucleotide_diversity_v3",
+    "label": "apc_local_nucleotide_diversity_v3",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.mappability",
+    "label": "apc_mappability",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.micro_rna",
+    "label": "apc_micro_rna",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.mutation_density",
+    "label": "apc_mutation_density",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.protein_function_v3",
+    "label": "apc_protein_function_v3",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.proximity_to_coding_v2",
+    "label": "apc_proximity_to_coding_v2",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.proximity_to_tsstes",
+    "label": "apc_proximity_to_tsstes",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "apc.transcription_factor",
+    "label": "apc_transcription_factor",
+    "dtype": "float",
+    "category": "aPC",
+    "scale": "phred"
+  },
+  {
+    "path": "aloft.score",
+    "label": "aloft_score",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.cadd.phred",
+    "label": "cadd_phred",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "fathmm_xf",
+    "label": "fathmm_xf",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "funseq.score",
+    "label": "funseq_score",
+    "dtype": "uint8",
+    "category": "Pathogenicity",
+    "scale": "continuous"
+  },
+  {
+    "path": "gnomad_cst_phred",
+    "label": "gnomad_cst_phred",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "gpn_msa_phred",
+    "label": "gpn_msa_phred",
+    "dtype": "double",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "jarvis_phred",
+    "label": "jarvis_phred",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "linsight",
+    "label": "linsight",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "ncboost.percentile",
+    "label": "ncboost_percentile",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "percentile"
+  },
+  {
+    "path": "ncer_percentile",
+    "label": "ncer_percentile",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "percentile"
+  },
+  {
+    "path": "remm_phred",
+    "label": "remm_phred",
+    "dtype": "float",
+    "category": "Pathogenicity",
+    "scale": "phred"
+  },
+  {
+    "path": "alphamissense.max_pathogenicity",
+    "label": "alphamissense_max_pathogenicity",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.bayesdel.score",
+    "label": "dbnsfp_bayesdel_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.clinpred.score",
+    "label": "dbnsfp_clinpred_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.deogen2.score",
+    "label": "dbnsfp_deogen2_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.esm1b.score",
+    "label": "dbnsfp_esm1b_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.gmvp",
+    "label": "dbnsfp_gmvp",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.list_s2.score",
+    "label": "dbnsfp_list_s2_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.m_cap.score",
+    "label": "dbnsfp_m_cap_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.meta_lr.score",
+    "label": "dbnsfp_meta_lr_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.meta_rnn.score",
+    "label": "dbnsfp_meta_rnn_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mpc",
+    "label": "dbnsfp_mpc",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mutation_assessor",
+    "label": "dbnsfp_mutation_assessor",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mutation_taster",
+    "label": "dbnsfp_mutation_taster",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mutformer",
+    "label": "dbnsfp_mutformer",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mutpred2.score",
+    "label": "dbnsfp_mutpred2_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mutscore",
+    "label": "dbnsfp_mutscore",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.mvp",
+    "label": "dbnsfp_mvp",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.phactboost",
+    "label": "dbnsfp_phactboost",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.polyphen2_hdiv",
+    "label": "dbnsfp_polyphen2_hdiv",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.polyphen2_hvar",
+    "label": "dbnsfp_polyphen2_hvar",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.primate_ai.score",
+    "label": "dbnsfp_primate_ai_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.provean.score",
+    "label": "dbnsfp_provean_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.revel",
+    "label": "dbnsfp_revel",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.sift4g.score",
+    "label": "dbnsfp_sift4g_score",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.varity_er",
+    "label": "dbnsfp_varity_er",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.varity_r",
+    "label": "dbnsfp_varity_r",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "dbnsfp.vest4",
+    "label": "dbnsfp_vest4",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.protein_predictions.grantham",
+    "label": "protein_predictions_grantham",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.protein_predictions.polyphen_val",
+    "label": "protein_predictions_polyphen_val",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.protein_predictions.sift_val",
+    "label": "protein_predictions_sift_val",
+    "dtype": "float",
+    "category": "Protein",
+    "scale": "continuous"
+  },
+  {
+    "path": "spliceai.ds_ag",
+    "label": "spliceai_ds_ag",
+    "dtype": "float",
+    "category": "Splicing",
+    "scale": "continuous"
+  },
+  {
+    "path": "spliceai.ds_al",
+    "label": "spliceai_ds_al",
+    "dtype": "float",
+    "category": "Splicing",
+    "scale": "continuous"
+  },
+  {
+    "path": "spliceai.ds_dg",
+    "label": "spliceai_ds_dg",
+    "dtype": "float",
+    "category": "Splicing",
+    "scale": "continuous"
+  },
+  {
+    "path": "spliceai.ds_dl",
+    "label": "spliceai_ds_dl",
+    "dtype": "float",
+    "category": "Splicing",
+    "scale": "continuous"
+  },
+  {
+    "path": "spliceai.max_ds",
+    "label": "spliceai_max_ds",
+    "dtype": "float",
+    "category": "Splicing",
+    "scale": "continuous"
+  },
+  {
+    "path": "cv2f.baseline.phred",
+    "label": "cv2f_baseline_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "cv2f.combined.phred",
+    "label": "cv2f_combined_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "cv2f.liver.phred",
+    "label": "cv2f_liver_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "cv2f.lvs.phred",
+    "label": "cv2f_lvs_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "cv2f.mpra.phred",
+    "label": "cv2f_mpra_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "macie.anyclass.phred",
+    "label": "macie_anyclass_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "macie.conserved.phred",
+    "label": "macie_conserved_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "macie.regulatory.phred",
+    "label": "macie_regulatory_phred",
+    "dtype": "float",
+    "category": "NoncodingReg",
+    "scale": "phred"
+  },
+  {
+    "path": "main.sequence_context.cpg_phred",
+    "label": "sequence_context_cpg_phred",
+    "dtype": "float",
+    "category": "Sequence",
+    "scale": "phred"
+  },
+  {
+    "path": "main.sequence_context.gc_phred",
+    "label": "sequence_context_gc_phred",
+    "dtype": "float",
+    "category": "Sequence",
+    "scale": "phred"
+  },
+  {
+    "path": "main.distance.min_dist_tse",
+    "label": "distance_min_dist_tse",
+    "dtype": "float",
+    "category": "Distance",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.distance.min_dist_tss",
+    "label": "distance_min_dist_tss",
+    "dtype": "float",
+    "category": "Distance",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e1",
+    "label": "chromhmm_e1",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e10",
+    "label": "chromhmm_e10",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e11",
+    "label": "chromhmm_e11",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e12",
+    "label": "chromhmm_e12",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e13",
+    "label": "chromhmm_e13",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e14",
+    "label": "chromhmm_e14",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e15",
+    "label": "chromhmm_e15",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e16",
+    "label": "chromhmm_e16",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e17",
+    "label": "chromhmm_e17",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e18",
+    "label": "chromhmm_e18",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e19",
+    "label": "chromhmm_e19",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e2",
+    "label": "chromhmm_e2",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e20",
+    "label": "chromhmm_e20",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e21",
+    "label": "chromhmm_e21",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e22",
+    "label": "chromhmm_e22",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e23",
+    "label": "chromhmm_e23",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e24",
+    "label": "chromhmm_e24",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e25",
+    "label": "chromhmm_e25",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e3",
+    "label": "chromhmm_e3",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e4",
+    "label": "chromhmm_e4",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e5",
+    "label": "chromhmm_e5",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e6",
+    "label": "chromhmm_e6",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e7",
+    "label": "chromhmm_e7",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e8",
+    "label": "chromhmm_e8",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.chromhmm.e9",
+    "label": "chromhmm_e9",
+    "dtype": "float",
+    "category": "ChromHMM",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.encode.dnase.phred",
+    "label": "encode_dnase_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h2afz.phred",
+    "label": "encode_h2afz_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k27ac.phred",
+    "label": "encode_h3k27ac_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k27me3.phred",
+    "label": "encode_h3k27me3_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k36me3.phred",
+    "label": "encode_h3k36me3_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k4me1.phred",
+    "label": "encode_h3k4me1_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k4me2.phred",
+    "label": "encode_h3k4me2_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k4me3.phred",
+    "label": "encode_h3k4me3_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k79me2.phred",
+    "label": "encode_h3k79me2_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k9ac.phred",
+    "label": "encode_h3k9ac_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h3k9me3.phred",
+    "label": "encode_h3k9me3_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.h4k20me1.phred",
+    "label": "encode_h4k20me1_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.encode.total_rna.phred",
+    "label": "encode_total_rna_phred",
+    "dtype": "float",
+    "category": "Encode",
+    "scale": "phred"
+  },
+  {
+    "path": "main.variant_density.freq_10000bp",
+    "label": "variant_density_freq_10000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.freq_1000bp",
+    "label": "variant_density_freq_1000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.freq_100bp",
+    "label": "variant_density_freq_100bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.rare_10000bp",
+    "label": "variant_density_rare_10000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.rare_1000bp",
+    "label": "variant_density_rare_1000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.rare_100bp",
+    "label": "variant_density_rare_100bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.sngl_10000bp",
+    "label": "variant_density_sngl_10000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.sngl_1000bp",
+    "label": "variant_density_sngl_1000bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.variant_density.sngl_100bp",
+    "label": "variant_density_sngl_100bp",
+    "dtype": "float",
+    "category": "VariantDensity",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.remap.overlap_cl",
+    "label": "remap_overlap_cl",
+    "dtype": "float",
+    "category": "ReMap",
+    "scale": "continuous"
+  },
+  {
+    "path": "main.remap.overlap_tf",
+    "label": "remap_overlap_tf",
+    "dtype": "float",
+    "category": "ReMap",
+    "scale": "continuous"
+  },
+  {
+    "path": "genehancer.feature_score",
+    "label": "genehancer_feature_score",
+    "dtype": "float",
+    "category": "Regulatory",
+    "scale": "continuous"
+  },
+  {
+    "path": "mutation_rate.ar",
+    "label": "mutation_rate_ar",
+    "dtype": "float",
+    "category": "MutationRate",
+    "scale": "continuous"
+  },
+  {
+    "path": "mutation_rate.mc",
+    "label": "mutation_rate_mc",
+    "dtype": "float",
+    "category": "MutationRate",
+    "scale": "continuous"
+  },
+  {
+    "path": "mutation_rate.mg",
+    "label": "mutation_rate_mg",
+    "dtype": "float",
+    "category": "MutationRate",
+    "scale": "continuous"
+  },
+  {
+    "path": "mutation_rate.mr",
+    "label": "mutation_rate_mr",
+    "dtype": "float",
+    "category": "MutationRate",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k100.bismap",
+    "label": "mappability_k100_bismap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k100.umap",
+    "label": "mappability_k100_umap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k24.bismap",
+    "label": "mappability_k24_bismap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k24.umap",
+    "label": "mappability_k24_umap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k36.bismap",
+    "label": "mappability_k36_bismap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k36.umap",
+    "label": "mappability_k36_umap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k50.bismap",
+    "label": "mappability_k50_bismap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "mappability.k50.umap",
+    "label": "mappability_k50_umap",
+    "dtype": "float",
+    "category": "Mappability",
+    "scale": "continuous"
+  },
+  {
+    "path": "nucdiv",
+    "label": "nucdiv",
+    "dtype": "float",
+    "category": "PopGen",
+    "scale": "continuous"
+  },
+  {
+    "path": "recombination_rate",
+    "label": "recombination_rate",
+    "dtype": "float",
+    "category": "PopGen",
+    "scale": "continuous"
+  }
+]

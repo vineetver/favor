@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  // Next 16 defaults to Turbopack; the webpack config above is still needed
+  // for the gosling.js alias when using --webpack. Silence the Turbopack
+  // "no turbopack config" error by providing an empty config.
+  turbopack: {},
   // Rewrite rule removed: all API calls now use API_BASE directly with
   // `credentials: "include"` so session cookies reach the backend.
   // The old /api/v1/ proxy silently dropped auth cookies because they
