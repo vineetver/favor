@@ -618,37 +618,10 @@ export function UniversalSearch() {
             onChange={(val) => val && handleSelectSuggestion(val)}
           >
             <div className="relative flex flex-col sm:flex-row items-center bg-card p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-card/80 ring-1 ring-border">
-              <div className="grid grid-cols-2 bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0 relative w-full sm:w-[144px]">
-                <div
-                  className={cn(
-                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-background rounded-xl shadow-sm transition-all duration-300 ease-out",
-                    genome === "hg38" ? "left-1" : "right-1",
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleGenomeChange("hg38")}
-                  className={cn(
-                    "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
-                    genome === "hg38"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  HG38
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGenomeChange("hg19")}
-                  className={cn(
-                    "relative z-10 px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200",
-                    genome === "hg19"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  HG19
-                </button>
+              <div className="bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0">
+                <div className="px-4 py-3 rounded-xl text-sm font-semibold text-foreground bg-background shadow-sm">
+                  GRCh38
+                </div>
               </div>
 
               <div className="flex-1 w-full relative flex items-center gap-2 flex-wrap px-2 py-1.5 min-h-14">

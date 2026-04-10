@@ -82,7 +82,7 @@ export const RELEASES: Release[] = [
   },
   {
     version: "2026.1",
-    date: "2026-04-09",
+    date: "2026-02-15",
     title: "Missense, splicing, and non-coding pathogenicity expansion",
     tag: "major",
     summary:
