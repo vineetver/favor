@@ -10,7 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 .agents/
+.claude/
+.mcp.json
 
+# personal notes / api references (not public)
+docs/
 
 # testing
 /coverage
