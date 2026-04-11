@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { RequireAuth } from "@shared/components/require-auth";
+import type { Metadata } from "next";
 import { JobDetailClient } from "./job-detail-client";
 
 export const metadata: Metadata = {

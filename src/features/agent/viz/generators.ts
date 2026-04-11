@@ -5,17 +5,17 @@
  */
 
 import type {
-  VizSpec,
   BarChartVizSpec,
-  EnrichmentVizSpec,
-  NetworkVizSpec,
-  StatCardVizSpec,
-  DistributionVizSpec,
   ComparisonVizSpec,
-  ScatterPlotVizSpec,
-  QQPlotVizSpec,
+  DistributionVizSpec,
+  EnrichmentVizSpec,
   HeatmapVizSpec,
+  NetworkVizSpec,
   ProteinStructureVizSpec,
+  QQPlotVizSpec,
+  ScatterPlotVizSpec,
+  StatCardVizSpec,
+  VizSpec,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -103,15 +103,19 @@ function genEnrichment(
     data: enriched.slice(0, 20).map((e) => {
       const entity = e.entity as { id: string; label: string } | undefined;
       // Handle both overlappingGenes (legacy) and overlappingEntities (current)
-      const rawOverlap = (e.overlappingEntities ?? e.overlappingGenes ?? []) as Array<string | { label?: string }>;
-      const genes = rawOverlap.slice(0, 10).map((g) =>
-        typeof g === "string" ? g : (g.label ?? "?"),
-      );
+      const rawOverlap = (e.overlappingEntities ??
+        e.overlappingGenes ??
+        []) as Array<string | { label?: string }>;
+      const genes = rawOverlap
+        .slice(0, 10)
+        .map((g) => (typeof g === "string" ? g : (g.label ?? "?")));
       return {
         id: entity?.id ?? "?",
         label: entity?.label ?? "?",
         // Floor at 1e-300 to avoid -log10(0)=Infinity while keeping extreme values ranked highest
-        negLogAdjP: -Math.log10(Math.max(e.adjustedPValue as number ?? 1, 1e-300)),
+        negLogAdjP: -Math.log10(
+          Math.max((e.adjustedPValue as number) ?? 1, 1e-300),
+        ),
         foldEnrichment: (e.foldEnrichment as number) ?? 0,
         overlap: (e.overlap as number) ?? 0,
         overlappingGenes: genes,
@@ -127,17 +131,22 @@ function genFindPaths(
 ): NetworkVizSpec | null {
   // New format: PathsResult { paths: CompressedPath[] }
   const out = output as Record<string, unknown>;
-  const paths = out?.paths as Array<{
-    rank: number;
-    length: number;
-    pathText: string;
-    nodes: Array<{ type: string; id: string; label: string }>;
-  }> | undefined;
+  const paths = out?.paths as
+    | Array<{
+        rank: number;
+        length: number;
+        pathText: string;
+        nodes: Array<{ type: string; id: string; label: string }>;
+      }>
+    | undefined;
 
   if (!paths || paths.length < 1) return null;
 
   // Deduplicate nodes and build edges from top 5 paths
-  const nodeMap = new Map<string, { id: string; label: string; type: string }>();
+  const nodeMap = new Map<
+    string,
+    { id: string; label: string; type: string }
+  >();
   const edgeSet = new Set<string>();
   const edges: NetworkVizSpec["edges"] = [];
 
@@ -151,7 +160,11 @@ function genFindPaths(
   for (const path of paths.slice(0, 5)) {
     for (const node of path.nodes) {
       if (!nodeMap.has(node.id)) {
-        nodeMap.set(node.id, { id: node.id, label: node.label, type: node.type });
+        nodeMap.set(node.id, {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+        });
       }
     }
     // Build edges between consecutive nodes in path
@@ -194,23 +207,32 @@ function genFindPatterns(
   toolCallIndex: number,
 ): NetworkVizSpec | null {
   const out = output as Record<string, unknown>;
-  const matches = out?.matches as Array<{
-    vars: Record<string, { type: string; id: string; label: string }>;
-    edges: Array<{ type: string; from: string; to: string }>;
-    score?: number;
-  }> | undefined;
+  const matches = out?.matches as
+    | Array<{
+        vars: Record<string, { type: string; id: string; label: string }>;
+        edges: Array<{ type: string; from: string; to: string }>;
+        score?: number;
+      }>
+    | undefined;
 
   if (!matches || matches.length < 1) return null;
 
   // Build deduplicated nodes and edges from top matches
-  const nodeMap = new Map<string, { id: string; label: string; type: string }>();
+  const nodeMap = new Map<
+    string,
+    { id: string; label: string; type: string }
+  >();
   const edgeSet = new Set<string>();
   const edges: NetworkVizSpec["edges"] = [];
 
   for (const match of matches.slice(0, 10)) {
     for (const entity of Object.values(match.vars)) {
       if (!nodeMap.has(entity.id)) {
-        nodeMap.set(entity.id, { id: entity.id, label: entity.label, type: entity.type });
+        nodeMap.set(entity.id, {
+          id: entity.id,
+          label: entity.label,
+          type: entity.type,
+        });
       }
     }
     for (const e of match.edges) {
@@ -218,8 +240,12 @@ function genFindPatterns(
       if (!edgeSet.has(key)) {
         edgeSet.add(key);
         // Extract IDs from Type:ID format
-        const fromId = e.from.includes(":") ? e.from.split(":").slice(1).join(":") : e.from;
-        const toId = e.to.includes(":") ? e.to.split(":").slice(1).join(":") : e.to;
+        const fromId = e.from.includes(":")
+          ? e.from.split(":").slice(1).join(":")
+          : e.from;
+        const toId = e.to.includes(":")
+          ? e.to.split(":").slice(1).join(":")
+          : e.to;
         edges.push({ source: fromId, target: toId, type: e.type });
       }
     }
@@ -371,11 +397,8 @@ function genSharedNeighbors(
 
   if (!neighbors || neighbors.length < 3) return null;
 
-  const entities = input.entities as
-    | Array<{ id?: string }>
-    | undefined;
-  const entityLabels =
-    entities?.map((e) => e.id).join(", ") ?? "entities";
+  const entities = input.entities as Array<{ id?: string }> | undefined;
+  const entityLabels = entities?.map((e) => e.id).join(", ") ?? "entities";
 
   return {
     type: "bar_chart",
@@ -398,9 +421,7 @@ function genAnalyzeCohortGroupby(
   toolCallIndex: number,
 ): BarChartVizSpec | null {
   const out = output as Record<string, unknown>;
-  const buckets = out?.buckets as
-    | Array<Record<string, unknown>>
-    | undefined;
+  const buckets = out?.buckets as Array<Record<string, unknown>> | undefined;
   const operation = input.operation as string | undefined;
 
   if (operation !== "groupby" || !buckets || buckets.length < 2) return null;
@@ -410,9 +431,7 @@ function genAnalyzeCohortGroupby(
   return {
     type: "bar_chart",
     toolCallIndex,
-    title: groupBy
-      ? `Variants by ${groupBy}`
-      : "Cohort group breakdown",
+    title: groupBy ? `Variants by ${groupBy}` : "Cohort group breakdown",
     data: buckets.slice(0, 20).map((b, i) => {
       const key =
         (b[groupBy ?? "key"] as string) ??
@@ -487,9 +506,7 @@ function genGwasAssociations(
   return {
     type: "bar_chart",
     toolCallIndex,
-    title: entityId
-      ? `GWAS associations for ${entityId}`
-      : "GWAS associations",
+    title: entityId ? `GWAS associations for ${entityId}` : "GWAS associations",
     data: associations.slice(0, 20).map((a) => ({
       id: a.trait,
       label: a.trait,
@@ -684,10 +701,14 @@ function genAnalyticsScatter(
   const chartData = scatterChart.data as Record<string, unknown> | undefined;
   if (!chartData) return null;
 
-  const points = chartData.points as Array<{ x: number; y: number; label?: string; category?: string }> | undefined;
+  const points = chartData.points as
+    | Array<{ x: number; y: number; label?: string; category?: string }>
+    | undefined;
   if (!points || points.length < 2) return null;
 
-  const regression = chartData.regression as { slope: number; intercept: number; r_squared: number } | undefined;
+  const regression = chartData.regression as
+    | { slope: number; intercept: number; r_squared: number }
+    | undefined;
   const ct = (scatterChart.chart_type as string) ?? "";
   let xLabel = chartData.x_label as string | undefined;
   let yLabel = chartData.y_label as string | undefined;
@@ -733,7 +754,9 @@ function genAnalyticsQQ(
   const chartData = qqChart.data as Record<string, unknown> | undefined;
   if (!chartData) return null;
 
-  const points = chartData.points as Array<{ expected: number; observed: number; label?: string }> | undefined;
+  const points = chartData.points as
+    | Array<{ expected: number; observed: number; label?: string }>
+    | undefined;
   if (!points || points.length < 2) return null;
 
   return {
@@ -763,7 +786,9 @@ function genAnalyticsBar(
   const chartData = barChart.data as Record<string, unknown> | undefined;
   if (!chartData) return null;
 
-  const bars = chartData.bars as Array<{ id: string; label: string; value: number; category?: string }> | undefined;
+  const bars = chartData.bars as
+    | Array<{ id: string; label: string; value: number; category?: string }>
+    | undefined;
   if (!bars || bars.length < 2) return null;
 
   return {
@@ -806,7 +831,8 @@ function genAnalyticsHeatmap(
     rows: rows.slice(0, 50),
     cols: cols.slice(0, 50),
     values: values.slice(0, 50).map((r) => r.slice(0, 50)),
-    colorScale: (chartData.color_scale as "diverging" | "sequential") ?? "sequential",
+    colorScale:
+      (chartData.color_scale as "diverging" | "sequential") ?? "sequential",
     valueLabel: chartData.value_label as string | undefined,
     minValue: chartData.min_value as number | undefined,
     maxValue: chartData.max_value as number | undefined,
@@ -818,8 +844,14 @@ function genAnalyticsHeatmap(
 // ---------------------------------------------------------------------------
 
 const DOMAIN_PALETTE = [
-  "#8b5cf6", "#06b6d4", "#f59e0b", "#10b981",
-  "#ef4444", "#3b82f6", "#ec4899", "#84cc16",
+  "#8b5cf6",
+  "#06b6d4",
+  "#f59e0b",
+  "#10b981",
+  "#ef4444",
+  "#3b82f6",
+  "#ec4899",
+  "#84cc16",
 ];
 
 function genProteinDomains(
@@ -830,19 +862,21 @@ function genProteinDomains(
   const out = output as Record<string, unknown>;
   // RunResult shape: { text_summary, data: { _proteinDomains, resolved_seeds, ... }, state_delta }
   const data = out?.data as Record<string, unknown> | undefined;
-  const pd = data?._proteinDomains as {
-    proteinLength?: number;
-    alphafoldId?: string | null;
-    domains?: Array<{
-      id: string;
-      name: string;
-      description?: string;
-      start: number;
-      end: number;
-      type?: string;
-      meanPlddt?: number;
-    }>;
-  } | undefined;
+  const pd = data?._proteinDomains as
+    | {
+        proteinLength?: number;
+        alphafoldId?: string | null;
+        domains?: Array<{
+          id: string;
+          name: string;
+          description?: string;
+          start: number;
+          end: number;
+          type?: string;
+          meanPlddt?: number;
+        }>;
+      }
+    | undefined;
 
   if (!pd?.domains?.length || !pd.proteinLength) return null;
 
@@ -905,7 +939,12 @@ function generateRunAnalyticsAllSpecs(
         label: key.replace(/_/g, " "),
         value: typeof val === "number" ? Number(val.toFixed(4)) : String(val),
       }));
-    specs.push({ type: "stat_card", toolCallIndex, title: `${taskType} results`, stats });
+    specs.push({
+      type: "stat_card",
+      toolCallIndex,
+      title: `${taskType} results`,
+      stats,
+    });
   }
 
   // 2. One viz per chart — shape-driven (not chart_type name-driven)
@@ -921,10 +960,14 @@ function generateRunAnalyticsAllSpecs(
     try {
       // QQ plot (check first — points have expected/observed, not x/y)
       if (chartType === "qq_plot") {
-        const pts = chartData.points as Array<{ expected: number; observed: number; label?: string }> | undefined;
+        const pts = chartData.points as
+          | Array<{ expected: number; observed: number; label?: string }>
+          | undefined;
         if (pts && pts.length >= 2) {
           specs.push({
-            type: "qq_plot", toolCallIndex, title,
+            type: "qq_plot",
+            toolCallIndex,
+            title,
             data: pts.slice(0, 1000),
             lambda: chartData.lambda as number | undefined,
           });
@@ -938,11 +981,15 @@ function generateRunAnalyticsAllSpecs(
       const hVals = chartData.values as number[][] | undefined;
       if (hRows?.length && hCols?.length && hVals?.length) {
         specs.push({
-          type: "heatmap", toolCallIndex, title,
+          type: "heatmap",
+          toolCallIndex,
+          title,
           rows: hRows.slice(0, 50),
           cols: hCols.slice(0, 50),
           values: hVals.slice(0, 50).map((r) => r.slice(0, 50)),
-          colorScale: (chartData.color_scale as "diverging" | "sequential") ?? "sequential",
+          colorScale:
+            (chartData.color_scale as "diverging" | "sequential") ??
+            "sequential",
           valueLabel: chartData.value_label as string | undefined,
           minValue: chartData.min_value as number | undefined,
           maxValue: chartData.max_value as number | undefined,
@@ -951,10 +998,19 @@ function generateRunAnalyticsAllSpecs(
       }
 
       // Bar chart (bars array)
-      const bars = chartData.bars as Array<{ label: string; value: number; id?: string; category?: string }> | undefined;
+      const bars = chartData.bars as
+        | Array<{
+            label: string;
+            value: number;
+            id?: string;
+            category?: string;
+          }>
+        | undefined;
       if (bars && bars.length >= 1) {
         specs.push({
-          type: "bar_chart", toolCallIndex, title,
+          type: "bar_chart",
+          toolCallIndex,
+          title,
           data: bars.slice(0, 30).map((b) => ({
             id: b.id ?? b.label,
             label: b.label,
@@ -968,14 +1024,19 @@ function generateRunAnalyticsAllSpecs(
       }
 
       // Scatter (points with x/y)
-      const points = chartData.points as Array<{ x: number; y: number; label?: string; category?: string }> | undefined;
+      const points = chartData.points as
+        | Array<{ x: number; y: number; label?: string; category?: string }>
+        | undefined;
       if (points && points.length >= 2) {
         // Derive axis labels from chart_type when backend doesn't provide them
         let xLabel = chartData.x_label as string | undefined;
         let yLabel = chartData.y_label as string | undefined;
         if (!xLabel || !yLabel) {
           const ct = chartType ?? "";
-          if (ct.includes("pred_vs_actual") || ct.includes("predicted_vs_actual")) {
+          if (
+            ct.includes("pred_vs_actual") ||
+            ct.includes("predicted_vs_actual")
+          ) {
             xLabel ??= "Actual";
             yLabel ??= "Predicted";
           } else if (ct.includes("residual")) {
@@ -987,17 +1048,18 @@ function generateRunAnalyticsAllSpecs(
           }
         }
         specs.push({
-          type: "scatter_plot", toolCallIndex, title,
+          type: "scatter_plot",
+          toolCallIndex,
+          title,
           data: points.slice(0, 500),
           xLabel,
           yLabel,
-          regressionLine: chartData.regression as { slope: number; intercept: number; r_squared: number } | undefined,
+          regressionLine: chartData.regression as
+            | { slope: number; intercept: number; r_squared: number }
+            | undefined,
         });
-        continue;
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return specs;
@@ -1021,12 +1083,22 @@ function genRunExploreNeighbors(
   const data = runData(output);
   if (!data) return null;
 
-  const results = data.results as Record<string, {
-    count: number;
-    top: Array<{ type: string; id: string; label: string; score?: number }>;
-    edgeType: string;
-    scoreField?: string;
-  }> | undefined;
+  const results = data.results as
+    | Record<
+        string,
+        {
+          count: number;
+          top: Array<{
+            type: string;
+            id: string;
+            label: string;
+            score?: number;
+          }>;
+          edgeType: string;
+          scoreField?: string;
+        }
+      >
+    | undefined;
   if (!results) return null;
 
   // Pick the first branch with ≥3 scored entities
@@ -1063,14 +1135,19 @@ function genRunExploreCompare(
   const data = runData(output);
   if (!data) return null;
 
-  const entities = data.entities as Array<{ type: string; id: string; label: string }> | undefined;
-  const shared = data.shared as Array<{
-    entity: { type: string; id: string; label: string };
-    sharedBy: string[];
-    score?: number;
-  }> | undefined;
+  const entities = data.entities as
+    | Array<{ type: string; id: string; label: string }>
+    | undefined;
+  const shared = data.shared as
+    | Array<{
+        entity: { type: string; id: string; label: string };
+        sharedBy: string[];
+        score?: number;
+      }>
+    | undefined;
 
-  if (!entities || entities.length < 2 || !shared || shared.length < 2) return null;
+  if (!entities || entities.length < 2 || !shared || shared.length < 2)
+    return null;
 
   const labels = entities.map((e) => e.label).join(" vs ");
 
@@ -1118,14 +1195,18 @@ function genRunExploreEnrich(
     data: enriched.slice(0, 20).map((e) => {
       const entity = e.entity as { id: string; label: string } | undefined;
       // overlappingEntities can be string[] (standalone enrich) or object[] (auto-enrichment)
-      const rawOverlap = (e.overlappingEntities ?? e.overlappingGenes ?? []) as Array<string | { label?: string }>;
-      const genes = rawOverlap.slice(0, 10).map((g) =>
-        typeof g === "string" ? g : (g.label ?? "?"),
-      );
+      const rawOverlap = (e.overlappingEntities ??
+        e.overlappingGenes ??
+        []) as Array<string | { label?: string }>;
+      const genes = rawOverlap
+        .slice(0, 10)
+        .map((g) => (typeof g === "string" ? g : (g.label ?? "?")));
       return {
         id: entity?.id ?? "?",
         label: entity?.label ?? "?",
-        negLogAdjP: -Math.log10(Math.max(e.adjustedPValue as number ?? 1, 1e-300)),
+        negLogAdjP: -Math.log10(
+          Math.max((e.adjustedPValue as number) ?? 1, 1e-300),
+        ),
         foldEnrichment: (e.foldEnrichment as number) ?? 0,
         overlap: (e.overlap as number) ?? 0,
         overlappingGenes: genes,
@@ -1143,10 +1224,12 @@ function genRunExploreSimilar(
   if (!data) return null;
 
   const seed = data.seed as { label?: string } | undefined;
-  const similar = data.similar as Array<{
-    entity: { type: string; id: string; label: string };
-    score: number;
-  }> | undefined;
+  const similar = data.similar as
+    | Array<{
+        entity: { type: string; id: string; label: string };
+        score: number;
+      }>
+    | undefined;
 
   if (!similar || similar.length < 3) return null;
 
@@ -1174,7 +1257,9 @@ function genRunExploreAggregate(
   if (!data) return null;
 
   const seed = data.seed as { label?: string } | undefined;
-  const buckets = data.buckets as Array<{ key: string; value: number }> | undefined;
+  const buckets = data.buckets as
+    | Array<{ key: string; value: number }>
+    | undefined;
   const value = data.value as number | undefined;
   const metric = data.metric as string | undefined;
   const edgeType = data.edgeType as string | undefined;
@@ -1199,7 +1284,9 @@ function genRunExploreAggregate(
       type: "stat_card",
       toolCallIndex,
       title: `${seed?.label ?? "Entity"} aggregation`,
-      stats: [{ label: `${metric ?? "Value"} (${edgeType ?? "edges"})`, value }],
+      stats: [
+        { label: `${metric ?? "Value"} (${edgeType ?? "edges"})`, value },
+      ],
     };
   }
 
@@ -1219,13 +1306,15 @@ function genRunTraverseChain(
   if (!data) return null;
 
   const seed = data.seed as { label?: string } | undefined;
-  const steps = data.steps as Array<{
-    intent: string;
-    edgeType: string;
-    scoreField?: string;
-    count: number;
-    top: Array<{ type: string; id: string; label: string; score?: number }>;
-  }> | undefined;
+  const steps = data.steps as
+    | Array<{
+        intent: string;
+        edgeType: string;
+        scoreField?: string;
+        count: number;
+        top: Array<{ type: string; id: string; label: string; score?: number }>;
+      }>
+    | undefined;
 
   if (!steps?.length) return null;
 
@@ -1264,19 +1353,24 @@ function genRunTraversePaths(
   const data = runData(output);
   if (!data) return null;
 
-  const paths = data.paths as Array<{
-    rank: number;
-    length: number;
-    pathText: string;
-    nodes: Array<{ type: string; id: string; label: string }>;
-  }> | undefined;
+  const paths = data.paths as
+    | Array<{
+        rank: number;
+        length: number;
+        pathText: string;
+        nodes: Array<{ type: string; id: string; label: string }>;
+      }>
+    | undefined;
 
   if (!paths || paths.length < 1) return null;
 
   const from = data.from as string | undefined;
   const to = data.to as string | undefined;
 
-  const nodeMap = new Map<string, { id: string; label: string; type: string }>();
+  const nodeMap = new Map<
+    string,
+    { id: string; label: string; type: string }
+  >();
   const edgeSet = new Set<string>();
   const edges: NetworkVizSpec["edges"] = [];
 
@@ -1293,7 +1387,11 @@ function genRunTraversePaths(
   for (const path of paths.slice(0, 5)) {
     for (const node of path.nodes) {
       if (!nodeMap.has(node.id)) {
-        nodeMap.set(node.id, { id: node.id, label: node.label, type: node.type });
+        nodeMap.set(node.id, {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+        });
       }
     }
     for (let i = 0; i < path.nodes.length - 1; i++) {
@@ -1336,7 +1434,13 @@ const GENERATOR_REGISTRY: Record<string, VizGenerator[]> = {
   getGwasAssociations: [genGwasAssociations],
   variantBatchSummary: [genVariantBatchSummary],
   getGeneVariantStats: [genGeneVariantStats],
-  runAnalytics: [genAnalyticsStatCard, genAnalyticsScatter, genAnalyticsQQ, genAnalyticsBar, genAnalyticsHeatmap],
+  runAnalytics: [
+    genAnalyticsStatCard,
+    genAnalyticsScatter,
+    genAnalyticsQQ,
+    genAnalyticsBar,
+    genAnalyticsHeatmap,
+  ],
   // run_analytics is handled by generateRunAnalyticsAllSpecs (shape-driven, multi-chart)
   // — see special case in generateVizSpecs below
   // Run tool — explore modes (collect ALL matches: protein domains + chart)
@@ -1394,9 +1498,7 @@ export function generateVizSpecs(
       try {
         const spec = gen(output, input, toolCallIndex);
         if (spec) specs.push(spec);
-      } catch {
-        continue;
-      }
+      } catch {}
     }
     return specs;
   }
@@ -1406,9 +1508,7 @@ export function generateVizSpecs(
     try {
       const spec = gen(output, input, toolCallIndex);
       if (spec) return [spec];
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return [];
 }

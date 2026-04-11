@@ -1,6 +1,5 @@
-import type { PhenotypeEntityResponse } from "../types";
-
 import { API_BASE } from "@/config/api";
+import type { PhenotypeEntityResponse } from "../types";
 
 /** Edge types to fetch for the phenotype detail page */
 const PHENOTYPE_EDGE_TYPES = [

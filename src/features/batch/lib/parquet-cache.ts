@@ -45,7 +45,9 @@ function openDatabase(): Promise<IDBDatabase> {
 /**
  * Get cached parquet file by URL
  */
-export async function getCachedParquet(url: string): Promise<ArrayBuffer | null> {
+export async function getCachedParquet(
+  url: string,
+): Promise<ArrayBuffer | null> {
   try {
     const db = await openDatabase();
 
@@ -89,7 +91,10 @@ export async function getCachedParquet(url: string): Promise<ArrayBuffer | null>
 /**
  * Store parquet file in cache
  */
-export async function setCachedParquet(url: string, data: ArrayBuffer): Promise<void> {
+export async function setCachedParquet(
+  url: string,
+  data: ArrayBuffer,
+): Promise<void> {
   try {
     // Clone the ArrayBuffer to avoid "detached buffer" errors
     // This can happen when the buffer has been transferred to a worker

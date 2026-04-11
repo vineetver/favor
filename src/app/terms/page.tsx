@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import {
   Card,
   CardContent,
@@ -6,6 +5,7 @@ import {
   CardTitle,
 } from "@shared/components/ui/card";
 import { ExternalLink } from "@shared/components/ui/external-link";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Use | FAVOR",
@@ -27,7 +27,10 @@ export default function TermsPage() {
               All data in FAVOR are released openly and publicly for the benefit
               of the broad biomedical and health science community. It is
               distributed under the terms of the{" "}
-              <ExternalLink iconSize="sm" href="https://opensource.org/licenses/MIT">
+              <ExternalLink
+                iconSize="sm"
+                href="https://opensource.org/licenses/MIT"
+              >
                 MIT license
               </ExternalLink>
               . Users may freely download, search the data and are encouraged to
@@ -79,30 +82,42 @@ export default function TermsPage() {
                   Blue, Steven Buyske, Nancy Cox, Adam Felsenfeld, Mark
                   Gerstein, Eimear Kenny, Bingshan Li, Tara Matise, Anthony
                   Philippakis, Heidi Rehm, Heidi J. Sofia, Grace Snyder, NHGRI
-                  Genome Sequencing Program Variant Functional Annotation Working
-                  Group, Zhiping Weng, Benjamin Neale, Shamil R. Sunyaev, Xihong
-                  Lin.{" "}
+                  Genome Sequencing Program Variant Functional Annotation
+                  Working Group, Zhiping Weng, Benjamin Neale, Shamil R.
+                  Sunyaev, Xihong Lin.{" "}
                   <strong>
                     FAVOR: Functional Annotation of Variants Online Resource and
                     Annotator for Variation across the Human Genome
                   </strong>
                   . Nucleic Acids Res 2022 Nov 9; gkac966. PMID:{" "}
-                  <ExternalLink iconSize="sm" href="https://pubmed.ncbi.nlm.nih.gov/36350676/">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://pubmed.ncbi.nlm.nih.gov/36350676/"
+                  >
                     36350676
                   </ExternalLink>
                   . DOI:{" "}
-                  <ExternalLink iconSize="sm" href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://academic.oup.com/nar/article/51/D1/D1300/6814464?login=false"
+                  >
                     10.1093/nar/gkac966
                   </ExternalLink>
                   .
                 </p>
                 <p className="text-sm mt-2">
                   FAVOR Full Database, DOI:{" "}
-                  <ExternalLink iconSize="sm" href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KFUBKG"
+                  >
                     10.7910/DVN/KFUBKG
                   </ExternalLink>
                   . FAVOR Essential Database, DOI:{" "}
-                  <ExternalLink iconSize="sm" href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/1VGTJI"
+                  >
                     10.7910/DVN/1VGTJI
                   </ExternalLink>
                   .
@@ -114,8 +129,8 @@ export default function TermsPage() {
                 <p className="font-medium text-foreground mb-2">2. STAAR</p>
                 <p className="text-sm">
                   Li X, Li Z, Zhou H, Gaynor SM, Liu Y, Chen H, Sun R, Dey R,
-                  Arnett DK, Aslibekyan S, Ballantyne CM, Bielak LF, Blangero
-                  J, Boerwinkle E, Bowden DW, Broome JG, Conomos MP, Correa A,
+                  Arnett DK, Aslibekyan S, Ballantyne CM, Bielak LF, Blangero J,
+                  Boerwinkle E, Bowden DW, Broome JG, Conomos MP, Correa A,
                   Cupples LA, Curran JE, Freedman BI, Guo X, Hindy G, Irvin MR,
                   Kardia SLR, Kathiresan S, Khan AT, Kooperberg CL, Laurie CC,
                   Liu XS, Mahaney MC, Manichaikul AW, Martin LW, Mathias RA,
@@ -125,19 +140,25 @@ export default function TermsPage() {
                   HK, Tsai MY, Vasan RS, Wang FF, Weeks DE, Weng Z, Wilson JG,
                   Yanek LR, NHLBI Trans-Omics for Precision Medicine (TOPMed)
                   Consortium, TOPMed Lipids Working Group, Neale BM, Sunyaev SR,
-                  Abecasis GR, Rotter JI, Willer CJ, Peloso GM, Natarajan P,
-                  and Lin X.{" "}
+                  Abecasis GR, Rotter JI, Willer CJ, Peloso GM, Natarajan P, and
+                  Lin X.{" "}
                   <strong>
                     Dynamic incorporation of multiple in silico functional
                     annotations empowers rare variant association analysis of
                     large whole-genome sequencing studies at scale
                   </strong>
                   . <em>Nature Genetics</em> 2020; 52(9): 969-983. PMID:{" "}
-                  <ExternalLink iconSize="sm" href="https://pubmed.ncbi.nlm.nih.gov/32839606/">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://pubmed.ncbi.nlm.nih.gov/32839606/"
+                  >
                     32839606
                   </ExternalLink>
                   . DOI:{" "}
-                  <ExternalLink iconSize="sm" href="https://www.nature.com/articles/s41588-020-0676-4">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://www.nature.com/articles/s41588-020-0676-4"
+                  >
                     10.1038/s41588-020-0676-4
                   </ExternalLink>
                   .
@@ -175,7 +196,10 @@ export default function TermsPage() {
                     associations of large-scale whole-genome sequencing studies.
                   </strong>{" "}
                   <em>Nature Methods</em> 19, 1599&ndash;1611 (2022) DOI:{" "}
-                  <ExternalLink iconSize="sm" href="https://doi.org/10.1038/s41592-022-01640-x">
+                  <ExternalLink
+                    iconSize="sm"
+                    href="https://doi.org/10.1038/s41592-022-01640-x"
+                  >
                     s41592-022-01640-x
                   </ExternalLink>
                   .

@@ -12,7 +12,11 @@
 // Core Enums & Literals
 // ============================================================================
 
-export type DataType = "variant_list" | "gwas_sumstats" | "credible_set" | "fine_mapping";
+export type DataType =
+  | "variant_list"
+  | "gwas_sumstats"
+  | "credible_set"
+  | "fine_mapping";
 
 export type JobState =
   | "PENDING"
@@ -40,18 +44,18 @@ export type ProcessingStage =
 
 // Structured error codes for actionable UX
 export type ErrorCode =
-  | "CANCELLED"              // User cancelled
-  | "MAX_ATTEMPTS_EXCEEDED"  // Transient failures exhausted retries
-  | "EMPTY_FILE"             // Input file has no data
-  | "INVALID_FORMAT"         // Can't parse input
-  | "NO_KEY_COLUMN"          // No variant IDs found
-  | "FILE_TOO_LARGE"         // Exceeds size limit
-  | "INPUT_NOT_FOUND"        // S3 object missing
-  | "ROCKSDB_UNAVAILABLE"    // Database down
-  | "S3_UNAVAILABLE"         // Storage down
-  | "TIMEOUT"                // Exceeded max_runtime_sec
-  | "LEASE_LOST"             // Worker interrupted
-  | "INTERNAL_ERROR";        // Unknown error
+  | "CANCELLED" // User cancelled
+  | "MAX_ATTEMPTS_EXCEEDED" // Transient failures exhausted retries
+  | "EMPTY_FILE" // Input file has no data
+  | "INVALID_FORMAT" // Can't parse input
+  | "NO_KEY_COLUMN" // No variant IDs found
+  | "FILE_TOO_LARGE" // Exceeds size limit
+  | "INPUT_NOT_FOUND" // S3 object missing
+  | "ROCKSDB_UNAVAILABLE" // Database down
+  | "S3_UNAVAILABLE" // Storage down
+  | "TIMEOUT" // Exceeded max_runtime_sec
+  | "LEASE_LOST" // Worker interrupted
+  | "INTERNAL_ERROR"; // Unknown error
 
 // ============================================================================
 // Upload
@@ -168,7 +172,11 @@ export interface TypedValidateResponse {
   requires_confirmation: boolean;
   schema_preview: SchemaPreviewColumn[];
   suggested_column_map: ColumnMapping[];
-  variant_key_strategy: "rsid" | "chrom_pos_ref_alt" | "chrom_pos_only" | "none";
+  variant_key_strategy:
+    | "rsid"
+    | "chrom_pos_ref_alt"
+    | "chrom_pos_only"
+    | "none";
   variant_key_columns: string[];
   row_count_estimate: number;
   warnings: string[];
@@ -234,24 +242,24 @@ export interface JobProgress {
   stage_description: string;
 
   // RESOLVING stage progress
-  rows_resolved: number;  // Rows read/resolved during RESOLVING
-  bytes_read: number;     // Bytes read from input file (for progress %)
+  rows_resolved: number; // Rows read/resolved during RESOLVING
+  bytes_read: number; // Bytes read from input file (for progress %)
 
   // PROCESSING stage progress
-  fetched: number;        // VIDs processed during PROCESSING
-  found: number;          // Successful lookups
-  not_found: number;      // VID not in database
-  errors: number;         // Processing errors
+  fetched: number; // VIDs processed during PROCESSING
+  found: number; // Successful lookups
+  not_found: number; // VID not in database
+  errors: number; // Processing errors
 
   // Stats known after each phase (optional until available)
-  total_rows?: number;    // Known after RESOLVING
-  unique_vids?: number;   // Known after SORTING
-  duplicates?: number;    // total_rows - unique_vids
+  total_rows?: number; // Known after RESOLVING
+  unique_vids?: number; // Known after SORTING
+  duplicates?: number; // total_rows - unique_vids
 
   // Calculated rates (optional)
-  percent?: number;       // Completion % (0-100)
-  found_rate?: number;    // % of fetched that were found
-  error_rate?: number;    // % of fetched with errors
+  percent?: number; // Completion % (0-100)
+  found_rate?: number; // % of fetched that were found
+  error_rate?: number; // % of fetched with errors
 
   // Enrichment progress (ENRICHING stage)
   packs_total?: number;
@@ -432,10 +440,23 @@ export interface CohortDetail {
   progress: CohortProgress | null;
   is_terminal: boolean;
   poll: { after_ms: number; message: string } | null;
-  timing: { queued_ms?: number; processing_ms?: number; total_ms: number; total_human: string; rows_per_sec?: number } | null;
+  timing: {
+    queued_ms?: number;
+    processing_ms?: number;
+    total_ms: number;
+    total_human: string;
+    rows_per_sec?: number;
+  } | null;
   eta: { seconds: number; human: string } | null;
   input: { filename: string; bytes: number; bytes_human: string } | null;
-  output: { url: string; bytes: number; bytes_human: string; sha256: string; expires_at: string; expires_in_seconds: number } | null;
+  output: {
+    url: string;
+    bytes: number;
+    bytes_human: string;
+    sha256: string;
+    expires_at: string;
+    expires_in_seconds: number;
+  } | null;
   error_code: string | null;
   error_message: string | null;
   retryable: boolean | null;
@@ -506,8 +527,18 @@ export interface CohortSummary {
   text_summary: string;
   cohort_id: string;
   vid_count: number;
-  source?: { type: string; ref_count?: number; job_id?: string; parent_id?: string };
-  by_gene?: Array<{ gene_symbol: string; count: number; pathogenic: number; functional_impact: number }>;
+  source?: {
+    type: string;
+    ref_count?: number;
+    job_id?: string;
+    parent_id?: string;
+  };
+  by_gene?: Array<{
+    gene_symbol: string;
+    count: number;
+    pathogenic: number;
+    functional_impact: number;
+  }>;
   by_consequence?: Array<{ category: string; count: number }>;
   by_clinical_significance?: Array<{ category: string; count: number }>;
   by_frequency?: Array<{ category: string; count: number }>;
@@ -563,7 +594,12 @@ export interface CohortTopKRequest {
 }
 
 export interface CohortAggregateRequest {
-  field: "gene" | "consequence" | "clinical_significance" | "frequency" | "chromosome";
+  field:
+    | "gene"
+    | "consequence"
+    | "clinical_significance"
+    | "frequency"
+    | "chromosome";
   limit?: number;
 }
 
@@ -618,8 +654,12 @@ function parseStage(raw: string | undefined): ProcessingStage {
   // Backend sends Title Case: "Processing", "Resolving", etc.
   // Accept any casing gracefully.
   const stages: Record<string, ProcessingStage> = {
-    queued: "Queued", resolving: "Resolving", sorting: "Sorting",
-    processing: "Processing", enriching: "Enriching", done: "Done",
+    queued: "Queued",
+    resolving: "Resolving",
+    sorting: "Sorting",
+    processing: "Processing",
+    enriching: "Enriching",
+    done: "Done",
   };
   return stages[raw.toLowerCase()] ?? "Processing";
 }
@@ -640,9 +680,27 @@ export type WizardState =
   | { step: "idle"; error?: string }
   | { step: "uploading"; file: File; progress: number }
   | { step: "validating"; file: File; inputUri: string }
-  | { step: "mapping"; file: File; inputUri: string; validation: TypedValidateResponse }
-  | { step: "configuring"; file: File; inputUri: string; validation: TypedValidateResponse; columnMap: ColumnMapping[] | null; error?: string }
-  | { step: "creating"; file: File; inputUri: string; validation: TypedValidateResponse; columnMap: ColumnMapping[] | null };
+  | {
+      step: "mapping";
+      file: File;
+      inputUri: string;
+      validation: TypedValidateResponse;
+    }
+  | {
+      step: "configuring";
+      file: File;
+      inputUri: string;
+      validation: TypedValidateResponse;
+      columnMap: ColumnMapping[] | null;
+      error?: string;
+    }
+  | {
+      step: "creating";
+      file: File;
+      inputUri: string;
+      validation: TypedValidateResponse;
+      columnMap: ColumnMapping[] | null;
+    };
 
 export type WizardAction =
   | { type: "FILE_SELECTED"; file: File }
@@ -677,7 +735,11 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
 
   const defaultPoll: JobPollHint = { after_ms: 10000, message: "Polling..." };
   const defaultTiming: JobTiming = { total_ms: 0, total_human: "0s" };
-  const defaultInput: JobInput = { filename: detail.label ?? "unknown", bytes: 0, bytes_human: "0 B" };
+  const defaultInput: JobInput = {
+    filename: detail.label ?? "unknown",
+    bytes: 0,
+    bytes_human: "0 B",
+  };
 
   const base = {
     job_id: detail.id,
@@ -783,7 +845,15 @@ export function cohortDetailToJob(detail: CohortDetail): Job {
             expires_at: detail.output.expires_at,
             expires_in_seconds: detail.output.expires_in_seconds,
           }
-        : { url: "", manifest_url: "", bytes: 0, bytes_human: "0 B", sha256: "", expires_at: "", expires_in_seconds: 0 };
+        : {
+            url: "",
+            manifest_url: "",
+            bytes: 0,
+            bytes_human: "0 B",
+            sha256: "",
+            expires_at: "",
+            expires_in_seconds: 0,
+          };
 
       const job: JobCompleted = {
         ...base,

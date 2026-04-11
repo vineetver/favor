@@ -7,15 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
-import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
-import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import { TooltipProvider } from "@shared/components/ui/tooltip";
 import { Tip } from "@shared/components/ui/tip";
-import { Search, ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { TooltipProvider } from "@shared/components/ui/tooltip";
+import { ChevronDown, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,7 +75,8 @@ const PHASE_LABELS: Record<number, { label: string; color: string }> = {
 };
 
 function phaseInfo(phase: number | null): { label: string; color: string } {
-  if (phase === null) return { label: "Unknown", color: "text-muted-foreground" };
+  if (phase === null)
+    return { label: "Unknown", color: "text-muted-foreground" };
   if (phase >= 4) return PHASE_LABELS[4];
   if (phase >= 3) return PHASE_LABELS[3];
   if (phase >= 2) return PHASE_LABELS[2];
@@ -83,7 +84,10 @@ function phaseInfo(phase: number | null): { label: string; color: string } {
   return PHASE_LABELS[0.5];
 }
 
-function formatAffinity(value: number | null, assayType: string | null): string {
+function formatAffinity(
+  value: number | null,
+  assayType: string | null,
+): string {
   if (value === null) return "—";
   return `${value.toFixed(1)} ${assayType ? `(${assayType})` : ""}`.trim();
 }
@@ -127,7 +131,11 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
   const actsOn = record.DRUG_ACTS_ON_GENE ?? record.drug_acts_on_gene;
   if (actsOn && typeof actsOn === "object") {
     const typed = actsOn as Record<string, unknown>;
-    const rows = Array.isArray(typed.rows) ? typed.rows : Array.isArray(actsOn) ? actsOn : [];
+    const rows = Array.isArray(typed.rows)
+      ? typed.rows
+      : Array.isArray(actsOn)
+        ? actsOn
+        : [];
     for (const row of rows as any[]) {
       const neighbor = row?.neighbor ?? row?.target ?? {};
       const link = row?.link ?? row?.edge ?? {};
@@ -137,23 +145,40 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
 
       results.push({
         id: `acts_on_${id}`,
-        drugName: String(props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
-        drugDescription: typeof (neighbor?.subtitle ?? props.drug_description) === "string"
-          ? (neighbor?.subtitle ?? props.drug_description) : null,
+        drugName: String(
+          props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown",
+        ),
+        drugDescription:
+          typeof (neighbor?.subtitle ?? props.drug_description) === "string"
+            ? (neighbor?.subtitle ?? props.drug_description)
+            : null,
         actionType: props.action_type ?? null,
         mechanismOfAction: props.mechanism_of_action ?? null,
         receptorFamily: props.receptor_family ?? null,
         targetName: props.target_name ?? null,
-        bindingAffinity: typeof props.binding_affinity === "number" ? props.binding_affinity : null,
+        bindingAffinity:
+          typeof props.binding_affinity === "number"
+            ? props.binding_affinity
+            : null,
         bindingAssayType: props.binding_assay_type ?? null,
-        maxClinicalPhase: typeof props.max_clinical_phase === "number" ? props.max_clinical_phase : null,
-        isPrimaryTarget: typeof props.is_primary_target === "boolean" ? props.is_primary_target : null,
+        maxClinicalPhase:
+          typeof props.max_clinical_phase === "number"
+            ? props.max_clinical_phase
+            : null,
+        isPrimaryTarget:
+          typeof props.is_primary_target === "boolean"
+            ? props.is_primary_target
+            : null,
         targetDevelopmentLevel: props.target_development_level ?? null,
-        diseaseNames: Array.isArray(props.disease_names) ? props.disease_names.filter(Boolean) : [],
+        diseaseNames: Array.isArray(props.disease_names)
+          ? props.disease_names.filter(Boolean)
+          : [],
         confidenceClass: props.confidence_class ?? null,
-        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
+        evidenceCount:
+          typeof props.evidence_count === "number" ? props.evidence_count : 0,
         sources: Array.isArray(props.sources) ? props.sources : [],
-        numSources: typeof props.num_sources === "number" ? props.num_sources : 0,
+        numSources:
+          typeof props.num_sources === "number" ? props.num_sources : 0,
         pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
         dispositionType: null,
         edgeType: "acts_on",
@@ -162,10 +187,15 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
   }
 
   // DRUG_DISPOSITION_BY_GENE
-  const disposition = record.DRUG_DISPOSITION_BY_GENE ?? record.drug_disposition_by_gene;
+  const disposition =
+    record.DRUG_DISPOSITION_BY_GENE ?? record.drug_disposition_by_gene;
   if (disposition && typeof disposition === "object") {
     const typed = disposition as Record<string, unknown>;
-    const rows = Array.isArray(typed.rows) ? typed.rows : Array.isArray(disposition) ? disposition : [];
+    const rows = Array.isArray(typed.rows)
+      ? typed.rows
+      : Array.isArray(disposition)
+        ? disposition
+        : [];
     for (const row of rows as any[]) {
       const neighbor = row?.neighbor ?? row?.target ?? {};
       const link = row?.link ?? row?.edge ?? {};
@@ -175,9 +205,13 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
 
       results.push({
         id: `disposition_${id}`,
-        drugName: String(props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
-        drugDescription: typeof (neighbor?.subtitle ?? props.drug_description) === "string"
-          ? (neighbor?.subtitle ?? props.drug_description) : null,
+        drugName: String(
+          props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown",
+        ),
+        drugDescription:
+          typeof (neighbor?.subtitle ?? props.drug_description) === "string"
+            ? (neighbor?.subtitle ?? props.drug_description)
+            : null,
         actionType: null,
         mechanismOfAction: null,
         receptorFamily: null,
@@ -189,9 +223,11 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
         targetDevelopmentLevel: props.target_development_level ?? null,
         diseaseNames: [],
         confidenceClass: props.confidence_class ?? null,
-        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
+        evidenceCount:
+          typeof props.evidence_count === "number" ? props.evidence_count : 0,
         sources: Array.isArray(props.sources) ? props.sources : [],
-        numSources: typeof props.num_sources === "number" ? props.num_sources : 0,
+        numSources:
+          typeof props.num_sources === "number" ? props.num_sources : 0,
         pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
         dispositionType: props.disposition_type ?? null,
         edgeType: "disposition",
@@ -232,13 +268,20 @@ export function DrugLandscapeOverview({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const drugs = useMemo(() => extractDrugEdges(relations, edges), [relations, edges]);
+  const drugs = useMemo(
+    () => extractDrugEdges(relations, edges),
+    [relations, edges],
+  );
 
   const actionOptions = useMemo(() => {
     const actions = new Set<string>();
-    drugs.forEach((d) => { if (d.actionType) actions.add(d.actionType); });
+    drugs.forEach((d) => {
+      if (d.actionType) actions.add(d.actionType);
+    });
     return [{ value: "all", label: "All" }].concat(
-      Array.from(actions).sort().map((a) => ({ value: a, label: formatAction(a) })),
+      Array.from(actions)
+        .sort()
+        .map((a) => ({ value: a, label: formatAction(a) })),
     );
   }, [drugs]);
 
@@ -254,12 +297,16 @@ export function DrugLandscapeOverview({
           { value: "disposition", label: "Metabolism / Transport" },
         ],
       },
-      ...(actionOptions.length > 2 ? [{
-        label: "Action",
-        value: actionFilter,
-        onChange: setActionFilter,
-        options: actionOptions,
-      }] : []),
+      ...(actionOptions.length > 2
+        ? [
+            {
+              label: "Action",
+              value: actionFilter,
+              onChange: setActionFilter,
+              options: actionOptions,
+            },
+          ]
+        : []),
       {
         label: "Phase",
         value: phaseFilter,
@@ -286,7 +333,9 @@ export function DrugLandscapeOverview({
     [typeFilter, actionFilter, actionOptions, phaseFilter, sortMode],
   );
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, typeFilter, actionFilter, phaseFilter, sortMode]);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -295,7 +344,8 @@ export function DrugLandscapeOverview({
     return drugs.filter((d) => {
       if (typeFilter !== "all" && d.edgeType !== typeFilter) return false;
       if (actionFilter !== "all" && d.actionType !== actionFilter) return false;
-      if (minPhase !== null && (d.maxClinicalPhase ?? -1) < minPhase) return false;
+      if (minPhase !== null && (d.maxClinicalPhase ?? -1) < minPhase)
+        return false;
       if (query.length > 0) {
         const matches =
           d.drugName.toLowerCase().includes(query) ||
@@ -309,7 +359,8 @@ export function DrugLandscapeOverview({
 
   const sorted = useMemo(() => {
     const items = [...filtered];
-    if (sortMode === "alpha") return items.sort((a, b) => a.drugName.localeCompare(b.drugName));
+    if (sortMode === "alpha")
+      return items.sort((a, b) => a.drugName.localeCompare(b.drugName));
     if (sortMode === "affinity-desc") {
       return items.sort((a, b) => {
         const diff = (b.bindingAffinity ?? -1) - (a.bindingAffinity ?? -1);
@@ -325,25 +376,34 @@ export function DrugLandscapeOverview({
     });
   }, [filtered, sortMode]);
 
-  const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const visible = useMemo(
+    () => sorted.slice(0, visibleCount),
+    [sorted, visibleCount],
+  );
   const hasMore = sorted.length > visibleCount;
 
   // Group by edge type
   const grouped = useMemo(() => {
     const map = new Map<string, DrugEdge[]>();
     for (const d of visible) {
-      const key = d.edgeType === "disposition" ? "Metabolism & Transport" : "Drug Targets";
+      const key =
+        d.edgeType === "disposition"
+          ? "Metabolism & Transport"
+          : "Drug Targets";
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(d);
+      map.get(key)?.push(d);
     }
     // Ensure "Drug Targets" comes first
     const entries = Array.from(map.entries());
-    entries.sort((a) => a[0] === "Drug Targets" ? -1 : 1);
+    entries.sort((a) => (a[0] === "Drug Targets" ? -1 : 1));
     return entries;
   }, [visible]);
 
   useEffect(() => {
-    if (sorted.length === 0) { setSelectedId(null); return; }
+    if (sorted.length === 0) {
+      setSelectedId(null);
+      return;
+    }
     if (!selectedId || !sorted.some((d) => d.id === selectedId)) {
       setSelectedId(sorted[0].id);
     }
@@ -354,7 +414,9 @@ export function DrugLandscapeOverview({
     [sorted, selectedId],
   );
 
-  const showMore = useCallback(() => { setVisibleCount((prev) => prev + PAGE_SIZE); }, []);
+  const showMore = useCallback(() => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }, []);
 
   if (!drugs.length) {
     return (
@@ -366,7 +428,9 @@ export function DrugLandscapeOverview({
   }
 
   const actsOnCount = drugs.filter((d) => d.edgeType === "acts_on").length;
-  const dispositionCount = drugs.filter((d) => d.edgeType === "disposition").length;
+  const dispositionCount = drugs.filter(
+    (d) => d.edgeType === "disposition",
+  ).length;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -378,10 +442,19 @@ export function DrugLandscapeOverview({
                 Drug Landscape
               </CardTitle>
               <div className="text-xs text-muted-foreground">
-                {filtered.length === drugs.length
-                  ? <>{actsOnCount} drug targets{dispositionCount > 0 && <>, {dispositionCount} metabolizers</>}</>
-                  : <>{filtered.length} of {drugs.length} drugs</>
-                } for {geneSymbol ?? "this gene"}
+                {filtered.length === drugs.length ? (
+                  <>
+                    {actsOnCount} drug targets
+                    {dispositionCount > 0 && (
+                      <>, {dispositionCount} metabolizers</>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {filtered.length} of {drugs.length} drugs
+                  </>
+                )}{" "}
+                for {geneSymbol ?? "this gene"}
               </div>
             </div>
             <div className="relative w-56">
@@ -416,7 +489,9 @@ export function DrugLandscapeOverview({
                     <div className="px-5 py-1.5 border-b border-border bg-muted sticky top-0 z-10">
                       <span className="text-[11px] font-medium text-muted-foreground">
                         {group}
-                        <span className="ml-1 text-muted-foreground/60">{items.length}</span>
+                        <span className="ml-1 text-muted-foreground/60">
+                          {items.length}
+                        </span>
                       </span>
                     </div>
                     {items.map((d) => {
@@ -440,7 +515,12 @@ export function DrugLandscapeOverview({
                               {formatDrugName(d.drugName)}
                             </span>
                             {d.maxClinicalPhase !== null && (
-                              <span className={cn("text-[11px] font-medium tabular-nums shrink-0", phase.color)}>
+                              <span
+                                className={cn(
+                                  "text-[11px] font-medium tabular-nums shrink-0",
+                                  phase.color,
+                                )}
+                              >
                                 {phase.label}
                               </span>
                             )}
@@ -466,7 +546,9 @@ export function DrugLandscapeOverview({
             {/* ── Detail Panel ── */}
             <div>
               <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-                <span className="text-[11px] font-medium text-muted-foreground">Details</span>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Details
+                </span>
               </div>
               <div className="px-5 py-5 max-h-[600px] overflow-y-auto">
                 {!selected && (
@@ -485,7 +567,13 @@ export function DrugLandscapeOverview({
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         {selected.actionType && (
                           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className={cn("h-2 w-2 rounded-full shrink-0", ACTION_COLORS[selected.actionType] ?? "bg-muted-foreground/40")} />
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full shrink-0",
+                                ACTION_COLORS[selected.actionType] ??
+                                  "bg-muted-foreground/40",
+                              )}
+                            />
                             {formatAction(selected.actionType)}
                           </span>
                         )}
@@ -496,17 +584,27 @@ export function DrugLandscapeOverview({
                         )}
                         {selected.isPrimaryTarget && (
                           <Tip content="This gene is a primary mechanism-of-action target for this drug — not an off-target or secondary effect.">
-                            <span className="text-xs text-primary font-medium">Primary target</span>
+                            <span className="text-xs text-primary font-medium">
+                              Primary target
+                            </span>
                           </Tip>
                         )}
                         {selected.confidenceClass && (
-                          <span className={cn(
-                            "text-xs",
-                            selected.confidenceClass === "high" ? "text-emerald-600" :
-                            selected.confidenceClass === "medium" ? "text-amber-600" : "text-muted-foreground"
-                          )}>
-                            {selected.confidenceClass === "high" ? "High confidence" :
-                             selected.confidenceClass === "medium" ? "Moderate" : "Preliminary"}
+                          <span
+                            className={cn(
+                              "text-xs",
+                              selected.confidenceClass === "high"
+                                ? "text-emerald-600"
+                                : selected.confidenceClass === "medium"
+                                  ? "text-amber-600"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {selected.confidenceClass === "high"
+                              ? "High confidence"
+                              : selected.confidenceClass === "medium"
+                                ? "Moderate"
+                                : "Preliminary"}
                           </span>
                         )}
                       </div>
@@ -517,9 +615,16 @@ export function DrugLandscapeOverview({
                       {selected.maxClinicalPhase !== null && (
                         <div>
                           <Tip content="Highest clinical trial phase reached for this drug-gene pair across all indications.">
-                            <span className="text-[11px] text-muted-foreground">Clinical phase</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Clinical phase
+                            </span>
                           </Tip>
-                          <div className={cn("text-sm font-semibold tabular-nums", phaseInfo(selected.maxClinicalPhase).color)}>
+                          <div
+                            className={cn(
+                              "text-sm font-semibold tabular-nums",
+                              phaseInfo(selected.maxClinicalPhase).color,
+                            )}
+                          >
                             {phaseInfo(selected.maxClinicalPhase).label}
                           </div>
                         </div>
@@ -527,12 +632,19 @@ export function DrugLandscapeOverview({
                       {selected.bindingAffinity !== null && (
                         <div>
                           <Tip content="Binding affinity as -log10(M). Higher values mean tighter binding. Values above 7 are considered potent.">
-                            <span className="text-[11px] text-muted-foreground">Binding affinity</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Binding affinity
+                            </span>
                           </Tip>
                           <div className="text-sm font-semibold text-foreground tabular-nums">
-                            {formatAffinity(selected.bindingAffinity, selected.bindingAssayType)}
+                            {formatAffinity(
+                              selected.bindingAffinity,
+                              selected.bindingAssayType,
+                            )}
                             {selected.bindingAffinity >= 7 && (
-                              <span className="ml-1 text-[10px] text-emerald-600 font-normal">potent</span>
+                              <span className="ml-1 text-[10px] text-emerald-600 font-normal">
+                                potent
+                              </span>
                             )}
                           </div>
                         </div>
@@ -540,7 +652,9 @@ export function DrugLandscapeOverview({
                       {selected.evidenceCount > 0 && (
                         <div>
                           <Tip content="Number of independent evidence records supporting this drug-gene interaction.">
-                            <span className="text-[11px] text-muted-foreground">Evidence</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Evidence
+                            </span>
                           </Tip>
                           <div className="text-sm font-semibold text-foreground tabular-nums">
                             {selected.evidenceCount}
@@ -550,7 +664,9 @@ export function DrugLandscapeOverview({
                       {selected.receptorFamily && (
                         <div>
                           <Tip content="Protein family classification of the target (e.g. Kinase, GPCR, Ion Channel).">
-                            <span className="text-[11px] text-muted-foreground">Target class</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Target class
+                            </span>
                           </Tip>
                           <div className="text-sm font-semibold text-foreground">
                             {formatSnakeLabel(selected.receptorFamily)}
@@ -579,7 +695,8 @@ export function DrugLandscapeOverview({
                     )}
 
                     {/* ─ Target info ─ */}
-                    {(selected.targetName || selected.targetDevelopmentLevel) && (
+                    {(selected.targetName ||
+                      selected.targetDevelopmentLevel) && (
                       <div className="space-y-2">
                         <span className="text-[11px] font-medium text-muted-foreground">
                           Target information
@@ -587,16 +704,24 @@ export function DrugLandscapeOverview({
                         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                           {selected.targetName && (
                             <div>
-                              <span className="text-[11px] text-muted-foreground">Target name</span>
-                              <div className="text-[13px] text-foreground">{selected.targetName}</div>
+                              <span className="text-[11px] text-muted-foreground">
+                                Target name
+                              </span>
+                              <div className="text-[13px] text-foreground">
+                                {selected.targetName}
+                              </div>
                             </div>
                           )}
                           {selected.targetDevelopmentLevel && (
                             <div>
                               <Tip content="Target Development Level: how well-studied this target is. Ranges from 'Tdark' (minimal info) to 'Tclin' (approved drug target).">
-                                <span className="text-[11px] text-muted-foreground">Development level</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  Development level
+                                </span>
                               </Tip>
-                              <div className="text-[13px] text-foreground">{formatTDL(selected.targetDevelopmentLevel)}</div>
+                              <div className="text-[13px] text-foreground">
+                                {formatTDL(selected.targetDevelopmentLevel)}
+                              </div>
                             </div>
                           )}
                         </div>

@@ -34,9 +34,7 @@ export const basicColumns = [
     cell: ({ getValue }) => {
       const v = getValue();
       if (v === null || v === undefined) return "-";
-      return (
-        <span className="font-mono whitespace-nowrap">{String(v)}</span>
-      );
+      return <span className="font-mono whitespace-nowrap">{String(v)}</span>;
     },
   }),
 

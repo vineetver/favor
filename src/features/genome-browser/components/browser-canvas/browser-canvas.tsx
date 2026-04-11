@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/browser-canvas/browser-canvas.tsx
 //
@@ -20,51 +20,51 @@
 //   only path that should trigger a Gosling re-render, and it's exactly
 //   what should trigger one.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { GoslingSpec } from 'gosling.js'
-import { cn } from '@infra/utils'
-import { Skeleton } from '@shared/components/ui/skeleton'
+import { cn } from "@infra/utils";
+import { Skeleton } from "@shared/components/ui/skeleton";
+import type { GoslingSpec } from "gosling.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useBrowserRegion,
   useVisibleTracks,
-} from '../../state/browser-context'
+} from "../../state/browser-context";
+import { LINKING_ID } from "../../tracks/constants";
+import type { GenomicRegion } from "../../types/state";
 import {
-  isStaticTrack,
-  isDynamicTrack,
   type ActiveTrack,
   type GoslingTrackSpec,
-} from '../../types/tracks'
-import type { GenomicRegion } from '../../types/state'
-import { LINKING_ID } from '../../tracks/constants'
-import { GoslingMount } from './gosling-mount'
+  isDynamicTrack,
+  isStaticTrack,
+} from "../../types/tracks";
+import { GoslingMount } from "./gosling-mount";
 
 type BrowserCanvasProps = {
-  className?: string
-}
+  className?: string;
+};
 
-const GOSLING_INNER_PADDING = 24
+const GOSLING_INNER_PADDING = 24;
 
 export function BrowserCanvas({ className }: BrowserCanvasProps) {
-  const region = useBrowserRegion()
-  const visibleTracks = useVisibleTracks()
-  const wrapperRef = useRef<HTMLDivElement | null>(null)
-  const width = useContainerWidth(wrapperRef)
+  const region = useBrowserRegion();
+  const visibleTracks = useVisibleTracks();
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const width = useContainerWidth(wrapperRef);
 
   const goslingSpec = useMemo<GoslingSpec | null>(() => {
-    if (!region || visibleTracks.length === 0 || width === null) return null
-    return buildGoslingSpec(region, visibleTracks, width)
-  }, [region, visibleTracks, width])
+    if (!region || visibleTracks.length === 0 || width === null) return null;
+    return buildGoslingSpec(region, visibleTracks, width);
+  }, [region, visibleTracks, width]);
 
   if (!region) {
-    return <BrowserCanvasSkeleton className={className} />
+    return <BrowserCanvasSkeleton className={className} />;
   }
 
   if (visibleTracks.length === 0) {
     return (
       <div
         className={cn(
-          'flex min-h-[480px] flex-col items-center justify-center gap-2 p-8',
-          className
+          "flex min-h-[480px] flex-col items-center justify-center gap-2 p-8",
+          className,
         )}
       >
         <p className="font-medium text-foreground">No tracks selected</p>
@@ -72,13 +72,13 @@ export function BrowserCanvas({ className }: BrowserCanvasProps) {
           Pick tracks from the panel on the left to visualize genomic data.
         </p>
       </div>
-    )
+    );
   }
 
   return (
     <div
       ref={wrapperRef}
-      className={cn('w-full min-w-0 bg-background', className)}
+      className={cn("w-full min-w-0 bg-background", className)}
     >
       {goslingSpec && (
         <GoslingMount
@@ -88,7 +88,7 @@ export function BrowserCanvas({ className }: BrowserCanvasProps) {
         />
       )}
     </div>
-  )
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,28 +101,28 @@ export function BrowserCanvas({ className }: BrowserCanvasProps) {
  * measurement is available (avoids a flash of zero-width Gosling).
  */
 function useContainerWidth(
-  ref: React.RefObject<HTMLDivElement | null>
+  ref: React.RefObject<HTMLDivElement | null>,
 ): number | null {
-  const [width, setWidth] = useState<number | null>(null)
+  const [width, setWidth] = useState<number | null>(null);
 
   useEffect(() => {
-    const node = ref.current
-    if (!node) return
+    const node = ref.current;
+    if (!node) return;
 
     // Initial measurement before the observer fires.
-    setWidth(node.offsetWidth)
+    setWidth(node.offsetWidth);
 
-    const observer = new ResizeObserver(entries => {
+    const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const next = Math.floor(entry.contentRect.width)
-        if (next > 0) setWidth(next)
+        const next = Math.floor(entry.contentRect.width);
+        if (next > 0) setWidth(next);
       }
-    })
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [ref])
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
 
-  return width
+  return width;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,36 +149,38 @@ function useContainerWidth(
 function buildGoslingSpec(
   region: GenomicRegion,
   tracks: readonly ActiveTrack[],
-  containerWidth: number
+  containerWidth: number,
 ): GoslingSpec {
   // Gosling's `padding` prop reserves whitespace inside the canvas border.
   // Subtract twice that from the measured width so the plotted area lands
   // exactly on the container edges.
   const plottedWidth = Math.max(
     100,
-    containerWidth - GOSLING_INNER_PADDING * 2
-  )
+    containerWidth - GOSLING_INNER_PADDING * 2,
+  );
 
-  const trackSpecs: GoslingTrackSpec[] = []
+  const trackSpecs: GoslingTrackSpec[] = [];
 
   for (const track of tracks) {
     if (isStaticTrack(track.definition)) {
-      const specs = track.definition.specs
+      const specs = track.definition.specs;
       for (let i = 0; i < specs.length; i++) {
         // Strip per-track `width` so the catalog can carry sensible defaults
         // without overriding the responsive layout. `height` is the only
         // dimension we honor from the spec; the user's slider drives the
         // first sub-track of composite specs.
-        const { width: _ignoredWidth, ...rest } = specs[i] as GoslingTrackSpec & {
-          width?: number
-        }
+        const { width: _ignoredWidth, ...rest } = specs[
+          i
+        ] as GoslingTrackSpec & {
+          width?: number;
+        };
         trackSpecs.push(
           i === 0
             ? { ...rest, width: plottedWidth, height: track.height }
-            : { ...rest, width: plottedWidth }
-        )
+            : { ...rest, width: plottedWidth },
+        );
       }
-      continue
+      continue;
     }
 
     if (isDynamicTrack(track.definition)) {
@@ -186,11 +188,12 @@ function buildGoslingSpec(
         region,
         source: track.definition.source,
         height: track.height,
-      })
-      const { width: _ignoredWidth, ...rest } = dynamicSpec as GoslingTrackSpec & {
-        width?: number
-      }
-      trackSpecs.push({ ...rest, width: plottedWidth })
+      });
+      const { width: _ignoredWidth, ...rest } =
+        dynamicSpec as GoslingTrackSpec & {
+          width?: number;
+        };
+      trackSpecs.push({ ...rest, width: plottedWidth });
     }
   }
 
@@ -199,16 +202,16 @@ function buildGoslingSpec(
   // black clearColor. The 'light' theme passed via GoslingMount keeps the
   // canvas white.
   const rootSpec = {
-    assembly: 'hg38',
-    layout: 'linear',
-    arrangement: 'vertical',
+    assembly: "hg38",
+    layout: "linear",
+    arrangement: "vertical",
     spacing: 4,
     centerRadius: 0.1,
     views: [
       {
-        id: 'browser-main-view',
-        layout: 'linear',
-        alignment: 'stack',
+        id: "browser-main-view",
+        layout: "linear",
+        alignment: "stack",
         spacing: 0,
         linkingId: LINKING_ID,
         width: plottedWidth,
@@ -219,9 +222,9 @@ function buildGoslingSpec(
         tracks: trackSpecs,
       },
     ],
-  }
+  };
 
-  return rootSpec as unknown as GoslingSpec
+  return rootSpec as unknown as GoslingSpec;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,7 +233,7 @@ function buildGoslingSpec(
 
 export function BrowserCanvasSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('flex flex-col bg-background', className)}>
+    <div className={cn("flex flex-col bg-background", className)}>
       <div className="p-6 space-y-6">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="space-y-2">
@@ -240,5 +243,5 @@ export function BrowserCanvasSkeleton({ className }: { className?: string }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

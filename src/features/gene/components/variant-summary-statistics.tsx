@@ -1,16 +1,17 @@
 "use client";
 
-import type { GeneVariantStatistics } from "@features/gene/api/variant-statistics";
 import {
   buildExplorerHref,
   type ExplorerFilters,
   type VariantSummaryScope,
 } from "@features/gene/api/variant-explorer-link";
+import type { GeneVariantStatistics } from "@features/gene/api/variant-statistics";
 import type { RegionBin } from "@features/region/api/region-statistics";
+import { cn } from "@infra/utils";
 import {
-  Plot,
-  PLOTLY_FONT,
   PLOTLY_CONFIG_STATIC,
+  PLOTLY_FONT,
+  Plot,
 } from "@shared/components/ui/charts";
 import {
   Popover,
@@ -22,7 +23,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
 import { AlertTriangle, ChevronRight, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -100,10 +100,7 @@ const CONSEQUENCE_TO_FILTER: Record<string, ExplorerFilters> = {
     gencode_consequence: ["frameshift insertion", "frameshift deletion"],
   },
   "In-frame": {
-    gencode_consequence: [
-      "nonframeshift insertion",
-      "nonframeshift deletion",
-    ],
+    gencode_consequence: ["nonframeshift insertion", "nonframeshift deletion"],
   },
   LoF: {
     gencode_consequence: [
@@ -141,14 +138,54 @@ function LocationTreemap({
   const router = useRouter();
 
   const cats = [
-    { label: "Exonic", parent: "Protein-coding", value: get(counts, "locExonic"), color: "#7c3aed" },
-    { label: "Splicing", parent: "Protein-coding", value: get(counts, "locSplicing"), color: "#a78bfa" },
-    { label: "Intronic", parent: "Genic non-coding", value: get(counts, "locIntronic"), color: "#2563eb" },
-    { label: "UTR", parent: "Genic non-coding", value: get(counts, "locUtr"), color: "#60a5fa" },
-    { label: "ncRNA", parent: "Genic non-coding", value: get(counts, "locNcrna"), color: "#93c5fd" },
-    { label: "Upstream", parent: "Outside genes", value: get(counts, "locUpstream"), color: "#94a3b8" },
-    { label: "Downstream", parent: "Outside genes", value: get(counts, "locDownstream"), color: "#a1a1aa" },
-    { label: "Intergenic", parent: "Outside genes", value: get(counts, "locIntergenic"), color: "#cbd5e1" },
+    {
+      label: "Exonic",
+      parent: "Protein-coding",
+      value: get(counts, "locExonic"),
+      color: "#7c3aed",
+    },
+    {
+      label: "Splicing",
+      parent: "Protein-coding",
+      value: get(counts, "locSplicing"),
+      color: "#a78bfa",
+    },
+    {
+      label: "Intronic",
+      parent: "Genic non-coding",
+      value: get(counts, "locIntronic"),
+      color: "#2563eb",
+    },
+    {
+      label: "UTR",
+      parent: "Genic non-coding",
+      value: get(counts, "locUtr"),
+      color: "#60a5fa",
+    },
+    {
+      label: "ncRNA",
+      parent: "Genic non-coding",
+      value: get(counts, "locNcrna"),
+      color: "#93c5fd",
+    },
+    {
+      label: "Upstream",
+      parent: "Outside genes",
+      value: get(counts, "locUpstream"),
+      color: "#94a3b8",
+    },
+    {
+      label: "Downstream",
+      parent: "Outside genes",
+      value: get(counts, "locDownstream"),
+      color: "#a1a1aa",
+    },
+    {
+      label: "Intergenic",
+      parent: "Outside genes",
+      value: get(counts, "locIntergenic"),
+      color: "#cbd5e1",
+    },
   ].filter((d) => d.value > 0);
 
   if (cats.length === 0) return null;
@@ -160,12 +197,16 @@ function LocationTreemap({
   };
 
   const parentTotals: Record<string, number> = {};
-  for (const c of cats) parentTotals[c.parent] = (parentTotals[c.parent] ?? 0) + c.value;
+  for (const c of cats)
+    parentTotals[c.parent] = (parentTotals[c.parent] ?? 0) + c.value;
   const parentKeys = Object.keys(parentTotals);
 
   const labels = [...parentKeys, ...cats.map((c) => c.label)];
   const parents = [...parentKeys.map(() => ""), ...cats.map((c) => c.parent)];
-  const values = [...parentKeys.map((k) => parentTotals[k]), ...cats.map((c) => c.value)];
+  const values = [
+    ...parentKeys.map((k) => parentTotals[k]),
+    ...cats.map((c) => c.value),
+  ];
   const colors = [
     ...parentKeys.map((k) => parentColors[k] ?? "#f5f5f5"),
     ...cats.map((c) => c.color),
@@ -219,12 +260,36 @@ function ConsequenceChart({
   const router = useRouter();
 
   const rows = [
-    { label: "Missense", snv: get(counts, "funcMissenseSnv"), indel: get(counts, "funcMissenseIndel") },
-    { label: "Synonymous", snv: get(counts, "funcSynonymousSnv"), indel: get(counts, "funcSynonymousIndel") },
-    { label: "Nonsense", snv: get(counts, "funcNonsenseSnv"), indel: get(counts, "funcNonsenseIndel") },
-    { label: "Frameshift", snv: get(counts, "funcFrameshiftSnv"), indel: get(counts, "funcFrameshiftIndel") },
-    { label: "In-frame", snv: get(counts, "funcInframeSnv"), indel: get(counts, "funcInframeIndel") },
-    { label: "LoF", snv: get(counts, "funcLofSnv"), indel: get(counts, "funcLofIndel") },
+    {
+      label: "Missense",
+      snv: get(counts, "funcMissenseSnv"),
+      indel: get(counts, "funcMissenseIndel"),
+    },
+    {
+      label: "Synonymous",
+      snv: get(counts, "funcSynonymousSnv"),
+      indel: get(counts, "funcSynonymousIndel"),
+    },
+    {
+      label: "Nonsense",
+      snv: get(counts, "funcNonsenseSnv"),
+      indel: get(counts, "funcNonsenseIndel"),
+    },
+    {
+      label: "Frameshift",
+      snv: get(counts, "funcFrameshiftSnv"),
+      indel: get(counts, "funcFrameshiftIndel"),
+    },
+    {
+      label: "In-frame",
+      snv: get(counts, "funcInframeSnv"),
+      indel: get(counts, "funcInframeIndel"),
+    },
+    {
+      label: "LoF",
+      snv: get(counts, "funcLofSnv"),
+      indel: get(counts, "funcLofIndel"),
+    },
   ].filter((r) => r.snv + r.indel > 0);
 
   if (rows.length === 0) return null;
@@ -269,7 +334,13 @@ function ConsequenceChart({
           tickfont: { size: 10 },
         },
         yaxis: { showline: false, showgrid: false, tickfont: { size: 11 } },
-        legend: { orientation: "h", y: -0.2, x: 0.5, xanchor: "center", font: { size: 11 } },
+        legend: {
+          orientation: "h",
+          y: -0.2,
+          x: 0.5,
+          xanchor: "center",
+          font: { size: 11 },
+        },
         showlegend: true,
       }}
       config={PLOTLY_CONFIG_STATIC}
@@ -306,7 +377,14 @@ function ClinvarDiverging({
   const benign = get(counts, "clinBenign");
   const drugResponse = get(counts, "clinDrugResponse");
 
-  const total = path + likelyPath + uncertain + conflicting + likelyBenign + benign + drugResponse;
+  const total =
+    path +
+    likelyPath +
+    uncertain +
+    conflicting +
+    likelyBenign +
+    benign +
+    drugResponse;
   if (total === 0) return null;
 
   const categories = [
@@ -318,7 +396,15 @@ function ClinvarDiverging({
     "Likely Pathogenic",
     "Pathogenic",
   ];
-  const values = [drugResponse, -benign, -likelyBenign, uncertain, conflicting, likelyPath, path];
+  const values = [
+    drugResponse,
+    -benign,
+    -likelyBenign,
+    uncertain,
+    conflicting,
+    likelyPath,
+    path,
+  ];
   const colors = [
     "#3b82f6",
     "#16a34a",
@@ -363,11 +449,35 @@ function ClinvarDiverging({
           tickformat: ",d",
         },
         yaxis: { showline: false, showticklabels: false },
-        legend: { orientation: "h", y: -0.4, x: 0.5, xanchor: "center", font: { size: 10 } },
+        legend: {
+          orientation: "h",
+          y: -0.4,
+          x: 0.5,
+          xanchor: "center",
+          font: { size: 10 },
+        },
         showlegend: true,
         annotations: [
-          { x: 0, y: 1.15, xref: "paper", yref: "paper", text: "<b>← Benign</b>", showarrow: false, font: { size: 11, color: "#16a34a" }, xanchor: "left" },
-          { x: 1, y: 1.15, xref: "paper", yref: "paper", text: "<b>Pathogenic →</b>", showarrow: false, font: { size: 11, color: "#dc2626" }, xanchor: "right" },
+          {
+            x: 0,
+            y: 1.15,
+            xref: "paper",
+            yref: "paper",
+            text: "<b>← Benign</b>",
+            showarrow: false,
+            font: { size: 11, color: "#16a34a" },
+            xanchor: "left",
+          },
+          {
+            x: 1,
+            y: 1.15,
+            xref: "paper",
+            yref: "paper",
+            text: "<b>Pathogenic →</b>",
+            showarrow: false,
+            font: { size: 11, color: "#dc2626" },
+            xanchor: "right",
+          },
         ],
       }}
       config={PLOTLY_CONFIG_STATIC}
@@ -397,12 +507,42 @@ function FrequencySpectrum({
   const router = useRouter();
 
   const bins = [
-    { label: "Common", display: "Common\n(>5%)", value: get(counts, "freqCommon"), color: "#3b82f6" },
-    { label: "Low Freq", display: "Low Freq\n(1–5%)", value: get(counts, "freqLow"), color: "#6366f1" },
-    { label: "Rare", display: "Rare\n(0.1–1%)", value: get(counts, "freqRare"), color: "#8b5cf6" },
-    { label: "Singleton", display: "Singleton", value: get(counts, "freqSingleton"), color: "#a855f7" },
-    { label: "Doubleton", display: "Doubleton", value: get(counts, "freqDoubleton"), color: "#c084fc" },
-    { label: "Ultra-Rare", display: "Ultra-Rare\n(<0.1%)", value: get(counts, "freqUltraRare"), color: "#e879f9" },
+    {
+      label: "Common",
+      display: "Common\n(>5%)",
+      value: get(counts, "freqCommon"),
+      color: "#3b82f6",
+    },
+    {
+      label: "Low Freq",
+      display: "Low Freq\n(1–5%)",
+      value: get(counts, "freqLow"),
+      color: "#6366f1",
+    },
+    {
+      label: "Rare",
+      display: "Rare\n(0.1–1%)",
+      value: get(counts, "freqRare"),
+      color: "#8b5cf6",
+    },
+    {
+      label: "Singleton",
+      display: "Singleton",
+      value: get(counts, "freqSingleton"),
+      color: "#a855f7",
+    },
+    {
+      label: "Doubleton",
+      display: "Doubleton",
+      value: get(counts, "freqDoubleton"),
+      color: "#c084fc",
+    },
+    {
+      label: "Ultra-Rare",
+      display: "Ultra-Rare\n(<0.1%)",
+      value: get(counts, "freqUltraRare"),
+      color: "#e879f9",
+    },
   ].filter((b) => b.value > 0);
 
   if (bins.length === 0) return null;
@@ -489,8 +629,8 @@ function FrequencySpectrum({
 type FingerprintRow = {
   group: "phred" | "categorical" | "regulatory";
   label: string;
-  value: number;            // % of varTotal
-  highValue?: number;       // CADD only — % of varTotal at ≥20 (overlay)
+  value: number; // % of varTotal
+  highValue?: number; // CADD only — % of varTotal at ≥20 (overlay)
   filters?: ExplorerFilters;
 };
 
@@ -513,7 +653,8 @@ function buildFingerprintRows(counts: Counts, total: number): FingerprintRow[] {
           value: pctNum(caddLow > 0 ? caddLow : caddHigh, total),
           highValue:
             caddLow > 0 && caddHigh > 0 ? pctNum(caddHigh, total) : undefined,
-          filters: caddLow > 0 ? { cadd_phred_min: 10 } : { cadd_phred_min: 20 },
+          filters:
+            caddLow > 0 ? { cadd_phred_min: 10 } : { cadd_phred_min: 20 },
         }
       : null;
 
@@ -613,7 +754,10 @@ function VariantScoringFingerprint({
   scope: VariantSummaryScope;
 }) {
   const router = useRouter();
-  const rows = useMemo(() => buildFingerprintRows(counts, total), [counts, total]);
+  const rows = useMemo(
+    () => buildFingerprintRows(counts, total),
+    [counts, total],
+  );
 
   if (rows.length === 0) return null;
 
@@ -725,8 +869,7 @@ function zScore(values: number[]): number[] {
   const n = values.length;
   if (n === 0) return [];
   const mean = values.reduce((s, v) => s + v, 0) / n;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
   const sd = Math.sqrt(variance);
   if (sd === 0) return values.map(() => 0);
   return values.map((v) => (v - mean) / sd);
@@ -738,13 +881,7 @@ function formatBp(bp: number): string {
   return `${bp} bp`;
 }
 
-function RegionSpatialStrip({
-  bins,
-  loc,
-}: {
-  bins: RegionBin[];
-  loc: string;
-}) {
+function RegionSpatialStrip({ bins, loc }: { bins: RegionBin[]; loc: string }) {
   const router = useRouter();
 
   const metrics = useMemo(() => {
@@ -752,7 +889,8 @@ function RegionSpatialStrip({
       { label: "Variant density", extract: (c) => get(c, "varTotal") },
       {
         label: "ClinVar Path/LP",
-        extract: (c) => get(c, "clinPathogenic") + get(c, "clinLikelyPathogenic"),
+        extract: (c) =>
+          get(c, "clinPathogenic") + get(c, "clinLikelyPathogenic"),
       },
       { label: "Ultra-rare (<0.1%)", extract: (c) => get(c, "freqUltraRare") },
       { label: "CADD ≥20", extract: (c) => get(c, "predCaddPhred20") },
@@ -918,7 +1056,8 @@ function ClinicalInterestTile({
   scope: VariantSummaryScope;
 }) {
   const value = get(counts, "scoreClinicalInterest");
-  const clinvarSub = get(counts, "clinPathogenic") + get(counts, "clinLikelyPathogenic");
+  const clinvarSub =
+    get(counts, "clinPathogenic") + get(counts, "clinLikelyPathogenic");
   const cosmicSub = get(counts, "cosmicTier1");
   const damagingRareSub = Math.min(
     get(counts, "predCaddPhred20"),
@@ -963,7 +1102,9 @@ function ClinicalInterestTile({
           <span className="text-2xl font-semibold tabular-nums text-foreground tracking-tight">
             {fmt(value)}
           </span>
-          <p className="text-xs text-muted-foreground mt-1">click for breakdown</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            click for breakdown
+          </p>
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-2">
@@ -1081,8 +1222,7 @@ export function VariantSummaryStatistics({
   );
 
   if (!stats) {
-    const label =
-      scope.kind === "gene" ? scope.geneSymbol : scope.loc;
+    const label = scope.kind === "gene" ? scope.geneSymbol : scope.loc;
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertTriangle className="h-10 w-10 text-muted-foreground/30 mb-4" />
@@ -1099,7 +1239,8 @@ export function VariantSummaryStatistics({
 
   // Region-only spatial bins (typed via the discriminated scope).
   const regionBins =
-    scope.kind === "region" && Array.isArray((scope as { bins?: RegionBin[] }).bins)
+    scope.kind === "region" &&
+    Array.isArray((scope as { bins?: RegionBin[] }).bins)
       ? ((scope as { bins?: RegionBin[] }).bins ?? [])
       : [];
 
@@ -1107,11 +1248,7 @@ export function VariantSummaryStatistics({
     <div className="space-y-6">
       {/* Header tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <DrillTile
-          label="Total Variants"
-          value={fmt(total)}
-          scope={scope}
-        />
+        <DrillTile label="Total Variants" value={fmt(total)} scope={scope} />
         <DrillTile
           label="SNVs"
           value={fmt(get(counts, "varSnv"))}
@@ -1138,7 +1275,9 @@ export function VariantSummaryStatistics({
           }}
           hint={
             <div className="space-y-1.5">
-              <p className="font-medium text-white">All three criteria must be met:</p>
+              <p className="font-medium text-white">
+                All three criteria must be met:
+              </p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li>ClinVar pathogenic or likely pathogenic</li>
                 <li>Rare allele frequency (AF &lt; 0.1%)</li>

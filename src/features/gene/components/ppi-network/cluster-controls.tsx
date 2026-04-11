@@ -37,7 +37,7 @@ function ClusterControlsInner({
         onRunClustering();
       }
     },
-    [clusterState, onChange, onRunClustering]
+    [clusterState, onChange, onRunClustering],
   );
 
   const handleAlgorithmChange = useCallback(
@@ -47,7 +47,7 @@ function ClusterControlsInner({
         onRunClustering();
       }
     },
-    [clusterState, onChange, onRunClustering]
+    [clusterState, onChange, onRunClustering],
   );
 
   const handleCollapseAll = useCallback(() => {
@@ -69,11 +69,17 @@ function ClusterControlsInner({
       <div className={cn("space-y-4", className)}>
         {/* Header */}
         <div className="flex items-center gap-2">
-          <Network className={cn(
-            "w-4 h-4",
-            clusterState.enabled ? "text-indigo-600" : "text-muted-foreground"
-          )} />
-          <span className="text-sm font-medium text-foreground">Clustering</span>
+          <Network
+            className={cn(
+              "w-4 h-4",
+              clusterState.enabled
+                ? "text-indigo-600"
+                : "text-muted-foreground",
+            )}
+          />
+          <span className="text-sm font-medium text-foreground">
+            Clustering
+          </span>
           {clusterState.enabled && stats.numClusters > 0 && (
             <span className="px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded">
               {stats.numClusters} clusters
@@ -84,7 +90,10 @@ function ClusterControlsInner({
         {/* Enable toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="cluster-toggle" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="cluster-toggle"
+              className="text-xs text-muted-foreground"
+            >
               Enable clustering
             </Label>
             <Tooltip>
@@ -93,8 +102,8 @@ function ClusterControlsInner({
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
-                  Group densely connected nodes into communities.
-                  Useful for identifying functional modules.
+                  Group densely connected nodes into communities. Useful for
+                  identifying functional modules.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -111,7 +120,9 @@ function ClusterControlsInner({
           <>
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Algorithm</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Algorithm
+                </Label>
               </div>
               <div className="flex rounded-lg border border-border bg-muted p-0.5">
                 <Tooltip>
@@ -124,14 +135,16 @@ function ClusterControlsInner({
                         "h-7 px-3 text-xs rounded-md flex-1",
                         clusterState.algorithm === "louvain"
                           ? "bg-card shadow-sm text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                          : "text-muted-foreground hover:text-foreground hover:bg-transparent",
                       )}
                     >
                       Louvain
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p className="text-xs">Modularity-based clustering. Better quality.</p>
+                    <p className="text-xs">
+                      Modularity-based clustering. Better quality.
+                    </p>
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -144,14 +157,16 @@ function ClusterControlsInner({
                         "h-7 px-3 text-xs rounded-md flex-1",
                         clusterState.algorithm === "label-propagation"
                           ? "bg-card shadow-sm text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                          : "text-muted-foreground hover:text-foreground hover:bg-transparent",
                       )}
                     >
                       Label Prop
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p className="text-xs">Label propagation. Faster for large networks.</p>
+                    <p className="text-xs">
+                      Label propagation. Faster for large networks.
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -163,15 +178,21 @@ function ClusterControlsInner({
                 <div className="text-xs text-muted-foreground space-y-0.5">
                   <div className="flex justify-between">
                     <span>Clusters found:</span>
-                    <span className="font-medium text-foreground">{stats.numClusters}</span>
+                    <span className="font-medium text-foreground">
+                      {stats.numClusters}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Avg size:</span>
-                    <span className="font-medium text-foreground">{stats.avgSize.toFixed(1)}</span>
+                    <span className="font-medium text-foreground">
+                      {stats.avgSize.toFixed(1)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Largest:</span>
-                    <span className="font-medium text-foreground">{stats.maxSize} nodes</span>
+                    <span className="font-medium text-foreground">
+                      {stats.maxSize} nodes
+                    </span>
                   </div>
                 </div>
 

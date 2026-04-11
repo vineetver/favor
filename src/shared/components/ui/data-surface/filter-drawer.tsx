@@ -1,10 +1,6 @@
 "use client";
 
-import { ChevronDown, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@infra/utils";
-import { Button } from "../button";
-import { Input } from "../input";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   Select,
@@ -13,6 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@shared/components/ui/select";
+import { ChevronDown, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "../button";
+import { Input } from "../input";
 import type { FilterConfig, FilterDrawerProps } from "./types";
 
 const DEFAULT_SECTION = "__default__";
@@ -37,22 +37,30 @@ export function FilterDrawer({
         buckets.set(key, []);
         order.push(key);
       }
-      buckets.get(key)!.push(f);
+      buckets.get(key)?.push(f);
     }
-    return order.map((key) => ({ key, label: key === DEFAULT_SECTION ? null : key, items: buckets.get(key)! }));
+    return order.map((key) => ({
+      key,
+      label: key === DEFAULT_SECTION ? null : key,
+      items: buckets.get(key)!,
+    }));
   }, [filters]);
 
   // Section open/close state. First section starts open; others collapsed when there's >1.
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    const state: Record<string, boolean> = {};
-    sections.forEach((s, i) => {
-      state[s.key] = sections.length === 1 || i === 0;
-    });
-    return state;
-  });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+    () => {
+      const state: Record<string, boolean> = {};
+      sections.forEach((s, i) => {
+        state[s.key] = sections.length === 1 || i === 0;
+      });
+      return state;
+    },
+  );
 
   // Internal state for text inputs (prevents parent re-renders on every keystroke)
-  const [localTextValues, setLocalTextValues] = useState<Record<string, string>>(() => {
+  const [localTextValues, setLocalTextValues] = useState<
+    Record<string, string>
+  >(() => {
     const initial: Record<string, string> = {};
     for (const filter of filters) {
       if (filter.type === "text") {
@@ -125,18 +133,22 @@ export function FilterDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} aria-hidden="true" />
+      <div
+        className="fixed inset-0 bg-black/20 z-40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Drawer */}
-      <div role="dialog" aria-label="Filters" className="fixed right-0 top-0 bottom-0 w-80 bg-background shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
+      <div
+        role="dialog"
+        aria-label="Filters"
+        className="fixed right-0 top-0 bottom-0 w-80 bg-background shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h3 className="text-base font-semibold text-foreground">Filters</h3>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClose}
-          >
+          <Button variant="ghost" size="icon-sm" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -153,12 +165,18 @@ export function FilterDrawer({
             }, 0);
 
             return (
-              <div key={section.key} className="border-b border-border last:border-b-0">
+              <div
+                key={section.key}
+                className="border-b border-border last:border-b-0"
+              >
                 {section.label && (
                   <button
                     type="button"
                     onClick={() =>
-                      setOpenSections((prev) => ({ ...prev, [section.key]: !isOpen }))
+                      setOpenSections((prev) => ({
+                        ...prev,
+                        [section.key]: !isOpen,
+                      }))
                     }
                     className="flex items-center justify-between w-full px-5 py-3 text-left hover:bg-muted/40 transition-colors"
                   >
@@ -180,7 +198,12 @@ export function FilterDrawer({
                 )}
 
                 {isOpen && (
-                  <div className={cn("space-y-4", section.label ? "px-5 pb-4" : "p-5")}>
+                  <div
+                    className={cn(
+                      "space-y-4",
+                      section.label ? "px-5 pb-4" : "p-5",
+                    )}
+                  >
                     {section.items.map((filter) => (
                       <div key={filter.id}>
                         <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
@@ -189,13 +212,20 @@ export function FilterDrawer({
 
                         {filter.type === "select" && filter.options && (
                           <Select
-                            value={(filterValues[filter.id] as string) || "__all__"}
+                            value={
+                              (filterValues[filter.id] as string) || "__all__"
+                            }
                             onValueChange={(value) =>
-                              onFilterChange(filter.id, value === "__all__" ? "" : value)
+                              onFilterChange(
+                                filter.id,
+                                value === "__all__" ? "" : value,
+                              )
                             }
                           >
                             <SelectTrigger className="w-full h-9">
-                              <SelectValue placeholder={filter.placeholder ?? "All"} />
+                              <SelectValue
+                                placeholder={filter.placeholder ?? "All"}
+                              />
                             </SelectTrigger>
                             <SelectContent
                               position="popper"
@@ -244,27 +274,17 @@ export function FilterDrawer({
         {/* Footer */}
         <div className="flex items-center gap-3 px-5 py-4 border-t border-border">
           {onReset && (
-            <Button
-              variant="secondary"
-              onClick={onReset}
-              className="flex-1"
-            >
+            <Button variant="secondary" onClick={onReset} className="flex-1">
               Reset
             </Button>
           )}
           {onApply && (
-            <Button
-              onClick={onApply}
-              className="flex-1"
-            >
+            <Button onClick={onApply} className="flex-1">
               Apply
             </Button>
           )}
           {!onApply && !onReset && (
-            <Button
-              onClick={onClose}
-              className="flex-1"
-            >
+            <Button onClick={onClose} className="flex-1">
               Done
             </Button>
           )}
@@ -294,7 +314,8 @@ function MultiselectField({
     if (!query) return opts;
     const q = query.toLowerCase();
     return opts.filter(
-      (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+      (o) =>
+        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     );
   }, [filter.options, query]);
 
@@ -333,7 +354,9 @@ function MultiselectField({
                   checked={selected}
                   onCheckedChange={(checked) => toggle(opt.value, !!checked)}
                 />
-                <span className="text-xs text-foreground truncate">{opt.label}</span>
+                <span className="text-xs text-foreground truncate">
+                  {opt.label}
+                </span>
               </label>
             );
           })

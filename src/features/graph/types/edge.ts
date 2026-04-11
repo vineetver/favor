@@ -185,88 +185,299 @@ export function getEdgeDatabase(type: EdgeType): string {
   return EDGE_TYPE_DATABASE[type];
 }
 
-export const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; description: string }> = {
+export const EDGE_TYPE_CONFIG: Record<
+  EdgeType,
+  { label: string; color: string; description: string }
+> = {
   // Gene → Disease (Red family)
-  GENE_ASSOCIATED_WITH_DISEASE: { label: "Gene–Disease Association", color: "#ef4444", description: "Gene associated with disease (scored, curated, causal)" },
-  GENE_ALTERED_IN_DISEASE: { label: "Gene Altered in Disease", color: "#dc2626", description: "Gene somatically altered in disease" },
+  GENE_ASSOCIATED_WITH_DISEASE: {
+    label: "Gene–Disease Association",
+    color: "#ef4444",
+    description: "Gene associated with disease (scored, curated, causal)",
+  },
+  GENE_ALTERED_IN_DISEASE: {
+    label: "Gene Altered in Disease",
+    color: "#dc2626",
+    description: "Gene somatically altered in disease",
+  },
   // Gene → Drug (Cyan family)
-  GENE_AFFECTS_DRUG_RESPONSE: { label: "Gene Affects Drug Response", color: "#06b6d4", description: "Pharmacogenomic gene–drug interaction" },
+  GENE_AFFECTS_DRUG_RESPONSE: {
+    label: "Gene Affects Drug Response",
+    color: "#06b6d4",
+    description: "Pharmacogenomic gene–drug interaction",
+  },
   // Gene → Entity (Amber family)
-  GENE_ASSOCIATED_WITH_ENTITY: { label: "Gene–Trait Association", color: "#f59e0b", description: "Gene associated with trait via GWAS" },
+  GENE_ASSOCIATED_WITH_ENTITY: {
+    label: "Gene–Trait Association",
+    color: "#f59e0b",
+    description: "Gene associated with trait via GWAS",
+  },
   // Gene → Pathway (Purple family)
-  GENE_PARTICIPATES_IN_PATHWAY: { label: "Participates in Pathway", color: "#8b5cf6", description: "Gene participates in pathway" },
+  GENE_PARTICIPATES_IN_PATHWAY: {
+    label: "Participates in Pathway",
+    color: "#8b5cf6",
+    description: "Gene participates in pathway",
+  },
   // Gene → GOTerm (Green family)
-  GENE_ANNOTATED_WITH_GO_TERM: { label: "GO Annotation", color: "#a78bfa", description: "Gene annotated with GO term" },
+  GENE_ANNOTATED_WITH_GO_TERM: {
+    label: "GO Annotation",
+    color: "#a78bfa",
+    description: "Gene annotated with GO term",
+  },
   // Gene → Phenotype (Pink family)
-  GENE_ASSOCIATED_WITH_PHENOTYPE: { label: "Gene–Phenotype Association", color: "#ec4899", description: "Gene associated with phenotype" },
+  GENE_ASSOCIATED_WITH_PHENOTYPE: {
+    label: "Gene–Phenotype Association",
+    color: "#ec4899",
+    description: "Gene associated with phenotype",
+  },
   // Gene → Gene (Blue family)
-  GENE_INTERACTS_WITH_GENE: { label: "Gene–Gene Interaction", color: "#3b82f6", description: "Protein-protein or functional interaction" },
-  GENE_PARALOG_OF_GENE: { label: "Paralog", color: "#60a5fa", description: "Paralogous gene pair" },
+  GENE_INTERACTS_WITH_GENE: {
+    label: "Gene–Gene Interaction",
+    color: "#3b82f6",
+    description: "Protein-protein or functional interaction",
+  },
+  GENE_PARALOG_OF_GENE: {
+    label: "Paralog",
+    color: "#60a5fa",
+    description: "Paralogous gene pair",
+  },
   // Gene → SideEffect
-  GENE_ASSOCIATED_WITH_SIDE_EFFECT: { label: "Gene–Side Effect", color: "#c084fc", description: "Gene associated with side effect" },
+  GENE_ASSOCIATED_WITH_SIDE_EFFECT: {
+    label: "Gene–Side Effect",
+    color: "#c084fc",
+    description: "Gene associated with side effect",
+  },
   // Gene → ProteinDomain
-  GENE_HAS_PROTEIN_DOMAIN: { label: "Has Protein Domain", color: "#7c3aed", description: "Gene encodes protein domain" },
+  GENE_HAS_PROTEIN_DOMAIN: {
+    label: "Has Protein Domain",
+    color: "#7c3aed",
+    description: "Gene encodes protein domain",
+  },
   // Gene → Tissue
-  GENE_EXPRESSED_IN_TISSUE: { label: "Expressed in Tissue", color: "#14b8a6", description: "Gene expressed in tissue" },
+  GENE_EXPRESSED_IN_TISSUE: {
+    label: "Expressed in Tissue",
+    color: "#14b8a6",
+    description: "Gene expressed in tissue",
+  },
   // Drug → Gene (Green family)
-  DRUG_ACTS_ON_GENE: { label: "Drug Acts on Gene", color: "#22c55e", description: "Drug targets or acts on gene" },
-  DRUG_DISPOSITION_BY_GENE: { label: "Drug Disposition by Gene", color: "#16a34a", description: "Drug disposition mediated by gene" },
+  DRUG_ACTS_ON_GENE: {
+    label: "Drug Acts on Gene",
+    color: "#22c55e",
+    description: "Drug targets or acts on gene",
+  },
+  DRUG_DISPOSITION_BY_GENE: {
+    label: "Drug Disposition by Gene",
+    color: "#16a34a",
+    description: "Drug disposition mediated by gene",
+  },
   // Drug → Disease
-  DRUG_INDICATED_FOR_DISEASE: { label: "Indicated for Disease", color: "#15803d", description: "Drug indicated for disease" },
+  DRUG_INDICATED_FOR_DISEASE: {
+    label: "Indicated for Disease",
+    color: "#15803d",
+    description: "Drug indicated for disease",
+  },
   // Drug → SideEffect
-  DRUG_HAS_ADVERSE_EFFECT: { label: "Adverse Effect", color: "#4ade80", description: "Drug has adverse effect" },
-  DRUG_PAIR_CAUSES_SIDE_EFFECT: { label: "Drug Pair Side Effect", color: "#86efac", description: "Drug pair causes side effect" },
+  DRUG_HAS_ADVERSE_EFFECT: {
+    label: "Adverse Effect",
+    color: "#4ade80",
+    description: "Drug has adverse effect",
+  },
+  DRUG_PAIR_CAUSES_SIDE_EFFECT: {
+    label: "Drug Pair Side Effect",
+    color: "#86efac",
+    description: "Drug pair causes side effect",
+  },
   // Drug → Drug
-  DRUG_INTERACTS_WITH_DRUG: { label: "Drug–Drug Interaction", color: "#34d399", description: "Drug-drug interaction (DrugBank)" },
+  DRUG_INTERACTS_WITH_DRUG: {
+    label: "Drug–Drug Interaction",
+    color: "#34d399",
+    description: "Drug-drug interaction (DrugBank)",
+  },
   // Variant → Gene (Amber-orange family)
-  VARIANT_IMPLIES_GENE: { label: "Variant Implies Gene", color: "#fb923c", description: "Variant-to-gene causal assignment" },
-  VARIANT_AFFECTS_GENE: { label: "Variant Affects Gene", color: "#ea580c", description: "Variant molecular impact on gene" },
+  VARIANT_IMPLIES_GENE: {
+    label: "Variant Implies Gene",
+    color: "#fb923c",
+    description: "Variant-to-gene causal assignment",
+  },
+  VARIANT_AFFECTS_GENE: {
+    label: "Variant Affects Gene",
+    color: "#ea580c",
+    description: "Variant molecular impact on gene",
+  },
   // Variant → Entity/Disease/Phenotype (Yellow family)
-  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: { label: "Variant–Trait GWAS", color: "#eab308", description: "Variant GWAS associated with trait" },
-  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Variant–Phenotype GWAS", color: "#ca8a04", description: "Variant GWAS associated with phenotype" },
-  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: { label: "Variant–Disease Association", color: "#d97706", description: "Variant associated with disease (ClinVar/PGx)" },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Entity: {
+    label: "Variant–Trait GWAS",
+    color: "#eab308",
+    description: "Variant GWAS associated with trait",
+  },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: {
+    label: "Variant–Phenotype GWAS",
+    color: "#ca8a04",
+    description: "Variant GWAS associated with phenotype",
+  },
+  VARIANT_ASSOCIATED_WITH_TRAIT__Disease: {
+    label: "Variant–Disease Association",
+    color: "#d97706",
+    description: "Variant associated with disease (ClinVar/PGx)",
+  },
   // Variant → Drug
-  VARIANT_ASSOCIATED_WITH_DRUG: { label: "Variant–Drug Response", color: "#fbbf24", description: "Variant associated with drug response" },
+  VARIANT_ASSOCIATED_WITH_DRUG: {
+    label: "Variant–Drug Response",
+    color: "#fbbf24",
+    description: "Variant associated with drug response",
+  },
   // Variant → Study
-  VARIANT_ASSOCIATED_WITH_STUDY: { label: "Reported in Study", color: "#f59e0b", description: "Variant reported in GWAS study" },
+  VARIANT_ASSOCIATED_WITH_STUDY: {
+    label: "Reported in Study",
+    color: "#f59e0b",
+    description: "Variant reported in GWAS study",
+  },
   // Variant → SideEffect
-  VARIANT_LINKED_TO_SIDE_EFFECT: { label: "Variant–Side Effect", color: "#fde047", description: "Variant linked to side effect" },
+  VARIANT_LINKED_TO_SIDE_EFFECT: {
+    label: "Variant–Side Effect",
+    color: "#fde047",
+    description: "Variant linked to side effect",
+  },
   // Variant → cCRE
-  VARIANT_OVERLAPS_CCRE: { label: "Overlaps cCRE", color: "#facc15", description: "Variant overlaps cCRE" },
+  VARIANT_OVERLAPS_CCRE: {
+    label: "Overlaps cCRE",
+    color: "#facc15",
+    description: "Variant overlaps cCRE",
+  },
   // cCRE → Gene (Teal family)
-  CCRE_REGULATES_GENE: { label: "Regulates Gene", color: "#0f766e", description: "cCRE regulates gene expression" },
+  CCRE_REGULATES_GENE: {
+    label: "Regulates Gene",
+    color: "#0f766e",
+    description: "cCRE regulates gene expression",
+  },
   // Disease → Phenotype (Rose family)
-  DISEASE_HAS_PHENOTYPE: { label: "Disease Has Phenotype", color: "#f43f5e", description: "Disease presents with phenotype" },
+  DISEASE_HAS_PHENOTYPE: {
+    label: "Disease Has Phenotype",
+    color: "#f43f5e",
+    description: "Disease presents with phenotype",
+  },
   // Phenotype → Phenotype
-  PHENOTYPE_EQUIVALENT_TO: { label: "Phenotype Equivalent", color: "#d946ef", description: "Equivalent phenotype mapping" },
-  PHENOTYPE_HIERARCHY: { label: "Phenotype Hierarchy", color: "#6b7280", description: "Phenotype subclass of" },
-  PHENOTYPE_CLOSURE: { label: "Phenotype Closure", color: "#9ca3af", description: "Phenotype ancestor of" },
+  PHENOTYPE_EQUIVALENT_TO: {
+    label: "Phenotype Equivalent",
+    color: "#d946ef",
+    description: "Equivalent phenotype mapping",
+  },
+  PHENOTYPE_HIERARCHY: {
+    label: "Phenotype Hierarchy",
+    color: "#6b7280",
+    description: "Phenotype subclass of",
+  },
+  PHENOTYPE_CLOSURE: {
+    label: "Phenotype Closure",
+    color: "#9ca3af",
+    description: "Phenotype ancestor of",
+  },
   // Study → trait (Teal family)
-  STUDY_INVESTIGATES_TRAIT__Entity: { label: "Investigates Trait", color: "#14b8a6", description: "Study investigates trait" },
-  STUDY_INVESTIGATES_TRAIT__Disease: { label: "Investigates Disease", color: "#0d9488", description: "Study investigates disease" },
-  STUDY_INVESTIGATES_TRAIT__Phenotype: { label: "Investigates Phenotype", color: "#115e59", description: "Study investigates phenotype" },
+  STUDY_INVESTIGATES_TRAIT__Entity: {
+    label: "Investigates Trait",
+    color: "#14b8a6",
+    description: "Study investigates trait",
+  },
+  STUDY_INVESTIGATES_TRAIT__Disease: {
+    label: "Investigates Disease",
+    color: "#0d9488",
+    description: "Study investigates disease",
+  },
+  STUDY_INVESTIGATES_TRAIT__Phenotype: {
+    label: "Investigates Phenotype",
+    color: "#115e59",
+    description: "Study investigates phenotype",
+  },
   // Disease → Disease (Gray family)
-  DISEASE_SUBCLASS_OF_DISEASE: { label: "Disease Subclass", color: "#6b7280", description: "Disease subclass of" },
-  DISEASE_ANCESTOR_OF_DISEASE: { label: "Disease Ancestor", color: "#9ca3af", description: "Disease ancestor of" },
+  DISEASE_SUBCLASS_OF_DISEASE: {
+    label: "Disease Subclass",
+    color: "#6b7280",
+    description: "Disease subclass of",
+  },
+  DISEASE_ANCESTOR_OF_DISEASE: {
+    label: "Disease Ancestor",
+    color: "#9ca3af",
+    description: "Disease ancestor of",
+  },
   // Pathway → Pathway (Indigo family)
-  PATHWAY_PART_OF_PATHWAY: { label: "Part of Pathway", color: "#6366f1", description: "Pathway part of parent" },
-  PATHWAY_ANCESTOR_OF_PATHWAY: { label: "Pathway Ancestor", color: "#818cf8", description: "Pathway ancestor of" },
+  PATHWAY_PART_OF_PATHWAY: {
+    label: "Part of Pathway",
+    color: "#6366f1",
+    description: "Pathway part of parent",
+  },
+  PATHWAY_ANCESTOR_OF_PATHWAY: {
+    label: "Pathway Ancestor",
+    color: "#818cf8",
+    description: "Pathway ancestor of",
+  },
   // Entity → Entity (Gray family)
-  ENTITY_HIERARCHY: { label: "Trait Hierarchy", color: "#6b7280", description: "Trait subclass hierarchy (EFO)" },
-  ENTITY_CLOSURE: { label: "Trait Closure", color: "#9ca3af", description: "Trait ancestor (transitive closure)" },
+  ENTITY_HIERARCHY: {
+    label: "Trait Hierarchy",
+    color: "#6b7280",
+    description: "Trait subclass hierarchy (EFO)",
+  },
+  ENTITY_CLOSURE: {
+    label: "Trait Closure",
+    color: "#9ca3af",
+    description: "Trait ancestor (transitive closure)",
+  },
   // GO → GO
-  GO_HIERARCHY: { label: "GO Hierarchy", color: "#6b7280", description: "GO term subclass hierarchy" },
-  GO_CLOSURE: { label: "GO Closure", color: "#9ca3af", description: "GO term ancestor (transitive closure)" },
+  GO_HIERARCHY: {
+    label: "GO Hierarchy",
+    color: "#6b7280",
+    description: "GO term subclass hierarchy",
+  },
+  GO_CLOSURE: {
+    label: "GO Closure",
+    color: "#9ca3af",
+    description: "GO term ancestor (transitive closure)",
+  },
   // Metabolite (Pink family)
-  PATHWAY_CONTAINS_METABOLITE: { label: "Contains Metabolite", color: "#db2777", description: "Pathway contains metabolite" },
-  METABOLITE_IS_A_METABOLITE: { label: "Metabolite Is A", color: "#be185d", description: "Metabolite is a subclass" },
+  PATHWAY_CONTAINS_METABOLITE: {
+    label: "Contains Metabolite",
+    color: "#db2777",
+    description: "Pathway contains metabolite",
+  },
+  METABOLITE_IS_A_METABOLITE: {
+    label: "Metabolite Is A",
+    color: "#be185d",
+    description: "Metabolite is a subclass",
+  },
   // Signal (Indigo-blue family)
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: { label: "Signal–Disease", color: "#4f46e5", description: "Signal associated with disease" },
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: { label: "Signal–Trait", color: "#6366f1", description: "Signal associated with trait" },
-  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: { label: "Signal–Phenotype", color: "#818cf8", description: "Signal associated with phenotype" },
-  SIGNAL_HAS_VARIANT: { label: "Signal Has Variant", color: "#a5b4fc", description: "Signal contains variant" },
-  SIGNAL_IMPLIES_GENE: { label: "Signal Implies Gene", color: "#c7d2fe", description: "Signal implicates gene" },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Disease: {
+    label: "Signal–Disease",
+    color: "#4f46e5",
+    description: "Signal associated with disease",
+  },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Entity: {
+    label: "Signal–Trait",
+    color: "#6366f1",
+    description: "Signal associated with trait",
+  },
+  SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype: {
+    label: "Signal–Phenotype",
+    color: "#818cf8",
+    description: "Signal associated with phenotype",
+  },
+  SIGNAL_HAS_VARIANT: {
+    label: "Signal Has Variant",
+    color: "#a5b4fc",
+    description: "Signal contains variant",
+  },
+  SIGNAL_IMPLIES_GENE: {
+    label: "Signal Implies Gene",
+    color: "#c7d2fe",
+    description: "Signal implicates gene",
+  },
   // ProteinDomain → ProteinDomain
-  DOMAIN_SUBCLASS_OF_DOMAIN: { label: "Domain Subclass", color: "#6b7280", description: "Domain subclass of" },
-  DOMAIN_ANCESTOR_OF_DOMAIN: { label: "Domain Ancestor", color: "#9ca3af", description: "Domain ancestor of" },
+  DOMAIN_SUBCLASS_OF_DOMAIN: {
+    label: "Domain Subclass",
+    color: "#6b7280",
+    description: "Domain subclass of",
+  },
+  DOMAIN_ANCESTOR_OF_DOMAIN: {
+    label: "Domain Ancestor",
+    color: "#9ca3af",
+    description: "Domain ancestor of",
+  },
 };

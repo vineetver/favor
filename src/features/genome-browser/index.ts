@@ -1,29 +1,27 @@
 // src/features/genome-browser/index.ts
 // Public API for the genome browser feature.
 
-export { BrowserPage } from './components/browser-page'
-
+export { BrowserPage } from "./components/browser-page";
+// Utility hooks
+export { useShareableUrl, useUrlSync } from "./hooks";
 // Narrow context hooks for external integration.
 export {
   BrowserProvider,
-  useBrowserState,
   useBrowserActions,
   useBrowserRegion,
-  useVisibleTracks,
-  useVisibleTrackIds,
-  useVisibleTrackCount,
-  useIsTrackVisible,
+  useBrowserState,
   useCanZoomIn,
   useCanZoomOut,
-} from './state'
-
-// Utility hooks
-export { useUrlSync, useShareableUrl } from './hooks'
+  useIsTrackVisible,
+  useVisibleTrackCount,
+  useVisibleTrackIds,
+  useVisibleTracks,
+} from "./state";
 
 // Domain types (only what callers actually need)
-export type { GenomicRegion, BrowserState, Chromosome } from './types/state'
+export type { BrowserState, Chromosome, GenomicRegion } from "./types/state";
 export type {
-  TrackDefinition,
   ActiveTrack,
   TrackCategory,
-} from './types/tracks'
+  TrackDefinition,
+} from "./types/tracks";

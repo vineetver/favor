@@ -1,6 +1,6 @@
-import { Fragment } from "react";
 import Link from "next/link";
-import type { GraphCcre, EdgeCounts } from "../types";
+import { Fragment } from "react";
+import type { EdgeCounts, GraphCcre } from "../types";
 
 interface CcreHeaderProps {
   ccre: GraphCcre;
@@ -19,7 +19,7 @@ function fmtCoord(n: number): string {
 
 export function CcreHeader({ ccre, counts }: CcreHeaderProps) {
   const size = ccre.end_position - ccre.start_position;
-  const regionLoc = `chr${ccre.chromosome}:${ccre.start_position}-${ccre.end_position}`;
+  const _regionLoc = `chr${ccre.chromosome}:${ccre.start_position}-${ccre.end_position}`;
 
   const metaParts: string[] = [];
   if (ccre.annotation_label) metaParts.push(ccre.annotation_label);
@@ -77,8 +77,7 @@ export function CcreHeader({ ccre, counts }: CcreHeaderProps) {
           rel="noopener noreferrer"
           className="hover:text-foreground transition-colors"
         >
-          ENCODE SCREEN:{" "}
-          <span className="font-mono">{ccre.id}</span>
+          ENCODE SCREEN: <span className="font-mono">{ccre.id}</span>
         </a>
         {ccre.nearest_gene_symbol && (
           <Link

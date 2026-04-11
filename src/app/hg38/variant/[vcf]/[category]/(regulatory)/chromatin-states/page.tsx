@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadChromatinStatesData } from "@features/enrichment/loaders";
 import { ChromatinStatesView } from "@features/enrichment/components/chromatin-states-view";
+import { loadChromatinStatesData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

@@ -1,6 +1,5 @@
-import type { DrugEntityResponse } from "../types";
-
 import { API_BASE } from "@/config/api";
+import type { DrugEntityResponse } from "../types";
 
 /** Edge types to fetch for the drug detail page */
 const DRUG_EDGE_TYPES = [

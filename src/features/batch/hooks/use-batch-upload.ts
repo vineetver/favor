@@ -19,7 +19,9 @@ interface UseBatchUploadResult {
 /**
  * Hook for uploading a file via POST /cohorts/upload (single request).
  */
-export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUploadResult {
+export function useBatchUpload(
+  options: UseBatchUploadOptions = {},
+): UseBatchUploadResult {
   const { onSuccess, onError } = options;
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -38,7 +40,8 @@ export function useBatchUpload(options: UseBatchUploadOptions = {}): UseBatchUpl
         onSuccess?.(input_uri);
         return input_uri;
       } catch (err) {
-        const uploadError = err instanceof Error ? err : new Error("Upload failed");
+        const uploadError =
+          err instanceof Error ? err : new Error("Upload failed");
         setError(uploadError);
         setIsUploading(false);
         onError?.(uploadError);

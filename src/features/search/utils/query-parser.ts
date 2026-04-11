@@ -2,13 +2,16 @@
  * Query parser - identifies and validates user queries
  */
 
+import {
+  looksLikeRegion,
+  parseRegion,
+} from "@features/region/utils/parse-region";
 import type {
   ParsedQuery,
   ParsedVariantQuery,
   QueryType,
 } from "../types/query";
 import { looksLikeVCF, parseVCF } from "./vcf-parser";
-import { looksLikeRegion, parseRegion } from "@features/region/utils/parse-region";
 
 /**
  * Parse user query and identify its type

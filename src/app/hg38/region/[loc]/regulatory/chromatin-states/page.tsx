@@ -1,5 +1,5 @@
-import { loadChromatinStatesData } from "@features/enrichment/loaders";
 import { ChromatinStatesView } from "@features/enrichment/components/chromatin-states-view";
+import { loadChromatinStatesData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

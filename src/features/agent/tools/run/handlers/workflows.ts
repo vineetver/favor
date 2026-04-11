@@ -8,20 +8,33 @@
  * compare_cohorts: Side-by-side cohort comparison
  */
 
-import { cohortFetch, agentFetch, pollAnalyticsRun } from "../../../lib/api-client";
-import type { RunCommand } from "../types";
-import type { RunResultEnvelope } from "../run-result";
-import { okResult, partialResult, errorResult, catchToResult, TraceCollector } from "../run-result";
+import {
+  agentFetch,
+  cohortFetch,
+  pollAnalyticsRun,
+} from "../../../lib/api-client";
 import { HANDLER_EDGE_FIELDS } from "../edge-field-constants";
 import type { RunContext } from "../index";
-import { fetchAndCacheSchema, getCachedSchema, getFingerprint } from "../schema-cache";
 import type { NextAction } from "../recovery";
+import type { RunResultEnvelope } from "../run-result";
+import {
+  catchToResult,
+  errorResult,
+  okResult,
+  partialResult,
+  TraceCollector,
+} from "../run-result";
+import { fetchAndCacheSchema } from "../schema-cache";
+import type { RunCommand } from "../types";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getCohortId(cmd: { cohort_id?: string }, activeCohortId?: string): string | null {
+function getCohortId(
+  cmd: { cohort_id?: string },
+  activeCohortId?: string,
+): string | null {
   return cmd.cohort_id ?? activeCohortId ?? null;
 }
 
@@ -34,15 +47,20 @@ export async function handleTopHits(
   ctx: RunContext,
 ): Promise<RunResultEnvelope> {
   const cohortId = getCohortId(cmd, ctx.activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
   const limit = cmd.limit ?? 10;
 
   try {
     // 1. Ensure we have schema (pre-gate may have already fetched it)
-    const schema = ctx.schemaCache ?? await fetchAndCacheSchema(cohortId);
-    tc.add({ step: "schema", kind: "cache", message: `Schema: ${schema.allColumns.length} columns, ${schema.rowCount} rows` });
+    const schema = ctx.schemaCache ?? (await fetchAndCacheSchema(cohortId));
+    tc.add({
+      step: "schema",
+      kind: "cache",
+      message: `Schema: ${schema.allColumns.length} columns, ${schema.rowCount} rows`,
+    });
 
     // 2. Build default criteria if none provided — use best available numeric scores
     const criteria = cmd.criteria?.length
@@ -51,7 +69,8 @@ export async function handleTopHits(
 
     if (criteria.length === 0) {
       return errorResult({
-        message: "No ranking criteria specified and no numeric columns available.",
+        message:
+          "No ranking criteria specified and no numeric columns available.",
         code: "validation_error",
         tc,
       });
@@ -63,12 +82,24 @@ export async function handleTopHits(
       try {
         const probe = await cohortFetch<{ total?: number }>(
           `/cohorts/${encodeURIComponent(cohortId)}/rows`,
-          { method: "POST", body: { filters: cmd.filters, limit: 1 }, timeout: 10_000 },
+          {
+            method: "POST",
+            body: { filters: cmd.filters, limit: 1 },
+            timeout: 10_000,
+          },
         );
         totalAfterFilter = probe.total ?? 0;
-        tc.add({ step: "filterProbe", kind: "call", message: `${totalAfterFilter} variants after filters` });
+        tc.add({
+          step: "filterProbe",
+          kind: "call",
+          message: `${totalAfterFilter} variants after filters`,
+        });
       } catch {
-        tc.add({ step: "filterProbe", kind: "call", message: "Probe failed, continuing" });
+        tc.add({
+          step: "filterProbe",
+          kind: "call",
+          message: "Probe failed, continuing",
+        });
       }
     }
 
@@ -82,8 +113,13 @@ export async function handleTopHits(
       { method: "POST", body, timeout: 60_000 },
     );
 
-    const rows = Array.isArray(result.rows) ? (result.rows as unknown[]).slice(0, limit) : [];
-    const totalRanked = typeof result.total_ranked === "number" ? result.total_ranked : rows.length;
+    const rows = Array.isArray(result.rows)
+      ? (result.rows as unknown[]).slice(0, limit)
+      : [];
+    const totalRanked =
+      typeof result.total_ranked === "number"
+        ? result.total_ranked
+        : rows.length;
 
     // 5. If too few results and filters exist, suggest relaxation
     const nextActions: NextAction[] = [];
@@ -103,7 +139,9 @@ export async function handleTopHits(
         criteria,
         rows,
         total_ranked: totalRanked,
-        ...(totalAfterFilter !== undefined ? { filtered_count: totalAfterFilter } : {}),
+        ...(totalAfterFilter !== undefined
+          ? { filtered_count: totalAfterFilter }
+          : {}),
       },
       state_delta: {},
       tc,
@@ -115,7 +153,9 @@ export async function handleTopHits(
 }
 
 /** Pick sensible default ranking criteria from available numeric columns */
-function inferDefaultCriteria(numericColumns: string[]): Array<{ column: string; desc: boolean }> {
+function inferDefaultCriteria(
+  numericColumns: string[],
+): Array<{ column: string; desc: boolean }> {
   // Priority order of commonly useful scores
   const PREFERRED = [
     { col: "cadd_phred", desc: true },
@@ -138,7 +178,8 @@ export async function handleQcSummary(
   ctx: RunContext,
 ): Promise<RunResultEnvelope> {
   const cohortId = getCohortId(cmd, ctx.activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -161,7 +202,11 @@ export async function handleQcSummary(
       groupbyPromises.push(
         cohortFetch<Record<string, unknown>>(
           `/cohorts/${encodeURIComponent(cohortId)}/groupby`,
-          { method: "POST", body: { group_by: "consequence", limit: 20 }, timeout: 30_000 },
+          {
+            method: "POST",
+            body: { group_by: "consequence", limit: 20 },
+            timeout: 30_000,
+          },
         ).catch(() => null),
       );
       groupbyLabels.push("consequence");
@@ -170,13 +215,21 @@ export async function handleQcSummary(
       groupbyPromises.push(
         cohortFetch<Record<string, unknown>>(
           `/cohorts/${encodeURIComponent(cohortId)}/groupby`,
-          { method: "POST", body: { group_by: "clinical_significance", limit: 20 }, timeout: 30_000 },
+          {
+            method: "POST",
+            body: { group_by: "clinical_significance", limit: 20 },
+            timeout: 30_000,
+          },
         ).catch(() => null),
       );
       groupbyLabels.push("clinical_significance");
     }
 
-    tc.add({ step: "groupbys", kind: "call", message: `Running ${groupbyPromises.length} groupby queries` });
+    tc.add({
+      step: "groupbys",
+      kind: "call",
+      message: `Running ${groupbyPromises.length} groupby queries`,
+    });
     const groupbyResults = await Promise.all(groupbyPromises);
 
     // Build summary
@@ -194,11 +247,15 @@ export async function handleQcSummary(
     // Extract quality warnings from profile
     const warnings: string[] = [];
     if (profileResult) {
-      const stats = profileResult.column_stats as Record<string, { null_fraction?: number }> | undefined;
+      const stats = profileResult.column_stats as
+        | Record<string, { null_fraction?: number }>
+        | undefined;
       if (stats) {
         for (const [col, s] of Object.entries(stats)) {
           if (s?.null_fraction && s.null_fraction > 0.5) {
-            warnings.push(`${col}: ${(s.null_fraction * 100).toFixed(0)}% missing`);
+            warnings.push(
+              `${col}: ${(s.null_fraction * 100).toFixed(0)}% missing`,
+            );
           }
         }
       }
@@ -217,7 +274,10 @@ export async function handleQcSummary(
         distributions,
         quality_warnings: warnings.length ? warnings : undefined,
         profile_summary: profileResult
-          ? { columns_profiled: Object.keys(profileResult.column_stats ?? {}).length }
+          ? {
+              columns_profiled: Object.keys(profileResult.column_stats ?? {})
+                .length,
+            }
           : undefined,
       },
       state_delta: {},
@@ -237,12 +297,13 @@ export async function handleGwasMinimal(
   ctx: RunContext,
 ): Promise<RunResultEnvelope> {
   const cohortId = getCohortId(cmd, ctx.activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
   try {
-    const schema = ctx.schemaCache ?? await fetchAndCacheSchema(cohortId);
+    const schema = ctx.schemaCache ?? (await fetchAndCacheSchema(cohortId));
 
     // Step 1: Multiple testing correction
     tc.add({ step: "multipleTestingCorrection", kind: "call" });
@@ -252,20 +313,40 @@ export async function handleGwasMinimal(
         `/cohorts/${encodeURIComponent(cohortId)}/analytics/run`,
         {
           method: "POST",
-          body: { task: { type: "multiple_testing_correction", p_value_column: cmd.p_column, method: "bh" } },
+          body: {
+            task: {
+              type: "multiple_testing_correction",
+              p_value_column: cmd.p_column,
+              method: "bh",
+            },
+          },
           timeout: 30_000,
         },
       );
       // Poll for completion
-      correctionResult = await pollAnalyticsRun(cohortId, submitResp.run_id) as unknown as Record<string, unknown>;
-      tc.add({ step: "correctionDone", kind: "call", message: `Run ${submitResp.run_id} completed` });
+      correctionResult = (await pollAnalyticsRun(
+        cohortId,
+        submitResp.run_id,
+      )) as unknown as Record<string, unknown>;
+      tc.add({
+        step: "correctionDone",
+        kind: "call",
+        message: `Run ${submitResp.run_id} completed`,
+      });
     } catch (err) {
-      tc.warn("correction_failed", `Multiple testing correction failed: ${err instanceof Error ? err.message : String(err)}`);
+      tc.warn(
+        "correction_failed",
+        `Multiple testing correction failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     // Step 2: Optional GWAS QC
     let qcResult: Record<string, unknown> | null = null;
-    if (cmd.effect_column && cmd.se_column_name && schema.availableMethods.includes("gwas_qc")) {
+    if (
+      cmd.effect_column &&
+      cmd.se_column_name &&
+      schema.availableMethods.includes("gwas_qc")
+    ) {
       try {
         tc.add({ step: "gwasQc", kind: "call" });
         const submitResp = await cohortFetch<{ run_id: string }>(
@@ -283,9 +364,15 @@ export async function handleGwasMinimal(
             timeout: 30_000,
           },
         );
-        qcResult = await pollAnalyticsRun(cohortId, submitResp.run_id) as unknown as Record<string, unknown>;
+        qcResult = (await pollAnalyticsRun(
+          cohortId,
+          submitResp.run_id,
+        )) as unknown as Record<string, unknown>;
       } catch (err) {
-        tc.warn("gwas_qc_failed", `GWAS QC failed: ${err instanceof Error ? err.message : String(err)}`);
+        tc.warn(
+          "gwas_qc_failed",
+          `GWAS QC failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
 
@@ -297,13 +384,21 @@ export async function handleGwasMinimal(
         `/cohorts/${encodeURIComponent(cohortId)}/prioritize`,
         {
           method: "POST",
-          body: { criteria: [{ column: cmd.p_column, desc: false }], limit: 10 },
+          body: {
+            criteria: [{ column: cmd.p_column, desc: false }],
+            limit: 10,
+          },
           timeout: 60_000,
         },
       );
-      topHits = Array.isArray(hitResult.rows) ? (hitResult.rows as unknown[]).slice(0, 10) : [];
+      topHits = Array.isArray(hitResult.rows)
+        ? (hitResult.rows as unknown[]).slice(0, 10)
+        : [];
     } catch (err) {
-      tc.warn("top_hits_failed", `Top hits failed: ${err instanceof Error ? err.message : String(err)}`);
+      tc.warn(
+        "top_hits_failed",
+        `Top hits failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     const parts: string[] = [];
@@ -316,7 +411,10 @@ export async function handleGwasMinimal(
       data: {
         p_column: cmd.p_column,
         correction: correctionResult
-          ? { summary: correctionResult.summary, metrics: correctionResult.metrics }
+          ? {
+              summary: correctionResult.summary,
+              metrics: correctionResult.metrics,
+            }
           : null,
         qc: qcResult
           ? { summary: qcResult.summary, metrics: qcResult.metrics }
@@ -344,15 +442,19 @@ interface ResolvedVariant {
 }
 
 /** Batch-resolve variant refs (rsIDs, VCF format, etc.) to graph entity IDs. */
-async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]> {
+async function resolveVariantRefs(
+  variants: string[],
+): Promise<ResolvedVariant[]> {
   if (variants.length === 0) return [];
   try {
     const resp = await agentFetch<{
-      data: { results: Array<{
-        query: string;
-        status: string;
-        entity?: { type: string; id: string; label: string };
-      }> };
+      data: {
+        results: Array<{
+          query: string;
+          status: string;
+          entity?: { type: string; id: string; label: string };
+        }>;
+      };
     }>("/graph/resolve", {
       method: "POST",
       body: { queries: variants },
@@ -360,13 +462,18 @@ async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]
     });
     return (resp.data?.results ?? []).map((r) => ({
       query: r.query,
-      id: r.status.toLowerCase() === "matched" ? r.entity?.id ?? null : null,
+      id: r.status.toLowerCase() === "matched" ? (r.entity?.id ?? null) : null,
       label: r.entity?.label ?? null,
       type: r.entity?.type ?? null,
     }));
   } catch {
     // Resolution failed — fall back to raw refs
-    return variants.map((v) => ({ query: v, id: null, label: null, type: null }));
+    return variants.map((v) => ({
+      query: v,
+      id: null,
+      label: null,
+      type: null,
+    }));
   }
 }
 
@@ -378,7 +485,9 @@ async function resolveVariantRefs(variants: string[]): Promise<ResolvedVariant[]
 const TRIM_EDGE_PROPS = HANDLER_EDGE_FIELDS;
 
 /** Strip source_versions, trim edge props to essentials, skip noisy edge types. */
-function trimVariantEntity(raw: Record<string, unknown>): Record<string, unknown> {
+function trimVariantEntity(
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
   const data = { ...(raw.data as Record<string, unknown>) };
   delete data.source_versions;
 
@@ -387,7 +496,15 @@ function trimVariantEntity(raw: Record<string, unknown>): Record<string, unknown
 
   const counts = included.counts;
   const relations = included.relations as
-    | Record<string, { direction?: string; neighbor_mode?: string; rows?: unknown[]; hasMore?: boolean }>
+    | Record<
+        string,
+        {
+          direction?: string;
+          neighbor_mode?: string;
+          rows?: unknown[];
+          hasMore?: boolean;
+        }
+      >
     | undefined;
   if (!relations) return { data, included: { counts } };
 
@@ -414,7 +531,13 @@ function trimVariantEntity(raw: Record<string, unknown>): Record<string, unknown
         }
         return {
           neighbor: r.neighbor,
-          link: { type: link.type, direction: link.direction, from: link.from, to: link.to, props: clean },
+          link: {
+            type: link.type,
+            direction: link.direction,
+            from: link.from,
+            to: link.to,
+            props: clean,
+          },
         };
       }
 
@@ -448,25 +571,48 @@ export async function handleVariantProfile(
     const variantRefs = cmd.variants.slice(0, 5);
 
     // Step 1: Resolve variant refs to graph IDs
-    tc.add({ step: "resolveVariants", kind: "call", message: `Resolving ${variantRefs.length} variant refs` });
+    tc.add({
+      step: "resolveVariants",
+      kind: "call",
+      message: `Resolving ${variantRefs.length} variant refs`,
+    });
     const resolved = await resolveVariantRefs(variantRefs);
 
     // Step 2: Fetch entity data for each resolved variant
-    tc.add({ step: "fetchEntities", kind: "call", message: `Fetching ${resolved.length} variant profiles` });
+    tc.add({
+      step: "fetchEntities",
+      kind: "call",
+      message: `Fetching ${resolved.length} variant profiles`,
+    });
 
     const entityPromises = resolved.map(async (rv) => {
       const entityId = rv.id;
       if (!entityId) {
-        return { variant: rv.query, entity: null, error: `Could not resolve variant: ${rv.query}` };
+        return {
+          variant: rv.query,
+          entity: null,
+          error: `Could not resolve variant: ${rv.query}`,
+        };
       }
       try {
         const result = await agentFetch<Record<string, unknown>>(
           `/graph/Variant/${encodeURIComponent(entityId)}?include=counts,edges&limitPerEdgeType=5`,
           { timeout: 15_000 },
         );
-        return { variant: rv.query, resolvedId: entityId, label: rv.label, entity: trimVariantEntity(result), error: null };
+        return {
+          variant: rv.query,
+          resolvedId: entityId,
+          label: rv.label,
+          entity: trimVariantEntity(result),
+          error: null,
+        };
       } catch (err) {
-        return { variant: rv.query, resolvedId: entityId, entity: null, error: err instanceof Error ? err.message : String(err) };
+        return {
+          variant: rv.query,
+          resolvedId: entityId,
+          entity: null,
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
     });
 
@@ -475,14 +621,16 @@ export async function handleVariantProfile(
     if (cohortId) {
       try {
         tc.add({ step: "fetchCohortRows", kind: "call" });
-        const schema = ctx.schemaCache ?? await fetchAndCacheSchema(cohortId);
+        const schema = ctx.schemaCache ?? (await fetchAndCacheSchema(cohortId));
         const hasRsid = schema.allColumns.includes("rsid");
         const hasVid = schema.allColumns.includes("vid");
 
         // Split variants by format for filtering
         const rsIds = variantRefs.filter((v) => v.startsWith("rs"));
         // VCF format: chr-pos-ref-alt (e.g. 1-12345-A-T)
-        const vcfRefs = variantRefs.filter((v) => /^\d+-.+-[A-Z]+-[A-Z]+$/i.test(v));
+        const vcfRefs = variantRefs.filter((v) =>
+          /^\d+-.+-[A-Z]+-[A-Z]+$/i.test(v),
+        );
 
         // Try rsid filter first, fall back to vid
         let rowResult: { rows?: unknown[] } | null = null;
@@ -498,7 +646,9 @@ export async function handleVariantProfile(
           // Client-side filter on rsid match
           if (rowResult?.rows) {
             const rsSet = new Set(rsIds);
-            const filtered = (rowResult.rows as Record<string, unknown>[]).filter(
+            const filtered = (
+              rowResult.rows as Record<string, unknown>[]
+            ).filter(
               (row) => typeof row.rsid === "string" && rsSet.has(row.rsid),
             );
             cohortData = filtered.length > 0 ? filtered : null;
@@ -511,13 +661,29 @@ export async function handleVariantProfile(
             `/cohorts/${encodeURIComponent(cohortId)}/rows`,
             {
               method: "POST",
-              body: { limit: scanLimit, select: ["vid", "rsid", "variant_vcf", "chromosome", "position", "ref", "alt", "cadd_phred", "gnomad_af", "clinvar_significance"] },
+              body: {
+                limit: scanLimit,
+                select: [
+                  "vid",
+                  "rsid",
+                  "variant_vcf",
+                  "chromosome",
+                  "position",
+                  "ref",
+                  "alt",
+                  "cadd_phred",
+                  "gnomad_af",
+                  "clinvar_significance",
+                ],
+              },
               timeout: 15_000,
             },
           ).catch(() => null);
           if (rowResult?.rows) {
             const vidSet = new Set(vcfRefs);
-            const filtered = (rowResult.rows as Record<string, unknown>[]).filter(
+            const filtered = (
+              rowResult.rows as Record<string, unknown>[]
+            ).filter(
               (row) => typeof row.vid === "string" && vidSet.has(row.vid),
             );
             cohortData = filtered.length > 0 ? filtered : null;
@@ -538,13 +704,17 @@ export async function handleVariantProfile(
       ...(er.error ? { error: er.error } : {}),
     }));
 
-    const succeeded = profiles.filter((p) => !("error" in p) || p.error === null).length;
+    const succeeded = profiles.filter(
+      (p) => !("error" in p) || p.error === null,
+    ).length;
     const failed = profiles.length - succeeded;
 
     // Suggest follow-up traverse chain when entity has graph connections
     const next_actions: NextAction[] = [];
     for (const profile of profiles) {
-      const entity = (profile.entity as { data?: Record<string, unknown> } | undefined)?.data;
+      const entity = (
+        profile.entity as { data?: Record<string, unknown> } | undefined
+      )?.data;
       if (!entity) continue;
 
       const label = (profile as { label?: string }).label ?? profile.variant;
@@ -586,9 +756,7 @@ export async function handleVariantProfile(
       }
     }
 
-    return (failed > 0 && succeeded > 0
-      ? partialResult
-      : okResult)({
+    return (failed > 0 && succeeded > 0 ? partialResult : okResult)({
       text_summary: `Profiled ${succeeded}/${profiles.length} variants${cohortData ? ` with cohort data` : ""}`,
       data: {
         profiles,
@@ -609,7 +777,7 @@ export async function handleVariantProfile(
 
 export async function handleCompareCohorts(
   cmd: Extract<RunCommand, { command: "compare_cohorts" }>,
-  ctx: RunContext,
+  _ctx: RunContext,
 ): Promise<RunResultEnvelope> {
   const [id1, id2] = cmd.cohort_ids;
   const tc = new TraceCollector();
@@ -638,38 +806,73 @@ export async function handleCompareCohorts(
     }
 
     // 2. Parallel: run groupby on both cohorts for each compare column
-    tc.add({ step: "groupbys", kind: "call", message: `Comparing ${compareColumns.length} columns` });
+    tc.add({
+      step: "groupbys",
+      kind: "call",
+      message: `Comparing ${compareColumns.length} columns`,
+    });
 
-    const comparisons: Record<string, { cohort_1: unknown; cohort_2: unknown }> = {};
+    const comparisons: Record<
+      string,
+      { cohort_1: unknown; cohort_2: unknown }
+    > = {};
     await Promise.all(
       compareColumns.map(async (col) => {
         const [g1, g2] = await Promise.all([
           cohortFetch<Record<string, unknown>>(
             `/cohorts/${encodeURIComponent(id1)}/groupby`,
-            { method: "POST", body: { group_by: col, limit: 20 }, timeout: 30_000 },
+            {
+              method: "POST",
+              body: { group_by: col, limit: 20 },
+              timeout: 30_000,
+            },
           ).catch(() => null),
           cohortFetch<Record<string, unknown>>(
             `/cohorts/${encodeURIComponent(id2)}/groupby`,
-            { method: "POST", body: { group_by: col, limit: 20 }, timeout: 30_000 },
+            {
+              method: "POST",
+              body: { group_by: col, limit: 20 },
+              timeout: 30_000,
+            },
           ).catch(() => null),
         ]);
         comparisons[col] = {
-          cohort_1: g1 ? { buckets: (g1.buckets as unknown[] ?? []).slice(0, 15), total_groups: g1.total_groups } : null,
-          cohort_2: g2 ? { buckets: (g2.buckets as unknown[] ?? []).slice(0, 15), total_groups: g2.total_groups } : null,
+          cohort_1: g1
+            ? {
+                buckets: ((g1.buckets as unknown[]) ?? []).slice(0, 15),
+                total_groups: g1.total_groups,
+              }
+            : null,
+          cohort_2: g2
+            ? {
+                buckets: ((g2.buckets as unknown[]) ?? []).slice(0, 15),
+                total_groups: g2.total_groups,
+              }
+            : null,
         };
       }),
     );
 
     // 3. Run correlation between shared numeric columns (if any)
     const commonNumeric = compareColumns.filter(
-      (c) => schema1.numericColumns.includes(c) && schema2.numericColumns.includes(c),
+      (c) =>
+        schema1.numericColumns.includes(c) &&
+        schema2.numericColumns.includes(c),
     );
 
     return okResult({
       text_summary: `Compared ${compareColumns.length} columns across 2 cohorts (${schema1.rowCount} vs ${schema2.rowCount} variants)`,
       data: {
-        cohort_1: { id: id1, data_type: schema1.dataType, row_count: schema1.rowCount },
-        cohort_2: { id: id2, data_type: schema2.dataType, row_count: schema2.rowCount },
+        cohort_1: {
+          id: id1,
+          data_type: schema1.dataType,
+          row_count: schema1.rowCount,
+        },
+        cohort_2: {
+          id: id2,
+          data_type: schema2.dataType,
+          row_count: schema2.rowCount,
+        },
         common_columns: [...commonColumns].slice(0, 30),
         comparisons,
         common_numeric_columns: commonNumeric,

@@ -10,13 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@shared/components/ui/sheet";
-import {
-  ArrowRight,
-  Loader2,
-  Route,
-  Search,
-  X,
-} from "lucide-react";
+import { ArrowRight, Loader2, Route, Search, X } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { fetchPaths, type PathResult } from "../../api";
 import { PathRecipeSelector } from "./path-recipe-selector";
@@ -51,7 +45,9 @@ function PPIPathFinderInner({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paths, setPaths] = useState<PathResult[]>([]);
-  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
+  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(
+    null,
+  );
   const [recipe, setRecipe] = useState<PathRecipe>("ppi-only");
 
   const handleSearch = useCallback(async () => {
@@ -70,7 +66,8 @@ function PPIPathFinderInner({
       const recipeConfig = PATH_RECIPES[recipe];
       // Therapeutic paths are longer: Gene ← Drug → Disease ← Drug → Gene (4 hops)
       // Mechanism paths: Gene → Pathway → Gene or Gene → Pathway ← Pathway ← Gene (2-4 hops)
-      const maxHops = recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4;
+      const maxHops =
+        recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4;
       const result = await fetchPaths(
         `Gene:${seedGeneId}`,
         `Gene:${targetGene.trim().toUpperCase()}`,
@@ -78,7 +75,7 @@ function PPIPathFinderInner({
           maxHops,
           limit: 5,
           edgeTypes: recipeConfig.edgeTypes,
-        }
+        },
       );
 
       if (!result || !result.data.paths.length) {
@@ -128,7 +125,7 @@ function PPIPathFinderInner({
       onPathHighlight(nodeIds, edgeIds);
       setSelectedPathIndex(index);
     },
-    [onPathHighlight, recipe]
+    [onPathHighlight, recipe],
   );
 
   const handleClearPath = useCallback(() => {
@@ -136,14 +133,17 @@ function PPIPathFinderInner({
     setSelectedPathIndex(null);
   }, [onClearPath]);
 
-  const handleClose = useCallback(() => {
+  const _handleClose = useCallback(() => {
     onOpenChange(false);
     // Don't clear paths/selection on close, keep the highlight
   }, [onOpenChange]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={cn("w-[400px] sm:max-w-[400px]", className)}>
+      <SheetContent
+        side="right"
+        className={cn("w-[400px] sm:max-w-[400px]", className)}
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Route className="w-5 h-5 text-indigo-600" />
@@ -151,8 +151,10 @@ function PPIPathFinderInner({
           </SheetTitle>
           <SheetDescription>
             Discover the shortest protein-protein interaction path between{" "}
-            <span className="font-semibold text-indigo-600">{seedGeneSymbol}</span> and
-            another gene.
+            <span className="font-semibold text-indigo-600">
+              {seedGeneSymbol}
+            </span>{" "}
+            and another gene.
           </SheetDescription>
         </SheetHeader>
 
@@ -164,7 +166,9 @@ function PPIPathFinderInner({
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg">
-                <span className="font-semibold text-indigo-600">{seedGeneSymbol}</span>
+                <span className="font-semibold text-indigo-600">
+                  {seedGeneSymbol}
+                </span>
               </div>
               <ArrowRight className="w-4 h-4 text-muted-foreground" />
               <div className="flex-1">
@@ -233,7 +237,7 @@ function PPIPathFinderInner({
                       "w-full p-3 rounded-lg border text-left transition-all",
                       selectedPathIndex === index
                         ? "border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200"
-                        : "border-border bg-card hover:border-border hover:bg-accent"
+                        : "border-border bg-card hover:border-border hover:bg-accent",
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -247,7 +251,7 @@ function PPIPathFinderInner({
                             ? "bg-green-100 text-green-700"
                             : path.length === 3
                               ? "bg-yellow-100 text-yellow-700"
-                              : "bg-orange-100 text-orange-700"
+                              : "bg-orange-100 text-orange-700",
                         )}
                       >
                         {path.length} hop{path.length !== 1 ? "s" : ""}
@@ -273,11 +277,14 @@ function PPIPathFinderInner({
                                   : "bg-muted text-foreground";
 
                         return (
-                          <span key={`${nodeIndex}-${node.id}`} className="flex items-center gap-1">
+                          <span
+                            key={`${nodeIndex}-${node.id}`}
+                            className="flex items-center gap-1"
+                          >
                             <span
                               className={cn(
                                 "px-2 py-0.5 rounded text-xs font-medium",
-                                nodeStyle
+                                nodeStyle,
                               )}
                               title={`${node.type}: ${node.label}`}
                             >
@@ -302,7 +309,9 @@ function PPIPathFinderInner({
               <Route className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p>Enter a target gene to find interaction paths</p>
               <p className="text-xs mt-1">
-                Maximum {recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4} hops
+                Maximum{" "}
+                {recipe === "ppi-only" ? 3 : recipe === "therapeutic" ? 5 : 4}{" "}
+                hops
               </p>
             </div>
           )}

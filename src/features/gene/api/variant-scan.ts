@@ -1,5 +1,5 @@
-import { fetchOrNull } from "@infra/api";
 import type { Variant } from "@features/variant/types";
+import { fetchOrNull } from "@infra/api";
 
 import { API_BASE } from "@/config/api";
 
@@ -117,7 +117,8 @@ function buildVariantScanUrl(
 
   if (options.cursor) params.set("cursor", options.cursor);
   if (options.sort_by) params.set("sort_by", options.sort_by);
-  if (options.sort_direction) params.set("sort_direction", options.sort_direction);
+  if (options.sort_direction)
+    params.set("sort_direction", options.sort_direction);
 
   // Numeric filters
   appendNumeric(params, "bravo_af_min", options.bravo_af_min);
@@ -129,10 +130,26 @@ function buildVariantScanUrl(
   appendNumeric(params, "cadd_phred_min", options.cadd_phred_min);
   appendNumeric(params, "revel_max_genome_min", options.revel_max_genome_min);
   appendNumeric(params, "revel_max_exome_min", options.revel_max_exome_min);
-  appendNumeric(params, "spliceai_max_genome_min", options.spliceai_max_genome_min);
-  appendNumeric(params, "spliceai_max_exome_min", options.spliceai_max_exome_min);
-  appendNumeric(params, "pangolin_max_genome_min", options.pangolin_max_genome_min);
-  appendNumeric(params, "pangolin_max_exome_min", options.pangolin_max_exome_min);
+  appendNumeric(
+    params,
+    "spliceai_max_genome_min",
+    options.spliceai_max_genome_min,
+  );
+  appendNumeric(
+    params,
+    "spliceai_max_exome_min",
+    options.spliceai_max_exome_min,
+  );
+  appendNumeric(
+    params,
+    "pangolin_max_genome_min",
+    options.pangolin_max_genome_min,
+  );
+  appendNumeric(
+    params,
+    "pangolin_max_exome_min",
+    options.pangolin_max_exome_min,
+  );
   appendNumeric(params, "alphamissense_max_min", options.alphamissense_max_min);
   appendNumeric(params, "linsight_min", options.linsight_min);
   appendNumeric(params, "fathmm_xf_min", options.fathmm_xf_min);

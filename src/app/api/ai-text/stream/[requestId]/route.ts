@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server";
-import { requireAuth } from "../../../_lib/require-auth";
-
+import type { NextRequest } from "next/server";
 import { API_BASE } from "@/config/api";
+import { requireAuth } from "../../../_lib/require-auth";
 
 /**
  * SSE proxy for ai-text streaming.
@@ -27,7 +26,7 @@ export async function GET(
   // Falls back to FAVOR_API_KEY only if cookies are unavailable (e.g., dev mode).
   const cookie = _request.headers.get("cookie");
   if (cookie) {
-    headers["Cookie"] = cookie;
+    headers.Cookie = cookie;
   } else {
     const apiKey = process.env.FAVOR_API_KEY;
     if (!apiKey) {
@@ -36,7 +35,7 @@ export async function GET(
         { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
-    headers["Authorization"] = `Bearer ${apiKey}`;
+    headers.Authorization = `Bearer ${apiKey}`;
   }
 
   const upstream = await fetch(upstreamUrl, { headers });
@@ -44,7 +43,10 @@ export async function GET(
   if (!upstream.ok || !upstream.body) {
     return new Response(
       JSON.stringify({ error: `Stream request failed (${upstream.status})` }),
-      { status: upstream.status, headers: { "Content-Type": "application/json" } },
+      {
+        status: upstream.status,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 

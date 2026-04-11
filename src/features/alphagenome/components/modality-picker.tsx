@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
   Tooltip,
@@ -7,7 +8,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
 import type { Modality } from "../types";
 import { MODALITIES } from "../utils";
 

@@ -1,24 +1,25 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { API_BASE } from "@/config/api";
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
-import { Textarea } from "@shared/components/ui/textarea";
 import {
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
-  TabsContent,
 } from "@shared/components/ui/tabs";
-import { cn } from "@infra/utils";
+import { Textarea } from "@shared/components/ui/textarea";
 import {
-  ClipboardPasteIcon,
-  UploadIcon,
-  FileIcon,
-  XIcon,
   AlertCircleIcon,
+  ClipboardPasteIcon,
+  FileIcon,
   Loader2Icon,
+  UploadIcon,
+  XIcon,
 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { API_BASE } from "@/config/api";
+
 // ---------------------------------------------------------------------------
 // Variant parser
 // ---------------------------------------------------------------------------
@@ -111,10 +112,9 @@ async function createCohortAsync(
   let foundCount = 0;
 
   while (Date.now() < deadline) {
-    const statusRes = await fetch(
-      `${API_BASE}/cohorts/${cohortId}/status`,
-      { credentials: "include" },
-    );
+    const statusRes = await fetch(`${API_BASE}/cohorts/${cohortId}/status`, {
+      credentials: "include",
+    });
     if (!statusRes.ok) {
       throw new Error(`Cohort status check failed (${statusRes.status})`);
     }
@@ -138,10 +138,14 @@ async function createCohortAsync(
   }
 
   if (terminalStatus === "failed") {
-    throw new Error("Cohort processing failed. Check the batch annotation page for details.");
+    throw new Error(
+      "Cohort processing failed. Check the batch annotation page for details.",
+    );
   }
   if (terminalStatus !== "ready") {
-    throw new Error(`Cohort did not complete in time (status: ${terminalStatus}).`);
+    throw new Error(
+      `Cohort did not complete in time (status: ${terminalStatus}).`,
+    );
   }
 
   return { cohort_id: cohortId, vid_count: foundCount };

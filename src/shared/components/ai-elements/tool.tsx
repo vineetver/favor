@@ -1,15 +1,13 @@
 "use client";
 
-import type { DynamicToolUIPart, ToolUIPart } from "ai";
-import type { ComponentProps, ReactNode } from "react";
-
+import { cn } from "@infra/utils";
 import { Badge } from "@shared/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
-import { cn } from "@infra/utils";
+import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
@@ -18,6 +16,7 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 
 import { CodeBlock } from "./code-block";
@@ -150,7 +149,10 @@ export const ToolOutput = ({
 
   // Try custom renderer first
   const customOutput =
-    renderOutput && typeof output === "object" && !isValidElement(output) && !errorText
+    renderOutput &&
+    typeof output === "object" &&
+    !isValidElement(output) &&
+    !errorText
       ? renderOutput(output)
       : null;
 
@@ -179,7 +181,7 @@ export const ToolOutput = ({
             ? "bg-destructive/10 text-destructive"
             : customOutput
               ? "text-foreground"
-              : "bg-muted/50 text-foreground"
+              : "bg-muted/50 text-foreground",
         )}
       >
         {errorText && <div>{errorText}</div>}

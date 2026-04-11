@@ -2,7 +2,7 @@
 
 import { cn } from "@infra/utils";
 import { DimensionSelector } from "@shared/components/ui/data-surface/dimension-selector";
-import { Loader2, Layers } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { memo } from "react";
 import { CONTEXT_OVERLAY_OPTIONS, type ContextOverlay } from "./types";
 

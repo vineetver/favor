@@ -1,7 +1,16 @@
-import { openai, type OpenAILanguageModelResponsesOptions } from "@ai-sdk/openai";
+import {
+  type OpenAILanguageModelResponsesOptions,
+  openai,
+} from "@ai-sdk/openai";
 
 // Matches SharedV3ProviderOptions from ai SDK
-type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue | undefined };
+type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue | undefined };
 type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 
 // Tool-calling model (routing, planning, tool selection)
@@ -9,7 +18,9 @@ export const nanoModel = openai("gpt-5-nano");
 
 // Provider options for the nano model (used in prepareStep)
 export const NANO_PROVIDER_OPTIONS: ProviderOptions = {
-  openai: { reasoningEffort: "low" } satisfies OpenAILanguageModelResponsesOptions,
+  openai: {
+    reasoningEffort: "low",
+  } satisfies OpenAILanguageModelResponsesOptions,
 };
 
 // Synthesis models (user-selectable)
@@ -20,7 +31,9 @@ const SYNTHESIS_MODES = {
     factory: () => openai("gpt-5-nano"),
     // Fast path: same nano model with minimal reasoning
     providerOptions: {
-      openai: { reasoningEffort: "minimal" } satisfies OpenAILanguageModelResponsesOptions,
+      openai: {
+        reasoningEffort: "minimal",
+      } satisfies OpenAILanguageModelResponsesOptions,
     } as ProviderOptions,
   },
   thinking: {
@@ -43,7 +56,9 @@ export function getSynthesisModel(id?: string) {
   return mode.factory();
 }
 
-export function getSynthesisProviderOptions(id?: string): ProviderOptions | undefined {
+export function getSynthesisProviderOptions(
+  id?: string,
+): ProviderOptions | undefined {
   const key = (id ?? DEFAULT_SYNTHESIS_MODEL) as SynthesisModelId;
   const mode = SYNTHESIS_MODES[key];
   if (!mode) return SYNTHESIS_MODES[DEFAULT_SYNTHESIS_MODEL].providerOptions;

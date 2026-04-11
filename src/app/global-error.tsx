@@ -29,7 +29,14 @@ export default function RootError({
           <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
             Something went wrong
           </h1>
-          <p style={{ fontSize: 14, color: "#666", marginBottom: 24, lineHeight: 1.5 }}>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#666",
+              marginBottom: 24,
+              lineHeight: 1.5,
+            }}
+          >
             A critical error occurred. Please try refreshing the page.
           </p>
           <button

@@ -1,3 +1,4 @@
+import { API_BASE } from "@/config/api";
 import type {
   SearchParams,
   SearchResults,
@@ -5,8 +6,6 @@ import type {
   TypeaheadResponse,
   VariantPrefixResponse,
 } from "../types/api";
-
-import { API_BASE } from "@/config/api";
 
 /**
  * Fetch typeahead suggestions for fast autocomplete
@@ -132,18 +131,15 @@ export async function fetchSearch(
     searchParams.append("include_links", params.include_links.toString());
   }
 
-  const response = await fetch(
-    `${API_BASE}/pivot?${searchParams.toString()}`,
-    {
-      headers: {
-        Accept: "application/json",
-      },
-      credentials: "include",
-      // Cache search results for 5 minutes
-      next: { revalidate: 300 },
-      signal: params.signal,
+  const response = await fetch(`${API_BASE}/pivot?${searchParams.toString()}`, {
+    headers: {
+      Accept: "application/json",
     },
-  );
+    credentials: "include",
+    // Cache search results for 5 minutes
+    next: { revalidate: 300 },
+    signal: params.signal,
+  });
 
   if (!response.ok) {
     throw new Error(`Search request failed: ${response.statusText}`);
@@ -179,17 +175,14 @@ export async function fetchPivotExpansion(params: {
     searchParams.append("limit", params.limit.toString());
   }
 
-  const response = await fetch(
-    `${API_BASE}/pivot?${searchParams.toString()}`,
-    {
-      headers: {
-        Accept: "application/json",
-      },
-      credentials: "include",
-      cache: "no-store",
-      signal: params.signal,
+  const response = await fetch(`${API_BASE}/pivot?${searchParams.toString()}`, {
+    headers: {
+      Accept: "application/json",
     },
-  );
+    credentials: "include",
+    cache: "no-store",
+    signal: params.signal,
+  });
 
   if (!response.ok) {
     throw new Error(`Pivot request failed: ${response.statusText}`);

@@ -2,6 +2,7 @@
 
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   Sheet,
   SheetContent,
@@ -9,14 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@shared/components/ui/sheet";
-import { ExternalLink } from "@shared/components/ui/external-link";
-import {
-  GitMerge,
-  Loader2,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { GitMerge, Loader2, Search, Trash2, X } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { fetchIntersection, type SharedNeighbor } from "../../api";
 
@@ -75,7 +69,7 @@ function PPISharedInteractorsInner({
       const result = await fetchIntersection(
         selectedGenes.map((g) => ({ type: "Gene", id: g.id })),
         "GENE_INTERACTS_WITH_GENE",
-        { direction: "out", limit: 50 }
+        { direction: "out", limit: 50 },
       );
 
       if (!result) {
@@ -88,7 +82,9 @@ function PPISharedInteractorsInner({
 
       // Highlight shared interactors in the graph
       if (result.data.sharedNeighbors.length > 0) {
-        const neighborIds = result.data.sharedNeighbors.map((n) => n.neighbor.id);
+        const neighborIds = result.data.sharedNeighbors.map(
+          (n) => n.neighbor.id,
+        );
         onSharedInteractorsFound(neighborIds);
       }
     } catch (err) {
@@ -109,14 +105,18 @@ function PPISharedInteractorsInner({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={cn("w-[420px] sm:max-w-[420px]", className)}>
+      <SheetContent
+        side="right"
+        className={cn("w-[420px] sm:max-w-[420px]", className)}
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <GitMerge className="w-5 h-5 text-purple-600" />
             Shared Interactors
           </SheetTitle>
           <SheetDescription>
-            Find proteins that interact with all selected genes (potential complex members).
+            Find proteins that interact with all selected genes (potential
+            complex members).
           </SheetDescription>
         </SheetHeader>
 
@@ -204,7 +204,8 @@ function PPISharedInteractorsInner({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">
-                  {sharedNeighbors.length} shared interactor{sharedNeighbors.length !== 1 ? "s" : ""} found
+                  {sharedNeighbors.length} shared interactor
+                  {sharedNeighbors.length !== 1 ? "s" : ""} found
                 </span>
               </div>
 
@@ -225,7 +226,8 @@ function PPISharedInteractorsInner({
                           </div>
                         </div>
                         <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 rounded text-xs font-medium text-purple-700">
-                          {neighbor.support.length} connection{neighbor.support.length !== 1 ? "s" : ""}
+                          {neighbor.support.length} connection
+                          {neighbor.support.length !== 1 ? "s" : ""}
                         </div>
                       </div>
 
@@ -272,15 +274,16 @@ function PPISharedInteractorsInner({
           )}
 
           {/* Empty state */}
-          {!hasSearched && !isLoading && !error && selectedGenes.length === 0 && (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              <GitMerge className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p>Select genes from the graph to compare</p>
-              <p className="text-xs mt-1">
-                Hold Cmd/Ctrl and click nodes
-              </p>
-            </div>
-          )}
+          {!hasSearched &&
+            !isLoading &&
+            !error &&
+            selectedGenes.length === 0 && (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                <GitMerge className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p>Select genes from the graph to compare</p>
+                <p className="text-xs mt-1">Hold Cmd/Ctrl and click nodes</p>
+              </div>
+            )}
         </div>
       </SheetContent>
     </Sheet>

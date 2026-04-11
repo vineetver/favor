@@ -89,7 +89,10 @@ export async function getCachedData(url: string): Promise<ArrayBuffer | null> {
 /**
  * Store data file in cache
  */
-export async function setCachedData(url: string, data: ArrayBuffer): Promise<void> {
+export async function setCachedData(
+  url: string,
+  data: ArrayBuffer,
+): Promise<void> {
   try {
     // Clone the ArrayBuffer to avoid "detached buffer" errors
     // This can happen when the buffer has been transferred to a worker

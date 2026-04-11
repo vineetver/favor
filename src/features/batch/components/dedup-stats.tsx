@@ -16,7 +16,12 @@ interface DedupStatsProps {
  * Only shows when there are duplicates worth mentioning.
  * Apple-style: minimal, informative, not cluttered.
  */
-export function DedupStats({ totalRows, uniqueVids, duplicates, className }: DedupStatsProps) {
+export function DedupStats({
+  totalRows,
+  uniqueVids,
+  duplicates,
+  className,
+}: DedupStatsProps) {
   // Only show if there are meaningful duplicates (more than 1%)
   const duplicatePercent = totalRows > 0 ? (duplicates / totalRows) * 100 : 0;
 
@@ -25,7 +30,12 @@ export function DedupStats({ totalRows, uniqueVids, duplicates, className }: Ded
   }
 
   return (
-    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-2 text-xs text-muted-foreground",
+        className,
+      )}
+    >
       <span>{formatNumber(uniqueVids)} unique</span>
       <span className="text-muted-foreground/50">|</span>
       <span className="text-muted-foreground">

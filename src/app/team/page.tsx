@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { Badge } from "@shared/components/ui/badge";
+import type { Metadata } from "next";
 import { Avatar } from "./avatar";
 
 export const metadata: Metadata = {
@@ -123,7 +123,11 @@ export default function TeamPage() {
                 key={person.name}
                 className="group flex flex-col items-center rounded-2xl border border-border bg-card p-8 text-center transition-colors hover:bg-accent/50"
               >
-                <Avatar name={person.name} imageUrl={person.imageUrl} size="lg" />
+                <Avatar
+                  name={person.name}
+                  imageUrl={person.imageUrl}
+                  size="lg"
+                />
                 <h3 className="mt-5 text-base font-semibold text-foreground">
                   {person.name}
                 </h3>
@@ -156,7 +160,11 @@ export default function TeamPage() {
                 key={person.name}
                 className="flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 transition-colors hover:bg-accent/50"
               >
-                <Avatar name={person.name} imageUrl={person.imageUrl} size="md" />
+                <Avatar
+                  name={person.name}
+                  imageUrl={person.imageUrl}
+                  size="md"
+                />
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground truncate">
                     {person.name}
@@ -190,7 +198,11 @@ export default function TeamPage() {
                 key={person.name}
                 className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-accent/50"
               >
-                <Avatar name={person.name} imageUrl={person.imageUrl} size="sm" />
+                <Avatar
+                  name={person.name}
+                  imageUrl={person.imageUrl}
+                  size="sm"
+                />
                 <span className="text-sm text-foreground truncate">
                   {person.name}
                 </span>

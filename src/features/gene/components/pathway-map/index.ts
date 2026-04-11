@@ -1,7 +1,8 @@
 // Public API - only export what's used externally
-export { PathwayLeverageView } from "./pathway-leverage-view";
+
 export { PathwayCategorySidebar } from "./pathway-category-sidebar";
 export { PathwayDetailPanel } from "./pathway-detail-panel";
+export { PathwayLeverageView } from "./pathway-leverage-view";
 export type {
   CategoryFilterState,
   EnrichedPathwayData,
@@ -14,4 +15,4 @@ export type {
   PathwayNode,
   PathwaySelection,
 } from "./types";
-export { parsePathwayFromNode, groupPathwaysByCategory } from "./types";
+export { groupPathwaysByCategory, parsePathwayFromNode } from "./types";

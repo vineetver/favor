@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/state/browser-context.tsx
 //
@@ -26,22 +26,22 @@
 
 import {
   createContext,
+  type ReactNode,
   useContext,
   useMemo,
   useReducer,
-  type ReactNode,
-} from 'react'
+} from "react";
 import {
-  isReady,
   type BrowserState,
   type GenomicRegion,
-  MIN_REGION_SIZE,
+  initialBrowserState,
+  isReady,
   MAX_REGION_SIZE,
-} from '../types/state'
-import { initialBrowserState } from '../types/state'
-import type { ActiveTrack, TrackDefinition } from '../types/tracks'
-import type { TissueSource } from '../types/tissue'
-import { browserReducer, type BrowserAction } from './reducer'
+  MIN_REGION_SIZE,
+} from "../types/state";
+import type { TissueSource } from "../types/tissue";
+import type { ActiveTrack, TrackDefinition } from "../types/tracks";
+import { browserReducer } from "./reducer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTEXT VALUE SHAPES
@@ -49,51 +49,51 @@ import { browserReducer, type BrowserAction } from './reducer'
 
 export type BrowserDerivedState = {
   /** Raw state, exposed for consumers that legitimately want the discriminant. */
-  readonly state: BrowserState
+  readonly state: BrowserState;
   /** Current region, or null when status === 'idle'. Stable reference. */
-  readonly region: GenomicRegion | null
+  readonly region: GenomicRegion | null;
   /** Visible tracks in render order. Stable reference between unrelated mutations. */
-  readonly visibleTracks: readonly ActiveTrack[]
+  readonly visibleTracks: readonly ActiveTrack[];
   /** O(1) membership lookup for the visible track id set. */
-  readonly visibleTrackIds: ReadonlySet<string>
+  readonly visibleTrackIds: ReadonlySet<string>;
   /** Convenience: visibleTracks.length without an extra subscription hop. */
-  readonly visibleTrackCount: number
-  readonly canZoomIn: boolean
-  readonly canZoomOut: boolean
-}
+  readonly visibleTrackCount: number;
+  readonly canZoomIn: boolean;
+  readonly canZoomOut: boolean;
+};
 
 export type BrowserActions = {
-  navigateTo: (region: GenomicRegion) => void
-  zoomIn: () => void
-  zoomOut: () => void
-  panLeft: () => void
-  panRight: () => void
-  resetView: (region: GenomicRegion) => void
-  toggleTrack: (trackId: string, definition?: TrackDefinition) => void
-  addTrack: (definition: TrackDefinition) => void
-  removeTrack: (trackId: string) => void
-  reorderTracks: (fromIndex: number, toIndex: number) => void
-  setTrackHeight: (trackId: string, height: number) => void
-  addTissueTrack: (definition: TrackDefinition, source: TissueSource) => void
-  loadCollection: (trackDefinitions: readonly TrackDefinition[]) => void
-}
+  navigateTo: (region: GenomicRegion) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  panLeft: () => void;
+  panRight: () => void;
+  resetView: (region: GenomicRegion) => void;
+  toggleTrack: (trackId: string, definition?: TrackDefinition) => void;
+  addTrack: (definition: TrackDefinition) => void;
+  removeTrack: (trackId: string) => void;
+  reorderTracks: (fromIndex: number, toIndex: number) => void;
+  setTrackHeight: (trackId: string, height: number) => void;
+  addTissueTrack: (definition: TrackDefinition, source: TissueSource) => void;
+  loadCollection: (trackDefinitions: readonly TrackDefinition[]) => void;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTEXTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BrowserStateContext = createContext<BrowserDerivedState | null>(null)
-const BrowserActionsContext = createContext<BrowserActions | null>(null)
+const BrowserStateContext = createContext<BrowserDerivedState | null>(null);
+const BrowserActionsContext = createContext<BrowserActions | null>(null);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BrowserProviderProps = {
-  children: ReactNode
-  initialRegion?: GenomicRegion
-  initialTracks?: readonly ActiveTrack[]
-}
+  children: ReactNode;
+  initialRegion?: GenomicRegion;
+  initialTracks?: readonly ActiveTrack[];
+};
 
 export function BrowserProvider({
   children,
@@ -106,74 +106,76 @@ export function BrowserProvider({
     (): BrowserState =>
       initialRegion
         ? {
-            status: 'ready',
+            status: "ready",
             region: initialRegion,
             tracks: initialTracks ?? [],
           }
-        : initialBrowserState
-  )
+        : initialBrowserState,
+  );
 
   // Actions are computed once and never change. Components that import only
   // useBrowserActions() will never re-render due to state changes.
   const actions = useMemo<BrowserActions>(
     () => ({
-      navigateTo: region => dispatch({ type: 'NAVIGATE_TO', region }),
-      zoomIn: () => dispatch({ type: 'ZOOM_IN' }),
-      zoomOut: () => dispatch({ type: 'ZOOM_OUT' }),
-      panLeft: () => dispatch({ type: 'PAN_LEFT' }),
-      panRight: () => dispatch({ type: 'PAN_RIGHT' }),
-      resetView: region => dispatch({ type: 'RESET_VIEW', region }),
+      navigateTo: (region) => dispatch({ type: "NAVIGATE_TO", region }),
+      zoomIn: () => dispatch({ type: "ZOOM_IN" }),
+      zoomOut: () => dispatch({ type: "ZOOM_OUT" }),
+      panLeft: () => dispatch({ type: "PAN_LEFT" }),
+      panRight: () => dispatch({ type: "PAN_RIGHT" }),
+      resetView: (region) => dispatch({ type: "RESET_VIEW", region }),
       toggleTrack: (trackId, definition) =>
-        dispatch({ type: 'TOGGLE_TRACK', trackId, definition }),
-      addTrack: definition => dispatch({ type: 'ADD_TRACK', definition }),
-      removeTrack: trackId => dispatch({ type: 'REMOVE_TRACK', trackId }),
+        dispatch({ type: "TOGGLE_TRACK", trackId, definition }),
+      addTrack: (definition) => dispatch({ type: "ADD_TRACK", definition }),
+      removeTrack: (trackId) => dispatch({ type: "REMOVE_TRACK", trackId }),
       reorderTracks: (fromIndex, toIndex) =>
-        dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex }),
+        dispatch({ type: "REORDER_TRACKS", fromIndex, toIndex }),
       setTrackHeight: (trackId, height) =>
-        dispatch({ type: 'SET_TRACK_HEIGHT', trackId, height }),
+        dispatch({ type: "SET_TRACK_HEIGHT", trackId, height }),
       addTissueTrack: (definition, source) =>
-        dispatch({ type: 'ADD_TISSUE_TRACK', definition, source }),
-      loadCollection: trackDefinitions =>
-        dispatch({ type: 'LOAD_COLLECTION', trackDefinitions }),
+        dispatch({ type: "ADD_TISSUE_TRACK", definition, source }),
+      loadCollection: (trackDefinitions) =>
+        dispatch({ type: "LOAD_COLLECTION", trackDefinitions }),
     }),
-    []
-  )
+    [],
+  );
 
   // Precomputed derived state. Each useMemo is keyed only on what it
   // actually reads, so e.g. canZoomIn doesn't recompute when a track is
   // toggled.
   const region = useMemo<GenomicRegion | null>(
     () => (isReady(state) ? state.region : null),
-    [state]
-  )
+    [state],
+  );
 
   const visibleTracks = useMemo<readonly ActiveTrack[]>(() => {
-    if (!isReady(state)) return EMPTY_TRACK_ARRAY
-    const visible = state.tracks.filter(t => t.visibility.state === 'visible')
-    if (visible.length === 0) return EMPTY_TRACK_ARRAY
+    if (!isReady(state)) return EMPTY_TRACK_ARRAY;
+    const visible = state.tracks.filter(
+      (t) => t.visibility.state === "visible",
+    );
+    if (visible.length === 0) return EMPTY_TRACK_ARRAY;
     return visible.slice().sort((a, b) => {
-      const oa = a.visibility.state === 'visible' ? a.visibility.order : 0
-      const ob = b.visibility.state === 'visible' ? b.visibility.order : 0
-      return oa - ob
-    })
-  }, [state])
+      const oa = a.visibility.state === "visible" ? a.visibility.order : 0;
+      const ob = b.visibility.state === "visible" ? b.visibility.order : 0;
+      return oa - ob;
+    });
+  }, [state]);
 
   const visibleTrackIds = useMemo<ReadonlySet<string>>(() => {
-    if (visibleTracks.length === 0) return EMPTY_ID_SET
-    const ids = new Set<string>()
-    for (const t of visibleTracks) ids.add(t.definition.id)
-    return ids
-  }, [visibleTracks])
+    if (visibleTracks.length === 0) return EMPTY_ID_SET;
+    const ids = new Set<string>();
+    for (const t of visibleTracks) ids.add(t.definition.id);
+    return ids;
+  }, [visibleTracks]);
 
   const canZoomIn = useMemo(
     () => (region ? region.size > MIN_REGION_SIZE : false),
-    [region]
-  )
+    [region],
+  );
 
   const canZoomOut = useMemo(
     () => (region ? region.size < MAX_REGION_SIZE : false),
-    [region]
-  )
+    [region],
+  );
 
   const derived = useMemo<BrowserDerivedState>(
     () => ({
@@ -185,8 +187,8 @@ export function BrowserProvider({
       canZoomIn,
       canZoomOut,
     }),
-    [state, region, visibleTracks, visibleTrackIds, canZoomIn, canZoomOut]
-  )
+    [state, region, visibleTracks, visibleTrackIds, canZoomIn, canZoomOut],
+  );
 
   return (
     <BrowserActionsContext.Provider value={actions}>
@@ -194,69 +196,69 @@ export function BrowserProvider({
         {children}
       </BrowserStateContext.Provider>
     </BrowserActionsContext.Provider>
-  )
+  );
 }
 
 // Stable empty references to keep memo identity across mount/unmount cycles.
-const EMPTY_TRACK_ARRAY: readonly ActiveTrack[] = Object.freeze([])
-const EMPTY_ID_SET: ReadonlySet<string> = new Set<string>()
+const EMPTY_TRACK_ARRAY: readonly ActiveTrack[] = Object.freeze([]);
+const EMPTY_ID_SET: ReadonlySet<string> = new Set<string>();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NARROW HOOKS — pick exactly one of state OR actions, never both implicitly
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useBrowserDerived(): BrowserDerivedState {
-  const ctx = useContext(BrowserStateContext)
+  const ctx = useContext(BrowserStateContext);
   if (!ctx) {
-    throw new Error('useBrowserDerived must be used within a BrowserProvider')
+    throw new Error("useBrowserDerived must be used within a BrowserProvider");
   }
-  return ctx
+  return ctx;
 }
 
 export function useBrowserActions(): BrowserActions {
-  const ctx = useContext(BrowserActionsContext)
+  const ctx = useContext(BrowserActionsContext);
   if (!ctx) {
-    throw new Error('useBrowserActions must be used within a BrowserProvider')
+    throw new Error("useBrowserActions must be used within a BrowserProvider");
   }
-  return ctx
+  return ctx;
 }
 
 /** Raw discriminated state — usually you want one of the narrower hooks below. */
 export function useBrowserState(): BrowserState {
-  return useBrowserDerived().state
+  return useBrowserDerived().state;
 }
 
 /** Current region, or null when the browser is idle. */
 export function useBrowserRegion(): GenomicRegion | null {
-  return useBrowserDerived().region
+  return useBrowserDerived().region;
 }
 
 /** Stable, sorted, frozen array of visible tracks. */
 export function useVisibleTracks(): readonly ActiveTrack[] {
-  return useBrowserDerived().visibleTracks
+  return useBrowserDerived().visibleTracks;
 }
 
 /** Read-only Set of visible track IDs for O(1) membership tests. */
 export function useVisibleTrackIds(): ReadonlySet<string> {
-  return useBrowserDerived().visibleTrackIds
+  return useBrowserDerived().visibleTrackIds;
 }
 
 /** True if the given track ID is currently visible. O(1). */
 export function useIsTrackVisible(id: string): boolean {
-  return useBrowserDerived().visibleTrackIds.has(id)
+  return useBrowserDerived().visibleTrackIds.has(id);
 }
 
 /** Number of visible tracks. */
 export function useVisibleTrackCount(): number {
-  return useBrowserDerived().visibleTrackCount
+  return useBrowserDerived().visibleTrackCount;
 }
 
 /** Whether the user can zoom in further. */
 export function useCanZoomIn(): boolean {
-  return useBrowserDerived().canZoomIn
+  return useBrowserDerived().canZoomIn;
 }
 
 /** Whether the user can zoom out further. */
 export function useCanZoomOut(): boolean {
-  return useBrowserDerived().canZoomOut
+  return useBrowserDerived().canZoomOut;
 }

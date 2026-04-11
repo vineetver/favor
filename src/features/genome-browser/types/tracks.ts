@@ -7,54 +7,54 @@
 // surfaced. We use a permissive structural type for tracks and a single
 // well-typed cast at the spec-builder boundary (see browser-canvas.tsx).
 
-import type { LucideIcon } from 'lucide-react'
-import type { GenomicRegion } from './state'
-import type { TissueSource } from './tissue'
+import type { LucideIcon } from "lucide-react";
+import type { GenomicRegion } from "./state";
+import type { TissueSource } from "./tissue";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackCategory =
-  | 'annotation'
-  | 'integrative'
-  | 'clinical'
-  | 'conservation'
-  | 'epigenetics'
-  | 'mappability'
-  | 'nucleotide-diversity'
-  | 'regulatory'
-  | 'links'
-  | 'other'
-  | 'tissue-specific'
+  | "annotation"
+  | "integrative"
+  | "clinical"
+  | "conservation"
+  | "epigenetics"
+  | "mappability"
+  | "nucleotide-diversity"
+  | "regulatory"
+  | "links"
+  | "other"
+  | "tissue-specific";
 
 export const TRACK_CATEGORY_LABELS: Record<TrackCategory, string> = {
-  annotation: 'Gene Annotation',
-  integrative: 'Integrative',
-  clinical: 'Clinical Significance',
-  conservation: 'Conservation',
-  epigenetics: 'Epigenetics',
-  mappability: 'Mappability',
-  'nucleotide-diversity': 'Local Nucleotide Diversity',
-  regulatory: 'Regulatory Elements',
-  links: 'Single Cell / Tissue Links',
-  other: 'Other',
-  'tissue-specific': 'Tissue-Specific',
-}
+  annotation: "Gene Annotation",
+  integrative: "Integrative",
+  clinical: "Clinical Significance",
+  conservation: "Conservation",
+  epigenetics: "Epigenetics",
+  mappability: "Mappability",
+  "nucleotide-diversity": "Local Nucleotide Diversity",
+  regulatory: "Regulatory Elements",
+  links: "Single Cell / Tissue Links",
+  other: "Other",
+  "tissue-specific": "Tissue-Specific",
+};
 
 export const TRACK_CATEGORY_ORDER: TrackCategory[] = [
-  'annotation',
-  'integrative',
-  'clinical',
-  'conservation',
-  'epigenetics',
-  'regulatory',
-  'links',
-  'mappability',
-  'nucleotide-diversity',
-  'other',
-  'tissue-specific',
-]
+  "annotation",
+  "integrative",
+  "clinical",
+  "conservation",
+  "epigenetics",
+  "regulatory",
+  "links",
+  "mappability",
+  "nucleotide-diversity",
+  "other",
+  "tissue-specific",
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GOSLING SPEC SHIM
@@ -67,22 +67,22 @@ export const TRACK_CATEGORY_ORDER: TrackCategory[] = [
  * boundary into the real `GoslingSpec` type.
  */
 export type GoslingTrackSpec = {
-  readonly [key: string]: unknown
-}
+  readonly [key: string]: unknown;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BASE TRACK DEFINITION
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type BaseTrackDefinition = {
-  id: string
-  name: string
-  description: string
-  category: TrackCategory
-  defaultHeight: number
-  icon: LucideIcon
-  curated?: boolean
-}
+  id: string;
+  name: string;
+  description: string;
+  category: TrackCategory;
+  defaultHeight: number;
+  icon: LucideIcon;
+  curated?: boolean;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC TRACK
@@ -96,38 +96,38 @@ export type BaseTrackDefinition = {
  * tracks. Single-spec tracks just use a one-element array.
  */
 export type StaticTrack = BaseTrackDefinition & {
-  kind: 'static'
-  specs: readonly GoslingTrackSpec[]
-}
+  kind: "static";
+  specs: readonly GoslingTrackSpec[];
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DYNAMIC TRACK
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type DynamicTrackParams = {
-  region: GenomicRegion
-  source: TissueSource
-  height: number
-}
+  region: GenomicRegion;
+  source: TissueSource;
+  height: number;
+};
 
 export type DynamicTrack = BaseTrackDefinition & {
-  kind: 'dynamic'
-  source: TissueSource
-  specFactory: (params: DynamicTrackParams) => GoslingTrackSpec
-}
+  kind: "dynamic";
+  source: TissueSource;
+  specFactory: (params: DynamicTrackParams) => GoslingTrackSpec;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UNION + GUARDS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TrackDefinition = StaticTrack | DynamicTrack
+export type TrackDefinition = StaticTrack | DynamicTrack;
 
 export function isStaticTrack(track: TrackDefinition): track is StaticTrack {
-  return track.kind === 'static'
+  return track.kind === "static";
 }
 
 export function isDynamicTrack(track: TrackDefinition): track is DynamicTrack {
-  return track.kind === 'dynamic'
+  return track.kind === "dynamic";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,14 +135,14 @@ export function isDynamicTrack(track: TrackDefinition): track is DynamicTrack {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackVisibility =
-  | { state: 'visible'; order: number }
-  | { state: 'hidden' }
-  | { state: 'loading' }
+  | { state: "visible"; order: number }
+  | { state: "hidden" }
+  | { state: "loading" };
 
 export function isVisible(
-  visibility: TrackVisibility
-): visibility is Extract<TrackVisibility, { state: 'visible' }> {
-  return visibility.state === 'visible'
+  visibility: TrackVisibility,
+): visibility is Extract<TrackVisibility, { state: "visible" }> {
+  return visibility.state === "visible";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -150,20 +150,20 @@ export function isVisible(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ActiveTrack = {
-  definition: TrackDefinition
-  visibility: TrackVisibility
-  height: number
-}
+  definition: TrackDefinition;
+  visibility: TrackVisibility;
+  height: number;
+};
 
 export function createActiveTrack(
   definition: TrackDefinition,
-  order: number
+  order: number,
 ): ActiveTrack {
   return {
     definition,
-    visibility: { state: 'visible', order },
+    visibility: { state: "visible", order },
     height: definition.defaultHeight,
-  }
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,9 +171,9 @@ export function createActiveTrack(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TrackCollection = {
-  id: string
-  name: string
-  description: string
-  trackIds: string[]
-  requiresTissue?: boolean
-}
+  id: string;
+  name: string;
+  description: string;
+  trackIds: string[];
+  requiresTissue?: boolean;
+};

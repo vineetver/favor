@@ -35,7 +35,10 @@ const EDGE_LEGEND_ITEMS = [
   { width: 1, color: "#cbd5e1", label: "1 source" },
 ] as const;
 
-function PPILegendInner({ colorMode = "experiments", className }: PPILegendProps) {
+function PPILegendInner({
+  colorMode = "experiments",
+  className,
+}: PPILegendProps) {
   const nodeItems = colorMode === "hub" ? HUB_ITEMS : EXPERIMENT_LEGEND_ITEMS;
 
   return (

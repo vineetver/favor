@@ -1,14 +1,13 @@
 "use client";
 
+import { listAnalyticsRuns, listCohorts } from "@features/batch/api";
 import { useQuery } from "@tanstack/react-query";
-import { listCohorts } from "@features/batch/api";
-import { listAnalyticsRuns } from "@features/batch/api";
-import type { TreeNode, FolderNode, LeafNode } from "./types";
+import type { FolderNode, LeafNode, TreeNode } from "./types";
 import {
   buildCohortPath,
-  buildSchemaPath,
-  buildSamplePath,
   buildRunPath,
+  buildSamplePath,
+  buildSchemaPath,
   buildVizPath,
   cohortSlug,
 } from "./workspace-path";

@@ -3,13 +3,7 @@ import type {
   ServerSortProps,
 } from "@shared/components/ui/data-surface/types";
 import { usePathname } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   updateClientUrl,
   useClientSearchParams,
@@ -206,7 +200,7 @@ export function useServerTable({
   // Debounced URL update for text filters
   // ============================================================================
 
-  const scheduleUrlUpdate = useCallback(
+  const _scheduleUrlUpdate = useCallback(
     (filterId: string, value: string) => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -236,7 +230,9 @@ export function useServerTable({
     (filterId: string, value: unknown) => {
       // Multiselect: encode array as comma-separated string in URL
       if (multiselectFilterIds.has(filterId)) {
-        const arr = Array.isArray(value) ? value.map(String).filter(Boolean) : [];
+        const arr = Array.isArray(value)
+          ? value.map(String).filter(Boolean)
+          : [];
         updateUrl(filterId, arr.join(","));
         return;
       }
@@ -272,9 +268,7 @@ export function useServerTable({
         const [filterId, value] = chipId.split("::");
         if (!filterId || value === undefined) return;
         const params = new URLSearchParams(searchParams.toString());
-        const current = (params.get(filterId) ?? "")
-          .split(",")
-          .filter(Boolean);
+        const current = (params.get(filterId) ?? "").split(",").filter(Boolean);
         const next = current.filter((v) => v !== value);
         if (next.length) {
           params.set(filterId, next.join(","));
@@ -420,8 +414,7 @@ export function useServerTable({
   const serverSort = useMemo<ServerSortProps | undefined>(() => {
     if (!serverPagination) return undefined;
     const sortBy = searchParams.get("sort_by") || null;
-    const sortDir =
-      (searchParams.get("sort_dir") as "asc" | "desc") || "desc";
+    const sortDir = (searchParams.get("sort_dir") as "asc" | "desc") || "desc";
     return { sortBy, sortDir, onSortChange: handleSortChange };
   }, [serverPagination, searchParams, handleSortChange]);
 

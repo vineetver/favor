@@ -1,18 +1,38 @@
-import { createAgentUIStreamResponse, ToolLoopAgent, stepCountIs, type UIMessage } from "ai";
-import { z } from "zod";
-import { createFavorAgent, createAgentTools } from "@features/agent/agent";
+import { createAgentTools, createFavorAgent } from "@features/agent/agent";
 import { appendAgentMessage } from "@features/agent/lib/agent-api";
-import { classifyQuery } from "@features/agent/lib/query-classifier";
-import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
-import { getSynthesisModel, getSynthesisProviderOptions } from "@features/agent/lib/models";
 import { compactMessageForStorage } from "@features/agent/lib/compact-message";
+import {
+  getSynthesisModel,
+  getSynthesisProviderOptions,
+} from "@features/agent/lib/models";
+import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
+import { classifyQuery } from "@features/agent/lib/query-classifier";
+import {
+  createAgentUIStreamResponse,
+  stepCountIs,
+  ToolLoopAgent,
+  type UIMessage,
+} from "ai";
+import { z } from "zod";
 import { requireAuth } from "../_lib/require-auth";
 
 const chatBodySchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(["user", "assistant", "system"]),
-  }).passthrough()).min(1).max(200),
-  sessionId: z.string().max(128).regex(/^[\w-]+$/).nullable().optional(),
+  messages: z
+    .array(
+      z
+        .object({
+          role: z.enum(["user", "assistant", "system"]),
+        })
+        .passthrough(),
+    )
+    .min(1)
+    .max(200),
+  sessionId: z
+    .string()
+    .max(128)
+    .regex(/^[\w-]+$/)
+    .nullable()
+    .optional(),
   synthesisModel: z.enum(["fast", "thinking"]).optional(),
 });
 
@@ -29,13 +49,19 @@ async function persistCompacted(
     vizSpecs?.length ? { ...msg, _vizSpecs: vizSpecs } : msg;
 
   try {
-    const compacted = await compactMessageForStorage(sessionId, responseMessage);
+    const compacted = await compactMessageForStorage(
+      sessionId,
+      responseMessage,
+    );
     await appendAgentMessage(sessionId, {
       role: "assistant",
       content: JSON.stringify(embed(compacted)),
     });
   } catch (err) {
-    console.error("[chat/route] Compaction failed, persisting full message:", err);
+    console.error(
+      "[chat/route] Compaction failed, persisting full message:",
+      err,
+    );
     await appendAgentMessage(sessionId, {
       role: "assistant",
       content: JSON.stringify(embed(responseMessage)),
@@ -49,7 +75,9 @@ export async function POST(req: Request) {
   // Basic abuse prevention: reject oversized payloads before parsing
   const contentLength = req.headers.get("content-length");
   if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
-    return new Response(JSON.stringify({ error: "Request too large" }), { status: 413 });
+    return new Response(JSON.stringify({ error: "Request too large" }), {
+      status: 413,
+    });
   }
 
   const { user, error } = await requireAuth(req);
@@ -59,7 +87,10 @@ export async function POST(req: Request) {
   const parsed = chatBodySchema.safeParse(raw);
   if (!parsed.success) {
     return new Response(
-      JSON.stringify({ error: "Invalid request body", issues: parsed.error.issues.map(i => i.message) }),
+      JSON.stringify({
+        error: "Invalid request body",
+        issues: parsed.error.issues.map((i) => i.message),
+      }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -72,7 +103,10 @@ export async function POST(req: Request) {
   {
     const userMsg = [...messages].reverse().find((m) => m.role === "user");
     if (userMsg) {
-      const payload = { role: "user" as const, content: JSON.stringify(userMsg) };
+      const payload = {
+        role: "user" as const,
+        content: JSON.stringify(userMsg),
+      };
       const persistWithRetry = async (retries = 2, delayMs = 500) => {
         for (let i = 0; i <= retries; i++) {
           try {
@@ -80,7 +114,10 @@ export async function POST(req: Request) {
             return;
           } catch (err) {
             if (i === retries) {
-              console.error("[chat/route] Failed to persist user message after retries:", err);
+              console.error(
+                "[chat/route] Failed to persist user message after retries:",
+                err,
+              );
             } else {
               await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
             }
@@ -93,15 +130,23 @@ export async function POST(req: Request) {
 
   // Extract last user message text for classification
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-  const lastUserText = lastUserMsg?.parts
-    ?.filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-    ?.map((p) => p.text)
-    ?.join(" ") ?? "";
+  const lastUserText =
+    lastUserMsg?.parts
+      ?.filter(
+        (p): p is Extract<typeof p, { type: "text" }> => p.type === "text",
+      )
+      ?.map((p) => p.text)
+      ?.join(" ") ?? "";
 
   // Detect if prior assistant turn contained an AskUser tool call
-  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
+  const lastAssistantMsg = [...messages]
+    .reverse()
+    .find((m) => m.role === "assistant");
   const pendingAskUser = !!(lastAssistantMsg?.parts ?? []).some(
-    (p) => p.type === "tool-invocation" && "toolName" in p && p.toolName === "AskUser",
+    (p) =>
+      p.type === "tool-invocation" &&
+      "toolName" in p &&
+      p.toolName === "AskUser",
   );
 
   // Classify query for fast-path
@@ -117,7 +162,9 @@ export async function POST(req: Request) {
     const { tools } = createAgentTools(effectiveSessionId);
     const fastAgent = new ToolLoopAgent({
       model: getSynthesisModel(synthesisModel),
-      instructions: buildSystemPrompt() + "\n\n[SYSTEM] This is a follow-up. Write a thorough response using ONLY data from prior tool results in the conversation above. Do NOT call any tools.",
+      instructions:
+        buildSystemPrompt() +
+        "\n\n[SYSTEM] This is a follow-up. Write a thorough response using ONLY data from prior tool results in the conversation above. Do NOT call any tools.",
       tools,
       stopWhen: stepCountIs(1),
       maxOutputTokens: 8000,
@@ -128,23 +175,33 @@ export async function POST(req: Request) {
       agent: fastAgent,
       uiMessages: messages,
       onFinish: ({ responseMessage }) => {
-          persistCompacted(effectiveSessionId, responseMessage).catch((err) =>
-            console.error("[chat/route] Failed to persist assistant message:", err),
-          );
-        },
+        persistCompacted(effectiveSessionId, responseMessage).catch((err) =>
+          console.error(
+            "[chat/route] Failed to persist assistant message:",
+            err,
+          ),
+        );
+      },
     });
   }
 
   // Full agent loop
-  const { agent, getVizSpecs } = createFavorAgent(effectiveSessionId, synthesisModel);
+  const { agent, getVizSpecs } = createFavorAgent(
+    effectiveSessionId,
+    synthesisModel,
+  );
 
   return createAgentUIStreamResponse({
     agent,
     uiMessages: messages,
     onFinish: ({ responseMessage }) => {
-        persistCompacted(effectiveSessionId, responseMessage, getVizSpecs()).catch((err) =>
-          console.error("[chat/route] Failed to persist assistant message:", err),
-        );
-      },
+      persistCompacted(
+        effectiveSessionId,
+        responseMessage,
+        getVizSpecs(),
+      ).catch((err) =>
+        console.error("[chat/route] Failed to persist assistant message:", err),
+      );
+    },
   });
 }

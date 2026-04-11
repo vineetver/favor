@@ -1,5 +1,5 @@
-import type { EdgeType } from "../types/edge";
 import type { GraphQueryStep, GraphQueryStepOrBranch } from "../api";
+import type { EdgeType } from "../types/edge";
 
 // =============================================================================
 // Lens System - Curated Views via /graph/query
@@ -52,7 +52,9 @@ function serializeQueryStep(s: QueryStep): GraphQueryStep {
  * Strips undefined fields to ensure clean JSON for the backend's
  * StepOrBranch untagged enum deserializer.
  */
-export function serializeLensSteps(steps: LensStep[]): GraphQueryStepOrBranch[] {
+export function serializeLensSteps(
+  steps: LensStep[],
+): GraphQueryStepOrBranch[] {
   return steps.map((step): GraphQueryStepOrBranch => {
     if (isBranchStep(step)) {
       return {
@@ -62,4 +64,3 @@ export function serializeLensSteps(steps: LensStep[]): GraphQueryStepOrBranch[] 
     return serializeQueryStep(step) as GraphQueryStepOrBranch;
   });
 }
-

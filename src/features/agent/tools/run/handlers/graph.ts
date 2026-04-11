@@ -4,35 +4,37 @@
  */
 
 import { AgentToolError } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
-import type { GraphSchemaResponse, SortStrategy, KeyFilter } from "../intent-aliases";
+import type { GraphSchemaResponse } from "../intent-aliases";
 import {
   errorResult as makeErrorResult,
-  catchToResult,
-  TraceCollector,
   type RunResultEnvelope,
+  type TraceCollector,
 } from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
 import { schemaStore } from "./graph-schema-store";
+
 export type { AgentViewSchema, EdgePropertyMeta } from "./graph-schema-store";
 
+import { handleExploreAggregate } from "./graph-explore-aggregate";
+import { handleExploreCompare } from "./graph-explore-compare";
+import { handleExploreContext } from "./graph-explore-context";
+import { handleExploreEnrich } from "./graph-explore-enrich";
 // Mode handlers — explore
 import { handleExploreNeighbors } from "./graph-explore-neighbors";
-import { handleExploreCompare } from "./graph-explore-compare";
-import { handleExploreEnrich } from "./graph-explore-enrich";
 import { handleExploreSimilar } from "./graph-explore-similar";
-import { handleExploreContext } from "./graph-explore-context";
-import { handleExploreAggregate } from "./graph-explore-aggregate";
+// Query handler (now routed via traverse patterns)
+import { handleQuery, type QueryCmd } from "./graph-query";
 // Mode handlers — traverse
 import { handleTraverseChain } from "./graph-traverse-chain";
 import { handleTraversePaths } from "./graph-traverse-paths";
-// Query handler (now routed via traverse patterns)
-import { handleQuery, type QueryCmd } from "./graph-query";
 
 // ---------------------------------------------------------------------------
 // Shared: schema cache delegates (backed by SchemaStore)
 // ---------------------------------------------------------------------------
 
-export async function getCachedGraphSchema(portal?: string): Promise<GraphSchemaResponse> {
+export async function getCachedGraphSchema(
+  portal?: string,
+): Promise<GraphSchemaResponse> {
   return schemaStore.getFull(portal);
 }
 
@@ -115,7 +117,9 @@ export function humanEdgeLabel(edgeType: string): string {
 
 /** Human-readable label for a score field (fallback: lowercase + de-underscore) */
 export function humanScoreLabel(scoreField: string): string {
-  return SCORE_HUMAN_LABEL[scoreField] ?? scoreField.toLowerCase().replace(/_/g, " ");
+  return (
+    SCORE_HUMAN_LABEL[scoreField] ?? scoreField.toLowerCase().replace(/_/g, " ")
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +175,8 @@ export function applyDefaultKeyFilters(
 ): { filters: Record<string, unknown>; applied: string[] } {
   const et = schema.edgeTypes.find((e) => e.edgeType === edgeType);
   const defaults = et?.keyFilters?.filter((kf) => kf.priority === 1) ?? [];
-  if (defaults.length === 0) return { filters: agentFilters ?? {}, applied: [] };
+  if (defaults.length === 0)
+    return { filters: agentFilters ?? {}, applied: [] };
 
   const merged = { ...(agentFilters ?? {}) };
   const applied: string[] = [];
@@ -205,7 +210,11 @@ export function schemaGuidedRecovery(
   const msg = err.detail.toLowerCase();
 
   // Unknown edge type → list valid edge types
-  if (msg.includes("edge type") || msg.includes("edgetype") || msg.includes("unknown edge")) {
+  if (
+    msg.includes("edge type") ||
+    msg.includes("edgetype") ||
+    msg.includes("unknown edge")
+  ) {
     const validEdges = schema.edgeTypes.map((e) => e.edgeType);
     return makeErrorResult({
       message: err.detail,
@@ -213,18 +222,26 @@ export function schemaGuidedRecovery(
       hint: `Valid edge types: ${validEdges.slice(0, 15).join(", ")}`,
       http_status: 400,
       tc,
-      next_actions: [{
-        tool: "Run",
-        args: {},
-        reason: `Retry with a valid edge type. Available: ${validEdges.slice(0, 10).join(", ")}`,
-        reason_code: "schema_correction",
-      }],
+      next_actions: [
+        {
+          tool: "Run",
+          args: {},
+          reason: `Retry with a valid edge type. Available: ${validEdges.slice(0, 10).join(", ")}`,
+          reason_code: "schema_correction",
+        },
+      ],
     });
   }
 
   // Unknown field → list valid fields for the mentioned edge type
-  if (msg.includes("field") || msg.includes("property") || msg.includes("sort")) {
-    const edgeType = schema.edgeTypes.find((e) => msg.includes(e.edgeType.toLowerCase()));
+  if (
+    msg.includes("field") ||
+    msg.includes("property") ||
+    msg.includes("sort")
+  ) {
+    const edgeType = schema.edgeTypes.find((e) =>
+      msg.includes(e.edgeType.toLowerCase()),
+    );
     if (edgeType?.properties?.length) {
       return makeErrorResult({
         message: err.detail,
@@ -244,7 +261,10 @@ export function schemaGuidedRecovery(
 // ---------------------------------------------------------------------------
 
 /** Simple error result with a message string */
-export function errorResult(message: string, tc?: TraceCollector): RunResultEnvelope {
+export function errorResult(
+  message: string,
+  tc?: TraceCollector,
+): RunResultEnvelope {
   return makeErrorResult({ message, tc });
 }
 
@@ -286,7 +306,9 @@ export function trimEntitySubtitles<T>(items: T[]): T[] {
  * Returns a single annotation line: "EDGE_TYPE: <full description>"
  * or null if the edge type is not found.
  */
-export async function edgeTypeAnnotation(edgeType: string): Promise<string | null> {
+export async function edgeTypeAnnotation(
+  edgeType: string,
+): Promise<string | null> {
   const schema = await getCachedGraphSchema();
   const entry = schema.edgeTypes.find((e) => e.edgeType === edgeType);
   if (!entry?.description) return null;
@@ -299,7 +321,10 @@ export async function edgeTypeAnnotation(edgeType: string): Promise<string | nul
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
-type ExploreHandler = (cmd: ExploreCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>;
+type ExploreHandler = (
+  cmd: ExploreCmd,
+  cache?: Record<string, EntityRef>,
+) => Promise<RunResult>;
 
 const EXPLORE_DISPATCH: Record<string, ExploreHandler> = {
   neighbors: handleExploreNeighbors,
@@ -341,7 +366,10 @@ export async function handleExplore(
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
-type TraverseHandler = (cmd: TraverseCmd, cache?: Record<string, EntityRef>) => Promise<RunResult>;
+type TraverseHandler = (
+  cmd: TraverseCmd,
+  cache?: Record<string, EntityRef>,
+) => Promise<RunResult>;
 
 /** Adapter: route traverse patterns mode to the query handler */
 async function handleTraversePatterns(
@@ -371,7 +399,10 @@ const TRAVERSE_DISPATCH: Record<string, TraverseHandler> = {
 /** Infer traverse mode from params — with conflict validation. */
 function routeTraverse(cmd: TraverseCmd): string | { error: string } {
   if ((cmd.pattern || cmd.description) && cmd.steps) {
-    return { error: "Cannot combine pattern/description with steps. Use pattern OR steps, not both." };
+    return {
+      error:
+        "Cannot combine pattern/description with steps. Use pattern OR steps, not both.",
+    };
   }
   if (cmd.pattern || cmd.description) return "patterns";
   if (cmd.from && cmd.to) return "paths";

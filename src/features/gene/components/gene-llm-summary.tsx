@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import { useAskFollowUp } from "@features/agent/hooks/use-ask-follow-up";
 import { useGeneSummary } from "@features/gene/hooks/use-gene-summary";
 import type { Gene } from "@features/gene/types";
@@ -9,6 +8,7 @@ import {
   type GenePromptContext,
 } from "@features/gene/utils/build-gene-prompt";
 import { LLMSummaryCard } from "@shared/components/llm-summary-card";
+import { useCallback, useMemo } from "react";
 
 interface GeneLLMSummaryProps {
   geneId: string;

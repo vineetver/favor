@@ -1,7 +1,12 @@
 import type { StatCardVizSpec } from "../../viz/types";
 
 export function AgentStatCard({ spec }: { spec: StatCardVizSpec }) {
-  const cols = spec.stats.length <= 2 ? "grid-cols-2" : spec.stats.length === 3 ? "grid-cols-3" : "grid-cols-4";
+  const cols =
+    spec.stats.length <= 2
+      ? "grid-cols-2"
+      : spec.stats.length === 3
+        ? "grid-cols-3"
+        : "grid-cols-4";
 
   return (
     <div className={`grid ${cols} gap-3`}>

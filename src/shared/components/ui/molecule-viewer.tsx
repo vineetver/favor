@@ -35,7 +35,9 @@ export function MoleculeViewer({
         // Check if already loaded
         if ((window as { SmilesDrawer?: unknown }).SmilesDrawer) {
           if (isMountedRef.current) {
-            setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+            setSmilesDrawer(
+              (window as { SmilesDrawer?: unknown }).SmilesDrawer,
+            );
           }
           return;
         }
@@ -47,7 +49,9 @@ export function MoleculeViewer({
         script.async = true;
         script.onload = () => {
           if (isMountedRef.current) {
-            setSmilesDrawer((window as { SmilesDrawer?: unknown }).SmilesDrawer);
+            setSmilesDrawer(
+              (window as { SmilesDrawer?: unknown }).SmilesDrawer,
+            );
           }
         };
         script.onerror = () => {
@@ -72,7 +76,7 @@ export function MoleculeViewer({
     // Cleanup: remove script tag on unmount
     return () => {
       isMountedRef.current = false;
-      if (scriptRef.current && scriptRef.current.parentNode) {
+      if (scriptRef.current?.parentNode) {
         scriptRef.current.parentNode.removeChild(scriptRef.current);
         scriptRef.current = null;
       }
@@ -84,7 +88,20 @@ export function MoleculeViewer({
 
     try {
       // Create a new SmilesDrawer instance
-      const drawer = new (SmilesDrawer as { Drawer: new (config: unknown) => { draw: (tree: unknown, canvas: HTMLCanvasElement | null, theme: string, replaceMode: boolean) => void } }).Drawer({
+      const drawer = new (
+        SmilesDrawer as {
+          Drawer: new (
+            config: unknown,
+          ) => {
+            draw: (
+              tree: unknown,
+              canvas: HTMLCanvasElement | null,
+              theme: string,
+              replaceMode: boolean,
+            ) => void;
+          };
+        }
+      ).Drawer({
         width,
         height,
         bondThickness: 1.5,
@@ -94,7 +111,15 @@ export function MoleculeViewer({
       });
 
       // Parse and draw the SMILES string
-      (SmilesDrawer as { parse: (smiles: string, success: (tree: unknown) => void, error: (err: unknown) => void) => void }).parse(
+      (
+        SmilesDrawer as {
+          parse: (
+            smiles: string,
+            success: (tree: unknown) => void,
+            error: (err: unknown) => void,
+          ) => void;
+        }
+      ).parse(
         smiles,
         (tree: unknown) => {
           if (!tree || (tree as { error?: unknown }).error) {
@@ -161,7 +186,9 @@ export function MoleculeViewer({
           className="flex items-center justify-center bg-muted rounded-lg border border-border"
           style={{ width: `${width}px`, height: `${height}px` }}
         >
-          <div className="text-sm text-muted-foreground">Loading structure...</div>
+          <div className="text-sm text-muted-foreground">
+            Loading structure...
+          </div>
         </div>
       )}
 

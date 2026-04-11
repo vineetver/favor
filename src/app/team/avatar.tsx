@@ -27,7 +27,13 @@ const sizeClasses = {
 
 const sizeDims = { sm: 40, md: 56, lg: 96 };
 
-function InitialsFallback({ name, size }: { name: string; size: "sm" | "md" | "lg" }) {
+function InitialsFallback({
+  name,
+  size,
+}: {
+  name: string;
+  size: "sm" | "md" | "lg";
+}) {
   return (
     <div
       className={`${sizeClasses[size]} flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary`}

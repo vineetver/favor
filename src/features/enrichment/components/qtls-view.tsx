@@ -1,9 +1,19 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  PaginatedResponse,
+  QtlRow,
+  TissueGroupRow,
+} from "@features/enrichment/api/region";
+import { useQtlsQuery } from "@features/enrichment/hooks/use-qtls-query";
 import { cn } from "@infra/utils";
-import { DataSurface } from "@shared/components/ui/data-surface";
+import { CATEGORICAL_PALETTE } from "@shared/components/charts";
 import { Dash } from "@shared/components/ui/dash";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type {
+  ColumnMeta,
+  DimensionConfig,
+} from "@shared/components/ui/data-surface/types";
 import {
   Tooltip,
   TooltipContent,
@@ -11,20 +21,21 @@ import {
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import { VariantCell } from "@shared/components/ui/variant-cell";
-import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
-import { CATEGORICAL_PALETTE } from "@shared/components/charts";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
-import { useServerTable, useClientSearchParams, updateClientUrl } from "@shared/hooks";
-import { tissueGroupFilter, significantOnlyFilter } from "./filter-helpers";
-import type { ColumnMeta, DimensionConfig } from "@shared/components/ui/data-surface/types";
-import type { ColumnDef } from "@tanstack/react-table";
+import {
+  updateClientUrl,
+  useClientSearchParams,
+  useServerTable,
+} from "@shared/hooks";
+import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useMemo } from "react";
-import type { QtlRow, PaginatedResponse, TissueGroupRow } from "@features/enrichment/api/region";
-import { useQtlsQuery } from "@features/enrichment/hooks/use-qtls-query";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { API_BASE } from "@/config/api";
+import { significantOnlyFilter, tissueGroupFilter } from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Source config
@@ -50,19 +61,30 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "variant_vcf",
     header: "Variant",
     enableSorting: false,
-    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
+    meta: {
+      description: "Variant in VCF notation (chr-pos-ref-alt)",
+    } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <VariantCell
+        vcf={row.original.variant_vcf}
+        position={row.original.position}
+      />
+    ),
   },
   {
     id: "gene_symbol",
     accessorKey: "gene_symbol",
     header: "Gene",
     enableSorting: false,
-    meta: { description: "Target gene whose expression is affected by this QTL" } satisfies ColumnMeta,
+    meta: {
+      description: "Target gene whose expression is affected by this QTL",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const gene = getValue() as string | null;
       if (!gene) return <Dash />;
-      return <span className="text-sm font-medium text-foreground">{gene}</span>;
+      return (
+        <span className="text-sm font-medium text-foreground">{gene}</span>
+      );
     },
   },
   {
@@ -70,7 +92,9 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "tissue_name",
     header: "Tissue",
     enableSorting: false,
-    meta: { description: "Tissue where this QTL association was detected" } satisfies ColumnMeta,
+    meta: {
+      description: "Tissue where this QTL association was detected",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
         {formatTissueName(getValue() as string)}
@@ -82,13 +106,25 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "tss_distance",
     header: "TSS Dist.",
     enableSorting: false,
-    meta: { description: "Distance from variant to the transcription start site of the target gene" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Distance from variant to the transcription start site of the target gene",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
       const abs = Math.abs(v);
-      const label = abs >= 1_000_000 ? `${(abs / 1_000_000).toFixed(1)} Mb` : abs >= 1_000 ? `${(abs / 1_000).toFixed(1)} kb` : `${abs} bp`;
-      return <span className="text-xs tabular-nums text-muted-foreground">{label}</span>;
+      const label =
+        abs >= 1_000_000
+          ? `${(abs / 1_000_000).toFixed(1)} Mb`
+          : abs >= 1_000
+            ? `${(abs / 1_000).toFixed(1)} kb`
+            : `${abs} bp`;
+      return (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {label}
+        </span>
+      );
     },
   },
   {
@@ -96,16 +132,27 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "neglog_pvalue",
     header: "\u2212log\u2081\u2080(p)",
     enableSorting: true,
-    meta: { description: "Statistical significance. Higher = stronger evidence. >5 is genome-wide significant." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Statistical significance. Higher = stronger evidence. >5 is genome-wide significant.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
       return (
         <div className="flex items-center gap-2 min-w-[100px]">
           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[60px]">
-            <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min((v / 50) * 100, 100)}%`, opacity: Math.max(0.4, Math.min(v / 50, 1)) }} />
+            <div
+              className="h-full rounded-full bg-amber-500"
+              style={{
+                width: `${Math.min((v / 50) * 100, 100)}%`,
+                opacity: Math.max(0.4, Math.min(v / 50, 1)),
+              }}
+            />
           </div>
-          <span className="text-xs tabular-nums text-foreground">{v.toFixed(1)}</span>
+          <span className="text-xs tabular-nums text-foreground">
+            {v.toFixed(1)}
+          </span>
         </div>
       );
     },
@@ -115,13 +162,26 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "effect_size",
     header: "Effect (\u03b2)",
     enableSorting: true,
-    meta: { description: "Regression slope: normalized expression change per ALT allele copy. Positive = upregulation, negative = downregulation." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Regression slope: normalized expression change per ALT allele copy. Positive = upregulation, negative = downregulation.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
       return (
-        <span className={cn("text-xs tabular-nums", v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground")}>
-          {v > 0 ? "+" : ""}{v.toFixed(3)}
+        <span
+          className={cn(
+            "text-xs tabular-nums",
+            v > 0
+              ? "text-emerald-600"
+              : v < 0
+                ? "text-destructive"
+                : "text-muted-foreground",
+          )}
+        >
+          {v > 0 ? "+" : ""}
+          {v.toFixed(3)}
         </span>
       );
     },
@@ -131,9 +191,18 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
     accessorKey: "is_significant",
     header: "Sig.",
     enableSorting: false,
-    meta: { description: "Passed gene-level permutation threshold (GTEx: Bonferroni-corrected qval<0.05)" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Passed gene-level permutation threshold (GTEx: Bonferroni-corrected qval<0.05)",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
-      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
+      <span
+        className={
+          getValue()
+            ? "text-emerald-600 text-xs font-medium"
+            : "text-muted-foreground/40 text-xs"
+        }
+      >
         {getValue() ? "Yes" : "No"}
       </span>
     ),
@@ -162,10 +231,22 @@ function buildFilters(genes: string[]): ServerFilterConfig[] {
 // Forest plot
 // ---------------------------------------------------------------------------
 
-async function fetchForestData(ref: string, source: string, tissueGroup?: string): Promise<QtlRow[]> {
-  const params = new URLSearchParams({ source, limit: "100", sort_by: "neglog_pvalue", sort_dir: "desc" });
+async function fetchForestData(
+  ref: string,
+  source: string,
+  tissueGroup?: string,
+): Promise<QtlRow[]> {
+  const params = new URLSearchParams({
+    source,
+    limit: "100",
+    sort_by: "neglog_pvalue",
+    sort_dir: "desc",
+  });
   if (tissueGroup) params.set("tissue_group", tissueGroup);
-  const res = await fetch(`${API_BASE}/variants/${encodeURIComponent(ref)}/qtls?${params}`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE}/variants/${encodeURIComponent(ref)}/qtls?${params}`,
+    { credentials: "include" },
+  );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json = await res.json();
   return json.data;
@@ -227,7 +308,8 @@ function getTissueGroupColor(group: string): string {
 /** Deterministic color from a string (for individual tissue names). */
 function hashStringColor(str: string): string {
   let h = 0;
-  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  for (let i = 0; i < str.length; i++)
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
   return CATEGORICAL_PALETTE[Math.abs(h) % CATEGORICAL_PALETTE.length];
 }
 
@@ -267,11 +349,18 @@ function QtlForestPlot({
   const legendItems = useMemo(() => {
     if (colorByTissue) {
       // Individual tissues within the group
-      const names = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueName)))).sort();
-      return names.map((n) => ({ label: formatTissueName(n), color: hashStringColor(n) }));
+      const names = Array.from(
+        new Set(genes.flatMap((g) => g.points.map((p) => p.tissueName))),
+      ).sort();
+      return names.map((n) => ({
+        label: formatTissueName(n),
+        color: hashStringColor(n),
+      }));
     }
     // Tissue groups
-    const groups = Array.from(new Set(genes.flatMap((g) => g.points.map((p) => p.tissueGroup)))).sort((a, b) => {
+    const groups = Array.from(
+      new Set(genes.flatMap((g) => g.points.map((p) => p.tissueGroup))),
+    ).sort((a, b) => {
       const ai = (TISSUE_GROUPS as readonly string[]).indexOf(a);
       const bi = (TISSUE_GROUPS as readonly string[]).indexOf(b);
       return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
@@ -283,7 +372,9 @@ function QtlForestPlot({
     return (
       <div className="rounded-lg border border-border overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border">
-          <div className="text-sm font-medium text-foreground">Effect Sizes by Gene</div>
+          <div className="text-sm font-medium text-foreground">
+            Effect Sizes by Gene
+          </div>
           <div className="text-xs text-muted-foreground">Loading...</div>
         </div>
         <div className="p-4 space-y-2">
@@ -302,7 +393,8 @@ function QtlForestPlot({
 
   const rowH = 28;
   const labelW = 90;
-  const toPercent = (effect: number) => ((effect + maxAbs) / (2 * maxAbs)) * 100;
+  const toPercent = (effect: number) =>
+    ((effect + maxAbs) / (2 * maxAbs)) * 100;
   const zeroPct = 50; // center
 
   return (
@@ -310,9 +402,12 @@ function QtlForestPlot({
       <div className="rounded-lg border border-border overflow-hidden">
         {/* Header */}
         <div className="px-4 py-2.5 border-b border-border">
-          <h3 className="text-sm font-medium text-foreground">Effect Sizes by Gene</h3>
+          <h3 className="text-sm font-medium text-foreground">
+            Effect Sizes by Gene
+          </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Top genes by significance, showing all QTL effect sizes colored by tissue group
+            Top genes by significance, showing all QTL effect sizes colored by
+            tissue group
           </p>
         </div>
 
@@ -320,14 +415,22 @@ function QtlForestPlot({
           {/* Direction labels */}
           <div className="flex items-center" style={{ paddingLeft: labelW }}>
             <div className="flex-1 flex justify-between px-1">
-              <span className="text-[10px] text-destructive/50">Downregulated</span>
-              <span className="text-[10px] text-emerald-600/50">Upregulated</span>
+              <span className="text-[10px] text-destructive/50">
+                Downregulated
+              </span>
+              <span className="text-[10px] text-emerald-600/50">
+                Upregulated
+              </span>
             </div>
           </div>
 
           {/* Forest plot rows */}
           {genes.map((g) => (
-            <div key={g.gene} className="flex items-center" style={{ height: rowH }}>
+            <div
+              key={g.gene}
+              className="flex items-center"
+              style={{ height: rowH }}
+            >
               {/* Gene label */}
               <span
                 className="text-xs font-medium text-muted-foreground truncate shrink-0 text-right pr-2"
@@ -358,8 +461,13 @@ function QtlForestPlot({
                 {/* Data points */}
                 {g.points.map((pt, pi) => {
                   const xPct = toPercent(pt.effectSize);
-                  const r = Math.min(8, Math.max(3, 3 + Math.sqrt(pt.neglogPvalue) * 0.5));
-                  const color = colorByTissue ? hashStringColor(pt.tissueName) : getTissueGroupColor(pt.tissueGroup);
+                  const r = Math.min(
+                    8,
+                    Math.max(3, 3 + Math.sqrt(pt.neglogPvalue) * 0.5),
+                  );
+                  const color = colorByTissue
+                    ? hashStringColor(pt.tissueName)
+                    : getTissueGroupColor(pt.tissueGroup);
 
                   return (
                     <Tooltip key={pi}>
@@ -377,12 +485,16 @@ function QtlForestPlot({
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
-                        <div className="font-medium">{g.gene} in {formatTissueName(pt.tissueName)}</div>
-                        <div className="text-muted-foreground">
-                          {"\u03b2"} = {pt.effectSize > 0 ? "+" : ""}{pt.effectSize.toFixed(3)}
+                        <div className="font-medium">
+                          {g.gene} in {formatTissueName(pt.tissueName)}
                         </div>
                         <div className="text-muted-foreground">
-                          {"\u2212log\u2081\u2080(p)"} = {pt.neglogPvalue.toFixed(1)}
+                          {"\u03b2"} = {pt.effectSize > 0 ? "+" : ""}
+                          {pt.effectSize.toFixed(3)}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {"\u2212log\u2081\u2080(p)"} ={" "}
+                          {pt.neglogPvalue.toFixed(1)}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -403,27 +515,45 @@ function QtlForestPlot({
                 <div className="border-l border-border" style={{ height: 4 }} />
                 <span
                   className="text-xs tabular-nums text-muted-foreground absolute"
-                  style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
+                  style={{
+                    transform: "translateX(-50%)",
+                    top: 6,
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   0
                 </span>
               </div>
               {/* Negative tick */}
-              <div className="absolute" style={{ left: `${toPercent(-maxAbs * 0.5)}%`, top: 0 }}>
+              <div
+                className="absolute"
+                style={{ left: `${toPercent(-maxAbs * 0.5)}%`, top: 0 }}
+              >
                 <div className="border-l border-border" style={{ height: 4 }} />
                 <span
                   className="text-xs tabular-nums text-muted-foreground absolute"
-                  style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
+                  style={{
+                    transform: "translateX(-50%)",
+                    top: 6,
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {(-maxAbs * 0.5).toFixed(2)}
                 </span>
               </div>
               {/* Positive tick */}
-              <div className="absolute" style={{ left: `${toPercent(maxAbs * 0.5)}%`, top: 0 }}>
+              <div
+                className="absolute"
+                style={{ left: `${toPercent(maxAbs * 0.5)}%`, top: 0 }}
+              >
                 <div className="border-l border-border" style={{ height: 4 }} />
                 <span
                   className="text-xs tabular-nums text-muted-foreground absolute"
-                  style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
+                  style={{
+                    transform: "translateX(-50%)",
+                    top: 6,
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {(maxAbs * 0.5).toFixed(2)}
                 </span>
@@ -445,9 +575,16 @@ function QtlForestPlot({
               <div key={item.label} className="flex items-center gap-1">
                 <div
                   className="rounded-full"
-                  style={{ width: 8, height: 8, backgroundColor: item.color, opacity: 0.7 }}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    backgroundColor: item.color,
+                    opacity: 0.7,
+                  }}
                 />
-                <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {item.label}
+                </span>
               </div>
             ))}
           </div>
@@ -463,7 +600,8 @@ function QtlForestPlot({
 
 const QTLS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best \u2212log\u2081\u2080(p)",
-  metricDescription: "Strongest QTL association significance across all 7 sources in this tissue group",
+  metricDescription:
+    "Strongest QTL association significance across all 7 sources in this tissue group",
   countLabel: "Associations",
   formatMetric: (v) => v.toFixed(1),
   sqrtScale: true,
@@ -480,7 +618,13 @@ interface QtlsViewProps {
   groupedData?: TissueGroupRow[];
 }
 
-export function QtlsView({ loc, totalCount, genes, initialData, groupedData }: QtlsViewProps) {
+export function QtlsView({
+  loc,
+  totalCount,
+  genes,
+  initialData,
+  groupedData,
+}: QtlsViewProps) {
   const searchParams = useClientSearchParams();
   const activeTissueGroup = searchParams.get("tissue_group");
 
@@ -495,17 +639,30 @@ export function QtlsView({ loc, totalCount, genes, initialData, groupedData }: Q
   }
 
   return (
-    <QtlsDetailView loc={loc} totalCount={totalCount} genes={genes} initialData={initialData} />
+    <QtlsDetailView
+      loc={loc}
+      totalCount={totalCount}
+      genes={genes}
+      initialData={initialData}
+    />
   );
 }
 
-function QtlsDetailView({ loc, totalCount, genes, initialData }: Omit<QtlsViewProps, "groupedData">) {
+function QtlsDetailView({
+  loc,
+  totalCount,
+  genes,
+  initialData,
+}: Omit<QtlsViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
   const activeSource = searchParams.get("source") || "gtex";
 
   const filters = useMemo(() => buildFilters(genes), [genes]);
 
-  const { data, pageInfo, isLoading, isFetching } = useQtlsQuery({ ref: loc, initialData });
+  const { data, pageInfo, isLoading, isFetching } = useQtlsQuery({
+    ref: loc,
+    initialData,
+  });
 
   const handleSourceChange = useCallback((source: string) => {
     const params = new URLSearchParams(window.location.search);
@@ -514,19 +671,24 @@ function QtlsDetailView({ loc, totalCount, genes, initialData }: Omit<QtlsViewPr
     updateClientUrl(`${window.location.pathname}?${params}`, false);
   }, []);
 
-  const sourceDimension: DimensionConfig = useMemo(() => ({
-    label: "Source",
-    options: QTL_SOURCES.map((s) => ({ value: s.id, label: s.label })),
-    value: activeSource,
-    onChange: handleSourceChange,
-    presentation: "segmented",
-  }), [activeSource, handleSourceChange]);
+  const sourceDimension: DimensionConfig = useMemo(
+    () => ({
+      label: "Source",
+      options: QTL_SOURCES.map((s) => ({ value: s.id, label: s.label })),
+      value: activeSource,
+      onChange: handleSourceChange,
+      presentation: "segmented",
+    }),
+    [activeSource, handleSourceChange],
+  );
 
   const hasActiveFilters = Boolean(
     searchParams.get("gene") ||
-    searchParams.get("tissue_group") || searchParams.get("significant_only")
+      searchParams.get("tissue_group") ||
+      searchParams.get("significant_only"),
   );
-  const liveTotal = pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
+  const liveTotal =
+    pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,
@@ -535,12 +697,17 @@ function QtlsDetailView({ loc, totalCount, genes, initialData }: Omit<QtlsViewPr
     currentCursor: pageInfo.nextCursor,
   };
 
-  const tableState = useServerTable({ filters, serverPagination: true, paginationInfo });
+  const tableState = useServerTable({
+    filters,
+    serverPagination: true,
+    paginationInfo,
+  });
 
   const sourceInfo = QTL_SOURCES.find((s) => s.id === activeSource);
-  const subtitle = liveTotal != null
-    ? `${liveTotal.toLocaleString()} ${sourceInfo?.label ?? "QTL"} associations`
-    : `${sourceInfo?.label ?? "QTL"} associations for variants in this region`;
+  const subtitle =
+    liveTotal != null
+      ? `${liveTotal.toLocaleString()} ${sourceInfo?.label ?? "QTL"} associations`
+      : `${sourceInfo?.label ?? "QTL"} associations for variants in this region`;
 
   return (
     <div className="space-y-4">

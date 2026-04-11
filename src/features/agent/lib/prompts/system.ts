@@ -16,9 +16,9 @@
  * - Graph schema injected after §2 (before intent guides). Session state at the end.
  */
 
-import { ZERO_TRUST_BANNER } from "./shared";
-import { stateToPromptSnippet, type SessionState } from "../session-state";
 import type { AgentViewSchema } from "../../tools/run/handlers/graph";
+import { type SessionState, stateToPromptSnippet } from "../session-state";
+import { ZERO_TRUST_BANNER } from "./shared";
 
 /* ------------------------------------------------------------------ */
 /* §1 IDENTITY                                                ~65 tok */
@@ -454,7 +454,10 @@ const ANTI_PATTERNS = `## ANTI-PATTERNS
 /* Builder                                                            */
 /* ------------------------------------------------------------------ */
 
-export function buildSystemPrompt(state?: SessionState, agentView?: AgentViewSchema | null): string {
+export function buildSystemPrompt(
+  state?: SessionState,
+  agentView?: AgentViewSchema | null,
+): string {
   const sections = [
     // §0: Trust policy (highest priority — early position)
     ZERO_TRUST_BANNER,

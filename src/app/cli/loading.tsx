@@ -11,7 +11,10 @@ export default function CLILoading() {
         </div>
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-border p-5 space-y-3">
+            <div
+              key={i}
+              className="rounded-xl border border-border p-5 space-y-3"
+            >
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />

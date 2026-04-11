@@ -1,17 +1,17 @@
 "use client";
 
-import { cn } from "@infra/utils";
 import type { TargetGeneEvidence } from "@features/enrichment/api/region";
-import { formatTissueName } from "@shared/utils/tissue-format";
+import { cn } from "@infra/utils";
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { formatTissueName } from "@shared/utils/tissue-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 
@@ -104,15 +104,25 @@ const ALL_SOURCES = [
   // Computational (teal)
   { source: "chrombpnet", label: "ChromBPNet", category: "computational" },
   // Perturbation (red) — derived from perturbation fields, not sources array
-  { source: "crispr_essentiality", label: "CRISPR Essentiality", category: "perturbation" },
+  {
+    source: "crispr_essentiality",
+    label: "CRISPR Essentiality",
+    category: "perturbation",
+  },
   { source: "perturb_seq", label: "Perturb-seq", category: "perturbation" },
 ] as const;
 
 const CATEGORY_META: Record<string, { label: string; style: string }> = {
   qtl: { label: "QTL", style: "bg-blue-500/10 text-blue-700" },
-  enhancer_gene: { label: "Enhancer-Gene", style: "bg-violet-500/10 text-violet-700" },
+  enhancer_gene: {
+    label: "Enhancer-Gene",
+    style: "bg-violet-500/10 text-violet-700",
+  },
   ccre_links: { label: "cCRE Links", style: "bg-amber-500/10 text-amber-700" },
-  computational: { label: "Computational", style: "bg-teal-500/10 text-teal-700" },
+  computational: {
+    label: "Computational",
+    style: "bg-teal-500/10 text-teal-700",
+  },
   perturbation: { label: "Perturbation", style: "bg-red-500/10 text-red-700" },
 };
 
@@ -133,7 +143,7 @@ function fmtScore(v: number): string {
 
 function fmtPvalue(neglogp: number): string {
   if (neglogp >= 100) return "<1e-100";
-  const p = Math.pow(10, -neglogp);
+  const p = 10 ** -neglogp;
   return p < 0.001 ? p.toExponential(1) : p.toFixed(3);
 }
 
@@ -203,8 +213,8 @@ function GeneDetail({ gene }: { gene: TargetGeneEvidence }) {
               </span>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {s.associations ?? 0} association
-                {(s.associations ?? 0) !== 1 ? "s" : ""} across{" "}
-                {s.tissues ?? 0} tissue
+                {(s.associations ?? 0) !== 1 ? "s" : ""} across {s.tissues ?? 0}{" "}
+                tissue
                 {(s.tissues ?? 0) !== 1 ? "s" : ""}
               </p>
               {s.significant > 0 && (
@@ -235,7 +245,13 @@ function GeneDetail({ gene }: { gene: TargetGeneEvidence }) {
 // ---------------------------------------------------------------------------
 
 const TOTAL_SOURCES = ALL_SOURCES.length; // 18
-const CATEGORIES = ["qtl", "enhancer_gene", "ccre_links", "computational", "perturbation"] as const;
+const CATEGORIES = [
+  "qtl",
+  "enhancer_gene",
+  "ccre_links",
+  "computational",
+  "perturbation",
+] as const;
 
 /** Build the full set of present sources, including perturbation derived from row fields */
 function getPresentSources(row: TargetGeneEvidence): Set<string> {
@@ -243,7 +259,10 @@ function getPresentSources(row: TargetGeneEvidence): Set<string> {
   if (row.crispr_total != null && row.crispr_total > 0) {
     present.add("crispr_essentiality");
   }
-  if (row.perturb_seq_downstream_genes != null && row.perturb_seq_downstream_genes > 0) {
+  if (
+    row.perturb_seq_downstream_genes != null &&
+    row.perturb_seq_downstream_genes > 0
+  ) {
     present.add("perturb_seq");
   }
   return present;
@@ -275,10 +294,13 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
             <TooltipProvider delayDuration={150}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-[10px] text-muted-foreground/60 leading-none">RT</span>
+                  <span className="text-[10px] text-muted-foreground/60 leading-none">
+                    RT
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs max-w-xs">
-                  Readthrough transcript spanning {gene.split("-").join(" and ")}
+                  Readthrough transcript spanning{" "}
+                  {gene.split("-").join(" and ")}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -309,12 +331,24 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
                 <div className="flex flex-col gap-[3px]">
                   <div className="flex gap-[3px]">
                     {Array.from({ length: 9 }, (_, i) => (
-                      <div key={i} className={cn("w-1.5 h-1.5 rounded-full", i < filled ? "bg-primary" : "bg-border")} />
+                      <div
+                        key={i}
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          i < filled ? "bg-primary" : "bg-border",
+                        )}
+                      />
                     ))}
                   </div>
                   <div className="flex gap-[3px]">
                     {Array.from({ length: 9 }, (_, i) => (
-                      <div key={i + 9} className={cn("w-1.5 h-1.5 rounded-full", i + 9 < filled ? "bg-primary" : "bg-border")} />
+                      <div
+                        key={i + 9}
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          i + 9 < filled ? "bg-primary" : "bg-border",
+                        )}
+                      />
                     ))}
                   </div>
                 </div>
@@ -324,9 +358,13 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
               </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs min-w-[180px]">
-              <p className="font-medium mb-2">{filled} of {TOTAL_SOURCES} sources</p>
+              <p className="font-medium mb-2">
+                {filled} of {TOTAL_SOURCES} sources
+              </p>
               {CATEGORIES.map((cat) => {
-                const catSources = ALL_SOURCES.filter((s) => s.category === cat);
+                const catSources = ALL_SOURCES.filter(
+                  (s) => s.category === cat,
+                );
                 const catLabel = CATEGORY_META[cat]?.label ?? cat;
                 return (
                   <div key={cat} className="mb-1.5 last:mb-0">
@@ -334,7 +372,10 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
                     {catSources.map((s) => {
                       const active = present.has(s.source);
                       return (
-                        <p key={s.source} className={cn("pl-2", !active && "opacity-30")}>
+                        <p
+                          key={s.source}
+                          className={cn("pl-2", !active && "opacity-30")}
+                        >
                           {active ? "✓" : "–"} {s.label}
                         </p>
                       );
@@ -387,7 +428,9 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs max-w-xs">
                   <p className="font-medium">{formatTissueName(t.tissue)}</p>
-                  {t.tissue_group && <p className="text-muted-foreground">{t.tissue_group}</p>}
+                  {t.tissue_group && (
+                    <p className="text-muted-foreground">{t.tissue_group}</p>
+                  )}
                   <p>Sources: {t.sources.join(", ")}</p>
                   {t.best_score != null && (
                     <p>Best score: {fmtScore(t.best_score)}</p>
@@ -415,8 +458,7 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
     enableSorting: true,
     sortDescFirst: true,
     meta: {
-      description:
-        "Distinct tissues with evidence for this variant→gene link",
+      description: "Distinct tissues with evidence for this variant→gene link",
     } satisfies ColumnMeta,
     cell: ({ row }) => {
       const v = row.original.tissue_count;
@@ -461,8 +503,12 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs max-w-xs">
-              <p>{fmtScore(best.score)} from {best.label}</p>
-              <p className="opacity-60">Scores vary by method and are not directly comparable</p>
+              <p>
+                {fmtScore(best.score)} from {best.label}
+              </p>
+              <p className="opacity-60">
+                Scores vary by method and are not directly comparable
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

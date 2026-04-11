@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import { Markdown } from "@shared/components/ai-elements/markdown";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
-import { cn } from "@infra/utils";
 import {
   AlertCircle,
   Check,

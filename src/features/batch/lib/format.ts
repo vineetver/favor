@@ -7,11 +7,11 @@
  */
 
 export {
-  formatNumber,
   formatBytes,
-  formatPercent,
-  formatDuration,
   formatDate,
+  formatDuration,
+  formatNumber,
+  formatPercent,
   formatTime,
 } from "@shared/utils/value-formatters";
 
@@ -50,9 +50,12 @@ export function getDataTypeLabel(dt: string): string {
 export function getDataTypeDescription(dt: string): string {
   const descriptions: Record<string, string> = {
     variant_list: "Simple list of variant identifiers (rsID, VID, or VCF)",
-    gwas_sumstats: "Genome-wide association study summary statistics with effect sizes and p-values",
-    credible_set: "Fine-mapped credible set with posterior inclusion probabilities",
-    fine_mapping: "Fine mapping results with statistical evidence for causal variants",
+    gwas_sumstats:
+      "Genome-wide association study summary statistics with effect sizes and p-values",
+    credible_set:
+      "Fine-mapped credible set with posterior inclusion probabilities",
+    fine_mapping:
+      "Fine mapping results with statistical evidence for causal variants",
   };
   return descriptions[dt] || "";
 }

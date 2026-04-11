@@ -1,6 +1,6 @@
-import { loadTissueSignalsData } from "@features/enrichment/loaders";
 import { SignalHeatmap } from "@features/enrichment/components/signal-heatmap";
 import { TissueSignalsView } from "@features/enrichment/components/tissue-signals-view";
+import { loadTissueSignalsData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

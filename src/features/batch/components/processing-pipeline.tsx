@@ -16,7 +16,10 @@ interface ProcessingPipelineProps {
  * Apple-inspired design: Clean, minimal, with subtle animations.
  * Shows all stages as a horizontal timeline with the current stage highlighted.
  */
-export function ProcessingPipeline({ currentStage, className }: ProcessingPipelineProps) {
+export function ProcessingPipeline({
+  currentStage,
+  className,
+}: ProcessingPipelineProps) {
   const currentIndex = STAGE_ORDER.indexOf(currentStage);
 
   return (
@@ -31,7 +34,10 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
           const isLast = index === STAGE_ORDER.length - 1;
 
           return (
-            <div key={stage} className="flex items-center flex-1 last:flex-none">
+            <div
+              key={stage}
+              className="flex items-center flex-1 last:flex-none"
+            >
               {/* Stage indicator */}
               <div className="flex flex-col items-center gap-1.5">
                 <div
@@ -39,17 +45,19 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                     "relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-all duration-300",
                     isCompleted && "bg-emerald-500 text-white",
                     isCurrent && "bg-primary text-white ring-4 ring-primary/20",
-                    isPending && "bg-muted text-muted-foreground"
+                    isPending && "bg-muted text-muted-foreground",
                   )}
                 >
                   {isCompleted ? (
                     <Check className="h-3.5 w-3.5" />
                   ) : (
-                    <span className={cn(
-                      "h-2 w-2 rounded-full",
-                      isCurrent && "bg-background animate-pulse",
-                      isPending && "bg-muted-foreground/40"
-                    )} />
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        isCurrent && "bg-background animate-pulse",
+                        isPending && "bg-muted-foreground/40",
+                      )}
+                    />
                   )}
                 </div>
                 <span
@@ -57,7 +65,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                     "text-[10px] font-medium uppercase tracking-wide transition-colors",
                     isCompleted && "text-emerald-600",
                     isCurrent && "text-primary",
-                    isPending && "text-muted-foreground"
+                    isPending && "text-muted-foreground",
                   )}
                 >
                   {config.shortLabel}
@@ -70,7 +78,7 @@ export function ProcessingPipeline({ currentStage, className }: ProcessingPipeli
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
-                      isCompleted ? "bg-emerald-400 w-full" : "w-0"
+                      isCompleted ? "bg-emerald-400 w-full" : "w-0",
                     )}
                   />
                 </div>

@@ -1,8 +1,8 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchGraphQuery, parseTypeId } from "@features/graph/api";
 import { ProteinStructureView } from "@features/gene/components/protein-structure";
 import { assignDomainColors } from "@features/gene/components/protein-structure/colors";
 import type { ProteinDomain } from "@features/gene/components/protein-structure/types";
+import { fetchGraphQuery, parseTypeId } from "@features/graph/api";
 import { notFound } from "next/navigation";
 
 interface ProteinStructurePageProps {
@@ -36,16 +36,8 @@ export default async function GeneProteinStructurePage({
       },
     ],
     select: {
-      nodeFields: [
-        "domain_name",
-        "description",
-        "interpro_type",
-      ],
-      edgeFields: [
-        "start_residue",
-        "end_residue",
-        "mean_plddt",
-      ],
+      nodeFields: ["domain_name", "description", "interpro_type"],
+      edgeFields: ["start_residue", "end_residue", "mean_plddt"],
     },
     limits: { maxNodes: 100, maxEdges: 200 },
   });
@@ -55,7 +47,13 @@ export default async function GeneProteinStructurePage({
 
     // First pass: collect domain names for collision-free color assignment
     const domainNames: string[] = [];
-    const rawDomains: Array<{ id: string; name: string; start: number; end: number; type?: string }> = [];
+    const rawDomains: Array<{
+      id: string;
+      name: string;
+      start: number;
+      end: number;
+      type?: string;
+    }> = [];
 
     for (const edge of edges) {
       const start = Number(edge.fields?.start_residue);

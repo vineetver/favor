@@ -2,15 +2,15 @@
 
 import { memo, useMemo } from "react";
 import {
-  ScatterChart,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
   Scatter,
+  ScatterChart,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Line,
-  ComposedChart,
 } from "recharts";
 import type { ScatterPlotVizSpec } from "../../viz/types";
 
@@ -79,7 +79,12 @@ export const AgentScatterPlot = memo(function AgentScatterPlot({
                 fontSize: 12,
               }}
             />
-            <Scatter data={spec.data} fill={POINT_COLOR} fillOpacity={0.6} r={3} />
+            <Scatter
+              data={spec.data}
+              fill={POINT_COLOR}
+              fillOpacity={0.6}
+              r={3}
+            />
             <Line
               data={regressionData}
               dataKey="y"

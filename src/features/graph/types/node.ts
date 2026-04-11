@@ -1,6 +1,6 @@
-import type { EntityType, ExplorerEntity } from "./entity";
 import type { EdgeType } from "./edge";
-import type { NodeKey, EdgeKey } from "./keys";
+import type { EntityType, ExplorerEntity } from "./entity";
+import type { EdgeKey, NodeKey } from "./keys";
 
 // =============================================================================
 // Node & Edge Types for Cytoscape

@@ -2,9 +2,7 @@ import type { ServerFilterConfig } from "@shared/hooks";
 import { formatTissueName, TISSUE_GROUPS } from "@shared/utils/tissue-format";
 
 /** Tissue group dropdown using the 18 standard groups */
-export function tissueGroupFilter(
-  groups?: string[],
-): ServerFilterConfig {
+export function tissueGroupFilter(groups?: string[]): ServerFilterConfig {
   return {
     id: "tissue_group",
     label: "Tissue Group",

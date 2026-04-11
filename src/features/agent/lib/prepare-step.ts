@@ -4,16 +4,27 @@
  */
 
 import type { PrepareStepFunction } from "ai";
-import { isContextHeavy, isContextCritical } from "./context-budget";
-import { fetchSessionState, applyStateDelta, patchSessionState, type SessionState } from "./session-state";
-import { buildSystemPrompt } from "./prompts/system";
-import { schemaStore } from "../tools/run/handlers/graph-schema-store";
 import type { AgentViewSchema } from "../tools/run/handlers/graph-schema-store";
-import type { RunResult, EntityRef } from "../tools/run/types";
+import { schemaStore } from "../tools/run/handlers/graph-schema-store";
 import type { RunContext } from "../tools/run/index";
+import type { EntityRef, RunResult } from "../tools/run/types";
+import { isContextCritical, isContextHeavy } from "./context-budget";
+import { buildSystemPrompt } from "./prompts/system";
+import {
+  applyStateDelta,
+  fetchSessionState,
+  patchSessionState,
+  type SessionState,
+} from "./session-state";
 
 // Matches SharedV3ProviderOptions from ai SDK
-type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue | undefined };
+type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue | undefined };
 type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 
 // ---------------------------------------------------------------------------
@@ -64,7 +75,10 @@ function isLoop(steps: StepData[]): boolean {
     const toolNames = last3.map((s) =>
       (s.toolCalls ?? []).map((tc) => tc.toolName).join(","),
     );
-    const allSameTool = toolNames[0] === toolNames[1] && toolNames[1] === toolNames[2] && toolNames[0].length > 0;
+    const allSameTool =
+      toolNames[0] === toolNames[1] &&
+      toolNames[1] === toolNames[2] &&
+      toolNames[0].length > 0;
     const allErrors = last3.every((s) =>
       (s.toolResults ?? []).every((r) => {
         const out = r.output as Record<string, unknown> | undefined;
@@ -138,11 +152,16 @@ export function createPrepareStep(
   const synthesize = (extraSystem?: string) => ({
     activeTools: [] as string[],
     system: SYNTHESIS_INSTRUCTION + (extraSystem ?? ""),
-    ...(synthesisProviderOptions ? { providerOptions: synthesisProviderOptions } : {}),
+    ...(synthesisProviderOptions
+      ? { providerOptions: synthesisProviderOptions }
+      : {}),
   });
 
   // PrepareStepFunction<any> — tool-type-agnostic; SDK interop requires this.
-  const prepareStep: PrepareStepFunction</* tools */ any> = async ({ stepNumber, steps }) => {
+  const prepareStep: PrepareStepFunction</* tools */ any> = async ({
+    stepNumber,
+    steps,
+  }) => {
     const stepsData = steps as StepData[];
 
     // --- 1. First step: load state + agent view, inject into system prompt ---
@@ -152,7 +171,10 @@ export function createPrepareStep(
         currentState = state;
         stateVersion = version;
       } catch (err) {
-        console.warn("[prepareStep] Failed to load session state:", err instanceof Error ? err.message : err);
+        console.warn(
+          "[prepareStep] Failed to load session state:",
+          err instanceof Error ? err.message : err,
+        );
         currentState = null;
       }
 
@@ -160,7 +182,10 @@ export function createPrepareStep(
       try {
         agentView = await schemaStore.getAgentView();
       } catch (err) {
-        console.warn("[prepareStep] Failed to load agent view:", err instanceof Error ? err.message : err);
+        console.warn(
+          "[prepareStep] Failed to load agent view:",
+          err instanceof Error ? err.message : err,
+        );
       }
 
       const sys = buildSystemPrompt(currentState ?? undefined, agentView);
@@ -173,7 +198,9 @@ export function createPrepareStep(
 
     // --- 2. Context budget: critical → force synthesis ---
     if (isContextCritical(stepsData, systemPromptLength)) {
-      return synthesize("\n\n[SYSTEM] Context budget exceeded — synthesize now.");
+      return synthesize(
+        "\n\n[SYSTEM] Context budget exceeded — synthesize now.",
+      );
     }
 
     // --- 3. Tool call budget ---
@@ -206,7 +233,10 @@ export function createPrepareStep(
     }
     if (lastStep?.toolResults) {
       for (const r of lastStep.toolResults) {
-        const output = r.output as RunResult | Record<string, unknown> | undefined;
+        const output = r.output as
+          | RunResult
+          | Record<string, unknown>
+          | undefined;
         if (output && "state_delta" in output && output.state_delta) {
           const delta = output.state_delta as RunResult["state_delta"];
 
@@ -222,7 +252,11 @@ export function createPrepareStep(
           currentState = applyStateDelta(currentState, delta);
           // Persist with single retry on version conflict
           try {
-            const resp = await patchSessionState(sessionId, currentState, stateVersion);
+            const resp = await patchSessionState(
+              sessionId,
+              currentState,
+              stateVersion,
+            );
             stateVersion = resp.version;
             stateDirty = false;
           } catch (patchErr) {
@@ -230,9 +264,14 @@ export function createPrepareStep(
             if (err.status === 409) {
               // Version conflict — reload and re-apply
               try {
-                const { state: fresh, version: freshVer } = await fetchSessionState(sessionId);
+                const { state: fresh, version: freshVer } =
+                  await fetchSessionState(sessionId);
                 currentState = applyStateDelta(fresh, delta);
-                const resp = await patchSessionState(sessionId, currentState, freshVer);
+                const resp = await patchSessionState(
+                  sessionId,
+                  currentState,
+                  freshVer,
+                );
                 stateVersion = resp.version;
                 stateDirty = false;
               } catch {
@@ -253,9 +292,14 @@ export function createPrepareStep(
     // exploration commands (explore, traverse) almost always have follow-ups.
     if (lastStep?.toolResults && stepNumber >= 2) {
       const CONTINUATION_COMMANDS = new Set([
-        "set_cohort", "pin", "create_cohort", "derive",
-        "explore", "traverse",
-        "variant_profile", "pipeline",
+        "set_cohort",
+        "pin",
+        "create_cohort",
+        "derive",
+        "explore",
+        "traverse",
+        "variant_profile",
+        "pipeline",
       ]);
 
       const runResults = lastStep.toolResults.filter(
@@ -266,9 +310,10 @@ export function createPrepareStep(
         runResults.every((r) => {
           const out = r.output as Record<string, unknown> | undefined;
           if (!out?.text_summary || out?.status === "error") return false;
-          const cmd = (lastStep.toolCalls?.find(
-            (tc) => tc.toolName === "Run",
-          )?.input as Record<string, unknown>)?.command as string | undefined;
+          const cmd = (
+            lastStep.toolCalls?.find((tc) => tc.toolName === "Run")
+              ?.input as Record<string, unknown>
+          )?.command as string | undefined;
           // Continuation commands are never terminal
           if (cmd && CONTINUATION_COMMANDS.has(cmd)) return false;
           // If the result suggests follow-up work, don't synthesize
@@ -282,7 +327,9 @@ export function createPrepareStep(
     }
 
     // --- 8. Context heavy hint ---
-    const hint = isContextHeavy(stepsData, systemPromptLength) ? CONTEXT_HEAVY_HINT : "";
+    const hint = isContextHeavy(stepsData, systemPromptLength)
+      ? CONTEXT_HEAVY_HINT
+      : "";
 
     // --- 9. Otherwise: let model decide ---
     return {

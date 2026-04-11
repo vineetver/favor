@@ -1,5 +1,5 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { ChromatinStateView } from "@features/variant/components/chromatin-state-view";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 interface ChromatinStatePageProps {
@@ -7,14 +7,12 @@ interface ChromatinStatePageProps {
     vcf: string;
     category: string;
   }>;
-  
 }
 
 export default async function ChromatinStatePage({
   params,
 }: ChromatinStatePageProps) {
   const { vcf } = await params;
-  
 
   const result = await fetchVariantWithCookie(vcf);
 

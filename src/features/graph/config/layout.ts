@@ -4,9 +4,17 @@ import type { LayoutOptions } from "cytoscape";
 // Layout Config
 // =============================================================================
 
-export type ExplorerLayoutType = "cose-bilkent" | "dagre" | "circle" | "concentric" | "grid";
+export type ExplorerLayoutType =
+  | "cose-bilkent"
+  | "dagre"
+  | "circle"
+  | "concentric"
+  | "grid";
 
-export const EXPLORER_LAYOUT_OPTIONS: Array<{ value: ExplorerLayoutType; label: string }> = [
+export const EXPLORER_LAYOUT_OPTIONS: Array<{
+  value: ExplorerLayoutType;
+  label: string;
+}> = [
   { value: "cose-bilkent", label: "Force-Directed" },
   { value: "dagre", label: "Hierarchical" },
   { value: "concentric", label: "Concentric" },
@@ -14,7 +22,9 @@ export const EXPLORER_LAYOUT_OPTIONS: Array<{ value: ExplorerLayoutType; label: 
   { value: "grid", label: "Grid" },
 ];
 
-export function getExplorerLayoutOptions(type: ExplorerLayoutType): LayoutOptions {
+export function getExplorerLayoutOptions(
+  type: ExplorerLayoutType,
+): LayoutOptions {
   switch (type) {
     case "cose-bilkent":
       return {
@@ -61,7 +71,9 @@ export function getExplorerLayoutOptions(type: ExplorerLayoutType): LayoutOption
         animate: true,
         animationDuration: 500,
         concentric: (node: { data: (key: string) => unknown }) =>
-          node.data("isSeed") ? 100 : 100 - (node.data("depth") as number || 1) * 20,
+          node.data("isSeed")
+            ? 100
+            : 100 - ((node.data("depth") as number) || 1) * 20,
         levelWidth: () => 1,
         minNodeSpacing: 50,
         fit: true,

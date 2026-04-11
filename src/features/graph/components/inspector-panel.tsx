@@ -3,51 +3,61 @@
 import { Button } from "@shared/components/ui/button";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import {
-  ChevronDown,
-  ChevronRight,
-  Database,
-  Beaker,
-  Expand,
-  HeartPulse,
-  Info,
-  Link2,
-  Loader2,
-  Network,
-  Pill,
-  Route,
-  Target,
-  Trash2,
-  Activity,
-  Dna,
-  AlertTriangle,
-  Microscope,
-} from "lucide-react";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { memo, useMemo, useState } from "react";
-import type { InspectorPanelProps } from "../types/props";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
-import type { ProvenanceEvent } from "../types/provenance";
-import type { ExpansionConfig } from "../config/expansion";
-import type { EdgeType } from "../types/edge";
-import type { EntityType } from "../types/entity";
-import type { ConnectionsDrilldownData, ConnectionsEdgeGroup, ConnectionsStatus } from "../types/connections";
-import type { ExternalLinkConfig } from "../config/explorer-config";
-import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
-import { NODE_TYPE_COLORS } from "../config/styling";
-import { NODE_EXPANSION_CONFIG } from "../config/expansion";
-import { hasVariantTrail } from "../config/variant-trail";
-import { VariantTrailResults } from "./variant-trail-results";
-import { buildEdgeTypeStatsMap, resolveScoreFields } from "../utils/schema-fields";
-import { filterEdgeFields, buildFieldLabelMap } from "../utils/edge-field-filter";
-import { displayEntityType, formatNodeId } from "../utils/display-names";
 import { formatNumericValue as formatNumber } from "@shared/utils/value-formatters";
-import type { GraphSchema } from "../types/schema";
+import {
+  Activity,
+  AlertTriangle,
+  Beaker,
+  ChevronDown,
+  ChevronRight,
+  Database,
+  Dna,
+  Expand,
+  HeartPulse,
+  Info,
+  Link2,
+  Loader2,
+  Microscope,
+  Network,
+  Pill,
+  Route,
+  Target,
+  Trash2,
+} from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import type { SchemaPropertyMeta } from "../api";
+import type { ExpansionConfig } from "../config/expansion";
+import { NODE_EXPANSION_CONFIG } from "../config/expansion";
+import type { ExternalLinkConfig } from "../config/explorer-config";
+import { NODE_TYPE_COLORS } from "../config/styling";
+import { hasVariantTrail } from "../config/variant-trail";
+import type {
+  ConnectionsDrilldownData,
+  ConnectionsEdgeGroup,
+  ConnectionsStatus,
+} from "../types/connections";
+import type { EdgeType } from "../types/edge";
+import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
+import type { EntityType } from "../types/entity";
+import type { ExplorerEdge, ExplorerNode } from "../types/node";
+import type { InspectorPanelProps } from "../types/props";
+import type { ProvenanceEvent } from "../types/provenance";
+import type { GraphSchema } from "../types/schema";
+import { displayEntityType, formatNodeId } from "../utils/display-names";
+import {
+  buildFieldLabelMap,
+  filterEdgeFields,
+} from "../utils/edge-field-filter";
+import {
+  buildEdgeTypeStatsMap,
+  resolveScoreFields,
+} from "../utils/schema-fields";
+import { VariantTrailResults } from "./variant-trail-results";
 
 // =============================================================================
 // Icon Map for Expansion Configs
@@ -55,18 +65,18 @@ import type { SchemaPropertyMeta } from "../api";
 
 const EXPANSION_ICONS: Record<string, React.ReactNode> = {
   "heart-pulse": <HeartPulse className="w-4 h-4" />,
-  "pill": <Pill className="w-4 h-4" />,
-  "route": <Route className="w-4 h-4" />,
-  "activity": <Activity className="w-4 h-4" />,
-  "target": <Target className="w-4 h-4" />,
-  "dna": <Dna className="w-4 h-4" />,
-  "network": <Network className="w-4 h-4" />,
+  pill: <Pill className="w-4 h-4" />,
+  route: <Route className="w-4 h-4" />,
+  activity: <Activity className="w-4 h-4" />,
+  target: <Target className="w-4 h-4" />,
+  dna: <Dna className="w-4 h-4" />,
+  network: <Network className="w-4 h-4" />,
   "alert-triangle": <AlertTriangle className="w-4 h-4" />,
-  "microscope": <Microscope className="w-4 h-4" />,
+  microscope: <Microscope className="w-4 h-4" />,
   "bar-chart": <Activity className="w-4 h-4" />,
-  "tag": <Activity className="w-4 h-4" />,
+  tag: <Activity className="w-4 h-4" />,
   "book-open": <Database className="w-4 h-4" />,
-  "beaker": <Beaker className="w-4 h-4" />,
+  beaker: <Beaker className="w-4 h-4" />,
 };
 
 // =============================================================================
@@ -104,7 +114,6 @@ function fieldLabel(key: string): string {
     .replace(/\bGo\b/g, "GO");
 }
 
-
 /** Check if a field key represents PubMed IDs (pattern match) */
 function isPubmedField(key: string): boolean {
   const k = key.toLowerCase();
@@ -138,7 +147,9 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
           </ExternalLink>
         ))}
         {pmids.length > 5 && (
-          <span className="text-xs text-muted-foreground">+{pmids.length - 5} more</span>
+          <span className="text-xs text-muted-foreground">
+            +{pmids.length - 5} more
+          </span>
         )}
       </div>
     );
@@ -147,7 +158,10 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   // URLs — pattern matched
   if (isUrlField(fieldKey) && typeof value === "string") {
     return (
-      <ExternalLink href={value} className="text-xs text-indigo-600 hover:underline truncate">
+      <ExternalLink
+        href={value}
+        className="text-xs text-indigo-600 hover:underline truncate"
+      >
         {value}
       </ExternalLink>
     );
@@ -156,7 +170,9 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   // Boolean
   if (typeof value === "boolean") {
     return (
-      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${value ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+      <span
+        className={`px-1.5 py-0.5 rounded text-xs font-medium ${value ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}
+      >
         {value ? "Yes" : "No"}
       </span>
     );
@@ -178,12 +194,17 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
     return (
       <div className="flex flex-wrap gap-1">
         {items.slice(0, 8).map((item, i) => (
-          <span key={`${item}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
+          <span
+            key={`${item}-${i}`}
+            className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded"
+          >
             {item}
           </span>
         ))}
         {items.length > 8 && (
-          <span className="text-xs text-muted-foreground">+{items.length - 8} more</span>
+          <span className="text-xs text-muted-foreground">
+            +{items.length - 8} more
+          </span>
         )}
       </div>
     );
@@ -199,23 +220,34 @@ function FieldValue({ fieldKey, value }: { fieldKey: string; value: unknown }) {
   }
 
   // Default string
-  return <span className="text-sm text-foreground break-words">{String(value)}</span>;
+  return (
+    <span className="text-sm text-foreground break-words">{String(value)}</span>
+  );
 }
 
 /** Field label with optional info tooltip showing schema description */
-function FieldHeader({ label, description, className }: {
+function FieldHeader({
+  label,
+  description,
+  className,
+}: {
   label: string;
   description?: string;
   className?: string;
 }) {
   return (
-    <div className={`flex items-center gap-1 ${className ?? "text-xs font-medium text-muted-foreground"}`}>
+    <div
+      className={`flex items-center gap-1 ${className ?? "text-xs font-medium text-muted-foreground"}`}
+    >
       <span>{label}</span>
       {description && (
         <TooltipProvider>
           <Tooltip delayDuration={200}>
             <TooltipTrigger asChild>
-              <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
+              <span
+                className="inline-flex"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Info className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help transition-colors" />
               </span>
             </TooltipTrigger>
@@ -236,7 +268,12 @@ function FieldHeader({ label, description, className }: {
  *  Key fields: entries with displayOrder → sorted by displayOrder.
  *  Fallback: schema scoreFields when no displayOrder entries exist.
  *  Detail fields: everything else, sorted alphabetically. */
-function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
+function EdgeFields({
+  fields,
+  edgeType,
+  schema,
+  propertyMeta,
+}: {
   fields: Record<string, unknown>;
   edgeType?: EdgeType;
   schema?: GraphSchema | null;
@@ -270,10 +307,14 @@ function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
   const schemaLabelMap = buildFieldLabelMap(propertyMeta);
 
   // Key fields: entries where meta.displayOrder is set
-  const hasDisplayOrder = entries.some(([key]) => metaMap.get(key)?.displayOrder != null);
+  const hasDisplayOrder = entries.some(
+    ([key]) => metaMap.get(key)?.displayOrder != null,
+  );
 
   // If no displayOrder entries and propertyMeta exists, fallback to schema scoreFields
-  const schemaScoreFields = edgeType ? resolveScoreFields(edgeType, schemaMap) : [];
+  const schemaScoreFields = edgeType
+    ? resolveScoreFields(edgeType, schemaMap)
+    : [];
   const keyFieldSet = new Set<string>();
 
   if (hasDisplayOrder) {
@@ -330,7 +371,10 @@ function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
       <div className="space-y-2.5">
         {entries.map(([key, value]) => (
           <div key={key} className="space-y-0.5">
-            <FieldHeader label={getLabel(key)} description={descriptionMap.get(key)} />
+            <FieldHeader
+              label={getLabel(key)}
+              description={descriptionMap.get(key)}
+            />
             <FieldValue fieldKey={key} value={value} />
           </div>
         ))}
@@ -370,14 +414,18 @@ function EdgeFields({ fields, edgeType, schema, propertyMeta }: {
               ) : (
                 <ChevronRight className="w-3 h-3" />
               )}
-              {detailEntries.length} more field{detailEntries.length !== 1 ? "s" : ""}
+              {detailEntries.length} more field
+              {detailEntries.length !== 1 ? "s" : ""}
             </button>
           )}
           {(fewDetails || detailsOpen) && (
             <div className={`space-y-2.5 ${fewDetails ? "" : "mt-2"}`}>
               {detailEntries.map(([key, value]) => (
                 <div key={key} className="space-y-0.5">
-                  <FieldHeader label={getLabel(key)} description={descriptionMap.get(key)} />
+                  <FieldHeader
+                    label={getLabel(key)}
+                    description={descriptionMap.get(key)}
+                  />
                   <FieldValue fieldKey={key} value={value} />
                 </div>
               ))}
@@ -407,8 +455,15 @@ function EdgeContent({
 }) {
   const config = EDGE_TYPE_CONFIG[edge.type];
   const hasFields = edge.fields && Object.keys(edge.fields).length > 0;
-  const hasEvidence = edge.evidence?.sources?.length || edge.evidence?.pubmedIds?.length || edge.evidence?.detectionMethods?.length;
-  const hasContent = hasFields || hasEvidence || edge.numSources !== undefined || edge.numExperiments !== undefined;
+  const hasEvidence =
+    edge.evidence?.sources?.length ||
+    edge.evidence?.pubmedIds?.length ||
+    edge.evidence?.detectionMethods?.length;
+  const hasContent =
+    hasFields ||
+    hasEvidence ||
+    edge.numSources !== undefined ||
+    edge.numExperiments !== undefined;
 
   return (
     <div className="space-y-3">
@@ -418,16 +473,26 @@ function EdgeContent({
 
       {/* Schema-driven fields — filtered to evidence/relationship only */}
       {edge.fields && Object.keys(edge.fields).length > 0 && (
-        <EdgeFields fields={edge.fields} edgeType={edge.type} schema={schema} propertyMeta={propertyMeta} />
+        <EdgeFields
+          fields={edge.fields}
+          edgeType={edge.type}
+          schema={schema}
+          propertyMeta={propertyMeta}
+        />
       )}
 
       {/* Legacy evidence (from subgraph API with includeProps) */}
       {edge.evidence?.sources && edge.evidence.sources.length > 0 && (
         <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Data Sources</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            Data Sources
+          </div>
           <div className="flex flex-wrap gap-1">
             {edge.evidence.sources.map((source, i) => (
-              <span key={`${source}-${i}`} className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded">
+              <span
+                key={`${source}-${i}`}
+                className="px-1.5 py-0.5 bg-muted text-foreground text-xs rounded"
+              >
                 {source}
               </span>
             ))}
@@ -437,7 +502,9 @@ function EdgeContent({
 
       {edge.evidence?.pubmedIds && edge.evidence.pubmedIds.length > 0 && (
         <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Publications</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            Publications
+          </div>
           <div className="flex flex-wrap gap-1">
             {edge.evidence.pubmedIds.slice(0, 5).map((pmid) => (
               <ExternalLink
@@ -457,26 +524,32 @@ function EdgeContent({
         </div>
       )}
 
-      {edge.evidence?.detectionMethods && edge.evidence.detectionMethods.length > 0 && (
-        <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Detection Methods</div>
-          <div className="flex flex-wrap gap-1">
-            {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
-              <span key={`${method}-${i}`} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded">
-                {method}
-              </span>
-            ))}
+      {edge.evidence?.detectionMethods &&
+        edge.evidence.detectionMethods.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">
+              Detection Methods
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {edge.evidence.detectionMethods.slice(0, 5).map((method, i) => (
+                <span
+                  key={`${method}-${i}`}
+                  className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded"
+                >
+                  {method}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {!hasContent && (
-        <p className="text-xs text-muted-foreground italic">No additional data available</p>
+        <p className="text-xs text-muted-foreground italic">
+          No additional data available
+        </p>
       )}
 
-      {provenance.length > 0 && (
-        <ProvenanceDisplay events={provenance} />
-      )}
+      {provenance.length > 0 && <ProvenanceDisplay events={provenance} />}
     </div>
   );
 }
@@ -503,7 +576,9 @@ function EdgeInstance({
   // Prefer per-edge source fields over static type default
   const rawSource = edge.fields?.source ?? edge.fields?.sources;
   const edgeSource = rawSource
-    ? (Array.isArray(rawSource) ? (rawSource as string[]).join(", ") : String(rawSource))
+    ? Array.isArray(rawSource)
+      ? (rawSource as string[]).join(", ")
+      : String(rawSource)
     : getEdgeDatabase(edge.type);
 
   // Inside a group: render flat, no wrapper card
@@ -520,7 +595,12 @@ function EdgeInstance({
             </span>
           )}
         </div>
-        <EdgeContent edge={edge} provenance={provenance} schema={schema} propertyMeta={propertyMeta} />
+        <EdgeContent
+          edge={edge}
+          provenance={provenance}
+          schema={schema}
+          propertyMeta={propertyMeta}
+        />
       </div>
     );
   }
@@ -551,7 +631,12 @@ function EdgeInstance({
 
       {open && (
         <div className="px-3 pb-3 pt-2 border-t border-border">
-          <EdgeContent edge={edge} provenance={provenance} schema={schema} propertyMeta={propertyMeta} />
+          <EdgeContent
+            edge={edge}
+            provenance={provenance}
+            schema={schema}
+            propertyMeta={propertyMeta}
+          />
         </div>
       )}
     </div>
@@ -725,7 +810,9 @@ function EdgeDetail({
       {connectionsStatus === "error" && connectionsError && !errorDismissed && (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <span className="text-xs text-amber-700 flex-1">{connectionsError}</span>
+          <span className="text-xs text-amber-700 flex-1">
+            {connectionsError}
+          </span>
           <div className="flex items-center gap-1 shrink-0">
             {onRetryConnections && (
               <Button
@@ -795,8 +882,22 @@ interface NodeDetailProps {
   onRunVariantTrail?: (nodeId: string) => void;
 }
 
-function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpanding, externalLinks, enableVariantTrail, onRunVariantTrail }: NodeDetailProps) {
-  const colors = NODE_TYPE_COLORS[node.type] ?? { background: "#e2e8f0", border: "#94a3b8", text: "#334155" };
+function NodeDetail({
+  node,
+  provenance,
+  onExpand,
+  onRemove,
+  onFindPaths,
+  isExpanding,
+  externalLinks,
+  enableVariantTrail,
+  onRunVariantTrail,
+}: NodeDetailProps) {
+  const colors = NODE_TYPE_COLORS[node.type] ?? {
+    background: "#e2e8f0",
+    border: "#94a3b8",
+    text: "#334155",
+  };
   const expansionOptions = NODE_EXPANSION_CONFIG[node.type] ?? [];
 
   return (
@@ -821,7 +922,9 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
           )}
         </div>
         <h3 className="text-lg font-semibold text-foreground">{node.label}</h3>
-        <p className="text-xs font-mono text-muted-foreground">{formatNodeId(node.id)}</p>
+        <p className="text-xs font-mono text-muted-foreground">
+          {formatNodeId(node.id)}
+        </p>
       </div>
 
       {/* Stats */}
@@ -830,7 +933,9 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
           {node.degree !== undefined && (
             <div className="bg-muted rounded-lg p-3 text-center">
               <Network className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-              <div className="text-lg font-semibold text-foreground">{node.degree}</div>
+              <div className="text-lg font-semibold text-foreground">
+                {node.degree}
+              </div>
               <div className="text-xs text-muted-foreground">Connections</div>
             </div>
           )}
@@ -859,7 +964,9 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
               {links.map((link) => (
                 <ExternalLink
                   key={link.label}
-                  href={link.urlTemplate.replace("{id}", node.id).replace("{label}", node.label)}
+                  href={link.urlTemplate
+                    .replace("{id}", node.id)
+                    .replace("{label}", node.label)}
                   className="text-xs text-indigo-600 hover:underline"
                 >
                   {link.label}
@@ -871,23 +978,33 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
       })()}
 
       {/* Route to Variants */}
-      {enableVariantTrail && hasVariantTrail(node.type) && onRunVariantTrail && (
-        <div className="pt-2 border-t border-border">
-          <button
-            className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-left hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => onRunVariantTrail(node.id)}
-            disabled={isExpanding}
-          >
-            <div className="p-1 rounded bg-primary/10 text-primary">
-              {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Microscope className="w-4 h-4" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-foreground">Route to Variants</div>
-              <div className="text-xs text-muted-foreground">Find variant evidence from this node</div>
-            </div>
-          </button>
-        </div>
-      )}
+      {enableVariantTrail &&
+        hasVariantTrail(node.type) &&
+        onRunVariantTrail && (
+          <div className="pt-2 border-t border-border">
+            <button
+              className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-left hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => onRunVariantTrail(node.id)}
+              disabled={isExpanding}
+            >
+              <div className="p-1 rounded bg-primary/10 text-primary">
+                {isExpanding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Microscope className="w-4 h-4" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-foreground">
+                  Route to Variants
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Find variant evidence from this node
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
 
       {/* Context-Aware Expansion Options */}
       {expansionOptions.length > 0 && (
@@ -905,13 +1022,26 @@ function NodeDetail({ node, provenance, onExpand, onRemove, onFindPaths, isExpan
               >
                 <div
                   className="mt-0.5 p-1 rounded"
-                  style={{ backgroundColor: `${option.color}15`, color: option.color }}
+                  style={{
+                    backgroundColor: `${option.color}15`,
+                    color: option.color,
+                  }}
                 >
-                  {isExpanding ? <Loader2 className="w-4 h-4 animate-spin" /> : (EXPANSION_ICONS[option.icon] ?? <Expand className="w-4 h-4" />)}
+                  {isExpanding ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    (EXPANSION_ICONS[option.icon] ?? (
+                      <Expand className="w-4 h-4" />
+                    ))
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground">{option.label}</div>
-                  <div className="text-xs text-muted-foreground truncate">{option.description}</div>
+                  <div className="text-sm font-medium text-foreground">
+                    {option.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {option.description}
+                  </div>
                 </div>
               </button>
             ))}
@@ -973,7 +1103,11 @@ interface MultiSelectDetailProps {
   onFindPaths: (fromId: string, toId: string) => void;
 }
 
-function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailProps) {
+function MultiSelectDetail({
+  nodeIds,
+  getNode,
+  onFindPaths,
+}: MultiSelectDetailProps) {
   const nodes = Array.from(nodeIds)
     .map((id) => getNode(id))
     .filter((n): n is ExplorerNode => n !== undefined);
@@ -1009,7 +1143,9 @@ function MultiSelectDetail({ nodeIds, getNode, onFindPaths }: MultiSelectDetailP
                 <span className="text-sm font-medium text-foreground truncate">
                   {node.label}
                 </span>
-                <span className="text-xs text-muted-foreground">{displayEntityType(node.type)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {displayEntityType(node.type)}
+                </span>
               </div>
             );
           })}
@@ -1121,7 +1257,10 @@ function InspectorPanelInner({
       {selection.type === "edge" && (
         <EdgeDetail
           edge={selection.edge}
-          allEdges={getEdgesBetween(selection.edge.sourceId, selection.edge.targetId)}
+          allEdges={getEdgesBetween(
+            selection.edge.sourceId,
+            selection.edge.targetId,
+          )}
           getNode={getNode}
           getProvenance={getProvenance}
           connectionsData={connectionsData}

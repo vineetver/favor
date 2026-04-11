@@ -34,7 +34,7 @@ export function useCentralityQuery({
   // that doesn't add new nodes
   const sortedNeighborIds = useMemo(
     () => [...neighborIds].sort(),
-    [neighborIds]
+    [neighborIds],
   );
 
   const query = useQuery({
@@ -53,7 +53,7 @@ export function useCentralityQuery({
       for (let i = 0; i < neighborIds.length; i += batchSize) {
         const batch = neighborIds.slice(i, i + batchSize);
         const results = await Promise.all(
-          batch.map((id) => fetchCentrality("Gene", id))
+          batch.map((id) => fetchCentrality("Gene", id)),
         );
 
         results.forEach((result, idx) => {
@@ -96,7 +96,7 @@ export function useCentralityQuery({
 export function useTopHubs(
   centralityData: Map<string, CentralityData> | undefined,
   seedGeneId: string,
-  limit: number = 5
+  limit: number = 5,
 ): CentralityData[] {
   return useMemo(() => {
     if (!centralityData) return [];

@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import { useAskFollowUp } from "@features/agent/hooks/use-ask-follow-up";
 import { useVariantSummary } from "@features/variant/hooks/use-variant-summary";
 import type { Variant } from "@features/variant/types/variant";
@@ -9,6 +8,7 @@ import {
   type VariantPromptContext,
 } from "@features/variant/utils/build-variant-prompt";
 import { LLMSummaryCard } from "@shared/components/llm-summary-card";
+import { useCallback, useMemo } from "react";
 
 interface VariantLLMSummaryProps {
   variant: Variant;

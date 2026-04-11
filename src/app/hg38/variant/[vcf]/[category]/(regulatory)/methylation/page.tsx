@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadMethylationData } from "@features/enrichment/loaders";
 import { MethylationView } from "@features/enrichment/components/methylation-view";
+import { loadMethylationData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function VariantMethylationPage({
@@ -19,10 +19,5 @@ export default async function VariantMethylationPage({
   const ref = result.selected.variant_vcf;
   const data = await loadMethylationData(ref, tissueGroup);
 
-  return (
-    <MethylationView
-      ref_id={ref}
-      {...data}
-    />
-  );
+  return <MethylationView ref_id={ref} {...data} />;
 }

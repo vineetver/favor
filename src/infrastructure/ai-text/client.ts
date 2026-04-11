@@ -1,11 +1,10 @@
+import { API_BASE } from "@/config/api";
 import type {
   AITextGenerateRequest,
   AITextGenerateResponse,
   AITextResponse,
   AITextStreamEvent,
 } from "./types";
-
-import { API_BASE } from "@/config/api";
 
 const AI_TEXT_API_BASE = `${API_BASE}/ai-text`;
 
@@ -72,9 +71,7 @@ export function subscribeToStream(
   function connect() {
     if (closed) return;
 
-    const eventSource = new EventSource(
-      `/api/ai-text/stream/${requestId}`,
-    );
+    const eventSource = new EventSource(`/api/ai-text/stream/${requestId}`);
     currentSource = eventSource;
 
     eventSource.addEventListener("status", (event) => {
@@ -98,7 +95,7 @@ export function subscribeToStream(
 
       if (attempt < MAX_RETRIES) {
         attempt++;
-        const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+        const delay = 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s
         setTimeout(connect, delay);
       } else {
         closed = true;

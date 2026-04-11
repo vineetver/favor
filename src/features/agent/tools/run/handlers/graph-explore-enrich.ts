@@ -7,11 +7,23 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
-import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
+import { findEdgesConnecting, resolveIntentType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { TARGET_EDGE_MAP, getCachedGraphSchema, errorResult, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, emptyResult, catchToResult, TraceCollector } from "../run-result";
+import {
+  catchToResult,
+  emptyResult,
+  okResult,
+  TraceCollector,
+} from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
+import {
+  edgeTypeAnnotation,
+  errorResult,
+  getCachedGraphSchema,
+  humanEdgeLabel,
+  TARGET_EDGE_MAP,
+  trimEntitySubtitles,
+} from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -23,12 +35,18 @@ export async function handleExploreEnrich(
 
   try {
     if (!cmd.target) {
-      return errorResult("enrich mode requires a 'target' intent (e.g. pathways, diseases).", tc);
+      return errorResult(
+        "enrich mode requires a 'target' intent (e.g. pathways, diseases).",
+        tc,
+      );
     }
 
     const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
     if (resolved.length < 3) {
-      return errorResult("Enrichment requires at least 3 resolved entities.", tc);
+      return errorResult(
+        "Enrichment requires at least 3 resolved entities.",
+        tc,
+      );
     }
 
     const targetType = resolveIntentType(cmd.target);
@@ -65,7 +83,7 @@ export async function handleExploreEnrich(
     if (!expectedEdge) {
       return errorResult(
         `No enrichment edge type connecting ${inputType} to ${targetType}. ` +
-        `Enrichment requires a direct edge between your input entity type and the target type.`,
+          `Enrichment requires a direct edge between your input entity type and the target type.`,
         tc,
       );
     }
@@ -88,7 +106,11 @@ export async function handleExploreEnrich(
           pValue: number;
           adjustedPValue: number;
           foldEnrichment: number;
-          overlappingEntities?: Array<{ type: string; id: string; label: string }>;
+          overlappingEntities?: Array<{
+            type: string;
+            id: string;
+            label: string;
+          }>;
         }>;
       };
       meta?: { requestId?: string; resolved?: unknown; warnings?: unknown[] };
@@ -123,15 +145,28 @@ export async function handleExploreEnrich(
         data: { _mode: "enrich" as const },
         tc,
         next_actions: [
-          { tool: "Run", args: { command: "explore", target: cmd.target, p_cutoff: Math.min((cmd.p_cutoff ?? 0.05) * 10, 1) }, reason: "Relax p-value cutoff to find weaker signals" },
-          { tool: "Run", args: { command: "explore", into: [cmd.target] }, reason: "Try direct neighbor exploration instead" },
+          {
+            tool: "Run",
+            args: {
+              command: "explore",
+              target: cmd.target,
+              p_cutoff: Math.min((cmd.p_cutoff ?? 0.05) * 10, 1),
+            },
+            reason: "Relax p-value cutoff to find weaker signals",
+          },
+          {
+            tool: "Run",
+            args: { command: "explore", into: [cmd.target] },
+            reason: "Try direct neighbor exploration instead",
+          },
         ],
       });
     }
 
     const pCutoff = cmd.p_cutoff ?? 0.05;
     const method = data.data?.method ?? "Fisher's exact test";
-    const summary = data.data?.textSummary ??
+    const summary =
+      data.data?.textSummary ??
       `${enriched.length} enriched ${cmd.target} (${method}, p < ${pCutoff})`;
 
     return okResult({
@@ -157,14 +192,22 @@ export async function handleExploreEnrich(
 }
 
 /** Extract entities from enrich result data for pipeline forwarding. */
-export function extractEnrichEntities(data: Record<string, unknown>): EntityRef[] {
-  const enriched = data.enriched as Array<{ entity?: Record<string, unknown> }> | undefined;
+export function extractEnrichEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
+  const enriched = data.enriched as
+    | Array<{ entity?: Record<string, unknown> }>
+    | undefined;
   if (!enriched) return [];
   const out: EntityRef[] = [];
   for (const e of enriched) {
     const ent = e.entity;
     if (ent?.type && ent.id && ent.label) {
-      out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+      out.push({
+        type: String(ent.type),
+        id: String(ent.id),
+        label: String(ent.label),
+      });
     }
   }
   return out;

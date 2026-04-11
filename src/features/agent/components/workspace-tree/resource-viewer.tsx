@@ -1,12 +1,18 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import {
+  getCohortSampleClient,
+  getCohortSchemaClient,
+} from "@features/batch/api";
+import { cn } from "@infra/utils";
+import { Badge } from "@shared/components/ui/badge";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@shared/components/ui/sheet";
+import { Skeleton } from "@shared/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -15,14 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
-import { Badge } from "@shared/components/ui/badge";
-import { Skeleton } from "@shared/components/ui/skeleton";
-import { cn } from "@infra/utils";
-import {
-  getCohortSchemaClient,
-  getCohortSampleClient,
-  type SchemaColumn,
-} from "@features/batch/api";
+import { useQuery } from "@tanstack/react-query";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -185,9 +184,7 @@ function SampleView({ cohortId }: { cohortId: string }) {
   }
 
   // Collect all column keys from rows
-  const allKeys = Array.from(
-    new Set(data.rows.flatMap((r) => Object.keys(r))),
-  );
+  const allKeys = Array.from(new Set(data.rows.flatMap((r) => Object.keys(r))));
 
   return (
     <div className="space-y-3 p-4">

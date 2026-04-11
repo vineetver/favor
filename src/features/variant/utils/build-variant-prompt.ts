@@ -143,22 +143,28 @@ function clinicalSignificance(v: Variant): string | null {
       if (cv.clnsig?.length) lines.push(`- ClinVar: ${cv.clnsig.join(", ")}`);
       if (cv.clndn?.length) {
         const conds = cv.clndn.filter(Boolean).slice(0, 5);
-        lines.push(`- Conditions: ${conds.join("; ")}${cv.clndn.length > 5 ? ` (+${cv.clndn.length - 5} more)` : ""}`);
+        lines.push(
+          `- Conditions: ${conds.join("; ")}${cv.clndn.length > 5 ? ` (+${cv.clndn.length - 5} more)` : ""}`,
+        );
       }
-      if (cv.origin_decoded?.length) lines.push(`- Origin: ${cv.origin_decoded.join(", ")}`);
+      if (cv.origin_decoded?.length)
+        lines.push(`- Origin: ${cv.origin_decoded.join(", ")}`);
       if (cv.clnrevstat) lines.push(`- Review: ${cv.clnrevstat}`);
     }
   }
 
   if (v.cosmic?.sample_count) {
     heading(lines, "## Clinical Significance");
-    lines.push(`- COSMIC: ${v.cosmic.sample_count} tumor samples${v.cosmic.tier ? `, tier ${v.cosmic.tier}` : ""}`);
+    lines.push(
+      `- COSMIC: ${v.cosmic.sample_count} tumor samples${v.cosmic.tier ? `, tier ${v.cosmic.tier}` : ""}`,
+    );
   }
 
   const am = v.alphamissense?.max_pathogenicity;
   if (am != null) {
     heading(lines, "## Clinical Significance");
-    const cls = v.alphamissense?.predictions?.[0]?.class ?? alphaMissenseClass(am);
+    const cls =
+      v.alphamissense?.predictions?.[0]?.class ?? alphaMissenseClass(am);
     lines.push(`- AlphaMissense: ${am.toFixed(3)} (${cls})`);
   }
 
@@ -205,10 +211,14 @@ function pathogenicityScores(v: Variant): string | null {
       heading(lines, "## Pathogenicity Scores");
       const s: string[] = [];
       if (c.mamphylop != null) {
-        s.push(`mammalian: ${c.mamphylop.toFixed(2)}${annotate(c.mamphylop, 2)}`);
+        s.push(
+          `mammalian: ${c.mamphylop.toFixed(2)}${annotate(c.mamphylop, 2)}`,
+        );
       }
       if (c.verphylop != null) {
-        s.push(`vertebrate: ${c.verphylop.toFixed(2)}${annotate(c.verphylop, 2)}`);
+        s.push(
+          `vertebrate: ${c.verphylop.toFixed(2)}${annotate(c.verphylop, 2)}`,
+        );
       }
       lines.push(`- PhyloP: ${s.join(", ")}`);
     }
@@ -247,7 +257,8 @@ function populationFrequency(v: Variant): string | null {
   if (gnomad?.af != null) {
     lines.push("## Population Frequency");
     const pct = (gnomad.af * 100).toFixed(4);
-    const rarity = gnomad.af < 0.001 ? " (very rare)" : gnomad.af < 0.01 ? " (rare)" : "";
+    const rarity =
+      gnomad.af < 0.001 ? " (very rare)" : gnomad.af < 0.01 ? " (rare)" : "";
     lines.push(`- gnomAD AF: ${pct}%${rarity}`);
     if (gnomad.grpmax) lines.push(`- Highest pop: ${gnomad.grpmax}`);
   }
@@ -281,8 +292,14 @@ function regulatoryAnnotations(v: Variant): string | null {
 
   if (v.genehancer?.id) {
     heading(lines, "## Regulatory Annotations");
-    const targets = v.genehancer.targets?.slice(0, 3).map((t) => t.gene).filter(Boolean) ?? [];
-    lines.push(`- GeneHancer: ${v.genehancer.id}${targets.length ? ` → ${targets.join(", ")}` : ""}`);
+    const targets =
+      v.genehancer.targets
+        ?.slice(0, 3)
+        .map((t) => t.gene)
+        .filter(Boolean) ?? [];
+    lines.push(
+      `- GeneHancer: ${v.genehancer.id}${targets.length ? ` → ${targets.join(", ")}` : ""}`,
+    );
   }
 
   if (v.super_enhancer?.ids?.length) {
@@ -292,8 +309,10 @@ function regulatoryAnnotations(v: Variant): string | null {
 
   if (v.cage?.cage_promoter || v.cage?.cage_enhancer) {
     heading(lines, "## Regulatory Annotations");
-    if (v.cage.cage_promoter) lines.push(`- CAGE Promoter: ${v.cage.cage_promoter}`);
-    if (v.cage.cage_enhancer) lines.push(`- CAGE Enhancer: ${v.cage.cage_enhancer}`);
+    if (v.cage.cage_promoter)
+      lines.push(`- CAGE Promoter: ${v.cage.cage_promoter}`);
+    if (v.cage.cage_enhancer)
+      lines.push(`- CAGE Enhancer: ${v.cage.cage_enhancer}`);
   }
 
   return lines.length > 1 ? lines.join("\n") : null;
@@ -307,7 +326,7 @@ function traitAssociations(
   gwas: GwasSummary | undefined,
   credibleSets: CredibleSetSummary[] | undefined,
 ): string | null {
-  const hasGwas = gwas && gwas.totalAssociations;
+  const hasGwas = gwas?.totalAssociations;
   const hasCs = credibleSets && credibleSets.length > 0;
   if (!hasGwas && !hasCs) return null;
 
@@ -346,12 +365,16 @@ function traitAssociations(
 // Extended Context: Target Genes
 // ---------------------------------------------------------------------------
 
-function targetGenesSection(genes: TargetGeneSummary[] | undefined): string | null {
+function targetGenesSection(
+  genes: TargetGeneSummary[] | undefined,
+): string | null {
   if (!genes?.length) return null;
 
   const lines = ["## Target Genes (variant → gene regulatory evidence)"];
   for (const g of genes.slice(0, 5)) {
-    lines.push(`- ${g.gene}: ${g.evidence} assocs, ${g.significant} sig, ${g.tissues} tissues [${g.sources.join(",")}]`);
+    lines.push(
+      `- ${g.gene}: ${g.evidence} assocs, ${g.significant} sig, ${g.tissues} tissues [${g.sources.join(",")}]`,
+    );
   }
 
   return lines.join("\n");
@@ -368,7 +391,9 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
   if (qtls?.length) {
     lines.push("## QTL Associations by Tissue");
     const sig = qtls.filter((t) => t.significant && t.significant > 0);
-    lines.push(`- ${qtls.length} tissues total, ${sig.length} with significant QTLs`);
+    lines.push(
+      `- ${qtls.length} tissues total, ${sig.length} with significant QTLs`,
+    );
     for (const t of topN(sig, 5)) {
       lines.push(`- ${t.tissue}: ${t.count} QTLs, ${t.significant} sig`);
     }
@@ -380,7 +405,9 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
     lines.push("## ChromBPNet Predictions by Tissue");
     lines.push(`- ${cbp.length} tissues with predictions`);
     for (const t of topN(cbp, 3)) {
-      lines.push(`- ${t.tissue}: max_score=${t.maxValue?.toFixed(2) ?? "N/A"}, ${t.count} predictions`);
+      lines.push(
+        `- ${t.tissue}: max_score=${t.maxValue?.toFixed(2) ?? "N/A"}, ${t.count} predictions`,
+      );
     }
   }
 
@@ -390,7 +417,9 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
     lines.push("## Tissue cCRE Activity");
     lines.push(`- ${signals.length} tissues with regulatory signals`);
     for (const t of topN(signals, 3)) {
-      lines.push(`- ${t.tissue}: max_signal=${t.maxValue?.toFixed(1) ?? "N/A"}`);
+      lines.push(
+        `- ${t.tissue}: max_signal=${t.maxValue?.toFixed(1) ?? "N/A"}`,
+      );
     }
   }
 
@@ -399,7 +428,9 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
     const sigAi = ai.filter((t) => t.significant && t.significant > 0);
     if (sigAi.length) {
       if (lines.length) lines.push("");
-      lines.push(`## Allelic Imbalance: ${ai.length} tissues, ${sigAi.length} significant`);
+      lines.push(
+        `## Allelic Imbalance: ${ai.length} tissues, ${sigAi.length} significant`,
+      );
       for (const t of topN(sigAi, 3)) {
         lines.push(`- ${t.tissue}: ${t.significant} sig marks`);
       }
@@ -411,7 +442,9 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
     const sigM = meth.filter((t) => t.significant && t.significant > 0);
     if (sigM.length) {
       if (lines.length) lines.push("");
-      lines.push(`## Methylation: ${meth.length} tissues, ${sigM.length} significant`);
+      lines.push(
+        `## Methylation: ${meth.length} tissues, ${sigM.length} significant`,
+      );
     }
   }
 
@@ -422,17 +455,24 @@ function tissueEvidenceSection(ctx: VariantPromptContext): string | null {
 // Extended Context: Region Evidence Counts
 // ---------------------------------------------------------------------------
 
-function regionEvidenceSection(counts: RegionCounts | undefined): string | null {
+function regionEvidenceSection(
+  counts: RegionCounts | undefined,
+): string | null {
   if (!counts) return null;
 
   const parts: string[] = [];
   if (counts.signals) parts.push(`${counts.signals} cCRE signals`);
-  if (counts.chromatin_states) parts.push(`${counts.chromatin_states} chromatin states`);
-  if (counts.enhancer_genes) parts.push(`${counts.enhancer_genes} enhancer-gene links`);
-  if (counts.accessibility_peaks) parts.push(`${counts.accessibility_peaks} accessibility peaks`);
+  if (counts.chromatin_states)
+    parts.push(`${counts.chromatin_states} chromatin states`);
+  if (counts.enhancer_genes)
+    parts.push(`${counts.enhancer_genes} enhancer-gene links`);
+  if (counts.accessibility_peaks)
+    parts.push(`${counts.accessibility_peaks} accessibility peaks`);
   if (counts.loops) parts.push(`${counts.loops} chromatin loops`);
-  if (counts.validated_enhancers) parts.push(`${counts.validated_enhancers} validated enhancers`);
-  if (counts.crispr_screens) parts.push(`${counts.crispr_screens} CRISPR screens`);
+  if (counts.validated_enhancers)
+    parts.push(`${counts.validated_enhancers} validated enhancers`);
+  if (counts.crispr_screens)
+    parts.push(`${counts.crispr_screens} CRISPR screens`);
 
   if (!parts.length) return null;
   return `## Region Evidence\n- ${parts.join(", ")}`;
@@ -528,6 +568,9 @@ function alphaMissenseClass(score: number): string {
 /** Sort by significant (desc), then count (desc), return top N */
 function topN(stats: TissueStat[], n: number): TissueStat[] {
   return [...stats]
-    .sort((a, b) => (b.significant ?? 0) - (a.significant ?? 0) || b.count - a.count)
+    .sort(
+      (a, b) =>
+        (b.significant ?? 0) - (a.significant ?? 0) || b.count - a.count,
+    )
     .slice(0, n);
 }

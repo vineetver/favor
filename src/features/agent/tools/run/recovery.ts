@@ -59,7 +59,10 @@ export async function recoverEmptyResult(
       next_actions: [
         {
           tool: "AskUser",
-          args: { question: "This cohort has no data matching the query. What would you like to try?" },
+          args: {
+            question:
+              "This cohort has no data matching the query. What would you like to try?",
+          },
           reason: "Empty cohort with no filters to relax",
           confidence: 0.5,
         },
@@ -100,14 +103,19 @@ export async function recoverEmptyResult(
 
   // Multiple filters: probe to find the culprit
   const ranked = rankFiltersBySelectivity(filters);
-  const probeResults: Array<{ filter_removed: CohortFilter; count: number }> = [];
+  const probeResults: Array<{ filter_removed: CohortFilter; count: number }> =
+    [];
 
   for (const suspect of ranked.slice(0, 2)) {
     const relaxed = filters.filter((f) => f !== suspect);
     try {
       const result = await cohortFetch<{ total?: number }>(
         `/cohorts/${encodeURIComponent(cohortId)}/rows`,
-        { method: "POST", body: { filters: relaxed, limit: 1 }, timeout: 10_000 },
+        {
+          method: "POST",
+          body: { filters: relaxed, limit: 1 },
+          timeout: 10_000,
+        },
       );
       const count = typeof result.total === "number" ? result.total : 0;
       probeResults.push({ filter_removed: suspect, count });
@@ -132,7 +140,9 @@ export async function recoverEmptyResult(
                     args: {
                       command,
                       cohort_id: cohortId,
-                      filters: filters.map((f) => (f === suspect ? relaxThreshold(suspect) : f)),
+                      filters: filters.map((f) =>
+                        f === suspect ? relaxThreshold(suspect) : f,
+                      ),
                     },
                     reason: `Relaxed ${(suspect as { field: string }).field} threshold by 50%`,
                     reason_code: "threshold_relaxation",
@@ -163,7 +173,8 @@ export async function recoverEmptyResult(
       {
         tool: "AskUser",
         args: {
-          question: "No variants match these filters. Which filters should I relax?",
+          question:
+            "No variants match these filters. Which filters should I relax?",
         },
         reason: "User guidance needed",
         confidence: 0.5,
@@ -186,10 +197,14 @@ function rankFiltersBySelectivity(filters: CohortFilter[]): CohortFilter[] {
     gene: 4,
     chromosome: 5,
   };
-  return [...filters].sort((a, b) => (priority[a.type] ?? 99) - (priority[b.type] ?? 99));
+  return [...filters].sort(
+    (a, b) => (priority[a.type] ?? 99) - (priority[b.type] ?? 99),
+  );
 }
 
-function isScoreFilter(filter: CohortFilter): filter is CohortFilter & { field: string; threshold: number } {
+function isScoreFilter(
+  filter: CohortFilter,
+): filter is CohortFilter & { field: string; threshold: number } {
   return filter.type === "score_above" || filter.type === "score_below";
 }
 
@@ -226,7 +241,9 @@ export function describeFilter(filter: CohortFilter): string {
 // Helpers for checking empty data and extracting filters
 // ---------------------------------------------------------------------------
 
-export function isEmptyData(data: Record<string, unknown> | undefined): boolean {
+export function isEmptyData(
+  data: Record<string, unknown> | undefined,
+): boolean {
   if (!data) return true;
 
   // rows command: empty rows array

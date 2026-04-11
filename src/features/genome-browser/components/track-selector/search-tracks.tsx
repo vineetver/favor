@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/track-selector/search-tracks.tsx
 // Search input for filtering tracks
 
-import { Search, X } from 'lucide-react'
-import { Input } from '@shared/components/ui/input'
-import { Button } from '@shared/components/ui/button'
-import { cn } from '@infra/utils'
+import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Search, X } from "lucide-react";
 
 type SearchTracksProps = {
-  value: string
-  onChange: (value: string) => void
-  className?: string
-  placeholder?: string
-}
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+};
 
 export function SearchTracks({
   value,
   onChange,
   className,
-  placeholder = 'Search tracks...',
+  placeholder = "Search tracks...",
 }: SearchTracksProps) {
   return (
     <div className={cn("relative", className)}>
@@ -35,12 +35,12 @@ export function SearchTracks({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onChange('')}
+          onClick={() => onChange("")}
           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
         >
           <X className="h-4 w-4" />
         </Button>
       )}
     </div>
-  )
+  );
 }

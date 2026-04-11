@@ -1,13 +1,13 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@shared/components/ui/popover";
-import { cn } from "@infra/utils";
+import { Filter } from "lucide-react";
 import type { TissueGroup } from "../types";
 import { TISSUE_GROUPS } from "../utils";
 

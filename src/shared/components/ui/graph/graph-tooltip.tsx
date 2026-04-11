@@ -28,7 +28,10 @@ function GraphTooltipInner({
   children,
   className,
 }: GraphTooltipProps) {
-  const [adjustedPosition, setAdjustedPosition] = useState<{ x: number; y: number } | null>(null);
+  const [adjustedPosition, setAdjustedPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Adjust tooltip position to keep it within viewport
   useEffect(() => {
@@ -72,7 +75,7 @@ function GraphTooltipInner({
         "bg-background rounded-lg border border-border shadow-lg",
         "px-3 py-2 max-w-[240px]",
         "animate-in fade-in-0 zoom-in-95 duration-100",
-        className
+        className,
       )}
       style={{
         left: adjustedPosition.x,
@@ -114,7 +117,12 @@ interface TooltipHeaderProps {
   className?: string;
 }
 
-export function TooltipHeader({ title, subtitle, badge, className }: TooltipHeaderProps) {
+export function TooltipHeader({
+  title,
+  subtitle,
+  badge,
+  className,
+}: TooltipHeaderProps) {
   return (
     <div className={cn("mb-2", className)}>
       <div className="flex items-center gap-2">
@@ -122,7 +130,9 @@ export function TooltipHeader({ title, subtitle, badge, className }: TooltipHead
         {badge}
       </div>
       {subtitle && (
-        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{subtitle}</div>
+        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+          {subtitle}
+        </div>
       )}
     </div>
   );

@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
 import type { ElementDefinition } from "cytoscape";
-import {
-  createEdgeMap,
-  transformToCytoscapeElements,
-} from "../utils/ppi-graph-utils";
+import { useMemo } from "react";
 import type {
   CentralityData,
   EdgeFilterConfig,
   PPIEdge,
 } from "../components/ppi-network/types";
+import {
+  createEdgeMap,
+  transformToCytoscapeElements,
+} from "../utils/ppi-graph-utils";
 
 interface UsePPIDerivedStateOptions {
   seedGeneId: string;
@@ -76,21 +76,27 @@ export function usePPIDerivedState({
     () =>
       transformToCytoscapeElements(
         { id: seedGeneId, symbol: seedGeneSymbol },
-        limitedEdges
+        limitedEdges,
       ),
-    [seedGeneId, seedGeneSymbol, limitedEdges]
+    [seedGeneId, seedGeneSymbol, limitedEdges],
   );
 
   // Max experiments for slider range
   const maxExperiments = useMemo(() => {
-    return allEdges.reduce((max, edge) => Math.max(max, edge.numExperiments ?? 0), 0);
+    return allEdges.reduce(
+      (max, edge) => Math.max(max, edge.numExperiments ?? 0),
+      0,
+    );
   }, [allEdges]);
 
   // Visible edges based on filter
   const visibleEdgeIds = useMemo(() => {
     const visible = new Set<string>();
 
-    if (!edgeFilter || (edgeFilter.minSources === 0 && edgeFilter.minExperiments === 0)) {
+    if (
+      !edgeFilter ||
+      (edgeFilter.minSources === 0 && edgeFilter.minExperiments === 0)
+    ) {
       // No filter active - all edges visible
       limitedEdges.forEach((edge) => visible.add(edge.id));
       return visible;

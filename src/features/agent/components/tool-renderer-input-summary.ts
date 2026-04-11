@@ -8,7 +8,9 @@ function getRunCommandSummary(
 ): string {
   switch (command) {
     case "explore": {
-      const seeds = inp.seeds as Array<{ label?: string; id?: string }> | undefined;
+      const seeds = inp.seeds as
+        | Array<{ label?: string; id?: string }>
+        | undefined;
       const into = inp.into as string[] | undefined;
       const seedLabel = seeds?.[0]?.label ?? seeds?.[0]?.id ?? "entities";
       const targetLabel = into?.join(", ") ?? "neighbors";
@@ -20,7 +22,9 @@ function getRunCommandSummary(
       const parts = ["rows"];
       if (sort) parts.push(`sort: ${sort}`);
       if (limit) parts.push(`limit: ${limit}`);
-      return parts.length > 1 ? `${parts[0]} (${parts.slice(1).join(", ")})` : parts[0];
+      return parts.length > 1
+        ? `${parts[0]} (${parts.slice(1).join(", ")})`
+        : parts[0];
     }
     case "groupby": {
       const groupBy = inp.group_by as string | undefined;
@@ -37,12 +41,18 @@ function getRunCommandSummary(
     }
     case "prioritize": {
       const criteria = inp.criteria as Array<{ column?: string }> | undefined;
-      const cols = criteria?.map((c) => c.column).filter(Boolean).join(", ");
+      const cols = criteria
+        ?.map((c) => c.column)
+        .filter(Boolean)
+        .join(", ");
       return cols ? `prioritize by ${cols}` : "prioritize";
     }
     case "compute": {
       const weights = inp.weights as Array<{ column?: string }> | undefined;
-      const cols = weights?.map((w) => w.column).filter(Boolean).join(", ");
+      const cols = weights
+        ?.map((w) => w.column)
+        .filter(Boolean)
+        .join(", ");
       return cols ? `compute score: ${cols}` : "compute score";
     }
     case "analytics": {
@@ -60,7 +70,9 @@ function getRunCommandSummary(
       return "export cohort";
     case "create_cohort": {
       const refs = inp.references as string[] | undefined;
-      return refs?.length ? `create cohort (${refs.length} variants)` : "create cohort";
+      return refs?.length
+        ? `create cohort (${refs.length} variants)`
+        : "create cohort";
     }
     case "enrich": {
       const inputSet = inp.input_set as unknown[] | undefined;
@@ -77,7 +89,9 @@ function getRunCommandSummary(
       return from && to ? `paths: ${from} → ${to}` : "find paths";
     }
     case "compare": {
-      const entities = inp.entities as Array<{ label?: string; id?: string }> | undefined;
+      const entities = inp.entities as
+        | Array<{ label?: string; id?: string }>
+        | undefined;
       const labels = entities?.map((e) => e.label ?? e.id ?? "?").join(" vs ");
       return labels ? `compare ${labels}` : "compare entities";
     }
@@ -120,7 +134,9 @@ export function getToolInputSummary(
       const type = inp.type as string | undefined;
       const id = inp.id as string | undefined;
       if (!id) return null;
-      return type ? `Getting context for ${type}:${id}` : `Getting context for ${id}`;
+      return type
+        ? `Getting context for ${type}:${id}`
+        : `Getting context for ${id}`;
     }
     case "compareEntities": {
       const entities = inp.entities as Array<{ id?: string }> | undefined;
@@ -144,9 +160,14 @@ export function getToolInputSummary(
         : `Enrichment analysis (${genes?.length ?? 0} genes)`;
     }
     case "findPaths": {
-      const from = inp.from as { type?: string; id?: string } | string | undefined;
+      const from = inp.from as
+        | { type?: string; id?: string }
+        | string
+        | undefined;
       const to = inp.to as { type?: string; id?: string } | string | undefined;
-      const fmtEntity = (e: { type?: string; id?: string } | string | undefined) => {
+      const fmtEntity = (
+        e: { type?: string; id?: string } | string | undefined,
+      ) => {
         if (!e) return null;
         if (typeof e === "string") return e;
         return e.type ? `${e.type}:${e.id}` : e.id;
@@ -157,14 +178,21 @@ export function getToolInputSummary(
       return `Finding paths from ${src} to ${tgt}`;
     }
     case "findPatterns": {
-      const pattern = inp.pattern as Array<{ var?: string; type?: string; edge?: string }> | undefined;
+      const pattern = inp.pattern as
+        | Array<{ var?: string; type?: string; edge?: string }>
+        | undefined;
       if (!pattern?.length) return null;
-      const nodeVars = pattern.filter(p => p.var).map(p => p.type).join(", ");
-      const edgeCount = pattern.filter(p => p.edge).length;
+      const nodeVars = pattern
+        .filter((p) => p.var)
+        .map((p) => p.type)
+        .join(", ");
+      const edgeCount = pattern.filter((p) => p.edge).length;
       return `Finding ${nodeVars} patterns (${edgeCount} edge constraints)`;
     }
     case "getSharedNeighbors": {
-      const entities = inp.entities as Array<{ type?: string; id?: string }> | undefined;
+      const entities = inp.entities as
+        | Array<{ type?: string; id?: string }>
+        | undefined;
       if (!entities?.length) return null;
       return `Finding shared neighbors of ${entities.map((e) => e.id ?? "?").join(", ")}`;
     }
@@ -197,7 +225,9 @@ export function getToolInputSummary(
       const task = inp.task as { type?: string } | undefined;
       const taskType = task?.type;
       if (taskType === "gwas_qc") return "Running GWAS QC";
-      return taskType ? `Running ${taskType.replace(/_/g, " ")}` : "Running analytics";
+      return taskType
+        ? `Running ${taskType.replace(/_/g, " ")}`
+        : "Running analytics";
     }
     case "getConnections": {
       const from = inp.from as { type?: string; id?: string } | undefined;
@@ -226,7 +256,7 @@ export function getToolInputSummary(
     case "planQuery": {
       const uq = inp.userQuery as string | undefined;
       return uq
-        ? `Planning: ${uq.length > 50 ? uq.slice(0, 47) + "..." : uq}`
+        ? `Planning: ${uq.length > 50 ? `${uq.slice(0, 47)}...` : uq}`
         : "Planning query";
     }
     case "getGraphSchema": {
@@ -240,13 +270,13 @@ export function getToolInputSummary(
     case "variantTriage": {
       const task = inp.task as string | undefined;
       return task
-        ? `Analyzing: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
+        ? `Analyzing: ${task.length > 60 ? `${task.slice(0, 57)}...` : task}`
         : "Analyzing variants";
     }
     case "bioContext": {
       const task = inp.task as string | undefined;
       return task
-        ? `Exploring: ${task.length > 60 ? task.slice(0, 57) + "..." : task}`
+        ? `Exploring: ${task.length > 60 ? `${task.slice(0, 57)}...` : task}`
         : "Exploring graph";
     }
     case "State":
@@ -254,7 +284,7 @@ export function getToolInputSummary(
     case "Read": {
       const path = inp.path as string | undefined;
       if (!path) return "Reading resource";
-      return `Read ${path.length > 50 ? path.slice(0, 47) + "..." : path}`;
+      return `Read ${path.length > 50 ? `${path.slice(0, 47)}...` : path}`;
     }
     case "Search": {
       const q = inp.query as string | undefined;
@@ -272,9 +302,7 @@ export function getToolInputSummary(
     case "AskUser": {
       const question = inp.question as string | undefined;
       if (!question) return "Asking user";
-      return question.length > 60
-        ? question.slice(0, 57) + "..."
-        : question;
+      return question.length > 60 ? `${question.slice(0, 57)}...` : question;
     }
     default:
       return null;

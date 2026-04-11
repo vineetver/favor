@@ -2,22 +2,22 @@
  * Agent factory — 5 tools, observe-decide-act loop.
  */
 
+import { devToolsMiddleware } from "@ai-sdk/devtools";
 import {
-  ToolLoopAgent,
   type InferAgentUIMessage,
   stepCountIs,
+  ToolLoopAgent,
   wrapLanguageModel,
 } from "ai";
-import { devToolsMiddleware } from "@ai-sdk/devtools";
-import { buildSystemPrompt } from "./lib/prompts/system";
-import { createPrepareStep } from "./lib/prepare-step";
 import { getSynthesisModel, getSynthesisProviderOptions } from "./lib/models";
-import { createStateTool } from "./tools/state";
-import { readTool } from "./tools/read";
-import { createSearchTool } from "./tools/search";
-import { createRunTool } from "./tools/run";
+import { createPrepareStep } from "./lib/prepare-step";
+import { buildSystemPrompt } from "./lib/prompts/system";
 import { askUserTool } from "./tools/ask-user";
+import { readTool } from "./tools/read";
 import type { RunContext } from "./tools/run";
+import { createRunTool } from "./tools/run";
+import { createSearchTool } from "./tools/search";
+import { createStateTool } from "./tools/state";
 
 import type { VizSpec } from "./types";
 import { generateVizSpecs } from "./viz";
@@ -38,14 +38,19 @@ export function createAgentTools(sessionId: string) {
   const tools = {
     State: createStateTool(sessionId),
     Read: readTool,
-    Search: createSearchTool(sessionId, () => getContext().activeCohortId ?? null),
+    Search: createSearchTool(
+      sessionId,
+      () => getContext().activeCohortId ?? null,
+    ),
     Run: createRunTool(() => getContext()),
     AskUser: askUserTool,
   };
 
   return {
     tools,
-    setContextProvider: (fn: () => RunContext) => { getContext = fn; },
+    setContextProvider: (fn: () => RunContext) => {
+      getContext = fn;
+    },
   };
 }
 
@@ -53,15 +58,15 @@ export function createAgentTools(sessionId: string) {
 // Agent factory
 // ---------------------------------------------------------------------------
 
-export function createFavorAgent(
-  sessionId: string,
-  synthesisModelId?: string,
-) {
+export function createFavorAgent(sessionId: string, synthesisModelId?: string) {
   const baseModel = getSynthesisModel(synthesisModelId);
 
   const model =
     process.env.NODE_ENV === "development"
-      ? wrapLanguageModel({ model: baseModel, middleware: devToolsMiddleware() })
+      ? wrapLanguageModel({
+          model: baseModel,
+          middleware: devToolsMiddleware(),
+        })
       : baseModel;
 
   const { tools, setContextProvider } = createAgentTools(sessionId);
@@ -89,7 +94,8 @@ export function createFavorAgent(
         if (!isObj(tr.output) || tr.output.error) continue;
 
         if (tc.toolName === "Run" && isObj(tc.input)) {
-          const cmd = typeof tc.input.command === "string" ? tc.input.command : "";
+          const cmd =
+            typeof tc.input.command === "string" ? tc.input.command : "";
           const vizResults = generateVizSpecs(
             `run_${cmd}`,
             tr.output,

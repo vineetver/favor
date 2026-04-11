@@ -96,13 +96,16 @@ export function GwasCatalogTable({
     prefetchNext,
   } = useGwasQuery({
     variantVcf,
-    initialData: initialData.length > 0 ? {
-      data: initialData,
-      meta: initialMeta ?? null,
-      hasMore: initialPaginationInfo?.hasMore ?? false,
-      nextCursor: initialPaginationInfo?.currentCursor ?? null,
-      totalCount: initialPaginationInfo?.totalCount,
-    } : undefined,
+    initialData:
+      initialData.length > 0
+        ? {
+            data: initialData,
+            meta: initialMeta ?? null,
+            hasMore: initialPaginationInfo?.hasMore ?? false,
+            nextCursor: initialPaginationInfo?.currentCursor ?? null,
+            totalCount: initialPaginationInfo?.totalCount,
+          }
+        : undefined,
   });
 
   // Use query data (falls back to initial data on first render)

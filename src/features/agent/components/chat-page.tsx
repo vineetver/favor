@@ -1,9 +1,5 @@
 "use client";
 
-import { isToolUIPart, getToolName, type UIMessage } from "ai";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
 import {
   Conversation,
   ConversationContent,
@@ -17,65 +13,69 @@ import {
   MessageResponse,
 } from "@shared/components/ai-elements/message";
 import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputFooter,
+  type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "@shared/components/ai-elements/prompt-input";
+import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
 } from "@shared/components/ai-elements/reasoning";
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  type PromptInputMessage,
-} from "@shared/components/ai-elements/prompt-input";
 import { Shimmer } from "@shared/components/ai-elements/shimmer";
-import { Spinner } from "@shared/components/ui/spinner";
-import { Button } from "@shared/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from "@shared/components/ui/sheet";
 import {
   Suggestion,
   Suggestions,
 } from "@shared/components/ai-elements/suggestion";
-import {
-  CopyIcon,
-  DnaIcon,
-  MessageSquareIcon,
-  PanelLeftIcon,
-  PlusIcon,
-  ThumbsUpIcon,
-  ThumbsDownIcon,
-  XIcon,
-} from "lucide-react";
+import { Button } from "@shared/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@shared/components/ui/select";
+import { Sheet, SheetContent, SheetTitle } from "@shared/components/ui/sheet";
+import { Spinner } from "@shared/components/ui/spinner";
+import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import {
-  AVAILABLE_SYNTHESIS_MODELS,
-  type SynthesisModelId,
-} from "../lib/models";
+  CopyIcon,
+  DnaIcon,
+  MessageSquareIcon,
+  PanelLeftIcon,
+  PlusIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  XIcon,
+} from "lucide-react";
 import { motion } from "motion/react";
-import { WorkspaceSidebar } from "./workspace-sidebar";
-import { AgentErrorBoundary } from "./error-boundary";
-import { ActivityTimeline } from "./tool-renderers";
-import { EmptyState } from "./empty-state";
-import { VizSpecPanel } from "./viz-spec-panel";
-import type { AgentPlan, VizSpec, VariantTriageOutput, BioContextOutput } from "../types";
-import { isArtifactRef } from "../lib/compact-message";
-import { generateVizSpecs } from "../viz";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgentChat } from "../hooks/use-agent-chat";
+import { isArtifactRef } from "../lib/compact-message";
 import {
   buildFollowUpMessage,
   consumeFollowUp,
   type SummarySeed,
 } from "../lib/follow-up";
+import {
+  AVAILABLE_SYNTHESIS_MODELS,
+  type SynthesisModelId,
+} from "../lib/models";
+import type {
+  AgentPlan,
+  BioContextOutput,
+  VariantTriageOutput,
+  VizSpec,
+} from "../types";
+import { generateVizSpecs } from "../viz";
+import { EmptyState } from "./empty-state";
+import { AgentErrorBoundary } from "./error-boundary";
+import { ActivityTimeline } from "./tool-renderers";
+import { VizSpecPanel } from "./viz-spec-panel";
+import { WorkspaceSidebar } from "./workspace-sidebar";
 
 // ---------------------------------------------------------------------------
 // Follow-up suggestions
@@ -91,20 +91,39 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
   if (lastTool) {
     const name = getToolName(lastTool).replace(/^tool-/, "");
 
-    const args = "input" in lastTool ? (lastTool.input as Record<string, unknown> | undefined) : undefined;
+    const args =
+      "input" in lastTool
+        ? (lastTool.input as Record<string, unknown> | undefined)
+        : undefined;
 
     switch (name) {
       case "Run": {
         const command = args?.command as string | undefined;
-        const mode = args?.mode as string | undefined;
+        const _mode = args?.mode as string | undefined;
         if (command === "explore") {
           const inp = args as Record<string, unknown> | undefined;
-          if (inp?.metric) return ["Break down by group", "Explore the top entity"];
-          if (inp?.target) return ["Which genes drive the top enriched term?", "Explore the most significant pathway"];
+          if (inp?.metric)
+            return ["Break down by group", "Explore the top entity"];
+          if (inp?.target)
+            return [
+              "Which genes drive the top enriched term?",
+              "Explore the most significant pathway",
+            ];
           if (inp?.into && Array.isArray(inp.seeds) && inp.seeds.length >= 2)
-            return ["Run enrichment on the shared genes", "Show unique associations for each"];
-          if (inp?.into) return ["Run enrichment on the top genes", "Tell me about the top-ranked result"];
-          if (inp?.top_k) return ["Tell me about the most similar one", "Compare these entities"];
+            return [
+              "Run enrichment on the shared genes",
+              "Show unique associations for each",
+            ];
+          if (inp?.into)
+            return [
+              "Run enrichment on the top genes",
+              "Tell me about the top-ranked result",
+            ];
+          if (inp?.top_k)
+            return [
+              "Tell me about the most similar one",
+              "Compare these entities",
+            ];
           return ["Explore connections", "Tell me about the top-ranked result"];
         }
         if (command === "traverse") {
@@ -112,29 +131,50 @@ function getFollowUpSuggestions(messages: UIMessage[]): string[] {
           if (inp?.pattern || inp?.description)
             return ["Refine this pattern", "Show details for the top matches"];
           if (inp?.from && inp?.to)
-            return ["What diseases do they share?", "Are there alternative connections?"];
+            return [
+              "What diseases do they share?",
+              "Are there alternative connections?",
+            ];
           return ["Explore the next hop", "Summarize the chain"];
         }
         if (command === "rows")
-          return ["Filter to pathogenic variants only", "Group by clinical significance"];
+          return [
+            "Filter to pathogenic variants only",
+            "Group by clinical significance",
+          ];
         if (command === "groupby")
-          return ["Drill into the largest group", "Visualize this distribution"];
+          return [
+            "Drill into the largest group",
+            "Visualize this distribution",
+          ];
         if (command === "create_cohort")
           return ["Show me the cohort schema", "Rank variants by CADD score"];
         if (command === "derive")
           return ["Summarize the derived cohort", "Compare with the parent"];
         if (command === "prioritize" || command === "compute")
-          return ["Explore the top-ranked genes in the graph", "Export these results"];
+          return [
+            "Explore the top-ranked genes in the graph",
+            "Export these results",
+          ];
         if (command === "analytics")
           return ["Visualize the results", "What do these results mean?"];
-        return ["Tell me more about these results", "What else can we explore?"];
+        return [
+          "Tell me more about these results",
+          "What else can we explore?",
+        ];
       }
       case "Search":
-        return ["Get details on the top result", "Search for something related"];
+        return [
+          "Get details on the top result",
+          "Search for something related",
+        ];
       case "Read":
         return ["What does this data tell us?", "Summarize the key findings"];
       case "State":
-        return ["What can I do with the active cohort?", "Show me available analyses"];
+        return [
+          "What can I do with the active cohort?",
+          "Show me available analyses",
+        ];
     }
   }
 
@@ -160,9 +200,11 @@ function getContextualStatus(messages: UIMessage[]): string {
   if (RS_PATTERN.test(text)) return "Looking up variant data...";
   if (text.includes("compare")) return "Setting up comparison...";
   if (text.includes("cohort")) return "Preparing cohort analysis...";
-  if (text.includes("path") || text.includes("connect")) return "Tracing connections...";
+  if (text.includes("path") || text.includes("connect"))
+    return "Tracing connections...";
   if (text.includes("enrich")) return "Running enrichment analysis...";
-  if (text.includes("drug") || text.includes("target")) return "Exploring drug landscape...";
+  if (text.includes("drug") || text.includes("target"))
+    return "Exploring drug landscape...";
   return "Searching knowledge graph...";
 }
 
@@ -190,7 +232,10 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
 
   const lastPart = message.parts.at(-1);
   const isReasoningStreaming =
-    showReasoning && isLastMessage && isStreaming && lastPart?.type === "reasoning";
+    showReasoning &&
+    isLastMessage &&
+    isStreaming &&
+    lastPart?.type === "reasoning";
 
   const handleCopy = useCallback(() => {
     const textContent = message.parts
@@ -204,22 +249,23 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   // state transitions (e.g. input-available → output-available), NOT on every
   // text token during streaming.  This prevents cascading re-renders through
   // vizSpecs → chart components → ResponsiveContainer resize observer loops.
-  const toolFingerprint = message.parts
+  const _toolFingerprint = message.parts
     .filter(isToolUIPart)
     .map((p) => `${getToolName(p)}:${"state" in p ? p.state : ""}`)
     .join("|");
 
-  const allToolParts = useMemo(() =>
-    message.parts.filter(isToolUIPart).map((p) => ({
-      type: p.type as string,
-      toolCallId: "toolCallId" in p ? (p.toolCallId as string) : undefined,
-      toolName: getToolName(p) as string,
-      state: "state" in p ? (p.state as string) : undefined,
-      input: "input" in p ? p.input : undefined,
-      output: "output" in p ? p.output : undefined,
-    })),
+  const allToolParts = useMemo(
+    () =>
+      message.parts.filter(isToolUIPart).map((p) => ({
+        type: p.type as string,
+        toolCallId: "toolCallId" in p ? (p.toolCallId as string) : undefined,
+        toolName: getToolName(p) as string,
+        state: "state" in p ? (p.state as string) : undefined,
+        input: "input" in p ? p.input : undefined,
+        output: "output" in p ? p.output : undefined,
+      })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toolFingerprint],
+    [message.parts.filter],
   );
   const hasToolParts = allToolParts.length > 0;
 
@@ -232,14 +278,20 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
     for (const p of allToolParts) {
       const name = (p.toolName ?? "").replace(/^tool-/, "");
       if (name === "planQuery") {
-        if (p.state === "output-available" && p.output) plan = p.output as AgentPlan;
-        if (p.state === "input-available" || p.state === "input-streaming") planStreaming = true;
+        if (p.state === "output-available" && p.output)
+          plan = p.output as AgentPlan;
+        if (p.state === "input-available" || p.state === "input-streaming")
+          planStreaming = true;
       } else {
         siblings.push(p);
       }
     }
 
-    return { planOutput: plan, isPlanStreaming: planStreaming, siblingToolParts: siblings };
+    return {
+      planOutput: plan,
+      isPlanStreaming: planStreaming,
+      siblingToolParts: siblings,
+    };
   }, [allToolParts]);
 
   // Extract vizSpecs — prefer persisted _vizSpecs from compacted messages,
@@ -248,17 +300,31 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   // streaming token, which would produce a new vizSpecs array on every render,
   // bypassing VizSpecPanel memo and triggering Recharts ResizeObserver loops.
   const persistedVizSpecs = useMemo(
-    () => (message as unknown as Record<string, unknown>)._vizSpecs as VizSpec[] | undefined,
+    () =>
+      (message as unknown as Record<string, unknown>)._vizSpecs as
+        | VizSpec[]
+        | undefined,
     // message.id is stable for the lifetime of a message — _vizSpecs is set once on load
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [message.id],
+    [message.id, message],
   );
 
   const vizSpecs = useMemo(() => {
     if (persistedVizSpecs?.length) return persistedVizSpecs;
 
     const SPECIALIST = new Set(["bioContext", "variantTriage"]);
-    const SKIP = new Set(["planQuery", "searchEntities", "recalMemories", "saveMemory", "getResultSlice", "listResults", "getGraphSchema", "getCohortSchema", "getEdgeDetail", "runBatch"]);
+    const SKIP = new Set([
+      "planQuery",
+      "searchEntities",
+      "recalMemories",
+      "saveMemory",
+      "getResultSlice",
+      "listResults",
+      "getGraphSchema",
+      "getCohortSchema",
+      "getEdgeDetail",
+      "runBatch",
+    ]);
 
     return allToolParts.reduce<VizSpec[]>((acc, p, idx) => {
       const name = (p.toolName ?? "").replace(/^tool-/, "");
@@ -271,10 +337,22 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
         const output = p.output as VariantTriageOutput | BioContextOutput;
         if (output.vizSpecs?.length) acc.push(...output.vizSpecs);
       } else if (name === "runBatch") {
-        const batch = p.output as { results?: Array<{ toolName: string; input?: Record<string, unknown>; output?: unknown; error?: boolean }> };
+        const batch = p.output as {
+          results?: Array<{
+            toolName: string;
+            input?: Record<string, unknown>;
+            output?: unknown;
+            error?: boolean;
+          }>;
+        };
         for (const entry of batch.results ?? []) {
           if (entry.error || !entry.output) continue;
-          const vizResults = generateVizSpecs(entry.toolName, entry.output, entry.input ?? {}, acc.length);
+          const vizResults = generateVizSpecs(
+            entry.toolName,
+            entry.output,
+            entry.input ?? {},
+            acc.length,
+          );
           acc.push(...vizResults);
         }
       } else if (!SKIP.has(name)) {
@@ -289,8 +367,9 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   const textSegments = useMemo(
     () =>
       message.parts
-        .filter((p): p is Extract<typeof p, { type: "text" }> =>
-          p.type === "text" && !!p.text.trim(),
+        .filter(
+          (p): p is Extract<typeof p, { type: "text" }> =>
+            p.type === "text" && !!p.text.trim(),
         )
         .map((p, i) => ({ text: p.text, key: `text-${message.id}-${i}` })),
     [message.parts, message.id],
@@ -319,12 +398,16 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
         )}
 
         {/* Streaming indicator before any tools appear */}
-        {isLastMessage && isStreaming && !hasToolParts && textSegments.length === 0 && !hasReasoning && (
-          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-            <Spinner className="size-4" />
-            <Shimmer duration={2}>{contextualStatus}</Shimmer>
-          </div>
-        )}
+        {isLastMessage &&
+          isStreaming &&
+          !hasToolParts &&
+          textSegments.length === 0 &&
+          !hasReasoning && (
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              <Shimmer duration={2}>{contextualStatus}</Shimmer>
+            </div>
+          )}
 
         {/* Activity timeline — flat status lines for all tool activity */}
         {hasToolParts && (
@@ -482,11 +565,11 @@ export function ChatPage() {
       <aside className="hidden lg:flex w-[300px] shrink-0 flex-col bg-muted/40 border-r border-border">
         <AgentErrorBoundary fallbackLabel="Sidebar error">
           <WorkspaceSidebar
-              onSendMessage={handleSidebarMessage}
-              sessionId={sessionId}
-              onLoadSession={loadSession}
-              onNewChat={newChat}
-            />
+            onSendMessage={handleSidebarMessage}
+            sessionId={sessionId}
+            onLoadSession={loadSession}
+            onNewChat={newChat}
+          />
         </AgentErrorBoundary>
       </aside>
 
@@ -554,9 +637,8 @@ export function ChatPage() {
               </Select>
             ) : (
               <span className="h-7 px-2 text-[11px] font-medium text-muted-foreground inline-flex items-center">
-                {AVAILABLE_SYNTHESIS_MODELS.find(
-                  (m) => m.id === synthesisModel,
-                )?.label ?? "Fast"}
+                {AVAILABLE_SYNTHESIS_MODELS.find((m) => m.id === synthesisModel)
+                  ?.label ?? "Fast"}
               </span>
             )}
             <Button
@@ -578,7 +660,7 @@ export function ChatPage() {
                 <EmptyState onSelect={send} />
               ) : (
                 <div className="mx-auto w-full max-w-3xl space-y-6">
-                {messages.map((message, index) => (
+                  {messages.map((message, index) => (
                     <motion.div
                       key={message.id || `msg-${index}`}
                       initial={{ opacity: 0, y: 8 }}
@@ -620,11 +702,7 @@ export function ChatPage() {
                     messages.at(-1)?.role === "assistant" && (
                       <Suggestions className="mt-1">
                         {getFollowUpSuggestions(messages).map((s) => (
-                          <Suggestion
-                            key={s}
-                            suggestion={s}
-                            onClick={send}
-                          />
+                          <Suggestion key={s} suggestion={s} onClick={send} />
                         ))}
                       </Suggestions>
                     )}
@@ -675,7 +753,10 @@ export function ChatPage() {
                 <span className="flex-1 truncate">
                   Following up on {pendingSeed.kind}{" "}
                   <span className="font-medium">{pendingSeed.displayName}</span>
-                  <span className="text-muted-foreground"> — summary attached</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — summary attached
+                  </span>
                 </span>
                 <button
                   type="button"

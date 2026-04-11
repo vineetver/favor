@@ -13,10 +13,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
-import { NoDataState } from "@shared/components/ui/error-states";
-import { ExternalLink } from "@shared/components/ui/external-link";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { NoDataState } from "@shared/components/ui/error-states";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -30,18 +30,39 @@ interface SafetyLiabilitiesAccordionProps {
   className?: string;
 }
 
-type SafetyLiability = NonNullable<Gene["opentargets"]["safety_liabilities"]>[number];
+type SafetyLiability = NonNullable<
+  Gene["opentargets"]["safety_liabilities"]
+>[number];
 type DirectionCategory = "increase" | "decrease" | "mixed" | "unknown";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const DIRECTION_CONFIG: Record<DirectionCategory, { label: string; dotColor: string; textColor: string }> = {
-  increase: { label: "Increases risk", dotColor: "bg-red-500", textColor: "text-red-500/80" },
-  decrease: { label: "Decreases risk", dotColor: "bg-emerald-500", textColor: "text-emerald-600" },
-  mixed: { label: "Variable", dotColor: "bg-amber-500", textColor: "text-amber-500/80" },
-  unknown: { label: "Unknown", dotColor: "bg-muted-foreground/40", textColor: "text-muted-foreground" },
+const DIRECTION_CONFIG: Record<
+  DirectionCategory,
+  { label: string; dotColor: string; textColor: string }
+> = {
+  increase: {
+    label: "Increases risk",
+    dotColor: "bg-red-500",
+    textColor: "text-red-500/80",
+  },
+  decrease: {
+    label: "Decreases risk",
+    dotColor: "bg-emerald-500",
+    textColor: "text-emerald-600",
+  },
+  mixed: {
+    label: "Variable",
+    dotColor: "bg-amber-500",
+    textColor: "text-amber-500/80",
+  },
+  unknown: {
+    label: "Unknown",
+    dotColor: "bg-muted-foreground/40",
+    textColor: "text-muted-foreground",
+  },
 };
 
 // ============================================================================
@@ -50,16 +71,28 @@ const DIRECTION_CONFIG: Record<DirectionCategory, { label: string; dotColor: str
 
 function classifyDirection(text: string): DirectionCategory {
   const normalized = text.toLowerCase();
-  if (normalized.includes("increase") || normalized.includes("up") || normalized.includes("positive") || normalized.includes("elevated")) {
+  if (
+    normalized.includes("increase") ||
+    normalized.includes("up") ||
+    normalized.includes("positive") ||
+    normalized.includes("elevated")
+  ) {
     return "increase";
   }
-  if (normalized.includes("decrease") || normalized.includes("down") || normalized.includes("negative") || normalized.includes("reduced")) {
+  if (
+    normalized.includes("decrease") ||
+    normalized.includes("down") ||
+    normalized.includes("negative") ||
+    normalized.includes("reduced")
+  ) {
     return "decrease";
   }
   return "unknown";
 }
 
-function getDirectionSummary(effects: SafetyLiability["effects"]): DirectionCategory {
+function getDirectionSummary(
+  effects: SafetyLiability["effects"],
+): DirectionCategory {
   if (!effects || effects.length === 0) return "unknown";
   const directions = new Set<DirectionCategory>();
   effects.forEach((effect) => {
@@ -76,7 +109,10 @@ function getLiabilityKey(item: SafetyLiability, index: number) {
 }
 
 /** A study is "real" only if it has a name or description — not a placeholder */
-function isRealStudy(study: { name?: string | null; description?: string | null }): boolean {
+function isRealStudy(study: {
+  name?: string | null;
+  description?: string | null;
+}): boolean {
   return Boolean(study.name || study.description);
 }
 
@@ -86,9 +122,14 @@ function getRealStudies(item: SafetyLiability) {
 
 function parseLiterature(literature?: string | null): string[] {
   if (!literature) return [];
-  return Array.from(new Set(
-    literature.split(/[,;\s]+/).map((e) => e.trim()).filter(Boolean)
-  ));
+  return Array.from(
+    new Set(
+      literature
+        .split(/[,;\s]+/)
+        .map((e) => e.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 // Format technical study names like "TOX21_ERa_BLA_Antagonist_ratio" into readable text
@@ -97,21 +138,21 @@ function formatStudyName(name: string): string {
 
   // Common abbreviation expansions
   const expansions: Record<string, string> = {
-    "TOX21": "Tox21",
-    "ATG": "Attagene",
-    "BLA": "\u03B2-lactamase",
-    "LUC": "Luciferase",
-    "ERa": "ER\u03B1",
-    "ERb": "ER\u03B2",
-    "AR": "Androgen Receptor",
-    "GR": "Glucocorticoid Receptor",
-    "PR": "Progesterone Receptor",
-    "TRANS": "Transactivation",
-    "CIS": "Cis-regulatory",
-    "ERE": "Estrogen Response Element",
-    "VM7": "VM7 cells",
-    "dn": "down",
-    "up": "up",
+    TOX21: "Tox21",
+    ATG: "Attagene",
+    BLA: "\u03B2-lactamase",
+    LUC: "Luciferase",
+    ERa: "ER\u03B1",
+    ERb: "ER\u03B2",
+    AR: "Androgen Receptor",
+    GR: "Glucocorticoid Receptor",
+    PR: "Progesterone Receptor",
+    TRANS: "Transactivation",
+    CIS: "Cis-regulatory",
+    ERE: "Estrogen Response Element",
+    VM7: "VM7 cells",
+    dn: "down",
+    up: "up",
   };
 
   // Split by underscores
@@ -144,7 +185,8 @@ function getStudyTypeDescription(type?: string | null): string {
   if (!type) return "";
   const lower = type.toLowerCase();
   if (lower.includes("cell")) return "Cell-based assay";
-  if (lower.includes("vivo") || lower.includes("animal")) return "In vivo study";
+  if (lower.includes("vivo") || lower.includes("animal"))
+    return "In vivo study";
   if (lower.includes("vitro")) return "In vitro assay";
   if (lower.includes("clinical")) return "Clinical study";
   return type;
@@ -160,14 +202,19 @@ function formatVariantCoord(raw: string): string {
 }
 
 /** Clean up ClinPGx descriptions that contain raw variant notation */
-function formatStudyDescription(desc: string): { text: string; variants: string[] } | null {
+function formatStudyDescription(
+  desc: string,
+): { text: string; variants: string[] } | null {
   if (!desc) return null;
   const match = desc.match(/^(.+?):\s*(.+)$/);
   if (!match) return { text: desc, variants: [] };
 
   const [, prefix, variantList] = match;
   // Check if the suffix looks like variant coords (e.g. "6_152103343_A_A,A")
-  const rawVariants = variantList.split(/,\s*/).map((v) => v.trim()).filter(Boolean);
+  const rawVariants = variantList
+    .split(/,\s*/)
+    .map((v) => v.trim())
+    .filter(Boolean);
   const looksLikeCoords = rawVariants.some((v) => /^\d+_\d+_[ACGT]/.test(v));
 
   if (looksLikeCoords) {
@@ -183,16 +230,24 @@ function formatStudyDescription(desc: string): { text: string; variants: string[
 // Direction Indicator
 // ============================================================================
 
-function DirectionDot({ direction, size = "sm" }: { direction: DirectionCategory; size?: "sm" | "md" }) {
+function DirectionDot({
+  direction,
+  size = "sm",
+}: {
+  direction: DirectionCategory;
+  size?: "sm" | "md";
+}) {
   const config = DIRECTION_CONFIG[direction];
   const dotSize = size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2";
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={cn(dotSize, "rounded-full shrink-0", config.dotColor)} />
-      <span className={cn(
-        size === "sm" ? "text-[10px]" : "text-[11px]",
-        "text-muted-foreground"
-      )}>
+      <span
+        className={cn(
+          size === "sm" ? "text-[10px]" : "text-[11px]",
+          "text-muted-foreground",
+        )}
+      >
         {config.label}
       </span>
     </span>
@@ -210,7 +265,9 @@ export function SafetyLiabilitiesAccordion({
   const [directionFilter, setDirectionFilter] = useState("all");
   const [studyFilter, setStudyFilter] = useState("all");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [expandedStudies, setExpandedStudies] = useState<Record<string, boolean>>({});
+  const [expandedStudies, setExpandedStudies] = useState<
+    Record<string, boolean>
+  >({});
 
   // Count by direction
   const directionCounts = useMemo(() => {
@@ -223,34 +280,44 @@ export function SafetyLiabilitiesAccordion({
 
   // Count with real studies (not empty placeholders)
   const withStudiesCount = useMemo(() => {
-    return (liabilities ?? []).filter((l) => getRealStudies(l).length > 0).length;
+    return (liabilities ?? []).filter((l) => getRealStudies(l).length > 0)
+      .length;
   }, [liabilities]);
 
   // Filter dimensions
-  const dimensions = useMemo<DimensionConfig[]>(() => [
-    {
-      label: "Effect",
-      value: directionFilter,
-      onChange: setDirectionFilter,
-      options: [
-        { value: "all", label: `All (${liabilities?.length ?? 0})` },
-        { value: "increase", label: `Risk \u2191 (${directionCounts.increase})` },
-        { value: "decrease", label: `Risk \u2193 (${directionCounts.decrease})` },
-        { value: "mixed", label: `Variable (${directionCounts.mixed})` },
-      ],
-    },
-    {
-      label: "Evidence",
-      value: studyFilter,
-      onChange: setStudyFilter,
-      options: [
-        { value: "all", label: "All" },
-        { value: "with", label: "Has studies" },
-        { value: "without", label: "No studies" },
-      ],
-      presentation: "segmented",
-    },
-  ], [directionFilter, studyFilter, liabilities?.length, directionCounts]);
+  const dimensions = useMemo<DimensionConfig[]>(
+    () => [
+      {
+        label: "Effect",
+        value: directionFilter,
+        onChange: setDirectionFilter,
+        options: [
+          { value: "all", label: `All (${liabilities?.length ?? 0})` },
+          {
+            value: "increase",
+            label: `Risk \u2191 (${directionCounts.increase})`,
+          },
+          {
+            value: "decrease",
+            label: `Risk \u2193 (${directionCounts.decrease})`,
+          },
+          { value: "mixed", label: `Variable (${directionCounts.mixed})` },
+        ],
+      },
+      {
+        label: "Evidence",
+        value: studyFilter,
+        onChange: setStudyFilter,
+        options: [
+          { value: "all", label: "All" },
+          { value: "with", label: "Has studies" },
+          { value: "without", label: "No studies" },
+        ],
+        presentation: "segmented",
+      },
+    ],
+    [directionFilter, studyFilter, liabilities?.length, directionCounts],
+  );
 
   // Filter liabilities
   const filteredLiabilities = useMemo(() => {
@@ -259,9 +326,12 @@ export function SafetyLiabilitiesAccordion({
       .map((item, index) => ({ item, index }))
       .filter(({ item }) => {
         const summary = getDirectionSummary(item.effects);
-        const matchesDirection = directionFilter === "all" || summary === directionFilter;
+        const matchesDirection =
+          directionFilter === "all" || summary === directionFilter;
         const hasStudies = getRealStudies(item).length > 0;
-        const matchesStudies = studyFilter === "all" || (studyFilter === "with" ? hasStudies : !hasStudies);
+        const matchesStudies =
+          studyFilter === "all" ||
+          (studyFilter === "with" ? hasStudies : !hasStudies);
         return matchesDirection && matchesStudies;
       });
   }, [directionFilter, liabilities, studyFilter]);
@@ -272,7 +342,12 @@ export function SafetyLiabilitiesAccordion({
       setSelectedKey(null);
       return;
     }
-    if (!selectedKey || !filteredLiabilities.some((e) => getLiabilityKey(e.item, e.index) === selectedKey)) {
+    if (
+      !selectedKey ||
+      !filteredLiabilities.some(
+        (e) => getLiabilityKey(e.item, e.index) === selectedKey,
+      )
+    ) {
       const first = filteredLiabilities[0];
       setSelectedKey(getLiabilityKey(first.item, first.index));
     }
@@ -281,7 +356,9 @@ export function SafetyLiabilitiesAccordion({
   // Get selected
   const selected = useMemo(() => {
     if (!selectedKey) return filteredLiabilities[0]?.item ?? null;
-    const matched = filteredLiabilities.find((e) => getLiabilityKey(e.item, e.index) === selectedKey);
+    const matched = filteredLiabilities.find(
+      (e) => getLiabilityKey(e.item, e.index) === selectedKey,
+    );
     return matched?.item ?? filteredLiabilities[0]?.item ?? null;
   }, [filteredLiabilities, selectedKey]);
 
@@ -291,7 +368,9 @@ export function SafetyLiabilitiesAccordion({
     return selected.effects.map((effect) => ({
       direction: effect.direction || "Unknown",
       dosing: effect.dosing || "Not specified",
-      category: effect.direction ? classifyDirection(effect.direction) : "unknown" as DirectionCategory,
+      category: effect.direction
+        ? classifyDirection(effect.direction)
+        : ("unknown" as DirectionCategory),
     }));
   }, [selected]);
 
@@ -301,7 +380,11 @@ export function SafetyLiabilitiesAccordion({
     const map = new Map<string, string[]>();
     selected.biosamples.forEach((sample) => {
       const tissue = sample.tissueLabel || "Unknown tissue";
-      const cell = sample.cellLabel || sample.cellFormat || sample.cellId || "Unknown cell";
+      const cell =
+        sample.cellLabel ||
+        sample.cellFormat ||
+        sample.cellId ||
+        "Unknown cell";
       if (!map.has(tissue)) map.set(tissue, []);
       const list = map.get(tissue);
       if (list && !list.includes(cell)) list.push(cell);
@@ -310,7 +393,10 @@ export function SafetyLiabilitiesAccordion({
   }, [selected]);
 
   // Literature refs
-  const literature = useMemo(() => parseLiterature(selected?.literature), [selected]);
+  const literature = useMemo(
+    () => parseLiterature(selected?.literature),
+    [selected],
+  );
 
   // Empty state
   if (!liabilities || liabilities.length === 0) {
@@ -338,7 +424,9 @@ export function SafetyLiabilitiesAccordion({
           <div className="text-right text-[13px] text-muted-foreground">
             <div>{liabilities.length} events</div>
             {withStudiesCount > 0 && (
-              <div className="text-primary font-medium">{withStudiesCount} with evidence</div>
+              <div className="text-primary font-medium">
+                {withStudiesCount} with evidence
+              </div>
             )}
           </div>
         </div>
@@ -373,7 +461,7 @@ export function SafetyLiabilitiesAccordion({
                       className={cn(
                         "w-full px-5 py-2.5 text-left border-b border-border/60 transition-colors",
                         "hover:bg-accent/50",
-                        isSelected && "bg-accent/70"
+                        isSelected && "bg-accent/70",
                       )}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -385,7 +473,8 @@ export function SafetyLiabilitiesAccordion({
                             const real = getRealStudies(item);
                             return real.length > 0 ? (
                               <div className="text-[11px] text-muted-foreground">
-                                {real.length} {real.length === 1 ? "study" : "studies"}
+                                {real.length}{" "}
+                                {real.length === 1 ? "study" : "studies"}
                               </div>
                             ) : null;
                           })()}
@@ -406,7 +495,9 @@ export function SafetyLiabilitiesAccordion({
           {/* Detail Panel */}
           <div className="overflow-y-auto max-h-[600px]">
             <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-              <div className="text-[11px] font-medium text-muted-foreground">Details</div>
+              <div className="text-[11px] font-medium text-muted-foreground">
+                Details
+              </div>
             </div>
             <div className="px-5 py-5 space-y-5">
               {!selected ? (
@@ -421,7 +512,10 @@ export function SafetyLiabilitiesAccordion({
                       <h3 className="text-[15px] font-semibold text-foreground">
                         {selected.event || "Unnamed event"}
                       </h3>
-                      <DirectionDot direction={getDirectionSummary(selected.effects)} size="md" />
+                      <DirectionDot
+                        direction={getDirectionSummary(selected.effects)}
+                        size="md"
+                      />
                     </div>
                     {selected.datasource && (
                       <div className="text-[13px] text-muted-foreground">
@@ -438,10 +532,18 @@ export function SafetyLiabilitiesAccordion({
                       </div>
                       <div className="space-y-2">
                         {selectedEffects.map((effect, index) => (
-                          <div key={index} className="flex items-start gap-3 p-3 rounded-lg border border-border/60">
-                            <DirectionDot direction={effect.category} size="md" />
+                          <div
+                            key={index}
+                            className="flex items-start gap-3 p-3 rounded-lg border border-border/60"
+                          >
+                            <DirectionDot
+                              direction={effect.category}
+                              size="md"
+                            />
                             <div className="text-[13px] text-muted-foreground">
-                              <span className="text-foreground">{effect.dosing}</span>
+                              <span className="text-foreground">
+                                {effect.dosing}
+                              </span>
                             </div>
                           </div>
                         ))}
@@ -454,69 +556,84 @@ export function SafetyLiabilitiesAccordion({
                     const realStudies = getRealStudies(selected);
                     if (realStudies.length === 0) return null;
                     return (
-                    <div className="space-y-3">
-                      <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Supporting Studies
-                      </div>
-                      <div className="space-y-2">
-                        {realStudies.map((study, index) => {
-                          const studyKey = `${study.name || "study"}-${index}`;
-                          const isExpanded = expandedStudies[studyKey] ?? false;
+                      <div className="space-y-3">
+                        <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                          Supporting Studies
+                        </div>
+                        <div className="space-y-2">
+                          {realStudies.map((study, index) => {
+                            const studyKey = `${study.name || "study"}-${index}`;
+                            const isExpanded =
+                              expandedStudies[studyKey] ?? false;
 
-                          return (
-                            <Collapsible
-                              key={studyKey}
-                              open={isExpanded}
-                              onOpenChange={(open) => setExpandedStudies((prev) => ({ ...prev, [studyKey]: open }))}
-                              className="border border-border/60 rounded-lg overflow-hidden"
-                            >
-                              <CollapsibleTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
-                                >
-                                  <div className="text-left min-w-0">
-                                    <div className="text-[13px] font-medium text-foreground">
-                                      {formatStudyName(study.name || "")}
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                      {getStudyTypeDescription(study.type) || "Assay"}
-                                    </div>
-                                  </div>
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                  )}
-                                </button>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent>
-                                {study.description && (() => {
-                                  const parsed = formatStudyDescription(study.description);
-                                  if (!parsed) return null;
-                                  return (
-                                    <div className="px-4 py-3 border-t border-border/60 bg-muted/30 space-y-2">
-                                      <div className="text-[13px] text-muted-foreground leading-relaxed">
-                                        {parsed.text}
+                            return (
+                              <Collapsible
+                                key={studyKey}
+                                open={isExpanded}
+                                onOpenChange={(open) =>
+                                  setExpandedStudies((prev) => ({
+                                    ...prev,
+                                    [studyKey]: open,
+                                  }))
+                                }
+                                className="border border-border/60 rounded-lg overflow-hidden"
+                              >
+                                <CollapsibleTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
+                                  >
+                                    <div className="text-left min-w-0">
+                                      <div className="text-[13px] font-medium text-foreground">
+                                        {formatStudyName(study.name || "")}
                                       </div>
-                                      {parsed.variants.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {[...new Set(parsed.variants)].map((v, i) => (
-                                            <span key={`${i}-${v}`} className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                                              {v}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {getStudyTypeDescription(study.type) ||
+                                          "Assay"}
+                                      </div>
                                     </div>
-                                  );
-                                })()}
-                              </CollapsibleContent>
-                            </Collapsible>
-                          );
-                        })}
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    )}
+                                  </button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  {study.description &&
+                                    (() => {
+                                      const parsed = formatStudyDescription(
+                                        study.description,
+                                      );
+                                      if (!parsed) return null;
+                                      return (
+                                        <div className="px-4 py-3 border-t border-border/60 bg-muted/30 space-y-2">
+                                          <div className="text-[13px] text-muted-foreground leading-relaxed">
+                                            {parsed.text}
+                                          </div>
+                                          {parsed.variants.length > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                              {[
+                                                ...new Set(parsed.variants),
+                                              ].map((v, i) => (
+                                                <span
+                                                  key={`${i}-${v}`}
+                                                  className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground"
+                                                >
+                                                  {v}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+                                </CollapsibleContent>
+                              </Collapsible>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
                     );
                   })()}
 
@@ -529,7 +646,9 @@ export function SafetyLiabilitiesAccordion({
                       <div className="space-y-3">
                         {groupedBiosamples.map(([tissue, cells]) => (
                           <div key={tissue}>
-                            <div className="text-[13px] font-medium text-foreground mb-1">{tissue}</div>
+                            <div className="text-[13px] font-medium text-foreground mb-1">
+                              {tissue}
+                            </div>
                             <div className="flex flex-wrap gap-1.5">
                               {cells.map((cell) => (
                                 <span

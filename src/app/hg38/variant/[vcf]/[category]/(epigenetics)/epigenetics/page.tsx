@@ -7,14 +7,12 @@ interface EpigeneticsPageProps {
     vcf: string;
     category: string;
   }>;
-  
 }
 
 export default async function EpigeneticsPage({
   params,
 }: EpigeneticsPageProps) {
   const { vcf } = await params;
-  
 
   const result = await fetchVariantWithCookie(vcf);
 

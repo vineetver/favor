@@ -6,6 +6,9 @@
  * - Components receive strongly-typed Job objects where TypeScript enforces valid states
  */
 
+import { handle401 } from "@infra/api/handle-auth-error";
+
+import { API_BASE } from "@/config/api";
 import type {
   CohortAggregateRequest,
   CohortDeriveRequest,
@@ -27,9 +30,6 @@ import type {
   ValidateResponse,
 } from "../types";
 
-import { API_BASE } from "@/config/api";
-import { handle401 } from "@infra/api/handle-auth-error";
-
 // ============================================================================
 // Error Classes
 // ============================================================================
@@ -50,7 +50,7 @@ export class BatchApiError extends Error {
 // Helper Functions
 // ============================================================================
 
-function getContentType(filename: string): string {
+function _getContentType(filename: string): string {
   const ext = filename.toLowerCase().split(".").pop();
   const types: Record<string, string> = {
     csv: "text/csv",
@@ -62,7 +62,10 @@ function getContentType(filename: string): string {
   return types[ext || ""] || "application/octet-stream";
 }
 
-async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  endpoint: string,
+): Promise<T> {
   if (!response.ok) {
     if (handle401(response.status)) {
       return new Promise<T>(() => {}); // redirect in progress, never resolves
@@ -103,7 +106,7 @@ async function withRetry<T>(
 
       if (!isRetryable) throw error;
 
-      const delay = baseDelayMs * Math.pow(2, attempt);
+      const delay = baseDelayMs * 2 ** attempt;
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -148,10 +151,22 @@ export async function uploadFile(
         try {
           resolve(JSON.parse(xhr.responseText));
         } catch {
-          reject(new BatchApiError(xhr.status, "Invalid JSON response", "/cohorts/upload"));
+          reject(
+            new BatchApiError(
+              xhr.status,
+              "Invalid JSON response",
+              "/cohorts/upload",
+            ),
+          );
         }
       } else {
-        reject(new BatchApiError(xhr.status, xhr.responseText.slice(0, 500), "/cohorts/upload"));
+        reject(
+          new BatchApiError(
+            xhr.status,
+            xhr.responseText.slice(0, 500),
+            "/cohorts/upload",
+          ),
+        );
       }
     });
 
@@ -160,7 +175,9 @@ export async function uploadFile(
     xhr.addEventListener("error", () => {
       networkErrored = true;
       signal?.removeEventListener("abort", onAbort);
-      reject(new BatchApiError(0, "Network error during upload", "/cohorts/upload"));
+      reject(
+        new BatchApiError(0, "Network error during upload", "/cohorts/upload"),
+      );
     });
 
     xhr.addEventListener("abort", () => {
@@ -186,14 +203,18 @@ export async function uploadFile(
 /**
  * Step 3: Validate uploaded file (variant list mode)
  */
-export async function validateFile(request: ValidateRequest): Promise<ValidateResponse> {
+export async function validateFile(
+  request: ValidateRequest,
+): Promise<ValidateResponse> {
   return withRetry(() =>
     fetch(`${API_BASE}/cohorts/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(request),
-    }).then((res) => handleResponse<ValidateResponse>(res, "/cohorts/validate")),
+    }).then((res) =>
+      handleResponse<ValidateResponse>(res, "/cohorts/validate"),
+    ),
   );
 }
 
@@ -213,7 +234,9 @@ export async function validateTypedCohort(
       credentials: "include",
       body: JSON.stringify(request),
       signal,
-    }).then((res) => handleResponse<TypedValidateResponse>(res, "/cohorts/validate")),
+    }).then((res) =>
+      handleResponse<TypedValidateResponse>(res, "/cohorts/validate"),
+    ),
   );
 }
 
@@ -228,9 +251,12 @@ export async function getCohortFiles(
   if (tenantId) params.set("tenant_id", tenantId);
   const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${encodeURIComponent(id)}/files${qs ? `?${qs}` : ""}`, {
-      credentials: "include",
-    }).then((res) =>
+    fetch(
+      `${API_BASE}/cohorts/${encodeURIComponent(id)}/files${qs ? `?${qs}` : ""}`,
+      {
+        credentials: "include",
+      },
+    ).then((res) =>
       handleResponse<CohortFilesResponse>(res, `/cohorts/${id}/files`),
     ),
   );
@@ -253,8 +279,9 @@ export async function fetchTissueGroups(): Promise<string[]> {
  */
 export async function fetchEnrichmentOptions(): Promise<EnrichmentDiscoveryResponse> {
   return withRetry(() =>
-    fetch(`${API_BASE}/batch/enrichments`, { credentials: "include" }).then((res) =>
-      handleResponse<EnrichmentDiscoveryResponse>(res, "/batch/enrichments"),
+    fetch(`${API_BASE}/batch/enrichments`, { credentials: "include" }).then(
+      (res) =>
+        handleResponse<EnrichmentDiscoveryResponse>(res, "/batch/enrichments"),
     ),
   );
 }
@@ -317,9 +344,13 @@ export async function createCohort(
 /**
  * List cohorts with optional status filter and cursor pagination.
  */
-export async function listCohorts(
-  opts?: { status?: CohortStatus; source?: string; parent_id?: string; limit?: number; cursor?: string },
-): Promise<CohortListResponse> {
+export async function listCohorts(opts?: {
+  status?: CohortStatus;
+  source?: string;
+  parent_id?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<CohortListResponse> {
   const params = new URLSearchParams();
   if (opts?.status) params.set("status", opts.status);
   if (opts?.source) params.set("source", opts.source);
@@ -329,9 +360,9 @@ export async function listCohorts(
 
   const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts${qs ? `?${qs}` : ""}`, { credentials: "include" }).then((res) =>
-      handleResponse<CohortListResponse>(res, "/cohorts"),
-    ),
+    fetch(`${API_BASE}/cohorts${qs ? `?${qs}` : ""}`, {
+      credentials: "include",
+    }).then((res) => handleResponse<CohortListResponse>(res, "/cohorts")),
   );
 }
 
@@ -347,9 +378,9 @@ export async function getCohort(
   if (includeUrls) params.set("include_urls", "true");
   const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}${qs ? `?${qs}` : ""}`, { credentials: "include" }).then((res) =>
-      handleResponse<CohortDetail>(res, `/cohorts/${id}`),
-    ),
+    fetch(`${API_BASE}/cohorts/${id}${qs ? `?${qs}` : ""}`, {
+      credentials: "include",
+    }).then((res) => handleResponse<CohortDetail>(res, `/cohorts/${id}`)),
   );
 }
 
@@ -360,8 +391,9 @@ export async function getCohortStatus(
   id: string,
 ): Promise<CohortStatusResponse> {
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/status`, { credentials: "include" }).then((res) =>
-      handleResponse<CohortStatusResponse>(res, `/cohorts/${id}/status`),
+    fetch(`${API_BASE}/cohorts/${id}/status`, { credentials: "include" }).then(
+      (res) =>
+        handleResponse<CohortStatusResponse>(res, `/cohorts/${id}/status`),
     ),
   );
 }
@@ -369,9 +401,7 @@ export async function getCohortStatus(
 /**
  * Delete (or cancel) a cohort.
  */
-export async function deleteCohort(
-  id: string,
-): Promise<DeleteCohortResponse> {
+export async function deleteCohort(id: string): Promise<DeleteCohortResponse> {
   const res = await fetch(`${API_BASE}/cohorts/${id}`, {
     method: "DELETE",
     credentials: "include",
@@ -388,12 +418,10 @@ export async function deleteCohort(
 /**
  * Get cohort summary (gene/consequence/clinical breakdowns + highlights).
  */
-export async function getCohortSummary(
-  id: string,
-): Promise<CohortSummary> {
+export async function getCohortSummary(id: string): Promise<CohortSummary> {
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/summary`, { credentials: "include" }).then((res) =>
-      handleResponse<CohortSummary>(res, `/cohorts/${id}/summary`),
+    fetch(`${API_BASE}/cohorts/${id}/summary`, { credentials: "include" }).then(
+      (res) => handleResponse<CohortSummary>(res, `/cohorts/${id}/summary`),
     ),
   );
 }
@@ -452,9 +480,7 @@ export async function cohortDerive(
 /**
  * Export cohort as Arrow IPC.
  */
-export async function cohortExport(
-  id: string,
-): Promise<CohortExportResponse> {
+export async function cohortExport(id: string): Promise<CohortExportResponse> {
   return withRetry(() =>
     fetch(`${API_BASE}/cohorts/${id}/export`, {
       method: "POST",
@@ -525,7 +551,12 @@ export interface CohortSchemaResponse {
   data_type?: string;
   columns?: SchemaColumn[];
   capabilities?: Record<string, boolean>;
-  available_methods?: Array<{ method: string; category: string; description: string; available: boolean }>;
+  available_methods?: Array<{
+    method: string;
+    category: string;
+    description: string;
+    available: boolean;
+  }>;
 }
 
 /**

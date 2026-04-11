@@ -1,8 +1,12 @@
 import { fetchGene } from "@features/gene/api";
-import { fetchGraphQuery, parseTypeId, searchEntities } from "@features/graph/api";
 import { ProteinStructureView } from "@features/gene/components/protein-structure";
 import { assignDomainColors } from "@features/gene/components/protein-structure/colors";
 import type { ProteinDomain } from "@features/gene/components/protein-structure/types";
+import {
+  fetchGraphQuery,
+  parseTypeId,
+  searchEntities,
+} from "@features/graph/api";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
@@ -48,8 +52,7 @@ export default async function VariantProteinStructurePage({
   }
 
   // Get UniProt ID from AlphaMissense predictions
-  let uniprotId =
-    variant.alphamissense?.predictions?.[0]?.uniprot_id ?? null;
+  let uniprotId = variant.alphamissense?.predictions?.[0]?.uniprot_id ?? null;
   let geneId: string | null = null;
 
   // Search for the gene by symbol to get the Ensembl ID
@@ -107,7 +110,13 @@ export default async function VariantProteinStructurePage({
       const { nodes, edges } = graphResponse.data;
 
       const domainNames: string[] = [];
-      const rawDomains: Array<{ id: string; name: string; start: number; end: number; type?: string }> = [];
+      const rawDomains: Array<{
+        id: string;
+        name: string;
+        start: number;
+        end: number;
+        type?: string;
+      }> = [];
 
       for (const edge of edges) {
         const start = Number(edge.fields?.start_residue);

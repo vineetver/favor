@@ -1,15 +1,18 @@
 "use client";
 
-import { memo } from "react";
-import { ArrowRight } from "lucide-react";
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
+  TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import type { HoveredEdgeInfo } from "../types/node";
+import { ArrowRight } from "lucide-react";
+import { memo } from "react";
+import {
+  EDGE_TOOLTIP_FIELDS,
+  formatTooltipValue,
+} from "../config/edge-tooltip-fields";
 import { EDGE_TYPE_CONFIG, getEdgeDatabase } from "../types/edge";
-import { EDGE_TOOLTIP_FIELDS, formatTooltipValue } from "../config/edge-tooltip-fields";
+import type { HoveredEdgeInfo } from "../types/node";
 
 interface EdgeTooltipProps {
   info: HoveredEdgeInfo | null;
@@ -43,9 +46,16 @@ function EdgeTooltipInner({ info }: EdgeTooltipProps) {
   if (!fieldEntries.some((f) => f.label === "Source")) {
     fieldEntries.push({ label: "Source", value: database });
   }
-  if (fieldEntries.length < 3 && edge.numExperiments !== undefined && edge.numExperiments > 0) {
+  if (
+    fieldEntries.length < 3 &&
+    edge.numExperiments !== undefined &&
+    edge.numExperiments > 0
+  ) {
     if (!fieldEntries.some((f) => f.label === "Experiments")) {
-      fieldEntries.push({ label: "Experiments", value: String(edge.numExperiments) });
+      fieldEntries.push({
+        label: "Experiments",
+        value: String(edge.numExperiments),
+      });
     }
   }
 
@@ -80,7 +90,10 @@ function EdgeTooltipInner({ info }: EdgeTooltipProps) {
         {fieldEntries.length > 0 && (
           <div className="border-t border-background/20 pt-1.5 mt-1.5 space-y-0.5">
             {fieldEntries.map((entry) => (
-              <div key={entry.label} className="flex items-center justify-between gap-3">
+              <div
+                key={entry.label}
+                className="flex items-center justify-between gap-3"
+              >
                 <span className="text-background/60">{entry.label}</span>
                 <span className="font-medium text-white">{entry.value}</span>
               </div>

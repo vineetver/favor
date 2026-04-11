@@ -1,53 +1,63 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@shared/components/ui/sheet";
-import {
-  TooltipProvider,
-} from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
-import {
-  Network,
-} from "lucide-react";
-import { toast } from "sonner";
+import { TooltipProvider } from "@shared/components/ui/tooltip";
+import { Network } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ExplorerCytoscape } from "./explorer-cytoscape";
-import { ExplorerToolbar } from "./explorer-toolbar";
-import { ControlsDrawer } from "./controls-drawer";
-import { InspectorPanel } from "./inspector-panel";
-import { EdgeTooltip } from "./edge-tooltip";
-import { RankedResultsList } from "./ranked-results-list";
-import { useExplorerState, useExplorerActions, useExplorerSelectors } from "../state";
-import { hydrateSubgraphData, hydrateQueryResponse } from "../utils/hydration";
-import { serializeLensSteps, isBranchStep } from "../config/lenses";
-import { fetchSubgraph, fetchGraphQuery, parseTypeId } from "../api";
+import { toast } from "sonner";
 import type { GraphQueryStepOrBranch } from "../api";
-import {
-  buildEdgeTypeStatsMap,
-  resolveSortField,
-  resolveEdgeSelectFields,
-  collectEdgeTypesFromSteps,
-  injectSortFields,
-} from "../utils/schema-fields";
-import type { GraphExplorerViewProps, VariantTrailResultData } from "../types/props";
-import type { ExplorerNode, ExplorerEdge, HoveredEdgeInfo } from "../types/node";
-import type { EntityType } from "../types/entity";
-import type { EdgeType } from "../types/edge";
-import type { TemplateId } from "../types/state";
+import { fetchGraphQuery, fetchSubgraph, parseTypeId } from "../api";
 import type { ExpansionConfig } from "../config/expansion";
 import type { ExplorerTemplate } from "../config/explorer-config";
 import type { QueryStep } from "../config/lenses";
-import type { TemplateResultData, TemplateResultEntry } from "../types/template-results";
+import { isBranchStep, serializeLensSteps } from "../config/lenses";
 import { VARIANT_TRAIL_CONFIG } from "../config/variant-trail";
-import { makeNodeKey, makeEdgeKey } from "../types/keys";
-import { createEdgeId } from "../utils/keys";
-import { createProvenanceEvent } from "../types/provenance";
 import { useConnectionsDrilldown } from "../hooks/use-connections-drilldown";
+import {
+  useExplorerActions,
+  useExplorerSelectors,
+  useExplorerState,
+} from "../state";
+import type { EdgeType } from "../types/edge";
+import type { EntityType } from "../types/entity";
+import { makeEdgeKey, makeNodeKey } from "../types/keys";
+import type {
+  ExplorerEdge,
+  ExplorerNode,
+  HoveredEdgeInfo,
+} from "../types/node";
+import type {
+  GraphExplorerViewProps,
+  VariantTrailResultData,
+} from "../types/props";
+import { createProvenanceEvent } from "../types/provenance";
+import type { TemplateId } from "../types/state";
+import type {
+  TemplateResultData,
+  TemplateResultEntry,
+} from "../types/template-results";
+import { hydrateQueryResponse, hydrateSubgraphData } from "../utils/hydration";
+import { createEdgeId } from "../utils/keys";
+import {
+  buildEdgeTypeStatsMap,
+  collectEdgeTypesFromSteps,
+  injectSortFields,
+  resolveEdgeSelectFields,
+  resolveSortField,
+} from "../utils/schema-fields";
+import { ControlsDrawer } from "./controls-drawer";
+import { EdgeTooltip } from "./edge-tooltip";
+import { ExplorerCytoscape } from "./explorer-cytoscape";
+import { ExplorerToolbar } from "./explorer-toolbar";
+import { InspectorPanel } from "./inspector-panel";
+import { RankedResultsList } from "./ranked-results-list";
 
 // =============================================================================
 // Extract Ranked Results from query response
@@ -152,8 +162,11 @@ function GraphExplorerViewInner({
   const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeInfo | null>(null);
 
   // Variant trail cache + active result
-  const variantTrailCache = useRef<Map<string, VariantTrailResultData>>(new Map());
-  const [activeTrailResult, setActiveTrailResult] = useState<VariantTrailResultData | null>(null);
+  const variantTrailCache = useRef<Map<string, VariantTrailResultData>>(
+    new Map(),
+  );
+  const [activeTrailResult, setActiveTrailResult] =
+    useState<VariantTrailResultData | null>(null);
 
   // Build schema map once (memoized)
   const schemaMap = useMemo(() => buildEdgeTypeStatsMap(schema), [schema]);
@@ -167,11 +180,23 @@ function GraphExplorerViewInner({
     const templateId = initialTemplateId ?? config.defaultTemplateId;
     const template = config.templates.find((t) => t.id === templateId);
     const templateName = template?.name ?? templateId;
-    const initialProv = createProvenanceEvent("lens", `${templateName} template (initial)`, { templateId });
+    const initialProv = createProvenanceEvent(
+      "lens",
+      `${templateName} template (initial)`,
+      { templateId },
+    );
 
     if (initialSubgraph && initialSubgraph.edges.length > 0) {
-      const { nodes, edges } = hydrateSubgraphData(initialSubgraph, seed, seedSet);
-      actions.hydrateInitial({ nodes, edges, seeds: seedSet, provenance: new Map() }, templateId, initialProv);
+      const { nodes, edges } = hydrateSubgraphData(
+        initialSubgraph,
+        seed,
+        seedSet,
+      );
+      actions.hydrateInitial(
+        { nodes, edges, seeds: seedSet, provenance: new Map() },
+        templateId,
+        initialProv,
+      );
 
       // Extract ranked results from initial data
       if (template) {
@@ -196,21 +221,53 @@ function GraphExplorerViewInner({
       };
       const nodes = new Map<string, ExplorerNode>();
       nodes.set(seed.id, seedNode);
-      actions.hydrateInitial({ nodes, edges: new Map(), seeds: seedSet, provenance: new Map() }, templateId, initialProv);
+      actions.hydrateInitial(
+        { nodes, edges: new Map(), seeds: seedSet, provenance: new Map() },
+        templateId,
+        initialProv,
+      );
     }
-  }, [state.status, seed.id, seed.label, seed.type, initialSubgraph, initialTemplateId, config, actions]);
+  }, [
+    state.status,
+    seed.id,
+    seed.label,
+    seed.type,
+    initialSubgraph,
+    initialTemplateId,
+    config,
+    actions,
+    seed,
+  ]);
 
   // Derived state from selectors
   const elements = useMemo(() => selectors.elements(), [selectors]);
-  const { nodeTypeCounts, edgeTypeCounts } = useMemo(() => selectors.graphSummary(), [selectors]);
-  const selectedNodeIds = useMemo(() => selectors.highlightedNodeIds(), [selectors]);
-  const selectedEdgeId = useMemo(() => selectors.highlightedEdgeId(), [selectors]);
+  const { nodeTypeCounts, edgeTypeCounts } = useMemo(
+    () => selectors.graphSummary(),
+    [selectors],
+  );
+  const selectedNodeIds = useMemo(
+    () => selectors.highlightedNodeIds(),
+    [selectors],
+  );
+  const selectedEdgeId = useMemo(
+    () => selectors.highlightedEdgeId(),
+    [selectors],
+  );
   const isLoading = selectors.isLoading();
 
   // Ready-state shortcuts
   const readyState = state.status === "ready" ? state : null;
   const selection = readyState?.selection ?? { type: "none" as const };
-  const filters = readyState?.filters ?? { edgeTypes: new Set<EdgeType>(), minSources: 0, minExperiments: 0, maxDepth: 4, showOrphans: true, edgeTypeFilters: {}, scoreThreshold: null, scoreField: null };
+  const filters = readyState?.filters ?? {
+    edgeTypes: new Set<EdgeType>(),
+    minSources: 0,
+    minExperiments: 0,
+    maxDepth: 4,
+    showOrphans: true,
+    edgeTypeFilters: {},
+    scoreThreshold: null,
+    scoreField: null,
+  };
   const layout = readyState?.layout ?? "cose-bilkent";
   const viewMode = readyState?.viewMode ?? "graph";
   const activeTemplate = readyState?.activeTemplate ?? config.defaultTemplateId;
@@ -241,7 +298,10 @@ function GraphExplorerViewInner({
   useEffect(() => {
     if (selection.type !== "node") {
       setActiveTrailResult(null);
-    } else if (activeTrailResult && activeTrailResult.seedNodeId !== selection.nodeId) {
+    } else if (
+      activeTrailResult &&
+      activeTrailResult.seedNodeId !== selection.nodeId
+    ) {
       setActiveTrailResult(null);
     }
   }, [selection, activeTrailResult]);
@@ -250,99 +310,142 @@ function GraphExplorerViewInner({
   // Template Switching (async — stays in component)
   // ==========================================================================
 
-  const switchTemplate = useCallback(async (
-    templateId: TemplateId,
-    opts?: { extraSteps?: QueryStep[]; stepLimit?: number },
-  ) => {
-    const template = config.templates.find((t) => t.id === templateId);
-    if (!template) return;
+  const switchTemplate = useCallback(
+    async (
+      templateId: TemplateId,
+      opts?: { extraSteps?: QueryStep[]; stepLimit?: number },
+    ) => {
+      const template = config.templates.find((t) => t.id === templateId);
+      if (!template) return;
 
-    // Clear variant trail cache and active result on template switch
-    variantTrailCache.current.clear();
-    setActiveTrailResult(null);
+      // Clear variant trail cache and active result on template switch
+      variantTrailCache.current.clear();
+      setActiveTrailResult(null);
 
-    actions.switchTemplateStart(templateId);
-    const prov = createProvenanceEvent("lens", `${template.name} template`, { templateId });
-
-    try {
-      // Cap total steps at 5 (API limit)
-      const allSteps = [...template.steps, ...(opts?.extraSteps ?? [])].slice(0, 5);
-
-      // Apply step limit override: clamp each non-branch step's limit
-      const stepLimit = opts?.stepLimit;
-      const stepsWithLimit = stepLimit
-        ? allSteps.map((step) => {
-            if (isBranchStep(step)) {
-              return { branch: step.branch.map((s) => ({ ...s, limit: Math.min(s.limit ?? 1000, stepLimit) })) };
-            }
-            return { ...step, limit: Math.min(step.limit ?? 1000, stepLimit) };
-          })
-        : allSteps;
-
-      // Inject schema-driven sorts into steps that don't have hardcoded sorts
-      const stepsWithSorts = injectSortFields(stepsWithLimit, schemaMap);
-
-      // Compute edge fields from schema (or fallback to hardcoded catalog)
-      const allEdgeTypes = collectEdgeTypesFromSteps(allSteps);
-      const edgeFields = resolveEdgeSelectFields(allEdgeTypes, schemaMap);
-
-      const response = await fetchGraphQuery({
-        seeds: [{ type: seed.type, id: seed.id }],
-        steps: serializeLensSteps(stepsWithSorts),
-        select: { edgeFields },
-        limits: template.limits,
+      actions.switchTemplateStart(templateId);
+      const prov = createProvenanceEvent("lens", `${template.name} template`, {
+        templateId,
       });
 
-      if (!response?.data?.edges?.length) {
-        const seedKey = makeNodeKey(seed.type, seed.id);
-        const seedNode: ExplorerNode = {
-          id: seed.id,
-          key: seedKey,
-          type: seed.type,
-          label: seed.label,
-          entity: { type: seed.type, id: seed.id, label: seed.label } as ExplorerNode["entity"],
-          isSeed: true,
-          depth: 0,
-        };
-        const nodes = new Map<string, ExplorerNode>();
-        nodes.set(seed.id, seedNode);
+      try {
+        // Cap total steps at 5 (API limit)
+        const allSteps = [...template.steps, ...(opts?.extraSteps ?? [])].slice(
+          0,
+          5,
+        );
+
+        // Apply step limit override: clamp each non-branch step's limit
+        const stepLimit = opts?.stepLimit;
+        const stepsWithLimit = stepLimit
+          ? allSteps.map((step) => {
+              if (isBranchStep(step)) {
+                return {
+                  branch: step.branch.map((s) => ({
+                    ...s,
+                    limit: Math.min(s.limit ?? 1000, stepLimit),
+                  })),
+                };
+              }
+              return {
+                ...step,
+                limit: Math.min(step.limit ?? 1000, stepLimit),
+              };
+            })
+          : allSteps;
+
+        // Inject schema-driven sorts into steps that don't have hardcoded sorts
+        const stepsWithSorts = injectSortFields(stepsWithLimit, schemaMap);
+
+        // Compute edge fields from schema (or fallback to hardcoded catalog)
+        const allEdgeTypes = collectEdgeTypesFromSteps(allSteps);
+        const edgeFields = resolveEdgeSelectFields(allEdgeTypes, schemaMap);
+
+        const response = await fetchGraphQuery({
+          seeds: [{ type: seed.type, id: seed.id }],
+          steps: serializeLensSteps(stepsWithSorts),
+          select: { edgeFields },
+          limits: template.limits,
+        });
+
+        if (!response?.data?.edges?.length) {
+          const seedKey = makeNodeKey(seed.type, seed.id);
+          const seedNode: ExplorerNode = {
+            id: seed.id,
+            key: seedKey,
+            type: seed.type,
+            label: seed.label,
+            entity: {
+              type: seed.type,
+              id: seed.id,
+              label: seed.label,
+            } as ExplorerNode["entity"],
+            isSeed: true,
+            depth: 0,
+          };
+          const nodes = new Map<string, ExplorerNode>();
+          nodes.set(seed.id, seedNode);
+          actions.switchTemplateSuccess(
+            {
+              nodes,
+              edges: new Map(),
+              seeds: new Set([seed.id]),
+              provenance: new Map(),
+            },
+            new Set<EdgeType>(),
+            prov,
+          );
+          actions.setTemplateResults(null);
+          return;
+        }
+
+        const seedSet = new Set([seed.id]);
+        const { nodes: newNodes, edges: newEdges } = hydrateQueryResponse(
+          response,
+          seed,
+          seedSet,
+        );
+
+        // Collect edge types from ALL steps (template + extra hops)
+        const templateEdgeTypes = new Set<EdgeType>();
+        for (const step of allSteps) {
+          if (isBranchStep(step)) {
+            for (const sub of step.branch) {
+              for (const et of sub.edgeTypes) templateEdgeTypes.add(et);
+            }
+          } else {
+            for (const et of step.edgeTypes) templateEdgeTypes.add(et);
+          }
+        }
+        for (const edge of response.data.edges) {
+          templateEdgeTypes.add(edge.type as EdgeType);
+        }
+
         actions.switchTemplateSuccess(
-          { nodes, edges: new Map(), seeds: new Set([seed.id]), provenance: new Map() },
-          new Set<EdgeType>(),
+          {
+            nodes: newNodes,
+            edges: newEdges,
+            seeds: seedSet,
+            provenance: new Map(),
+          },
+          templateEdgeTypes,
           prov,
         );
-        actions.setTemplateResults(null);
-        return;
+
+        // Extract ranked results
+        const results = extractTemplateResults(
+          template,
+          newNodes,
+          newEdges,
+          seed.id,
+        );
+        actions.setTemplateResults(results);
+      } catch (error) {
+        console.error("Failed to switch template:", error);
+        actions.switchTemplateError(String(error));
       }
-
-      const seedSet = new Set([seed.id]);
-      const { nodes: newNodes, edges: newEdges } = hydrateQueryResponse(response, seed, seedSet);
-
-      // Collect edge types from ALL steps (template + extra hops)
-      const templateEdgeTypes = new Set<EdgeType>();
-      for (const step of allSteps) {
-        if (isBranchStep(step)) {
-          for (const sub of step.branch) {
-            for (const et of sub.edgeTypes) templateEdgeTypes.add(et);
-          }
-        } else {
-          for (const et of step.edgeTypes) templateEdgeTypes.add(et);
-        }
-      }
-      for (const edge of response.data.edges) {
-        templateEdgeTypes.add(edge.type as EdgeType);
-      }
-
-      actions.switchTemplateSuccess({ nodes: newNodes, edges: newEdges, seeds: seedSet, provenance: new Map() }, templateEdgeTypes, prov);
-
-      // Extract ranked results
-      const results = extractTemplateResults(template, newNodes, newEdges, seed.id);
-      actions.setTemplateResults(results);
-    } catch (error) {
-      console.error("Failed to switch template:", error);
-      actions.switchTemplateError(String(error));
-    }
-  }, [seed, config.templates, actions, schemaMap]);
+    },
+    [seed, config.templates, actions, schemaMap],
+  );
 
   const handleReset = useCallback(() => {
     switchTemplate(activeTemplate);
@@ -352,41 +455,56 @@ function GraphExplorerViewInner({
   // Event Handlers
   // ==========================================================================
 
-  const handleNodeClick = useCallback((node: ExplorerNode, event?: MouseEvent) => {
-    if (event?.metaKey || event?.ctrlKey) {
-      actions.toggleMultiSelect(node.id, node);
-    } else {
-      actions.selectNode(node.id, node);
-    }
-  }, [actions]);
+  const handleNodeClick = useCallback(
+    (node: ExplorerNode, event?: MouseEvent) => {
+      if (event?.metaKey || event?.ctrlKey) {
+        actions.toggleMultiSelect(node.id, node);
+      } else {
+        actions.selectNode(node.id, node);
+      }
+    },
+    [actions],
+  );
 
-  const handleEdgeClick = useCallback((edge: ExplorerEdge) => {
-    actions.selectEdge(edge.id, edge);
-  }, [actions]);
+  const handleEdgeClick = useCallback(
+    (edge: ExplorerEdge) => {
+      actions.selectEdge(edge.id, edge);
+    },
+    [actions],
+  );
 
   const handleBackgroundClick = useCallback(() => {
     actions.clearSelection();
   }, [actions]);
 
-  const handleNodeHover = useCallback((_node: ExplorerNode | null, _position: { x: number; y: number } | null) => {
-    // Node tooltip handling in future
-  }, []);
+  const handleNodeHover = useCallback(
+    (
+      _node: ExplorerNode | null,
+      _position: { x: number; y: number } | null,
+    ) => {
+      // Node tooltip handling in future
+    },
+    [],
+  );
 
-  const handleEdgeHover = useCallback((edge: ExplorerEdge | null, position: { x: number; y: number } | null) => {
-    if (!edge || !position) {
-      setHoveredEdge(null);
-      return;
-    }
-    // Look up source/target labels from graph
-    const sourceNode = selectors.getNode(edge.sourceId);
-    const targetNode = selectors.getNode(edge.targetId);
-    setHoveredEdge({
-      edge,
-      sourceLabel: sourceNode?.label ?? edge.sourceId,
-      targetLabel: targetNode?.label ?? edge.targetId,
-      position,
-    });
-  }, [selectors]);
+  const handleEdgeHover = useCallback(
+    (edge: ExplorerEdge | null, position: { x: number; y: number } | null) => {
+      if (!edge || !position) {
+        setHoveredEdge(null);
+        return;
+      }
+      // Look up source/target labels from graph
+      const sourceNode = selectors.getNode(edge.sourceId);
+      const targetNode = selectors.getNode(edge.targetId);
+      setHoveredEdge({
+        edge,
+        sourceLabel: sourceNode?.label ?? edge.sourceId,
+        targetLabel: targetNode?.label ?? edge.targetId,
+        position,
+      });
+    },
+    [selectors],
+  );
 
   const handleNodeDoubleClick = useCallback((_node: ExplorerNode) => {
     // Placeholder for Focus mode (future phase)
@@ -396,346 +514,453 @@ function GraphExplorerViewInner({
   // Graph Operations (async — stays in component)
   // ==========================================================================
 
-  const expandNode = useCallback(async (nodeId: string, expansion?: ExpansionConfig) => {
-    const node = selectors.getNode(nodeId);
-    if (!node) return;
+  const expandNode = useCallback(
+    async (nodeId: string, expansion?: ExpansionConfig) => {
+      const node = selectors.getNode(nodeId);
+      if (!node) return;
 
-    actions.expandStart(nodeId, node.label);
+      actions.expandStart(nodeId, node.label);
 
-    const expandProv = expansion
-      ? createProvenanceEvent("typed_expand", `${expansion.label} from ${node.label}`, { sourceNodeId: nodeId, sourceNodeLabel: node.label })
-      : createProvenanceEvent("bfs_expand", `Expand all from ${node.label}`, { sourceNodeId: nodeId, sourceNodeLabel: node.label });
+      const expandProv = expansion
+        ? createProvenanceEvent(
+            "typed_expand",
+            `${expansion.label} from ${node.label}`,
+            { sourceNodeId: nodeId, sourceNodeLabel: node.label },
+          )
+        : createProvenanceEvent("bfs_expand", `Expand all from ${node.label}`, {
+            sourceNodeId: nodeId,
+            sourceNodeLabel: node.label,
+          });
 
-    try {
-      if (expansion) {
-        // Split edge types into batches of 4 (resolveEdgeSelectFields caps fields at 20)
-        const allExpEdgeTypes = expansion.edgeTypes as EdgeType[];
-        const batches: EdgeType[][] = [];
-        for (let i = 0; i < allExpEdgeTypes.length; i += 4) {
-          batches.push(allExpEdgeTypes.slice(i, i + 4));
-        }
+      try {
+        if (expansion) {
+          // Split edge types into batches of 4 (resolveEdgeSelectFields caps fields at 20)
+          const allExpEdgeTypes = expansion.edgeTypes as EdgeType[];
+          const batches: EdgeType[][] = [];
+          for (let i = 0; i < allExpEdgeTypes.length; i += 4) {
+            batches.push(allExpEdgeTypes.slice(i, i + 4));
+          }
 
-        const responses = await Promise.all(
-          batches.map((batch) => {
-            // Resolve sort from schema for the primary edge type in this expansion
-            const sort = resolveSortField(batch[0], schemaMap, expansion.sort);
-            const step: GraphQueryStepOrBranch = {
-              edgeTypes: batch as string[],
-              direction: expansion.direction,
-              limit: expansion.limit ?? 20,
-              ...(sort ? { sort } : {}),
-            };
-            return fetchGraphQuery({
-              seeds: [{ type: node.type, id: nodeId }],
-              steps: [step],
-              select: { edgeFields: resolveEdgeSelectFields(batch, schemaMap) },
-              limits: { maxNodes: 200, maxEdges: 500 },
-            });
-          }),
-        );
-
-        // Check if ALL batches failed
-        const successResponses = responses.filter((r) => r?.data?.edges?.length);
-        if (successResponses.length === 0) {
-          actions.dismissExpansionError();
-          const allNull = responses.every((r) => r === null);
-          toast.error(
-            allNull
-              ? "Expansion request failed — the server may be unavailable."
-              : "No relationships found for this expansion.",
+          const responses = await Promise.all(
+            batches.map((batch) => {
+              // Resolve sort from schema for the primary edge type in this expansion
+              const sort = resolveSortField(
+                batch[0],
+                schemaMap,
+                expansion.sort,
+              );
+              const step: GraphQueryStepOrBranch = {
+                edgeTypes: batch as string[],
+                direction: expansion.direction,
+                limit: expansion.limit ?? 20,
+                ...(sort ? { sort } : {}),
+              };
+              return fetchGraphQuery({
+                seeds: [{ type: node.type, id: nodeId }],
+                steps: [step],
+                select: {
+                  edgeFields: resolveEdgeSelectFields(batch, schemaMap),
+                },
+                limits: { maxNodes: 200, maxEdges: 500 },
+              });
+            }),
           );
-          return;
-        }
 
-        // Merge results from all batches
-        const newNodes = new Map<string, ExplorerNode>();
-        const newEdges = new Map<string, ExplorerEdge>();
+          // Check if ALL batches failed
+          const successResponses = responses.filter(
+            (r) => r?.data?.edges?.length,
+          );
+          if (successResponses.length === 0) {
+            actions.dismissExpansionError();
+            const allNull = responses.every((r) => r === null);
+            toast.error(
+              allNull
+                ? "Expansion request failed — the server may be unavailable."
+                : "No relationships found for this expansion.",
+            );
+            return;
+          }
 
-        for (const response of successResponses) {
-          for (const [, nodeData] of Object.entries(response!.data.nodes)) {
-            const entity = nodeData.entity;
-            const nodeType = entity.type as EntityType;
-            const nodeKey = makeNodeKey(nodeType, entity.id);
-            if (!newNodes.has(entity.id)) {
-              newNodes.set(entity.id, {
-                id: entity.id,
-                key: nodeKey,
-                type: nodeType,
-                label: entity.label,
-                subtitle: entity.subtitle,
-                entity: { type: entity.type, id: entity.id, label: entity.label } as ExplorerNode["entity"],
-                isSeed: false,
-                depth: (node.depth ?? 0) + 1,
-              });
+          // Merge results from all batches
+          const newNodes = new Map<string, ExplorerNode>();
+          const newEdges = new Map<string, ExplorerEdge>();
+
+          for (const response of successResponses) {
+            for (const [, nodeData] of Object.entries(response?.data.nodes)) {
+              const entity = nodeData.entity;
+              const nodeType = entity.type as EntityType;
+              const nodeKey = makeNodeKey(nodeType, entity.id);
+              if (!newNodes.has(entity.id)) {
+                newNodes.set(entity.id, {
+                  id: entity.id,
+                  key: nodeKey,
+                  type: nodeType,
+                  label: entity.label,
+                  subtitle: entity.subtitle,
+                  entity: {
+                    type: entity.type,
+                    id: entity.id,
+                    label: entity.label,
+                  } as ExplorerNode["entity"],
+                  isSeed: false,
+                  depth: (node.depth ?? 0) + 1,
+                });
+              }
+            }
+
+            for (const apiEdge of response?.data.edges) {
+              const edgeType = apiEdge.type as EdgeType;
+              const fromId = parseTypeId(apiEdge.from).id;
+              const toId = parseTypeId(apiEdge.to).id;
+              const edgeId = createEdgeId(edgeType, fromId, toId);
+              if (!newEdges.has(edgeId)) {
+                const fromType = parseTypeId(apiEdge.from).type as EntityType;
+                const toType = parseTypeId(apiEdge.to).type as EntityType;
+                const sourceKey = makeNodeKey(fromType, fromId);
+                const targetKey = makeNodeKey(toType, toId);
+                newEdges.set(edgeId, {
+                  id: edgeId,
+                  key: makeEdgeKey(edgeType, sourceKey, targetKey),
+                  type: edgeType,
+                  sourceId: fromId,
+                  targetId: toId,
+                  sourceKey,
+                  targetKey,
+                  numSources: apiEdge.fields?.num_sources as number | undefined,
+                  numExperiments: apiEdge.fields?.num_experiments as
+                    | number
+                    | undefined,
+                  fields: apiEdge.fields,
+                });
+              }
             }
           }
 
-          for (const apiEdge of response!.data.edges) {
+          actions.expandSuccess(newNodes, newEdges, expandProv);
+        } else {
+          const response = await fetchSubgraph({
+            seeds: [{ type: node.type, id: nodeId }],
+            maxDepth: 1,
+            edgeTypes: readyState
+              ? Array.from(readyState.filters.edgeTypes)
+              : [],
+            nodeLimit: 100,
+            edgeLimit: 200,
+            includeProps: true,
+          });
+
+          if (!response) {
+            actions.dismissExpansionError();
+            toast.error(
+              "Expansion request failed — the server may be unavailable.",
+            );
+            return;
+          }
+
+          if (!response.data?.graph) {
+            actions.dismissExpansionError();
+            toast.error("No relationships found for this expansion.");
+            return;
+          }
+
+          const newNodes = new Map<string, ExplorerNode>();
+          const newEdges = new Map<string, ExplorerEdge>();
+
+          response.data.graph.nodes.forEach((apiNode) => {
+            const nodeType = apiNode.type as EntityType;
+            const nodeKey = makeNodeKey(nodeType, apiNode.id);
+            newNodes.set(apiNode.id, {
+              id: apiNode.id,
+              key: nodeKey,
+              type: nodeType,
+              label: apiNode.label,
+              subtitle: apiNode.subtitle,
+              entity: {
+                type: apiNode.type,
+                id: apiNode.id,
+                label: apiNode.label,
+              } as ExplorerNode["entity"],
+              isSeed: false,
+              depth: (node.depth ?? 0) + 1,
+            });
+          });
+
+          response.data.graph.edges.forEach((apiEdge) => {
             const edgeType = apiEdge.type as EdgeType;
-            const fromId = parseTypeId(apiEdge.from).id;
-            const toId = parseTypeId(apiEdge.to).id;
-            const edgeId = createEdgeId(edgeType, fromId, toId);
-            if (!newEdges.has(edgeId)) {
-              const fromType = parseTypeId(apiEdge.from).type as EntityType;
-              const toType = parseTypeId(apiEdge.to).type as EntityType;
-              const sourceKey = makeNodeKey(fromType, fromId);
-              const targetKey = makeNodeKey(toType, toId);
-              newEdges.set(edgeId, {
-                id: edgeId,
-                key: makeEdgeKey(edgeType, sourceKey, targetKey),
-                type: edgeType,
-                sourceId: fromId,
-                targetId: toId,
-                sourceKey,
-                targetKey,
-                numSources: apiEdge.fields?.num_sources as number | undefined,
-                numExperiments: apiEdge.fields?.num_experiments as number | undefined,
-                fields: apiEdge.fields,
-              });
-            }
-          }
-        }
-
-        actions.expandSuccess(newNodes, newEdges, expandProv);
-      } else {
-        const response = await fetchSubgraph({
-          seeds: [{ type: node.type, id: nodeId }],
-          maxDepth: 1,
-          edgeTypes: readyState ? Array.from(readyState.filters.edgeTypes) : [],
-          nodeLimit: 100,
-          edgeLimit: 200,
-          includeProps: true,
-        });
-
-        if (!response) {
-          actions.dismissExpansionError();
-          toast.error("Expansion request failed — the server may be unavailable.");
-          return;
-        }
-
-        if (!response.data?.graph) {
-          actions.dismissExpansionError();
-          toast.error("No relationships found for this expansion.");
-          return;
-        }
-
-        const newNodes = new Map<string, ExplorerNode>();
-        const newEdges = new Map<string, ExplorerEdge>();
-
-        response.data.graph.nodes.forEach((apiNode) => {
-          const nodeType = apiNode.type as EntityType;
-          const nodeKey = makeNodeKey(nodeType, apiNode.id);
-          newNodes.set(apiNode.id, {
-            id: apiNode.id,
-            key: nodeKey,
-            type: nodeType,
-            label: apiNode.label,
-            subtitle: apiNode.subtitle,
-            entity: { type: apiNode.type, id: apiNode.id, label: apiNode.label } as ExplorerNode["entity"],
-            isSeed: false,
-            depth: (node.depth ?? 0) + 1,
+            const edgeId = createEdgeId(
+              edgeType,
+              apiEdge.from.id,
+              apiEdge.to.id,
+            );
+            const sourceKey = makeNodeKey(
+              apiEdge.from.type as EntityType,
+              apiEdge.from.id,
+            );
+            const targetKey = makeNodeKey(
+              apiEdge.to.type as EntityType,
+              apiEdge.to.id,
+            );
+            newEdges.set(edgeId, {
+              id: edgeId,
+              key: makeEdgeKey(edgeType, sourceKey, targetKey),
+              type: edgeType,
+              sourceId: apiEdge.from.id,
+              targetId: apiEdge.to.id,
+              sourceKey,
+              targetKey,
+              numSources: apiEdge.props?.num_sources as number | undefined,
+              numExperiments: apiEdge.props?.num_experiments as
+                | number
+                | undefined,
+              evidence: {
+                sources: apiEdge.props?.sources as string[] | undefined,
+                pubmedIds: (apiEdge.props?.pmids ??
+                  apiEdge.props?.pubmed_ids) as string[] | undefined,
+                detectionMethods: apiEdge.props?.detection_methods as
+                  | string[]
+                  | undefined,
+              },
+              fields: apiEdge.props as Record<string, unknown> | undefined,
+            });
           });
-        });
 
-        response.data.graph.edges.forEach((apiEdge) => {
-          const edgeType = apiEdge.type as EdgeType;
-          const edgeId = createEdgeId(edgeType, apiEdge.from.id, apiEdge.to.id);
-          const sourceKey = makeNodeKey(apiEdge.from.type as EntityType, apiEdge.from.id);
-          const targetKey = makeNodeKey(apiEdge.to.type as EntityType, apiEdge.to.id);
-          newEdges.set(edgeId, {
-            id: edgeId,
-            key: makeEdgeKey(edgeType, sourceKey, targetKey),
-            type: edgeType,
-            sourceId: apiEdge.from.id,
-            targetId: apiEdge.to.id,
-            sourceKey,
-            targetKey,
-            numSources: apiEdge.props?.num_sources as number | undefined,
-            numExperiments: apiEdge.props?.num_experiments as number | undefined,
-            evidence: {
-              sources: apiEdge.props?.sources as string[] | undefined,
-              pubmedIds: (apiEdge.props?.pmids ?? apiEdge.props?.pubmed_ids) as string[] | undefined,
-              detectionMethods: apiEdge.props?.detection_methods as string[] | undefined,
-            },
-            fields: apiEdge.props as Record<string, unknown> | undefined,
-          });
-        });
-
-        actions.expandSuccess(newNodes, newEdges, expandProv);
+          actions.expandSuccess(newNodes, newEdges, expandProv);
+        }
+      } catch (error: unknown) {
+        console.error("Failed to expand node:", error);
+        actions.dismissExpansionError();
+        const is404 =
+          (error instanceof Response && error.status === 404) ||
+          (error instanceof Error &&
+            (error.message.includes("404") ||
+              error.message.includes("Not Found")));
+        toast.error(
+          is404
+            ? "Entity not found — this node may not exist in the knowledge graph."
+            : `Expansion failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-    } catch (error: unknown) {
-      console.error("Failed to expand node:", error);
-      actions.dismissExpansionError();
-      const is404 =
-        (error instanceof Response && error.status === 404) ||
-        (error instanceof Error && (error.message.includes("404") || error.message.includes("Not Found")));
-      toast.error(
-        is404
-          ? "Entity not found — this node may not exist in the knowledge graph."
-          : `Expansion failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }, [selectors, actions, readyState, schemaMap]);
+    },
+    [selectors, actions, readyState, schemaMap],
+  );
 
   // ==========================================================================
   // Variant Trail (async — multi-step route to find Variants)
   // ==========================================================================
 
-  const runVariantTrail = useCallback(async (nodeId: string) => {
-    const node = selectors.getNode(nodeId);
-    if (!node) return;
+  const runVariantTrail = useCallback(
+    async (nodeId: string) => {
+      const node = selectors.getNode(nodeId);
+      if (!node) return;
 
-    const trailConfig = VARIANT_TRAIL_CONFIG[node.type];
-    if (!trailConfig) return;
+      const trailConfig = VARIANT_TRAIL_CONFIG[node.type];
+      if (!trailConfig) return;
 
-    // Check cache
-    const cacheKey = `${node.type}:${nodeId}`;
-    const cached = variantTrailCache.current.get(cacheKey);
-    if (cached) {
-      setActiveTrailResult(cached);
-      return;
-    }
-
-    actions.variantTrailStart(nodeId);
-
-    const trailProv = createProvenanceEvent("variant_trail", `Variant trail from ${node.label}`, {
-      sourceNodeId: nodeId,
-      sourceNodeLabel: node.label,
-    });
-
-    try {
-      const allNewNodes = new Map<string, ExplorerNode>();
-      const allNewEdges = new Map<string, ExplorerEdge>();
-      const variantEntries: Array<{ node: ExplorerNode; connectingEdge: ExplorerEdge; routeBadge: string }> = [];
-      const seenVariantIds = new Set<string>();
-
-      for (const route of trailConfig.routes) {
-        // Collect all edge types across all steps for edge field selection
-        const allEdgeTypes = route.steps.flatMap((s) => s.edgeTypes) as EdgeType[];
-
-        // Build steps with schema-driven sorts, stripping undefined fields
-        const serializedSteps: GraphQueryStepOrBranch[] = route.steps.map((s) => {
-          const sort = s.sort ?? resolveSortField(s.edgeTypes[0] as EdgeType, schemaMap);
-          return {
-            edgeTypes: s.edgeTypes as string[],
-            direction: s.direction,
-            limit: s.limit,
-            ...(sort ? { sort } : {}),
-          };
-        });
-
-        const response = await fetchGraphQuery({
-          seeds: [{ type: node.type, id: nodeId }],
-          steps: serializedSteps,
-          select: { edgeFields: resolveEdgeSelectFields(allEdgeTypes, schemaMap) },
-          limits: { maxNodes: trailConfig.maxNodes, maxEdges: trailConfig.maxEdges },
-        });
-
-        if (!response?.data?.edges?.length) continue;
-
-        // Hydrate nodes
-        for (const [, nodeData] of Object.entries(response.data.nodes)) {
-          const entity = nodeData.entity;
-          const nodeType = entity.type as EntityType;
-          const nodeKey = makeNodeKey(nodeType, entity.id);
-          allNewNodes.set(entity.id, {
-            id: entity.id,
-            key: nodeKey,
-            type: nodeType,
-            label: entity.label,
-            subtitle: entity.subtitle,
-            entity: { type: entity.type, id: entity.id, label: entity.label } as ExplorerNode["entity"],
-            isSeed: false,
-            depth: (node.depth ?? 0) + route.steps.length,
-          });
-        }
-
-        // Hydrate edges + extract Variant nodes with connecting edges
-        for (const apiEdge of response.data.edges) {
-          const edgeType = apiEdge.type as EdgeType;
-          const fromId = parseTypeId(apiEdge.from).id;
-          const toId = parseTypeId(apiEdge.to).id;
-          const edgeId = createEdgeId(edgeType, fromId, toId);
-          const fromType = parseTypeId(apiEdge.from).type as EntityType;
-          const toType = parseTypeId(apiEdge.to).type as EntityType;
-          const sourceKey = makeNodeKey(fromType, fromId);
-          const targetKey = makeNodeKey(toType, toId);
-          const hydratedEdge: ExplorerEdge = {
-            id: edgeId,
-            key: makeEdgeKey(edgeType, sourceKey, targetKey),
-            type: edgeType,
-            sourceId: fromId,
-            targetId: toId,
-            sourceKey,
-            targetKey,
-            numSources: apiEdge.fields?.num_sources as number | undefined,
-            numExperiments: apiEdge.fields?.num_experiments as number | undefined,
-            fields: apiEdge.fields,
-          };
-          allNewEdges.set(edgeId, hydratedEdge);
-
-          // Check if either end is a Variant node (deduplicate by ID, first route wins)
-          if (fromType === "Variant" && !seenVariantIds.has(fromId)) {
-            seenVariantIds.add(fromId);
-            const variantNode = allNewNodes.get(fromId);
-            if (variantNode) {
-              variantEntries.push({ node: variantNode, connectingEdge: hydratedEdge, routeBadge: route.routeBadge });
-            }
-          }
-          if (toType === "Variant" && !seenVariantIds.has(toId)) {
-            seenVariantIds.add(toId);
-            const variantNode = allNewNodes.get(toId);
-            if (variantNode) {
-              variantEntries.push({ node: variantNode, connectingEdge: hydratedEdge, routeBadge: route.routeBadge });
-            }
-          }
-        }
+      // Check cache
+      const cacheKey = `${node.type}:${nodeId}`;
+      const cached = variantTrailCache.current.get(cacheKey);
+      if (cached) {
+        setActiveTrailResult(cached);
+        return;
       }
 
-      // Merge into graph
-      actions.variantTrailSuccess(allNewNodes, allNewEdges, trailProv);
+      actions.variantTrailStart(nodeId);
 
-      // Build result
-      const result: VariantTrailResultData = {
-        seedNodeId: nodeId,
-        seedNodeType: node.type,
-        seedNodeLabel: node.label,
-        variants: variantEntries,
-        totalFound: variantEntries.length,
-        timestamp: Date.now(),
-      };
-
-      // Cache and set active
-      variantTrailCache.current.set(cacheKey, result);
-      setActiveTrailResult(result);
-
-      if (variantEntries.length === 0) {
-        toast.error("No variant evidence found via this route.");
-      }
-    } catch (error: unknown) {
-      console.error("Variant trail failed:", error);
-      actions.dismissError();
-      toast.error(
-        `Variant trail failed: ${error instanceof Error ? error.message : String(error)}`,
+      const trailProv = createProvenanceEvent(
+        "variant_trail",
+        `Variant trail from ${node.label}`,
+        {
+          sourceNodeId: nodeId,
+          sourceNodeLabel: node.label,
+        },
       );
-    }
-  }, [selectors, actions, schemaMap]);
 
-  const removeNode = useCallback((nodeId: string) => {
-    actions.removeNode(nodeId);
-  }, [actions]);
+      try {
+        const allNewNodes = new Map<string, ExplorerNode>();
+        const allNewEdges = new Map<string, ExplorerEdge>();
+        const variantEntries: Array<{
+          node: ExplorerNode;
+          connectingEdge: ExplorerEdge;
+          routeBadge: string;
+        }> = [];
+        const seenVariantIds = new Set<string>();
 
-  const getNode = useCallback((id: string) => selectors.getNode(id), [selectors]);
-  const getEdge = useCallback((id: string) => selectors.getEdge(id), [selectors]);
-  const getProvenance = useCallback((id: string) => selectors.getProvenance(id), [selectors]);
-  const getEdgesBetween = useCallback((sourceId: string, targetId: string) => selectors.getEdgesBetween(sourceId, targetId), [selectors]);
+        for (const route of trailConfig.routes) {
+          // Collect all edge types across all steps for edge field selection
+          const allEdgeTypes = route.steps.flatMap(
+            (s) => s.edgeTypes,
+          ) as EdgeType[];
+
+          // Build steps with schema-driven sorts, stripping undefined fields
+          const serializedSteps: GraphQueryStepOrBranch[] = route.steps.map(
+            (s) => {
+              const sort =
+                s.sort ??
+                resolveSortField(s.edgeTypes[0] as EdgeType, schemaMap);
+              return {
+                edgeTypes: s.edgeTypes as string[],
+                direction: s.direction,
+                limit: s.limit,
+                ...(sort ? { sort } : {}),
+              };
+            },
+          );
+
+          const response = await fetchGraphQuery({
+            seeds: [{ type: node.type, id: nodeId }],
+            steps: serializedSteps,
+            select: {
+              edgeFields: resolveEdgeSelectFields(allEdgeTypes, schemaMap),
+            },
+            limits: {
+              maxNodes: trailConfig.maxNodes,
+              maxEdges: trailConfig.maxEdges,
+            },
+          });
+
+          if (!response?.data?.edges?.length) continue;
+
+          // Hydrate nodes
+          for (const [, nodeData] of Object.entries(response.data.nodes)) {
+            const entity = nodeData.entity;
+            const nodeType = entity.type as EntityType;
+            const nodeKey = makeNodeKey(nodeType, entity.id);
+            allNewNodes.set(entity.id, {
+              id: entity.id,
+              key: nodeKey,
+              type: nodeType,
+              label: entity.label,
+              subtitle: entity.subtitle,
+              entity: {
+                type: entity.type,
+                id: entity.id,
+                label: entity.label,
+              } as ExplorerNode["entity"],
+              isSeed: false,
+              depth: (node.depth ?? 0) + route.steps.length,
+            });
+          }
+
+          // Hydrate edges + extract Variant nodes with connecting edges
+          for (const apiEdge of response.data.edges) {
+            const edgeType = apiEdge.type as EdgeType;
+            const fromId = parseTypeId(apiEdge.from).id;
+            const toId = parseTypeId(apiEdge.to).id;
+            const edgeId = createEdgeId(edgeType, fromId, toId);
+            const fromType = parseTypeId(apiEdge.from).type as EntityType;
+            const toType = parseTypeId(apiEdge.to).type as EntityType;
+            const sourceKey = makeNodeKey(fromType, fromId);
+            const targetKey = makeNodeKey(toType, toId);
+            const hydratedEdge: ExplorerEdge = {
+              id: edgeId,
+              key: makeEdgeKey(edgeType, sourceKey, targetKey),
+              type: edgeType,
+              sourceId: fromId,
+              targetId: toId,
+              sourceKey,
+              targetKey,
+              numSources: apiEdge.fields?.num_sources as number | undefined,
+              numExperiments: apiEdge.fields?.num_experiments as
+                | number
+                | undefined,
+              fields: apiEdge.fields,
+            };
+            allNewEdges.set(edgeId, hydratedEdge);
+
+            // Check if either end is a Variant node (deduplicate by ID, first route wins)
+            if (fromType === "Variant" && !seenVariantIds.has(fromId)) {
+              seenVariantIds.add(fromId);
+              const variantNode = allNewNodes.get(fromId);
+              if (variantNode) {
+                variantEntries.push({
+                  node: variantNode,
+                  connectingEdge: hydratedEdge,
+                  routeBadge: route.routeBadge,
+                });
+              }
+            }
+            if (toType === "Variant" && !seenVariantIds.has(toId)) {
+              seenVariantIds.add(toId);
+              const variantNode = allNewNodes.get(toId);
+              if (variantNode) {
+                variantEntries.push({
+                  node: variantNode,
+                  connectingEdge: hydratedEdge,
+                  routeBadge: route.routeBadge,
+                });
+              }
+            }
+          }
+        }
+
+        // Merge into graph
+        actions.variantTrailSuccess(allNewNodes, allNewEdges, trailProv);
+
+        // Build result
+        const result: VariantTrailResultData = {
+          seedNodeId: nodeId,
+          seedNodeType: node.type,
+          seedNodeLabel: node.label,
+          variants: variantEntries,
+          totalFound: variantEntries.length,
+          timestamp: Date.now(),
+        };
+
+        // Cache and set active
+        variantTrailCache.current.set(cacheKey, result);
+        setActiveTrailResult(result);
+
+        if (variantEntries.length === 0) {
+          toast.error("No variant evidence found via this route.");
+        }
+      } catch (error: unknown) {
+        console.error("Variant trail failed:", error);
+        actions.dismissError();
+        toast.error(
+          `Variant trail failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    },
+    [selectors, actions, schemaMap],
+  );
+
+  const removeNode = useCallback(
+    (nodeId: string) => {
+      actions.removeNode(nodeId);
+    },
+    [actions],
+  );
+
+  const getNode = useCallback(
+    (id: string) => selectors.getNode(id),
+    [selectors],
+  );
+  const getEdge = useCallback(
+    (id: string) => selectors.getEdge(id),
+    [selectors],
+  );
+  const getProvenance = useCallback(
+    (id: string) => selectors.getProvenance(id),
+    [selectors],
+  );
+  const getEdgesBetween = useCallback(
+    (sourceId: string, targetId: string) =>
+      selectors.getEdgesBetween(sourceId, targetId),
+    [selectors],
+  );
 
   // ==========================================================================
   // Connections Drilldown (fetch ALL relationships for selected edge pair)
   // ==========================================================================
 
   const edgeSelectionPair = useMemo(() => {
-    if (selection.type !== "edge") return { sourceId: null, targetId: null, sourceType: null, targetType: null };
+    if (selection.type !== "edge")
+      return {
+        sourceId: null,
+        targetId: null,
+        sourceType: null,
+        targetType: null,
+      };
     const sourceNode = selectors.getNode(selection.edge.sourceId);
     const targetNode = selectors.getNode(selection.edge.targetId);
     return {
@@ -748,7 +973,10 @@ function GraphExplorerViewInner({
 
   const localEdgesBetween = useMemo(() => {
     if (selection.type !== "edge") return [];
-    return selectors.getEdgesBetween(selection.edge.sourceId, selection.edge.targetId);
+    return selectors.getEdgesBetween(
+      selection.edge.sourceId,
+      selection.edge.targetId,
+    );
   }, [selection, selectors]);
 
   const {
@@ -757,7 +985,10 @@ function GraphExplorerViewInner({
     error: connectionsError,
     loadMoreEdges,
     retry: retryConnections,
-  } = useConnectionsDrilldown({ ...edgeSelectionPair, localEdges: localEdgesBetween });
+  } = useConnectionsDrilldown({
+    ...edgeSelectionPair,
+    localEdges: localEdgesBetween,
+  });
 
   const handleFindPaths = useCallback((_fromId: string, _toId: string) => {
     // Path finding will be implemented in a future phase
@@ -767,13 +998,19 @@ function GraphExplorerViewInner({
     setActiveTrailResult(null);
   }, []);
 
-  const handleSelectTrailVariant = useCallback((node: ExplorerNode) => {
-    actions.selectNode(node.id, node);
-  }, [actions]);
+  const handleSelectTrailVariant = useCallback(
+    (node: ExplorerNode) => {
+      actions.selectNode(node.id, node);
+    },
+    [actions],
+  );
 
-  const handleResultNodeSelect = useCallback((node: ExplorerNode) => {
-    actions.selectNode(node.id, node);
-  }, [actions]);
+  const handleResultNodeSelect = useCallback(
+    (node: ExplorerNode) => {
+      actions.selectNode(node.id, node);
+    },
+    [actions],
+  );
 
   // Selected node ID for list highlighting
   const selectedNodeId = useMemo(() => {
@@ -814,7 +1051,9 @@ function GraphExplorerViewInner({
           {/* Left Controls Drawer */}
           <ControlsDrawer
             open={leftDrawerOpen}
-            onOpenChange={(open) => open !== leftDrawerOpen && actions.toggleLeftDrawer()}
+            onOpenChange={(open) =>
+              open !== leftDrawerOpen && actions.toggleLeftDrawer()
+            }
             templates={config.templates}
             activeTemplate={activeTemplate}
             onTemplateChange={switchTemplate}
@@ -899,9 +1138,13 @@ function GraphExplorerViewInner({
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-background/90 backdrop-blur-sm rounded-xl shadow-lg p-6 text-center max-w-md">
                   <Network className="w-12 h-12 text-primary/50 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    No Results
+                  </h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    No relationships found for <strong>{seed.label}</strong> with the current template. Try switching to a different template.
+                    No relationships found for <strong>{seed.label}</strong>{" "}
+                    with the current template. Try switching to a different
+                    template.
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import { cn } from "@infra/utils";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import {
@@ -8,8 +8,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
-import { cn } from "@infra/utils";
 import { ChevronRightIcon } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
 import {
   createContext,
   memo,
@@ -122,12 +122,12 @@ export const Reasoning = memo(
       (newOpen: boolean) => {
         setIsOpen(newOpen);
       },
-      [setIsOpen]
+      [setIsOpen],
     );
 
     const contextValue = useMemo(
       () => ({ duration, isOpen, isStreaming, setIsOpen }),
-      [duration, isOpen, isStreaming, setIsOpen]
+      [duration, isOpen, isStreaming, setIsOpen],
     );
 
     return (
@@ -142,7 +142,7 @@ export const Reasoning = memo(
         </Collapsible>
       </ReasoningContext.Provider>
     );
-  }
+  },
 );
 
 export type ReasoningTriggerProps = ComponentProps<
@@ -174,7 +174,7 @@ export const ReasoningTrigger = memo(
       <CollapsibleTrigger
         className={cn(
           "group flex w-full items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground",
-          className
+          className,
         )}
         {...props}
       >
@@ -185,7 +185,7 @@ export const ReasoningTrigger = memo(
                 "size-[5px] shrink-0 rounded-full",
                 isStreaming
                   ? "bg-primary animate-pulse"
-                  : "bg-muted-foreground/30"
+                  : "bg-muted-foreground/30",
               )}
             />
             {getThinkingMessage(isStreaming, duration)}
@@ -194,7 +194,7 @@ export const ReasoningTrigger = memo(
         )}
       </CollapsibleTrigger>
     );
-  }
+  },
 );
 
 export type ReasoningContentProps = ComponentProps<
@@ -210,7 +210,7 @@ export const ReasoningContent = memo(
         "mt-2 ml-[3px] border-l-2 border-border pl-3",
         "text-xs text-muted-foreground",
         "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-        className
+        className,
       )}
       {...props}
     >
@@ -218,7 +218,7 @@ export const ReasoningContent = memo(
         <Streamdown className="ai-summary-content">{children}</Streamdown>
       </div>
     </CollapsibleContent>
-  )
+  ),
 );
 
 Reasoning.displayName = "Reasoning";

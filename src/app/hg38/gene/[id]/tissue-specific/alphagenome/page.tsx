@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { fetchGene } from "@features/gene/api";
 import { AlphaGenomeGeneScoresView } from "@features/alphagenome/components/gene-scores-view";
 import { AlphaGenomeRegionView } from "@features/alphagenome/components/region-view";
+import { fetchGene } from "@features/gene/api";
+import { notFound } from "next/navigation";
 
 interface AlphaGenomeGenePageProps {
   params: Promise<{ id: string }>;

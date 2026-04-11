@@ -1,5 +1,5 @@
-import { loadLoopsData } from "@features/enrichment/loaders";
 import { LoopsView } from "@features/enrichment/components/loops-view";
+import { loadLoopsData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

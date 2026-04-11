@@ -1,17 +1,15 @@
 // src/features/genome-browser/tracks/index.ts
 // Barrel export for track definitions and helpers.
 
+export { LINKING_ID } from "./constants";
+export { createTissueTrack, tissueTrackId } from "./dynamic/tissue-track";
 export {
-  TRACK_REGISTRY,
+  DEFAULT_TRACK_IDS,
   getAllTracks,
+  getCuratedTracks,
+  getDefaultTracks,
   getTrackById,
   getTracksByCategory,
   getTracksGroupedByCategory,
-  getCuratedTracks,
-  DEFAULT_TRACK_IDS,
-  getDefaultTracks,
-} from './registry'
-
-export { LINKING_ID } from './constants'
-
-export { createTissueTrack, tissueTrackId } from './dynamic/tissue-track'
+  TRACK_REGISTRY,
+} from "./registry";

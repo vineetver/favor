@@ -3,13 +3,13 @@
 import { lazy, memo, Suspense } from "react";
 import type { VizSpec } from "../viz/types";
 import { AgentBarChart } from "./viz/agent-bar-chart";
-import { AgentEnrichmentPlot } from "./viz/agent-enrichment-plot";
-import { AgentStatCard } from "./viz/agent-stat-card";
-import { AgentDistribution } from "./viz/agent-distribution";
 import { AgentComparison } from "./viz/agent-comparison";
-import { AgentScatterPlot } from "./viz/agent-scatter-plot";
-import { AgentQQPlot } from "./viz/agent-qq-plot";
+import { AgentDistribution } from "./viz/agent-distribution";
+import { AgentEnrichmentPlot } from "./viz/agent-enrichment-plot";
 import { AgentHeatmap } from "./viz/agent-heatmap";
+import { AgentQQPlot } from "./viz/agent-qq-plot";
+import { AgentScatterPlot } from "./viz/agent-scatter-plot";
+import { AgentStatCard } from "./viz/agent-stat-card";
 
 // Lazy-load heavy renderers
 const AgentMiniNetwork = lazy(() =>
@@ -67,7 +67,11 @@ function VizSpecRenderer({ spec }: { spec: VizSpec }) {
   }
 }
 
-export const VizSpecPanel = memo(function VizSpecPanel({ vizSpecs }: { vizSpecs: VizSpec[] }) {
+export const VizSpecPanel = memo(function VizSpecPanel({
+  vizSpecs,
+}: {
+  vizSpecs: VizSpec[];
+}) {
   if (!vizSpecs.length) return null;
 
   return (

@@ -7,24 +7,32 @@
  * executeRun is injected as a parameter to avoid circular imports.
  */
 
-import type { RunCommand, PipelineStep, EntityRef } from "../types";
 import type { RunContext } from "../index";
 import type { RunResultEnvelope } from "../run-result";
-import { errorResult, okResult, partialResult, TraceCollector } from "../run-result";
-import { extractNeighborEntities } from "./graph-explore-neighbors";
+import {
+  errorResult,
+  okResult,
+  partialResult,
+  TraceCollector,
+} from "../run-result";
+import type { EntityRef, PipelineStep, RunCommand } from "../types";
 import { extractCompareEntities } from "./graph-explore-compare";
-import { extractSimilarEntities } from "./graph-explore-similar";
 import { extractContextEntities } from "./graph-explore-context";
 import { extractEnrichEntities } from "./graph-explore-enrich";
+import { extractNeighborEntities } from "./graph-explore-neighbors";
+import { extractSimilarEntities } from "./graph-explore-similar";
+import { extractPatternEntities } from "./graph-query";
 import { extractChainEntities } from "./graph-traverse-chain";
 import { extractPathEntities } from "./graph-traverse-paths";
-import { extractPatternEntities } from "./graph-query";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type ExecFn = (command: Record<string, unknown>, ctx: RunContext) => Promise<RunResultEnvelope>;
+type ExecFn = (
+  command: Record<string, unknown>,
+  ctx: RunContext,
+) => Promise<RunResultEnvelope>;
 
 interface StepResult {
   id: string;
@@ -109,7 +117,10 @@ function executeIntersect(
   const sourceIds = step.depends_on ?? [];
   if (sourceIds.length < 2) {
     return {
-      envelope: errorResult({ message: "intersect requires depends_on with 2+ step IDs", code: "validation_error" }),
+      envelope: errorResult({
+        message: "intersect requires depends_on with 2+ step IDs",
+        code: "validation_error",
+      }),
       entities: [],
     };
   }
@@ -129,15 +140,20 @@ function executeIntersect(
     }
   }
 
-  const sourceCounts = sourceIds.map((id, i) => `${id}: ${sets[i].size}`).join(", ");
-  const summary = overlap.length > 0
-    ? `Intersect found ${overlap.length} shared entities (${sourceCounts})`
-    : `No overlap between source steps (${sourceCounts})`;
+  const sourceCounts = sourceIds
+    .map((id, i) => `${id}: ${sets[i].size}`)
+    .join(", ");
+  const summary =
+    overlap.length > 0
+      ? `Intersect found ${overlap.length} shared entities (${sourceCounts})`
+      : `No overlap between source steps (${sourceCounts})`;
 
   const data: Record<string, unknown> = {
     overlap: overlap.map((e) => ({ type: e.type, id: e.id, label: e.label })),
     overlap_count: overlap.length,
-    source_counts: Object.fromEntries(sourceIds.map((id, i) => [id, sets[i].size])),
+    source_counts: Object.fromEntries(
+      sourceIds.map((id, i) => [id, sets[i].size]),
+    ),
   };
 
   const envelope = okResult({ text_summary: summary, data, state_delta: {} });
@@ -157,7 +173,10 @@ function executeUnion(
   const sourceIds = step.depends_on ?? [];
   if (sourceIds.length < 2) {
     return {
-      envelope: errorResult({ message: "union requires depends_on with 2+ step IDs", code: "validation_error" }),
+      envelope: errorResult({
+        message: "union requires depends_on with 2+ step IDs",
+        code: "validation_error",
+      }),
       entities: [],
     };
   }
@@ -174,15 +193,20 @@ function executeUnion(
     }
   }
 
-  const sourceCounts = sourceIds.map((id) => `${id}: ${(stepEntities.get(id) ?? []).length}`).join(", ");
-  const summary = combined.length > 0
-    ? `Union merged ${combined.length} unique entities (${sourceCounts})`
-    : `No entities in any source step (${sourceCounts})`;
+  const sourceCounts = sourceIds
+    .map((id) => `${id}: ${(stepEntities.get(id) ?? []).length}`)
+    .join(", ");
+  const summary =
+    combined.length > 0
+      ? `Union merged ${combined.length} unique entities (${sourceCounts})`
+      : `No entities in any source step (${sourceCounts})`;
 
   const data: Record<string, unknown> = {
     combined: combined.map((e) => ({ type: e.type, id: e.id, label: e.label })),
     combined_count: combined.length,
-    source_counts: Object.fromEntries(sourceIds.map((id) => [id, (stepEntities.get(id) ?? []).length])),
+    source_counts: Object.fromEntries(
+      sourceIds.map((id) => [id, (stepEntities.get(id) ?? []).length]),
+    ),
   };
 
   const envelope = okResult({ text_summary: summary, data, state_delta: {} });
@@ -196,7 +220,10 @@ function executeUnion(
 // ---------------------------------------------------------------------------
 
 /** Per-mode entity extractors from handler modules. */
-const MODE_EXTRACTORS: Record<string, (data: Record<string, unknown>) => EntityRef[]> = {
+const MODE_EXTRACTORS: Record<
+  string,
+  (data: Record<string, unknown>) => EntityRef[]
+> = {
   neighbors: extractNeighborEntities,
   compare: extractCompareEntities,
   similar: extractSimilarEntities,
@@ -208,7 +235,9 @@ const MODE_EXTRACTORS: Record<string, (data: Record<string, unknown>) => EntityR
 };
 
 /** Extract variant entities from variant_profile results. */
-function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef[] {
+function extractVariantProfileEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
   const profiles = data.profiles as Array<Record<string, unknown>> | undefined;
   if (!profiles) return [];
   const out: EntityRef[] = [];
@@ -225,7 +254,10 @@ function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef
     const included = entity.included as Record<string, unknown> | undefined;
     const entityData = (entity.data ?? {}) as Record<string, unknown>;
 
-    const relations = (included?.relations ?? {}) as Record<string, { rows?: unknown[] }>;
+    const relations = (included?.relations ?? {}) as Record<
+      string,
+      { rows?: unknown[] }
+    >;
     for (const [, group] of Object.entries(relations)) {
       const rows = group?.rows;
       if (!Array.isArray(rows)) continue;
@@ -235,7 +267,11 @@ function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef
         if (!neighbor) continue;
         const nType = neighbor.type as string | undefined;
         const nId = neighbor.id as string | undefined;
-        const nLabel = (neighbor.symbol as string) ?? (neighbor.name as string) ?? (neighbor.label as string) ?? nId;
+        const nLabel =
+          (neighbor.symbol as string) ??
+          (neighbor.name as string) ??
+          (neighbor.label as string) ??
+          nId;
         if (nType && nId && nLabel) {
           out.push({ type: nType, id: nId, label: nLabel });
         }
@@ -256,7 +292,13 @@ function extractVariantProfileEntities(data: Record<string, unknown>): EntityRef
 }
 
 /** Commands that return cohort rows with gene annotations. */
-const ROW_COMMANDS = new Set(["top_hits", "rows", "prioritize", "compute", "gwas_minimal"]);
+const ROW_COMMANDS = new Set([
+  "top_hits",
+  "rows",
+  "prioritize",
+  "compute",
+  "gwas_minimal",
+]);
 
 /** Gene columns found in cohort rows (ordered by preference). */
 const GENE_COLUMNS = ["genecode_genes", "genes", "gene", "gene_symbol"];
@@ -266,7 +308,9 @@ const GENE_COLUMNS = ["genecode_genes", "genes", "gene", "gene_symbol"];
  * Looks for gene name arrays/strings in known columns.
  */
 function extractRowEntities(data: Record<string, unknown>): EntityRef[] {
-  const rows = (data.rows ?? data.top_hits) as Array<Record<string, unknown>> | undefined;
+  const rows = (data.rows ?? data.top_hits) as
+    | Array<Record<string, unknown>>
+    | undefined;
   if (!rows?.length) return [];
 
   const out: EntityRef[] = [];
@@ -330,7 +374,8 @@ function extractEntities(
   // Adaptive limit: pipeline-internal entities never reach the LLM,
   // so we can pass more through. Set operations (intersect/union) need
   // complete inputs; enrichment and other downstream steps get a generous cap.
-  const isSetOp = nextStep?.command === "intersect" || nextStep?.command === "union";
+  const isSetOp =
+    nextStep?.command === "intersect" || nextStep?.command === "union";
   const isEnrichment =
     nextStep?.command === "explore" &&
     ((nextStep.args as Record<string, unknown>).target != null ||
@@ -342,7 +387,11 @@ function extractEntities(
   const entities = raw.slice(0, cap);
 
   const meta: StepResult["entities_meta"] = capped
-    ? { totalAvailable, capped: true, warning: `Capped to ${cap} of ${totalAvailable} entities` }
+    ? {
+        totalAvailable,
+        capped: true,
+        warning: `Capped to ${cap} of ${totalAvailable} entities`,
+      }
     : { totalAvailable, capped: false };
 
   return { entities, meta };
@@ -360,12 +409,19 @@ function buildStepCommand(
   const cmd: Record<string, unknown> = { command: step.command, ...step.args };
 
   if (seedEntities?.length) {
-    const seedRefs = seedEntities.map((e) => ({ type: e.type, id: e.id, label: e.label }));
+    const seedRefs = seedEntities.map((e) => ({
+      type: e.type,
+      id: e.id,
+      label: e.label,
+    }));
     if (step.command === "traverse" && !cmd.pattern && !cmd.description) {
       // traverse chain uses singular `seed` — only first entity is used
       cmd.seed = seedRefs[0];
       if (seedRefs.length > 1) {
-        tc?.warn("traverse_single_seed", `Traverse chain uses only first of ${seedRefs.length} piped entities (${seedRefs[0].label}). Use explore for multi-seed.`);
+        tc?.warn(
+          "traverse_single_seed",
+          `Traverse chain uses only first of ${seedRefs.length} piped entities (${seedRefs[0].label}). Use explore for multi-seed.`,
+        );
       }
     } else if (step.command === "traverse") {
       // traverse patterns uses `seeds` array
@@ -374,7 +430,10 @@ function buildStepCommand(
       // explore: cap at 10 for neighbors (graph/query limit), uncapped for enrichment
       const isNeighbors = cmd.into != null;
       if (isNeighbors && seedRefs.length > 10) {
-        tc?.warn("seeds_capped", `Capped from ${seedRefs.length} to 10 seeds for explore neighbors (API limit)`);
+        tc?.warn(
+          "seeds_capped",
+          `Capped from ${seedRefs.length} to 10 seeds for explore neighbors (API limit)`,
+        );
         cmd.seeds = seedRefs.slice(0, 10);
       } else {
         cmd.seeds = seedRefs;
@@ -468,7 +527,8 @@ export async function handlePipeline(
   );
   if (!hasDependency) {
     return errorResult({
-      message: "Pipeline steps have no dependencies. Call commands separately instead.",
+      message:
+        "Pipeline steps have no dependencies. Call commands separately instead.",
       code: "validation_error",
       hint: "Pipeline requires at least one step with depends_on or seeds_from.",
       tc,
@@ -481,13 +541,18 @@ export async function handlePipeline(
     waves = topoSort(steps);
   } catch (err) {
     return errorResult({
-      message: err instanceof Error ? err.message : "Cycle in pipeline dependencies",
+      message:
+        err instanceof Error ? err.message : "Cycle in pipeline dependencies",
       code: "validation_error",
       tc,
     });
   }
 
-  tc.add({ step: "topo_sort", kind: "decision", message: `${waves.length} waves, ${steps.length} steps` });
+  tc.add({
+    step: "topo_sort",
+    kind: "decision",
+    message: `${waves.length} waves, ${steps.length} steps`,
+  });
 
   // --- Execute waves ---
   const stepResults = new Map<string, StepResult>();
@@ -515,7 +580,12 @@ export async function handlePipeline(
         const depResult = stepRawResults.get(depId);
         const depStepDef = steps.find((s) => s.id === depId);
         if (depResult && depResult.status === "error" && depStepDef) {
-          const decision = shouldSkipDependent(depResult, depStepDef, step, stepEntities);
+          const decision = shouldSkipDependent(
+            depResult,
+            depStepDef,
+            step,
+            stepEntities,
+          );
           if (decision === "skip") {
             stepResults.set(step.id, {
               id: step.id,
@@ -563,9 +633,10 @@ export async function handlePipeline(
 
       // --- Intersect / Union: virtual commands, no API call ---
       if (step.command === "intersect" || step.command === "union") {
-        const result = step.command === "intersect"
-          ? executeIntersect(step, stepEntities)
-          : executeUnion(step, stepEntities);
+        const result =
+          step.command === "intersect"
+            ? executeIntersect(step, stepEntities)
+            : executeUnion(step, stepEntities);
         stepRawResults.set(step.id, result.envelope);
         stepEntities.set(step.id, result.entities);
         stepResults.set(step.id, {
@@ -588,7 +659,11 @@ export async function handlePipeline(
       stepRawResults.set(step.id, result);
 
       // Extract entities for downstream steps
-      const { entities, meta } = extractEntities(result, step.command, steps.find((s) => s.seeds_from === step.id));
+      const { entities, meta } = extractEntities(
+        result,
+        step.command,
+        steps.find((s) => s.seeds_from === step.id),
+      );
       stepEntities.set(step.id, entities);
 
       // Propagate cohort ID changes
@@ -599,9 +674,12 @@ export async function handlePipeline(
       const sr: StepResult = {
         id: step.id,
         command: step.command,
-        status: result.status === "ok" || result.status === "partial" ? "ok"
-          : result.status === "empty" ? "empty"
-          : "error",
+        status:
+          result.status === "ok" || result.status === "partial"
+            ? "ok"
+            : result.status === "empty"
+              ? "empty"
+              : "error",
         summary: result.text_summary ?? "",
         data: result.data,
         ms: Date.now() - stepStart,
@@ -631,16 +709,28 @@ export async function handlePipeline(
       const d = raw.state_delta;
       if (d.active_cohort_id) mergedDelta.active_cohort_id = d.active_cohort_id;
       if (d.new_artifact_ids?.length) {
-        mergedDelta.new_artifact_ids = [...(mergedDelta.new_artifact_ids ?? []), ...d.new_artifact_ids];
+        mergedDelta.new_artifact_ids = [
+          ...(mergedDelta.new_artifact_ids ?? []),
+          ...d.new_artifact_ids,
+        ];
       }
       if (d.pinned_entities?.length) {
-        mergedDelta.pinned_entities = [...(mergedDelta.pinned_entities ?? []), ...d.pinned_entities];
+        mergedDelta.pinned_entities = [
+          ...(mergedDelta.pinned_entities ?? []),
+          ...d.pinned_entities,
+        ];
       }
       if (d.active_job_ids?.length) {
-        mergedDelta.active_job_ids = [...(mergedDelta.active_job_ids ?? []), ...d.active_job_ids];
+        mergedDelta.active_job_ids = [
+          ...(mergedDelta.active_job_ids ?? []),
+          ...d.active_job_ids,
+        ];
       }
       if (d.derived_cohorts?.length) {
-        mergedDelta.derived_cohorts = [...(mergedDelta.derived_cohorts ?? []), ...d.derived_cohorts];
+        mergedDelta.derived_cohorts = [
+          ...(mergedDelta.derived_cohorts ?? []),
+          ...d.derived_cohorts,
+        ];
       }
     }
   }
@@ -652,7 +742,10 @@ export async function handlePipeline(
   const skippedCount = allResults.filter((r) => r.status === "skipped").length;
 
   const statusSummary = allResults
-    .map((r) => `[${r.id}] ${r.command}: ${r.status}${r.summary ? ` — ${r.summary.slice(0, 80)}` : ""}`)
+    .map(
+      (r) =>
+        `[${r.id}] ${r.command}: ${r.status}${r.summary ? ` — ${r.summary.slice(0, 80)}` : ""}`,
+    )
     .join("\n");
   const textSummary = `Pipeline "${goal}": ${okCount}/${allResults.length} steps succeeded\n${statusSummary}`;
 
@@ -670,6 +763,13 @@ export async function handlePipeline(
     });
   }
 
-  const opts = { text_summary: textSummary, data, state_delta: mergedDelta, tc };
-  return (errorCount > 0 || skippedCount > 0) ? partialResult(opts) : okResult(opts);
+  const opts = {
+    text_summary: textSummary,
+    data,
+    state_delta: mergedDelta,
+    tc,
+  };
+  return errorCount > 0 || skippedCount > 0
+    ? partialResult(opts)
+    : okResult(opts);
 }

@@ -7,7 +7,7 @@
  */
 
 import { Plot } from "./plotly-chart";
-import { PLOTLY_CONFIG_STATIC, PLOTLY_FONT, PLOTLY_AXIS } from "./theme";
+import { PLOTLY_AXIS, PLOTLY_CONFIG_STATIC, PLOTLY_FONT } from "./theme";
 
 export interface StackedHBarTrace {
   name: string;
@@ -33,9 +33,7 @@ export function StackedHBar({
   className,
 }: StackedHBarProps) {
   // Filter to only labels where at least one trace has a non-zero value
-  const keep = labels.map((_, i) =>
-    traces.some((t) => (t.values[i] ?? 0) > 0),
-  );
+  const keep = labels.map((_, i) => traces.some((t) => (t.values[i] ?? 0) > 0));
   const filteredLabels = labels.filter((_, i) => keep[i]);
   if (filteredLabels.length === 0) return null;
 
@@ -46,12 +44,10 @@ export function StackedHBar({
     type: "bar" as const,
     orientation: "h" as const,
     y: yLabels,
-    x: trace.values
-      .filter((_, i) => keep[i])
-      .reverse(),
+    x: trace.values.filter((_, i) => keep[i]).reverse(),
     name: trace.name,
     marker: { color: trace.color },
-    hovertemplate: "%{y}: %{x:,}<extra>" + trace.name + "</extra>",
+    hovertemplate: `%{y}: %{x:,}<extra>${trace.name}</extra>`,
   }));
 
   const titleText = subtitle

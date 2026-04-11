@@ -29,19 +29,60 @@ const capabilities = [
 ];
 
 const roadmap = [
-  { name: "Interpretation", detail: "Score each variant for pathogenicity, map it to a target gene and tissue through enhancer-gene links and eQTL colocalization, layer in functional validation from CRISPRi and MPRA screens, and assign a confidence tier" },
-  { name: "Quality Control", detail: "Flag problematic samples and variants before analysis" },
-  { name: "Reporting", detail: "Generate publication-ready plots: Manhattan, QQ, locus zoom, tissue heatmaps" },
+  {
+    name: "Interpretation",
+    detail:
+      "Score each variant for pathogenicity, map it to a target gene and tissue through enhancer-gene links and eQTL colocalization, layer in functional validation from CRISPRi and MPRA screens, and assign a confidence tier",
+  },
+  {
+    name: "Quality Control",
+    detail: "Flag problematic samples and variants before analysis",
+  },
+  {
+    name: "Reporting",
+    detail:
+      "Generate publication-ready plots: Manhattan, QQ, locus zoom, tissue heatmaps",
+  },
 ];
 
 const dataPacks = [
-  { name: "FAVOR Base", size: "200 GB", contents: "40 curated columns: pathogenicity, frequency, clinical, conservation, regulatory, aPC STAAR channels" },
-  { name: "FAVOR Full", size: "508 GB", contents: "All 54 annotation columns including dbNSFP, ENCODE, MaveDB, COSMIC" },
-  { name: "eQTL", size: "3 GB", contents: "GTEx v10 eQTL/sQTL/apaQTL, 50 tissues, SuSiE fine-mapped" },
-  { name: "Single-cell eQTL", size: "48 GB", contents: "OneK1K, DICE, PsychENCODE" },
-  { name: "Regulatory", size: "18 GB", contents: "cCRE tissue signals, chromatin states, accessibility" },
-  { name: "Enhancer-Gene", size: "12 GB", contents: "ABC, EPIraction, rE2G, EpiMap, CRISPRi" },
-  { name: "Tissue Scores", size: "5 GB", contents: "ChromBPNet, allelic imbalance" },
+  {
+    name: "FAVOR Base",
+    size: "200 GB",
+    contents:
+      "40 curated columns: pathogenicity, frequency, clinical, conservation, regulatory, aPC STAAR channels",
+  },
+  {
+    name: "FAVOR Full",
+    size: "508 GB",
+    contents:
+      "All 54 annotation columns including dbNSFP, ENCODE, MaveDB, COSMIC",
+  },
+  {
+    name: "eQTL",
+    size: "3 GB",
+    contents: "GTEx v10 eQTL/sQTL/apaQTL, 50 tissues, SuSiE fine-mapped",
+  },
+  {
+    name: "Single-cell eQTL",
+    size: "48 GB",
+    contents: "OneK1K, DICE, PsychENCODE",
+  },
+  {
+    name: "Regulatory",
+    size: "18 GB",
+    contents: "cCRE tissue signals, chromatin states, accessibility",
+  },
+  {
+    name: "Enhancer-Gene",
+    size: "12 GB",
+    contents: "ABC, EPIraction, rE2G, EpiMap, CRISPRi",
+  },
+  {
+    name: "Tissue Scores",
+    size: "5 GB",
+    contents: "ChromBPNet, allelic imbalance",
+  },
 ];
 
 export default function CLIPage() {
@@ -145,16 +186,23 @@ export default function CLIPage() {
               Download what you need
             </h2>
             <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-16">
-              From tissue-specific regulatory data to the full 508 GB annotation database.
+              From tissue-specific regulatory data to the full 508 GB annotation
+              database.
             </p>
 
             <div className="overflow-x-auto rounded-2xl border border-border bg-card/60 backdrop-blur-sm">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-4 px-6 font-semibold text-foreground">Pack</th>
-                    <th className="text-left py-4 px-6 font-semibold text-foreground">Size</th>
-                    <th className="text-left py-4 px-6 font-semibold text-foreground">Contents</th>
+                    <th className="text-left py-4 px-6 font-semibold text-foreground">
+                      Pack
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-foreground">
+                      Size
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-foreground">
+                      Contents
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -205,8 +253,9 @@ export default function CLIPage() {
                   <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
                     An AI agent can take a VCF, annotate it, enrich with tissue
                     data, run association tests, and write up which variants are
-                    likely causal, which genes they affect, and in which tissues.
-                    What takes a bioinformatician days becomes a single conversation.
+                    likely causal, which genes they affect, and in which
+                    tissues. What takes a bioinformatician days becomes a single
+                    conversation.
                   </p>
                 </div>
                 <div className="border-t border-border pt-6">
@@ -222,9 +271,10 @@ export default function CLIPage() {
                       className="text-primary hover:underline"
                     >
                       agent reference
-                    </Link>
-                    {" "}that describes every command, its inputs and outputs, so
-                    agents know exactly what to call and how to read the results.
+                    </Link>{" "}
+                    that describes every command, its inputs and outputs, so
+                    agents know exactly what to call and how to read the
+                    results.
                   </p>
                 </div>
               </div>
@@ -241,7 +291,8 @@ export default function CLIPage() {
               What&apos;s coming
             </h2>
             <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-16">
-              The goal is to replace entire bioinformatics workflows with single commands.
+              The goal is to replace entire bioinformatics workflows with single
+              commands.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -280,7 +331,11 @@ export default function CLIPage() {
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay" />
               <div className="relative z-10 text-center text-white">
                 <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 border border-white/10 group-hover:scale-110 transition-transform duration-300">
-                  <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-6 h-6 ml-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>

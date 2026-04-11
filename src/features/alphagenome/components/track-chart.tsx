@@ -52,13 +52,20 @@ export function TrackChart({
       <p className="text-xs text-muted-foreground mb-0.5 pl-1">{label}</p>
       <div className="border border-border/50 rounded bg-card">
         <ResponsiveContainer width="100%" height={effectiveHeight}>
-          <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <ComposedChart
+            data={data}
+            margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
+          >
             <XAxis dataKey="i" hide />
             <YAxis hide domain={["auto", "auto"]} />
 
             {/* Zero line — separates ref (up) from alt (down) */}
             {hasAlt && (
-              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={0.5} />
+              <ReferenceLine
+                y={0}
+                stroke="hsl(var(--border))"
+                strokeWidth={0.5}
+              />
             )}
 
             {/* Ref signal: up */}

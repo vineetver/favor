@@ -21,8 +21,8 @@ interface QuotaResponse {
 // Fetch
 // ---------------------------------------------------------------------------
 
-import { API_BASE } from "@/config/api";
 import { handle401 } from "@infra/api/handle-auth-error";
+import { API_BASE } from "@/config/api";
 
 async function fetchQuotas(): Promise<Quota[]> {
   const res = await fetch(`${API_BASE}/quotas`, { credentials: "include" });

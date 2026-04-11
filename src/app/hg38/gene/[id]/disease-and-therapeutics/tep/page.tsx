@@ -1,12 +1,12 @@
 import { fetchGene } from "@features/gene/api";
-import { NoDataState } from "@shared/components/ui/error-states";
-import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { NoDataState } from "@shared/components/ui/error-states";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import { notFound } from "next/navigation";
 
 interface TepPageProps {

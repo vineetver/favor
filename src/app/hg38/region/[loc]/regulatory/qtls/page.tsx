@@ -1,5 +1,5 @@
-import { loadQtlsData } from "@features/enrichment/loaders";
 import { QtlsView } from "@features/enrichment/components/qtls-view";
+import { loadQtlsData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

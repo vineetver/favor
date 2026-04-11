@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { Button } from "@shared/components/ui/button";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function GlobalError({
   error,
@@ -18,7 +18,9 @@ export default function GlobalError({
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
-        <p className="text-5xl font-bold text-muted-foreground/20 tabular-nums">500</p>
+        <p className="text-5xl font-bold text-muted-foreground/20 tabular-nums">
+          500
+        </p>
         <h1 className="mt-4 text-xl font-bold tracking-tight text-foreground">
           Something went wrong
         </h1>

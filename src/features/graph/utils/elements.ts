@@ -1,15 +1,20 @@
 import type { ElementDefinition } from "cytoscape";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
-import type { GraphFilters } from "../types/filters";
-import type { EntityType } from "../types/entity";
+import {
+  getEdgeColor,
+  getEdgeWidth,
+  getNodeColors,
+  getNodeSize,
+} from "../config/styling";
 import type { EdgeType } from "../types/edge";
-import { getNodeColors, getNodeSize, getEdgeColor, getEdgeWidth } from "../config/styling";
+import type { EntityType } from "../types/entity";
+import type { GraphFilters } from "../types/filters";
+import type { ExplorerEdge, ExplorerNode } from "../types/node";
 
 /** Max characters for node labels on the canvas. Full label remains in node.label for panels. */
 const CANVAS_LABEL_MAX = 28;
 
 function truncateLabel(label: string, max: number): string {
-  return label.length > max ? label.slice(0, max - 1) + "\u2026" : label;
+  return label.length > max ? `${label.slice(0, max - 1)}\u2026` : label;
 }
 
 /**
@@ -21,7 +26,10 @@ export function nodeToElementData(node: ExplorerNode): Record<string, unknown> {
 
   return {
     id: node.id,
-    label: node.type === "Study" ? truncateLabel(node.label, CANVAS_LABEL_MAX) : node.label,
+    label:
+      node.type === "Study"
+        ? truncateLabel(node.label, CANVAS_LABEL_MAX)
+        : node.label,
     type: node.type,
     subtitle: node.subtitle,
     isSeed: node.isSeed,
@@ -67,7 +75,10 @@ export function transformToElements(
   const visibleNodeIds = new Set<string>();
 
   // First pass: identify visible edges and their connected nodes
-  const hasActiveEdgeFilters = filters.minSources > 0 || filters.minExperiments > 0 || (filters.scoreThreshold != null && filters.scoreThreshold > 0);
+  const hasActiveEdgeFilters =
+    filters.minSources > 0 ||
+    filters.minExperiments > 0 ||
+    (filters.scoreThreshold != null && filters.scoreThreshold > 0);
   edges.forEach((edge) => {
     if (!filters.edgeTypes.has(edge.type)) return;
     if ((edge.numSources ?? 0) < filters.minSources) return;
@@ -86,8 +97,10 @@ export function transformToElements(
   // hide non-seed orphaned nodes even if showOrphans is true
   nodes.forEach((node) => {
     if (node.depth > filters.maxDepth) return;
-    if (hasActiveEdgeFilters && !visibleNodeIds.has(node.id) && !node.isSeed) return;
-    if (!filters.showOrphans && !visibleNodeIds.has(node.id) && !node.isSeed) return;
+    if (hasActiveEdgeFilters && !visibleNodeIds.has(node.id) && !node.isSeed)
+      return;
+    if (!filters.showOrphans && !visibleNodeIds.has(node.id) && !node.isSeed)
+      return;
 
     elements.push({
       data: nodeToElementData(node),
@@ -108,7 +121,11 @@ export function transformToElements(
     const sourceNode = nodes.get(edge.sourceId);
     const targetNode = nodes.get(edge.targetId);
     if (!sourceNode || !targetNode) return;
-    if (sourceNode.depth > filters.maxDepth || targetNode.depth > filters.maxDepth) return;
+    if (
+      sourceNode.depth > filters.maxDepth ||
+      targetNode.depth > filters.maxDepth
+    )
+      return;
 
     elements.push({
       data: edgeToElementData(edge),
@@ -122,12 +139,21 @@ export function transformToElements(
 /**
  * Get summary of graph contents by type
  */
-export function getGraphSummary(nodes: Map<string, ExplorerNode>, edges: Map<string, ExplorerEdge>): {
+export function getGraphSummary(
+  nodes: Map<string, ExplorerNode>,
+  edges: Map<string, ExplorerEdge>,
+): {
   nodeTypeCounts: Record<EntityType, number>;
   edgeTypeCounts: Record<EdgeType, number>;
 } {
-  const nodeTypeCounts: Record<EntityType, number> = {} as Record<EntityType, number>;
-  const edgeTypeCounts: Record<EdgeType, number> = {} as Record<EdgeType, number>;
+  const nodeTypeCounts: Record<EntityType, number> = {} as Record<
+    EntityType,
+    number
+  >;
+  const edgeTypeCounts: Record<EdgeType, number> = {} as Record<
+    EdgeType,
+    number
+  >;
 
   nodes.forEach((node) => {
     nodeTypeCounts[node.type] = (nodeTypeCounts[node.type] ?? 0) + 1;

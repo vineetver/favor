@@ -108,7 +108,7 @@ function transformRow(
   const traitId = row.neighbor.id;
   const category =
     origin === "Entity"
-      ? (nb<string>(row, "semantic_class") || "other")
+      ? nb<string>(row, "semantic_class") || "other"
       : origin === "Disease"
         ? (diseaseCategories.get(traitId) ?? "disease")
         : "phenotype";
@@ -116,9 +116,7 @@ function transformRow(
   return {
     id: `${origin}-${traitId}-${index}`,
     traitName:
-      strOrNull(ep(row, "trait_name")) ??
-      strOrNull(nb(row, "name")) ??
-      traitId,
+      strOrNull(ep(row, "trait_name")) ?? strOrNull(nb(row, "name")) ?? traitId,
     category,
     yValue: numOrNull(ep(row, "p_value_mlog")),
     orBeta: numOrNull(ep(row, "or_beta")),
@@ -140,17 +138,32 @@ export async function fetchVariantTraitAssociations(
   );
   if (!response) return [];
 
-  const entityRows = getEdgeRows(response, "VARIANT_ASSOCIATED_WITH_TRAIT__Entity");
-  const phenoRows = getEdgeRows(response, "VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype");
-  const diseaseRows = getEdgeRows(response, "VARIANT_ASSOCIATED_WITH_TRAIT__Disease");
+  const entityRows = getEdgeRows(
+    response,
+    "VARIANT_ASSOCIATED_WITH_TRAIT__Entity",
+  );
+  const phenoRows = getEdgeRows(
+    response,
+    "VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype",
+  );
+  const diseaseRows = getEdgeRows(
+    response,
+    "VARIANT_ASSOCIATED_WITH_TRAIT__Disease",
+  );
 
   const diseaseCategories = await fetchDiseaseCategories(
     Array.from(new Set(diseaseRows.map((r) => r.neighbor.id))),
   );
 
   return [
-    ...entityRows.map((r, i) => transformRow(r, "Entity", i, diseaseCategories)),
-    ...phenoRows.map((r, i) => transformRow(r, "Phenotype", i, diseaseCategories)),
-    ...diseaseRows.map((r, i) => transformRow(r, "Disease", i, diseaseCategories)),
+    ...entityRows.map((r, i) =>
+      transformRow(r, "Entity", i, diseaseCategories),
+    ),
+    ...phenoRows.map((r, i) =>
+      transformRow(r, "Phenotype", i, diseaseCategories),
+    ),
+    ...diseaseRows.map((r, i) =>
+      transformRow(r, "Disease", i, diseaseCategories),
+    ),
   ];
 }

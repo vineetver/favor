@@ -1,27 +1,31 @@
 "use client";
 
-import { useCallback, useReducer, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useCallback, useReducer, useRef } from "react";
 import {
+  uploadFile as apiUploadFile,
   BatchApiError,
   createCohort,
-  uploadFile as apiUploadFile,
   validateTypedCohort,
 } from "../api";
+import type { JobConfig } from "../components/job-configuration";
 import type {
   ColumnMapping,
   CreateCohortRequest,
   WizardAction,
   WizardState,
 } from "../types";
-import type { JobConfig } from "../components/job-configuration";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const TYPED_DATA_TYPES = new Set<string>(["gwas_sumstats", "credible_set", "fine_mapping"]);
+const TYPED_DATA_TYPES = new Set<string>([
+  "gwas_sumstats",
+  "credible_set",
+  "fine_mapping",
+]);
 
 // ============================================================================
 // Reducer (pure — all state transitions in one place)
@@ -38,7 +42,11 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
 
     case "UPLOAD_DONE":
       if (state.step !== "uploading") return state;
-      return { step: "validating", file: state.file, inputUri: action.inputUri };
+      return {
+        step: "validating",
+        file: state.file,
+        inputUri: action.inputUri,
+      };
 
     case "UPLOAD_FAILED":
       return { step: "idle", error: action.error };
@@ -47,7 +55,8 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
       if (state.step !== "validating") return state;
       const { validation } = action;
       const isTyped =
-        TYPED_DATA_TYPES.has(validation.data_type) && validation.confidence >= 0.5;
+        TYPED_DATA_TYPES.has(validation.data_type) &&
+        validation.confidence >= 0.5;
       if (isTyped && validation.suggested_column_map?.length > 0) {
         return {
           step: "mapping",
@@ -132,7 +141,12 @@ export function isTypedCohortState(state: WizardState): boolean {
 }
 
 /** Map wizard state to the 5 visual steps for the step indicator. */
-export type VisualStep = "upload" | "validate" | "mapping" | "configure" | "complete";
+export type VisualStep =
+  | "upload"
+  | "validate"
+  | "mapping"
+  | "configure"
+  | "complete";
 
 export function getVisualStep(state: WizardState): VisualStep {
   switch (state.step) {
@@ -170,7 +184,9 @@ export function getStepDescription(step: VisualStep): string {
 // ============================================================================
 
 export function useWizard() {
-  const [state, dispatch] = useReducer(wizardReducer, { step: "idle" } as WizardState);
+  const [state, dispatch] = useReducer(wizardReducer, {
+    step: "idle",
+  } as WizardState);
   const router = useRouter();
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);

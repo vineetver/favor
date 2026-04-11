@@ -1,6 +1,6 @@
+import type { SchemaPropertyMeta } from "../api";
 import type { EdgeType } from "./edge";
 import type { ExplorerEdge } from "./node";
-import type { SchemaPropertyMeta } from "../api";
 
 /** A merged edge group for the drilldown UI */
 export interface ConnectionsEdgeGroup {

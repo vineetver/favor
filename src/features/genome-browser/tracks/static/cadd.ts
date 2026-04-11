@@ -2,37 +2,37 @@
 // CADD 1.7 deleteriousness scores, split by alternate-allele identity.
 // Each track is a vector tileset hosted on the Genohub HiGlass server.
 
-import { Calculator } from 'lucide-react'
-import type { StaticTrack, GoslingTrackSpec } from '../../types/tracks'
-import { LINKING_ID } from '../constants'
+import { Calculator } from "lucide-react";
+import type { GoslingTrackSpec, StaticTrack } from "../../types/tracks";
+import { LINKING_ID } from "../constants";
 
-const CADD_BASE = 'https://higlass.genohub.org/api/v1/tileset_info/?d=cadd'
+const CADD_BASE = "https://higlass.genohub.org/api/v1/tileset_info/?d=cadd";
 
-function caddSpec(allele: 'a' | 'c' | 'g' | 't'): GoslingTrackSpec {
+function caddSpec(allele: "a" | "c" | "g" | "t"): GoslingTrackSpec {
   return {
-    alignment: 'overlay',
+    alignment: "overlay",
     title: `CADD 1.7 (Mutation ${allele.toUpperCase()})`,
     data: {
       url: `${CADD_BASE}-${allele}-hg38`,
-      type: 'vector',
+      type: "vector",
       binSize: 4,
     },
     tracks: [
       {
-        mark: 'bar',
-        x: { field: 'start', type: 'genomic', linkingId: LINKING_ID },
-        xe: { field: 'end', type: 'genomic' },
-        y: { field: 'value', type: 'quantitative' },
-        color: { value: 'blue' },
-        stroke: { value: 'blue' },
+        mark: "bar",
+        x: { field: "start", type: "genomic", linkingId: LINKING_ID },
+        xe: { field: "end", type: "genomic" },
+        y: { field: "value", type: "quantitative" },
+        color: { value: "blue" },
+        stroke: { value: "blue" },
         strokeWidth: { value: 0.8 },
         opacity: { value: 0.7 },
         tooltip: [
-          { field: 'start', type: 'genomic', alt: 'Start Position' },
-          { field: 'end', type: 'genomic', alt: 'End Position' },
+          { field: "start", type: "genomic", alt: "Start Position" },
+          { field: "end", type: "genomic", alt: "End Position" },
           {
-            field: 'value',
-            type: 'quantitative',
+            field: "value",
+            type: "quantitative",
             alt: `CADD 1.7 (Mutation ${allele.toUpperCase()})`,
           },
         ],
@@ -40,19 +40,19 @@ function caddSpec(allele: 'a' | 'c' | 'g' | 't'): GoslingTrackSpec {
     ],
     width: 800,
     height: 60,
-  }
+  };
 }
 
-const ALLELES = ['a', 'c', 'g', 't'] as const
+const ALLELES = ["a", "c", "g", "t"] as const;
 
-export const caddTracks: StaticTrack[] = ALLELES.map(allele => ({
-  kind: 'static',
+export const caddTracks: StaticTrack[] = ALLELES.map((allele) => ({
+  kind: "static",
   id: `cadd-${allele}`,
   name: `CADD 1.7 (Mutation ${allele.toUpperCase()})`,
   description: `Combined Annotation Dependent Depletion scores for ${allele.toUpperCase()}>X mutations.`,
-  category: 'integrative',
+  category: "integrative",
   defaultHeight: 60,
   icon: Calculator,
   curated: false,
   specs: [caddSpec(allele)],
-}))
+}));

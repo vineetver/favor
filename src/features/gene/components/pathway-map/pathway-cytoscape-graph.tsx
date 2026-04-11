@@ -178,7 +178,7 @@ function PathwayCytoscapeGraphInner({
         .map((el) => el.data.id)
         .sort()
         .join(","),
-    [elements]
+    [elements],
   );
 
   // Track previous element count for forced layout re-run on limit change

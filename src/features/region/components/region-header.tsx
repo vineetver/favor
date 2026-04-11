@@ -1,8 +1,8 @@
 "use client";
 
+import { ShareButton } from "@shared/components/share-button";
 import type { ParsedRegion } from "../utils/parse-region";
 import { formatRegionSize } from "../utils/parse-region";
-import { ShareButton } from "@shared/components/share-button";
 
 interface RegionHeaderProps {
   region: ParsedRegion;
@@ -41,7 +41,9 @@ export function RegionHeader({ region, genome = "hg38" }: RegionHeaderProps) {
           </div>
         </div>
 
-        <ShareButton label={`${region.chromosome}:${region.start}-${region.end}`} />
+        <ShareButton
+          label={`${region.chromosome}:${region.start}-${region.end}`}
+        />
       </div>
     </div>
   );

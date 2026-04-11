@@ -202,9 +202,7 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       },
       {
         name: "AI Predictions",
-        items: [
-          { text: "AlphaGenome", slug: "alphagenome" },
-        ],
+        items: [{ text: "AlphaGenome", slug: "alphagenome" }],
       },
       {
         name: "Validation",

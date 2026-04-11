@@ -4,11 +4,26 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
-import { resolveSeedsWithMeta, resolveSeedsWithTypeHint, warnPartialResolution } from "../resolve-seeds";
-import { errorResult, getCachedGraphSchema, trimEntitySubtitles, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, catchToResult, TraceCollector } from "../run-result";
-import { canonicalizeIntent, resolveIntentType, findEdgesConnecting, type GraphSchemaResponse } from "../intent-aliases";
+import {
+  canonicalizeIntent,
+  findEdgesConnecting,
+  type GraphSchemaResponse,
+  resolveIntentType,
+} from "../intent-aliases";
+import {
+  resolveSeedsWithMeta,
+  resolveSeedsWithTypeHint,
+  warnPartialResolution,
+} from "../resolve-seeds";
+import { catchToResult, okResult, TraceCollector } from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
+import {
+  edgeTypeAnnotation,
+  errorResult,
+  getCachedGraphSchema,
+  humanEdgeLabel,
+  trimEntitySubtitles,
+} from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -19,11 +34,17 @@ export async function handleExploreCompare(
   const tc = new TraceCollector();
 
   try {
-    const { resolutions } = await resolveSeedsWithMeta(cmd.seeds, resolvedCache);
+    const { resolutions } = await resolveSeedsWithMeta(
+      cmd.seeds,
+      resolvedCache,
+    );
     let resolved = resolutions.map((r) => r.entity);
     warnPartialResolution(cmd.seeds.length, resolved.length, tc);
     if (resolved.length < 2) {
-      return errorResult("compare mode requires at least 2 resolved entities.", tc);
+      return errorResult(
+        "compare mode requires at least 2 resolved entities.",
+        tc,
+      );
     }
 
     let allSameType = resolved.every((e) => e.type === resolved[0].type);
@@ -32,20 +53,40 @@ export async function handleExploreCompare(
     // intent info, infer the expected seed type and re-resolve mismatches.
     if (!allSameType && cmd.into?.length) {
       const schema = await getCachedGraphSchema();
-      const expectedSeedType = inferExpectedSeedType(schema, cmd.into, resolved);
+      const expectedSeedType = inferExpectedSeedType(
+        schema,
+        cmd.into,
+        resolved,
+      );
       if (expectedSeedType) {
-        tc.add({ step: "type_correction", kind: "decision", message: `Re-resolving seeds as ${expectedSeedType} (inferred from intents)` });
-        const { resolutions: reResolved } = await resolveSeedsWithTypeHint(cmd.seeds, expectedSeedType, resolvedCache);
+        tc.add({
+          step: "type_correction",
+          kind: "decision",
+          message: `Re-resolving seeds as ${expectedSeedType} (inferred from intents)`,
+        });
+        const { resolutions: reResolved } = await resolveSeedsWithTypeHint(
+          cmd.seeds,
+          expectedSeedType,
+          resolvedCache,
+        );
         const reEntities = reResolved.map((r) => r.entity);
-        const nowSameType = reEntities.every((e) => e.type === reEntities[0].type);
+        const nowSameType = reEntities.every(
+          (e) => e.type === reEntities[0].type,
+        );
         if (nowSameType) {
           resolved = reEntities;
           allSameType = true;
         } else {
-          tc.warn("type_correction_failed", `Re-resolution produced mixed types: ${reEntities.map((e) => `${e.label}(${e.type})`).join(", ")}`);
+          tc.warn(
+            "type_correction_failed",
+            `Re-resolution produced mixed types: ${reEntities.map((e) => `${e.label}(${e.type})`).join(", ")}`,
+          );
         }
       } else {
-        tc.warn("type_correction_skipped", `Could not infer expected seed type from intents: ${cmd.into.join(", ")}`);
+        tc.warn(
+          "type_correction_skipped",
+          `Could not infer expected seed type from intents: ${cmd.into.join(", ")}`,
+        );
       }
     }
 
@@ -62,11 +103,20 @@ export async function handleExploreCompare(
         if (repairNote) tc.warn("intent_repair", repairNote);
         const targetType = resolveIntentType(intent);
         if (!targetType) continue;
-        const candidates = findEdgesConnecting(schema, seedType, targetType, intent);
+        const candidates = findEdgesConnecting(
+          schema,
+          seedType,
+          targetType,
+          intent,
+        );
         if (candidates.length > 0) {
           resolved_edges.push(candidates[0].edgeType);
         } else {
-          tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType} for compare` });
+          tc.add({
+            step: `intent_${intent}`,
+            kind: "decision",
+            message: `No edge ${seedType}→${targetType} for compare`,
+          });
         }
       }
       if (resolved_edges.length > 0) edgeTypes = resolved_edges;
@@ -80,7 +130,14 @@ export async function handleExploreCompare(
     }
 
     // Different types → fall back to /graph/intersect
-    return await executeIntersect(resolved, edgeType, cmd.direction, cmd.limit, annotation, tc);
+    return await executeIntersect(
+      resolved,
+      edgeType,
+      cmd.direction,
+      cmd.limit,
+      annotation,
+      tc,
+    );
   } catch (err) {
     return catchToResult(err, tc);
   }
@@ -99,19 +156,32 @@ async function executeCompare(
   const filterLabel = edgeTypes?.length
     ? `filtered to ${edgeTypes.map(humanEdgeLabel).join(", ")}`
     : "all relationships";
-  tc.add({ step: "routeCompare", kind: "decision", message: `Same-type seeds → /graph/compare (Jaccard), ${filterLabel}` });
+  tc.add({
+    step: "routeCompare",
+    kind: "decision",
+    message: `Same-type seeds → /graph/compare (Jaccard), ${filterLabel}`,
+  });
 
   try {
     const data = await agentFetch<{
       data: {
         textSummary?: string;
         entities: Array<{ type: string; id: string; label: string }>;
-        comparisons: Record<string, {
-          label?: string;
-          shared: Array<{ entity: { type: string; id: string; label: string }; score?: number }>;
-          unique: Record<string, Array<{ entity: { type: string; id: string; label: string } }>>;
-          counts: { shared: number; unique: Record<string, number> };
-        }>;
+        comparisons: Record<
+          string,
+          {
+            label?: string;
+            shared: Array<{
+              entity: { type: string; id: string; label: string };
+              score?: number;
+            }>;
+            unique: Record<
+              string,
+              Array<{ entity: { type: string; id: string; label: string } }>
+            >;
+            counts: { shared: number; unique: Record<string, number> };
+          }
+        >;
         overallSimilarity: {
           sharedNeighborCount: number;
           jaccardIndex: number;
@@ -133,21 +203,26 @@ async function executeCompare(
 
     const similarity = data.data?.overallSimilarity;
     const entityNames = resolved.map((e) => e.label).join(" vs ");
-    const jaccard = similarity?.jaccardIndex != null
-      ? ` (Jaccard: ${(similarity.jaccardIndex * 100).toFixed(1)}%)`
-      : "";
+    const jaccard =
+      similarity?.jaccardIndex != null
+        ? ` (Jaccard: ${(similarity.jaccardIndex * 100).toFixed(1)}%)`
+        : "";
     const sharedCount = similarity?.sharedNeighborCount ?? 0;
 
-    const summary = data.data?.textSummary ??
+    const summary =
+      data.data?.textSummary ??
       `Compared ${entityNames}: ${sharedCount} shared neighbors${jaccard}`;
 
     return okResult({
       text_summary: summary,
       data: {
         _mode: "compare" as const,
-        _method: "Side-by-side Jaccard comparison of same-type entities. Higher Jaccard index = more similar neighborhoods.",
+        _method:
+          "Side-by-side Jaccard comparison of same-type entities. Higher Jaccard index = more similar neighborhoods.",
         entities: resolved,
-        relationship: edgeTypes?.length ? edgeTypes.map(humanEdgeLabel).join(", ") : "all relationships",
+        relationship: edgeTypes?.length
+          ? edgeTypes.map(humanEdgeLabel).join(", ")
+          : "all relationships",
         edgeDescription: annotation ?? undefined,
         comparisons: data.data?.comparisons,
         overallSimilarity: similarity,
@@ -156,11 +231,25 @@ async function executeCompare(
       tc,
       resolved_info: resolvedInfo,
     });
-  } catch (err) {
+  } catch (_err) {
     // Fallback to intersect if compare fails
-    tc.add({ step: "compareFallback", kind: "fallback", message: "compare failed, falling back to intersect" });
-    tc.warn("compare_fallback", "compare endpoint failed, using intersect instead");
-    return executeIntersect(resolved, edgeTypes?.[0], undefined, 20, annotation, tc);
+    tc.add({
+      step: "compareFallback",
+      kind: "fallback",
+      message: "compare failed, falling back to intersect",
+    });
+    tc.warn(
+      "compare_fallback",
+      "compare endpoint failed, using intersect instead",
+    );
+    return executeIntersect(
+      resolved,
+      edgeTypes?.[0],
+      undefined,
+      20,
+      annotation,
+      tc,
+    );
   }
 }
 
@@ -176,7 +265,11 @@ async function executeIntersect(
   annotation: string | null,
   tc: TraceCollector,
 ): Promise<RunResult> {
-  tc.add({ step: "routeIntersect", kind: "decision", message: "Using /graph/intersect" });
+  tc.add({
+    step: "routeIntersect",
+    kind: "decision",
+    message: "Using /graph/intersect",
+  });
 
   const data = await agentFetch<{
     data: {
@@ -186,7 +279,10 @@ async function executeIntersect(
       neighborType?: string;
       sharedNeighbors: Array<{
         neighbor: { type: string; id: string; label: string };
-        support: Array<{ from: { type: string; id: string; label: string }; edge: { type: string } }>;
+        support: Array<{
+          from: { type: string; id: string; label: string };
+          edge: { type: string };
+        }>;
       }>;
       counts: {
         shared?: number;
@@ -212,7 +308,8 @@ async function executeIntersect(
 
   const entityNames = resolved.map((e) => e.label).join(" vs ");
   const edgeLabel = edgeType ?? data.data?.intersectionType ?? "neighbors";
-  const summary = data.data?.textSummary ??
+  const summary =
+    data.data?.textSummary ??
     `Compared ${entityNames} via ${edgeLabel}: ${sharedNeighbors.length} shared neighbors`;
 
   return okResult({
@@ -250,7 +347,9 @@ function inferExpectedSeedType(
   const candidateCounts = new Map<string, number>();
 
   for (const rawIntent of intents) {
-    const [intent] = canonicalizeIntent(rawIntent as import("../types").TargetIntent);
+    const [intent] = canonicalizeIntent(
+      rawIntent as import("../types").TargetIntent,
+    );
     const targetType = resolveIntentType(intent);
     if (!targetType) continue;
 
@@ -282,28 +381,42 @@ function inferExpectedSeedType(
 }
 
 /** Extract entities from compare result data for pipeline forwarding. */
-export function extractCompareEntities(data: Record<string, unknown>): EntityRef[] {
+export function extractCompareEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
   const out: EntityRef[] = [];
   // Same-type compare: comparisons[edgeType].shared[].entity
-  const comparisons = data.comparisons as Record<string, { shared?: unknown[] }> | undefined;
+  const comparisons = data.comparisons as
+    | Record<string, { shared?: unknown[] }>
+    | undefined;
   if (comparisons) {
     for (const comp of Object.values(comparisons)) {
       for (const s of comp.shared ?? []) {
         const item = s as { entity?: Record<string, unknown> };
         const ent = item.entity;
         if (ent?.type && ent.id && ent.label) {
-          out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+          out.push({
+            type: String(ent.type),
+            id: String(ent.id),
+            label: String(ent.label),
+          });
         }
       }
     }
   }
   // Mixed-type compare: sharedNeighbors[].neighbor
-  const sharedNeighbors = data.sharedNeighbors as Array<{ neighbor?: Record<string, unknown> }> | undefined;
+  const sharedNeighbors = data.sharedNeighbors as
+    | Array<{ neighbor?: Record<string, unknown> }>
+    | undefined;
   if (sharedNeighbors) {
     for (const s of sharedNeighbors) {
       const ent = s.neighbor;
       if (ent?.type && ent.id && ent.label) {
-        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+        out.push({
+          type: String(ent.type),
+          id: String(ent.id),
+          label: String(ent.label),
+        });
       }
     }
   }

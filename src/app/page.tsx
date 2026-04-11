@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { UniversalSearch } from "@features/search";
+import { useAuth } from "@shared/hooks";
 import { ArrowUpRight, FileText, UploadCloud } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@shared/hooks";
 
 // Stats data
 const stats = [
@@ -171,12 +171,8 @@ function StatsTicker() {
             <div className="h-16 w-px bg-border mx-8 md:mx-16 hidden sm:block" />
           )}
           <div className="text-center px-6 sm:px-0">
-            <div className="text-stat-value mb-2">
-              {stat.value}
-            </div>
-            <div className="text-stat-label">
-              {stat.label}
-            </div>
+            <div className="text-stat-value mb-2">{stat.value}</div>
+            <div className="text-stat-label">{stat.label}</div>
           </div>
         </div>
       ))}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Skeleton } from "@shared/components/ui/skeleton";
-import { useWorkspaceTree } from "./use-workspace-tree";
-import { TreeBranch, type TreeCallbacks } from "./tree-folder";
 import type { CohortListItem } from "@features/batch/types";
+import { Skeleton } from "@shared/components/ui/skeleton";
+import { useCallback, useState } from "react";
+import { TreeBranch, type TreeCallbacks } from "./tree-folder";
+import { useWorkspaceTree } from "./use-workspace-tree";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -18,7 +18,11 @@ interface WorkspaceTreeProps {
   /** Delete a cohort */
   onDeleteCohort: (cohortId: string) => void;
   /** Open the resource viewer for schema/sample */
-  onOpenResource: (kind: "schema" | "sample", cohortId: string, cohortLabel: string) => void;
+  onOpenResource: (
+    kind: "schema" | "sample",
+    cohortId: string,
+    cohortLabel: string,
+  ) => void;
 }
 
 // ---------------------------------------------------------------------------

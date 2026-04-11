@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/shared/toolbar-button.tsx
 // Reusable tooltip-wrapped button for toolbars
 
-import type { LucideIcon } from 'lucide-react'
-import { Button } from '@shared/components/ui/button'
+import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@shared/components/ui/tooltip'
-import { cn } from '@infra/utils'
+} from "@shared/components/ui/tooltip";
+import type { LucideIcon } from "lucide-react";
 
 type ToolbarButtonProps = {
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-  disabled?: boolean
-  className?: string
-  size?: 'sm' | 'default'
-}
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+  size?: "sm" | "default";
+};
 
 export function ToolbarButton({
   icon: Icon,
@@ -27,9 +27,9 @@ export function ToolbarButton({
   onClick,
   disabled = false,
   className,
-  size = 'sm',
+  size = "sm",
 }: ToolbarButtonProps) {
-  const sizeClasses = size === 'sm' ? 'h-8 w-8 p-0' : 'h-9 w-9 p-0'
+  const sizeClasses = size === "sm" ? "h-8 w-8 p-0" : "h-9 w-9 p-0";
 
   return (
     <Tooltip>
@@ -46,5 +46,5 @@ export function ToolbarButton({
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
-  )
+  );
 }

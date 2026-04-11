@@ -7,14 +7,12 @@ interface IntegrativePageProps {
     vcf: string;
     category: string;
   }>;
-  
 }
 
 export default async function IntegrativePage({
   params,
 }: IntegrativePageProps) {
   const { vcf } = await params;
-  
 
   const result = await fetchVariantWithCookie(vcf);
 

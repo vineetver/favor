@@ -7,16 +7,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { ConfidenceDots } from "@shared/components/ui/confidence-dots";
+import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
-import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
-import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import { TooltipProvider } from "@shared/components/ui/tooltip";
 import { Tip } from "@shared/components/ui/tip";
-import { ConfidenceDots } from "@shared/components/ui/confidence-dots";
-import { Search, ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { TooltipProvider } from "@shared/components/ui/tooltip";
+import { ChevronDown, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +49,10 @@ type PhenotypeEdge = {
 // Labels & helpers
 // ---------------------------------------------------------------------------
 
-const EVIDENCE_CODES: Record<string, { label: string; tip: string; rank: number }> = {
+const EVIDENCE_CODES: Record<
+  string,
+  { label: string; tip: string; rank: number }
+> = {
   PCS: {
     label: "Published clinical study",
     tip: "Phenotype observed in a published clinical study with individual patient data.",
@@ -68,7 +71,10 @@ const EVIDENCE_CODES: Record<string, { label: string; tip: string; rank: number 
 };
 
 // HPO frequency terms: https://hpo.jax.org/browse/term/HP:0040279
-const FREQUENCY_LABELS: Record<string, { label: string; short: string; tip: string; rank: number }> = {
+const FREQUENCY_LABELS: Record<
+  string,
+  { label: string; short: string; tip: string; rank: number }
+> = {
   "HP:0040280": {
     label: "Obligate (100%)",
     short: "100%",
@@ -107,25 +113,29 @@ const FREQUENCY_LABELS: Record<string, { label: string; short: string; tip: stri
   },
 };
 
-const CONFIDENCE: Record<string, { dots: number; label: string; tip: string }> = {
-  high: {
-    dots: 3,
-    label: "Strong evidence",
-    tip: "Multiple independent clinical observations confirm this phenotype for this gene.",
-  },
-  medium: {
-    dots: 2,
-    label: "Moderate evidence",
-    tip: "Supported by author statements or limited clinical data.",
-  },
-  low: {
-    dots: 1,
-    label: "Preliminary",
-    tip: "Inferred from model organisms or computational methods. Needs clinical validation.",
-  },
-};
+const CONFIDENCE: Record<string, { dots: number; label: string; tip: string }> =
+  {
+    high: {
+      dots: 3,
+      label: "Strong evidence",
+      tip: "Multiple independent clinical observations confirm this phenotype for this gene.",
+    },
+    medium: {
+      dots: 2,
+      label: "Moderate evidence",
+      tip: "Supported by author statements or limited clinical data.",
+    },
+    low: {
+      dots: 1,
+      label: "Preliminary",
+      tip: "Inferred from model organisms or computational methods. Needs clinical validation.",
+    },
+  };
 
-const ORIGIN_LABELS: Record<string, { label: string; short: string; dot: string }> = {
+const ORIGIN_LABELS: Record<
+  string,
+  { label: string; short: string; dot: string }
+> = {
   human_clinical: {
     label: "Human clinical",
     short: "Human",
@@ -138,11 +148,14 @@ const ORIGIN_LABELS: Record<string, { label: string; short: string; dot: string 
   },
 };
 
-function frequencyLabel(raw: string | null): { label: string; short: string; tip: string } | null {
+function frequencyLabel(
+  raw: string | null,
+): { label: string; short: string; tip: string } | null {
   if (!raw) return null;
   if (FREQUENCY_LABELS[raw]) return FREQUENCY_LABELS[raw];
   // Handle raw fractions like "1/1" or "0/1"
-  if (raw.includes("/")) return { label: raw, short: raw, tip: `Observed frequency: ${raw}` };
+  if (raw.includes("/"))
+    return { label: raw, short: raw, tip: `Observed frequency: ${raw}` };
   return null;
 }
 
@@ -150,7 +163,10 @@ function frequencyLabel(raw: string | null): { label: string; short: string; tip
 // Data extraction
 // ---------------------------------------------------------------------------
 
-function extractPhenotypeEdges(relations: unknown, edges?: unknown): PhenotypeEdge[] {
+function extractPhenotypeEdges(
+  relations: unknown,
+  edges?: unknown,
+): PhenotypeEdge[] {
   const source = relations ?? edges;
   if (!source || typeof source !== "object") return [];
 
@@ -177,14 +193,23 @@ function extractPhenotypeEdges(relations: unknown, edges?: unknown): PhenotypeEd
       return {
         id: `${rawId}_${idx}`,
         termId: String(rawId),
-        phenotypeName: String(props.phenotype_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
-        phenotypeDescription: typeof (neighbor?.subtitle ?? props.phenotype_description) === "string"
-          ? (neighbor?.subtitle ?? props.phenotype_description) : null,
+        phenotypeName: String(
+          props.phenotype_name ??
+            neighbor?.label ??
+            neighbor?.name ??
+            "Unknown",
+        ),
+        phenotypeDescription:
+          typeof (neighbor?.subtitle ?? props.phenotype_description) ===
+          "string"
+            ? (neighbor?.subtitle ?? props.phenotype_description)
+            : null,
         evidenceOrigin: props.evidence_origin ?? null,
         evidenceCode: props.evidence_code ?? null,
         phenotypeFrequency: props.phenotype_frequency ?? null,
         confidenceClass: props.confidence_class ?? null,
-        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
+        evidenceCount:
+          typeof props.evidence_count === "number" ? props.evidence_count : 0,
         modelOrganism: props.model_organism ?? null,
         modelOrganismGeneSymbol: props.model_organism_gene_symbol ?? null,
         ontologySource: props.ontology_source ?? null,
@@ -193,8 +218,10 @@ function extractPhenotypeEdges(relations: unknown, edges?: unknown): PhenotypeEd
     .filter((d): d is PhenotypeEdge => d !== null)
     .sort((a, b) => {
       // High confidence first, then by evidence count
-      const confRank = (c: string | null) => c === "high" ? 3 : c === "medium" ? 2 : 1;
-      const confDiff = confRank(b.confidenceClass) - confRank(a.confidenceClass);
+      const confRank = (c: string | null) =>
+        c === "high" ? 3 : c === "medium" ? 2 : 1;
+      const confDiff =
+        confRank(b.confidenceClass) - confRank(a.confidenceClass);
       if (confDiff !== 0) return confDiff;
       return b.evidenceCount - a.evidenceCount;
     });
@@ -222,12 +249,19 @@ export function PhenotypeSignatureOverview({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const phenotypes = useMemo(() => extractPhenotypeEdges(relations, edges), [relations, edges]);
+  const phenotypes = useMemo(
+    () => extractPhenotypeEdges(relations, edges),
+    [relations, edges],
+  );
 
   // Summary counts
   const summary = useMemo(() => {
-    const human = phenotypes.filter((p) => p.evidenceOrigin === "human_clinical").length;
-    const mouse = phenotypes.filter((p) => p.evidenceOrigin === "mouse_model").length;
+    const human = phenotypes.filter(
+      (p) => p.evidenceOrigin === "human_clinical",
+    ).length;
+    const mouse = phenotypes.filter(
+      (p) => p.evidenceOrigin === "mouse_model",
+    ).length;
     return { human, mouse };
   }, [phenotypes]);
 
@@ -239,8 +273,12 @@ export function PhenotypeSignatureOverview({
         onChange: setOriginFilter,
         options: [
           { value: "all", label: "All" },
-          ...(summary.human > 0 ? [{ value: "human_clinical", label: `Human (${summary.human})` }] : []),
-          ...(summary.mouse > 0 ? [{ value: "mouse_model", label: `Mouse (${summary.mouse})` }] : []),
+          ...(summary.human > 0
+            ? [{ value: "human_clinical", label: `Human (${summary.human})` }]
+            : []),
+          ...(summary.mouse > 0
+            ? [{ value: "mouse_model", label: `Mouse (${summary.mouse})` }]
+            : []),
         ],
       },
       {
@@ -268,15 +306,24 @@ export function PhenotypeSignatureOverview({
     [originFilter, confidenceFilter, sortMode, summary],
   );
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, originFilter, confidenceFilter, sortMode]);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return phenotypes.filter((p) => {
-      if (originFilter !== "all" && p.evidenceOrigin !== originFilter) return false;
-      if (confidenceFilter === "high" && p.confidenceClass !== "high") return false;
-      if (confidenceFilter === "medium" && p.confidenceClass !== "high" && p.confidenceClass !== "medium") return false;
+      if (originFilter !== "all" && p.evidenceOrigin !== originFilter)
+        return false;
+      if (confidenceFilter === "high" && p.confidenceClass !== "high")
+        return false;
+      if (
+        confidenceFilter === "medium" &&
+        p.confidenceClass !== "high" &&
+        p.confidenceClass !== "medium"
+      )
+        return false;
       if (query.length > 0) {
         const matches =
           p.phenotypeName.toLowerCase().includes(query) ||
@@ -289,17 +336,25 @@ export function PhenotypeSignatureOverview({
 
   const sorted = useMemo(() => {
     const items = [...filtered];
-    if (sortMode === "alpha") return items.sort((a, b) => a.phenotypeName.localeCompare(b.phenotypeName));
+    if (sortMode === "alpha")
+      return items.sort((a, b) =>
+        a.phenotypeName.localeCompare(b.phenotypeName),
+      );
     if (sortMode === "evidence-desc") {
       return items.sort((a, b) => {
         const diff = b.evidenceCount - a.evidenceCount;
-        return diff !== 0 ? diff : a.phenotypeName.localeCompare(b.phenotypeName);
+        return diff !== 0
+          ? diff
+          : a.phenotypeName.localeCompare(b.phenotypeName);
       });
     }
     return items; // already sorted by confidence
   }, [filtered, sortMode]);
 
-  const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const visible = useMemo(
+    () => sorted.slice(0, visibleCount),
+    [sorted, visibleCount],
+  );
   const hasMore = sorted.length > visibleCount;
 
   // Group by origin
@@ -308,16 +363,19 @@ export function PhenotypeSignatureOverview({
     for (const p of visible) {
       const key = ORIGIN_LABELS[p.evidenceOrigin ?? ""]?.label ?? "Other";
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(p);
+      map.get(key)?.push(p);
     }
     // Human clinical first
     const entries = Array.from(map.entries());
-    entries.sort((a) => a[0] === "Human clinical" ? -1 : 1);
+    entries.sort((a) => (a[0] === "Human clinical" ? -1 : 1));
     return entries;
   }, [visible]);
 
   useEffect(() => {
-    if (sorted.length === 0) { setSelectedId(null); return; }
+    if (sorted.length === 0) {
+      setSelectedId(null);
+      return;
+    }
     if (!selectedId || !sorted.some((p) => p.id === selectedId)) {
       setSelectedId(sorted[0].id);
     }
@@ -328,7 +386,9 @@ export function PhenotypeSignatureOverview({
     [sorted, selectedId],
   );
 
-  const showMore = useCallback(() => { setVisibleCount((prev) => prev + PAGE_SIZE); }, []);
+  const showMore = useCallback(() => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }, []);
 
   if (!phenotypes.length) {
     return (
@@ -349,10 +409,19 @@ export function PhenotypeSignatureOverview({
                 Phenotype Signature
               </CardTitle>
               <div className="text-xs text-muted-foreground">
-                {filtered.length === phenotypes.length
-                  ? <>{summary.human} human phenotypes{summary.mouse > 0 && <>, {summary.mouse} from mouse models</>}</>
-                  : <>{filtered.length} of {phenotypes.length} phenotypes</>
-                } for {geneSymbol ?? "this gene"}
+                {filtered.length === phenotypes.length ? (
+                  <>
+                    {summary.human} human phenotypes
+                    {summary.mouse > 0 && (
+                      <>, {summary.mouse} from mouse models</>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {filtered.length} of {phenotypes.length} phenotypes
+                  </>
+                )}{" "}
+                for {geneSymbol ?? "this gene"}
               </div>
             </div>
             <div className="relative w-56">
@@ -387,7 +456,9 @@ export function PhenotypeSignatureOverview({
                     <div className="px-5 py-1.5 border-b border-border bg-muted sticky top-0 z-10">
                       <span className="text-[11px] font-medium text-muted-foreground">
                         {group}
-                        <span className="ml-1 text-muted-foreground/60">{items.length}</span>
+                        <span className="ml-1 text-muted-foreground/60">
+                          {items.length}
+                        </span>
                       </span>
                     </div>
                     {items.map((p) => {
@@ -416,7 +487,12 @@ export function PhenotypeSignatureOverview({
                               <div className="flex items-center gap-1.5 mt-1">
                                 {origin && (
                                   <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", origin.dot)} />
+                                    <span
+                                      className={cn(
+                                        "h-1.5 w-1.5 rounded-full shrink-0",
+                                        origin.dot,
+                                      )}
+                                    />
                                     {origin.short}
                                   </span>
                                 )}
@@ -454,7 +530,9 @@ export function PhenotypeSignatureOverview({
             {/* ── Detail Panel ── */}
             <div>
               <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-                <span className="text-[11px] font-medium text-muted-foreground">Details</span>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Details
+                </span>
               </div>
               <div className="px-5 py-5 max-h-[600px] overflow-y-auto">
                 {!selected && (
@@ -471,20 +549,33 @@ export function PhenotypeSignatureOverview({
                         {selected.phenotypeName}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {selected.evidenceOrigin && ORIGIN_LABELS[selected.evidenceOrigin] && (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className={cn("h-2 w-2 rounded-full shrink-0", ORIGIN_LABELS[selected.evidenceOrigin].dot)} />
-                            {ORIGIN_LABELS[selected.evidenceOrigin].label}
-                          </span>
-                        )}
-                        {selected.confidenceClass && CONFIDENCE[selected.confidenceClass] && (
-                          <Tip content={CONFIDENCE[selected.confidenceClass].tip}>
+                        {selected.evidenceOrigin &&
+                          ORIGIN_LABELS[selected.evidenceOrigin] && (
                             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <ConfidenceDots count={CONFIDENCE[selected.confidenceClass].dots} />
-                              {CONFIDENCE[selected.confidenceClass].label}
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full shrink-0",
+                                  ORIGIN_LABELS[selected.evidenceOrigin].dot,
+                                )}
+                              />
+                              {ORIGIN_LABELS[selected.evidenceOrigin].label}
                             </span>
-                          </Tip>
-                        )}
+                          )}
+                        {selected.confidenceClass &&
+                          CONFIDENCE[selected.confidenceClass] && (
+                            <Tip
+                              content={CONFIDENCE[selected.confidenceClass].tip}
+                            >
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ConfidenceDots
+                                  count={
+                                    CONFIDENCE[selected.confidenceClass].dots
+                                  }
+                                />
+                                {CONFIDENCE[selected.confidenceClass].label}
+                              </span>
+                            </Tip>
+                          )}
                       </div>
                     </div>
 
@@ -493,30 +584,43 @@ export function PhenotypeSignatureOverview({
                       {selected.evidenceCount > 0 && (
                         <div>
                           <Tip content="Number of independent diseases linking this gene to this phenotype.">
-                            <span className="text-[11px] text-muted-foreground">Evidence count</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Evidence count
+                            </span>
                           </Tip>
                           <div className="text-sm font-semibold text-foreground tabular-nums">
                             {selected.evidenceCount}
                           </div>
                         </div>
                       )}
-                      {selected.evidenceCode && EVIDENCE_CODES[selected.evidenceCode] && (
-                        <div>
-                          <Tip content={EVIDENCE_CODES[selected.evidenceCode].tip}>
-                            <span className="text-[11px] text-muted-foreground">Evidence type</span>
-                          </Tip>
-                          <div className="text-sm font-semibold text-foreground">
-                            {EVIDENCE_CODES[selected.evidenceCode].label}
+                      {selected.evidenceCode &&
+                        EVIDENCE_CODES[selected.evidenceCode] && (
+                          <div>
+                            <Tip
+                              content={
+                                EVIDENCE_CODES[selected.evidenceCode].tip
+                              }
+                            >
+                              <span className="text-[11px] text-muted-foreground">
+                                Evidence type
+                              </span>
+                            </Tip>
+                            <div className="text-sm font-semibold text-foreground">
+                              {EVIDENCE_CODES[selected.evidenceCode].label}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                       {(() => {
-                        const freq = frequencyLabel(selected.phenotypeFrequency);
+                        const freq = frequencyLabel(
+                          selected.phenotypeFrequency,
+                        );
                         if (!freq) return null;
                         return (
                           <div>
                             <Tip content={freq.tip}>
-                              <span className="text-[11px] text-muted-foreground">Frequency in patients</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                Frequency in patients
+                              </span>
                             </Tip>
                             <div className="text-sm font-semibold text-foreground">
                               {freq.label}
@@ -543,13 +647,21 @@ export function PhenotypeSignatureOverview({
                         </span>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                           <div>
-                            <span className="text-[11px] text-muted-foreground">Species</span>
-                            <div className="text-[13px] text-foreground italic">{selected.modelOrganism}</div>
+                            <span className="text-[11px] text-muted-foreground">
+                              Species
+                            </span>
+                            <div className="text-[13px] text-foreground italic">
+                              {selected.modelOrganism}
+                            </div>
                           </div>
                           {selected.modelOrganismGeneSymbol && (
                             <div>
-                              <span className="text-[11px] text-muted-foreground">Ortholog</span>
-                              <div className="text-[13px] text-foreground font-mono">{selected.modelOrganismGeneSymbol}</div>
+                              <span className="text-[11px] text-muted-foreground">
+                                Ortholog
+                              </span>
+                              <div className="text-[13px] text-foreground font-mono">
+                                {selected.modelOrganismGeneSymbol}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -564,24 +676,32 @@ export function PhenotypeSignatureOverview({
                       <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                         {selected.ontologySource && (
                           <div>
-                            <Tip content={
-                              selected.ontologySource === "HP"
-                                ? "Human Phenotype Ontology — standardized vocabulary for human clinical phenotypes."
-                                : selected.ontologySource === "MP"
-                                  ? "Mammalian Phenotype Ontology — standardized vocabulary for phenotypes observed in model organisms."
-                                  : `Ontology source: ${selected.ontologySource}`
-                            }>
-                              <span className="text-[11px] text-muted-foreground">Source ontology</span>
+                            <Tip
+                              content={
+                                selected.ontologySource === "HP"
+                                  ? "Human Phenotype Ontology — standardized vocabulary for human clinical phenotypes."
+                                  : selected.ontologySource === "MP"
+                                    ? "Mammalian Phenotype Ontology — standardized vocabulary for phenotypes observed in model organisms."
+                                    : `Ontology source: ${selected.ontologySource}`
+                              }
+                            >
+                              <span className="text-[11px] text-muted-foreground">
+                                Source ontology
+                              </span>
                             </Tip>
                             <div className="text-[13px] text-foreground">
-                              {selected.ontologySource === "HP" ? "Human Phenotype Ontology (HPO)" :
-                               selected.ontologySource === "MP" ? "Mammalian Phenotype Ontology (MP)" :
-                               selected.ontologySource}
+                              {selected.ontologySource === "HP"
+                                ? "Human Phenotype Ontology (HPO)"
+                                : selected.ontologySource === "MP"
+                                  ? "Mammalian Phenotype Ontology (MP)"
+                                  : selected.ontologySource}
                             </div>
                           </div>
                         )}
                         <div>
-                          <span className="text-[11px] text-muted-foreground">Term ID</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Term ID
+                          </span>
                           <div className="text-[13px] text-foreground font-mono">
                             {selected.termId.replace("_", ":")}
                           </div>

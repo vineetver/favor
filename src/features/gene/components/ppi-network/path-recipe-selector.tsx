@@ -22,7 +22,10 @@ function PathRecipeSelectorInner({
   onChange,
   className,
 }: PathRecipeSelectorProps) {
-  const recipes = Object.entries(PATH_RECIPES) as [PathRecipe, typeof PATH_RECIPES[PathRecipe]][];
+  const recipes = Object.entries(PATH_RECIPES) as [
+    PathRecipe,
+    (typeof PATH_RECIPES)[PathRecipe],
+  ][];
 
   return (
     <TooltipProvider>
@@ -40,7 +43,7 @@ function PathRecipeSelectorInner({
                     "h-7 px-3 text-xs rounded-md transition-all",
                     value === key
                       ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-transparent",
                   )}
                 >
                   {config.label}

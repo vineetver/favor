@@ -15,7 +15,8 @@ import type { Quota } from "@shared/hooks/use-quotas";
 
 function QuotaIndicator({ quota }: { quota: Quota }) {
   const unlimited = quota.limit < 0;
-  const pct = !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
+  const pct =
+    !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
   const isWarning = !unlimited && pct >= 80;
   const isExhausted = !unlimited && pct >= 100;
   const label = formatQuotaLabel(quota.name);
@@ -24,10 +25,18 @@ function QuotaIndicator({ quota }: { quota: Quota }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex flex-col gap-1 min-w-0" role="group" aria-label={label}>
+          <div
+            className="flex flex-col gap-1 min-w-0"
+            role="group"
+            aria-label={label}
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-muted-foreground truncate">{label}</span>
-              <span className="shrink-0 text-[11px] text-muted-foreground">Unlimited</span>
+              <span className="text-[11px] text-muted-foreground truncate">
+                {label}
+              </span>
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                Unlimited
+              </span>
             </div>
           </div>
         </TooltipTrigger>
@@ -43,7 +52,11 @@ function QuotaIndicator({ quota }: { quota: Quota }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex flex-col gap-1 min-w-0" role="group" aria-label={label}>
+        <div
+          className="flex flex-col gap-1 min-w-0"
+          role="group"
+          aria-label={label}
+        >
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] text-muted-foreground truncate">
               {label}
@@ -99,7 +112,8 @@ function QuotaIndicator({ quota }: { quota: Quota }) {
 
 function QuotaIndicatorCompact({ quota }: { quota: Quota }) {
   const unlimited = quota.limit < 0;
-  const pct = !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
+  const pct =
+    !unlimited && quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
   const isWarning = !unlimited && pct >= 80;
   const isExhausted = !unlimited && pct >= 100;
   const label = formatQuotaLabel(quota.name);
@@ -109,8 +123,12 @@ function QuotaIndicatorCompact({ quota }: { quota: Quota }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="shrink-0 text-[11px] text-muted-foreground truncate">{label}</span>
-            <span className="shrink-0 text-[11px] text-muted-foreground">Unlimited</span>
+            <span className="shrink-0 text-[11px] text-muted-foreground truncate">
+              {label}
+            </span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              Unlimited
+            </span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
@@ -162,7 +180,9 @@ function QuotaIndicatorCompact({ quota }: { quota: Quota }) {
         </div>
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs">
-        <p>{quota.used} of {quota.limit} used</p>
+        <p>
+          {quota.used} of {quota.limit} used
+        </p>
         <p className="opacity-70">Resets {quota.resets}</p>
       </TooltipContent>
     </Tooltip>

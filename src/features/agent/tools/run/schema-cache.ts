@@ -72,7 +72,9 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * Get cached schema if fresh, otherwise return undefined.
  */
-export function getCachedSchema(cohortId: string): CohortSchemaCache | undefined {
+export function getCachedSchema(
+  cohortId: string,
+): CohortSchemaCache | undefined {
   const entry = cache.get(cohortId);
   if (!entry) return undefined;
   if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) {
@@ -86,7 +88,9 @@ export function getCachedSchema(cohortId: string): CohortSchemaCache | undefined
  * Fetch and cache the schema for a cohort.
  * Returns cached version if still fresh.
  */
-export async function fetchAndCacheSchema(cohortId: string): Promise<CohortSchemaCache> {
+export async function fetchAndCacheSchema(
+  cohortId: string,
+): Promise<CohortSchemaCache> {
   const existing = getCachedSchema(cohortId);
   if (existing) return existing;
 
@@ -164,7 +168,9 @@ function parseSchemaResponse(
     | Array<string | { method: string; available: boolean }>
     | undefined;
   const availableMethods = Array.isArray(rawMethods)
-    ? rawMethods.map((m) => (typeof m === "string" ? m : m.method)).filter(Boolean)
+    ? rawMethods
+        .map((m) => (typeof m === "string" ? m : m.method))
+        .filter(Boolean)
     : [];
 
   // Extract metadata
@@ -202,25 +208,51 @@ function parseSchemaResponse(
 // Column kind classification
 // ---------------------------------------------------------------------------
 
-function classifyColumn(col: { name: string; kind?: string; type?: string }): ColumnKind {
+function classifyColumn(col: {
+  name: string;
+  kind?: string;
+  type?: string;
+}): ColumnKind {
   // Use explicit kind if provided
-  if (col.kind === "numeric" || col.kind === "categorical" || col.kind === "identity" || col.kind === "array") {
+  if (
+    col.kind === "numeric" ||
+    col.kind === "categorical" ||
+    col.kind === "identity" ||
+    col.kind === "array"
+  ) {
     return col.kind;
   }
 
   // Infer from type
   const t = (col.type ?? "").toLowerCase();
-  if (t.includes("int") || t.includes("float") || t.includes("double") || t.includes("numeric") || t.includes("decimal")) {
+  if (
+    t.includes("int") ||
+    t.includes("float") ||
+    t.includes("double") ||
+    t.includes("numeric") ||
+    t.includes("decimal")
+  ) {
     return "numeric";
   }
-  if (t.includes("varchar") || t.includes("string") || t.includes("text") || t.includes("enum")) {
+  if (
+    t.includes("varchar") ||
+    t.includes("string") ||
+    t.includes("text") ||
+    t.includes("enum")
+  ) {
     return "categorical";
   }
 
   // Infer from name patterns
   const name = col.name.toLowerCase();
-  if (name.includes("_id") || name === "vid" || name === "rsid") return "identity";
-  if (name.includes("_name") || name.includes("_type") || name === "consequence" || name === "chromosome") {
+  if (name.includes("_id") || name === "vid" || name === "rsid")
+    return "identity";
+  if (
+    name.includes("_name") ||
+    name.includes("_type") ||
+    name === "consequence" ||
+    name === "chromosome"
+  ) {
     return "categorical";
   }
 

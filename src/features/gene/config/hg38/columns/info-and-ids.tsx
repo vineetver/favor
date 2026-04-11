@@ -1,10 +1,6 @@
-import type React from "react";
 import type { Gene } from "@features/gene/types";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
+import type React from "react";
 
 const col = createColumns<Gene>();
 
@@ -22,7 +18,9 @@ function formatSynonyms(items: Array<Record<string, string>>): React.ReactNode {
   if (labels.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      {labels.map((l, i) => <span key={i}>{l}</span>)}
+      {labels.map((l, i) => (
+        <span key={i}>{l}</span>
+      ))}
     </div>
   );
 }
@@ -36,7 +34,7 @@ export const geneInfoAndIdsColumns = [
       description: "Alternative gene names from OpenTargets.",
     }),
     cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
-      formatSynonyms(synonyms)
+      formatSynonyms(synonyms),
     ),
   }),
 
@@ -45,10 +43,11 @@ export const geneInfoAndIdsColumns = [
     header: "Synonyms",
     description: tooltip({
       title: "Gene Synonyms",
-      description: "Alternative gene names and symbols from multiple sources (OpenTargets).",
+      description:
+        "Alternative gene names and symbols from multiple sources (OpenTargets).",
     }),
     cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
-      formatSynonyms(synonyms)
+      formatSynonyms(synonyms),
     ),
   }),
 
@@ -60,7 +59,7 @@ export const geneInfoAndIdsColumns = [
       description: "Alternative gene symbols from OpenTargets.",
     }),
     cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
-      formatSynonyms(synonyms)
+      formatSynonyms(synonyms),
     ),
   }),
 
@@ -72,7 +71,7 @@ export const geneInfoAndIdsColumns = [
       description: "Previously used gene symbols that are now obsolete.",
     }),
     cell: cell.custom<Gene, any>((obsolete: Array<Record<string, string>>) =>
-      formatSynonyms(obsolete)
+      formatSynonyms(obsolete),
     ),
   }),
 
@@ -91,7 +90,8 @@ export const geneInfoAndIdsColumns = [
         <div className="space-y-0.5">
           <span className="font-medium text-foreground">{transcript.id}</span>
           <p className="text-xs text-muted-foreground">
-            {transcript.chromosome}:{start?.toLocaleString()}-{end?.toLocaleString()} ({transcript.strand})
+            {transcript.chromosome}:{start?.toLocaleString()}-
+            {end?.toLocaleString()} ({transcript.strand})
           </p>
         </div>
       );
@@ -125,7 +125,10 @@ export const geneInfoAndIdsColumns = [
       title: "CCDS ID",
       description: "CCDS ID (from HGNC).",
     }),
-    cell: cell.link((val) => `https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&GO=MainBrowse&DATA=${val}`),
+    cell: cell.link(
+      (val) =>
+        `https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&GO=MainBrowse&DATA=${val}`,
+    ),
   }),
 
   col.accessor("refseq_id", {
@@ -146,7 +149,8 @@ export const geneInfoAndIdsColumns = [
       description: "UCSC ID (from HGNC).",
     }),
     cell: cell.link(
-      (val) => `https://genome.ucsc.edu/cgi-bin/hgGene?hgg_gene=${val}&org=human`,
+      (val) =>
+        `https://genome.ucsc.edu/cgi-bin/hgGene?hgg_gene=${val}&org=human`,
     ),
   }),
 
@@ -221,7 +225,8 @@ export const geneInfoAndIdsColumns = [
       description: "Vega ID",
     }),
     cell: cell.link(
-      (val) => `https://vega.archive.ensembl.org/Homo_sapiens/Gene/Summary?g=${val}`,
+      (val) =>
+        `https://vega.archive.ensembl.org/Homo_sapiens/Gene/Summary?g=${val}`,
     ),
   }),
 
@@ -242,7 +247,7 @@ export const geneInfoAndIdsColumns = [
       title: "Pubmed ID",
       description: "Pubmed ID",
     }),
-    cell: cell.link((val) => `https://pubmed.ncbi.nlm.nih.gov/${val}`)
+    cell: cell.link((val) => `https://pubmed.ncbi.nlm.nih.gov/${val}`),
   }),
 
   col.accessor("lsdb", {
@@ -267,11 +272,7 @@ export const geneInfoAndIdsColumns = [
           uniqueNames.add(lowerCaseName);
           results.push(
             <li key={i}>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={url} target="_blank" rel="noopener noreferrer">
                 {name}
               </a>
             </li>,
@@ -427,7 +428,8 @@ export const geneInfoAndIdsColumns = [
     header: "Intermediate Filament DB",
     description: tooltip({
       title: "Intermediate Filament DB",
-      description: "ID used to link to the Human Intermediate Filament Database",
+      description:
+        "ID used to link to the Human Intermediate Filament Database",
     }),
     cell: cell.text(),
   }),

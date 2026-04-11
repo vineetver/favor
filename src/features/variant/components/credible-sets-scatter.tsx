@@ -58,7 +58,7 @@ function hashJitter(str: string): number {
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) - h + str.charCodeAt(i)) | 0;
   }
-  return ((Math.abs(h) % 1000) / 500) - 1;
+  return (Math.abs(h) % 1000) / 500 - 1;
 }
 
 // Stable Plotly references — prevents re-mount on every parent render
@@ -68,7 +68,6 @@ const PLOT_CONFIG: PlotConfig = {
   scrollZoom: true,
 };
 const PLOT_STYLE = { width: "100%" } as const;
-
 
 // ---------------------------------------------------------------------------
 // Component
@@ -129,11 +128,8 @@ export function CredibleSetsScatter({
         // Jitter: ±8% in log-x space, ±0.012 in PIP space
         const hx = hashJitter(p.id);
         const hy = hashJitter(`${p.id}-y`);
-        const jitteredSize = cs * Math.pow(10, hx * 0.04);
-        const jitteredPip = Math.min(
-          1,
-          Math.max(0, pip + hy * 0.012),
-        );
+        const jitteredSize = cs * 10 ** (hx * 0.04);
+        const jitteredPip = Math.min(1, Math.max(0, pip + hy * 0.012));
         xs.push(jitteredSize);
         ys.push(jitteredPip);
         customdata.push([
@@ -180,7 +176,8 @@ export function CredibleSetsScatter({
     // Compute x range that covers the data with a bit of padding on both ends
     let dmax = 1;
     for (const p of plottable) {
-      if (p.variantCount != null && p.variantCount > dmax) dmax = p.variantCount;
+      if (p.variantCount != null && p.variantCount > dmax)
+        dmax = p.variantCount;
     }
     // Plotly log axis uses log10 internally; range is in log10 units
     const logMin = -0.1; // show a bit left of 1

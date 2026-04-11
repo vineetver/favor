@@ -1,14 +1,5 @@
 "use client";
 
-import { DataSurface } from "@shared/components/ui/data-surface";
-import type {
-  ServerFilterConfig,
-  ServerPaginationInfo,
-} from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import { tissueGroupFilter, tissueFilter, significantOnlyFilter } from "./filter-helpers";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useMemo, useState } from "react";
 import type {
   AseRow,
   PaginatedResponse,
@@ -16,16 +7,26 @@ import type {
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useAseQuery } from "@features/enrichment/hooks/use-ase-query";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useCallback, useMemo, useState } from "react";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import {
+  significantOnlyFilter,
+  tissueFilter,
+  tissueGroupFilter,
+} from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { formatTissueName, formatPvalue } from "@shared/utils/tissue-format";
+import { formatPvalue, formatTissueName } from "@shared/utils/tissue-format";
 
 // Clean assay names: "HM-ChIP-seq_H3K27ac" → "H3K27ac"
 function shortAssayLabel(raw: string): string {
@@ -132,7 +133,13 @@ const columns: ColumnDef<AseRow, unknown>[] = [
     header: "Sig.",
     enableSorting: false,
     cell: ({ getValue }) => (
-      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
+      <span
+        className={
+          getValue()
+            ? "text-emerald-600 text-xs font-medium"
+            : "text-muted-foreground/40 text-xs"
+        }
+      >
         {getValue() ? "Yes" : "No"}
       </span>
     ),
@@ -168,7 +175,8 @@ function buildFilters(
 
 const ASE_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best \u2212log\u2081\u2080(p)",
-  metricDescription: "Strongest allele-specific epigenomic activity significance in this tissue group",
+  metricDescription:
+    "Strongest allele-specific epigenomic activity significance in this tissue group",
   countLabel: "Observations",
   formatMetric: (v) => v.toFixed(1),
   showSignificant: true,
@@ -252,9 +260,9 @@ function AseDetailView({
 
   const hasActiveFilters = Boolean(
     searchParams.get("tissue") ||
-    searchParams.get("tissue_group") ||
-    searchParams.get("assay") ||
-    searchParams.get("significant_only"),
+      searchParams.get("tissue_group") ||
+      searchParams.get("assay") ||
+      searchParams.get("significant_only"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

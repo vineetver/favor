@@ -1,14 +1,14 @@
 "use client";
 
-import { cn } from "@infra/utils";
 import type { RegionSummary } from "@features/enrichment/api/region";
-import { formatCount } from "@shared/utils/tissue-format";
+import { cn } from "@infra/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { formatCount } from "@shared/utils/tissue-format";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
@@ -163,7 +163,11 @@ interface RegionNavBarProps {
 
 export type { NavGroup, NavItem };
 
-export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps) {
+export function RegionNavBar({
+  summary,
+  basePath,
+  navGroups,
+}: RegionNavBarProps) {
   const groups = navGroups ?? NAV_GROUPS;
   const pathname = usePathname();
 
@@ -203,7 +207,8 @@ export function RegionNavBar({ summary, basePath, navGroups }: RegionNavBarProps
                           ? {
                               tabIndex: -1,
                               "aria-disabled": true,
-                              onClick: (e: React.MouseEvent) => e.preventDefault(),
+                              onClick: (e: React.MouseEvent) =>
+                                e.preventDefault(),
                             }
                           : {})}
                       >

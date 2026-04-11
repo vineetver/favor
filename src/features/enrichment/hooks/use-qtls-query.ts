@@ -1,10 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  PaginatedResponse,
+  QtlRow,
+} from "@features/enrichment/api/region";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
-import type { QtlRow, PaginatedResponse } from "@features/enrichment/api/region";
+import { API_BASE } from "@/config/api";
 
 interface QtlFilterOptions {
   tissue?: string;

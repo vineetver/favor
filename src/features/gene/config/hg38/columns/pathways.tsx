@@ -1,9 +1,5 @@
 import type { Gene } from "@features/gene/types";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -14,45 +10,57 @@ export const genePathwaysColumns = [
     header: "Pathways (OT)",
     description: tooltip({
       title: "Pathways from OpenTargets",
-      description: "Comprehensive pathway annotations from OpenTargets including Reactome and other sources.",
+      description:
+        "Comprehensive pathway annotations from OpenTargets including Reactome and other sources.",
     }),
-    cell: cell.custom<Gene, any>((pathways: Array<{ pathwayId: string; pathway: string; topLevelTerm: string }>) => {
-      if (!pathways || pathways.length === 0) return null;
+    cell: cell.custom<Gene, any>(
+      (
+        pathways: Array<{
+          pathwayId: string;
+          pathway: string;
+          topLevelTerm: string;
+        }>,
+      ) => {
+        if (!pathways || pathways.length === 0) return null;
 
-      // Group by topLevelTerm
-      const grouped = pathways.reduce((acc, pathway) => {
-        const term = pathway.topLevelTerm || "Other";
-        if (!acc[term]) acc[term] = [];
-        acc[term].push(pathway);
-        return acc;
-      }, {} as Record<string, typeof pathways>);
+        // Group by topLevelTerm
+        const grouped = pathways.reduce(
+          (acc, pathway) => {
+            const term = pathway.topLevelTerm || "Other";
+            if (!acc[term]) acc[term] = [];
+            acc[term].push(pathway);
+            return acc;
+          },
+          {} as Record<string, typeof pathways>,
+        );
 
-      return (
-        <div>
-          {Object.entries(grouped).map(([term, pathwayList]) => (
-            <div key={term}>
-              <div>{term}</div>
-              <ul>
-                {pathwayList.map((pathway, index) => (
-                  <li key={index}>
-                    <div>{pathway.pathway}</div>
-                    {pathway.pathwayId && (
-                      <a
-                        href={`https://reactome.org/content/detail/${pathway.pathwayId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {pathway.pathwayId}
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      );
-    }),
+        return (
+          <div>
+            {Object.entries(grouped).map(([term, pathwayList]) => (
+              <div key={term}>
+                <div>{term}</div>
+                <ul>
+                  {pathwayList.map((pathway, index) => (
+                    <li key={index}>
+                      <div>{pathway.pathway}</div>
+                      {pathway.pathwayId && (
+                        <a
+                          href={`https://reactome.org/content/detail/${pathway.pathwayId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {pathway.pathwayId}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        );
+      },
+    ),
   }),
 
   // Original pathway fields (kept for completeness)
@@ -145,4 +153,8 @@ export const genePathwaysColumns = [
   }),
 ];
 
-export const genePathwaysGroup = col.group("pathways", "Pathways", genePathwaysColumns);
+export const genePathwaysGroup = col.group(
+  "pathways",
+  "Pathways",
+  genePathwaysColumns,
+);

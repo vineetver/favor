@@ -2,9 +2,18 @@
  * Workspace command handlers: pin, set_cohort, remember, export, create_cohort
  */
 
-import { agentFetch, cohortFetch, pollCohortUntilReady } from "../../../lib/api-client";
+import {
+  agentFetch,
+  cohortFetch,
+  pollCohortUntilReady,
+} from "../../../lib/api-client";
+import {
+  catchToResult,
+  errorResult,
+  okResult,
+  TraceCollector,
+} from "../run-result";
 import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
 export async function handlePin(
   cmd: Extract<RunCommand, { command: "pin" }>,
@@ -22,13 +31,19 @@ export async function handleSetCohort(
   const tc = new TraceCollector();
 
   try {
-    tc.add({ step: "fetchSchema", kind: "call", message: `GET /cohorts/${cmd.cohort_id}/schema` });
+    tc.add({
+      step: "fetchSchema",
+      kind: "call",
+      message: `GET /cohorts/${cmd.cohort_id}/schema`,
+    });
 
     const schema = await cohortFetch<{
       row_count?: number;
       data_type?: string;
       text_summary?: string;
-    }>(`/cohorts/${encodeURIComponent(cmd.cohort_id)}/schema`, { timeout: 30_000 });
+    }>(`/cohorts/${encodeURIComponent(cmd.cohort_id)}/schema`, {
+      timeout: 30_000,
+    });
 
     return okResult({
       text_summary: `Active cohort set to ${cmd.cohort_id} (${schema.row_count ?? 0} rows, type: ${schema.data_type ?? "unknown"})`,
@@ -54,7 +69,11 @@ export async function handleRemember(
   const tc = new TraceCollector();
 
   try {
-    tc.add({ step: "writeMemory", kind: "call", message: `PUT /agent/memories key=${cmd.key}` });
+    tc.add({
+      step: "writeMemory",
+      kind: "call",
+      message: `PUT /agent/memories key=${cmd.key}`,
+    });
 
     await agentFetch("/agent/memories", {
       method: "PUT",
@@ -85,11 +104,17 @@ export async function handleExport(
 ): Promise<RunResult> {
   const cohortId = cmd.cohort_id ?? activeCohortId;
   if (!cohortId) {
-    return errorResult({ message: "No active cohort to export.", code: "no_cohort" });
+    return errorResult({
+      message: "No active cohort to export.",
+      code: "no_cohort",
+    });
   }
 
   const tc = new TraceCollector();
-  tc.warn("not_implemented", "Export is not yet implemented. The user can export from the cohort UI.");
+  tc.warn(
+    "not_implemented",
+    "Export is not yet implemented. The user can export from the cohort UI.",
+  );
 
   return okResult({
     text_summary: `Export not yet available for cohort ${cohortId}. Use the cohort UI to export.`,
@@ -106,9 +131,14 @@ export async function handleCreateCohort(
 
   try {
     const idempotencyKey = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const cohortLabel = cmd.label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`;
+    const cohortLabel =
+      cmd.label ?? `Agent cohort ${new Date().toISOString().slice(0, 10)}`;
 
-    tc.add({ step: "createCohort", kind: "call", message: `POST /cohorts with ${cmd.references.length} references` });
+    tc.add({
+      step: "createCohort",
+      kind: "call",
+      message: `POST /cohorts with ${cmd.references.length} references`,
+    });
 
     const submitResult = await cohortFetch<{
       id: string;
@@ -125,10 +155,18 @@ export async function handleCreateCohort(
 
     const cohortId = submitResult.id;
     if (!cohortId) {
-      return errorResult({ message: "Cohort creation returned no ID.", code: "create_failed", tc });
+      return errorResult({
+        message: "Cohort creation returned no ID.",
+        code: "create_failed",
+        tc,
+      });
     }
 
-    tc.add({ step: "pollCohort", kind: "call", message: `Polling cohort ${cohortId}` });
+    tc.add({
+      step: "pollCohort",
+      kind: "call",
+      message: `Polling cohort ${cohortId}`,
+    });
     const statusResult = await pollCohortUntilReady(cohortId);
 
     if (statusResult.status === "failed") {
@@ -161,7 +199,9 @@ export async function handleCreateCohort(
           resolved: statusResult.progress?.found ?? variantCount,
           notFound: statusResult.progress?.not_found ?? 0,
         },
-        summary: schema.text_summary ?? `Cohort created with ${variantCount} variants.`,
+        summary:
+          schema.text_summary ??
+          `Cohort created with ${variantCount} variants.`,
       },
       state_delta: { active_cohort_id: cohortId },
       next_reads: [{ path: `cohort/${cohortId}/schema` }],

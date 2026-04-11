@@ -1,7 +1,7 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadTissueSignalsData } from "@features/enrichment/loaders";
-import { TissueSignalsView } from "@features/enrichment/components/tissue-signals-view";
 import { SignalHeatmap } from "@features/enrichment/components/signal-heatmap";
+import { TissueSignalsView } from "@features/enrichment/components/tissue-signals-view";
+import { loadTissueSignalsData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

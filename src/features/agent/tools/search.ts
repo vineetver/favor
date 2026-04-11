@@ -5,18 +5,33 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { agentFetch, cohortFetch, AgentToolError } from "../lib/api-client";
+import { AgentToolError, agentFetch, cohortFetch } from "../lib/api-client";
 
-const SCOPE_VALUES = ["entities", "columns", "methods", "artifacts", "memories", "all"] as const;
+const SCOPE_VALUES = [
+  "entities",
+  "columns",
+  "methods",
+  "artifacts",
+  "memories",
+  "all",
+] as const;
 
 /** Internal columns to hide */
 const INTERNAL_COLUMNS = new Set([
-  "variants_vid", "variants_chrom_id", "variants_position0",
-  "variants_hash30", "variants_pos_bin_1m", "variants_is_hashed",
-  "variants_position", "row_id",
+  "variants_vid",
+  "variants_chrom_id",
+  "variants_position0",
+  "variants_hash30",
+  "variants_pos_bin_1m",
+  "variants_is_hashed",
+  "variants_position",
+  "row_id",
 ]);
 
-export function createSearchTool(sessionId: string, activeCohortId?: () => string | null) {
+export function createSearchTool(
+  sessionId: string,
+  activeCohortId?: () => string | null,
+) {
   return tool({
     description: `Search across multiple domains. Use scope to narrow results.
 
@@ -29,7 +44,11 @@ SCOPES:
   all       — Search everything (default)`,
     inputSchema: z.object({
       query: z.string().describe("Search term"),
-      scope: z.enum(SCOPE_VALUES).optional().default("all").describe("Search domain (default: all)"),
+      scope: z
+        .enum(SCOPE_VALUES)
+        .optional()
+        .default("all")
+        .describe("Search domain (default: all)"),
     }),
     execute: async ({ query, scope }) => {
       try {
@@ -46,39 +65,56 @@ SCOPES:
             const data = await agentFetch<{
               data: {
                 results: Array<{
-                  entity: { type: string; id: string; label: string; subtitle?: string };
+                  entity: {
+                    type: string;
+                    id: string;
+                    label: string;
+                    subtitle?: string;
+                  };
                   match: { confidence: number; matchTier?: string };
                 }>;
               };
             }>(`/graph/search?${params.toString()}`);
 
             const MAX_SUB = 150;
-            results.entities = (data.data?.results ?? []).slice(0, 5).map((r) => ({
-              type: r.entity.type,
-              id: r.entity.id,
-              label: r.entity.label,
-              subtitle: r.entity.subtitle && r.entity.subtitle.length > MAX_SUB
-                ? `${r.entity.subtitle.slice(0, MAX_SUB).trimEnd()}…`
-                : r.entity.subtitle,
-              score: r.match.confidence,
-            }));
+            results.entities = (data.data?.results ?? [])
+              .slice(0, 5)
+              .map((r) => ({
+                type: r.entity.type,
+                id: r.entity.id,
+                label: r.entity.label,
+                subtitle:
+                  r.entity.subtitle && r.entity.subtitle.length > MAX_SUB
+                    ? `${r.entity.subtitle.slice(0, MAX_SUB).trimEnd()}…`
+                    : r.entity.subtitle,
+                score: r.match.confidence,
+              }));
           } catch {
             results.entities = [];
           }
         }
 
         // Columns
-        if ((searchScope === "columns" || searchScope === "all") && activeCohortId?.()) {
+        if (
+          (searchScope === "columns" || searchScope === "all") &&
+          activeCohortId?.()
+        ) {
           try {
             const cohortId = activeCohortId()!;
             const resp = await cohortFetch<{
               columns?: Array<{ name: string; kind: string; role?: string }>;
-            }>(`/cohorts/${encodeURIComponent(cohortId)}/schema`, { timeout: 15_000 });
+            }>(`/cohorts/${encodeURIComponent(cohortId)}/schema`, {
+              timeout: 15_000,
+            });
 
-            const allColumns = (resp.columns ?? []).filter((c) => !INTERNAL_COLUMNS.has(c.name));
+            const allColumns = (resp.columns ?? []).filter(
+              (c) => !INTERNAL_COLUMNS.has(c.name),
+            );
             const q = query.toLowerCase();
             const matched = allColumns.filter(
-              (c) => c.name.toLowerCase().includes(q) || (c.role ?? "").toLowerCase().includes(q),
+              (c) =>
+                c.name.toLowerCase().includes(q) ||
+                (c.role ?? "").toLowerCase().includes(q),
             );
             results.columns = matched.slice(0, 10).map((c) => ({
               name: c.name,
@@ -91,7 +127,10 @@ SCOPES:
         }
 
         // Methods
-        if ((searchScope === "methods" || searchScope === "all") && activeCohortId?.()) {
+        if (
+          (searchScope === "methods" || searchScope === "all") &&
+          activeCohortId?.()
+        ) {
           try {
             const cohortId = activeCohortId()!;
             const resp = await cohortFetch<{
@@ -102,7 +141,9 @@ SCOPES:
                 available: boolean;
                 auto_config?: Record<string, unknown>;
               }>;
-            }>(`/cohorts/${encodeURIComponent(cohortId)}/schema`, { timeout: 15_000 });
+            }>(`/cohorts/${encodeURIComponent(cohortId)}/schema`, {
+              timeout: 15_000,
+            });
 
             const q = query.toLowerCase();
             const matched = (resp.available_methods ?? [])
@@ -128,7 +169,12 @@ SCOPES:
         if (searchScope === "artifacts" || searchScope === "all") {
           try {
             const data = await agentFetch<{
-              results?: Array<{ type: string; id: number; score: number; snippet: string }>;
+              results?: Array<{
+                type: string;
+                id: number;
+                score: number;
+                snippet: string;
+              }>;
             }>(`/agent/sessions/${sessionId}/search`, {
               method: "POST",
               body: { query, types: ["artifact"], limit: 5 },
@@ -170,7 +216,11 @@ SCOPES:
         throw err;
       }
     },
-    toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+    toModelOutput: async (opts: {
+      toolCallId: string;
+      input: unknown;
+      output: unknown;
+    }) => {
       const results = opts.output as Record<string, unknown>;
       if (results.error) return jsonOut(results);
 
@@ -181,7 +231,11 @@ SCOPES:
         const full = compact.entities as unknown[];
         if (full.length > 5) {
           compact.entities = full.slice(0, 5);
-          compact._entities_truncation = { truncated: true, returned: 5, total: full.length };
+          compact._entities_truncation = {
+            truncated: true,
+            returned: 5,
+            total: full.length,
+          };
         }
       }
 
@@ -190,7 +244,11 @@ SCOPES:
         const full = compact.columns as unknown[];
         if (full.length > 10) {
           compact.columns = full.slice(0, 10);
-          compact._columns_truncation = { truncated: true, returned: 10, total: full.length };
+          compact._columns_truncation = {
+            truncated: true,
+            returned: 10,
+            total: full.length,
+          };
         }
       }
 

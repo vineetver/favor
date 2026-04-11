@@ -1,16 +1,15 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import { useAuth } from "@shared/hooks";
 import { Button } from "@shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Logo } from "@shared/components/ui/logo";
+import { useAuth } from "@shared/hooks";
 import {
   ChevronDown,
   LogOut,
@@ -22,7 +21,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { MobileDrawer } from "./mobile-drawer";
-import { NAV_ITEMS, type NavItem, MORE_ITEMS } from "./nav-items";
+import { MORE_ITEMS, NAV_ITEMS, type NavItem } from "./nav-items";
 import { useScrolled } from "./use-navbar";
 
 function NavLink({ item }: { item: NavItem }) {
@@ -210,10 +209,7 @@ export function Navbar() {
                             "focus:outline-none",
                           )}
                         >
-                          <UserAvatar
-                            name={user.name}
-                            picture={user.picture}
-                          />
+                          <UserAvatar name={user.name} picture={user.picture} />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent

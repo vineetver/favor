@@ -31,7 +31,9 @@ function PathwayNodeTooltipInner({ node, position }: PathwayNodeTooltipProps) {
       <div className="font-medium text-sm text-foreground mb-1">
         {node.name}
       </div>
-      <div className="text-xs font-mono text-muted-foreground mb-2">{node.id}</div>
+      <div className="text-xs font-mono text-muted-foreground mb-2">
+        {node.id}
+      </div>
 
       {/* Evidence badges */}
       {hasEvidence && (

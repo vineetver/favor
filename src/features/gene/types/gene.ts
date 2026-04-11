@@ -55,7 +55,7 @@ export interface Gene {
   interactions_int_act?: string;
   interactions_bio_grid?: string;
   interactions_consensus_path_db?: string;
-  
+
   // Additional external IDs
   ensembl_gene?: string;
   locus_group?: string;
@@ -319,7 +319,12 @@ export interface Gene {
     obsolete_symbols: Array<{ label: string; source: string }>;
     obsolete_names: Array<{ label: string; source: string }>;
     function_descriptions: string[];
-    subcellular_locations: Array<{ location: string; source: string; termSL: string; labelSL: string }>;
+    subcellular_locations: Array<{
+      location: string;
+      source: string;
+      termSL: string;
+      labelSL: string;
+    }>;
     protein_ids: Array<{ id: string; source: string }>;
     db_xrefs: Array<{ id: string; source: string }>;
     constraint: Array<{
@@ -334,8 +339,19 @@ export interface Gene {
       upperBin: number;
       upperBin6: number;
     }>;
-    go: Array<{ id: string; source: string; evidence: string; aspect: string; geneProduct: string; ecoId: string }>;
-    pathways: Array<{ pathwayId: string; pathway: string; topLevelTerm: string }>;
+    go: Array<{
+      id: string;
+      source: string;
+      evidence: string;
+      aspect: string;
+      geneProduct: string;
+      ecoId: string;
+    }>;
+    pathways: Array<{
+      pathwayId: string;
+      pathway: string;
+      topLevelTerm: string;
+    }>;
     homologues: Array<{
       speciesId: string;
       speciesName: string;
@@ -353,7 +369,13 @@ export interface Gene {
       event: string;
       eventId: string;
       effects: Array<{ direction: string; dosing: string }>;
-      biosamples: Array<{ tissueLabel: string; tissueId: string; cellLabel: string; cellFormat: string; cellId: string }>;
+      biosamples: Array<{
+        tissueLabel: string;
+        tissueId: string;
+        cellLabel: string;
+        cellFormat: string;
+        cellId: string;
+      }>;
       datasource: string;
       literature: string;
       url: string;
@@ -374,8 +396,17 @@ export interface Gene {
       urls: Array<{ niceName: string; url: string }>;
     }>;
     hallmarks: {
-      attributes: Array<{ pmid: number; description: string; attribute_name: string }>;
-      cancerHallmarks: Array<{ pmid: number; description: string; impact: string; label: string }>;
+      attributes: Array<{
+        pmid: number;
+        description: string;
+        attribute_name: string;
+      }>;
+      cancerHallmarks: Array<{
+        pmid: number;
+        description: string;
+        impact: string;
+        label: string;
+      }>;
     };
     tep: {
       targetFromSourceId: string;
@@ -401,4 +432,4 @@ export interface GeneColumnGroup {
 }
 
 // Re-export commonly used React type
-export type { ReactNode } from 'react';
+export type { ReactNode } from "react";

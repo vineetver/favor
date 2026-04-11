@@ -3,11 +3,16 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
-import { resolveIntentType, findEdgesConnecting } from "../intent-aliases";
+import { findEdgesConnecting, resolveIntentType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, getCachedGraphSchema, edgeTypeAnnotation, humanEdgeLabel } from "./graph";
-import { okResult, catchToResult, TraceCollector } from "../run-result";
+import { catchToResult, okResult, TraceCollector } from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
+import {
+  edgeTypeAnnotation,
+  errorResult,
+  getCachedGraphSchema,
+  humanEdgeLabel,
+} from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -19,7 +24,10 @@ export async function handleExploreAggregate(
 
   try {
     if (!cmd.metric) {
-      return errorResult("aggregate mode requires 'metric' (count, avg, sum, min, max).", tc);
+      return errorResult(
+        "aggregate mode requires 'metric' (count, avg, sum, min, max).",
+        tc,
+      );
     }
 
     const resolved = await resolveSeeds(cmd.seeds, resolvedCache);
@@ -35,17 +43,29 @@ export async function handleExploreAggregate(
       const targetType = resolveIntentType(cmd.into[0]);
       if (targetType) {
         const schema = await getCachedGraphSchema();
-        const edges = findEdgesConnecting(schema, seed.type, targetType, cmd.into[0]);
+        const edges = findEdgesConnecting(
+          schema,
+          seed.type,
+          targetType,
+          cmd.into[0],
+        );
         edgeType = edges[0]?.edgeType;
       }
     }
     if (!edgeType) {
-      return errorResult("aggregate mode requires 'edge_type' or 'into' to resolve one.", tc);
+      return errorResult(
+        "aggregate mode requires 'edge_type' or 'into' to resolve one.",
+        tc,
+      );
     }
 
     const annotation = await edgeTypeAnnotation(edgeType);
 
-    tc.add({ step: "fetchAggregate", kind: "call", message: `POST /graph/edges/aggregate` });
+    tc.add({
+      step: "fetchAggregate",
+      kind: "call",
+      message: `POST /graph/edges/aggregate`,
+    });
 
     const data = await agentFetch<{
       data: {
@@ -61,7 +81,11 @@ export async function handleExploreAggregate(
           count?: number;
         }>;
       };
-      meta?: { requestId?: string; resolved?: { scoreField?: string; direction?: string }; warnings?: unknown[] };
+      meta?: {
+        requestId?: string;
+        resolved?: { scoreField?: string; direction?: string };
+        warnings?: unknown[];
+      };
     }>("/graph/edges/aggregate", {
       method: "POST",
       body: {
@@ -80,9 +104,11 @@ export async function handleExploreAggregate(
     const resolvedInfo = tc.extractResolvedInfo(data.meta);
 
     const result = data.data;
-    const resolvedScoreField = data.meta?.resolved?.scoreField ?? cmd.score_field;
+    const resolvedScoreField =
+      data.meta?.resolved?.scoreField ?? cmd.score_field;
     const edgeLabel = humanEdgeLabel(edgeType);
-    const summary = result?.textSummary ??
+    const summary =
+      result?.textSummary ??
       (result?.buckets
         ? `${cmd.metric} of ${edgeLabel} for ${seed.label}: ${result.buckets.length} groups`
         : `${cmd.metric} of ${edgeLabel} for ${seed.label}: ${result?.value}`);
@@ -96,7 +122,9 @@ export async function handleExploreAggregate(
         edgeDescription: annotation ?? undefined,
         metric: cmd.metric,
         scoreField: resolvedScoreField ?? undefined,
-        ...(result?.totalEdges != null ? { totalEdges: result.totalEdges } : {}),
+        ...(result?.totalEdges != null
+          ? { totalEdges: result.totalEdges }
+          : {}),
         ...(cmd.group_by ? { groupBy: cmd.group_by } : {}),
         ...(result?.value !== undefined ? { value: result.value } : {}),
         ...(result?.buckets ? { buckets: result.buckets } : {}),

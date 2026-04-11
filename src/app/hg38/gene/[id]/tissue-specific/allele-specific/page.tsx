@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadAseData } from "@features/enrichment/loaders";
 import { AseView } from "@features/enrichment/components/ase-view";
+import { loadAseData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

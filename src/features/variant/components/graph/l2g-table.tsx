@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { DataSurface } from "@shared/components/ui/data-surface";
 import {
   Badge,
   categories,
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import Link from "next/link";
 
 // =============================================================================
 // Row type
@@ -115,8 +115,7 @@ const columns = [
     cell: ({ row }) => {
       const score = row.original.l2gScore;
       if (score === null || score === undefined) return "-";
-      const color =
-        score >= 0.5 ? "emerald" : score >= 0.1 ? "amber" : "gray";
+      const color = score >= 0.5 ? "emerald" : score >= 0.1 ? "amber" : "gray";
       return <Badge color={color}>{score.toFixed(4)}</Badge>;
     },
   }),
@@ -149,9 +148,7 @@ const columns = [
       if (!val || val === "Unknown") return "-";
       return (
         <span className="text-sm">
-          {val
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase())}
+          {val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
         </span>
       );
     },

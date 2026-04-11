@@ -2,7 +2,12 @@
 
 import { useMemo } from "react";
 import { Plot } from "./plotly-chart";
-import { PLOTLY_FONT, PLOTLY_AXIS, PLOTLY_CONFIG_STATIC, METHOD_PALETTE } from "./theme";
+import {
+  METHOD_PALETTE,
+  PLOTLY_AXIS,
+  PLOTLY_CONFIG_STATIC,
+  PLOTLY_FONT,
+} from "./theme";
 
 export interface PRCurvePoint {
   method: string;
@@ -50,13 +55,33 @@ export function PRCurve({ data, title, className }: PRCurveProps) {
       <Plot
         data={traces}
         layout={{
-          title: title ? { text: title, font: { ...PLOTLY_FONT, size: 14 }, x: 0, xanchor: "left" } : undefined,
+          title: title
+            ? {
+                text: title,
+                font: { ...PLOTLY_FONT, size: 14 },
+                x: 0,
+                xanchor: "left",
+              }
+            : undefined,
           font: PLOTLY_FONT,
-          xaxis: { ...PLOTLY_AXIS, title: { text: "Recall" }, range: [0, 1.02] },
-          yaxis: { ...PLOTLY_AXIS, title: { text: "Precision" }, range: [0, 1.05] },
+          xaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "Recall" },
+            range: [0, 1.02],
+          },
+          yaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "Precision" },
+            range: [0, 1.05],
+          },
           height: 400,
           margin: { l: 60, r: 120, t: title ? 50 : 20, b: 50 },
-          legend: { x: 1.02, y: 1, xanchor: "left" as const, font: { size: 11 } },
+          legend: {
+            x: 1.02,
+            y: 1,
+            xanchor: "left" as const,
+            font: { size: 11 },
+          },
           paper_bgcolor: "transparent",
           plot_bgcolor: "transparent",
           showlegend: true,

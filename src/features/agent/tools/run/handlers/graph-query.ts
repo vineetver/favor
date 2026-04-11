@@ -7,16 +7,22 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunResult, EntityRef, SeedRef } from "../types";
 import { inferEdgeType } from "../intent-aliases";
 import { resolveSeeds } from "../resolve-seeds";
-import { getCachedGraphSchema, errorResult } from "./graph";
-import { okResult, catchToResult, TraceCollector } from "../run-result";
+import { catchToResult, okResult, TraceCollector } from "../run-result";
+import type { EntityRef, RunResult, SeedRef } from "../types";
+import { errorResult, getCachedGraphSchema } from "./graph";
 
 export interface QueryCmd {
   description?: string;
   seeds?: SeedRef[];
-  pattern?: Array<{ var: string; type?: string; edge?: string; from?: string; to?: string }>;
+  pattern?: Array<{
+    var: string;
+    type?: string;
+    edge?: string;
+    from?: string;
+    to?: string;
+  }>;
   return_vars?: string[];
   filters?: Record<string, unknown>;
   limit?: number;
@@ -41,7 +47,10 @@ export async function handleQuery(
     // If no explicit pattern but seeds + description, build pattern from schema
     if (!pattern && resolvedSeeds && resolvedSeeds.length > 0) {
       if (resolvedSeeds.length === 0) {
-        return errorResult("Could not resolve any seeds for pattern building.", tc);
+        return errorResult(
+          "Could not resolve any seeds for pattern building.",
+          tc,
+        );
       }
 
       const schema = await getCachedGraphSchema();
@@ -58,7 +67,11 @@ export async function handleQuery(
 
       // If there are exactly 2 seeds, try to infer an edge connecting them
       if (resolvedSeeds.length === 2) {
-        const edgeType = inferEdgeType(schema, resolvedSeeds[0].type, resolvedSeeds[1].type);
+        const edgeType = inferEdgeType(
+          schema,
+          resolvedSeeds[0].type,
+          resolvedSeeds[1].type,
+        );
         if (edgeType) {
           pattern.push({
             var: "e0",
@@ -69,7 +82,11 @@ export async function handleQuery(
         }
       }
 
-      tc.add({ step: "buildPattern", kind: "decision", message: `Built pattern from ${resolvedSeeds.length} seeds` });
+      tc.add({
+        step: "buildPattern",
+        kind: "decision",
+        message: `Built pattern from ${resolvedSeeds.length} seeds`,
+      });
     }
 
     if (!pattern || pattern.length === 0) {
@@ -112,9 +129,12 @@ export async function handleQuery(
         return: cmd.return_vars,
         filters: Object.keys(filters).length > 0 ? filters : undefined,
         limit: Math.min(cmd.limit ?? 20, 100),
-        select: cmd.select?.includeEvidence != null ? {
-          includeEvidence: cmd.select.includeEvidence,
-        } : undefined,
+        select:
+          cmd.select?.includeEvidence != null
+            ? {
+                includeEvidence: cmd.select.includeEvidence,
+              }
+            : undefined,
       },
     });
 
@@ -125,16 +145,21 @@ export async function handleQuery(
     const total = data.data?.counts?.returned ?? matches.length;
 
     return okResult({
-      text_summary: data.data?.textSummary ??
+      text_summary:
+        data.data?.textSummary ??
         `Pattern matched ${matches.length} results (${total} total)`,
       data: {
         _mode: "patterns" as const,
         pattern,
         matches: matches.slice(0, cmd.limit ?? 20),
         totalMatches: total,
-        ...(data.data?.nodeColumns ? { nodeColumns: data.data.nodeColumns } : {}),
+        ...(data.data?.nodeColumns
+          ? { nodeColumns: data.data.nodeColumns }
+          : {}),
         ...(data.data?.nodes ? { nodes: data.data.nodes } : {}),
-        ...(data.data?.edgeColumns ? { edgeColumns: data.data.edgeColumns } : {}),
+        ...(data.data?.edgeColumns
+          ? { edgeColumns: data.data.edgeColumns }
+          : {}),
         ...(data.fieldMeta ? { fieldMeta: data.fieldMeta } : {}),
       },
       state_delta: {},
@@ -147,10 +172,14 @@ export async function handleQuery(
 }
 
 /** Extract entities from patterns result data for pipeline forwarding. */
-export function extractPatternEntities(data: Record<string, unknown>): EntityRef[] {
+export function extractPatternEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
   const nodeColumns = data.nodeColumns as string[] | undefined;
   const nodesMap = data.nodes as Record<string, unknown[]> | undefined;
-  const matches = data.matches as Array<{ vars?: Record<string, string> }> | undefined;
+  const matches = data.matches as
+    | Array<{ vars?: Record<string, string> }>
+    | undefined;
   if (!matches) return [];
 
   const typeIdx = nodeColumns?.indexOf("type") ?? -1;

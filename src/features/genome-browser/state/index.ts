@@ -3,15 +3,15 @@
 
 export {
   BrowserProvider,
-  useBrowserState,
   useBrowserActions,
   useBrowserRegion,
-  useVisibleTracks,
-  useVisibleTrackIds,
-  useVisibleTrackCount,
-  useIsTrackVisible,
+  useBrowserState,
   useCanZoomIn,
   useCanZoomOut,
-} from './browser-context'
+  useIsTrackVisible,
+  useVisibleTrackCount,
+  useVisibleTrackIds,
+  useVisibleTracks,
+} from "./browser-context";
 
-export type { BrowserAction } from './reducer'
+export type { BrowserAction } from "./reducer";

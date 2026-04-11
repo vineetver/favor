@@ -1,5 +1,5 @@
-import { loadAccessibilityData } from "@features/enrichment/loaders";
 import { AccessibilityView } from "@features/enrichment/components/accessibility-view";
+import { loadAccessibilityData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

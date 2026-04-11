@@ -28,9 +28,7 @@ export function SectionTitle({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <div className={cn("text-section-header", className)}>{children}</div>
-  );
+  return <div className={cn("text-section-header", className)}>{children}</div>;
 }
 
 /**

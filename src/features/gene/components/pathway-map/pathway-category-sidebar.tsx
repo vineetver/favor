@@ -5,10 +5,7 @@ import { Checkbox } from "@shared/components/ui/checkbox";
 import { Label } from "@shared/components/ui/label";
 import { ChevronRight } from "lucide-react";
 import { memo, useCallback, useState } from "react";
-import {
-  getCategoryColor,
-  type PathwayCategorySidebarProps,
-} from "./types";
+import { getCategoryColor, type PathwayCategorySidebarProps } from "./types";
 
 function PathwayCategorySidebarInner({
   categories,
@@ -94,8 +91,7 @@ function PathwayCategorySidebarInner({
   const allVisible =
     filterState.selectedCategories.size === 0 &&
     filterState.hiddenPathwayIds.size === 0;
-  const noneVisible =
-    filterState.selectedCategories.size === categories.length;
+  const noneVisible = filterState.selectedCategories.size === categories.length;
 
   return (
     <div className={cn("flex flex-col", className)}>

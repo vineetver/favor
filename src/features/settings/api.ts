@@ -1,7 +1,11 @@
-import type { ApiKeyItem, CreateApiKeyRequest, CreateApiKeyResponse } from "./types";
+import { handle401 } from "@infra/api/handle-auth-error";
 
 import { API_BASE } from "@/config/api";
-import { handle401 } from "@infra/api/handle-auth-error";
+import type {
+  ApiKeyItem,
+  CreateApiKeyRequest,
+  CreateApiKeyResponse,
+} from "./types";
 
 class ApiKeyError extends Error {
   constructor(

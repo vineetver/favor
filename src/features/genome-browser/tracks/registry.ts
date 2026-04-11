@@ -8,22 +8,21 @@
 
 import type {
   StaticTrack,
-  TrackDefinition,
   TrackCategory,
-} from '../types/tracks'
-import { TRACK_CATEGORY_ORDER } from '../types/tracks'
-
-import { geneAnnotationTrack } from './static/gene-annotation'
-import { clinvarTrack } from './static/clinvar'
-import { caddTracks } from './static/cadd'
-import { alphaMissenseTracks } from './static/alphamissense'
-import { conservationTracks } from './static/conservation'
-import { epigeneticsTracks } from './static/epigenetics'
-import { mappabilityTracks } from './static/mappability'
-import { recombinationTracks } from './static/recombination'
-import { ccreTrack } from './static/regulatory'
-import { linkTracks } from './static/links'
-import { otherTracks } from './static/other'
+  TrackDefinition,
+} from "../types/tracks";
+import { TRACK_CATEGORY_ORDER } from "../types/tracks";
+import { alphaMissenseTracks } from "./static/alphamissense";
+import { caddTracks } from "./static/cadd";
+import { clinvarTrack } from "./static/clinvar";
+import { conservationTracks } from "./static/conservation";
+import { epigeneticsTracks } from "./static/epigenetics";
+import { geneAnnotationTrack } from "./static/gene-annotation";
+import { linkTracks } from "./static/links";
+import { mappabilityTracks } from "./static/mappability";
+import { otherTracks } from "./static/other";
+import { recombinationTracks } from "./static/recombination";
+import { ccreTrack } from "./static/regulatory";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY ASSEMBLY
@@ -60,15 +59,13 @@ const ALL_STATIC_TRACKS: readonly StaticTrack[] = [
 
   // Other
   ...otherTracks,
-]
+];
 
 /**
  * Map of trackId → StaticTrack. Built once at module load.
  */
 export const TRACK_REGISTRY: Readonly<Record<string, StaticTrack>> =
-  Object.freeze(
-    Object.fromEntries(ALL_STATIC_TRACKS.map(t => [t.id, t]))
-  )
+  Object.freeze(Object.fromEntries(ALL_STATIC_TRACKS.map((t) => [t.id, t])));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOOKUP HELPERS
@@ -77,37 +74,38 @@ export const TRACK_REGISTRY: Readonly<Record<string, StaticTrack>> =
 export function getAllTracks(): StaticTrack[] {
   // Return a defensive copy so callers can use array methods like .filter
   // without fighting the readonly source-of-truth.
-  return [...ALL_STATIC_TRACKS]
+  return [...ALL_STATIC_TRACKS];
 }
 
 export function getTrackById(id: string): TrackDefinition | undefined {
-  return TRACK_REGISTRY[id]
+  return TRACK_REGISTRY[id];
 }
 
-export function getTracksByCategory(
-  category: TrackCategory
-): StaticTrack[] {
-  return ALL_STATIC_TRACKS.filter(t => t.category === category)
+export function getTracksByCategory(category: TrackCategory): StaticTrack[] {
+  return ALL_STATIC_TRACKS.filter((t) => t.category === category);
 }
 
-export function getTracksGroupedByCategory(): Map<TrackCategory, StaticTrack[]> {
-  const grouped = new Map<TrackCategory, StaticTrack[]>()
+export function getTracksGroupedByCategory(): Map<
+  TrackCategory,
+  StaticTrack[]
+> {
+  const grouped = new Map<TrackCategory, StaticTrack[]>();
   for (const category of TRACK_CATEGORY_ORDER) {
-    grouped.set(category, [])
+    grouped.set(category, []);
   }
   for (const track of ALL_STATIC_TRACKS) {
-    const list = grouped.get(track.category)
-    if (list) list.push(track)
+    const list = grouped.get(track.category);
+    if (list) list.push(track);
   }
   // Drop empty buckets so the UI doesn't render hollow headers.
   for (const [category, tracks] of grouped) {
-    if (tracks.length === 0) grouped.delete(category)
+    if (tracks.length === 0) grouped.delete(category);
   }
-  return grouped
+  return grouped;
 }
 
 export function getCuratedTracks(): StaticTrack[] {
-  return ALL_STATIC_TRACKS.filter(t => t.curated === true)
+  return ALL_STATIC_TRACKS.filter((t) => t.curated === true);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -118,10 +116,10 @@ export function getCuratedTracks(): StaticTrack[] {
  * Tracks shown when the browser first loads. Just gene annotation — every
  * additional default track is a tile fetch the user didn't ask for.
  */
-export const DEFAULT_TRACK_IDS = ['gene-annotation'] as const
+export const DEFAULT_TRACK_IDS = ["gene-annotation"] as const;
 
 export function getDefaultTracks(): StaticTrack[] {
-  return DEFAULT_TRACK_IDS.map(id => TRACK_REGISTRY[id]).filter(
-    (t): t is StaticTrack => t !== undefined
-  )
+  return DEFAULT_TRACK_IDS.map((id) => TRACK_REGISTRY[id]).filter(
+    (t): t is StaticTrack => t !== undefined,
+  );
 }

@@ -1,10 +1,10 @@
-import type { CredibleSetSignal } from "@features/variant/api/credible-sets-graph";
-import type { GwasResult } from "@features/variant/api/gwas";
 import type {
   RegionSummary,
   TargetGeneEvidence,
   TissueGroupRow,
 } from "@features/enrichment/api/region";
+import type { CredibleSetSignal } from "@features/variant/api/credible-sets-graph";
+import type { GwasResult } from "@features/variant/api/gwas";
 import type {
   CredibleSetSummary,
   TissueStat,

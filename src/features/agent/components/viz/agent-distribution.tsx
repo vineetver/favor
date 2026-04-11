@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
-import { BarChart } from "@shared/components/charts";
 import type { ChartDataRow } from "@shared/components/charts";
+import { BarChart } from "@shared/components/charts";
+import { memo, useCallback, useMemo } from "react";
 import type { DistributionVizSpec } from "../../viz/types";
 
 const DistributionGroup = memo(function DistributionGroup({
@@ -38,7 +38,11 @@ const DistributionGroup = memo(function DistributionGroup({
   );
 });
 
-export const AgentDistribution = memo(function AgentDistribution({ spec }: { spec: DistributionVizSpec }) {
+export const AgentDistribution = memo(function AgentDistribution({
+  spec,
+}: {
+  spec: DistributionVizSpec;
+}) {
   return (
     <div className="space-y-4">
       {spec.groups.map((g, i) => (

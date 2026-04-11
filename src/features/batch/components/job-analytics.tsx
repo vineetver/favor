@@ -8,12 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { Textarea } from "@shared/components/ui/textarea";
 import {
   Collapsible,
-  CollapsibleTrigger,
   CollapsibleContent,
+  CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
+import { Textarea } from "@shared/components/ui/textarea";
 import {
   AlertCircle,
   BarChart3,
@@ -26,7 +26,11 @@ import {
   Table,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDuckDB, type QueryResult, type LoadDataResult } from "../hooks/use-duckdb";
+import {
+  type LoadDataResult,
+  type QueryResult,
+  useDuckDB,
+} from "../hooks/use-duckdb";
 
 // ============================================================================
 // Types
@@ -45,7 +49,12 @@ interface PresetQuery {
   name: string;
   description: string;
   sql: string;
-  category: "overview" | "distribution" | "clinical" | "population" | "functional";
+  category:
+    | "overview"
+    | "distribution"
+    | "clinical"
+    | "population"
+    | "functional";
 }
 
 // ============================================================================
@@ -290,10 +299,7 @@ function ResultTable({ result }: { result: QueryResult }) {
         </thead>
         <tbody>
           {result.rows.map((row, i) => (
-            <tr
-              key={i}
-              className="border-b border-border hover:bg-muted/50"
-            >
+            <tr key={i} className="border-b border-border hover:bg-muted/50">
               {result.columns.map((col) => (
                 <td key={col} className="px-4 py-2 whitespace-nowrap">
                   {formatValue(row[col])}
@@ -321,7 +327,7 @@ function formatValue(value: unknown): string {
   }
   if (typeof value === "object") {
     return JSON.stringify(value, (_key, val) =>
-      typeof val === "bigint" ? val.toString() : val
+      typeof val === "bigint" ? val.toString() : val,
     );
   }
   return String(value);
@@ -350,8 +356,12 @@ function QueryCard({
         {/* Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h4 className="text-sm font-medium text-foreground">{query.name}</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">{query.description}</p>
+            <h4 className="text-sm font-medium text-foreground">
+              {query.name}
+            </h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {query.description}
+            </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <CollapsibleTrigger asChild>
@@ -435,7 +445,9 @@ function CustomQuery({
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-muted-foreground" />
-          <CardTitle className="text-sm font-semibold">Custom SQL Query</CardTitle>
+          <CardTitle className="text-sm font-semibold">
+            Custom SQL Query
+          </CardTitle>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -449,7 +461,8 @@ function CustomQuery({
             />
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Table: <code className="bg-muted px-1 py-0.5 rounded">variants</code>
+                Table:{" "}
+                <code className="bg-muted px-1 py-0.5 rounded">variants</code>
               </p>
               <Button type="submit" disabled={isLoading || !sql.trim()}>
                 {isLoading ? (
@@ -510,11 +523,22 @@ export function JobAnalytics({
   filename,
   className,
 }: JobAnalyticsProps) {
-  const { isLoading: isInitializing, isReady, error: initError, loadParquet, query, clearCache } = useDuckDB();
+  const {
+    isLoading: isInitializing,
+    isReady,
+    error: initError,
+    loadParquet,
+    query,
+    clearCache,
+  } = useDuckDB();
 
   const [dataState, setDataState] = useState<DataLoadState>({ type: "idle" });
-  const [queryStates, setQueryStates] = useState<Record<string, QueryRunState>>({});
-  const [customQueryState, setCustomQueryState] = useState<QueryRunState>({ type: "idle" });
+  const [queryStates, setQueryStates] = useState<Record<string, QueryRunState>>(
+    {},
+  );
+  const [customQueryState, setCustomQueryState] = useState<QueryRunState>({
+    type: "idle",
+  });
 
   // Derive for existing rendering code
   const isLoadingData = dataState.type === "loading";
@@ -530,21 +554,34 @@ export function JobAnalytics({
       loading[k] = v.type === "loading";
       errors[k] = v.type === "error" ? v.message : null;
     }
-    return { queryResults: results, loadingQueries: loading, queryErrors: errors };
+    return {
+      queryResults: results,
+      loadingQueries: loading,
+      queryErrors: errors,
+    };
   }, [queryStates]);
 
-  const customResult = customQueryState.type === "success" ? customQueryState.result : null;
-  const customError = customQueryState.type === "error" ? customQueryState.message : null;
+  const customResult =
+    customQueryState.type === "success" ? customQueryState.result : null;
+  const customError =
+    customQueryState.type === "error" ? customQueryState.message : null;
   const isCustomLoading = customQueryState.type === "loading";
 
   // Load parquet data — extracted so both init and cache-clear can call it
   const loadData = useCallback(async () => {
     setDataState({ type: "loading" });
     try {
-      const result = await loadParquet(dataUrl, "variants", `cohort:${jobId}:data`);
+      const result = await loadParquet(
+        dataUrl,
+        "variants",
+        `cohort:${jobId}:data`,
+      );
       setDataState({ type: "ready", cache: result });
     } catch (err) {
-      setDataState({ type: "error", message: err instanceof Error ? err.message : "Failed to load data" });
+      setDataState({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to load data",
+      });
     }
   }, [loadParquet, dataUrl, jobId]);
 
@@ -565,13 +602,22 @@ export function JobAnalytics({
   // Run a preset query
   const runPresetQuery = useCallback(
     async (queryDef: PresetQuery) => {
-      setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "loading" } }));
+      setQueryStates((prev) => ({
+        ...prev,
+        [queryDef.id]: { type: "loading" },
+      }));
       try {
         const result = await query(queryDef.sql);
-        setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "success", result } }));
+        setQueryStates((prev) => ({
+          ...prev,
+          [queryDef.id]: { type: "success", result },
+        }));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Query failed";
-        setQueryStates((prev) => ({ ...prev, [queryDef.id]: { type: "error", message } }));
+        setQueryStates((prev) => ({
+          ...prev,
+          [queryDef.id]: { type: "error", message },
+        }));
       }
     },
     [query],
@@ -593,15 +639,17 @@ export function JobAnalytics({
   );
 
   // Export results as CSV
-  const exportToCsv = useCallback((result: QueryResult, queryName: string) => {
+  const _exportToCsv = useCallback((result: QueryResult, queryName: string) => {
     const headers = result.columns.join(",");
     const rows = result.rows.map((row) =>
-      result.columns.map((col) => {
-        const val = row[col];
-        if (val === null || val === undefined) return "";
-        if (typeof val === "string" && val.includes(",")) return `"${val}"`;
-        return String(val);
-      }).join(",")
+      result.columns
+        .map((col) => {
+          const val = row[col];
+          if (val === null || val === undefined) return "";
+          if (typeof val === "string" && val.includes(",")) return `"${val}"`;
+          return String(val);
+        })
+        .join(","),
     );
     const csv = [headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -630,7 +678,9 @@ export function JobAnalytics({
         <CardContent className="flex flex-col items-center justify-center py-16">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <p className="text-base font-medium text-foreground">
-            {isInitializing ? "Initializing analytics engine..." : "Loading variant data..."}
+            {isInitializing
+              ? "Initializing analytics engine..."
+              : "Loading variant data..."}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
             This may take a moment for large datasets
@@ -648,15 +698,14 @@ export function JobAnalytics({
           <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
             <AlertCircle className="w-8 h-8 text-rose-600" />
           </div>
-          <p className="text-base font-medium text-rose-700 mb-2">Failed to Load Analytics</p>
+          <p className="text-base font-medium text-rose-700 mb-2">
+            Failed to Load Analytics
+          </p>
           <p className="text-sm text-rose-600 max-w-md text-center">
             {initError || loadError}
           </p>
           <div className="flex gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-            >
+            <Button variant="outline" onClick={() => window.location.reload()}>
               <RefreshCw className="w-4 h-4" />
               Retry
             </Button>
@@ -700,12 +749,17 @@ export function JobAnalytics({
                     "px-2.5 py-1 rounded-lg text-xs font-medium border",
                     cacheInfo.fromCache
                       ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200",
                   )}
-                  title={cacheInfo.fromCache ? "Data loaded from browser cache" : "Data fetched from server"}
+                  title={
+                    cacheInfo.fromCache
+                      ? "Data loaded from browser cache"
+                      : "Data fetched from server"
+                  }
                 >
                   <Database className="w-3 h-3 inline mr-1" />
-                  {cacheInfo.fromCache ? "Cached" : "Fresh"} ({(cacheInfo.size / 1024 / 1024).toFixed(1)} MB)
+                  {cacheInfo.fromCache ? "Cached" : "Fresh"} (
+                  {(cacheInfo.size / 1024 / 1024).toFixed(1)} MB)
                 </span>
               )}
               {cacheInfo?.fromCache && (
@@ -724,8 +778,9 @@ export function JobAnalytics({
         </CardHeader>
         <CardContent className="p-6">
           <p className="text-sm text-muted-foreground">
-            Use the preset queries below or write custom SQL to analyze your variant data.
-            All queries run locally in your browser using DuckDB WASM.
+            Use the preset queries below or write custom SQL to analyze your
+            variant data. All queries run locally in your browser using DuckDB
+            WASM.
           </p>
         </CardContent>
       </Card>

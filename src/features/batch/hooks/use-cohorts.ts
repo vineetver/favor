@@ -2,7 +2,11 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listCohorts } from "../api";
-import type { CohortListItem, CohortListResponse, CohortStatus } from "../types";
+import type {
+  CohortListItem,
+  CohortListResponse,
+  CohortStatus,
+} from "../types";
 
 interface UseCohortsOptions {
   statusFilter?: CohortStatus;

@@ -1,6 +1,7 @@
 import type { CohortStatusResponse } from "@features/batch/types";
 import { classifyApiError } from "../tools/run/error-classify";
 import { API_BASE } from "./constants";
+
 const DEFAULT_TIMEOUT = 30_000; // 30s per tool call
 
 // ---------------------------------------------------------------------------
@@ -76,13 +77,13 @@ export async function agentFetch<T>(
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
         .join("; ");
-      if (cookieStr) headers["Cookie"] = cookieStr;
+      if (cookieStr) headers.Cookie = cookieStr;
     } catch {
       // Not in a Next.js request context (standalone script, eval, etc.)
       // — fall back to API key so scripts can authenticate.
       // In a request context, cookies() succeeds and is the only auth mechanism.
       if (process.env.FAVOR_API_KEY) {
-        headers["Authorization"] = `Bearer ${process.env.FAVOR_API_KEY}`;
+        headers.Authorization = `Bearer ${process.env.FAVOR_API_KEY}`;
       }
     }
   }
@@ -108,7 +109,10 @@ export async function agentFetch<T>(
         // Redirect to login on 401
         if (res.status === 401 && typeof window !== "undefined") {
           window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(window.location.href)}`;
-          throw new AgentToolError(401, "Session expired — redirecting to login.");
+          throw new AgentToolError(
+            401,
+            "Session expired — redirecting to login.",
+          );
         }
 
         const body = await res.text();
@@ -147,7 +151,11 @@ export async function agentFetch<T>(
           await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
           continue;
         }
-        throw new AgentToolError(408, "Request timed out", "Try a simpler query or reduce the limit.");
+        throw new AgentToolError(
+          408,
+          "Request timed out",
+          "Try a simpler query or reduce the limit.",
+        );
       }
 
       throw err;
@@ -220,7 +228,11 @@ interface AnalyticsRunRaw {
   result?: {
     metrics?: Record<string, unknown>;
     summary?: string;
-    viz_charts?: Array<{ chart_id: string; chart_type: string; title?: string }>;
+    viz_charts?: Array<{
+      chart_id: string;
+      chart_type: string;
+      title?: string;
+    }>;
     artifacts?: unknown[];
   };
   // Some backends put these flat
@@ -275,7 +287,11 @@ export async function pollAnalyticsRun(
     const raw = await cohortFetch<AnalyticsRunRaw>(
       `/cohorts/${encodeURIComponent(cohortId)}/analytics/runs/${encodeURIComponent(runId)}`,
     );
-    if (raw.status === "completed" || raw.status === "failed" || raw.status === "cancelled") {
+    if (
+      raw.status === "completed" ||
+      raw.status === "failed" ||
+      raw.status === "cancelled"
+    ) {
       return flattenRunStatus(raw);
     }
     await new Promise((r) => setTimeout(r, ANALYTICS_POLL_INTERVAL_MS));

@@ -1,15 +1,11 @@
 "use client";
 
+import type { Job, JobOutput } from "@features/batch";
+import { getCohort, JobAnalytics, useJobPolling } from "@features/batch";
+import { IgvfLipidReport } from "@features/batch/components/igvf-lipid-report";
+import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
 import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
-import {
-  JobAnalytics,
-  useJobPolling,
-  getCohort,
-} from "@features/batch";
-import type { Job, JobOutput } from "@features/batch";
-import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
-import { IgvfLipidReport } from "@features/batch/components/igvf-lipid-report";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -54,9 +50,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
     staleTime: 0,
   });
 
-  const hasIgvfLipid = cohortDetail?.enrichments?.analyses?.some(
-    (a) => a.name === "igvf_lipid",
-  ) ?? false;
+  const hasIgvfLipid =
+    cohortDetail?.enrichments?.analyses?.some((a) => a.name === "igvf_lipid") ??
+    false;
 
   // Use fresh URL from cohort detail — NOT from polling cache which may have expired
   const freshDataUrl = cohortDetail?.output?.url;
@@ -74,7 +70,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
           <Card className="border border-border py-0 gap-0">
             <CardContent className="flex flex-col items-center justify-center text-center py-16">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-base font-medium text-foreground">Loading job data...</p>
+              <p className="text-base font-medium text-foreground">
+                Loading job data...
+              </p>
             </CardContent>
           </Card>
         </main>
@@ -107,9 +105,12 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
               <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Job Not Found</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Job Not Found
+              </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                The job you&apos;re looking for doesn&apos;t exist or may have expired.
+                The job you&apos;re looking for doesn&apos;t exist or may have
+                expired.
               </p>
               <Button variant="outline" asChild>
                 <Link href="/batch-annotation/jobs">
@@ -153,7 +154,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
               <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
                 <Clock className="w-8 h-8 text-amber-600" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Job Not Complete</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Job Not Complete
+              </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
                 Analytics are available once the job has completed processing.
               </p>

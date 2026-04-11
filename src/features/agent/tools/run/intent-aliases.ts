@@ -20,38 +20,71 @@ interface IntentConfig {
 }
 
 export const INTENT_CONFIG: Record<TargetIntent, IntentConfig> = {
-  diseases:          { nodeType: "Disease" },
-  drugs:             { nodeType: "Drug" },
-  pathways:          { nodeType: "Pathway" },
-  variants:          { nodeType: "Variant" },
-  phenotypes:        { nodeType: "Phenotype" },
-  tissues:           { nodeType: "Tissue" },
-  genes:             { nodeType: "Gene" },
-  proteins:          { nodeType: "Gene", remapWarning: "No Protein nodes — querying Gene targets instead." },
-  compounds:         { nodeType: "Drug", remapWarning: "No Compound nodes — querying Drug targets instead." },
-  protein_domains:   { nodeType: "ProteinDomain" },
-  ccres:             { nodeType: "cCRE" },
-  side_effects:      { nodeType: "SideEffect", canonicalIntent: "adverse_effects" },
-  go_terms:          { nodeType: "GOTerm" },
-  metabolites:       { nodeType: "Metabolite" },
-  studies:           { nodeType: "Study" },
-  signals:           { nodeType: "Signal" },
-  drug_interactions: { nodeType: "Drug", preferredEdges: ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"] },
-  adverse_effects:   { nodeType: "SideEffect", preferredEdges: ["DRUG_HAS_ADVERSE_EFFECT", "GENE_ASSOCIATED_WITH_SIDE_EFFECT", "VARIANT_LINKED_TO_SIDE_EFFECT"] },
-  drug_indications:  { nodeType: "Drug", preferredEdges: ["DRUG_INDICATED_FOR_DISEASE"] },
-  drug_targets:      { nodeType: "Drug", preferredEdges: ["DRUG_ACTS_ON_GENE"] },
-  drug_metabolism:   { nodeType: "Drug", preferredEdges: ["DRUG_DISPOSITION_BY_GENE"] },
-  drug_response:     { nodeType: "Drug", preferredEdges: ["GENE_AFFECTS_DRUG_RESPONSE"] },
+  diseases: { nodeType: "Disease" },
+  drugs: { nodeType: "Drug" },
+  pathways: { nodeType: "Pathway" },
+  variants: { nodeType: "Variant" },
+  phenotypes: { nodeType: "Phenotype" },
+  tissues: { nodeType: "Tissue" },
+  genes: { nodeType: "Gene" },
+  proteins: {
+    nodeType: "Gene",
+    remapWarning: "No Protein nodes — querying Gene targets instead.",
+  },
+  compounds: {
+    nodeType: "Drug",
+    remapWarning: "No Compound nodes — querying Drug targets instead.",
+  },
+  protein_domains: { nodeType: "ProteinDomain" },
+  ccres: { nodeType: "cCRE" },
+  side_effects: { nodeType: "SideEffect", canonicalIntent: "adverse_effects" },
+  go_terms: { nodeType: "GOTerm" },
+  metabolites: { nodeType: "Metabolite" },
+  studies: { nodeType: "Study" },
+  signals: { nodeType: "Signal" },
+  drug_interactions: {
+    nodeType: "Drug",
+    preferredEdges: [
+      "DRUG_INTERACTS_WITH_DRUG",
+      "DRUG_PAIR_CAUSES_SIDE_EFFECT",
+    ],
+  },
+  adverse_effects: {
+    nodeType: "SideEffect",
+    preferredEdges: [
+      "DRUG_HAS_ADVERSE_EFFECT",
+      "GENE_ASSOCIATED_WITH_SIDE_EFFECT",
+      "VARIANT_LINKED_TO_SIDE_EFFECT",
+    ],
+  },
+  drug_indications: {
+    nodeType: "Drug",
+    preferredEdges: ["DRUG_INDICATED_FOR_DISEASE"],
+  },
+  drug_targets: { nodeType: "Drug", preferredEdges: ["DRUG_ACTS_ON_GENE"] },
+  drug_metabolism: {
+    nodeType: "Drug",
+    preferredEdges: ["DRUG_DISPOSITION_BY_GENE"],
+  },
+  drug_response: {
+    nodeType: "Drug",
+    preferredEdges: ["GENE_AFFECTS_DRUG_RESPONSE"],
+  },
 };
 
 /**
  * Auto-remap deprecated / ambiguous intents to their canonical equivalents.
  * Returns [canonicalIntent, repairNote | null].
  */
-export function canonicalizeIntent(intent: TargetIntent): [TargetIntent, string | null] {
+export function canonicalizeIntent(
+  intent: TargetIntent,
+): [TargetIntent, string | null] {
   const config = INTENT_CONFIG[intent];
   if (config?.canonicalIntent) {
-    return [config.canonicalIntent, `Remapped ${intent} → ${config.canonicalIntent} (canonical intent)`];
+    return [
+      config.canonicalIntent,
+      `Remapped ${intent} → ${config.canonicalIntent} (canonical intent)`,
+    ];
   }
   if (config?.remapWarning) {
     return [intent, config.remapWarning];
@@ -119,11 +152,25 @@ const EDGE_PREFERENCE: Record<string, string[]> = {
   "Disease→Gene": ["GENE_ASSOCIATED_WITH_DISEASE", "GENE_ALTERED_IN_DISEASE"],
   "Variant→Gene": ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"],
   "Gene→Variant": ["VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE"],
-  "Gene→Drug": ["DRUG_ACTS_ON_GENE", "GENE_AFFECTS_DRUG_RESPONSE", "DRUG_DISPOSITION_BY_GENE"],
-  "Drug→Gene": ["DRUG_ACTS_ON_GENE", "DRUG_DISPOSITION_BY_GENE", "GENE_AFFECTS_DRUG_RESPONSE"],
+  "Gene→Drug": [
+    "DRUG_ACTS_ON_GENE",
+    "GENE_AFFECTS_DRUG_RESPONSE",
+    "DRUG_DISPOSITION_BY_GENE",
+  ],
+  "Drug→Gene": [
+    "DRUG_ACTS_ON_GENE",
+    "DRUG_DISPOSITION_BY_GENE",
+    "GENE_AFFECTS_DRUG_RESPONSE",
+  ],
   "Gene→Gene": ["GENE_INTERACTS_WITH_GENE", "GENE_PARALOG_OF_GENE"],
-  "Drug→SideEffect": ["DRUG_HAS_ADVERSE_EFFECT", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
-  "SideEffect→Drug": ["DRUG_HAS_ADVERSE_EFFECT", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
+  "Drug→SideEffect": [
+    "DRUG_HAS_ADVERSE_EFFECT",
+    "DRUG_PAIR_CAUSES_SIDE_EFFECT",
+  ],
+  "SideEffect→Drug": [
+    "DRUG_HAS_ADVERSE_EFFECT",
+    "DRUG_PAIR_CAUSES_SIDE_EFFECT",
+  ],
   "Drug→Drug": ["DRUG_INTERACTS_WITH_DRUG", "DRUG_PAIR_CAUSES_SIDE_EFFECT"],
   "Drug→Disease": ["DRUG_INDICATED_FOR_DISEASE"],
   "Disease→Drug": ["DRUG_INDICATED_FOR_DISEASE"],
@@ -179,7 +226,9 @@ export function findEdgesConnecting(
     }));
 
   // Look up curated preference: intent-specific first, then type-pair
-  const intentPref = intent ? INTENT_CONFIG[intent as TargetIntent]?.preferredEdges : undefined;
+  const intentPref = intent
+    ? INTENT_CONFIG[intent as TargetIntent]?.preferredEdges
+    : undefined;
   const typePairPref =
     EDGE_PREFERENCE[`${fromType}→${toType}`] ||
     EDGE_PREFERENCE[`${toType}→${fromType}`];
@@ -240,7 +289,10 @@ let runtimeIntentMap = new Map<string, string>(
 
 /** Resolve an intent string to a node type using the runtime map (schema-enriched). */
 export function resolveIntentType(intent: string): string | undefined {
-  return runtimeIntentMap.get(intent) ?? INTENT_CONFIG[intent as TargetIntent]?.nodeType;
+  return (
+    runtimeIntentMap.get(intent) ??
+    INTENT_CONFIG[intent as TargetIntent]?.nodeType
+  );
 }
 
 /**

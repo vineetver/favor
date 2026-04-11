@@ -12,7 +12,11 @@ interface PPIClusterLegendProps {
   className?: string;
 }
 
-function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClusterLegendProps) {
+function PPIClusterLegendInner({
+  clusterState,
+  totalNodes,
+  className,
+}: PPIClusterLegendProps) {
   // Don't show legend if clustering is disabled or no clusters
   if (!clusterState.enabled || clusterState.clusters.size === 0) {
     return null;
@@ -22,8 +26,13 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
   const clusterEntries = Array.from(clusterState.clusters.entries());
 
   // Calculate unclustered nodes count
-  const clusteredNodeCount = clusterEntries.reduce((sum, [, nodes]) => sum + nodes.length, 0);
-  const unclusteredCount = totalNodes ? Math.max(0, totalNodes - clusteredNodeCount - 1) : 0; // -1 for seed
+  const clusteredNodeCount = clusterEntries.reduce(
+    (sum, [, nodes]) => sum + nodes.length,
+    0,
+  );
+  const unclusteredCount = totalNodes
+    ? Math.max(0, totalNodes - clusteredNodeCount - 1)
+    : 0; // -1 for seed
 
   return (
     <div
@@ -31,7 +40,7 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
         "absolute bottom-4 left-4 z-10",
         "bg-card/95 backdrop-blur-sm rounded-lg border border-border shadow-sm",
         "p-3 max-w-[200px]",
-        className
+        className,
       )}
     >
       <div className="text-xs font-medium text-foreground mb-2">
@@ -43,10 +52,7 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
           const isCollapsed = clusterState.collapsedClusters.has(clusterId);
 
           return (
-            <div
-              key={clusterId}
-              className="flex items-center gap-2 text-xs"
-            >
+            <div key={clusterId} className="flex items-center gap-2 text-xs">
               <div
                 className="w-3 h-3 rounded-sm border-2 shrink-0"
                 style={{
@@ -57,7 +63,9 @@ function PPIClusterLegendInner({ clusterState, totalNodes, className }: PPIClust
               <span className="text-muted-foreground truncate">
                 {nodeIds.length} nodes
                 {isCollapsed && (
-                  <span className="text-muted-foreground ml-1">(collapsed)</span>
+                  <span className="text-muted-foreground ml-1">
+                    (collapsed)
+                  </span>
                 )}
               </span>
             </div>

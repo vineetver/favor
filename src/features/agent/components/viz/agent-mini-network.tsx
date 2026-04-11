@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import cytoscape from "cytoscape";
-import CytoscapeComponent from "react-cytoscapejs";
-import coseBilkent from "cytoscape-cose-bilkent";
-import { NODE_TYPE_COLORS, SEED_NODE_COLORS } from "@features/graph/config/styling";
+import {
+  NODE_TYPE_COLORS,
+  SEED_NODE_COLORS,
+} from "@features/graph/config/styling";
+import type { EdgeType } from "@features/graph/types/edge";
 import { EDGE_TYPE_CONFIG } from "@features/graph/types/edge";
 import type { EntityType } from "@features/graph/types/entity";
-import type { EdgeType } from "@features/graph/types/edge";
+import cytoscape from "cytoscape";
+import coseBilkent from "cytoscape-cose-bilkent";
+import { useCallback, useMemo } from "react";
+import CytoscapeComponent from "react-cytoscapejs";
 import type { NetworkVizSpec } from "../../viz/types";
 
 // Register layout extension
@@ -19,7 +22,11 @@ const DEFAULT_NODE_COLOR = { background: "#f1f5f9", border: "#64748b" };
 const DEFAULT_EDGE_COLOR = "#94a3b8";
 
 function getNodeColor(type: string, isSeed: boolean) {
-  if (isSeed) return { background: SEED_NODE_COLORS.background, border: SEED_NODE_COLORS.border };
+  if (isSeed)
+    return {
+      background: SEED_NODE_COLORS.background,
+      border: SEED_NODE_COLORS.border,
+    };
   const colors = NODE_TYPE_COLORS[type as EntityType];
   return colors
     ? { background: colors.background, border: colors.border }

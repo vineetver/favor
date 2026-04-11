@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type { SignalRow } from "@features/enrichment/api/region";
 import { cn } from "@infra/utils";
 import {
   Tooltip,
@@ -11,19 +11,55 @@ import {
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
-import type { SignalRow } from "@features/enrichment/api/region";
+import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Marks config
 // ---------------------------------------------------------------------------
 
 const MARKS = [
-  { key: "max_signal" as const, label: "Max Z", short: "Max", color: "#8b5cf6", tw: "bg-primary" },
-  { key: "dnase" as const, label: "DNase Z", short: "DNase", color: "#3b82f6", tw: "bg-blue-500" },
-  { key: "atac" as const, label: "ATAC Z", short: "ATAC", color: "#10b981", tw: "bg-emerald-500" },
-  { key: "ctcf" as const, label: "CTCF Z", short: "CTCF", color: "#f59e0b", tw: "bg-amber-500" },
-  { key: "h3k27ac" as const, label: "H3K27ac Z", short: "H3K27ac", color: "#8b5cf6", tw: "bg-violet-500" },
-  { key: "h3k4me3" as const, label: "H3K4me3 Z", short: "H3K4me3", color: "#f43f5e", tw: "bg-rose-500" },
+  {
+    key: "max_signal" as const,
+    label: "Max Z",
+    short: "Max",
+    color: "#8b5cf6",
+    tw: "bg-primary",
+  },
+  {
+    key: "dnase" as const,
+    label: "DNase Z",
+    short: "DNase",
+    color: "#3b82f6",
+    tw: "bg-blue-500",
+  },
+  {
+    key: "atac" as const,
+    label: "ATAC Z",
+    short: "ATAC",
+    color: "#10b981",
+    tw: "bg-emerald-500",
+  },
+  {
+    key: "ctcf" as const,
+    label: "CTCF Z",
+    short: "CTCF",
+    color: "#f59e0b",
+    tw: "bg-amber-500",
+  },
+  {
+    key: "h3k27ac" as const,
+    label: "H3K27ac Z",
+    short: "H3K27ac",
+    color: "#8b5cf6",
+    tw: "bg-violet-500",
+  },
+  {
+    key: "h3k4me3" as const,
+    label: "H3K4me3 Z",
+    short: "H3K4me3",
+    color: "#f43f5e",
+    tw: "bg-rose-500",
+  },
 ] as const;
 
 type MarkKey = (typeof MARKS)[number]["key"];
@@ -157,7 +193,10 @@ function CellTooltip({ cell }: { cell: SignalRow }) {
               >
                 {m.short}
               </span>
-              <div className="flex-1 h-2 rounded-sm overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
+              <div
+                className="flex-1 h-2 rounded-sm overflow-hidden"
+                style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+              >
                 {v != null && (
                   <div
                     className="h-full rounded-sm"
@@ -242,7 +281,8 @@ export function SignalHeatmap({ loc }: SignalHeatmapProps) {
     [rows],
   );
 
-  const activeColor = MARKS.find((m) => m.key === activeMark)?.color ?? "#8b5cf6";
+  const activeColor =
+    MARKS.find((m) => m.key === activeMark)?.color ?? "#8b5cf6";
   const activeP95 = matrix?.markP95[activeMark] ?? matrix?.p95 ?? 1;
 
   const handleTissueClick = useCallback((tissue: string) => {

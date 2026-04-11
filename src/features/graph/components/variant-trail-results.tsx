@@ -2,10 +2,10 @@
 
 import { Button } from "@shared/components/ui/button";
 import { ArrowLeft, Dna, Microscope } from "lucide-react";
-import type { VariantTrailResultData } from "../types/props";
-import type { ExplorerNode } from "../types/node";
 import { NODE_TYPE_COLORS } from "../config/styling";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import type { ExplorerNode } from "../types/node";
+import type { VariantTrailResultData } from "../types/props";
 import { displayEntityType } from "../utils/display-names";
 
 // =============================================================================
@@ -14,9 +14,18 @@ import { displayEntityType } from "../utils/display-names";
 
 /** Fields worth showing as quick evidence summary */
 const EVIDENCE_PRIORITY_FIELDS = [
-  "p_value_mlog", "clinical_significance", "pathogenicity", "max_l2g_score",
-  "evidence_level", "score", "significance", "or_beta", "risk_allele",
-  "review_status", "frequency", "max_pathogenicity",
+  "p_value_mlog",
+  "clinical_significance",
+  "pathogenicity",
+  "max_l2g_score",
+  "evidence_level",
+  "score",
+  "significance",
+  "or_beta",
+  "risk_allele",
+  "review_status",
+  "frequency",
+  "max_pathogenicity",
 ];
 
 function EvidenceSummary({ fields }: { fields?: Record<string, unknown> }) {
@@ -46,17 +55,24 @@ function EvidenceSummary({ fields }: { fields?: Record<string, unknown> }) {
   return (
     <div className="flex flex-wrap gap-1.5 mt-1">
       {entries.map(({ key, value }) => {
-        const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        const display = typeof value === "number"
-          ? (Number.isInteger(value) ? value.toLocaleString() : value.toFixed(3))
-          : String(value);
+        const label = key
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        const display =
+          typeof value === "number"
+            ? Number.isInteger(value)
+              ? value.toLocaleString()
+              : value.toFixed(3)
+            : String(value);
         return (
           <span
             key={key}
             className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted text-xs rounded"
           >
             <span className="text-muted-foreground">{label}:</span>
-            <span className="font-medium text-foreground tabular-nums">{display}</span>
+            <span className="font-medium text-foreground tabular-nums">
+              {display}
+            </span>
           </span>
         );
       })}
@@ -74,7 +90,11 @@ interface VariantTrailResultsProps {
   onSelectNode: (node: ExplorerNode) => void;
 }
 
-export function VariantTrailResults({ result, onBack, onSelectNode }: VariantTrailResultsProps) {
+export function VariantTrailResults({
+  result,
+  onBack,
+  onSelectNode,
+}: VariantTrailResultsProps) {
   const seedColors = NODE_TYPE_COLORS[result.seedNodeType] ?? {
     background: "#e2e8f0",
     border: "#94a3b8",
@@ -99,7 +119,9 @@ export function VariantTrailResults({ result, onBack, onSelectNode }: VariantTra
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Microscope className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Variant Trail</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            Variant Trail
+          </h3>
         </div>
         <div className="flex items-center gap-2">
           <div
@@ -111,7 +133,10 @@ export function VariantTrailResults({ result, onBack, onSelectNode }: VariantTra
           </span>
           <span
             className="px-1.5 py-0.5 rounded text-xs"
-            style={{ backgroundColor: seedColors.background, color: seedColors.text }}
+            style={{
+              backgroundColor: seedColors.background,
+              color: seedColors.text,
+            }}
           >
             {displayEntityType(result.seedNodeType)}
           </span>

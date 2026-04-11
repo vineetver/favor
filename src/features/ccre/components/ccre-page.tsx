@@ -1,8 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { BrowserPage } from "@features/genome-browser";
 import { cn } from "@infra/utils";
+import {
+  PLOTLY_CONFIG_STATIC,
+  PLOTLY_FONT,
+  Plot,
+} from "@shared/components/ui/charts";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import {
   Tabs,
@@ -15,16 +19,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Info, Check } from "lucide-react";
-import { Plot, PLOTLY_FONT, PLOTLY_CONFIG_STATIC } from "@shared/components/ui/charts";
-import { BrowserPage } from "@features/genome-browser";
 import type { ColumnDef } from "@tanstack/react-table";
-import type {
-  GraphCcre,
-  EdgeCounts,
-  EdgeRelations,
-  EdgeRow,
-} from "../types";
+import { Check, Info } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import type { EdgeCounts, EdgeRelations, EdgeRow, GraphCcre } from "../types";
 
 // ============================================================================
 // Props
@@ -292,9 +291,10 @@ function ProfileTab({
       value: ccre.capra_tested,
       label: "CAPRA Tested",
       hint: "CRISPR perturbation evidence. Check p-adj for significance (< 0.05 = confirmed).",
-      detail: ccre.capra_min_padj != null
-        ? `min p-adj = ${ccre.capra_min_padj.toExponential(2)}`
-        : undefined,
+      detail:
+        ccre.capra_min_padj != null
+          ? `min p-adj = ${ccre.capra_min_padj.toExponential(2)}`
+          : undefined,
     },
   ].filter((f) => f.value);
 
@@ -365,7 +365,10 @@ function ProfileTab({
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {evidenceFlags.map((f) => (
-              <div key={f.label} className="flex items-center gap-2 text-[13px]">
+              <div
+                key={f.label}
+                className="flex items-center gap-2 text-[13px]"
+              >
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
                 <span>{f.label}</span>
                 <Hint text={f.hint} />
@@ -389,7 +392,10 @@ function ProfileTab({
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {experimentalFlags.map((f) => (
-              <div key={f.label} className="flex items-center gap-2 text-[13px]">
+              <div
+                key={f.label}
+                className="flex items-center gap-2 text-[13px]"
+              >
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
                 <span>{f.label}</span>
                 <Hint text={f.hint} />
@@ -434,8 +440,7 @@ function transformRegulatedGenes(rows: EdgeRow[]): RegulatedGeneRow[] {
       geneName: String(nb(r, "name") ?? ""),
       method: String(ep(r, "evidence_method") ?? ""),
       modality: String(ep(r, "evidence_modality") ?? ""),
-      maxScore:
-        ep(r, "max_score") != null ? Number(ep(r, "max_score")) : null,
+      maxScore: ep(r, "max_score") != null ? Number(ep(r, "max_score")) : null,
       topTissue: String(ep(r, "top_tissue") ?? ""),
       tissueCount: (ep<string[]>(r, "tissue_names") ?? []).length,
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
@@ -591,8 +596,7 @@ function transformVariants(rows: EdgeRow[]): OverlappingVariantRow[] {
       ccreSize: Number(ep(r, "ccre_size") ?? 0),
     }))
     .sort(
-      (a, b) =>
-        Math.abs(a.distanceToCenter) - Math.abs(b.distanceToCenter),
+      (a, b) => Math.abs(a.distanceToCenter) - Math.abs(b.distanceToCenter),
     );
 }
 
@@ -670,9 +674,7 @@ const variantColumns: ColumnDef<OverlappingVariantRow>[] = [
     ),
     enableSorting: true,
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.ccreSize} bp
-      </span>
+      <span className="text-muted-foreground">{row.original.ccreSize} bp</span>
     ),
   },
 ];
@@ -685,17 +687,11 @@ export function CcrePage({ ccre, counts, relations }: CcrePageProps) {
   const [activeTab, setActiveTab] = useState("profile");
 
   const regulatedGenes = useMemo(
-    () =>
-      transformRegulatedGenes(
-        getRows(relations, "CCRE_REGULATES_GENE"),
-      ),
+    () => transformRegulatedGenes(getRows(relations, "CCRE_REGULATES_GENE")),
     [relations],
   );
   const overlappingVariants = useMemo(
-    () =>
-      transformVariants(
-        getRows(relations, "VARIANT_OVERLAPS_CCRE"),
-      ),
+    () => transformVariants(getRows(relations, "VARIANT_OVERLAPS_CCRE")),
     [relations],
   );
 
@@ -721,16 +717,9 @@ export function CcrePage({ ccre, counts, relations }: CcrePageProps) {
   const browserEnd = ccre.end_position + browserPadding;
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={setActiveTab}
-      className="mt-2"
-    >
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
       <div className="border-b border-border overflow-x-auto">
-        <TabsList
-          variant="line"
-          className="w-full justify-start p-0 h-auto"
-        >
+        <TabsList variant="line" className="w-full justify-start p-0 h-auto">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -749,10 +738,7 @@ export function CcrePage({ ccre, counts, relations }: CcrePageProps) {
       </div>
 
       <TabsContent value="profile">
-        <ProfileTab
-          ccre={ccre}
-          onTabChange={setActiveTab}
-        />
+        <ProfileTab ccre={ccre} onTabChange={setActiveTab} />
       </TabsContent>
 
       <TabsContent value="genes" className="pt-6">

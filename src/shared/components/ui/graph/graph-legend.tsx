@@ -58,7 +58,7 @@ function GraphLegendInner({
         "bg-background/95 backdrop-blur-sm rounded-lg border border-border shadow-sm",
         "p-3",
         positionClasses[position],
-        className
+        className,
       )}
     >
       {title && (
@@ -68,7 +68,7 @@ function GraphLegendInner({
         className={cn(
           orientation === "horizontal"
             ? "flex flex-wrap items-center gap-4"
-            : "space-y-1.5"
+            : "space-y-1.5",
         )}
       >
         {items.map((item, index) => (
@@ -98,10 +98,11 @@ function LegendItemRow({ item }: LegendItemRowProps) {
         <div
           className={cn(
             "w-3 h-3 rounded-full shrink-0",
-            style === "ring" && "border-2"
+            style === "ring" && "border-2",
           )}
           style={{
-            backgroundColor: style === "filled" ? color : borderColor ? color : "transparent",
+            backgroundColor:
+              style === "filled" ? color : borderColor ? color : "transparent",
             borderColor: borderColor ?? color,
           }}
         />
@@ -111,7 +112,9 @@ function LegendItemRow({ item }: LegendItemRowProps) {
       <div className="flex flex-col">
         <span className="text-xs text-muted-foreground">{label}</span>
         {description && (
-          <span className="text-[10px] text-muted-foreground/70">{description}</span>
+          <span className="text-[10px] text-muted-foreground/70">
+            {description}
+          </span>
         )}
       </div>
     </div>
@@ -126,17 +129,57 @@ export const GraphLegend = memo(GraphLegendInner);
 export const LEGEND_PALETTES = {
   // Experiment count levels
   experiments: [
-    { color: "#dcfce7", borderColor: "#22c55e", label: "High (51+)", style: "ring" as const },
-    { color: "#dbeafe", borderColor: "#3b82f6", label: "Good (21-50)", style: "ring" as const },
-    { color: "#fef3c7", borderColor: "#f59e0b", label: "Moderate (6-20)", style: "ring" as const },
-    { color: "#f1f5f9", borderColor: "#94a3b8", label: "Low (0-5)", style: "ring" as const },
+    {
+      color: "#dcfce7",
+      borderColor: "#22c55e",
+      label: "High (51+)",
+      style: "ring" as const,
+    },
+    {
+      color: "#dbeafe",
+      borderColor: "#3b82f6",
+      label: "Good (21-50)",
+      style: "ring" as const,
+    },
+    {
+      color: "#fef3c7",
+      borderColor: "#f59e0b",
+      label: "Moderate (6-20)",
+      style: "ring" as const,
+    },
+    {
+      color: "#f1f5f9",
+      borderColor: "#94a3b8",
+      label: "Low (0-5)",
+      style: "ring" as const,
+    },
   ],
   // Hub score levels
   hubScore: [
-    { color: "#fef2f2", borderColor: "#ef4444", label: "Top 1%", style: "ring" as const },
-    { color: "#fef3c7", borderColor: "#f59e0b", label: "Top 10%", style: "ring" as const },
-    { color: "#dcfce7", borderColor: "#22c55e", label: "Top 25%", style: "ring" as const },
-    { color: "#f1f5f9", borderColor: "#94a3b8", label: "Other", style: "ring" as const },
+    {
+      color: "#fef2f2",
+      borderColor: "#ef4444",
+      label: "Top 1%",
+      style: "ring" as const,
+    },
+    {
+      color: "#fef3c7",
+      borderColor: "#f59e0b",
+      label: "Top 10%",
+      style: "ring" as const,
+    },
+    {
+      color: "#dcfce7",
+      borderColor: "#22c55e",
+      label: "Top 25%",
+      style: "ring" as const,
+    },
+    {
+      color: "#f1f5f9",
+      borderColor: "#94a3b8",
+      label: "Other",
+      style: "ring" as const,
+    },
   ],
   // Edge confidence
   edgeConfidence: [

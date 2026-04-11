@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
 import { cn } from "@infra/utils";
-import { Info } from "lucide-react";
+import { Badge } from "@shared/components/ui/badge";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import {
   Tabs,
@@ -16,13 +14,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Badge } from "@shared/components/ui/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Info } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import type {
-  GraphDisease,
   EdgeCounts,
   EdgeRelations,
   EdgeRow,
+  GraphDisease,
 } from "../types";
 
 // ============================================================================
@@ -70,7 +70,7 @@ function nb<T = unknown>(row: EdgeRow, key: string): T | undefined {
 
 function phaseLabel(phase: unknown): string {
   const n = Number(phase);
-  if (phase == null || isNaN(n)) return "—";
+  if (phase == null || Number.isNaN(n)) return "—";
   if (n === 4) return "Phase IV";
   if (n >= 3) return "Phase III";
   if (n >= 2) return "Phase II";
@@ -385,11 +385,7 @@ function ProfileTab({ disease }: { disease: GraphDisease }) {
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {disease.key_phenotypes.map((phenotype, i) => (
-              <Badge
-                key={i}
-                variant="outline"
-                className="text-xs font-normal"
-              >
+              <Badge key={i} variant="outline" className="text-xs font-normal">
                 {phenotype}
               </Badge>
             ))}
@@ -405,11 +401,7 @@ function ProfileTab({ disease }: { disease: GraphDisease }) {
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {visibleSynonyms?.map((name, i) => (
-              <Badge
-                key={i}
-                variant="outline"
-                className="text-xs font-normal"
-              >
+              <Badge key={i} variant="outline" className="text-xs font-normal">
                 {name}
               </Badge>
             ))}
@@ -454,8 +446,7 @@ function transformGenes(rows: EdgeRow[]): GeneRow[] {
       geneId: r.neighbor.id,
       geneName: String(nb(r, "name") ?? ""),
       causality: String(ep(r, "causality_level") ?? ""),
-      otScore:
-        ep(r, "ot_score") != null ? Number(ep(r, "ot_score")) : null,
+      otScore: ep(r, "ot_score") != null ? Number(ep(r, "ot_score")) : null,
       gwasP:
         ep(r, "gwas_best_p_value_mlog") != null
           ? Number(ep(r, "gwas_best_p_value_mlog"))
@@ -619,9 +610,7 @@ function transformDrugs(rows: EdgeRow[]): DrugRow[] {
         ep(r, "max_clinical_phase") != null
           ? Number(ep(r, "max_clinical_phase"))
           : null,
-      status: String(
-        ep(r, "ttd_clinical_status") ?? nb(r, "status") ?? "",
-      ),
+      status: String(ep(r, "ttd_clinical_status") ?? nb(r, "status") ?? ""),
       confidence: String(ep(r, "confidence_class") ?? ""),
       sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
@@ -732,11 +721,8 @@ function transformVariants(rows: EdgeRow[]): VariantRow[] {
       rsId: String(nb(r, "rsID") ?? ""),
       geneSymbol: String(ep(r, "gene_symbol") ?? ""),
       pValueMlog:
-        ep(r, "p_value_mlog") != null
-          ? Number(ep(r, "p_value_mlog"))
-          : null,
-      orBeta:
-        ep(r, "or_beta") != null ? Number(ep(r, "or_beta")) : null,
+        ep(r, "p_value_mlog") != null ? Number(ep(r, "p_value_mlog")) : null,
+      orBeta: ep(r, "or_beta") != null ? Number(ep(r, "or_beta")) : null,
       consequence: String(nb(r, "consequence") ?? ""),
       clinvar: String(nb(r, "ClinVar") ?? ""),
       confidence: String(ep(r, "confidence_class") ?? ""),
@@ -753,8 +739,10 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     enableSorting: true,
     filterFn: (row, _columnId, filterValue: string) => {
       const q = filterValue.toLowerCase();
-      return row.original.variantId.toLowerCase().includes(q) ||
-        row.original.rsId.toLowerCase().includes(q);
+      return (
+        row.original.variantId.toLowerCase().includes(q) ||
+        row.original.rsId.toLowerCase().includes(q)
+      );
     },
     cell: ({ row }) => {
       const display = row.original.rsId || row.original.variantId;
@@ -774,9 +762,7 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     header: "Gene",
     enableSorting: true,
     cell: ({ row }) => (
-      <span className="font-medium">
-        {row.original.geneSymbol || "—"}
-      </span>
+      <span className="font-medium">{row.original.geneSymbol || "—"}</span>
     ),
   },
   {
@@ -792,9 +778,7 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     cell: ({ row }) => {
       const v = row.original.pValueMlog;
       if (v == null) return "—";
-      return (
-        <span className="font-mono text-[13px]">{v.toFixed(1)}</span>
-      );
+      return <span className="font-mono text-[13px]">{v.toFixed(1)}</span>;
     },
   },
   {
@@ -810,9 +794,7 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     cell: ({ row }) => {
       const v = row.original.orBeta;
       if (v == null) return "—";
-      return (
-        <span className="font-mono text-[13px]">{v.toFixed(3)}</span>
-      );
+      return <span className="font-mono text-[13px]">{v.toFixed(3)}</span>;
     },
   },
   {
@@ -996,17 +978,12 @@ function transformRelatedDiseases(
         id: `rel-${i}`,
         diseaseId: r.neighbor.id,
         diseaseName: String(nb(r, "name") ?? ""),
-        relationship: (isParent ? "Parent" : "Child") as
-          | "Parent"
-          | "Child",
+        relationship: (isParent ? "Parent" : "Child") as "Parent" | "Child",
         isCancer: Boolean(nb(r, "is_cancer")),
         isRare: Boolean(nb(r, "is_rare")),
         causalGenes:
-          nb(r, "causal_genes") != null
-            ? Number(nb(r, "causal_genes"))
-            : null,
-        drugs:
-          nb(r, "drugs") != null ? Number(nb(r, "drugs")) : null,
+          nb(r, "causal_genes") != null ? Number(nb(r, "causal_genes")) : null,
+        drugs: nb(r, "drugs") != null ? Number(nb(r, "drugs")) : null,
       };
     })
     .sort((a, b) => {
@@ -1094,13 +1071,11 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
   const [activeTab, setActiveTab] = useState("profile");
 
   const genes = useMemo(
-    () =>
-      transformGenes(getRows(relations, "GENE_ASSOCIATED_WITH_DISEASE")),
+    () => transformGenes(getRows(relations, "GENE_ASSOCIATED_WITH_DISEASE")),
     [relations],
   );
   const drugs = useMemo(
-    () =>
-      transformDrugs(getRows(relations, "DRUG_INDICATED_FOR_DISEASE")),
+    () => transformDrugs(getRows(relations, "DRUG_INDICATED_FOR_DISEASE")),
     [relations],
   );
   const variants = useMemo(
@@ -1112,14 +1087,11 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
   );
   const studies = useMemo(
     () =>
-      transformStudies(
-        getRows(relations, "STUDY_INVESTIGATES_TRAIT__Disease"),
-      ),
+      transformStudies(getRows(relations, "STUDY_INVESTIGATES_TRAIT__Disease")),
     [relations],
   );
   const phenotypes = useMemo(
-    () =>
-      transformPhenotypes(getRows(relations, "DISEASE_HAS_PHENOTYPE")),
+    () => transformPhenotypes(getRows(relations, "DISEASE_HAS_PHENOTYPE")),
     [relations],
   );
   const relatedDiseases = useMemo(
@@ -1146,12 +1118,12 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
     {
       value: "variants",
       label: "Variants",
-      count: counts?.["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"],
+      count: counts?.VARIANT_ASSOCIATED_WITH_TRAIT__Disease,
     },
     {
       value: "studies",
       label: "Studies",
-      count: counts?.["STUDY_INVESTIGATES_TRAIT__Disease"],
+      count: counts?.STUDY_INVESTIGATES_TRAIT__Disease,
     },
     {
       value: "phenotypes",
@@ -1166,16 +1138,9 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
   ];
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={setActiveTab}
-      className="mt-2"
-    >
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
       <div className="border-b border-border overflow-x-auto">
-        <TabsList
-          variant="line"
-          className="w-full justify-start p-0 h-auto"
-        >
+        <TabsList variant="line" className="w-full justify-start p-0 h-auto">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -1243,9 +1208,9 @@ export function DiseasePage({ disease, counts, relations }: DiseasePageProps) {
           data={variants}
           title="GWAS Variants"
           subtitle={
-            counts?.["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"] &&
-            counts["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"] > 200
-              ? `Showing top 200 of ${fmtCount(counts["VARIANT_ASSOCIATED_WITH_TRAIT__Disease"])} — most significant first`
+            counts?.VARIANT_ASSOCIATED_WITH_TRAIT__Disease &&
+            counts.VARIANT_ASSOCIATED_WITH_TRAIT__Disease > 200
+              ? `Showing top 200 of ${fmtCount(counts.VARIANT_ASSOCIATED_WITH_TRAIT__Disease)} — most significant first`
               : "Sorted by -log₁₀(P), most significant first"
           }
           searchPlaceholder="Search variants..."

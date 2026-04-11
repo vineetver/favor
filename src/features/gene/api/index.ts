@@ -1,37 +1,37 @@
-import type { Gene } from "../types";
 import { fetchOrNull } from "@infra/api";
+import type { Gene } from "../types";
 
 // Re-export all graph API functions for backward compatibility
 export {
-  fetchSubgraph,
-  fetchGraphQuery,
-  parseTypeId,
+  type CentralityResponse,
+  type EntityRef,
+  type EntitySearchResponse,
+  type FetchIntersectionOptions,
+  type FetchPathsOptions,
+  type FetchSubgraphOptions,
   fetchCentrality,
-  fetchPaths,
-  fetchIntersection,
+  fetchGraphQuery,
   fetchGraphSchema,
   fetchGraphStats,
-  searchEntities,
-  type EntityRef,
-  type SubgraphEdge,
-  type SubgraphApiResponse,
-  type FetchSubgraphOptions,
-  type GraphQueryStep,
+  fetchIntersection,
+  fetchPaths,
+  fetchSubgraph,
   type GraphQueryOptions,
   type GraphQueryResponse,
-  type CentralityResponse,
-  type PathNode,
-  type PathEdge,
-  type PathResult,
-  type PathsResponse,
-  type FetchPathsOptions,
-  type SharedNeighbor,
-  type IntersectResponse,
-  type FetchIntersectionOptions,
+  type GraphQueryStep,
   type GraphSchemaResponse,
   type GraphStatsResponse,
+  type IntersectResponse,
+  type PathEdge,
+  type PathNode,
+  type PathResult,
+  type PathsResponse,
+  parseTypeId,
   type SearchResultEntity,
-  type EntitySearchResponse,
+  type SharedNeighbor,
+  type SubgraphApiResponse,
+  type SubgraphEdge,
+  searchEntities,
 } from "@features/graph/api";
 
 import { API_BASE } from "@/config/api";
@@ -107,7 +107,8 @@ export async function fetchGene(
   if (options?.filter) params.set("filter", options.filter);
   if (options?.agreementInclude)
     params.set("agreementInclude", options.agreementInclude);
-  if (options?.agreementSort) params.set("agreementSort", options.agreementSort);
+  if (options?.agreementSort)
+    params.set("agreementSort", options.agreementSort);
   if (options?.limitAgreements)
     params.set("limitAgreements", String(options.limitAgreements));
   if (options?.cursorAgreements)
@@ -168,7 +169,9 @@ interface PathwayRelationsResponse {
 }
 
 /** Extract relations from response (API returns at top-level or inside included) */
-function getRelations(response: PathwayRelationsResponse | null): PathwayRelationRows | undefined {
+function getRelations(
+  response: PathwayRelationsResponse | null,
+): PathwayRelationRows | undefined {
   return response?.relations ?? response?.included?.relations;
 }
 
@@ -180,9 +183,18 @@ export async function fetchPathwayEnrichment(
     const base = `${API_BASE}/graph/pathway/${encodeURIComponent(pathwayId)}`;
     const opts = { revalidate: 300 };
     const [parentData, childrenData, genesData] = await Promise.all([
-      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=5`, opts),
-      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=20`, opts),
-      fetchOrNull<PathwayRelationsResponse>(`${base}?include=edges&edgeTypes=PARTICIPATES_IN&direction=in&limitPerEdgeType=100`, opts),
+      fetchOrNull<PathwayRelationsResponse>(
+        `${base}?include=edges&edgeTypes=PART_OF&direction=out&limitPerEdgeType=5`,
+        opts,
+      ),
+      fetchOrNull<PathwayRelationsResponse>(
+        `${base}?include=edges&edgeTypes=PART_OF&direction=in&limitPerEdgeType=20`,
+        opts,
+      ),
+      fetchOrNull<PathwayRelationsResponse>(
+        `${base}?include=edges&edgeTypes=PARTICIPATES_IN&direction=in&limitPerEdgeType=100`,
+        opts,
+      ),
     ]);
 
     const parentRelations = getRelations(parentData);
@@ -196,7 +208,10 @@ export async function fetchPathwayEnrichment(
     );
     const firstParent = parentRows[0]?.neighbor;
     const parentPathway = firstParent
-      ? { id: firstParent.id, name: firstParent.name ?? firstParent.label ?? firstParent.id }
+      ? {
+          id: firstParent.id,
+          name: firstParent.name ?? firstParent.label ?? firstParent.id,
+        }
       : null;
 
     // Extract children: PART_OF direction=in means this pathway is the parent (target),
@@ -210,28 +225,29 @@ export async function fetchPathwayEnrichment(
     }));
 
     const geneRows = geneRelations?.PARTICIPATES_IN?.rows ?? [];
-    const genes = geneRows.filter(
-      (row) => row?.neighbor?.type === "Gene",
-    );
+    const genes = geneRows.filter((row) => row?.neighbor?.type === "Gene");
     const geneCount = genes.length;
 
     const sharedGenes = genes
-      .filter(
-        (g) => g.neighbor.id !== seedGeneId,
-      )
+      .filter((g) => g.neighbor.id !== seedGeneId)
       .slice(0, 10)
-      .map(
-        (g) => ({
-          id: g.neighbor.id,
-          symbol: g.neighbor.symbol ?? g.neighbor.name ?? g.neighbor.label ?? g.neighbor.id,
-        }),
-      );
+      .map((g) => ({
+        id: g.neighbor.id,
+        symbol:
+          g.neighbor.symbol ??
+          g.neighbor.name ??
+          g.neighbor.label ??
+          g.neighbor.id,
+      }));
 
     // Pathway→Gene→Disease requires depth 2 via PARTICIPATES_IN + ASSOCIATED_WITH_DISEASE
     const subgraphResponse = await fetchSubgraph({
       seeds: [{ type: "Pathway", id: pathwayId }],
       maxDepth: 2,
-      edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY", "GENE_ASSOCIATED_WITH_DISEASE"],
+      edgeTypes: [
+        "GENE_PARTICIPATES_IN_PATHWAY",
+        "GENE_ASSOCIATED_WITH_DISEASE",
+      ],
       nodeLimit: 50,
       edgeLimit: 100,
       includeProps: false,
@@ -281,7 +297,10 @@ export async function fetchPathwayDiseaseEnrichment(
     const subgraphResponse = await fetchSubgraph({
       seeds: [{ type: "Pathway", id: pathwayId }],
       maxDepth: 2,
-      edgeTypes: ["GENE_PARTICIPATES_IN_PATHWAY", "GENE_ASSOCIATED_WITH_DISEASE"],
+      edgeTypes: [
+        "GENE_PARTICIPATES_IN_PATHWAY",
+        "GENE_ASSOCIATED_WITH_DISEASE",
+      ],
       nodeLimit: 500,
       edgeLimit: 1000,
       includeProps: false,
@@ -294,7 +313,9 @@ export async function fetchPathwayDiseaseEnrichment(
     const edges = subgraphResponse.data.graph.edges;
 
     if (edges.length === 0) {
-      console.warn(`fetchPathwayDiseaseEnrichment: no edges returned for ${pathwayId}`);
+      console.warn(
+        `fetchPathwayDiseaseEnrichment: no edges returned for ${pathwayId}`,
+      );
       return { totalDiseases: 0, diseases: [] };
     }
 
@@ -321,8 +342,8 @@ export async function fetchPathwayDiseaseEnrichment(
     if (participatesInCount > 0 && participatesInMatchCount === 0) {
       console.warn(
         `fetchPathwayDiseaseEnrichment: Found ${participatesInCount} PARTICIPATES_IN edges ` +
-        `but none matched expected direction (Gene → Pathway with to.id === ${pathwayId}). ` +
-        `Check if API returns edges in reverse direction.`
+          `but none matched expected direction (Gene → Pathway with to.id === ${pathwayId}). ` +
+          `Check if API returns edges in reverse direction.`,
       );
     }
 
@@ -347,24 +368,32 @@ export async function fetchPathwayDiseaseEnrichment(
               name: diseaseNode.label,
             });
           }
-          diseaseToGenes.get(diseaseNode.id)!.add(geneId);
+          diseaseToGenes.get(diseaseNode.id)?.add(geneId);
         }
       }
     }
 
-    if (implicatedInCount > 0 && implicatedInMatchCount === 0 && pathwayGenes.size > 0) {
+    if (
+      implicatedInCount > 0 &&
+      implicatedInMatchCount === 0 &&
+      pathwayGenes.size > 0
+    ) {
       console.warn(
         `fetchPathwayDiseaseEnrichment: Found ${implicatedInCount} ASSOCIATED_WITH_DISEASE edges ` +
-        `but none matched pathway genes. Check if API returns edges in reverse direction.`
+          `but none matched pathway genes. Check if API returns edges in reverse direction.`,
       );
     }
 
-    const diseases: PathwayDiseaseAssociation[] = Array.from(diseaseToGenes.entries())
+    const diseases: PathwayDiseaseAssociation[] = Array.from(
+      diseaseToGenes.entries(),
+    )
       .map(([diseaseId, geneIds]) => {
         const disease = diseaseMap.get(diseaseId)!;
         const genes = Array.from(geneIds)
           .slice(0, 10)
-          .map((geneId) => geneMap.get(geneId) ?? { id: geneId, symbol: geneId });
+          .map(
+            (geneId) => geneMap.get(geneId) ?? { id: geneId, symbol: geneId },
+          );
 
         return {
           disease,

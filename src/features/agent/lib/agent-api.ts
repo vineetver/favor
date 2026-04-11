@@ -34,9 +34,7 @@ export async function createAgentSession(
   });
 }
 
-export async function listAgentSessions(
-  limit = 50,
-): Promise<AgentSession[]> {
+export async function listAgentSessions(limit = 50): Promise<AgentSession[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   return agentFetch<AgentSession[]>(`/agent/sessions?${params}`);
 }
@@ -55,18 +53,16 @@ export async function appendAgentMessage(
   sessionId: string,
   msg: { role: string; content: string; metadata?: object },
 ): Promise<AgentMessage> {
-  return agentFetch<AgentMessage>(
-    `/agent/sessions/${sessionId}/messages`,
-    { method: "POST", body: msg },
-  );
+  return agentFetch<AgentMessage>(`/agent/sessions/${sessionId}/messages`, {
+    method: "POST",
+    body: msg,
+  });
 }
 
 export async function listAgentMessages(
   sessionId: string,
 ): Promise<AgentMessage[]> {
-  return agentFetch<AgentMessage[]>(
-    `/agent/sessions/${sessionId}/messages`,
-  );
+  return agentFetch<AgentMessage[]>(`/agent/sessions/${sessionId}/messages`);
 }
 
 // ---------------------------------------------------------------------------

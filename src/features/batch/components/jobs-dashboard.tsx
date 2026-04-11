@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { QuotaBar } from "@shared/components/quota-bar";
 import { Button } from "@shared/components/ui/button";
 import {
   Card,
@@ -16,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Input } from "@shared/components/ui/input";
+import { useQuotas } from "@shared/hooks/use-quotas";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   ArrowUpDown,
@@ -30,12 +33,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { formatDate, formatNumber } from "../lib/format";
 import { deleteCohort } from "../api";
 import { useCohorts } from "../hooks/use-cohorts";
-import { useQuotas } from "@shared/hooks/use-quotas";
-import { QuotaBar } from "@shared/components/quota-bar";
+import { formatDate, formatNumber } from "../lib/format";
 import type { CohortListItem, CohortStatus } from "../types";
 
 interface JobsDashboardProps {
@@ -79,7 +79,7 @@ function cohortStatusLabel(status: CohortStatus): string {
   return labels[status];
 }
 
-function cohortStatusVariant(
+function _cohortStatusVariant(
   status: CohortStatus,
 ): "default" | "secondary" | "destructive" | "outline" {
   if (isActiveStatus(status)) return "default";
@@ -116,9 +116,7 @@ function StatusTabs({
           variant={active === tab.id ? "secondary" : "ghost"}
           size="sm"
           onClick={() => onChange(tab.id)}
-          className={cn(
-            active === tab.id && "bg-background shadow-sm",
-          )}
+          className={cn(active === tab.id && "bg-background shadow-sm")}
         >
           {tab.label}
           {counts[tab.id] > 0 && (
@@ -155,21 +153,14 @@ function SortDropdown({
 
   return (
     <div className="relative">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(!open)}
-      >
+      <Button variant="outline" size="sm" onClick={() => setOpen(!open)}>
         <ArrowUpDown className="w-3.5 h-3.5" />
         {current?.label}
       </Button>
 
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-1 z-20 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[140px]">
             {options.map((option) => (
               <Button
@@ -232,9 +223,7 @@ function CohortCard({
           )}
         >
           {isActive ? (
-            <Loader2
-              className="w-4 h-4 text-primary animate-spin"
-            />
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
           ) : (
             <FileSpreadsheet
               className={cn(
@@ -365,7 +354,9 @@ function EmptyState({ filter }: { filter: StatusFilter }) {
       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
         <FileSpreadsheet className="w-5 h-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold text-foreground mb-1">{msg.title}</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-1">
+        {msg.title}
+      </h3>
       <p className="text-sm text-muted-foreground mb-6 max-w-xs">{msg.desc}</p>
       {filter === "all" && (
         <Button variant="outline" size="sm" asChild>
@@ -443,7 +434,7 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
     const query = searchQuery.toLowerCase();
     return statusFilteredCohorts.filter(
       (c) =>
-        (c.label?.toLowerCase().includes(query)) ||
+        c.label?.toLowerCase().includes(query) ||
         c.id.toLowerCase().includes(query),
     );
   }, [statusFilteredCohorts, searchQuery]);
@@ -454,7 +445,8 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
     switch (sortOption) {
       case "oldest":
         return sorted.sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
         );
       case "name":
         return sorted.sort((a, b) =>
@@ -462,18 +454,26 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
         );
       default: // newest
         return sorted.sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
     }
   }, [searchFilteredCohorts, sortOption]);
 
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       {/* Header */}
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-lg font-semibold text-foreground">Batch Jobs</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">
+              Batch Jobs
+            </CardTitle>
             {cohorts.length > 0 && (
               <p className="text-sm text-muted-foreground mt-0.5">
                 {counts.active} active &middot; {counts.completed} completed
@@ -494,7 +494,11 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
         <div className="px-6 py-2.5 border-b border-border">
           <QuotaBar
             quotas={quotas}
-            filter={["concurrent_cohorts", "large_uploads_today", "small_uploads_today"]}
+            filter={[
+              "concurrent_cohorts",
+              "large_uploads_today",
+              "small_uploads_today",
+            ]}
             layout="row"
           />
         </div>
@@ -504,7 +508,11 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
       {cohorts.length > 0 && (
         <div className="px-6 py-3 border-b border-border bg-muted/50">
           <div className="flex items-center justify-between gap-4">
-            <StatusTabs active={statusFilter} onChange={setStatusFilter} counts={counts} />
+            <StatusTabs
+              active={statusFilter}
+              onChange={setStatusFilter}
+              counts={counts}
+            />
 
             <div className="flex items-center gap-3">
               {/* Search */}
@@ -543,7 +551,11 @@ export function JobsDashboard({ className }: JobsDashboardProps) {
         {sortedCohorts.length > 0 && (
           <div className="space-y-2">
             {sortedCohorts.map((cohort) => (
-              <CohortCard key={cohort.id} cohort={cohort} onRemove={handleRemove} />
+              <CohortCard
+                key={cohort.id}
+                cohort={cohort}
+                onRemove={handleRemove}
+              />
             ))}
           </div>
         )}

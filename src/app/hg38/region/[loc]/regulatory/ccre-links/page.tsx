@@ -25,9 +25,10 @@ export default async function CcreLinksPage({
       ? fetchCcreLinksByTissueGroup(region.loc).catch(() => [])
       : Promise.resolve([]),
     tissueGroup
-      ? fetchCcreLinks(region.loc, { tissue_group: tissueGroup, limit: 50 }).catch(
-          () => null,
-        )
+      ? fetchCcreLinks(region.loc, {
+          tissue_group: tissueGroup,
+          limit: 50,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 

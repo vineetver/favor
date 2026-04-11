@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import {
   ActivityIcon,
   BarChart3Icon,
@@ -14,7 +15,6 @@ import {
   Share2Icon,
   TablePropertiesIcon,
 } from "lucide-react";
-import { cn } from "@infra/utils";
 import type { NodeKind, TreeNode } from "./types";
 import { isFolder } from "./types";
 
@@ -130,11 +130,14 @@ export function TreeNodeRow({
       )}
 
       {/* Child count badge for folders */}
-      {folder && node.childCount != null && node.childCount > 0 && !isTopLevel && (
-        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
-          {node.childCount}
-        </span>
-      )}
+      {folder &&
+        node.childCount != null &&
+        node.childCount > 0 &&
+        !isTopLevel && (
+          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
+            {node.childCount}
+          </span>
+        )}
     </div>
   );
 }

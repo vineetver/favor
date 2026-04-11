@@ -1,8 +1,8 @@
 import {
   fetchAccessibilityByTissueGroup,
   fetchAseByTissueGroup,
-  fetchChromBpnetByTissueGroup,
   fetchChromatinByTissueGroup,
+  fetchChromBpnetByTissueGroup,
   fetchEnhancersByTissueGroup,
   fetchLoopsByTissueGroup,
   fetchQtlsByTissueGroup,
@@ -11,13 +11,13 @@ import {
   fetchVariantAllelicImbalanceByTissueGroup,
   fetchVariantEvidenceSummary,
 } from "@features/enrichment/api/region";
-import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
-import { VariantEvidenceView } from "@features/enrichment/components/variant-evidence-view";
-import {
-  TissueEvidenceSummary,
-  type TissueEvidenceData,
-} from "@features/enrichment/components/tissue-evidence-summary";
 import { OverviewHeatmap } from "@features/enrichment/components/overview-heatmap";
+import {
+  type TissueEvidenceData,
+  TissueEvidenceSummary,
+} from "@features/enrichment/components/tissue-evidence-summary";
+import { VariantEvidenceView } from "@features/enrichment/components/variant-evidence-view";
+import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 
@@ -25,7 +25,9 @@ interface OverviewPageProps {
   params: Promise<{ loc: string }>;
 }
 
-export default async function RegionOverviewPage({ params }: OverviewPageProps) {
+export default async function RegionOverviewPage({
+  params,
+}: OverviewPageProps) {
   const { loc: rawLoc } = await params;
   const loc = decodeURIComponent(rawLoc);
   const region = parseRegion(loc);

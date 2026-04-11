@@ -1,4 +1,4 @@
-import { isToolUIPart, getToolName, type UIMessage } from "ai";
+import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import { agentFetch } from "./api-client";
 
 const SIZE_THRESHOLD = 2_000; // bytes — skip compaction for small outputs
@@ -12,9 +12,7 @@ export interface ArtifactRef {
 
 export function isArtifactRef(output: unknown): output is ArtifactRef {
   return (
-    typeof output === "object" &&
-    output !== null &&
-    "_artifact_ref" in output
+    typeof output === "object" && output !== null && "_artifact_ref" in output
   );
 }
 
@@ -83,12 +81,14 @@ function buildPreview(
 
   // Enough for ActivityTimeline to render a summary line
   if (toolName === "Run") {
-    const cmd =
-      (output as { command?: string }).command ?? data.command;
+    const cmd = (output as { command?: string }).command ?? data.command;
     return {
       command: cmd,
       total:
-        data.total ?? data.total_ranked ?? data.total_scored ?? data.total_groups,
+        data.total ??
+        data.total_ranked ??
+        data.total_scored ??
+        data.total_groups,
       columns:
         Array.isArray(data.rows) && data.rows.length > 0
           ? Object.keys(data.rows[0] as Record<string, unknown>)

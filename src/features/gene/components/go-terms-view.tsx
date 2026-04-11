@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@infra/utils";
 import {
   Collapsible,
@@ -9,6 +8,7 @@ import {
 } from "@shared/components/ui/collapsible";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 const COLLAPSED_LIMIT = 6;
 
@@ -20,21 +20,30 @@ type GoTermDetail = {
 };
 
 interface GoTermsViewProps {
-  go: {
-    biological_process?: string;
-    molecular_function?: string;
-    cellular_component?: string;
-  } | null | undefined;
+  go:
+    | {
+        biological_process?: string;
+        molecular_function?: string;
+        cellular_component?: string;
+      }
+    | null
+    | undefined;
   goDetailed?: GoTermDetail[] | null;
 }
 
 function parseSemicolonList(str: string | undefined): string[] {
   if (!str) return [];
-  return str.split(";").map((s) => s.trim()).filter(Boolean);
+  return str
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Deduplicate GO IDs for an aspect */
-function uniqueIdsForAspect(detailed: GoTermDetail[] | null | undefined, aspect: string): string[] {
+function uniqueIdsForAspect(
+  detailed: GoTermDetail[] | null | undefined,
+  aspect: string,
+): string[] {
   if (!detailed) return [];
   const seen = new Set<string>();
   const ids: string[] = [];
@@ -75,7 +84,9 @@ function AspectSection({
         <div className="flex flex-col gap-1.5">
           {visible.map((term, i) => (
             <div key={i} className="flex items-baseline gap-2">
-              <span className="text-sm text-foreground leading-snug">{term}</span>
+              <span className="text-sm text-foreground leading-snug">
+                {term}
+              </span>
               {goIds[i] && (
                 <ExternalLink
                   href={`https://www.ebi.ac.uk/QuickGO/term/${goIds[i]}`}
@@ -96,7 +107,9 @@ function AspectSection({
                   const idx = i + COLLAPSED_LIMIT;
                   return (
                     <div key={idx} className="flex items-baseline gap-2">
-                      <span className="text-sm text-foreground leading-snug">{term}</span>
+                      <span className="text-sm text-foreground leading-snug">
+                        {term}
+                      </span>
                       {goIds[idx] && (
                         <ExternalLink
                           href={`https://www.ebi.ac.uk/QuickGO/term/${goIds[idx]}`}
@@ -112,13 +125,11 @@ function AspectSection({
               </div>
             </CollapsibleContent>
             <CollapsibleTrigger asChild>
-              <button
-                className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
+              <button className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown
                   className={cn(
                     "h-3 w-3 transition-transform",
-                    expanded && "rotate-180"
+                    expanded && "rotate-180",
                   )}
                 />
                 {expanded ? "Show less" : `Show all ${terms.length}`}

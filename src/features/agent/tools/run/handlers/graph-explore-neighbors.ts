@@ -7,27 +7,26 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
-import type { TargetIntent } from "../types";
 import {
-  resolveIntentType,
-  findEdgesConnecting,
   canonicalizeIntent,
   type EdgeTypeInfo,
+  findEdgesConnecting,
   type GraphSchemaResponse,
+  resolveIntentType,
 } from "../intent-aliases";
 import { resolveSeeds, warnPartialResolution } from "../resolve-seeds";
+import { catchToResult, okResult, TraceCollector } from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
 import {
-  getCachedGraphSchema,
-  errorResult,
-  trimEntitySubtitles,
+  applyDefaultKeyFilters,
   edgeTypeAnnotation,
+  errorResult,
+  getCachedGraphSchema,
   humanEdgeLabel,
   pickSortField,
-  applyDefaultKeyFilters,
   schemaGuidedRecovery,
+  trimEntitySubtitles,
 } from "./graph";
-import { okResult, catchToResult, TraceCollector } from "../run-result";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -70,24 +69,38 @@ async function fetchForEdge(
   const { isDiseaseQuery, schema, filters, tc } = opts;
 
   if (seeds.length === 1) {
-    tc.add({ step: `edge_${edge.edgeType}`, kind: "call", message: `ranked-neighbors: ${edge.edgeType}` });
+    tc.add({
+      step: `edge_${edge.edgeType}`,
+      kind: "call",
+      message: `ranked-neighbors: ${edge.edgeType}`,
+    });
 
     const data = await agentFetch<{
       data: {
         neighbors: Array<{
-          entity: { type: string; id: string; label: string; subtitle?: string };
+          entity: {
+            type: string;
+            id: string;
+            label: string;
+            subtitle?: string;
+          };
           rank: number;
           score?: number;
         }>;
       };
-      meta?: { resolved?: { scoreField?: string; sort?: string; direction?: string }; warnings?: unknown[] };
+      meta?: {
+        resolved?: { scoreField?: string; sort?: string; direction?: string };
+        warnings?: unknown[];
+      };
     }>("/graph/ranked-neighbors", {
       method: "POST",
       body: {
         seed: { type: seeds[0].type, id: seeds[0].id },
         edgeType: edge.edgeType,
         limit: Math.min(limit, 100),
-        ...(isDiseaseQuery ? { expandDescendants: true, expandLimit: 500 } : {}),
+        ...(isDiseaseQuery
+          ? { expandDescendants: true, expandLimit: 500 }
+          : {}),
       },
     });
 
@@ -105,37 +118,56 @@ async function fetchForEdge(
         rank: n.rank,
         score: n.score,
       })),
-      scoreField: data.meta?.resolved?.scoreField ?? data.meta?.resolved?.sort ?? edge.defaultScoreField ?? undefined,
+      scoreField:
+        data.meta?.resolved?.scoreField ??
+        data.meta?.resolved?.sort ??
+        edge.defaultScoreField ??
+        undefined,
     };
   }
 
   // Multi-seed → graph/query
-  tc.add({ step: `edge_${edge.edgeType}`, kind: "call", message: `graph/query multi-seed: ${edge.edgeType}` });
+  tc.add({
+    step: `edge_${edge.edgeType}`,
+    kind: "call",
+    message: `graph/query multi-seed: ${edge.edgeType}`,
+  });
 
   const sortField = pickSortField(schema, edge.edgeType);
-  const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
-    schema, edge.edgeType, filters,
-  );
+  const { filters: mergedFilters, applied: appliedDefaults } =
+    applyDefaultKeyFilters(schema, edge.edgeType, filters);
   if (appliedDefaults.length > 0) {
-    tc.add({ step: `edge_${edge.edgeType}`, kind: "decision", message: `Default filters: ${appliedDefaults.join(", ")}` });
+    tc.add({
+      step: `edge_${edge.edgeType}`,
+      kind: "decision",
+      message: `Default filters: ${appliedDefaults.join(", ")}`,
+    });
   }
 
   const queryResult = await agentFetch<{
     data: {
       nodes: Record<string, unknown>;
-      edges: Array<{ from: string; to: string; fields?: Record<string, unknown> }>;
+      edges: Array<{
+        from: string;
+        to: string;
+        fields?: Record<string, unknown>;
+      }>;
     };
     meta: { warnings?: unknown[] };
   }>("/graph/query", {
     method: "POST",
     body: {
       seeds: seeds.map((s) => ({ type: s.type, id: s.id })),
-      steps: [{
-        edgeTypes: [edge.edgeType],
-        limit: Math.min(limit, 100),
-        sort: sortField,
-        ...(Object.keys(mergedFilters).length > 0 ? { filters: mergedFilters } : {}),
-      }],
+      steps: [
+        {
+          edgeTypes: [edge.edgeType],
+          limit: Math.min(limit, 100),
+          sort: sortField,
+          ...(Object.keys(mergedFilters).length > 0
+            ? { filters: mergedFilters }
+            : {}),
+        },
+      ],
       limits: { maxNodes: 500, maxEdges: 2000 },
       mode: "compact",
     },
@@ -157,7 +189,9 @@ async function fetchForEdge(
   const nodeMap = queryResult.data?.nodes ?? {};
   const neighborEntities: ScoredEntity[] = [];
   for (const [key, value] of Object.entries(nodeMap)) {
-    const node = value as { entity?: { type: string; id: string; label: string } };
+    const node = value as {
+      entity?: { type: string; id: string; label: string };
+    };
     const entity = node.entity;
     if (!entity) continue;
     if (entity.type === targetType) {
@@ -189,13 +223,19 @@ export async function handleExploreNeighbors(
 
   try {
     if (!cmd.into || cmd.into.length === 0) {
-      return errorResult("neighbors mode requires at least one target intent in 'into'.", tc);
+      return errorResult(
+        "neighbors mode requires at least one target intent in 'into'.",
+        tc,
+      );
     }
 
     const resolvedSeeds = await resolveSeeds(cmd.seeds, resolvedCache);
     warnPartialResolution(cmd.seeds.length, resolvedSeeds.length, tc);
     if (resolvedSeeds.length === 0) {
-      return errorResult("Could not resolve any seeds. Check entity names or use exact {type, id}.", tc);
+      return errorResult(
+        "Could not resolve any seeds. Check entity names or use exact {type, id}.",
+        tc,
+      );
     }
 
     const schema = await getCachedGraphSchema();
@@ -204,23 +244,33 @@ export async function handleExploreNeighbors(
     // Phase 6: Bound intents
     const intents = cmd.into.slice(0, MAX_INTENTS_PER_CALL);
     if (cmd.into.length > MAX_INTENTS_PER_CALL) {
-      tc.warn("intents_capped", `Processing ${MAX_INTENTS_PER_CALL} of ${cmd.into.length} intents`);
+      tc.warn(
+        "intents_capped",
+        `Processing ${MAX_INTENTS_PER_CALL} of ${cmd.into.length} intents`,
+      );
     }
 
     // M9: Auto-enable expandDescendants for disease seeds
     const isDiseaseQuery = seedType === "Disease";
     if (isDiseaseQuery) {
-      tc.add({ step: "diseaseExpansion", kind: "decision", message: "Disease seed detected — expandDescendants available" });
+      tc.add({
+        step: "diseaseExpansion",
+        kind: "decision",
+        message: "Disease seed detected — expandDescendants available",
+      });
     }
 
-    const branchResults: Record<string, {
-      count: number;
-      top: ScoredEntity[];
-      edgeType: string;
-      scoreField?: string;
-      description?: string;
-      availableRelationships?: AvailableRelationship[];
-    }> = {};
+    const branchResults: Record<
+      string,
+      {
+        count: number;
+        top: ScoredEntity[];
+        edgeType: string;
+        scoreField?: string;
+        description?: string;
+        availableRelationships?: AvailableRelationship[];
+      }
+    > = {};
     const allPinnedEntities: EntityRef[] = [...resolvedSeeds];
     let apiCalls = 0;
 
@@ -231,35 +281,64 @@ export async function handleExploreNeighbors(
       const targetType = resolveIntentType(intent);
       if (!targetType) continue;
 
-      const edgeCandidates = findEdgesConnecting(schema, seedType, targetType, intent);
+      const edgeCandidates = findEdgesConnecting(
+        schema,
+        seedType,
+        targetType,
+        intent,
+      );
       if (edgeCandidates.length === 0) {
-        tc.add({ step: `intent_${intent}`, kind: "decision", message: `No edge ${seedType}→${targetType}` });
+        tc.add({
+          step: `intent_${intent}`,
+          kind: "decision",
+          message: `No edge ${seedType}→${targetType}`,
+        });
         continue;
       }
 
       // Edge cascade: try candidates in preference order, stop at first with results.
       // General pattern — works for any seed→target pair with multiple edge types.
-      let hit: { count: number; top: ScoredEntity[]; edgeType: string; scoreField?: string; description?: string } | null = null;
+      let hit: {
+        count: number;
+        top: ScoredEntity[];
+        edgeType: string;
+        scoreField?: string;
+        description?: string;
+      } | null = null;
 
       for (const edge of edgeCandidates.slice(0, MAX_CASCADE)) {
         try {
-          const result = await fetchForEdge(resolvedSeeds, edge, targetType, cmd.limit ?? 20, {
-            isDiseaseQuery,
-            schema,
-            filters: cmd.filters as Record<string, unknown> | undefined,
-            tc,
-          });
+          const result = await fetchForEdge(
+            resolvedSeeds,
+            edge,
+            targetType,
+            cmd.limit ?? 20,
+            {
+              isDiseaseQuery,
+              schema,
+              filters: cmd.filters as Record<string, unknown> | undefined,
+              tc,
+            },
+          );
           apiCalls++;
 
           if (result.count > 0) {
             const annotation = await edgeTypeAnnotation(edge.edgeType);
-            hit = { ...result, edgeType: edge.edgeType, description: annotation ?? undefined };
+            hit = {
+              ...result,
+              edgeType: edge.edgeType,
+              description: annotation ?? undefined,
+            };
             break;
           }
 
           // Log cascade only when there are more candidates to try
           if (edgeCandidates.indexOf(edge) < edgeCandidates.length - 1) {
-            tc.add({ step: `intent_${intent}`, kind: "fallback", message: `0 via ${humanEdgeLabel(edge.edgeType)}, trying next` });
+            tc.add({
+              step: `intent_${intent}`,
+              kind: "fallback",
+              message: `0 via ${humanEdgeLabel(edge.edgeType)}, trying next`,
+            });
           }
         } catch (err) {
           const recovered = schemaGuidedRecovery(err, schema, tc);
@@ -269,23 +348,33 @@ export async function handleExploreNeighbors(
         }
       }
 
-      branchResults[intent] = hit ?? { count: 0, top: [], edgeType: edgeCandidates[0].edgeType };
+      branchResults[intent] = hit ?? {
+        count: 0,
+        top: [],
+        edgeType: edgeCandidates[0].edgeType,
+      };
 
       // Annotate available relationships — zero extra API calls, just reads from candidates
       if (edgeCandidates.length > 1) {
-        branchResults[intent].availableRelationships = edgeCandidates.map((e) => ({
-          edgeType: e.edgeType,
-          label: humanEdgeLabel(e.edgeType),
-          used: e.edgeType === branchResults[intent].edgeType,
-        }));
+        branchResults[intent].availableRelationships = edgeCandidates.map(
+          (e) => ({
+            edgeType: e.edgeType,
+            label: humanEdgeLabel(e.edgeType),
+            used: e.edgeType === branchResults[intent].edgeType,
+          }),
+        );
       }
     }
 
     // Optionally run enrichment for pathways with 3+ seeds
     let enrichmentResult: Record<string, unknown> | null = null;
-    if (intents.some(i => i === "pathways") && resolvedSeeds.length >= 3) {
+    if (intents.some((i) => i === "pathways") && resolvedSeeds.length >= 3) {
       try {
-        tc.add({ step: "autoEnrich", kind: "call", message: "Auto-enrichment for pathways (3+ seeds)" });
+        tc.add({
+          step: "autoEnrich",
+          kind: "call",
+          message: "Auto-enrichment for pathways (3+ seeds)",
+        });
         apiCalls++;
 
         const enrichData = await agentFetch<{
@@ -325,7 +414,11 @@ export async function handleExploreNeighbors(
       );
       if (domainBranch) {
         try {
-          tc.add({ step: "proteinDomains", kind: "call", message: "Fetching protein domain positions" });
+          tc.add({
+            step: "proteinDomains",
+            kind: "call",
+            message: "Fetching protein domain positions",
+          });
           apiCalls++;
 
           const domainQuery = await agentFetch<{
@@ -341,10 +434,12 @@ export async function handleExploreNeighbors(
             method: "POST",
             body: {
               seeds: [{ type: resolvedSeeds[0].type, id: resolvedSeeds[0].id }],
-              steps: [{
-                edgeTypes: ["GENE_HAS_PROTEIN_DOMAIN"],
-                limit: 100,
-              }],
+              steps: [
+                {
+                  edgeTypes: ["GENE_HAS_PROTEIN_DOMAIN"],
+                  limit: 100,
+                },
+              ],
               limits: { maxNodes: 200, maxEdges: 200 },
               mode: "compact",
             },
@@ -395,7 +490,10 @@ export async function handleExploreNeighbors(
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          tc.warn("protein_domains_failed", `Protein domain fetch failed: ${msg}`);
+          tc.warn(
+            "protein_domains_failed",
+            `Protein domain fetch failed: ${msg}`,
+          );
         }
       }
     }
@@ -406,16 +504,21 @@ export async function handleExploreNeighbors(
       .map(([intent, v]) => {
         const scoreInfo = v.scoreField ? ` (ranked by ${v.scoreField})` : "";
         const unused = v.availableRelationships?.filter((r) => !r.used);
-        const alsoInfo = unused?.length ? ` [also: ${unused.map((r) => r.label).join(", ")}]` : "";
+        const alsoInfo = unused?.length
+          ? ` [also: ${unused.map((r) => r.label).join(", ")}]`
+          : "";
         return `${v.count} ${intent}${scoreInfo}${alsoInfo}`;
       });
     const seedNames = resolvedSeeds.map((s) => s.label).join(", ");
-    const summary = parts.length > 0
-      ? `Explored ${seedNames} → found ${parts.join(", ")}`
-      : `Explored ${seedNames} → no results for ${intents.join(", ")}`;
+    const summary =
+      parts.length > 0
+        ? `Explored ${seedNames} → found ${parts.join(", ")}`
+        : `Explored ${seedNames} → no results for ${intents.join(", ")}`;
 
     // Determine if partial (some intents failed)
-    const failedIntents = Object.entries(branchResults).filter(([, v]) => v.count === 0);
+    const failedIntents = Object.entries(branchResults).filter(
+      ([, v]) => v.count === 0,
+    );
     const hasPartialFailure = failedIntents.length > 0 && parts.length > 0;
 
     const result = okResult({
@@ -443,15 +546,23 @@ export async function handleExploreNeighbors(
 }
 
 /** Extract entities from neighbors result data for pipeline forwarding. */
-export function extractNeighborEntities(data: Record<string, unknown>): EntityRef[] {
-  const results = data.results as Record<string, { top?: unknown[] }> | undefined;
+export function extractNeighborEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
+  const results = data.results as
+    | Record<string, { top?: unknown[] }>
+    | undefined;
   if (!results) return [];
   const out: EntityRef[] = [];
   for (const branch of Object.values(results)) {
     for (const e of branch.top ?? []) {
       const ent = e as Record<string, unknown>;
       if (ent.type && ent.id && ent.label) {
-        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+        out.push({
+          type: String(ent.type),
+          id: String(ent.id),
+          label: String(ent.label),
+        });
       }
     }
   }

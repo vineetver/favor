@@ -12,7 +12,11 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { ACCEPTED_EXTENSIONS, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from "../config";
+import {
+  ACCEPTED_EXTENSIONS,
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+} from "../config";
 
 // ============================================================================
 // Types
@@ -200,7 +204,9 @@ export function UploadDropzone({
             <p className="text-sm font-semibold text-foreground truncate">
               {selectedFile.name}
             </p>
-            <p className="text-sm text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatFileSize(selectedFile.size)}
+            </p>
           </div>
           {!isProcessing && (
             <Button
@@ -228,8 +234,12 @@ export function UploadDropzone({
         {isUploading && (
           <div className="mt-5">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-muted-foreground font-medium">Uploading...</span>
-              <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
+              <span className="text-muted-foreground font-medium">
+                Uploading...
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round(uploadProgress)}%
+              </span>
             </div>
             <Progress value={uploadProgress} className="h-2" />
           </div>
@@ -270,7 +280,9 @@ export function UploadDropzone({
         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 bg-rose-100">
           <AlertCircle className="w-6 h-6 text-rose-500" />
         </div>
-        <p className="text-base font-semibold text-rose-700 mb-2">Upload Error</p>
+        <p className="text-base font-semibold text-rose-700 mb-2">
+          Upload Error
+        </p>
         <p className="text-sm text-rose-600 max-w-sm mb-6">{displayError}</p>
         <Button type="button" variant="outline" size="sm" onClick={handleClear}>
           Try Again
@@ -336,13 +348,18 @@ export function UploadDropzone({
 
         {/* Format + Size Note */}
         <p className="text-xs text-muted-foreground mt-5">
-          CSV, TSV, TXT, VCF, Parquet &middot; {MAX_FILE_SIZE_MB}MB max &middot; Auto-detected
+          CSV, TSV, TXT, VCF, Parquet &middot; {MAX_FILE_SIZE_MB}MB max &middot;
+          Auto-detected
         </p>
 
         {/* CLI note */}
         <p className="text-[11px] text-muted-foreground/60 mt-3">
           For genotype-scale data, use the{" "}
-          <a href="/cli" className="font-medium text-muted-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
+          <a
+            href="/cli"
+            className="font-medium text-muted-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
             FAVOR CLI
           </a>
         </p>

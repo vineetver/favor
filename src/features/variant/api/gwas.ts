@@ -1,12 +1,11 @@
 import { fetchOrNull } from "@infra/api";
+import { API_BASE } from "@/config/api";
 import type {
   GwasApiResponse,
   GwasApiRow,
   GwasAssociationRow,
   GwasMeta,
 } from "../types/gwas";
-
-import { API_BASE } from "@/config/api";
 
 /**
  * Filter options for GWAS API queries

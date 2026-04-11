@@ -1,5 +1,5 @@
-import { fetchOrNull } from "@infra/api";
 import type { VariantCounts } from "@features/gene/api/variant-statistics";
+import { fetchOrNull } from "@infra/api";
 
 import { API_BASE } from "@/config/api";
 

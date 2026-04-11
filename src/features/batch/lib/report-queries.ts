@@ -136,7 +136,14 @@ const HEX: Record<string, string> = {
   gray: "#9ca3af",
 };
 
-export const AF_BINS = ["Absent", "Ultra-rare", "Very rare", "Rare", "Low freq", "Common"] as const;
+export const AF_BINS = [
+  "Absent",
+  "Ultra-rare",
+  "Very rare",
+  "Rare",
+  "Low freq",
+  "Common",
+] as const;
 
 export const AF_COLORS: Record<string, string> = {
   Absent: HEX.stone,
@@ -698,7 +705,8 @@ function numOrNull(val: unknown): number | null {
 
 function formatDiseaseName(name: string): string {
   let formatted = name.replace(/_/g, " ");
-  formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1).toLowerCase();
+  formatted =
+    formatted.charAt(0).toUpperCase() + formatted.slice(1).toLowerCase();
   return formatted;
 }
 
@@ -716,7 +724,8 @@ function buildTakeaways(
   const out: string[] = [];
   const total = totalVariants;
 
-  const clinvarPct = total > 0 ? ((clinvarTotal / total) * 100).toFixed(1) : "0";
+  const clinvarPct =
+    total > 0 ? ((clinvarTotal / total) * 100).toFixed(1) : "0";
   out.push(
     `${clinvarTotal.toLocaleString()} (${clinvarPct}%) variants have ClinVar interpretations; ${summary.clinvarPLP.count.toLocaleString()} are Pathogenic/Likely Pathogenic.`,
   );
@@ -737,7 +746,9 @@ function buildTakeaways(
 
   if (summary.cosmicHits > 0) {
     const medianNote =
-      cosmicMedian !== null ? ` (median sample count = ${cosmicMedian.toLocaleString()})` : "";
+      cosmicMedian !== null
+        ? ` (median sample count = ${cosmicMedian.toLocaleString()})`
+        : "";
     const geneNote = topCosmicGene ? `, top gene: ${topCosmicGene}` : "";
     out.push(
       `${summary.cosmicHits.toLocaleString()} variants appear in COSMIC${medianNote}${geneNote}.`,
@@ -800,7 +811,8 @@ export async function generateReportData(query: QueryFn): Promise<ReportData> {
   // Parse consolidated summary row
   const sr = summaryR.rows[0] ?? {};
   const totalVariants = num(sr.total);
-  const pct = (count: number) => totalVariants > 0 ? (count / totalVariants) * 100 : 0;
+  const pct = (count: number) =>
+    totalVariants > 0 ? (count / totalVariants) * 100 : 0;
 
   const clinvarPLPCount = num(sr.clinvar_plp);
   const ultraRareCount = num(sr.ultra_rare);
@@ -816,21 +828,33 @@ export async function generateReportData(query: QueryFn): Promise<ReportData> {
   const summary: ReportData["summary"] = {
     clinvarPLP: { count: clinvarPLPCount, pct: pct(clinvarPLPCount) },
     ultraRare: { count: ultraRareCount, pct: pct(ultraRareCount) },
-    highImpact: { count: num(highImpactR.rows[0]?.count), pct: num(highImpactR.rows[0]?.percentage) },
+    highImpact: {
+      count: num(highImpactR.rows[0]?.count),
+      pct: num(highImpactR.rows[0]?.percentage),
+    },
     cosmicHits: cosmicHitsCount,
     spliceHigh: spliceHighCount,
-    regulatoryActive: { count: regulatoryActiveCount, pct: pct(regulatoryActiveCount) },
+    regulatoryActive: {
+      count: regulatoryActiveCount,
+      pct: pct(regulatoryActiveCount),
+    },
     qcPassPct: qcTotal > 0 ? (qcPass / qcTotal) * 100 : null,
   };
 
   // Genomic distributions → chart slices
   const regionType = mapToSlices(
-    regionR.rows.map((r) => ({ label: r.region_type as string, count: num(r.count) })),
+    regionR.rows.map((r) => ({
+      label: r.region_type as string,
+      count: num(r.count),
+    })),
     gencodeComprehensive as CategoryDef,
   );
 
   const consequence = mapToSlices(
-    consequenceR.rows.map((r) => ({ label: r.consequence as string, count: num(r.count) })),
+    consequenceR.rows.map((r) => ({
+      label: r.consequence as string,
+      count: num(r.count),
+    })),
     gencodeExonic as CategoryDef,
   );
 
@@ -856,51 +880,87 @@ export async function generateReportData(query: QueryFn): Promise<ReportData> {
 
   const scores: ScoreDistribution[] = [
     {
-      id: "cadd", label: "CADD",
-      p5: numOrNull(scoreRow.cadd_p5), q1: numOrNull(scoreRow.cadd_q1), median: numOrNull(scoreRow.cadd_median),
-      q3: numOrNull(scoreRow.cadd_q3), p95: numOrNull(scoreRow.cadd_p95),
-      highImpactCount: num(scoreRow.cadd_high), highImpactLabel: "≥ 20",
+      id: "cadd",
+      label: "CADD",
+      p5: numOrNull(scoreRow.cadd_p5),
+      q1: numOrNull(scoreRow.cadd_q1),
+      median: numOrNull(scoreRow.cadd_median),
+      q3: numOrNull(scoreRow.cadd_q3),
+      p95: numOrNull(scoreRow.cadd_p95),
+      highImpactCount: num(scoreRow.cadd_high),
+      highImpactLabel: "≥ 20",
     },
     {
-      id: "linsight", label: "LINSIGHT",
-      p5: numOrNull(scoreRow.linsight_p5), q1: numOrNull(scoreRow.linsight_q1), median: numOrNull(scoreRow.linsight_median),
-      q3: numOrNull(scoreRow.linsight_q3), p95: numOrNull(scoreRow.linsight_p95),
-      highImpactCount: num(scoreRow.linsight_high), highImpactLabel: "≥ 0.5",
+      id: "linsight",
+      label: "LINSIGHT",
+      p5: numOrNull(scoreRow.linsight_p5),
+      q1: numOrNull(scoreRow.linsight_q1),
+      median: numOrNull(scoreRow.linsight_median),
+      q3: numOrNull(scoreRow.linsight_q3),
+      p95: numOrNull(scoreRow.linsight_p95),
+      highImpactCount: num(scoreRow.linsight_high),
+      highImpactLabel: "≥ 0.5",
     },
     {
-      id: "fathmm", label: "FATHMM-XF",
-      p5: numOrNull(scoreRow.fathmm_p5), q1: numOrNull(scoreRow.fathmm_q1), median: numOrNull(scoreRow.fathmm_median),
-      q3: numOrNull(scoreRow.fathmm_q3), p95: numOrNull(scoreRow.fathmm_p95),
-      highImpactCount: num(scoreRow.fathmm_high), highImpactLabel: "≥ 0.5",
+      id: "fathmm",
+      label: "FATHMM-XF",
+      p5: numOrNull(scoreRow.fathmm_p5),
+      q1: numOrNull(scoreRow.fathmm_q1),
+      median: numOrNull(scoreRow.fathmm_median),
+      q3: numOrNull(scoreRow.fathmm_q3),
+      p95: numOrNull(scoreRow.fathmm_p95),
+      highImpactCount: num(scoreRow.fathmm_high),
+      highImpactLabel: "≥ 0.5",
     },
     {
-      id: "apc_pf", label: "aPC Protein Fn",
-      p5: numOrNull(scoreRow.apc_pf_p5), q1: numOrNull(scoreRow.apc_pf_q1), median: numOrNull(scoreRow.apc_pf_median),
-      q3: numOrNull(scoreRow.apc_pf_q3), p95: numOrNull(scoreRow.apc_pf_p95),
-      highImpactCount: num(scoreRow.apc_pf_high), highImpactLabel: "≥ 10",
+      id: "apc_pf",
+      label: "aPC Protein Fn",
+      p5: numOrNull(scoreRow.apc_pf_p5),
+      q1: numOrNull(scoreRow.apc_pf_q1),
+      median: numOrNull(scoreRow.apc_pf_median),
+      q3: numOrNull(scoreRow.apc_pf_q3),
+      p95: numOrNull(scoreRow.apc_pf_p95),
+      highImpactCount: num(scoreRow.apc_pf_high),
+      highImpactLabel: "≥ 10",
     },
     {
-      id: "apc_cons", label: "aPC Conserv.",
-      p5: numOrNull(scoreRow.apc_cons_p5), q1: numOrNull(scoreRow.apc_cons_q1), median: numOrNull(scoreRow.apc_cons_median),
-      q3: numOrNull(scoreRow.apc_cons_q3), p95: numOrNull(scoreRow.apc_cons_p95),
-      highImpactCount: num(scoreRow.apc_cons_high), highImpactLabel: "≥ 10",
+      id: "apc_cons",
+      label: "aPC Conserv.",
+      p5: numOrNull(scoreRow.apc_cons_p5),
+      q1: numOrNull(scoreRow.apc_cons_q1),
+      median: numOrNull(scoreRow.apc_cons_median),
+      q3: numOrNull(scoreRow.apc_cons_q3),
+      p95: numOrNull(scoreRow.apc_cons_p95),
+      highImpactCount: num(scoreRow.apc_cons_high),
+      highImpactLabel: "≥ 10",
     },
     {
-      id: "apc_epi", label: "aPC Epigenetics",
-      p5: numOrNull(scoreRow.apc_epi_p5), q1: numOrNull(scoreRow.apc_epi_q1), median: numOrNull(scoreRow.apc_epi_median),
-      q3: numOrNull(scoreRow.apc_epi_q3), p95: numOrNull(scoreRow.apc_epi_p95),
-      highImpactCount: num(scoreRow.apc_epi_high), highImpactLabel: "≥ 10",
+      id: "apc_epi",
+      label: "aPC Epigenetics",
+      p5: numOrNull(scoreRow.apc_epi_p5),
+      q1: numOrNull(scoreRow.apc_epi_q1),
+      median: numOrNull(scoreRow.apc_epi_median),
+      q3: numOrNull(scoreRow.apc_epi_q3),
+      p95: numOrNull(scoreRow.apc_epi_p95),
+      highImpactCount: num(scoreRow.apc_epi_high),
+      highImpactLabel: "≥ 10",
     },
   ];
 
   // Clinical evidence
   const clinvarSignificance = mapToSlices(
-    clinSigR.rows.map((r) => ({ label: r.clnsig as string, count: num(r.count) })),
+    clinSigR.rows.map((r) => ({
+      label: r.clnsig as string,
+      count: num(r.count),
+    })),
     clinicalSignificance as CategoryDef,
   );
 
   const clinvarReviewStatus = mapToSlices(
-    reviewR.rows.map((r) => ({ label: r.review_status as string, count: num(r.count) })),
+    reviewR.rows.map((r) => ({
+      label: r.review_status as string,
+      count: num(r.count),
+    })),
     reviewStatus as CategoryDef,
   );
 
@@ -921,8 +981,19 @@ export async function generateReportData(query: QueryFn): Promise<ReportData> {
   }));
 
   // AF × functional category (stacked bar)
-  const funcCatOrder = ["pLoF", "Missense", "Synonymous", "Promoter", "Enhancer", "Other"];
-  const afByFuncRaw = afByFuncR.rows as Array<{ func_cat: string; af_bin: string; count: number }>;
+  const funcCatOrder = [
+    "pLoF",
+    "Missense",
+    "Synonymous",
+    "Promoter",
+    "Enhancer",
+    "Other",
+  ];
+  const afByFuncRaw = afByFuncR.rows as Array<{
+    func_cat: string;
+    af_bin: string;
+    count: number;
+  }>;
   const afByFunction: AfByFunctionRow[] = funcCatOrder
     .map((cat) => {
       const catRows = afByFuncRaw.filter((r) => r.func_cat === cat);
@@ -947,18 +1018,20 @@ export async function generateReportData(query: QueryFn): Promise<ReportData> {
     { key: "apc_pf", label: "aPC Protein Fn", color: "#eab308" },
   ] as const;
 
-  const scoresByRegulatory: ScoreByRegulatoryPanel[] = scoreConfigs.map(({ key, label, color }) => ({
-    score: label,
-    color,
-    boxes: scoresByRegR.rows.map((r) => ({
-      category: r.reg as string,
-      p5: numOrNull(r[`${key}_p5`]),
-      q1: numOrNull(r[`${key}_q1`]),
-      median: numOrNull(r[`${key}_med`]),
-      q3: numOrNull(r[`${key}_q3`]),
-      p95: numOrNull(r[`${key}_p95`]),
-    })),
-  }));
+  const scoresByRegulatory: ScoreByRegulatoryPanel[] = scoreConfigs.map(
+    ({ key, label, color }) => ({
+      score: label,
+      color,
+      boxes: scoresByRegR.rows.map((r) => ({
+        category: r.reg as string,
+        p5: numOrNull(r[`${key}_p5`]),
+        q1: numOrNull(r[`${key}_q1`]),
+        median: numOrNull(r[`${key}_med`]),
+        q3: numOrNull(r[`${key}_q3`]),
+        p95: numOrNull(r[`${key}_p95`]),
+      })),
+    }),
+  );
 
   // Takeaways
   const takeaways = buildTakeaways(

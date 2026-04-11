@@ -6,6 +6,7 @@ import { variantColumnGroups } from "@features/variant/config/hg38";
 import type { Variant } from "@features/variant/types";
 import type { ColumnGroup, ColumnMeta } from "@infra/table/column-builder";
 import { Card, CardContent } from "@shared/components/ui/card";
+import type { ColumnGroupSource } from "@shared/components/ui/category-detail-view";
 import { NoDataState } from "@shared/components/ui/error-states";
 import {
   Tooltip,
@@ -20,7 +21,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Info } from "lucide-react";
-import type { ColumnGroupSource } from "@shared/components/ui/category-detail-view";
 
 interface CategoryDetailViewClientProps {
   data: Gene | Variant;
@@ -38,9 +38,7 @@ export function CategoryDetailViewClient({
   const columnGroups =
     columnGroupSource === "gene" ? geneColumnGroups : variantColumnGroups;
 
-  const group = (
-    columnGroups as readonly ColumnGroup<Gene | Variant>[]
-  ).find(
+  const group = (columnGroups as readonly ColumnGroup<Gene | Variant>[]).find(
     (g) => g.id === categoryId,
   );
 

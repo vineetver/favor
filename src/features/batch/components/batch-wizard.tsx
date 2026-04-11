@@ -1,7 +1,9 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { QuotaBar } from "@shared/components/quota-bar";
 import { Button } from "@shared/components/ui/button";
+import { useQuotas } from "@shared/hooks/use-quotas";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,13 +16,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
-import { useWizard, getStepDescription, type VisualStep } from "../hooks/use-wizard";
+import {
+  getStepDescription,
+  useWizard,
+  type VisualStep,
+} from "../hooks/use-wizard";
 import { ColumnMappingEditor } from "./column-mapping-editor";
+import { JobConfiguration } from "./job-configuration";
 import { UploadDropzone } from "./upload-dropzone";
 import { ValidationSummary } from "./validation-summary";
-import { JobConfiguration } from "./job-configuration";
-import { useQuotas } from "@shared/hooks/use-quotas";
-import { QuotaBar } from "@shared/components/quota-bar";
 
 // ============================================================================
 // Types
@@ -38,11 +42,36 @@ interface StepConfig {
 }
 
 const BASE_STEPS: StepConfig[] = [
-  { id: "upload", label: "Upload", description: "Select your file", icon: Upload },
-  { id: "validate", label: "Validate", description: "Check format + preview", icon: FileSpreadsheet },
-  { id: "mapping", label: "Mapping", description: "Review column mapping", icon: Columns3 },
-  { id: "configure", label: "Configure", description: "Output + notifications", icon: Settings2 },
-  { id: "complete", label: "Process", description: "Start annotation", icon: CheckCircle2 },
+  {
+    id: "upload",
+    label: "Upload",
+    description: "Select your file",
+    icon: Upload,
+  },
+  {
+    id: "validate",
+    label: "Validate",
+    description: "Check format + preview",
+    icon: FileSpreadsheet,
+  },
+  {
+    id: "mapping",
+    label: "Mapping",
+    description: "Review column mapping",
+    icon: Columns3,
+  },
+  {
+    id: "configure",
+    label: "Configure",
+    description: "Output + notifications",
+    icon: Settings2,
+  },
+  {
+    id: "complete",
+    label: "Process",
+    description: "Start annotation",
+    icon: CheckCircle2,
+  },
 ];
 
 // ============================================================================
@@ -59,7 +88,8 @@ function StepIndicator({
   className?: string;
 }) {
   const steps = useMemo(
-    () => (showMapping ? BASE_STEPS : BASE_STEPS.filter((s) => s.id !== "mapping")),
+    () =>
+      showMapping ? BASE_STEPS : BASE_STEPS.filter((s) => s.id !== "mapping"),
     [showMapping],
   );
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
@@ -72,14 +102,19 @@ function StepIndicator({
         const isLast = index === steps.length - 1;
 
         return (
-          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+          <div
+            key={step.id}
+            className="flex items-center flex-1 last:flex-none"
+          >
             <div className="flex items-center gap-2">
               <div
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full transition-all text-sm font-medium",
                   isCompleted && "bg-primary text-white",
                   isCurrent && "bg-primary text-white",
-                  !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
+                  !isCompleted &&
+                    !isCurrent &&
+                    "bg-muted text-muted-foreground",
                 )}
               >
                 {isCompleted ? (
@@ -138,14 +173,23 @@ export function BatchWizard({ className }: BatchWizardProps) {
   const stepDescription = getStepDescription(visualStep);
 
   return (
-    <div className={cn("bg-background rounded-xl border border-border overflow-hidden flex flex-col", className)}>
+    <div
+      className={cn(
+        "bg-background rounded-xl border border-border overflow-hidden flex flex-col",
+        className,
+      )}
+    >
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         {/* Title Row */}
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Batch Annotation</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{stepDescription}</p>
+            <h1 className="text-lg font-semibold text-foreground">
+              Batch Annotation
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {stepDescription}
+            </p>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/batch-annotation/jobs">
@@ -167,7 +211,9 @@ export function BatchWizard({ className }: BatchWizardProps) {
           {/* ================================================================ */}
           {/* Upload / Uploading / Validating */}
           {/* ================================================================ */}
-          {(state.step === "idle" || state.step === "uploading" || state.step === "validating") && (
+          {(state.step === "idle" ||
+            state.step === "uploading" ||
+            state.step === "validating") && (
             <div className="space-y-4">
               <UploadDropzone
                 onFileSelect={selectFile}
@@ -181,7 +227,11 @@ export function BatchWizard({ className }: BatchWizardProps) {
               {quotas.length > 0 && state.step === "idle" && (
                 <QuotaBar
                   quotas={quotas}
-                  filter={["large_uploads_today", "small_uploads_today", "concurrent_cohorts"]}
+                  filter={[
+                    "large_uploads_today",
+                    "small_uploads_today",
+                    "concurrent_cohorts",
+                  ]}
                   layout="row"
                   className="justify-center"
                 />
@@ -247,8 +297,12 @@ export function BatchWizard({ className }: BatchWizardProps) {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <Loader2 className="h-8 w-8 text-primary animate-spin" />
               </div>
-              <p className="text-lg font-medium text-foreground mb-1">Starting batch job...</p>
-              <p className="text-sm text-muted-foreground">You&apos;ll be redirected to track progress</p>
+              <p className="text-lg font-medium text-foreground mb-1">
+                Starting batch job...
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You&apos;ll be redirected to track progress
+              </p>
             </div>
           )}
         </div>

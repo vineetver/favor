@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAuth } from "@shared/hooks";
 import { Button } from "@shared/components/ui/button";
+import { useAuth } from "@shared/hooks";
 import { LogIn } from "lucide-react";
+import { useEffect } from "react";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -28,7 +28,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-sm">
-          <p className="text-lg font-semibold text-foreground">Sign in required</p>
+          <p className="text-lg font-semibold text-foreground">
+            Sign in required
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
             You need to sign in to access this page. Redirecting&hellip;
           </p>

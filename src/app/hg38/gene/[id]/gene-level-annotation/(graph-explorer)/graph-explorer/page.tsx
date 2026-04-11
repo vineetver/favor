@@ -1,22 +1,29 @@
 import { fetchGene } from "@features/gene/api";
 import {
+  fetchGraphQuery,
   fetchGraphSchema,
   fetchGraphStats,
-  fetchGraphQuery,
   parseTypeId,
 } from "@features/graph/api";
 import { GraphExplorer } from "@features/graph/components";
-import type { EntityType } from "@features/graph/types/entity";
-import type { EdgeType } from "@features/graph/types/edge";
-import type { GraphSchema, GraphStats, NodeTypeStats } from "@features/graph/types/schema";
-import type { InitialSubgraphData } from "@features/graph/types/props";
-import { serializeLensSteps, isBranchStep } from "@features/graph/config/lenses";
 import { GENE_EXPLORER_CONFIG } from "@features/graph/config/entities/gene";
 import {
+  isBranchStep,
+  serializeLensSteps,
+} from "@features/graph/config/lenses";
+import type { EdgeType } from "@features/graph/types/edge";
+import type { EntityType } from "@features/graph/types/entity";
+import type { InitialSubgraphData } from "@features/graph/types/props";
+import type {
+  GraphSchema,
+  GraphStats,
+  NodeTypeStats,
+} from "@features/graph/types/schema";
+import {
   buildEdgeTypeStatsMap,
-  resolveEdgeSelectFields,
   collectEdgeTypesFromSteps,
   injectSortFields,
+  resolveEdgeSelectFields,
 } from "@features/graph/utils/schema-fields";
 import { notFound } from "next/navigation";
 
@@ -51,16 +58,17 @@ export default async function GraphExplorerPage({
   // Transform schema response to component format
   const schema: GraphSchema | null = schemaResponse?.data
     ? {
-        nodeTypes: schemaResponse.data.nodeTypes.map((nt): NodeTypeStats =>
-          typeof nt === "string"
-            ? { nodeType: nt as EntityType }
-            : {
-                nodeType: nt.nodeType as EntityType,
-                description: nt.description,
-                summaryFields: nt.summaryFields,
-                propertyCount: nt.propertyCount,
-                fieldsByCategory: nt.fieldsByCategory,
-              },
+        nodeTypes: schemaResponse.data.nodeTypes.map(
+          (nt): NodeTypeStats =>
+            typeof nt === "string"
+              ? { nodeType: nt as EntityType }
+              : {
+                  nodeType: nt.nodeType as EntityType,
+                  description: nt.description,
+                  summaryFields: nt.summaryFields,
+                  propertyCount: nt.propertyCount,
+                  fieldsByCategory: nt.fieldsByCategory,
+                },
         ),
         edgeTypes: schemaResponse.data.edgeTypes.map((et) => ({
           edgeType: et.type as EdgeType,
@@ -95,7 +103,7 @@ export default async function GraphExplorerPage({
 
   // Fetch initial subgraph for default template via /graph/query
   const defaultTemplate = GENE_EXPLORER_CONFIG.templates.find(
-    (t) => t.id === GENE_EXPLORER_CONFIG.defaultTemplateId
+    (t) => t.id === GENE_EXPLORER_CONFIG.defaultTemplateId,
   )!;
   let initialSubgraph: InitialSubgraphData | null = null;
 
@@ -103,7 +111,12 @@ export default async function GraphExplorerPage({
     // Cap per-step limits to 10 for fast initial load
     const cappedSteps = defaultTemplate.steps.map((step) => {
       if (isBranchStep(step)) {
-        return { branch: step.branch.map((s) => ({ ...s, limit: Math.min(s.limit ?? 1000, 10) })) };
+        return {
+          branch: step.branch.map((s) => ({
+            ...s,
+            limit: Math.min(s.limit ?? 1000, 10),
+          })),
+        };
       }
       return { ...step, limit: Math.min(step.limit ?? 1000, 10) };
     });

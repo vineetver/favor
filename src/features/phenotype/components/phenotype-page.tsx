@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import {
@@ -15,13 +13,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Info } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Info } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import type {
-  GraphPhenotype,
   EdgeCounts,
   EdgeRelations,
   EdgeRow,
+  GraphPhenotype,
 } from "../types";
 
 // ============================================================================
@@ -111,31 +111,24 @@ function ProfileTab({
 
   // Hierarchy: separate parents from children
   const hierarchyRows = getRows(relations, "PHENOTYPE_HIERARCHY");
-  const parents: Array<{ id: string; name: string; description?: string }> =
-    [];
+  const parents: Array<{ id: string; name: string; description?: string }> = [];
   const children: Array<{ id: string; name: string; description?: string }> =
     [];
 
   for (const row of hierarchyRows) {
     const parentName = String(ep(row, "parent_phenotype_name") ?? "");
     const childName = String(ep(row, "child_phenotype_name") ?? "");
-    if (
-      childName.toLowerCase() === phenotype.phenotype_name.toLowerCase()
-    ) {
+    if (childName.toLowerCase() === phenotype.phenotype_name.toLowerCase()) {
       parents.push({
         id: row.neighbor.id,
         name: String(nb(row, "name") ?? parentName),
-        description: String(
-          ep(row, "parent_phenotype_description") ?? "",
-        ),
+        description: String(ep(row, "parent_phenotype_description") ?? ""),
       });
     } else {
       children.push({
         id: row.neighbor.id,
         name: String(nb(row, "name") ?? childName),
-        description: String(
-          ep(row, "child_phenotype_description") ?? "",
-        ),
+        description: String(ep(row, "child_phenotype_description") ?? ""),
       });
     }
   }
@@ -152,9 +145,7 @@ function ProfileTab({
 
   // Synonyms
   const synonyms = phenotype.synonyms ?? [];
-  const visibleSynonyms = showAllSynonyms
-    ? synonyms
-    : synonyms.slice(0, 20);
+  const visibleSynonyms = showAllSynonyms ? synonyms : synonyms.slice(0, 20);
   const hasMoreSynonyms = synonyms.length > 20;
 
   return (
@@ -753,15 +744,11 @@ export function PhenotypePage({
   const [activeTab, setActiveTab] = useState("profile");
 
   const genes = useMemo(
-    () =>
-      transformGenes(
-        getRows(relations, "GENE_ASSOCIATED_WITH_PHENOTYPE"),
-      ),
+    () => transformGenes(getRows(relations, "GENE_ASSOCIATED_WITH_PHENOTYPE")),
     [relations],
   );
   const diseases = useMemo(
-    () =>
-      transformDiseases(getRows(relations, "DISEASE_HAS_PHENOTYPE")),
+    () => transformDiseases(getRows(relations, "DISEASE_HAS_PHENOTYPE")),
     [relations],
   );
   const variants = useMemo(
@@ -804,16 +791,9 @@ export function PhenotypePage({
   ];
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={setActiveTab}
-      className="mt-2"
-    >
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
       <div className="border-b border-border overflow-x-auto">
-        <TabsList
-          variant="line"
-          className="w-full justify-start p-0 h-auto"
-        >
+        <TabsList variant="line" className="w-full justify-start p-0 h-auto">
           {tabs.map((tab) => {
             if (
               tab.value !== "profile" &&
@@ -839,10 +819,7 @@ export function PhenotypePage({
       </div>
 
       <TabsContent value="profile">
-        <ProfileTab
-          phenotype={phenotype}
-          relations={relations}
-        />
+        <ProfileTab phenotype={phenotype} relations={relations} />
       </TabsContent>
 
       <TabsContent value="genes" className="pt-6">
@@ -866,8 +843,7 @@ export function PhenotypePage({
           data={diseases}
           title="Associated Diseases"
           subtitle={
-            counts?.DISEASE_HAS_PHENOTYPE &&
-            counts.DISEASE_HAS_PHENOTYPE > 200
+            counts?.DISEASE_HAS_PHENOTYPE && counts.DISEASE_HAS_PHENOTYPE > 200
               ? `Showing 200 of ${fmtCount(counts.DISEASE_HAS_PHENOTYPE)} — sorted by evidence count`
               : "Sorted by evidence count"
           }

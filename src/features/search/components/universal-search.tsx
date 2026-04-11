@@ -22,7 +22,6 @@ import { usePivotExpansion } from "../hooks/use-pivot-expansion";
 import { useTypeahead } from "../hooks/use-typeahead";
 import type { EntityType, TypeaheadSuggestion } from "../types/api";
 import {
-  getPopulateIdentifier,
   isRoutableQuery,
   navigateToQuery,
   parseQuery,
@@ -221,7 +220,9 @@ function AnchorChip({
 }) {
   return (
     <span className="inline-flex items-center gap-2 bg-muted rounded-xl pl-4 pr-2 py-2">
-      <span className="text-sm font-semibold text-foreground">{anchor.display_name}</span>
+      <span className="text-sm font-semibold text-foreground">
+        {anchor.display_name}
+      </span>
       <button
         type="button"
         onClick={(e) => {
@@ -245,7 +246,7 @@ export function UniversalSearch() {
     anchors: [],
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [_highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -296,7 +297,13 @@ export function UniversalSearch() {
     } else if (isRegionQuery) {
       clearTypeahead();
     }
-  }, [deferredQuery, searchState.mode, setTypeaheadQuery, isRegionQuery, clearTypeahead]);
+  }, [
+    deferredQuery,
+    searchState.mode,
+    setTypeaheadQuery,
+    isRegionQuery,
+    clearTypeahead,
+  ]);
 
   // Sync pivot anchor when in selected mode (use last anchor for pivot queries)
   useEffect(() => {
@@ -311,29 +318,35 @@ export function UniversalSearch() {
     }
   }, [searchState.mode, searchState.anchors, setPivotAnchor, clearPivot]);
 
-  const handleInputChange = useCallback((value: string) => {
-    setSearchState((prev) => {
-      if (value.trim().length === 0 && prev.anchors.length === 0) {
-        return { mode: "idle", query: "", anchors: [] };
-      } else if (value.trim().length === 0 && prev.anchors.length > 0) {
-        // Keep anchors, stay in selected mode with empty query
-        return { mode: "selected", query: "", anchors: prev.anchors };
-      } else if (prev.anchors.length > 0) {
-        // Has anchors - stay in selected mode while typing to filter
-        return { mode: "selected", query: value, anchors: prev.anchors };
-      } else {
-        // No anchors - typing mode
-        return { mode: "typing", query: value, anchors: [] };
-      }
-    });
+  const handleInputChange = useCallback(
+    (value: string) => {
+      setSearchState((prev) => {
+        if (value.trim().length === 0 && prev.anchors.length === 0) {
+          return { mode: "idle", query: "", anchors: [] };
+        } else if (value.trim().length === 0 && prev.anchors.length > 0) {
+          // Keep anchors, stay in selected mode with empty query
+          return { mode: "selected", query: "", anchors: prev.anchors };
+        } else if (prev.anchors.length > 0) {
+          // Has anchors - stay in selected mode while typing to filter
+          return { mode: "selected", query: value, anchors: prev.anchors };
+        } else {
+          // No anchors - typing mode
+          return { mode: "typing", query: value, anchors: [] };
+        }
+      });
 
-    if (value.trim().length >= 2 || searchState.anchors.length > 0) {
-      setIsDropdownOpen(true);
-    } else if (value.trim().length === 0 && searchState.anchors.length === 0) {
-      setIsDropdownOpen(false);
-    }
-    setHighlightedIndex(-1);
-  }, [searchState.anchors.length]);
+      if (value.trim().length >= 2 || searchState.anchors.length > 0) {
+        setIsDropdownOpen(true);
+      } else if (
+        value.trim().length === 0 &&
+        searchState.anchors.length === 0
+      ) {
+        setIsDropdownOpen(false);
+      }
+      setHighlightedIndex(-1);
+    },
+    [searchState.anchors.length],
+  );
 
   // Preload variant data when user types a complete VCF (only in typing mode, not for regions)
   useEffect(() => {
@@ -350,7 +363,7 @@ export function UniversalSearch() {
     }
   }, [query, searchState.mode, isRegionQuery]);
 
-  const handleGenomeChange = useCallback((value: GenomeBuild) => {
+  const _handleGenomeChange = useCallback((value: GenomeBuild) => {
     setGenome(value);
   }, []);
 
@@ -369,28 +382,34 @@ export function UniversalSearch() {
     [],
   );
 
-  const handleRemoveAnchorAt = useCallback((index: number) => {
-    startTransition(() => {
-      // Clear pivot results immediately to prevent stale data flash
-      clearPivot();
+  const handleRemoveAnchorAt = useCallback(
+    (index: number) => {
+      startTransition(() => {
+        // Clear pivot results immediately to prevent stale data flash
+        clearPivot();
 
-      setSearchState((prev) => {
-        const newAnchors = prev.anchors.slice(0, index);
-        const newMode = newAnchors.length > 0
-          ? "selected"
-          : (prev.query.trim().length >= 2 ? "typing" : "idle");
-        return {
-          mode: newMode,
-          query: prev.query,
-          anchors: newAnchors,
-        };
+        setSearchState((prev) => {
+          const newAnchors = prev.anchors.slice(0, index);
+          const newMode =
+            newAnchors.length > 0
+              ? "selected"
+              : prev.query.trim().length >= 2
+                ? "typing"
+                : "idle";
+          return {
+            mode: newMode,
+            query: prev.query,
+            anchors: newAnchors,
+          };
+        });
+
+        // Force re-fetch typeahead since query didn't change
+        // (setTypeaheadQuery won't trigger fetch if query is same)
+        refetchTypeahead();
       });
-
-      // Force re-fetch typeahead since query didn't change
-      // (setTypeaheadQuery won't trigger fetch if query is same)
-      refetchTypeahead();
-    });
-  }, [clearPivot, refetchTypeahead]);
+    },
+    [clearPivot, refetchTypeahead],
+  );
 
   // Handle clicking a pivot result - can navigate or pivot-hop
   const handlePivotItemClick = useCallback(
@@ -426,7 +445,11 @@ export function UniversalSearch() {
       // Check if display_name is an rsID
       const rsIdMatch = lastAnchor.display_name.match(/^rs\d+$/i);
       if (rsIdMatch) {
-        const success = await navigateToQuery(lastAnchor.display_name, genome, router);
+        const success = await navigateToQuery(
+          lastAnchor.display_name,
+          genome,
+          router,
+        );
         if (success) {
           clearTypeahead();
           clearPivot();
@@ -450,7 +473,9 @@ export function UniversalSearch() {
   /** Navigate directly to the best suggestion's entity page */
   const navigateToSuggestion = useCallback(
     (suggestion: TypeaheadSuggestion) => {
-      const url = getEntityUrl(suggestion.entity_type, suggestion.id, { genome });
+      const url = getEntityUrl(suggestion.entity_type, suggestion.id, {
+        genome,
+      });
       router.push(url);
       clearTypeahead();
       clearPivot();
@@ -569,9 +594,10 @@ export function UniversalSearch() {
         }
 
         // Filter out best match from its group to avoid duplication
-        const filteredItems = bestMatch && group.entity_type === bestMatch.entity_type
-          ? group.suggestions.filter(item => item.id !== bestMatch?.id)
-          : group.suggestions;
+        const filteredItems =
+          bestMatch && group.entity_type === bestMatch.entity_type
+            ? group.suggestions.filter((item) => item.id !== bestMatch?.id)
+            : group.suggestions;
 
         // Limit to 4 items max for consistent display
         const limitedItems = filteredItems.slice(0, 4);
@@ -605,7 +631,8 @@ export function UniversalSearch() {
     }
   }
 
-  const isLoading = searchState.mode === "typing" ? isTypeaheadLoading : isPivotLoading;
+  const isLoading =
+    searchState.mode === "typing" ? isTypeaheadLoading : isPivotLoading;
 
   return (
     <div className="w-full" ref={containerRef}>
@@ -642,7 +669,11 @@ export function UniversalSearch() {
                   onFocus={handleFocus}
                   onKeyDown={(e) => {
                     // Backspace on empty input removes last anchor
-                    if (e.key === "Backspace" && query === "" && searchState.anchors.length > 0) {
+                    if (
+                      e.key === "Backspace" &&
+                      query === "" &&
+                      searchState.anchors.length > 0
+                    ) {
                       e.preventDefault();
                       handleRemoveAnchorAt(searchState.anchors.length - 1);
                       return;
@@ -655,7 +686,11 @@ export function UniversalSearch() {
                       handleSubmit(e as unknown as FormEvent);
                     }
                   }}
-                  placeholder={searchState.anchors.length > 0 ? "Continue searching..." : "Search genes, variants, diseases, drugs, pathways..."}
+                  placeholder={
+                    searchState.anchors.length > 0
+                      ? "Continue searching..."
+                      : "Search genes, variants, diseases, drugs, pathways..."
+                  }
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -696,7 +731,11 @@ export function UniversalSearch() {
                       {isRegionQuery ? (
                         <button
                           type="button"
-                          onClick={() => handleSubmit(new Event("submit") as unknown as FormEvent)}
+                          onClick={() =>
+                            handleSubmit(
+                              new Event("submit") as unknown as FormEvent,
+                            )
+                          }
                           className="w-full text-left px-5 py-5 hover:bg-muted transition-colors"
                         >
                           <div className="flex items-center gap-3">
@@ -716,12 +755,14 @@ export function UniversalSearch() {
                             </kbd>
                           </div>
                         </button>
-                      ) : isTypeaheadLoading && groupedTypeaheadSuggestions.length === 0 ? (
+                      ) : isTypeaheadLoading &&
+                        groupedTypeaheadSuggestions.length === 0 ? (
                         <div className="py-8 px-6 text-center text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                           <div className="text-sm">Searching...</div>
                         </div>
-                      ) : groupedTypeaheadSuggestions.length === 0 && query.trim() !== "" ? (
+                      ) : groupedTypeaheadSuggestions.length === 0 &&
+                        query.trim() !== "" ? (
                         <div className="py-8 px-6 text-center text-muted-foreground">
                           <div className="text-sm">No results found</div>
                         </div>
@@ -749,64 +790,93 @@ export function UniversalSearch() {
                   )}
 
                   {/* SELECTED MODE: Show pivot results (anchor chips are in input) */}
-                  {searchState.mode === "selected" && searchState.anchors.length > 0 && (
-                    <>
-                      {/* Pivot Anchor Info Card */}
-                      <PivotAnchorCard
-                        anchor={searchState.anchors[searchState.anchors.length - 1]}
-                      />
+                  {searchState.mode === "selected" &&
+                    searchState.anchors.length > 0 && (
+                      <>
+                        {/* Pivot Anchor Info Card */}
+                        <PivotAnchorCard
+                          anchor={
+                            searchState.anchors[searchState.anchors.length - 1]
+                          }
+                        />
 
-                      {/* Pivot Results Section */}
-                      {isPivotLoading ? (
-                        // Loading skeleton while pivot fetches
-                        <div className="py-8 px-6 text-center text-muted-foreground">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                          <div className="text-sm">Loading related entities...</div>
-                        </div>
-                      ) : pivotError ? (
-                        // Error state - show message without collapsing
-                        <div className="py-8 px-6 text-center text-red-400">
-                          <div className="text-sm">Failed to load related entities</div>
-                          <div className="text-xs mt-1 text-muted-foreground">
-                            {pivotError.message}
+                        {/* Pivot Results Section */}
+                        {isPivotLoading ? (
+                          // Loading skeleton while pivot fetches
+                          <div className="py-8 px-6 text-center text-muted-foreground">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                            <div className="text-sm">
+                              Loading related entities...
+                            </div>
                           </div>
-                        </div>
-                      ) : pivotGroups.length === 0 ? (
-                        // No results
-                        <div className="py-8 px-6 text-center text-muted-foreground">
-                          <div className="text-sm">No related entities found</div>
-                        </div>
-                      ) : (
-                        // Pivot context header + groups
-                        <>
-                          {/* Related to header */}
-                          <div className="px-5 py-3 bg-muted/80 border-b border-border">
-                            <span className="text-sm text-muted-foreground">
-                              Related to{" "}
-                              <span className={cn("font-semibold", getEntityConfig(searchState.anchors[searchState.anchors.length - 1].entity_type).textColor)}>
-                                {searchState.anchors[searchState.anchors.length - 1].display_name}
+                        ) : pivotError ? (
+                          // Error state - show message without collapsing
+                          <div className="py-8 px-6 text-center text-red-400">
+                            <div className="text-sm">
+                              Failed to load related entities
+                            </div>
+                            <div className="text-xs mt-1 text-muted-foreground">
+                              {pivotError.message}
+                            </div>
+                          </div>
+                        ) : pivotGroups.length === 0 ? (
+                          // No results
+                          <div className="py-8 px-6 text-center text-muted-foreground">
+                            <div className="text-sm">
+                              No related entities found
+                            </div>
+                          </div>
+                        ) : (
+                          // Pivot context header + groups
+                          <>
+                            {/* Related to header */}
+                            <div className="px-5 py-3 bg-muted/80 border-b border-border">
+                              <span className="text-sm text-muted-foreground">
+                                Related to{" "}
+                                <span
+                                  className={cn(
+                                    "font-semibold",
+                                    getEntityConfig(
+                                      searchState.anchors[
+                                        searchState.anchors.length - 1
+                                      ].entity_type,
+                                    ).textColor,
+                                  )}
+                                >
+                                  {
+                                    searchState.anchors[
+                                      searchState.anchors.length - 1
+                                    ].display_name
+                                  }
+                                </span>
                               </span>
-                            </span>
-                          </div>
-                          {pivotGroups.map((group) => {
-                            const lastAnchor = searchState.anchors[searchState.anchors.length - 1];
-                            const totalAvailable = lastAnchor.links?.[group.type] ?? group.items.length;
-                            return (
-                              <PivotGroupSection
-                                key={group.type}
-                                group={group}
-                                onItemClick={handlePivotItemClick}
-                                totalAvailable={totalAvailable}
-                                isExpanded={expandedTypes.has(group.type)}
-                                isExpanding={expandingType === group.type}
-                                onShowMore={() => fetchMoreForType(group.type)}
-                              />
-                            );
-                          })}
-                        </>
-                      )}
-                    </>
-                  )}
+                            </div>
+                            {pivotGroups.map((group) => {
+                              const lastAnchor =
+                                searchState.anchors[
+                                  searchState.anchors.length - 1
+                                ];
+                              const totalAvailable =
+                                lastAnchor.links?.[group.type] ??
+                                group.items.length;
+                              return (
+                                <PivotGroupSection
+                                  key={group.type}
+                                  group={group}
+                                  onItemClick={handlePivotItemClick}
+                                  totalAvailable={totalAvailable}
+                                  isExpanded={expandedTypes.has(group.type)}
+                                  isExpanding={expandingType === group.type}
+                                  onShowMore={() =>
+                                    fetchMoreForType(group.type)
+                                  }
+                                />
+                              );
+                            })}
+                          </>
+                        )}
+                      </>
+                    )}
 
                   {/* IDLE MODE: Show prompt */}
                   {searchState.mode === "idle" && (
@@ -817,18 +887,23 @@ export function UniversalSearch() {
                 </div>
 
                 {/* Hint bar — show when there are results */}
-                {searchState.mode === "typing" && (bestMatch || groupedTypeaheadSuggestions.length > 0) && (
-                  <div className="flex items-center justify-end gap-4 px-4 py-2 border-t border-border bg-muted/50 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">↵</kbd>
-                      go to page
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">click</kbd>
-                      explore connections
-                    </span>
-                  </div>
-                )}
+                {searchState.mode === "typing" &&
+                  (bestMatch || groupedTypeaheadSuggestions.length > 0) && (
+                    <div className="flex items-center justify-end gap-4 px-4 py-2 border-t border-border bg-muted/50 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">
+                          ↵
+                        </kbd>
+                        go to page
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">
+                          click
+                        </kbd>
+                        explore connections
+                      </span>
+                    </div>
+                  )}
               </ComboboxOptions>
             )}
           </Combobox>
@@ -858,17 +933,13 @@ export function UniversalSearch() {
 }
 
 // Pivot Anchor Card - shows info about the current pivot anchor at the top of dropdown
-function PivotAnchorCard({
-  anchor,
-}: {
-  anchor: TypeaheadSuggestion;
-}) {
+function PivotAnchorCard({ anchor }: { anchor: TypeaheadSuggestion }) {
   const config = getEntityConfig(anchor.entity_type);
 
   // Truncate description
   const truncatedDescription = anchor.description
     ? anchor.description.length > 120
-      ? anchor.description.slice(0, 120).trim() + "..."
+      ? `${anchor.description.slice(0, 120).trim()}...`
       : anchor.description
     : null;
 
@@ -878,7 +949,9 @@ function PivotAnchorCard({
     <div className="px-5 py-5 border-b border-border bg-gradient-to-br from-muted/80 to-card">
       {/* Entity name and type badge */}
       <div className="flex items-center gap-3 mb-2">
-        <h3 className={cn("text-xl font-bold tracking-tight", config.textColor)}>
+        <h3
+          className={cn("text-xl font-bold tracking-tight", config.textColor)}
+        >
           {anchor.display_name}
         </h3>
         <span
@@ -932,7 +1005,7 @@ function BestMatchCard({
   // Truncate description
   const truncatedDescription = item.description
     ? item.description.length > 120
-      ? item.description.slice(0, 120).trim() + "..."
+      ? `${item.description.slice(0, 120).trim()}...`
       : item.description
     : null;
 
@@ -972,7 +1045,10 @@ function BestMatchCard({
             {linkCounts.length > 0 && (
               <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
                 {linkCounts.map((link) => (
-                  <span key={link.label} className="inline-flex items-center gap-1">
+                  <span
+                    key={link.label}
+                    className="inline-flex items-center gap-1"
+                  >
                     <span className="font-semibold text-muted-foreground">
                       {link.count.toLocaleString()}
                     </span>
@@ -985,8 +1061,18 @@ function BestMatchCard({
 
           {/* Arrow indicator */}
           <div className="text-muted-foreground pt-1">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </div>
         </div>
@@ -1017,9 +1103,7 @@ function TypeaheadGroupSection({
         <span className="text-xs font-bold uppercase tracking-widest text-white">
           {config.label}
         </span>
-        <span className="text-xs text-white/70">
-          ({group.items.length})
-        </span>
+        <span className="text-xs text-white/70">({group.items.length})</span>
       </div>
 
       {/* Entity Cards - Two Column Grid on Desktop */}
@@ -1070,7 +1154,11 @@ function PivotGroupSection({
           {config.label}
         </span>
         <span className="text-xs text-white/70">
-          ({group.items.length}{totalAvailable > group.items.length ? ` of ${totalAvailable.toLocaleString()}` : ""})
+          ({group.items.length}
+          {totalAvailable > group.items.length
+            ? ` of ${totalAvailable.toLocaleString()}`
+            : ""}
+          )
         </span>
       </div>
 
@@ -1101,7 +1189,8 @@ function PivotGroupSection({
             </>
           ) : (
             <span>
-              Show more {config.label.toLowerCase()} ({remainingCount.toLocaleString()} more)
+              Show more {config.label.toLowerCase()} (
+              {remainingCount.toLocaleString()} more)
             </span>
           )}
         </button>
@@ -1130,14 +1219,16 @@ function SuggestionCard({
   let descriptionText = null;
   if (isStudy && item.display_name !== item.id) {
     // For studies, show the study name (display_name) as description
-    descriptionText = item.display_name.length > 80
-      ? item.display_name.slice(0, 80).trim() + "..."
-      : item.display_name;
+    descriptionText =
+      item.display_name.length > 80
+        ? `${item.display_name.slice(0, 80).trim()}...`
+        : item.display_name;
   } else if (item.description) {
     // For other entities, use actual description
-    descriptionText = item.description.length > 80
-      ? item.description.slice(0, 80).trim() + "..."
-      : item.description;
+    descriptionText =
+      item.description.length > 80
+        ? `${item.description.slice(0, 80).trim()}...`
+        : item.description;
   }
 
   return (

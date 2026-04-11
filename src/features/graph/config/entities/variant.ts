@@ -14,7 +14,10 @@ export const VARIANT_EXPLORER_CONFIG: ExplorerConfig = {
 
   externalLinks: {
     Variant: [
-      { label: "dbSNP", urlTemplate: "https://www.ncbi.nlm.nih.gov/snp/{label}" },
+      {
+        label: "dbSNP",
+        urlTemplate: "https://www.ncbi.nlm.nih.gov/snp/{label}",
+      },
     ],
   },
 

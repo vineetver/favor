@@ -1,5 +1,5 @@
-import type { EntityType } from "./entity";
 import type { EdgeType } from "./edge";
+import type { EntityType } from "./entity";
 
 // =============================================================================
 // Branded Key Types

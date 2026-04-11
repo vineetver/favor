@@ -1,20 +1,5 @@
 "use client";
 
-import { DataSurface } from "@shared/components/ui/data-surface";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
-import type {
-  ServerFilterConfig,
-  ServerPaginationInfo,
-} from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
-import { tissueGroupFilter, tissueFilter } from "./filter-helpers";
 import type {
   AccessibilityRow,
   PaginatedResponse,
@@ -22,9 +7,21 @@ import type {
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useAccessibilityQuery } from "@features/enrichment/hooks/use-accessibility-query";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
+import { tissueFilter, tissueGroupFilter } from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -86,8 +83,7 @@ function TissueSummaryChart({ rows }: { rows: AccessibilityRow[] }) {
 
         <div className="px-4 py-3 space-y-1">
           {tissueScores.map(({ tissue, bestSignal, peakCount }, idx) => {
-            const pct =
-              maxSignal > 0 ? (bestSignal / maxSignal) * 100 : 0;
+            const pct = maxSignal > 0 ? (bestSignal / maxSignal) * 100 : 0;
 
             return (
               <Tooltip key={`${tissue}-${idx}`}>
@@ -118,7 +114,8 @@ function TissueSummaryChart({ rows }: { rows: AccessibilityRow[] }) {
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-sm">
                   {peakCount} peak{peakCount !== 1 ? "s" : ""} in{" "}
-                  {formatTissueName(tissue)}, best signal {bestSignal.toFixed(2)}
+                  {formatTissueName(tissue)}, best signal{" "}
+                  {bestSignal.toFixed(2)}
                 </TooltipContent>
               </Tooltip>
             );
@@ -209,11 +206,11 @@ const columns: ColumnDef<AccessibilityRow, unknown>[] = [
 // Filter config
 // ---------------------------------------------------------------------------
 
-function buildFilters(tissues: string[], tissueGroups: string[]): ServerFilterConfig[] {
-  return [
-    tissueGroupFilter(tissueGroups),
-    tissueFilter(tissues),
-  ];
+function buildFilters(
+  tissues: string[],
+  tissueGroups: string[],
+): ServerFilterConfig[] {
+  return [tissueGroupFilter(tissueGroups), tissueFilter(tissues)];
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +219,8 @@ function buildFilters(tissues: string[], tissueGroups: string[]): ServerFilterCo
 
 const ACCESSIBILITY_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best Signal",
-  metricDescription: "Strongest ATAC-seq/DNase peak signal enrichment in this tissue group",
+  metricDescription:
+    "Strongest ATAC-seq/DNase peak signal enrichment in this tissue group",
   countLabel: "Peaks",
   formatMetric: (v) => v.toFixed(1),
 };
@@ -298,10 +296,15 @@ function AccessibilityDetailView({
     return [...groups].sort();
   }, [data]);
 
-  const filters = useMemo(() => buildFilters(tissues, tissueGroups), [tissues, tissueGroups]);
+  const filters = useMemo(
+    () => buildFilters(tissues, tissueGroups),
+    [tissues, tissueGroups],
+  );
 
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("min_signal"),
+    searchParams.get("tissue") ||
+      searchParams.get("tissue_group") ||
+      searchParams.get("min_signal"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

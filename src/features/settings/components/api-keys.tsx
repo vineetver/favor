@@ -32,9 +32,7 @@ import type { CreateApiKeyResponse } from "../types";
 // ── Relative time formatting ──────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
-  const seconds = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / 1000,
-  );
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -182,10 +180,7 @@ function CreateKeyDialog({
             </div>
 
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => handleClose(false)}
-              >
+              <Button variant="outline" onClick={() => handleClose(false)}>
                 Cancel
               </Button>
               <Button
@@ -388,9 +383,7 @@ export function ApiKeysSection() {
       ) : (
         <div className="space-y-3">
           {keys.map((key) => {
-            const expiry = key.expires_at
-              ? expiresIn(key.expires_at)
-              : null;
+            const expiry = key.expires_at ? expiresIn(key.expires_at) : null;
             const isExpired = expiry?.text === "Expired";
 
             return (
@@ -427,7 +420,7 @@ export function ApiKeysSection() {
                         Expired
                       </Badge>
                     )}
-                    {expiry && expiry.urgent && !isExpired && (
+                    {expiry?.urgent && !isExpired && (
                       <Badge
                         variant="outline"
                         className="text-[10px] text-amber-600 border-amber-300"
@@ -447,9 +440,7 @@ export function ApiKeysSection() {
                     {key.last_used_at && (
                       <span>Last used {timeAgo(key.last_used_at)}</span>
                     )}
-                    {expiry && !expiry.urgent && (
-                      <span>{expiry.text}</span>
-                    )}
+                    {expiry && !expiry.urgent && <span>{expiry.text}</span>}
                   </div>
                 </div>
 

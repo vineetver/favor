@@ -267,14 +267,14 @@ export function classificationLabel(classification: string): string {
 
 /** Returns true if the number is a real, finite value (not NaN/Infinity). */
 export function isValidScore(n: number): boolean {
-  return !isNaN(n) && isFinite(n);
+  return !Number.isNaN(n) && Number.isFinite(n);
 }
 
 // ─── Score display helpers ─────────────────────────────────────
 
 /** Quantile (0-1) → heatmap color. High quantile = strong effect. */
 export function quantileColor(q: number): string {
-  if (isNaN(q)) return "transparent";
+  if (Number.isNaN(q)) return "transparent";
   // Sequential blue-to-red through white
   if (q < 0.5) {
     const t = q / 0.5;
@@ -286,7 +286,7 @@ export function quantileColor(q: number): string {
 
 /** Format raw score for tooltip display — no scientific notation. */
 export function formatScore(score: number): string {
-  if (score == null || isNaN(score)) return "—";
+  if (score == null || Number.isNaN(score)) return "—";
   const sign = score > 0 ? "+" : "";
   if (Math.abs(score) < 0.0001) return `${sign}${score.toFixed(6)}`;
   return `${sign}${score.toFixed(4)}`;
@@ -294,7 +294,7 @@ export function formatScore(score: number): string {
 
 /** Format quantile for display. */
 export function formatQuantile(q: number): string {
-  if (isNaN(q)) return "—";
+  if (Number.isNaN(q)) return "—";
   return `${(q * 100).toFixed(0)}%`;
 }
 

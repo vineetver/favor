@@ -1,24 +1,5 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
-import { cn } from "@infra/utils";
-import { DataSurface } from "@shared/components/ui/data-surface";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@shared/components/ui/tooltip";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
-import type {
-  ServerFilterConfig,
-  ServerPaginationInfo,
-} from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import { tissueGroupFilter, tissueFilter } from "./filter-helpers";
-import { useQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
 import type {
   ChromatinStateRow,
   PaginatedResponse,
@@ -26,20 +7,35 @@ import type {
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useChromatinQuery } from "@features/enrichment/hooks/use-chromatin-query";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@shared/components/ui/tooltip";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
+import { API_BASE } from "@/config/api";
+import { tissueFilter, tissueGroupFilter } from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { formatTissueName, formatCount } from "@shared/utils/tissue-format";
+import { formatCount, formatTissueName } from "@shared/utils/tissue-format";
 
 function parseRegion(coords: string): [number, number] {
   const match = coords.match(/:(\d+)-(\d+)/);
   if (!match) return [0, 0];
-  return [parseInt(match[1]), parseInt(match[2])];
+  return [parseInt(match[1], 10), parseInt(match[2], 10)];
 }
 
 // Roadmap 25-state names are cryptic ("TxEnh5'", "EnhA1"). Map to readable labels.
@@ -77,13 +73,13 @@ function readableStateName(code: string, fallback: string): string {
 
 /** Roadmap 25-state standard colors keyed by state_category + state_code number. */
 const STATE_CATEGORY_COLORS: Record<string, string> = {
-  promoter: "#ef4444",        // red
-  enhancer: "#f59e0b",        // amber
-  transcription: "#22c55e",   // green
-  bivalent: "#a855f7",        // purple
-  repressed: "#6b7280",       // gray
+  promoter: "#ef4444", // red
+  enhancer: "#f59e0b", // amber
+  transcription: "#22c55e", // green
+  bivalent: "#a855f7", // purple
+  repressed: "#6b7280", // gray
   heterochromatin: "#818cf8", // indigo
-  quiescent: "#94a3b8",      // slate
+  quiescent: "#94a3b8", // slate
 };
 
 /** Color by functional category — the API's state_color is a Roadmap
@@ -96,7 +92,10 @@ function stateColor(row: ChromatinStateRow): string {
 // ChromatinTrackViz — multi-tissue segment track
 // ---------------------------------------------------------------------------
 
-async function fetchTrackData(loc: string, tissueGroup?: string): Promise<ChromatinStateRow[]> {
+async function fetchTrackData(
+  loc: string,
+  tissueGroup?: string,
+): Promise<ChromatinStateRow[]> {
   const params = new URLSearchParams({
     limit: "100",
     sort_by: "position",
@@ -172,8 +171,8 @@ function ChromatinTrackViz({
 
     const legendEntries = [...displayedStates.entries()]
       .sort((a, b) => {
-        const numA = parseInt(a[0].replace(/\D/g, "")) || 0;
-        const numB = parseInt(b[0].replace(/\D/g, "")) || 0;
+        const numA = parseInt(a[0].replace(/\D/g, ""), 10) || 0;
+        const numB = parseInt(b[0].replace(/\D/g, ""), 10) || 0;
         return numA - numB;
       })
       .map(([code, info]) => ({ code, ...info }));
@@ -245,7 +244,8 @@ function ChromatinTrackViz({
                     const clampedStart = Math.max(seg.start, regionStart);
                     const clampedEnd = Math.min(seg.end, regionEnd);
                     if (clampedStart >= clampedEnd) return null;
-                    const left = ((clampedStart - regionStart) / regionSpan) * 100;
+                    const left =
+                      ((clampedStart - regionStart) / regionSpan) * 100;
                     const width = Math.max(
                       ((clampedEnd - clampedStart) / regionSpan) * 100,
                       0.5,
@@ -267,8 +267,8 @@ function ChromatinTrackViz({
                             {readableStateName(seg.state_code, seg.state_name)}
                           </p>
                           <p className="text-muted-foreground">
-                            {seg.start.toLocaleString()}&ndash;{seg.end.toLocaleString()}
-                            {" "}&middot;{" "}
+                            {seg.start.toLocaleString()}&ndash;
+                            {seg.end.toLocaleString()} &middot;{" "}
                             {(seg.end - seg.start).toLocaleString()} bp
                           </p>
                         </TooltipContent>
@@ -313,7 +313,9 @@ const columns: ColumnDef<ChromatinStateRow, unknown>[] = [
     accessorKey: "state_code",
     header: "State",
     enableSorting: false,
-    meta: { description: "Roadmap 25-state chromatin state code" } satisfies ColumnMeta,
+    meta: {
+      description: "Roadmap 25-state chromatin state code",
+    } satisfies ColumnMeta,
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <div
@@ -361,7 +363,9 @@ const columns: ColumnDef<ChromatinStateRow, unknown>[] = [
     accessorKey: "tissue_name",
     header: "Biosample",
     enableSorting: true,
-    meta: { description: "Roadmap Epigenomics biosample (850 unique)" } satisfies ColumnMeta,
+    meta: {
+      description: "Roadmap Epigenomics biosample (850 unique)",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
         {formatTissueName(getValue() as string)}
@@ -427,7 +431,8 @@ function buildFilters(
 
 const CHROMATIN_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Segments",
-  metricDescription: "Number of chromatin state annotations in this tissue group",
+  metricDescription:
+    "Number of chromatin state annotations in this tissue group",
   countLabel: "Segments",
   formatMetric: (v) => formatCount(v),
   hideMetric: true,
@@ -516,7 +521,9 @@ function ChromatinStatesDetailView({
   );
 
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("state_category"),
+    searchParams.get("tissue") ||
+      searchParams.get("tissue_group") ||
+      searchParams.get("state_category"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

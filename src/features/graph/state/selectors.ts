@@ -1,15 +1,18 @@
 import type { ElementDefinition } from "cytoscape";
-import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "../types/node";
-import type { GraphFilters } from "../types/filters";
-import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
-import type { GraphData, ExplorerState, AsyncOperation } from "../types/state";
-import { transformToElements, getGraphSummary } from "../utils/elements";
+import type { EntityType } from "../types/entity";
+import type { GraphFilters } from "../types/filters";
+import type { ExplorerSelection } from "../types/node";
+import type { AsyncOperation, ExplorerState, GraphData } from "../types/state";
+import { getGraphSummary, transformToElements } from "../utils/elements";
 
 /**
  * Derive Cytoscape elements from graph data + filters
  */
-export function selectElements(graph: GraphData, filters: GraphFilters): ElementDefinition[] {
+export function selectElements(
+  graph: GraphData,
+  filters: GraphFilters,
+): ElementDefinition[] {
   return transformToElements(graph.nodes, graph.edges, filters);
 }
 
@@ -26,7 +29,9 @@ export function selectGraphSummary(graph: GraphData): {
 /**
  * Derive highlighted node IDs from selection
  */
-export function selectHighlightedNodeIds(selection: ExplorerSelection): Set<string> | undefined {
+export function selectHighlightedNodeIds(
+  selection: ExplorerSelection,
+): Set<string> | undefined {
   if (selection.type === "multi") return selection.nodeIds;
   if (selection.type === "node") return new Set([selection.nodeId]);
   return undefined;
@@ -35,7 +40,9 @@ export function selectHighlightedNodeIds(selection: ExplorerSelection): Set<stri
 /**
  * Derive highlighted edge ID from selection
  */
-export function selectHighlightedEdgeId(selection: ExplorerSelection): string | undefined {
+export function selectHighlightedEdgeId(
+  selection: ExplorerSelection,
+): string | undefined {
   if (selection.type === "edge") return selection.edgeId;
   return undefined;
 }

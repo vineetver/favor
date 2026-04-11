@@ -1,8 +1,6 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-
+import { cn } from "@infra/utils";
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { Badge } from "@shared/components/ui/badge";
 import {
@@ -10,8 +8,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
-import { cn } from "@infra/utils";
+import type { LucideIcon } from "lucide-react";
 import { BrainIcon, ChevronDownIcon, DotIcon } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useMemo } from "react";
 
 interface ChainOfThoughtContextValue {
@@ -20,14 +19,14 @@ interface ChainOfThoughtContextValue {
 }
 
 const ChainOfThoughtContext = createContext<ChainOfThoughtContextValue | null>(
-  null
+  null,
 );
 
 const useChainOfThought = () => {
   const context = useContext(ChainOfThoughtContext);
   if (!context) {
     throw new Error(
-      "ChainOfThought components must be used within ChainOfThought"
+      "ChainOfThought components must be used within ChainOfThought",
     );
   }
   return context;
@@ -56,7 +55,7 @@ export const ChainOfThought = memo(
 
     const chainOfThoughtContext = useMemo(
       () => ({ isOpen, setIsOpen }),
-      [isOpen, setIsOpen]
+      [isOpen, setIsOpen],
     );
 
     return (
@@ -66,7 +65,7 @@ export const ChainOfThought = memo(
         </div>
       </ChainOfThoughtContext.Provider>
     );
-  }
+  },
 );
 
 export type ChainOfThoughtHeaderProps = ComponentProps<
@@ -82,7 +81,7 @@ export const ChainOfThoughtHeader = memo(
         <CollapsibleTrigger
           className={cn(
             "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
-            className
+            className,
           )}
           {...props}
         >
@@ -93,13 +92,13 @@ export const ChainOfThoughtHeader = memo(
           <ChevronDownIcon
             className={cn(
               "size-4 transition-transform",
-              isOpen ? "rotate-180" : "rotate-0"
+              isOpen ? "rotate-180" : "rotate-0",
             )}
           />
         </CollapsibleTrigger>
       </Collapsible>
     );
-  }
+  },
 );
 
 export type ChainOfThoughtStepProps = ComponentProps<"div"> & {
@@ -130,7 +129,7 @@ export const ChainOfThoughtStep = memo(
         "flex gap-2 text-sm",
         stepStatusStyles[status],
         "fade-in-0 slide-in-from-top-2 animate-in",
-        className
+        className,
       )}
       {...props}
     >
@@ -146,7 +145,7 @@ export const ChainOfThoughtStep = memo(
         {children}
       </div>
     </div>
-  )
+  ),
 );
 
 export type ChainOfThoughtSearchResultsProps = ComponentProps<"div">;
@@ -157,7 +156,7 @@ export const ChainOfThoughtSearchResults = memo(
       className={cn("flex flex-wrap items-center gap-2", className)}
       {...props}
     />
-  )
+  ),
 );
 
 export type ChainOfThoughtSearchResultProps = ComponentProps<typeof Badge>;
@@ -171,7 +170,7 @@ export const ChainOfThoughtSearchResult = memo(
     >
       {children}
     </Badge>
-  )
+  ),
 );
 
 export type ChainOfThoughtContentProps = ComponentProps<
@@ -188,7 +187,7 @@ export const ChainOfThoughtContent = memo(
           className={cn(
             "mt-2 space-y-3",
             "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-            className
+            className,
           )}
           {...props}
         >
@@ -196,7 +195,7 @@ export const ChainOfThoughtContent = memo(
         </CollapsibleContent>
       </Collapsible>
     );
-  }
+  },
 );
 
 export type ChainOfThoughtImageProps = ComponentProps<"div"> & {
@@ -211,7 +210,7 @@ export const ChainOfThoughtImage = memo(
       </div>
       {caption && <p className="text-muted-foreground text-xs">{caption}</p>}
     </div>
-  )
+  ),
 );
 
 ChainOfThought.displayName = "ChainOfThought";

@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadTissueScoresData } from "@features/enrichment/loaders";
 import { TissueScoresView } from "@features/enrichment/components/tissue-scores-view";
+import { loadTissueScoresData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

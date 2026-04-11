@@ -33,7 +33,15 @@ export function displayEntityType(type: EntityType): string {
 // =============================================================================
 
 const ONTOLOGY_PREFIXES = new Set([
-  "MONDO", "HP", "EFO", "GO", "DOID", "UBERON", "CL", "CHEBI", "SO",
+  "MONDO",
+  "HP",
+  "EFO",
+  "GO",
+  "DOID",
+  "UBERON",
+  "CL",
+  "CHEBI",
+  "SO",
 ]);
 
 /** Format ontology IDs: "MONDO_0005070" → "MONDO:0005070" */
@@ -41,6 +49,7 @@ export function formatNodeId(id: string): string {
   const idx = id.indexOf("_");
   if (idx === -1) return id;
   const prefix = id.substring(0, idx);
-  if (ONTOLOGY_PREFIXES.has(prefix)) return prefix + ":" + id.substring(idx + 1);
+  if (ONTOLOGY_PREFIXES.has(prefix))
+    return `${prefix}:${id.substring(idx + 1)}`;
   return id;
 }

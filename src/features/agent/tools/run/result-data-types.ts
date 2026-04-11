@@ -15,14 +15,28 @@ import type { EntityRef } from "./types";
 export interface NeighborsResultData {
   _mode: "neighbors";
   _method?: string;
-  results: Record<string, {
-    count: number;
-    top: Array<EntityRef & { rank?: number; score?: number; edgeProperties?: Record<string, unknown>; subtitle?: string }>;
-    edgeType: string;
-    scoreField?: string;
-    description?: string;
-    availableRelationships?: Array<{ edgeType: string; label: string; used: boolean }>;
-  }>;
+  results: Record<
+    string,
+    {
+      count: number;
+      top: Array<
+        EntityRef & {
+          rank?: number;
+          score?: number;
+          edgeProperties?: Record<string, unknown>;
+          subtitle?: string;
+        }
+      >;
+      edgeType: string;
+      scoreField?: string;
+      description?: string;
+      availableRelationships?: Array<{
+        edgeType: string;
+        label: string;
+        used: boolean;
+      }>;
+    }
+  >;
   resolved_seeds: EntityRef[];
   enrichment?: unknown;
   _proteinDomains?: unknown;
@@ -35,12 +49,15 @@ export interface CompareResultData {
   relationship?: string;
   edgeDescription?: string;
   // Same-type compare
-  comparisons?: Record<string, {
-    label?: string;
-    shared: Array<{ entity: EntityRef; score?: number }>;
-    unique: Record<string, Array<{ entity: EntityRef }>>;
-    counts: { shared: number; unique: Record<string, number> };
-  }>;
+  comparisons?: Record<
+    string,
+    {
+      label?: string;
+      shared: Array<{ entity: EntityRef; score?: number }>;
+      unique: Record<string, Array<{ entity: EntityRef }>>;
+      counts: { shared: number; unique: Record<string, number> };
+    }
+  >;
   overallSimilarity?: { sharedNeighborCount: number; jaccardIndex: number };
   // Mixed-type compare
   sharedNeighbors?: Array<{
@@ -92,10 +109,18 @@ export interface ContextResultData {
       totalConnections?: number;
       connectedTypes?: string[];
     };
-    neighbors?: Record<string, {
-      count: number;
-      top: Array<{ entity: EntityRef; score?: number; edgeType?: string; direction?: string }>;
-    }>;
+    neighbors?: Record<
+      string,
+      {
+        count: number;
+        top: Array<{
+          entity: EntityRef;
+          score?: number;
+          edgeType?: string;
+          direction?: string;
+        }>;
+      }
+    >;
     evidence?: {
       sourceCount?: number;
       topSources?: string[];
@@ -129,7 +154,14 @@ export interface ChainResultData {
     edgeDescription?: string;
     scoreField?: string;
     count: number;
-    top: Array<EntityRef & { score?: number; edgeProperties?: Record<string, unknown>; supportCount?: number; subtitle?: string }>;
+    top: Array<
+      EntityRef & {
+        score?: number;
+        edgeProperties?: Record<string, unknown>;
+        supportCount?: number;
+        subtitle?: string;
+      }
+    >;
   }>;
 }
 
@@ -149,7 +181,13 @@ export interface PathsResultData {
 
 export interface PatternsResultData {
   _mode: "patterns";
-  pattern: Array<{ var: string; type?: string; edge?: string; from?: string; to?: string }>;
+  pattern: Array<{
+    var: string;
+    type?: string;
+    edge?: string;
+    from?: string;
+    to?: string;
+  }>;
   matches: Array<{
     vars: Record<string, string>;
     edges?: unknown[][];

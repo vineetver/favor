@@ -1,12 +1,7 @@
-import type { Gene } from "@features/gene/types";
-import { ExternalLink } from "@shared/components/ui/external-link";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
 import { HomologuesTable } from "@features/gene/components/homologues-table";
 import { MousePhenotypeList } from "@features/gene/components/mouse-phenotype-list";
+import type { Gene } from "@features/gene/types";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -17,19 +12,24 @@ export const geneAnimalPhenotypeColumns = [
     header: "Model Organism Homologues",
     description: tooltip({
       title: "Model Organism Homologues",
-      description: "Orthologous genes in model organisms from Ensembl Compara via OpenTargets.",
+      description:
+        "Orthologous genes in model organisms from Ensembl Compara via OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((homologues: Array<{
-      speciesId: string;
-      speciesName: string;
-      homologyType: string;
-      targetGeneId: string;
-      isHighConfidence: string;
-      targetGeneSymbol: string;
-      queryPercentageIdentity: number;
-      targetPercentageIdentity: number;
-      priority: number;
-    }>) => <HomologuesTable homologues={homologues} />),
+    cell: cell.custom<Gene, any>(
+      (
+        homologues: Array<{
+          speciesId: string;
+          speciesName: string;
+          homologyType: string;
+          targetGeneId: string;
+          isHighConfidence: string;
+          targetGeneSymbol: string;
+          queryPercentageIdentity: number;
+          targetPercentageIdentity: number;
+          priority: number;
+        }>,
+      ) => <HomologuesTable homologues={homologues} />,
+    ),
   }),
 
   // Mouse gene + phenotypes
@@ -38,7 +38,8 @@ export const geneAnimalPhenotypeColumns = [
     header: "MGI Mouse Gene",
     description: tooltip({
       title: "MGI Mouse Gene",
-      description: "Homolog mouse gene name from the Mouse Genome Informatics database.",
+      description:
+        "Homolog mouse gene name from the Mouse Genome Informatics database.",
     }),
     cell: cell.text(),
   }),
@@ -58,7 +59,8 @@ export const geneAnimalPhenotypeColumns = [
     header: "Mouse Phenotypes",
     description: tooltip({
       title: "Mouse Phenotypes",
-      description: "Phenotypes observed in mouse models with mutations in the orthologous gene (from MGI).",
+      description:
+        "Phenotypes observed in mouse models with mutations in the orthologous gene (from MGI).",
     }),
     cell: cell.custom<Gene, any>((str: string) => (
       <MousePhenotypeList phenotypeString={str} />
@@ -73,7 +75,9 @@ export const geneAnimalPhenotypeColumns = [
       title: "RGD ID",
       description: "Rat Genome Database identifier.",
     }),
-    cell: cell.link((val) => `https://rgd.mcw.edu/rgdweb/report/gene/main.html?id=${val}`),
+    cell: cell.link(
+      (val) => `https://rgd.mcw.edu/rgdweb/report/gene/main.html?id=${val}`,
+    ),
   }),
 
   // Zebrafish
@@ -82,7 +86,8 @@ export const geneAnimalPhenotypeColumns = [
     header: "ZFIN Zebrafish Gene",
     description: tooltip({
       title: "ZFIN Zebrafish Gene",
-      description: "Homolog zebrafish gene from the Zebrafish Information Network.",
+      description:
+        "Homolog zebrafish gene from the Zebrafish Information Network.",
     }),
     cell: cell.link((val) => `https://zfin.org/search?q=${val}`),
   }),
@@ -118,4 +123,8 @@ export const geneAnimalPhenotypeColumns = [
   }),
 ];
 
-export const geneAnimalPhenotypeGroup = col.group("animal-phenotype", "Animal Phenotypes", geneAnimalPhenotypeColumns);
+export const geneAnimalPhenotypeGroup = col.group(
+  "animal-phenotype",
+  "Animal Phenotypes",
+  geneAnimalPhenotypeColumns,
+);

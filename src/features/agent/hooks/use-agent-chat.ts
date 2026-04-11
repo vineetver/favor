@@ -1,15 +1,12 @@
 "use client";
 
-import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
+import type { PromptInputMessage } from "@shared/components/ai-elements/prompt-input";
+import { DefaultChatTransport } from "ai";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { AgentUIMessage } from "../agent";
 import { DEFAULT_SYNTHESIS_MODEL, type SynthesisModelId } from "../lib/models";
-import type { PromptInputMessage } from "@shared/components/ai-elements/prompt-input";
-import {
-  createSessionClient,
-  listMessagesClient,
-} from "../lib/session-client";
+import { createSessionClient, listMessagesClient } from "../lib/session-client";
 
 // ---------------------------------------------------------------------------
 // Variant paste detection
@@ -34,7 +31,9 @@ function countVariantLines(text: string): number {
 export function useAgentChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
-  const [synthesisModel, setSynthesisModel] = useState<SynthesisModelId>(DEFAULT_SYNTHESIS_MODEL);
+  const [synthesisModel, setSynthesisModel] = useState<SynthesisModelId>(
+    DEFAULT_SYNTHESIS_MODEL,
+  );
   const synthesisModelRef = useRef<SynthesisModelId>(DEFAULT_SYNTHESIS_MODEL);
 
   // Promise lock to prevent double-creation of sessions
@@ -161,7 +160,10 @@ export function useAgentChat() {
           try {
             uiMessages.push(JSON.parse(m.content) as AgentUIMessage);
           } catch {
-            console.warn("[useAgentChat] Skipping corrupted message in session", id);
+            console.warn(
+              "[useAgentChat] Skipping corrupted message in session",
+              id,
+            );
           }
         }
         setMessages(uiMessages);

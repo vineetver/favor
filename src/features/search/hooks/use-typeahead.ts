@@ -11,7 +11,9 @@ import type {
 import { parseQuery } from "../utils/query-parser";
 
 /** Convert RocksDB prefix results → TypeaheadSuggestion format */
-function prefixToSuggestions(prefix: VariantPrefixResponse): TypeaheadSuggestion[] {
+function prefixToSuggestions(
+  prefix: VariantPrefixResponse,
+): TypeaheadSuggestion[] {
   const suggestions: TypeaheadSuggestion[] = [];
 
   // Direct variant results (full/partial VCF lookups) — have annotation data
@@ -20,7 +22,8 @@ function prefixToSuggestions(prefix: VariantPrefixResponse): TypeaheadSuggestion
     if (r.rsid) desc.push(r.rsid);
     if (r.gene) desc.push(r.gene);
     if (r.caddPhred != null) desc.push(`CADD: ${r.caddPhred.toFixed(1)}`);
-    if (r.gnomadAf != null) desc.push(`gnomAD AF: ${r.gnomadAf.toPrecision(3)}`);
+    if (r.gnomadAf != null)
+      desc.push(`gnomAD AF: ${r.gnomadAf.toPrecision(3)}`);
 
     suggestions.push({
       id: r.vcf,

@@ -22,14 +22,17 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
-import type { ControlsDrawerProps } from "../types/props";
-import type { EntityType } from "../types";
-import { ENTITY_TYPES } from "../types/entity";
 import { NODE_TYPE_COLORS } from "../config/styling";
-import { buildEdgeTypeStatsMap, resolveFilterFields } from "../utils/schema-fields";
+import type { EntityType } from "../types";
 import type { EdgeType } from "../types/edge";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import { ENTITY_TYPES } from "../types/entity";
+import type { ControlsDrawerProps } from "../types/props";
 import { displayEntityType } from "../utils/display-names";
+import {
+  buildEdgeTypeStatsMap,
+  resolveFilterFields,
+} from "../utils/schema-fields";
 
 // =============================================================================
 // Template Icon Map
@@ -37,12 +40,12 @@ import { displayEntityType } from "../utils/display-names";
 
 const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
   "heart-pulse": <HeartPulse className="w-4 h-4" />,
-  "dna": <Dna className="w-4 h-4" />,
-  "pill": <Pill className="w-4 h-4" />,
-  "microscope": <Microscope className="w-4 h-4" />,
-  "activity": <Activity className="w-4 h-4" />,
+  dna: <Dna className="w-4 h-4" />,
+  pill: <Pill className="w-4 h-4" />,
+  microscope: <Microscope className="w-4 h-4" />,
+  activity: <Activity className="w-4 h-4" />,
   "bar-chart": <BarChart3 className="w-4 h-4" />,
-  "network": <Network className="w-4 h-4" />,
+  network: <Network className="w-4 h-4" />,
 };
 
 // =============================================================================
@@ -56,15 +59,22 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
 }
 
-function CollapsibleSection({ title, defaultOpen = true, badge, children }: CollapsibleSectionProps) {
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  badge,
+  children,
+}: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border last:border-b-0">
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="border-b border-border last:border-b-0"
+    >
       <CollapsibleTrigger asChild>
-        <button
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent"
-        >
+        <button className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">{title}</span>
             {badge}
@@ -111,7 +121,9 @@ function NodeTypeLegend({ counts }: NodeTypeLegendProps) {
                 borderColor: colors.border,
               }}
             />
-            <span className="flex-1 text-sm text-foreground">{displayEntityType(type)}</span>
+            <span className="flex-1 text-sm text-foreground">
+              {displayEntityType(type)}
+            </span>
             {count > 0 && (
               <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {count}
@@ -141,7 +153,11 @@ interface EdgeTypeFilterSectionProps {
   edgeTypeCounts?: Record<EdgeType, number>;
 }
 
-function EdgeTypeFilterSection({ edgeType, filterFields, edgeTypeCounts }: EdgeTypeFilterSectionProps) {
+function EdgeTypeFilterSection({
+  edgeType,
+  filterFields,
+  edgeTypeCounts,
+}: EdgeTypeFilterSectionProps) {
   const config = EDGE_TYPE_CONFIG[edgeType];
   const count = edgeTypeCounts?.[edgeType] ?? 0;
 
@@ -164,7 +180,9 @@ function EdgeTypeFilterSection({ edgeType, filterFields, edgeTypeCounts }: EdgeT
       <div className="pl-4 space-y-2">
         {filterFields.map((field) => (
           <div key={field} className="space-y-1">
-            <div className="text-[11px] text-muted-foreground">{fieldLabel(field)}</div>
+            <div className="text-[11px] text-muted-foreground">
+              {fieldLabel(field)}
+            </div>
             <Slider
               defaultValue={[0]}
               min={0}
@@ -195,8 +213,14 @@ function ControlsDrawerInner({
   isExpanding,
   schema,
 }: ControlsDrawerProps) {
-  const totalEdges = Object.values(edgeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
-  const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce((a, b) => a + b, 0);
+  const totalEdges = Object.values(edgeTypeCounts ?? {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const totalNodes = Object.values(nodeTypeCounts ?? {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
 
   // Build schema map for filter field lookup
   const schemaMap = useMemo(() => buildEdgeTypeStatsMap(schema), [schema]);
@@ -244,11 +268,15 @@ function ControlsDrawerInner({
           <div className="px-4 py-3 bg-primary/5 border-b border-border">
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{totalNodes}</div>
+                <div className="text-2xl font-bold text-primary">
+                  {totalNodes}
+                </div>
                 <div className="text-xs text-muted-foreground">Nodes</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{totalEdges}</div>
+                <div className="text-2xl font-bold text-primary">
+                  {totalEdges}
+                </div>
                 <div className="text-xs text-muted-foreground">Edges</div>
               </div>
             </div>
@@ -273,13 +301,20 @@ function ControlsDrawerInner({
                 >
                   <div
                     className="mt-0.5 p-1.5 rounded-md"
-                    style={{ backgroundColor: `${template.color}15`, color: template.color }}
+                    style={{
+                      backgroundColor: `${template.color}15`,
+                      color: template.color,
+                    }}
                   >
-                    {TEMPLATE_ICONS[template.icon] ?? <Network className="w-4 h-4" />}
+                    {TEMPLATE_ICONS[template.icon] ?? (
+                      <Network className="w-4 h-4" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-foreground">{template.name}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {template.name}
+                      </span>
                       {isActive && (
                         <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                           Active

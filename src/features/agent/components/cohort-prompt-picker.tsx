@@ -1,29 +1,28 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import type { CohortListItem, DataType } from "@features/batch/types";
+import { Button } from "@shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@shared/components/ui/dialog";
-import { Button } from "@shared/components/ui/button";
 import { Textarea } from "@shared/components/ui/textarea";
 import {
   BarChart3Icon,
-  ShieldAlertIcon,
-  Share2Icon,
-  GlobeIcon,
-  SendIcon,
-  FlaskConicalIcon,
-  TrendingUpIcon,
-  TargetIcon,
-  ScatterChartIcon,
   BrainCircuitIcon,
+  FlaskConicalIcon,
+  GlobeIcon,
+  ScatterChartIcon,
+  SendIcon,
+  Share2Icon,
+  ShieldAlertIcon,
+  TargetIcon,
+  TrendingUpIcon,
 } from "lucide-react";
-import type { CohortListItem } from "@features/batch/types";
-import type { DataType } from "@features/batch/types";
 import type { ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Prompt type
@@ -137,8 +136,7 @@ const CREDIBLE_SET_PROMPTS: CuratedPrompt[] = [
   },
   {
     label: "Lead variants",
-    description:
-      "Identify lead variants per credible set with highest PIPs",
+    description: "Identify lead variants per credible set with highest PIPs",
     prompt:
       "Identify the lead variant (highest PIP) in each credible set. Show their gene, consequence, and PIP values.",
     icon: <ShieldAlertIcon className="size-4" />,
@@ -152,8 +150,7 @@ const CREDIBLE_SET_PROMPTS: CuratedPrompt[] = [
 const FINE_MAPPING_PROMPTS: CuratedPrompt[] = [
   {
     label: "Posterior probabilities",
-    description:
-      "Top variants ranked by posterior probability of being causal",
+    description: "Top variants ranked by posterior probability of being causal",
     prompt:
       "Show the top 20 variants ranked by posterior probability. Include gene annotations, consequence types, and Bayes factors.",
     icon: <TargetIcon className="size-4" />,
@@ -168,8 +165,7 @@ const FINE_MAPPING_PROMPTS: CuratedPrompt[] = [
   },
   {
     label: "Bayes factor ranking",
-    description:
-      "Rank variants by Bayes factor evidence strength",
+    description: "Rank variants by Bayes factor evidence strength",
     prompt:
       "Rank variants by Bayes factor. Group by strength of evidence (decisive >100, strong 10-100, substantial 3-10, weak <3).",
     icon: <TrendingUpIcon className="size-4" />,
@@ -191,8 +187,7 @@ const ANALYTICS_PROMPTS: CuratedPrompt[] = [
   },
   {
     label: "Clustering",
-    description:
-      "Cluster variants/rows by numeric features to identify groups",
+    description: "Cluster variants/rows by numeric features to identify groups",
     prompt:
       "Run clustering analysis on the numeric columns to identify natural groupings in the data.",
     icon: <ScatterChartIcon className="size-4" />,
@@ -211,7 +206,6 @@ function getPromptsForDataType(dataType?: DataType): CuratedPrompt[] {
       return [...CREDIBLE_SET_PROMPTS, ...ANALYTICS_PROMPTS];
     case "fine_mapping":
       return [...FINE_MAPPING_PROMPTS, ...ANALYTICS_PROMPTS];
-    case "variant_list":
     default:
       return [...VARIANT_LIST_PROMPTS, ...ANALYTICS_PROMPTS];
   }
@@ -297,8 +291,8 @@ export function CohortPromptPicker({
                 {cohort.label ?? "Untitled cohort"}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(cohort.variant_count ?? 0).toLocaleString()} {rowLabel} &middot; Choose
-                a question or write your own
+                {(cohort.variant_count ?? 0).toLocaleString()} {rowLabel}{" "}
+                &middot; Choose a question or write your own
               </p>
             </div>
           </div>

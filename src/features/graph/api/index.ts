@@ -190,10 +190,13 @@ export interface GraphQueryResponse {
     };
   };
   data: {
-    nodes: Record<string, {
-      entity: EntityRef;
-      fields?: Record<string, unknown>;
-    }>;
+    nodes: Record<
+      string,
+      {
+        entity: EntityRef;
+        fields?: Record<string, unknown>;
+      }
+    >;
     edges: Array<{
       type: string;
       direction: string;
@@ -243,7 +246,11 @@ export async function fetchGraphQuery(
 
     if (!response.ok) {
       let detail = "";
-      try { detail = await response.text(); } catch { /* ignore */ }
+      try {
+        detail = await response.text();
+      } catch {
+        /* ignore */
+      }
       console.error(`Graph query failed: ${response.status}`, detail);
       console.error("Request body:", JSON.stringify(body, null, 2));
       return null;
@@ -702,7 +709,15 @@ export interface ConnectionsEdgeItem {
 }
 
 /** Keys that are structural (not user-data) on a ConnectionsEdgeItem */
-const STRUCTURAL_KEYS = new Set(["type", "from", "to", "direction", "fields", "evidence", "props"]);
+const STRUCTURAL_KEYS = new Set([
+  "type",
+  "from",
+  "to",
+  "direction",
+  "fields",
+  "evidence",
+  "props",
+]);
 
 /**
  * Normalise edge fields from any of the API response formats:
@@ -711,12 +726,15 @@ const STRUCTURAL_KEYS = new Set(["type", "from", "to", "direction", "fields", "e
  *  - `/graph/edge`         → data in `item.props`  (+ `item.evidence`)
  *  - some endpoints        → data at top level (fallback)
  */
-export function extractEdgeFields(item: ConnectionsEdgeItem): Record<string, unknown> {
+export function extractEdgeFields(
+  item: ConnectionsEdgeItem,
+): Record<string, unknown> {
   // Prefer explicit `fields` sub-object (graph/query format)
   if (item.fields && Object.keys(item.fields).length > 0) return item.fields;
   // Then try `props` sub-object (connections/edge format)
   const props = item.props as Record<string, unknown> | undefined;
-  if (props && typeof props === "object" && Object.keys(props).length > 0) return props;
+  if (props && typeof props === "object" && Object.keys(props).length > 0)
+    return props;
   // Fallback: collect top-level non-structural keys
   const fields: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(item)) {
@@ -774,7 +792,8 @@ export async function fetchConnections(options: {
 
     return await response.json();
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return null;
+    if (error instanceof DOMException && error.name === "AbortError")
+      return null;
     console.error("Connections fetch error:", error);
     return null;
   }
@@ -816,7 +835,10 @@ export async function fetchEdgePage(options: {
   const url = `${API_BASE}/graph/edge?${params.toString()}`;
 
   try {
-    const response = await fetch(url, { credentials: "include", signal: options.signal });
+    const response = await fetch(url, {
+      credentials: "include",
+      signal: options.signal,
+    });
 
     if (!response.ok) {
       console.error(`Edge page fetch failed: ${response.status}`);
@@ -825,7 +847,8 @@ export async function fetchEdgePage(options: {
 
     return await response.json();
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return null;
+    if (error instanceof DOMException && error.name === "AbortError")
+      return null;
     console.error("Edge page fetch error:", error);
     return null;
   }

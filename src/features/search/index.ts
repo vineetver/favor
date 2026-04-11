@@ -1,7 +1,11 @@
 // Components
 
 // API
-export { fetchPivotExpansion, fetchSearch, fetchTypeahead } from "./api/search-api";
+export {
+  fetchPivotExpansion,
+  fetchSearch,
+  fetchTypeahead,
+} from "./api/search-api";
 export { UniversalSearch } from "./components";
 // Context
 export { SearchProvider, useSearch } from "./context/search-context";

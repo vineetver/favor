@@ -12,16 +12,29 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
     {
       id: "gene-disease",
       name: "Gene \u2192 Disease",
-      description: "Disease causality \u2014 curated, cancer, and association evidence",
+      description:
+        "Disease causality \u2014 curated, cancer, and association evidence",
       icon: "heart-pulse",
       color: "#ef4444",
       targetEntityType: "Disease",
-      rankBy: { field: "overall_score", direction: "desc", label: "Overall Score" },
+      rankBy: {
+        field: "overall_score",
+        direction: "desc",
+        label: "Overall Score",
+      },
       steps: [
         {
           branch: [
-            { edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"], direction: "out", limit: 30 },
-            { edgeTypes: ["GENE_ALTERED_IN_DISEASE"], direction: "out", limit: 20 },
+            {
+              edgeTypes: ["GENE_ASSOCIATED_WITH_DISEASE"],
+              direction: "out",
+              limit: 30,
+            },
+            {
+              edgeTypes: ["GENE_ALTERED_IN_DISEASE"],
+              direction: "out",
+              limit: 20,
+            },
           ],
         },
       ],
@@ -32,7 +45,8 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
     {
       id: "gene-variant",
       name: "Gene \u2192 Variant",
-      description: "ClinVar, coding impact, and regulatory variants implicating this gene",
+      description:
+        "ClinVar, coding impact, and regulatory variants implicating this gene",
       icon: "dna",
       color: "#f59e0b",
       targetEntityType: "Variant",
@@ -89,7 +103,11 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
         {
           branch: [
             { edgeTypes: ["DRUG_ACTS_ON_GENE"], direction: "in", limit: 15 },
-            { edgeTypes: ["GENE_AFFECTS_DRUG_RESPONSE"], direction: "out", limit: 15 },
+            {
+              edgeTypes: ["GENE_AFFECTS_DRUG_RESPONSE"],
+              direction: "out",
+              limit: 15,
+            },
           ],
         },
         {
@@ -100,8 +118,16 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
         },
         {
           branch: [
-            { edgeTypes: ["DRUG_INDICATED_FOR_DISEASE"], direction: "out", limit: 12 },
-            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_DRUG"], direction: "in", limit: 12 },
+            {
+              edgeTypes: ["DRUG_INDICATED_FOR_DISEASE"],
+              direction: "out",
+              limit: 12,
+            },
+            {
+              edgeTypes: ["VARIANT_ASSOCIATED_WITH_DRUG"],
+              direction: "in",
+              limit: 12,
+            },
           ],
         },
       ],
@@ -149,8 +175,16 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
         },
         {
           branch: [
-            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"], direction: "in", limit: 12 },
-            { edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"], direction: "out", limit: 10 },
+            {
+              edgeTypes: ["VARIANT_ASSOCIATED_WITH_TRAIT__Entity"],
+              direction: "in",
+              limit: 12,
+            },
+            {
+              edgeTypes: ["VARIANT_ASSOCIATED_WITH_STUDY"],
+              direction: "out",
+              limit: 10,
+            },
           ],
         },
         {
@@ -182,61 +216,100 @@ export const GENE_EXPLORER_CONFIG: ExplorerConfig = {
     {
       label: "Gene \u2192 Other",
       types: [
-        "GENE_PARTICIPATES_IN_PATHWAY", "GENE_ASSOCIATED_WITH_PHENOTYPE",
-        "GENE_ASSOCIATED_WITH_ENTITY", "GENE_ANNOTATED_WITH_GO_TERM",
-        "GENE_ASSOCIATED_WITH_SIDE_EFFECT", "GENE_HAS_PROTEIN_DOMAIN",
+        "GENE_PARTICIPATES_IN_PATHWAY",
+        "GENE_ASSOCIATED_WITH_PHENOTYPE",
+        "GENE_ASSOCIATED_WITH_ENTITY",
+        "GENE_ANNOTATED_WITH_GO_TERM",
+        "GENE_ASSOCIATED_WITH_SIDE_EFFECT",
+        "GENE_HAS_PROTEIN_DOMAIN",
         "GENE_EXPRESSED_IN_TISSUE",
       ],
     },
     {
       label: "Drug",
       types: [
-        "DRUG_ACTS_ON_GENE", "DRUG_DISPOSITION_BY_GENE", "DRUG_INDICATED_FOR_DISEASE",
-        "DRUG_HAS_ADVERSE_EFFECT", "DRUG_PAIR_CAUSES_SIDE_EFFECT", "DRUG_INTERACTS_WITH_DRUG",
+        "DRUG_ACTS_ON_GENE",
+        "DRUG_DISPOSITION_BY_GENE",
+        "DRUG_INDICATED_FOR_DISEASE",
+        "DRUG_HAS_ADVERSE_EFFECT",
+        "DRUG_PAIR_CAUSES_SIDE_EFFECT",
+        "DRUG_INTERACTS_WITH_DRUG",
       ],
     },
     {
       label: "Variant",
       types: [
-        "VARIANT_IMPLIES_GENE", "VARIANT_AFFECTS_GENE",
-        "VARIANT_ASSOCIATED_WITH_TRAIT__Entity", "VARIANT_ASSOCIATED_WITH_TRAIT__Disease",
-        "VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype", "VARIANT_ASSOCIATED_WITH_DRUG",
-        "VARIANT_ASSOCIATED_WITH_STUDY", "VARIANT_LINKED_TO_SIDE_EFFECT", "VARIANT_OVERLAPS_CCRE",
+        "VARIANT_IMPLIES_GENE",
+        "VARIANT_AFFECTS_GENE",
+        "VARIANT_ASSOCIATED_WITH_TRAIT__Entity",
+        "VARIANT_ASSOCIATED_WITH_TRAIT__Disease",
+        "VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype",
+        "VARIANT_ASSOCIATED_WITH_DRUG",
+        "VARIANT_ASSOCIATED_WITH_STUDY",
+        "VARIANT_LINKED_TO_SIDE_EFFECT",
+        "VARIANT_OVERLAPS_CCRE",
       ],
     },
     {
       label: "Signal",
       types: [
-        "SIGNAL_ASSOCIATED_WITH_TRAIT__Disease", "SIGNAL_ASSOCIATED_WITH_TRAIT__Entity",
-        "SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype", "SIGNAL_HAS_VARIANT", "SIGNAL_IMPLIES_GENE",
+        "SIGNAL_ASSOCIATED_WITH_TRAIT__Disease",
+        "SIGNAL_ASSOCIATED_WITH_TRAIT__Entity",
+        "SIGNAL_ASSOCIATED_WITH_TRAIT__Phenotype",
+        "SIGNAL_HAS_VARIANT",
+        "SIGNAL_IMPLIES_GENE",
       ],
     },
     {
       label: "Other",
       types: [
-        "CCRE_REGULATES_GENE", "DISEASE_HAS_PHENOTYPE",
-        "PHENOTYPE_EQUIVALENT_TO", "PHENOTYPE_HIERARCHY", "PHENOTYPE_CLOSURE",
-        "STUDY_INVESTIGATES_TRAIT__Entity", "STUDY_INVESTIGATES_TRAIT__Disease", "STUDY_INVESTIGATES_TRAIT__Phenotype",
-        "DISEASE_SUBCLASS_OF_DISEASE", "DISEASE_ANCESTOR_OF_DISEASE",
-        "PATHWAY_PART_OF_PATHWAY", "PATHWAY_ANCESTOR_OF_PATHWAY",
-        "PATHWAY_CONTAINS_METABOLITE", "METABOLITE_IS_A_METABOLITE",
-        "ENTITY_HIERARCHY", "ENTITY_CLOSURE",
-        "GO_HIERARCHY", "GO_CLOSURE",
-        "DOMAIN_SUBCLASS_OF_DOMAIN", "DOMAIN_ANCESTOR_OF_DOMAIN",
+        "CCRE_REGULATES_GENE",
+        "DISEASE_HAS_PHENOTYPE",
+        "PHENOTYPE_EQUIVALENT_TO",
+        "PHENOTYPE_HIERARCHY",
+        "PHENOTYPE_CLOSURE",
+        "STUDY_INVESTIGATES_TRAIT__Entity",
+        "STUDY_INVESTIGATES_TRAIT__Disease",
+        "STUDY_INVESTIGATES_TRAIT__Phenotype",
+        "DISEASE_SUBCLASS_OF_DISEASE",
+        "DISEASE_ANCESTOR_OF_DISEASE",
+        "PATHWAY_PART_OF_PATHWAY",
+        "PATHWAY_ANCESTOR_OF_PATHWAY",
+        "PATHWAY_CONTAINS_METABOLITE",
+        "METABOLITE_IS_A_METABOLITE",
+        "ENTITY_HIERARCHY",
+        "ENTITY_CLOSURE",
+        "GO_HIERARCHY",
+        "GO_CLOSURE",
+        "DOMAIN_SUBCLASS_OF_DOMAIN",
+        "DOMAIN_ANCESTOR_OF_DOMAIN",
       ],
     },
   ],
 
   externalLinks: {
     Gene: [
-      { label: "Ensembl", urlTemplate: "https://www.ensembl.org/Homo_sapiens/Gene/Summary?g={id}" },
-      { label: "GeneCards", urlTemplate: "https://www.genecards.org/cgi-bin/carddisp.pl?gene={label}" },
+      {
+        label: "Ensembl",
+        urlTemplate: "https://www.ensembl.org/Homo_sapiens/Gene/Summary?g={id}",
+      },
+      {
+        label: "GeneCards",
+        urlTemplate:
+          "https://www.genecards.org/cgi-bin/carddisp.pl?gene={label}",
+      },
     ],
     Disease: [
-      { label: "Monarch Initiative", urlTemplate: "https://monarchinitiative.org/{id}" },
+      {
+        label: "Monarch Initiative",
+        urlTemplate: "https://monarchinitiative.org/{id}",
+      },
     ],
     Pathway: [
-      { label: "Reactome", urlTemplate: "https://reactome.org/PathwayBrowser/#/{id}" },
+      {
+        label: "Reactome",
+        urlTemplate: "https://reactome.org/PathwayBrowser/#/{id}",
+      },
     ],
     Drug: [
       { label: "DrugBank", urlTemplate: "https://www.drugbank.com/drugs/{id}" },

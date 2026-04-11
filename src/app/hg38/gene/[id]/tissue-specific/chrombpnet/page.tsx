@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadChromBpnetData } from "@features/enrichment/loaders";
 import { ChromBpnetView } from "@features/enrichment/components/chrombpnet-view";
+import { loadChromBpnetData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

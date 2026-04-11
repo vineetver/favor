@@ -3,15 +3,31 @@
  */
 
 import { cohortFetch } from "../../../lib/api-client";
+import {
+  catchToResult,
+  errorResult,
+  okResult,
+  TraceCollector,
+} from "../run-result";
 import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
 type CohortCommand = Extract<
   RunCommand,
-  { command: "rows" | "groupby" | "correlation" | "derive" | "prioritize" | "compute" }
+  {
+    command:
+      | "rows"
+      | "groupby"
+      | "correlation"
+      | "derive"
+      | "prioritize"
+      | "compute";
+  }
 >;
 
-function getCohortId(cmd: CohortCommand, activeCohortId?: string): string | null {
+function getCohortId(
+  cmd: CohortCommand,
+  activeCohortId?: string,
+): string | null {
   return cmd.cohort_id ?? activeCohortId ?? null;
 }
 
@@ -20,7 +36,11 @@ export async function handleRows(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort. Use set_cohort or create_cohort first.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({
+      message: "No active cohort. Use set_cohort or create_cohort first.",
+      code: "no_cohort",
+    });
 
   const tc = new TraceCollector();
 
@@ -33,7 +53,11 @@ export async function handleRows(
     if (cmd.select) body.select = cmd.select;
     if (cmd.filters?.length) body.filters = cmd.filters;
 
-    tc.add({ step: "fetchRows", kind: "call", message: `POST /cohorts/${cohortId}/rows` });
+    tc.add({
+      step: "fetchRows",
+      kind: "call",
+      message: `POST /cohorts/${cohortId}/rows`,
+    });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/rows`,
@@ -51,7 +75,9 @@ export async function handleRows(
     const isIncomplete = total > maxRows;
 
     return okResult({
-      text_summary: (result.text_summary as string) ?? `Showing ${rowCount} of ${result.total ?? "?"} variants (offset ${cmd.offset ?? 0}).`,
+      text_summary:
+        (result.text_summary as string) ??
+        `Showing ${rowCount} of ${result.total ?? "?"} variants (offset ${cmd.offset ?? 0}).`,
       data: { rows, total: result.total },
       state_delta: {},
       next_reads: [{ path: `cohort/${cohortId}/schema` }],
@@ -69,7 +95,8 @@ export async function handleGroupby(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -97,12 +124,19 @@ export async function handleGroupby(
       ? (result.buckets as unknown[]).slice(0, maxBuckets)
       : result.buckets;
 
-    const totalGroups = typeof result.total_groups === "number" ? result.total_groups : 0;
+    const totalGroups =
+      typeof result.total_groups === "number" ? result.total_groups : 0;
     const isIncomplete = totalGroups > maxBuckets;
 
     return okResult({
-      text_summary: (result.text_summary as string) ?? `${Array.isArray(buckets) ? buckets.length : 0} groups by ${cmd.group_by}`,
-      data: { group_by: result.group_by, buckets, total_groups: result.total_groups },
+      text_summary:
+        (result.text_summary as string) ??
+        `${Array.isArray(buckets) ? buckets.length : 0} groups by ${cmd.group_by}`,
+      data: {
+        group_by: result.group_by,
+        buckets,
+        total_groups: result.total_groups,
+      },
       state_delta: {},
       tc,
       incomplete: isIncomplete,
@@ -118,7 +152,8 @@ export async function handleCorrelation(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -126,7 +161,11 @@ export async function handleCorrelation(
     const body: Record<string, unknown> = { x: cmd.x, y: cmd.y };
     if (cmd.filters?.length) body.filters = cmd.filters;
 
-    tc.add({ step: "fetchCorrelation", kind: "call", message: `POST /cohorts/${cohortId}/correlation` });
+    tc.add({
+      step: "fetchCorrelation",
+      kind: "call",
+      message: `POST /cohorts/${cohortId}/correlation`,
+    });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/correlation`,
@@ -136,9 +175,14 @@ export async function handleCorrelation(
     return okResult({
       text_summary: `Correlation between ${cmd.x} and ${cmd.y}: r = ${result.r}`,
       data: {
-        x: result.x, y: result.y, r: result.r, n: result.n,
-        x_mean: result.x_mean, y_mean: result.y_mean,
-        x_stddev: result.x_stddev, y_stddev: result.y_stddev,
+        x: result.x,
+        y: result.y,
+        r: result.r,
+        n: result.n,
+        x_mean: result.x_mean,
+        y_mean: result.y_mean,
+        x_stddev: result.x_stddev,
+        y_stddev: result.y_stddev,
       },
       state_delta: {},
       tc,
@@ -153,7 +197,8 @@ export async function handleDerive(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -161,16 +206,25 @@ export async function handleDerive(
     const body: Record<string, unknown> = { filters: cmd.filters };
     if (cmd.label) body.label = cmd.label;
 
-    tc.add({ step: "derive", kind: "call", message: `POST /cohorts/${cohortId}/derive` });
+    tc.add({
+      step: "derive",
+      kind: "call",
+      message: `POST /cohorts/${cohortId}/derive`,
+    });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/derive`,
       { method: "POST", body, timeout: 60_000 },
     );
 
-    const derivedId = typeof result.cohort_id === "string" ? result.cohort_id : undefined;
+    const derivedId =
+      typeof result.cohort_id === "string" ? result.cohort_id : undefined;
     if (!derivedId) {
-      return errorResult({ message: "Derive returned no cohort_id.", code: "cohort_processing_failed", tc });
+      return errorResult({
+        message: "Derive returned no cohort_id.",
+        code: "cohort_processing_failed",
+        tc,
+      });
     }
     const rowCount = (result.vid_count as number) ?? 0;
 
@@ -184,7 +238,9 @@ export async function handleDerive(
         summary: result.summary,
       },
       state_delta: {
-        derived_cohorts: [{ id: derivedId, label: cmd.label, row_count: rowCount }],
+        derived_cohorts: [
+          { id: derivedId, label: cmd.label, row_count: rowCount },
+        ],
       },
       next_reads: [{ path: `cohort/${derivedId}/schema` }],
       tc,
@@ -199,7 +255,8 @@ export async function handlePrioritize(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -208,7 +265,11 @@ export async function handlePrioritize(
     if (cmd.limit) body.limit = cmd.limit;
     if (cmd.filters?.length) body.filters = cmd.filters;
 
-    tc.add({ step: "prioritize", kind: "call", message: `POST /cohorts/${cohortId}/prioritize` });
+    tc.add({
+      step: "prioritize",
+      kind: "call",
+      message: `POST /cohorts/${cohortId}/prioritize`,
+    });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/prioritize`,
@@ -220,8 +281,12 @@ export async function handlePrioritize(
       : result.rows;
 
     return okResult({
-      text_summary: `Prioritized ${result.total_ranked ?? 0} variants by ${cmd.criteria.map(c => c.column).join(", ")}`,
-      data: { criteria: result.criteria, rows, total_ranked: result.total_ranked },
+      text_summary: `Prioritized ${result.total_ranked ?? 0} variants by ${cmd.criteria.map((c) => c.column).join(", ")}`,
+      data: {
+        criteria: result.criteria,
+        rows,
+        total_ranked: result.total_ranked,
+      },
       state_delta: {},
       tc,
     });
@@ -235,7 +300,8 @@ export async function handleCompute(
   activeCohortId?: string,
 ): Promise<RunResult> {
   const cohortId = getCohortId(cmd, activeCohortId);
-  if (!cohortId) return errorResult({ message: "No active cohort.", code: "no_cohort" });
+  if (!cohortId)
+    return errorResult({ message: "No active cohort.", code: "no_cohort" });
 
   const tc = new TraceCollector();
 
@@ -245,7 +311,11 @@ export async function handleCompute(
     if (cmd.limit) body.limit = cmd.limit;
     if (cmd.filters?.length) body.filters = cmd.filters;
 
-    tc.add({ step: "compute", kind: "call", message: `POST /cohorts/${cohortId}/compute` });
+    tc.add({
+      step: "compute",
+      kind: "call",
+      message: `POST /cohorts/${cohortId}/compute`,
+    });
 
     const result = await cohortFetch<Record<string, unknown>>(
       `/cohorts/${encodeURIComponent(cohortId)}/compute`,

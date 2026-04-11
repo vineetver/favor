@@ -1,11 +1,6 @@
 import { API_BASE } from "@/config/api";
 import type { TraitPoint } from "./gwas-graph";
-import {
-  ep,
-  fetchVariantGraph,
-  getEdgeRows,
-  nb,
-} from "./variant-graph";
+import { ep, fetchVariantGraph, getEdgeRows, nb } from "./variant-graph";
 
 /**
  * Fetch fine-mapped credible set memberships for a variant.
@@ -154,12 +149,9 @@ export async function fetchVariantSignals(
   if (!vcf) return [];
 
   // One call — Signal fields inlined via neighborMode=full.
-  const graph = await fetchVariantGraph(
-    vcf,
-    ["SIGNAL_HAS_VARIANT"],
-    limit,
-    { SIGNAL_HAS_VARIANT: "full" },
-  );
+  const graph = await fetchVariantGraph(vcf, ["SIGNAL_HAS_VARIANT"], limit, {
+    SIGNAL_HAS_VARIANT: "full",
+  });
   if (!graph) return [];
 
   const edgeRows = getEdgeRows(graph, "SIGNAL_HAS_VARIANT");
@@ -179,11 +171,13 @@ export async function fetchVariantSignals(
   return edgeRows.map((row) => {
     const n = row.neighbor;
     const studyId = nb<string>(row, "study_id") ?? n.id;
-    const leadVariant = nb<string>(row, "lead_variant") ?? nb<string>(row, "lead");
+    const leadVariant =
+      nb<string>(row, "lead_variant") ?? nb<string>(row, "lead");
     return {
       signalId: n.id,
       studyId,
-      studyType: nb<string>(row, "study_type") ?? nb<string>(row, "type") ?? "other",
+      studyType:
+        nb<string>(row, "study_type") ?? nb<string>(row, "type") ?? "other",
       reportedTrait: studyTraits.get(studyId) ?? null,
       methodName: strOrNull(nb(row, "method_name")),
       numCredible95: numOrNull(nb(row, "num_credible_95")),

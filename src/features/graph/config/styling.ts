@@ -1,12 +1,15 @@
-import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
 import { EDGE_TYPE_CONFIG } from "../types/edge";
+import type { EntityType } from "../types/entity";
 
 // =============================================================================
 // Node Styling by Entity Type
 // =============================================================================
 
-export const NODE_TYPE_COLORS: Record<EntityType, { background: string; border: string; text: string }> = {
+export const NODE_TYPE_COLORS: Record<
+  EntityType,
+  { background: string; border: string; text: string }
+> = {
   Gene: { background: "#dbeafe", border: "#3b82f6", text: "#1e40af" },
   Disease: { background: "#fee2e2", border: "#ef4444", text: "#991b1b" },
   Drug: { background: "#d1fae5", border: "#10b981", text: "#065f46" },
@@ -31,12 +34,25 @@ export const SEED_NODE_COLORS = {
   text: "#ffffff",
 };
 
-export function getNodeColors(type: EntityType, isSeed: boolean): { background: string; border: string; text: string } {
+export function getNodeColors(
+  type: EntityType,
+  isSeed: boolean,
+): { background: string; border: string; text: string } {
   if (isSeed) return SEED_NODE_COLORS;
-  return NODE_TYPE_COLORS[type] ?? { background: "#f1f5f9", border: "#64748b", text: "#334155" };
+  return (
+    NODE_TYPE_COLORS[type] ?? {
+      background: "#f1f5f9",
+      border: "#64748b",
+      text: "#334155",
+    }
+  );
 }
 
-export function getNodeSize(type: EntityType, isSeed: boolean, depth: number): number {
+export function getNodeSize(
+  _type: EntityType,
+  isSeed: boolean,
+  depth: number,
+): number {
   if (isSeed) return 52;
   const baseSize = 36;
   const depthReduction = Math.min(depth, 3) * 4;

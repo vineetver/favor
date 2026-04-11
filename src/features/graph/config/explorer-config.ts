@@ -1,5 +1,5 @@
-import type { EntityType } from "../types/entity";
 import type { EdgeType } from "../types/edge";
+import type { EntityType } from "../types/entity";
 import type { LensStep } from "./lenses";
 
 // =============================================================================

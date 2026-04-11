@@ -366,7 +366,9 @@ function ChromatinStateRow({
         </span>
         {tooltipContent && <HeaderTooltip content={tooltipContent} />}
       </div>
-      <div className="flex-1 text-base text-muted-foreground">{state.description}</div>
+      <div className="flex-1 text-base text-muted-foreground">
+        {state.description}
+      </div>
       <ChromatinProgressBar value={value} category={state.category} />
     </div>
   );

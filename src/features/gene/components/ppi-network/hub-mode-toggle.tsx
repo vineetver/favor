@@ -31,14 +31,14 @@ function HubModeToggleInner({
     (checked: boolean) => {
       onChange({ ...hubMode, showHubsOnly: checked });
     },
-    [hubMode, onChange]
+    [hubMode, onChange],
   );
 
   const handleThresholdChange = useCallback(
     (value: number[]) => {
       onChange({ ...hubMode, hubThreshold: value[0] });
     },
-    [hubMode, onChange]
+    [hubMode, onChange],
   );
 
   return (
@@ -46,10 +46,12 @@ function HubModeToggleInner({
       <div className={cn("space-y-3", className)}>
         {/* Header */}
         <div className="flex items-center gap-2">
-          <Zap className={cn(
-            "w-4 h-4",
-            hubMode.showHubsOnly ? "text-amber-500" : "text-muted-foreground"
-          )} />
+          <Zap
+            className={cn(
+              "w-4 h-4",
+              hubMode.showHubsOnly ? "text-amber-500" : "text-muted-foreground",
+            )}
+          />
           <span className="text-sm font-medium text-foreground">Hub Focus</span>
           {hubMode.showHubsOnly && (
             <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded">
@@ -61,7 +63,10 @@ function HubModeToggleInner({
         {/* Toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="hub-mode-toggle" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="hub-mode-toggle"
+              className="text-xs text-muted-foreground"
+            >
               Show hubs only
             </Label>
             <Tooltip>
@@ -70,8 +75,8 @@ function HubModeToggleInner({
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
-                  Filter to show only highly connected hub nodes.
-                  Requires "Hub Score" color mode to be active.
+                  Filter to show only highly connected hub nodes. Requires "Hub
+                  Score" color mode to be active.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -89,15 +94,17 @@ function HubModeToggleInner({
           <div className="space-y-2 pt-2 border-t border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Label className="text-xs text-muted-foreground">Percentile Threshold</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Percentile Threshold
+                </Label>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-[200px]">
                     <p className="text-xs">
-                      Show nodes above this degree percentile.
-                      E.g., 90 = top 10% most connected nodes.
+                      Show nodes above this degree percentile. E.g., 90 = top
+                      10% most connected nodes.
                     </p>
                   </TooltipContent>
                 </Tooltip>

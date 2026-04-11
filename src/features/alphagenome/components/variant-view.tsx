@@ -1,8 +1,5 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
-import { Loader2 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import {
@@ -10,6 +7,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useScores } from "../hooks/use-scores";
+import { useVariantTracks } from "../hooks/use-variant-tracks";
 import type {
   Modality,
   OverallScore,
@@ -25,12 +26,10 @@ import {
   MODALITIES,
   parseVariantVcf,
 } from "../utils";
-import { useScores } from "../hooks/use-scores";
-import { useVariantTracks } from "../hooks/use-variant-tracks";
-import { ScoresHeatmap } from "./scores-heatmap";
-import { TrackChart } from "./track-chart";
 import { ModalityPicker } from "./modality-picker";
+import { ScoresHeatmap } from "./scores-heatmap";
 import { TissueGroupPicker } from "./tissue-group-picker";
+import { TrackChart } from "./track-chart";
 
 interface AlphaGenomeVariantViewProps {
   vcf: string;
@@ -206,7 +205,8 @@ function TracksSection({ parsed }: { parsed: ParsedVcf }) {
       {isLoading && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            First predictions can take 1-10 minutes. Subsequent requests for the same variant are instant.
+            First predictions can take 1-10 minutes. Subsequent requests for the
+            same variant are instant.
           </p>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full rounded" />
@@ -272,7 +272,10 @@ function transposeValues(values: number[][]): number[][] {
   if (values.length === 0) return [];
   const nTracks = values[0].length;
   const nPos = values.length;
-  const out: number[][] = Array.from({ length: nTracks }, () => new Array<number>(nPos));
+  const out: number[][] = Array.from(
+    { length: nTracks },
+    () => new Array<number>(nPos),
+  );
   for (let p = 0; p < nPos; p++) {
     const row = values[p];
     for (let t = 0; t < nTracks; t++) {
@@ -288,10 +291,20 @@ function formatCoord(pos: number): string {
   return String(pos);
 }
 
-function GenomicRuler({ start, end, variantPos }: { start: number; end: number; variantPos?: number }) {
+function GenomicRuler({
+  start,
+  end,
+  variantPos,
+}: {
+  start: number;
+  end: number;
+  variantPos?: number;
+}) {
   const ticks = 5;
   const step = (end - start) / (ticks - 1);
-  const positions = Array.from({ length: ticks }, (_, i) => Math.round(start + i * step));
+  const positions = Array.from({ length: ticks }, (_, i) =>
+    Math.round(start + i * step),
+  );
 
   return (
     <div className="flex items-center justify-between py-1.5 px-2 text-[10px] tabular-nums text-muted-foreground">
@@ -321,11 +334,18 @@ function ModalityTrackGroup({
   const interval = refTrack.interval;
 
   // Transpose once — O(positions × tracks), memoized
-  const refByTrack = useMemo(() => transposeValues(refTrack.values), [refTrack.values]);
-  const altByTrack = useMemo(() => transposeValues(altTrack.values), [altTrack.values]);
+  const refByTrack = useMemo(
+    () => transposeValues(refTrack.values),
+    [refTrack.values],
+  );
+  const altByTrack = useMemo(
+    () => transposeValues(altTrack.values),
+    [altTrack.values],
+  );
 
   // Variant line position as percentage of data width
-  const variantPct = numPositions > 0 ? (variantIndex / numPositions) * 100 : 50;
+  const variantPct =
+    numPositions > 0 ? (variantIndex / numPositions) * 100 : 50;
 
   return (
     <div>
@@ -340,7 +360,11 @@ function ModalityTrackGroup({
 
       {interval && (
         <div className="mb-2">
-          <GenomicRuler start={interval.start} end={interval.end} variantPos={variantPos} />
+          <GenomicRuler
+            start={interval.start}
+            end={interval.end}
+            variantPos={variantPos}
+          />
         </div>
       )}
 

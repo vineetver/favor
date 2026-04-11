@@ -1,12 +1,15 @@
 "use client";
 
+import type {
+  RegionSummary,
+  ValidatedEnhancerRow,
+} from "@features/enrichment/api/region";
 import { cn } from "@infra/utils";
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
-import { Switch } from "@shared/components/ui/switch";
 import { Label } from "@shared/components/ui/label";
-import { useState, useMemo } from "react";
-import type { ValidatedEnhancerRow, RegionSummary } from "@features/enrichment/api/region";
+import { Switch } from "@shared/components/ui/switch";
+import { useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -65,7 +68,10 @@ export function ValidatedEnhancersView({
             checked={positiveOnly}
             onCheckedChange={setPositiveOnly}
           />
-          <Label htmlFor="positive-only" className="text-xs text-muted-foreground cursor-pointer">
+          <Label
+            htmlFor="positive-only"
+            className="text-xs text-muted-foreground cursor-pointer"
+          >
             Positive only
           </Label>
         </div>

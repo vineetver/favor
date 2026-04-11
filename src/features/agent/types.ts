@@ -188,9 +188,9 @@ export type QueryType =
 // ---------------------------------------------------------------------------
 
 export interface EvidenceRef {
-  source: string;         // e.g., "cohort_rows", "getRankedNeighbors", "getConnections"
-  endpoint: string;       // API path called
-  query: Record<string, unknown>;  // params used
+  source: string; // e.g., "cohort_rows", "getRankedNeighbors", "getConnections"
+  endpoint: string; // API path called
+  query: Record<string, unknown>; // params used
 }
 
 export interface SubagentToolTrace {
@@ -206,8 +206,17 @@ export interface SubagentToolTrace {
 
 export interface VariantTriageOutput {
   summary: string;
-  topGenes?: Array<{ symbol: string; ensemblId?: string; variantCount?: number }>;
-  topVariants?: Array<{ id: string; gene?: string; consequence?: string; significance?: string }>;
+  topGenes?: Array<{
+    symbol: string;
+    ensemblId?: string;
+    variantCount?: number;
+  }>;
+  topVariants?: Array<{
+    id: string;
+    gene?: string;
+    consequence?: string;
+    significance?: string;
+  }>;
   cohortId?: string;
   derivedCohortId?: string;
   evidenceRefs: EvidenceRef[];
@@ -222,7 +231,12 @@ export interface VariantTriageOutput {
 export interface BioContextOutput {
   summary: string;
   entities?: Array<{ type: string; id: string; label: string }>;
-  relationships?: Array<{ from: string; to: string; edgeType: string; score?: number }>;
+  relationships?: Array<{
+    from: string;
+    to: string;
+    edgeType: string;
+    score?: number;
+  }>;
   pathways?: Array<{ id: string; label: string; pValue?: number }>;
   evidenceRefs: EvidenceRef[];
   toolTrace?: SubagentToolTrace[];
@@ -231,7 +245,11 @@ export interface BioContextOutput {
   stepsUsed: number;
   toolCallsMade: number;
   toolsUsed: string[];
-  tokenUsage?: { inputTokens: number; outputTokens: number; totalTokens: number };
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -265,7 +283,12 @@ export interface PlanStepSynthesize {
   do: "synthesize";
 }
 
-export type PlanStep = PlanStepResolve | PlanStepDelegate | PlanStepDirect | PlanStepBatch | PlanStepSynthesize;
+export type PlanStep =
+  | PlanStepResolve
+  | PlanStepDelegate
+  | PlanStepDirect
+  | PlanStepBatch
+  | PlanStepSynthesize;
 
 export interface AgentPlan {
   queryType: QueryType;

@@ -29,9 +29,7 @@ export default async function SomaticAlterationsPage({
   }
 
   const relations =
-    geneResponse?.relations ??
-    geneResponse?.included?.relations ??
-    undefined;
+    geneResponse?.relations ?? geneResponse?.included?.relations ?? undefined;
   const edges = geneResponse?.edges;
 
   return (

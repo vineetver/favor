@@ -92,10 +92,37 @@ const COLUMN_SYNONYMS: Record<string, string> = {
 const ROLE_GROUPS: Record<string, string[]> = {
   significance: ["p_value", "pval", "adjusted_p", "fdr", "bonferroni"],
   effect: ["beta", "effect_size", "odds_ratio", "log_or", "standard_error"],
-  score: ["cadd_phred", "linsight", "revel", "gerp", "dann", "fathmm_xf", "alphamissense"],
-  frequency: ["gnomad_af", "af", "maf", "allele_frequency", "gnomad_exome_af", "gnomad_genome_af"],
-  position: ["chromosome", "position", "start", "end", "start_position", "end_position"],
-  conservation: ["phylop_primates", "phylop_mammals", "phylop_vertebrates", "phastcons"],
+  score: [
+    "cadd_phred",
+    "linsight",
+    "revel",
+    "gerp",
+    "dann",
+    "fathmm_xf",
+    "alphamissense",
+  ],
+  frequency: [
+    "gnomad_af",
+    "af",
+    "maf",
+    "allele_frequency",
+    "gnomad_exome_af",
+    "gnomad_genome_af",
+  ],
+  position: [
+    "chromosome",
+    "position",
+    "start",
+    "end",
+    "start_position",
+    "end_position",
+  ],
+  conservation: [
+    "phylop_primates",
+    "phylop_mammals",
+    "phylop_vertebrates",
+    "phastcons",
+  ],
 };
 
 function isRoleMismatch(input: string, candidate: string): boolean {
@@ -108,11 +135,13 @@ function isRoleMismatch(input: string, candidate: string): boolean {
 
   for (const members of groups) {
     if (members.some((m) => normInput.includes(m))) inputGroup = members;
-    if (members.some((m) => normCandidate.includes(m))) candidateGroup = members;
+    if (members.some((m) => normCandidate.includes(m)))
+      candidateGroup = members;
   }
 
   // Mismatch only if both belong to different identified groups
-  if (inputGroup && candidateGroup && inputGroup !== candidateGroup) return true;
+  if (inputGroup && candidateGroup && inputGroup !== candidateGroup)
+    return true;
   return false;
 }
 
@@ -159,7 +188,12 @@ function scoreColumnMatch(
       column: candidate,
       score: 1.0,
       kind: candidateKind,
-      signals: { levenshtein: 1, token_jaccard: 1, prefix_match: true, synonym_hit: false },
+      signals: {
+        levenshtein: 1,
+        token_jaccard: 1,
+        prefix_match: true,
+        synonym_hit: false,
+      },
     };
   }
 
@@ -170,14 +204,21 @@ function scoreColumnMatch(
       column: candidate,
       score: 0.95,
       kind: candidateKind,
-      signals: { levenshtein: 0.5, token_jaccard: 0.5, prefix_match: false, synonym_hit: true },
+      signals: {
+        levenshtein: 0.5,
+        token_jaccard: 0.5,
+        prefix_match: false,
+        synonym_hit: true,
+      },
     };
   }
 
   // 3. Token overlap (Jaccard on underscore-split tokens)
   const inputTokens = new Set(normInput.split("_").filter(Boolean));
   const candidateTokens = new Set(normCandidate.split("_").filter(Boolean));
-  const intersection = [...inputTokens].filter((t) => candidateTokens.has(t)).length;
+  const intersection = [...inputTokens].filter((t) =>
+    candidateTokens.has(t),
+  ).length;
   const union = new Set([...inputTokens, ...candidateTokens]).size;
   const jaccard = union > 0 ? intersection / union : 0;
 
@@ -197,7 +238,12 @@ function scoreColumnMatch(
     column: candidate,
     score,
     kind: candidateKind,
-    signals: { levenshtein: levScore, token_jaccard: jaccard, prefix_match: prefixMatch, synonym_hit: false },
+    signals: {
+      levenshtein: levScore,
+      token_jaccard: jaccard,
+      prefix_match: prefixMatch,
+      synonym_hit: false,
+    },
   };
 }
 
@@ -205,8 +251,10 @@ function describeSignals(signals: ColumnMatch["signals"]): string {
   const parts: string[] = [];
   if (signals.synonym_hit) parts.push("synonym");
   if (signals.prefix_match) parts.push("prefix");
-  if (signals.token_jaccard >= 0.5) parts.push(`tokens:${signals.token_jaccard.toFixed(2)}`);
-  if (signals.levenshtein >= 0.7) parts.push(`lev:${signals.levenshtein.toFixed(2)}`);
+  if (signals.token_jaccard >= 0.5)
+    parts.push(`tokens:${signals.token_jaccard.toFixed(2)}`);
+  if (signals.levenshtein >= 0.7)
+    parts.push(`lev:${signals.levenshtein.toFixed(2)}`);
   return parts.join(", ") || "low-confidence";
 }
 
@@ -233,7 +281,11 @@ export function recoverUnknownColumn(
   const runnerUp = candidates[1];
 
   if (!best || best.score < 0.4) {
-    return { input: badColumn, action: "needs_user", reason: "No close match found" };
+    return {
+      input: badColumn,
+      action: "needs_user",
+      reason: "No close match found",
+    };
   }
 
   // Safety checks — ALL must pass for auto-correct
@@ -278,7 +330,8 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
   // rows: select, sort, filters[].field
   if (Array.isArray(cmd.select)) {
     for (const col of cmd.select) {
-      if (typeof col === "string") refs.push({ name: col, field_path: "select" });
+      if (typeof col === "string")
+        refs.push({ name: col, field_path: "select" });
     }
   }
   if (typeof cmd.sort === "string") {
@@ -296,7 +349,12 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
       if (m === "count") continue;
       // Strip aggregate prefix ("mean:cadd_phred" → "cadd_phred")
       const col = m.includes(":") ? m.split(":").slice(1).join(":") : m;
-      if (col) refs.push({ name: col, expectedKind: "numeric", field_path: "metrics" });
+      if (col)
+        refs.push({
+          name: col,
+          expectedKind: "numeric",
+          field_path: "metrics",
+        });
     }
   }
 
@@ -313,7 +371,11 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
     for (let i = 0; i < cmd.criteria.length; i++) {
       const c = cmd.criteria[i] as { column?: string };
       if (typeof c?.column === "string") {
-        refs.push({ name: c.column, expectedKind: "numeric", field_path: `criteria[${i}].column` });
+        refs.push({
+          name: c.column,
+          expectedKind: "numeric",
+          field_path: `criteria[${i}].column`,
+        });
       }
     }
   }
@@ -323,7 +385,11 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
     for (let i = 0; i < cmd.weights.length; i++) {
       const w = cmd.weights[i] as { column?: string };
       if (typeof w?.column === "string") {
-        refs.push({ name: w.column, expectedKind: "numeric", field_path: `weights[${i}].column` });
+        refs.push({
+          name: w.column,
+          expectedKind: "numeric",
+          field_path: `weights[${i}].column`,
+        });
       }
     }
   }
@@ -332,8 +398,15 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
   if (Array.isArray(cmd.filters)) {
     for (let i = 0; i < cmd.filters.length; i++) {
       const f = cmd.filters[i] as { type?: string; field?: string };
-      if ((f?.type === "score_above" || f?.type === "score_below") && typeof f.field === "string") {
-        refs.push({ name: f.field, expectedKind: "numeric", field_path: `filters[${i}].field` });
+      if (
+        (f?.type === "score_above" || f?.type === "score_below") &&
+        typeof f.field === "string"
+      ) {
+        refs.push({
+          name: f.field,
+          expectedKind: "numeric",
+          field_path: `filters[${i}].field`,
+        });
       }
     }
   }
@@ -341,15 +414,25 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
   // analytics: features.numeric, features.categorical, target.field, various column refs
   const params = cmd.params as Record<string, unknown> | undefined;
   if (params) {
-    const features = params.features as { numeric?: string[]; categorical?: string[] } | undefined;
+    const features = params.features as
+      | { numeric?: string[]; categorical?: string[] }
+      | undefined;
     if (features?.numeric) {
       for (const col of features.numeric) {
-        refs.push({ name: col, expectedKind: "numeric", field_path: "params.features.numeric" });
+        refs.push({
+          name: col,
+          expectedKind: "numeric",
+          field_path: "params.features.numeric",
+        });
       }
     }
     if (features?.categorical) {
       for (const col of features.categorical) {
-        refs.push({ name: col, expectedKind: "categorical", field_path: "params.features.categorical" });
+        refs.push({
+          name: col,
+          expectedKind: "categorical",
+          field_path: "params.features.categorical",
+        });
       }
     }
     const target = params.target as { field?: string } | undefined;
@@ -357,15 +440,32 @@ export function extractColumnRefs(cmd: Record<string, unknown>): ColumnRef[] {
       refs.push({ name: target.field, field_path: "params.target.field" });
     }
     // p_value_column, effect_size_column, se_column, time_column, event_column
-    for (const key of ["p_value_column", "effect_size_column", "se_column", "time_column", "event_column", "x_column", "y_column"] as const) {
+    for (const key of [
+      "p_value_column",
+      "effect_size_column",
+      "se_column",
+      "time_column",
+      "event_column",
+      "x_column",
+      "y_column",
+    ] as const) {
       if (typeof params[key] === "string") {
-        refs.push({ name: params[key] as string, expectedKind: "numeric", field_path: `params.${key}` });
+        refs.push({
+          name: params[key] as string,
+          expectedKind: "numeric",
+          field_path: `params.${key}`,
+        });
       }
     }
     // columns (bootstrap_ci)
     if (Array.isArray(params.columns)) {
       for (const col of params.columns) {
-        if (typeof col === "string") refs.push({ name: col, expectedKind: "numeric", field_path: "params.columns" });
+        if (typeof col === "string")
+          refs.push({
+            name: col,
+            expectedKind: "numeric",
+            field_path: "params.columns",
+          });
       }
     }
   }
@@ -390,7 +490,8 @@ export function applyColumnCorrections(
   if (correctionMap.size === 0) return;
 
   const fix = (v: unknown): unknown => {
-    if (typeof v === "string" && correctionMap.has(v)) return correctionMap.get(v);
+    if (typeof v === "string" && correctionMap.has(v))
+      return correctionMap.get(v);
     return v;
   };
 
@@ -409,7 +510,8 @@ export function applyColumnCorrections(
   if (Array.isArray(cmd.criteria)) {
     for (const c of cmd.criteria) {
       const crit = c as { column?: string };
-      if (typeof crit.column === "string") crit.column = fix(crit.column) as string;
+      if (typeof crit.column === "string")
+        crit.column = fix(crit.column) as string;
     }
   }
   // weights
@@ -423,7 +525,10 @@ export function applyColumnCorrections(
   if (Array.isArray(cmd.filters)) {
     for (const f of cmd.filters) {
       const flt = f as { type?: string; field?: string };
-      if ((flt.type === "score_above" || flt.type === "score_below") && typeof flt.field === "string") {
+      if (
+        (flt.type === "score_above" || flt.type === "score_below") &&
+        typeof flt.field === "string"
+      ) {
         flt.field = fix(flt.field) as string;
       }
     }
@@ -431,16 +536,31 @@ export function applyColumnCorrections(
   // analytics params
   const params = cmd.params as Record<string, unknown> | undefined;
   if (params) {
-    const features = params.features as { numeric?: string[]; categorical?: string[] } | undefined;
-    if (features?.numeric) features.numeric = features.numeric.map((c) => fix(c) as string);
-    if (features?.categorical) features.categorical = features.categorical.map((c) => fix(c) as string);
+    const features = params.features as
+      | { numeric?: string[]; categorical?: string[] }
+      | undefined;
+    if (features?.numeric)
+      features.numeric = features.numeric.map((c) => fix(c) as string);
+    if (features?.categorical)
+      features.categorical = features.categorical.map((c) => fix(c) as string);
     const target = params.target as { field?: string } | undefined;
-    if (typeof target?.field === "string") target.field = fix(target.field) as string;
-    for (const key of ["p_value_column", "effect_size_column", "se_column", "time_column", "event_column", "x_column", "y_column"] as const) {
+    if (typeof target?.field === "string")
+      target.field = fix(target.field) as string;
+    for (const key of [
+      "p_value_column",
+      "effect_size_column",
+      "se_column",
+      "time_column",
+      "event_column",
+      "x_column",
+      "y_column",
+    ] as const) {
       if (typeof params[key] === "string") params[key] = fix(params[key]);
     }
     if (Array.isArray(params.columns)) {
-      params.columns = (params.columns as string[]).map((c) => fix(c) as string);
+      params.columns = (params.columns as string[]).map(
+        (c) => fix(c) as string,
+      );
     }
   }
 }

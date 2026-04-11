@@ -1,10 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  ChromBpnetRow,
+  PaginatedResponse,
+} from "@features/enrichment/api/region";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
-import type { ChromBpnetRow, PaginatedResponse } from "@features/enrichment/api/region";
+import { API_BASE } from "@/config/api";
 
 interface ChromBpnetFilterOptions {
   tissue?: string;
@@ -24,7 +27,8 @@ async function fetchChromBpnetClient(
   const params = new URLSearchParams();
   if (filters.tissue) params.set("tissue", filters.tissue);
   if (filters.tissue_group) params.set("tissue_group", filters.tissue_group);
-  if (filters.min_score != null) params.set("min_score", String(filters.min_score));
+  if (filters.min_score != null)
+    params.set("min_score", String(filters.min_score));
   if (filters.significant_only) params.set("significant_only", "true");
   if (filters.sort_by) params.set("sort_by", filters.sort_by);
   if (filters.sort_dir) params.set("sort_dir", filters.sort_dir);
@@ -59,7 +63,10 @@ interface UseChromBpnetQueryOptions {
   initialData?: PaginatedResponse<ChromBpnetRow>;
 }
 
-export function useChromBpnetQuery({ ref, initialData }: UseChromBpnetQueryOptions) {
+export function useChromBpnetQuery({
+  ref,
+  initialData,
+}: UseChromBpnetQueryOptions) {
   const searchParams = useClientSearchParams();
   const isFirstMount = useRef(true);
 
@@ -68,7 +75,8 @@ export function useChromBpnetQuery({ ref, initialData }: UseChromBpnetQueryOptio
   const query = useQuery({
     queryKey: ["chrombpnet", ref, filters],
     queryFn: () => fetchChromBpnetClient(ref, filters),
-    placeholderData: (prev: PaginatedResponse<ChromBpnetRow> | undefined) => prev,
+    placeholderData: (prev: PaginatedResponse<ChromBpnetRow> | undefined) =>
+      prev,
     staleTime: 5 * 60 * 1000,
     ...(isFirstMount.current && initialData ? { initialData } : {}),
   });

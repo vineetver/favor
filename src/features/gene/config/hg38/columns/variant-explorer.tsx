@@ -1,20 +1,20 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import { basicColumns } from "@features/variant/config/hg38/columns/basic";
+import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
+import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
+import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
+import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
+import { apcColumns } from "@features/variant/config/hg38/columns/shared";
+import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
+import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
 import type { Variant } from "@features/variant/types";
 import { createColumns, tooltip } from "@infra/table/column-builder";
-import { basicColumns } from "@features/variant/config/hg38/columns/basic";
-import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
-import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
-import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
-import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
-import { apcColumns } from "@features/variant/config/hg38/columns/shared";
-import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
-import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import type { ColumnDef } from "@tanstack/react-table";
 
 const col = createColumns<Variant>();
 
@@ -23,10 +23,7 @@ const col = createColumns<Variant>();
  * Lets us point a column at the API `sort_by` enum (e.g., remap
  * `apc_conservation_v2` → `apc_conservation`) only inside this table.
  */
-function withSort<T>(
-  column: ColumnDef<T>,
-  apiSortId?: string,
-): ColumnDef<T> {
+function withSort<T>(column: ColumnDef<T>, apiSortId?: string): ColumnDef<T> {
   // Spread cast: TanStack's ColumnDef is a discriminated union and a generic
   // spread loses the discriminator. We know we're keeping the same shape and
   // only flipping enableSorting + id, so cast at the boundary.
@@ -51,13 +48,16 @@ const genesColumn = col.display("genes", {
     if (!genes?.length) return <span className="text-muted-foreground">—</span>;
 
     const filtered = genes.filter(Boolean) as string[];
-    if (filtered.length === 0) return <span className="text-muted-foreground">—</span>;
+    if (filtered.length === 0)
+      return <span className="text-muted-foreground">—</span>;
 
     const display = filtered[0];
     const rest = filtered.length - 1;
 
     if (filtered.length === 1 && display.length <= 20) {
-      return <span className="font-medium text-foreground text-xs">{display}</span>;
+      return (
+        <span className="font-medium text-foreground text-xs">{display}</span>
+      );
     }
 
     return (
@@ -71,7 +71,10 @@ const genesColumn = col.display("genes", {
               )}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-sm max-h-48 overflow-y-auto">
+          <TooltipContent
+            side="bottom"
+            className="max-w-sm max-h-48 overflow-y-auto"
+          >
             <ul className="space-y-0.5 text-xs font-mono">
               {filtered.map((g, i) => (
                 <li key={i}>{g}</li>
@@ -119,10 +122,7 @@ export const variantExplorerColumns: ColumnDef<Variant>[] = [
   withSort(integrativeColumns[11] as ColumnDef<Variant>), // fathmm_xf
   // aPC scores — re-id where needed to match API enum
   apcColumns.proteinFunction as ColumnDef<Variant>,
-  withSort(
-    apcColumns.conservation as ColumnDef<Variant>,
-    "apc_conservation",
-  ),
+  withSort(apcColumns.conservation as ColumnDef<Variant>, "apc_conservation"),
   apcColumns.epigeneticsActive as ColumnDef<Variant>,
   // CADD — server-sortable
   withSort(integrativeColumns[9] as ColumnDef<Variant>), // cadd_phred

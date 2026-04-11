@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
   Tooltip,
@@ -7,9 +8,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
 import type { ScorerKey } from "../types";
-import { SCORERS, friendlyScorerLabel as friendlyLabel } from "../utils";
+import { friendlyScorerLabel as friendlyLabel, SCORERS } from "../utils";
 
 /** Lookup friendly label by scorer ID (short key like "center_mask"). */
 function displayLabel(id: ScorerKey): string {

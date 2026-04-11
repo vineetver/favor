@@ -29,7 +29,10 @@ export default function JobDetailLoading() {
             ))}
           </div>
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex gap-4 p-4 border-b border-border last:border-0">
+            <div
+              key={i}
+              className="flex gap-4 p-4 border-b border-border last:border-0"
+            >
               {Array.from({ length: 6 }).map((_, j) => (
                 <Skeleton key={j} className="h-4 flex-1" />
               ))}

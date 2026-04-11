@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { AlphaGenomeVariantView } from "@features/alphagenome/components/variant-view";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
+import { notFound } from "next/navigation";
 
 interface AlphaGenomePageProps {
   params: Promise<{ vcf: string }>;

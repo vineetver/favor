@@ -134,7 +134,11 @@ export function classifyApiError(
       };
     }
 
-    if (lower.includes("column") || lower.includes("field") || lower.includes("score")) {
+    if (
+      lower.includes("column") ||
+      lower.includes("field") ||
+      lower.includes("score")
+    ) {
       return {
         code: "validation_error",
         message,

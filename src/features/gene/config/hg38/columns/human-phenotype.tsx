@@ -1,9 +1,5 @@
 import type { Gene } from "@features/gene/types";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -60,7 +56,8 @@ export const geneHumanPhenotypeColumns = [
   }),
 
   col.accessor("inheritance", {
-    accessor: (row) => row.inheritance || row.disease_phenotype?.allelic_requirement,
+    accessor: (row) =>
+      row.inheritance || row.disease_phenotype?.allelic_requirement,
     header: "Inheritance",
     description: tooltip({
       title: "Inheritance",
@@ -133,4 +130,8 @@ export const geneHumanPhenotypeColumns = [
   }),
 ];
 
-export const geneHumanPhenotypeGroup = col.group("human-phenotype", "Human Phenotypes", geneHumanPhenotypeColumns);
+export const geneHumanPhenotypeGroup = col.group(
+  "human-phenotype",
+  "Human Phenotypes",
+  geneHumanPhenotypeColumns,
+);

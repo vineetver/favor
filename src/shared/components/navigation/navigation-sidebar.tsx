@@ -20,8 +20,8 @@ import {
   GitCompare,
   HeartPulse,
   History,
-  LayoutGrid,
   Layers,
+  LayoutGrid,
   Link2,
   type LucideIcon,
   Map as MapIcon,
@@ -116,10 +116,7 @@ export function NavigationSidebar({
   showIcons = true,
   disabledSlugs,
 }: NavigationSidebarProps) {
-  const disabledSet = useMemo(
-    () => new Set(disabledSlugs),
-    [disabledSlugs],
-  );
+  const disabledSet = useMemo(() => new Set(disabledSlugs), [disabledSlugs]);
   const params = useParams();
   const pathname = usePathname();
 
@@ -164,7 +161,8 @@ export function NavigationSidebar({
                   {group.items.map((item) => {
                     const isActive = item.slug === activeSlug;
                     const isDisabled = disabledSet.has(item.slug);
-                    const Icon = showIcons && item.icon ? iconMap[item.icon] : null;
+                    const Icon =
+                      showIcons && item.icon ? iconMap[item.icon] : null;
 
                     if (isDisabled) {
                       return (

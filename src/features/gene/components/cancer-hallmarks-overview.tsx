@@ -8,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import { NoDataState } from "@shared/components/ui/error-states";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,7 +24,9 @@ interface CancerHallmarksOverviewProps {
   className?: string;
 }
 
-type HallmarkEvidence = NonNullable<Gene["opentargets"]["hallmarks"]["cancerHallmarks"]>[number];
+type HallmarkEvidence = NonNullable<
+  Gene["opentargets"]["hallmarks"]["cancerHallmarks"]
+>[number];
 type ImpactKey = "promotes" | "suppresses" | "unknown";
 
 // ============================================================================
@@ -43,7 +45,7 @@ const HALLMARK_DESCRIPTIONS: Record<string, string> = {
   "growth suppressors": "Evading growth inhibitors",
   "escaping cell death": "Resisting programmed cell death",
   "replicative immortality": "Enabling unlimited replication",
-  "angiogenesis": "Inducing blood vessel formation",
+  angiogenesis: "Inducing blood vessel formation",
   "invasion and metastasis": "Enabling tissue invasion and spread",
   "genome instability": "Accumulating genetic mutations",
   "tumour promoting inflammation": "Inflammation aiding tumor growth",
@@ -58,10 +60,20 @@ const HALLMARK_DESCRIPTIONS: Record<string, string> = {
 function normalizeImpact(impact?: string | null): ImpactKey {
   if (!impact) return "unknown";
   const normalized = impact.toLowerCase();
-  if (normalized.includes("promot") || normalized.includes("increase") || normalized.includes("enhance") || normalized.includes("activate")) {
+  if (
+    normalized.includes("promot") ||
+    normalized.includes("increase") ||
+    normalized.includes("enhance") ||
+    normalized.includes("activate")
+  ) {
     return "promotes";
   }
-  if (normalized.includes("suppress") || normalized.includes("decrease") || normalized.includes("reduce") || normalized.includes("inhibit")) {
+  if (
+    normalized.includes("suppress") ||
+    normalized.includes("decrease") ||
+    normalized.includes("reduce") ||
+    normalized.includes("inhibit")
+  ) {
     return "suppresses";
   }
   return "unknown";
@@ -117,30 +129,41 @@ export function CancerHallmarksOverview({
     return groups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => normalizeImpact(item.impact) === impactFilter),
+        items: group.items.filter(
+          (item) => normalizeImpact(item.impact) === impactFilter,
+        ),
       }))
       .filter((group) => group.items.length > 0);
   }, [groups, impactFilter]);
 
   // Filter dimensions
-  const dimensions = useMemo<DimensionConfig[]>(() => [
-    {
-      label: "Effect",
-      value: impactFilter,
-      onChange: setImpactFilter,
-      options: [
-        { value: "all", label: `All (${hallmarks?.length ?? 0})` },
-        { value: "promotes", label: `Promotes (${impactCounts.promotes})` },
-        { value: "suppresses", label: `Suppresses (${impactCounts.suppresses})` },
-      ],
-    },
-  ], [impactFilter, hallmarks?.length, impactCounts]);
+  const dimensions = useMemo<DimensionConfig[]>(
+    () => [
+      {
+        label: "Effect",
+        value: impactFilter,
+        onChange: setImpactFilter,
+        options: [
+          { value: "all", label: `All (${hallmarks?.length ?? 0})` },
+          { value: "promotes", label: `Promotes (${impactCounts.promotes})` },
+          {
+            value: "suppresses",
+            label: `Suppresses (${impactCounts.suppresses})`,
+          },
+        ],
+      },
+    ],
+    [impactFilter, hallmarks?.length, impactCounts],
+  );
 
   // Auto-select first hallmark
   useEffect(() => {
     if (filteredGroups.length === 0) {
       setSelectedHallmark(null);
-    } else if (!selectedHallmark || !filteredGroups.some((g) => g.label === selectedHallmark)) {
+    } else if (
+      !selectedHallmark ||
+      !filteredGroups.some((g) => g.label === selectedHallmark)
+    ) {
       setSelectedHallmark(filteredGroups[0].label);
     }
   }, [filteredGroups, selectedHallmark]);
@@ -148,7 +171,11 @@ export function CancerHallmarksOverview({
   // Get selected group
   const selectedGroup = useMemo(() => {
     if (!selectedHallmark) return filteredGroups[0] ?? null;
-    return filteredGroups.find((g) => g.label === selectedHallmark) ?? filteredGroups[0] ?? null;
+    return (
+      filteredGroups.find((g) => g.label === selectedHallmark) ??
+      filteredGroups[0] ??
+      null
+    );
   }, [filteredGroups, selectedHallmark]);
 
   // Empty state
@@ -208,7 +235,7 @@ export function CancerHallmarksOverview({
                       className={cn(
                         "w-full px-5 py-2.5 text-left border-b border-border/60 transition-colors",
                         "hover:bg-accent/50",
-                        isSelected && "bg-accent/70"
+                        isSelected && "bg-accent/70",
                       )}
                     >
                       <div className="space-y-1">
@@ -216,17 +243,23 @@ export function CancerHallmarksOverview({
                           {group.label}
                         </div>
                         <div className="flex items-center gap-2 text-[11px]">
-                          <span className="text-muted-foreground">{group.total} evidence</span>
+                          <span className="text-muted-foreground">
+                            {group.total} evidence
+                          </span>
                           {group.counts.promotes > 0 && (
                             <span className="inline-flex items-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                              <span className="text-[10px] text-muted-foreground">{group.counts.promotes} promote</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {group.counts.promotes} promote
+                              </span>
                             </span>
                           )}
                           {group.counts.suppresses > 0 && (
                             <span className="inline-flex items-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              <span className="text-[10px] text-muted-foreground">{group.counts.suppresses} suppress</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {group.counts.suppresses} suppress
+                              </span>
                             </span>
                           )}
                         </div>
@@ -241,7 +274,9 @@ export function CancerHallmarksOverview({
           {/* Detail Panel */}
           <div>
             <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-              <div className="text-[11px] font-medium text-muted-foreground">Evidence</div>
+              <div className="text-[11px] font-medium text-muted-foreground">
+                Evidence
+              </div>
             </div>
             <div className="px-5 py-5 space-y-5">
               {!selectedGroup ? (
@@ -261,17 +296,23 @@ export function CancerHallmarksOverview({
                       </div>
                     )}
                     <div className="flex items-center gap-3 text-[11px]">
-                      <span className="text-muted-foreground">{selectedGroup.total} publications</span>
+                      <span className="text-muted-foreground">
+                        {selectedGroup.total} publications
+                      </span>
                       {selectedGroup.counts.promotes > 0 && (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-2 w-2 rounded-full bg-red-500" />
-                          <span className="text-[11px] text-muted-foreground">{selectedGroup.counts.promotes} promote</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {selectedGroup.counts.promotes} promote
+                          </span>
                         </span>
                       )}
                       {selectedGroup.counts.suppresses > 0 && (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span className="text-[11px] text-muted-foreground">{selectedGroup.counts.suppresses} suppress</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {selectedGroup.counts.suppresses} suppress
+                          </span>
                         </span>
                       )}
                     </div>
@@ -294,8 +335,15 @@ export function CancerHallmarksOverview({
                           >
                             <div className="flex items-start justify-between gap-3">
                               <span className="inline-flex items-center gap-1.5 shrink-0">
-                                <span className={cn("h-2 w-2 rounded-full", config.dotClass)} />
-                                <span className="text-[11px] text-muted-foreground">{config.label}</span>
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    config.dotClass,
+                                  )}
+                                />
+                                <span className="text-[11px] text-muted-foreground">
+                                  {config.label}
+                                </span>
                               </span>
                               {item.pmid && (
                                 <ExternalLink

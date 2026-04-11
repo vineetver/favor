@@ -1,8 +1,15 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  EnhancerGeneRow,
+  PaginatedResponse,
+  RegionSummary,
+  TissueGroupRow,
+} from "@features/enrichment/api/region";
+import { useEnhancerGenesQuery } from "@features/enrichment/hooks/use-enhancer-genes-query";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import {
   Tooltip,
   TooltipContent,
@@ -11,26 +18,19 @@ import {
 } from "@shared/components/ui/tooltip";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import {
-  useServerTable,
-  useClientSearchParams,
   updateClientUrl,
+  useClientSearchParams,
+  useServerTable,
 } from "@shared/hooks";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo } from "react";
-import type {
-  EnhancerGeneRow,
-  PaginatedResponse,
-  RegionSummary,
-  TissueGroupRow,
-} from "@features/enrichment/api/region";
-import { useEnhancerGenesQuery } from "@features/enrichment/hooks/use-enhancer-genes-query";
 import { formatDist, formatTissueName } from "@shared/utils/tissue-format";
+import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useCallback, useEffect, useMemo } from "react";
+import { API_BASE } from "@/config/api";
 import { tissueFilter } from "./filter-helpers";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ============================================================================
 // Method config
@@ -86,7 +86,7 @@ function formatScoreValue(
   if (method === "epiraction") {
     if (score === 0) return "0";
     const exp = Math.floor(Math.log10(Math.abs(score)));
-    const mantissa = score / Math.pow(10, exp);
+    const mantissa = score / 10 ** exp;
     return (
       <span>
         {mantissa.toFixed(1)}&times;10
@@ -169,9 +169,7 @@ function detailText(
       const v = row.original.detail?.[key];
       if (v == null)
         return <span className="text-muted-foreground/40">&mdash;</span>;
-      return (
-        <span className="text-xs text-muted-foreground">{String(v)}</span>
-      );
+      return <span className="text-xs text-muted-foreground">{String(v)}</span>;
     },
   };
 }
@@ -262,7 +260,9 @@ const distCol: ColumnDef<EnhancerGeneRow, unknown> = {
   accessorKey: "distance",
   header: "Distance",
   enableSorting: true,
-  meta: { description: "Enhancer midpoint to gene TSS (bp)" } satisfies ColumnMeta,
+  meta: {
+    description: "Enhancer midpoint to gene TSS (bp)",
+  } satisfies ColumnMeta,
   cell: ({ getValue }) => {
     const v = getValue() as number | null;
     if (v == null)
@@ -301,8 +301,16 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
         geneCol,
         tissueCol,
         detailText("tissue_group", "Group", "Tissue group (11 groups)"),
-        makeScoreCol("ABC Score", "Activity \u00d7 Contact / \u03a3. >0.015 = functional link (Fulco 2019)"),
-        detailNum("log10_score", "log\u2081\u2080(ABC)", 3, "Log\u2081\u2080 of ABC score"),
+        makeScoreCol(
+          "ABC Score",
+          "Activity \u00d7 Contact / \u03a3. >0.015 = functional link (Fulco 2019)",
+        ),
+        detailNum(
+          "log10_score",
+          "log\u2081\u2080(ABC)",
+          3,
+          "Log\u2081\u2080 of ABC score",
+        ),
         distCol,
       ];
 
@@ -312,7 +320,10 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
         geneCol,
         tissueCol,
         detailText("element_class", "Class"),
-        makeScoreCol("EPIraction", "H3K27ac \u00d7 open chromatin \u00d7 Hi-C contact"),
+        makeScoreCol(
+          "EPIraction",
+          "H3K27ac \u00d7 open chromatin \u00d7 Hi-C contact",
+        ),
         detailNum("h3k27ac", "H3K27ac", 2, "Raw ChIP-seq signal at enhancer"),
         detailNum("open_chromatin", "Open Chrom.", 2, "Accessibility signal"),
         detailNum("hic_contacts", "Hi-C", 2, "3D contact frequency"),
@@ -339,7 +350,12 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
         detailText("sub_method", "Sub-method"),
         detailText("element_class", "Class"),
         makeScoreCol("ABC Score", "Activity \u00d7 Contact model score"),
-        detailNum("activity_base", "Activity", 2, "DNase/ATAC signal at enhancer"),
+        detailNum(
+          "activity_base",
+          "Activity",
+          2,
+          "DNase/ATAC signal at enhancer",
+        ),
         {
           id: "d_flags",
           header: "Flags",
@@ -355,12 +371,23 @@ function getColumns(method: string): ColumnDef<EnhancerGeneRow, unknown>[] {
             );
           },
         },
-        detailNum("hic_contact", "Hi-C Obs.", 4, "Measured 3D contact frequency"),
+        detailNum(
+          "hic_contact",
+          "Hi-C Obs.",
+          4,
+          "Measured 3D contact frequency",
+        ),
         distCol,
       ];
 
     default:
-      return [regionCol, geneCol, tissueCol, makeScoreCol("Score", "Prediction score"), distCol];
+      return [
+        regionCol,
+        geneCol,
+        tissueCol,
+        makeScoreCol("Score", "Prediction score"),
+        distCol,
+      ];
   }
 }
 
@@ -439,7 +466,12 @@ async function fetchTissueAgg(
       const name = r.tissue_name;
       const existing = map.get(name);
       if (!existing) {
-        map.set(name, { tissue: name, max_value: r.score ?? 0, count: 1, top_item: r.gene_symbol });
+        map.set(name, {
+          tissue: name,
+          max_value: r.score ?? 0,
+          count: 1,
+          top_item: r.gene_symbol,
+        });
       } else {
         existing.count++;
         if ((r.score ?? 0) > existing.max_value) {
@@ -455,7 +487,7 @@ async function fetchTissueAgg(
   const params = new URLSearchParams({ method, group_by: "tissue_group" });
   const res = await fetch(
     `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
-      { credentials: "include" },
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const json: { data: TissueAggRaw[] } = await res.json();
@@ -503,7 +535,7 @@ function TissueSummaryChart({
   const ticks = useMemo(() => {
     if (xMax <= 0) return [0];
     const step = xMax / 5;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
+    const magnitude = 10 ** Math.floor(Math.log10(step));
     const niceStep =
       step / magnitude >= 5
         ? 5 * magnitude
@@ -517,8 +549,7 @@ function TissueSummaryChart({
     return result;
   }, [xMax]);
 
-  const toPercent = (score: number) =>
-    xMax > 0 ? (score / xMax) * 100 : 0;
+  const toPercent = (score: number) => (xMax > 0 ? (score / xMax) * 100 : 0);
   const thresholdPct = toPercent(threshold);
 
   if (isLoading) {
@@ -547,10 +578,13 @@ function TissueSummaryChart({
       <div className="rounded-lg border border-border overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border">
           <h3 className="text-sm font-medium text-foreground">
-            Top {tissueGroup ? "Tissues" : "Tissue Groups"} by {methodLabel} Score
+            Top {tissueGroup ? "Tissues" : "Tissue Groups"} by {methodLabel}{" "}
+            Score
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Best {methodLabel} score per {tissueGroup ? "tissue" : "tissue group"}{tissueGroup ? ` within ${tissueGroup}` : ""}
+            Best {methodLabel} score per{" "}
+            {tissueGroup ? "tissue" : "tissue group"}
+            {tissueGroup ? ` within ${tissueGroup}` : ""}
           </p>
         </div>
 
@@ -580,7 +614,10 @@ function TissueSummaryChart({
                       {/* Horizontal leader line */}
                       <div
                         className="absolute top-1/2 left-0 border-t border-border"
-                        style={{ width: `${pct}%`, transform: "translateY(-50%)" }}
+                        style={{
+                          width: `${pct}%`,
+                          transform: "translateY(-50%)",
+                        }}
                       />
                       {/* Dot */}
                       <div
@@ -602,7 +639,8 @@ function TissueSummaryChart({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {row.count.toLocaleString()} prediction{row.count !== 1 ? "s" : ""}
+                  {row.count.toLocaleString()} prediction
+                  {row.count !== 1 ? "s" : ""}
                 </TooltipContent>
               </Tooltip>
             );
@@ -634,10 +672,17 @@ function TissueSummaryChart({
                     className="absolute"
                     style={{ left: `${pct}%`, top: 0 }}
                   >
-                    <div className="border-l border-border" style={{ height: 4 }} />
+                    <div
+                      className="border-l border-border"
+                      style={{ height: 4 }}
+                    />
                     <span
                       className="text-xs tabular-nums text-muted-foreground absolute"
-                      style={{ transform: "translateX(-50%)", top: 6, whiteSpace: "nowrap" }}
+                      style={{
+                        transform: "translateX(-50%)",
+                        top: 6,
+                        whiteSpace: "nowrap",
+                      }}
                     >
                       {v < 0.001
                         ? v.toExponential(0)
@@ -716,7 +761,8 @@ function buildFilters(
 
 const ENHANCER_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best Score",
-  metricDescription: "Strongest enhancer-gene prediction score (ABC/EPIraction/EpiMap/RE2G) in this tissue group",
+  metricDescription:
+    "Strongest enhancer-gene prediction score (ABC/EPIraction/EpiMap/RE2G) in this tissue group",
   countLabel: "Predictions",
   formatMetric: (v) => (v < 0.01 ? v.toExponential(1) : v.toFixed(3)),
 };
@@ -780,21 +826,17 @@ function EnhancerGenesDetailView({
   const searchParams = useClientSearchParams();
   const activeMethod = searchParams.get("method") || "abc";
 
-  const filters = useMemo(
-    () => buildFilters(genes, tissues),
-    [genes, tissues],
-  );
+  const filters = useMemo(() => buildFilters(genes, tissues), [genes, tissues]);
 
-  const columns = useMemo(
-    () => getColumns(activeMethod),
-    [activeMethod],
-  );
+  const columns = useMemo(() => getColumns(activeMethod), [activeMethod]);
 
   const { data, pageInfo, isLoading, isFetching, prefetchNext } =
     useEnhancerGenesQuery({ loc, initialData });
 
   const hasActiveFilters = Boolean(
-    searchParams.get("target_gene") || searchParams.get("tissue") || searchParams.get("tissue_group"),
+    searchParams.get("target_gene") ||
+      searchParams.get("tissue") ||
+      searchParams.get("tissue_group"),
   );
 
   const liveTotal =

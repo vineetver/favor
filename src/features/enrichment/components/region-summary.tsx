@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@infra/utils";
 import type { RegionSummary } from "@features/enrichment/api/region";
+import { cn } from "@infra/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -31,15 +31,61 @@ const NAV_ITEMS: {
   hint: string;
   isOverview?: boolean;
 }[] = [
-  { key: null, slug: "overview", label: "Overview", hint: "Tissue evidence ranked by convergence across all data types", isOverview: true },
-  { key: "signals", slug: "tissue-signals", label: "cCRE Activity", hint: "cCRE epigenomic signal Z-scores across tissues" },
-  { key: "chromatin_states", slug: "chromatin-states", label: "Chromatin States", hint: "Roadmap 25-state chromatin annotations" },
-  { key: "enhancer_genes", slug: "enhancer-genes", label: "Enhancer-Genes", hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)" },
-  { key: "accessibility_peaks", slug: "accessibility", label: "ATAC Peaks", hint: "ATAC-seq / DNase accessibility peaks" },
-  { key: "loops", slug: "loops", label: "Chromatin Loops", hint: "Two-anchor loops from Hi-C / ChIA-PET" },
-  { key: "ase", slug: "allele-specific", label: "ASE cCREs", hint: "Allele-specific epigenomic activity at cCREs" },
-  { key: "validated_enhancers", slug: "validated-enhancers", label: "VISTA Enhancers", hint: "In vivo validated enhancers from VISTA" },
-  { key: null, slug: "ccre-links", label: "cCRE Links", hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN" },
+  {
+    key: null,
+    slug: "overview",
+    label: "Overview",
+    hint: "Tissue evidence ranked by convergence across all data types",
+    isOverview: true,
+  },
+  {
+    key: "signals",
+    slug: "tissue-signals",
+    label: "cCRE Activity",
+    hint: "cCRE epigenomic signal Z-scores across tissues",
+  },
+  {
+    key: "chromatin_states",
+    slug: "chromatin-states",
+    label: "Chromatin States",
+    hint: "Roadmap 25-state chromatin annotations",
+  },
+  {
+    key: "enhancer_genes",
+    slug: "enhancer-genes",
+    label: "Enhancer-Genes",
+    hint: "Enhancer-gene predictions (ABC, EPIraction, EpiMap, RE2G)",
+  },
+  {
+    key: "accessibility_peaks",
+    slug: "accessibility",
+    label: "ATAC Peaks",
+    hint: "ATAC-seq / DNase accessibility peaks",
+  },
+  {
+    key: "loops",
+    slug: "loops",
+    label: "Chromatin Loops",
+    hint: "Two-anchor loops from Hi-C / ChIA-PET",
+  },
+  {
+    key: "ase",
+    slug: "allele-specific",
+    label: "ASE cCREs",
+    hint: "Allele-specific epigenomic activity at cCREs",
+  },
+  {
+    key: "validated_enhancers",
+    slug: "validated-enhancers",
+    label: "VISTA Enhancers",
+    hint: "In vivo validated enhancers from VISTA",
+  },
+  {
+    key: null,
+    slug: "ccre-links",
+    label: "cCRE Links",
+    hint: "cCRE-gene linkages from ChIA-PET, CRISPR, ENCODE SCREEN",
+  },
 ];
 
 export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
@@ -71,7 +117,13 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
                       ? "bg-card border-border opacity-40 cursor-default"
                       : "bg-card border-border hover:bg-accent",
                 )}
-                {...(isEmpty ? { tabIndex: -1, "aria-disabled": true, onClick: (e: React.MouseEvent) => e.preventDefault() } : {})}
+                {...(isEmpty
+                  ? {
+                      tabIndex: -1,
+                      "aria-disabled": true,
+                      onClick: (e: React.MouseEvent) => e.preventDefault(),
+                    }
+                  : {})}
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span
@@ -92,10 +144,12 @@ export function RegionSummaryNav({ summary, basePath }: RegionSummaryNavProps) {
                   </Tooltip>
                 </div>
                 {isOverview ? (
-                  <span className={cn(
-                    "text-sm font-medium",
-                    isActive ? "text-primary" : "text-muted-foreground",
-                  )}>
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      isActive ? "text-primary" : "text-muted-foreground",
+                    )}
+                  >
                     Evidence
                   </span>
                 ) : (

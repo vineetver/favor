@@ -1,9 +1,5 @@
 "use client";
 
-import { cn } from "@infra/utils";
-import type { Table } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "../button";
 import {
   Select,
   SelectContent,
@@ -11,6 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@shared/components/ui/select";
+import type { Table } from "@tanstack/react-table";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../button";
 import type { ServerPaginationProps } from "./types";
 
 interface FooterBarProps<TData> {
@@ -26,9 +25,19 @@ export function FooterBar<TData>({
 }: FooterBarProps<TData>) {
   // Server pagination mode
   if (serverPagination) {
-    const { pageSize, totalCount, canGoNext, canGoPrevious, onNextPage, onPreviousPage, onPageSizeChange } = serverPagination;
+    const {
+      pageSize,
+      totalCount,
+      canGoNext,
+      canGoPrevious,
+      onNextPage,
+      onPreviousPage,
+      onPageSizeChange,
+    } = serverPagination;
     const currentDataCount = table.getRowModel().rows.length;
-    const showPageSizeSelector = totalCount ? totalCount > Math.min(...pageSizeOptions) : true;
+    const showPageSizeSelector = totalCount
+      ? totalCount > Math.min(...pageSizeOptions)
+      : true;
 
     return (
       <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-background">
@@ -36,14 +45,20 @@ export function FooterBar<TData>({
           {totalCount !== undefined ? (
             <>
               Showing up to{" "}
-              <span className="font-medium text-foreground">{currentDataCount}</span>
+              <span className="font-medium text-foreground">
+                {currentDataCount}
+              </span>
               {" of "}
-              <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
+              <span className="font-medium text-foreground">
+                {totalCount.toLocaleString()}
+              </span>
             </>
           ) : (
             <>
               Showing{" "}
-              <span className="font-medium text-foreground">{currentDataCount}</span>
+              <span className="font-medium text-foreground">
+                {currentDataCount}
+              </span>
               {canGoNext && " (more available)"}
             </>
           )}
@@ -150,7 +165,10 @@ export function FooterBar<TData>({
 
             {getPageNumbers().map((page, idx) =>
               page === "ellipsis" ? (
-                <span key={`ellipsis-${idx}`} className="px-1 text-muted-foreground">
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="px-1 text-muted-foreground"
+                >
                   ...
                 </span>
               ) : (

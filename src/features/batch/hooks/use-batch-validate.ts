@@ -20,7 +20,9 @@ interface UseBatchValidateResult {
 /**
  * Hook for validating uploaded files before creating batch jobs
  */
-export function useBatchValidate(options: UseBatchValidateOptions = {}): UseBatchValidateResult {
+export function useBatchValidate(
+  options: UseBatchValidateOptions = {},
+): UseBatchValidateResult {
   const { onSuccess, onError } = options;
 
   const mutation = useMutation({

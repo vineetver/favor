@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadChromBpnetData } from "@features/enrichment/loaders";
 import { ChromBpnetView } from "@features/enrichment/components/chrombpnet-view";
+import { loadChromBpnetData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

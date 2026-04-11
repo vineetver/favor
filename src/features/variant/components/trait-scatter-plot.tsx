@@ -90,14 +90,14 @@ function hashJitter(str: string): number {
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) - h + str.charCodeAt(i)) | 0;
   }
-  return ((Math.abs(h) % 1000) / 500) - 1;
+  return (Math.abs(h) % 1000) / 500 - 1;
 }
 
 function formatPScientific(mlog: number): string {
   if (mlog <= 0) return "1";
   const expFloor = Math.floor(mlog);
   const frac = mlog - expFloor;
-  const mantissa = Math.pow(10, -frac);
+  const mantissa = 10 ** -frac;
   return `${mantissa.toFixed(2)}e-${expFloor}`;
 }
 
@@ -113,7 +113,8 @@ function buildYTicks(
   if (dataMax <= 0) return { tickvals: [0], ticktext: ["0"] };
   const n = 5;
   const toScaled = yScale === "sqrt" ? Math.sqrt : (v: number) => v;
-  const fromScaled = yScale === "sqrt" ? (v: number) => v * v : (v: number) => v;
+  const fromScaled =
+    yScale === "sqrt" ? (v: number) => v * v : (v: number) => v;
   const sm = toScaled(dataMax);
   const tickvals = Array.from({ length: n + 1 }, (_, i) => (i * sm) / n);
   const ticktext = tickvals.map((v) => {
@@ -121,7 +122,9 @@ function buildYTicks(
     if (dataMax <= 1) return raw.toFixed(2);
     if (dataMax <= 10) return raw.toFixed(1);
     const rounded = Math.round(raw);
-    return rounded >= 1000 ? `${Math.round(rounded / 100) / 10}k` : String(rounded);
+    return rounded >= 1000
+      ? `${Math.round(rounded / 100) / 10}k`
+      : String(rounded);
   });
   return { tickvals, ticktext };
 }

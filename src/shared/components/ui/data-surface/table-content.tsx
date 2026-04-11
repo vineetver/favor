@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@infra/utils";
 import {
   Tooltip,
@@ -15,6 +14,7 @@ import {
   type Table,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, Info, Search } from "lucide-react";
+import * as React from "react";
 import type { ColumnMeta } from "./types";
 
 interface TableContentProps<TData> {
@@ -178,10 +178,14 @@ export function TableContent<TData>({
                           )}
                         >
                           {cellIndex === 0 && (
-                            <div className={cn(
-                              "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r transition-all duration-150",
-                              isExpanded ? "h-6 bg-primary" : "h-0 bg-primary/60 group-hover:h-6",
-                            )} />
+                            <div
+                              className={cn(
+                                "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r transition-all duration-150",
+                                isExpanded
+                                  ? "h-6 bg-primary"
+                                  : "h-0 bg-primary/60 group-hover:h-6",
+                              )}
+                            />
                           )}
                           {flexRender(
                             cell.column.columnDef.cell,

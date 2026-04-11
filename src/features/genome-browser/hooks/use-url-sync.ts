@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/hooks/use-url-sync.ts
 //
@@ -9,72 +9,75 @@
 // effect depends on the reducer state directly — there is no intermediate
 // `updateUrl` callback that would force the timer to reset on every render.
 
-import { useEffect } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import {
-  useBrowserActions,
-  useBrowserDerived,
-} from '../state/browser-context'
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { useBrowserActions, useBrowserDerived } from "../state/browser-context";
+import { getTrackById } from "../tracks/registry";
 import {
   formatRegion,
   parseRegionParam,
   parseTracksParam,
-} from '../utils/region-parser'
-import { getTrackById } from '../tracks/registry'
+} from "../utils/region-parser";
 
 type UseUrlSyncOptions = {
-  enabled?: boolean
-}
+  enabled?: boolean;
+};
 
-const URL_DEBOUNCE_MS = 300
+const URL_DEBOUNCE_MS = 300;
 
 export function useUrlSync({ enabled = true }: UseUrlSyncOptions = {}) {
-  const { state, region, visibleTracks } = useBrowserDerived()
-  const actions = useBrowserActions()
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
+  const { state, region, visibleTracks } = useBrowserDerived();
+  const actions = useBrowserActions();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Restore from URL on mount only.
   useEffect(() => {
-    if (!enabled || state.status !== 'ready') return
+    if (!enabled || state.status !== "ready") return;
 
-    const regionParam = searchParams.get('region')
+    const regionParam = searchParams.get("region");
     if (regionParam) {
-      const parsed = parseRegionParam(regionParam)
-      if (parsed) actions.navigateTo(parsed)
+      const parsed = parseRegionParam(regionParam);
+      if (parsed) actions.navigateTo(parsed);
     }
 
-    const tracksParam = searchParams.get('tracks')
+    const tracksParam = searchParams.get("tracks");
     if (tracksParam) {
       for (const id of parseTracksParam(tracksParam)) {
-        const def = getTrackById(id)
-        if (def) actions.addTrack(def)
+        const def = getTrackById(id);
+        if (def) actions.addTrack(def);
       }
     }
     // Mount-only restore — intentionally not depending on the params.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled])
+  }, [
+    enabled,
+    actions.addTrack,
+    actions.navigateTo,
+    searchParams.get,
+    state.status,
+  ]);
 
   // Debounced URL writeback. Re-runs only when the data the URL actually
   // depends on changes (region + visible-track set).
   useEffect(() => {
-    if (!enabled || !region) return
+    if (!enabled || !region) return;
 
     const handle = setTimeout(() => {
-      const params = new URLSearchParams()
-      params.set('region', formatRegion(region, { commas: false }))
+      const params = new URLSearchParams();
+      params.set("region", formatRegion(region, { commas: false }));
       if (visibleTracks.length > 0) {
         params.set(
-          'tracks',
-          visibleTracks.map(t => t.definition.id).join(',')
-        )
+          "tracks",
+          visibleTracks.map((t) => t.definition.id).join(","),
+        );
       }
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }, URL_DEBOUNCE_MS)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, URL_DEBOUNCE_MS);
 
-    return () => clearTimeout(handle)
-  }, [enabled, region, visibleTracks, pathname, router])
+    return () => clearTimeout(handle);
+  }, [enabled, region, visibleTracks, pathname, router]);
 }
 
 /**
@@ -82,19 +85,19 @@ export function useUrlSync({ enabled = true }: UseUrlSyncOptions = {}) {
  * call from event handlers (e.g. "Copy link" button).
  */
 export function useShareableUrl(): string | null {
-  const { region, visibleTracks } = useBrowserDerived()
-  const pathname = usePathname()
+  const { region, visibleTracks } = useBrowserDerived();
+  const pathname = usePathname();
 
-  if (!region) return null
+  if (!region) return null;
 
-  const params = new URLSearchParams()
-  params.set('region', formatRegion(region, { commas: false }))
+  const params = new URLSearchParams();
+  params.set("region", formatRegion(region, { commas: false }));
   if (visibleTracks.length > 0) {
-    params.set('tracks', visibleTracks.map(t => t.definition.id).join(','))
+    params.set("tracks", visibleTracks.map((t) => t.definition.id).join(","));
   }
 
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}${pathname}?${params.toString()}`
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}${pathname}?${params.toString()}`;
   }
-  return `${pathname}?${params.toString()}`
+  return `${pathname}?${params.toString()}`;
 }

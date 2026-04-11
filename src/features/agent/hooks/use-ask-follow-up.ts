@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 // src/features/agent/hooks/use-ask-follow-up.ts
 //
@@ -16,26 +16,26 @@
 // If sessionStorage is unavailable (SSR / private browsing), we still
 // attempt the navigation; the agent will simply render the empty state.
 
-import { useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@shared/hooks/use-auth'
-import { stashFollowUp, type SummarySeed } from '../lib/follow-up'
+import { useAuth } from "@shared/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
+import { type SummarySeed, stashFollowUp } from "../lib/follow-up";
 
 export function useAskFollowUp() {
-  const router = useRouter()
-  const { isAuthenticated, login } = useAuth()
+  const router = useRouter();
+  const { isAuthenticated, login } = useAuth();
 
   return useCallback(
     (seed: SummarySeed) => {
-      const seedId = stashFollowUp(seed)
-      const target = seedId ? `/agent?seed=${seedId}` : '/agent'
+      const seedId = stashFollowUp(seed);
+      const target = seedId ? `/agent?seed=${seedId}` : "/agent";
 
       if (!isAuthenticated) {
-        login(target)
-        return
+        login(target);
+        return;
       }
-      router.push(target)
+      router.push(target);
     },
-    [router, isAuthenticated, login]
-  )
+    [router, isAuthenticated, login],
+  );
 }

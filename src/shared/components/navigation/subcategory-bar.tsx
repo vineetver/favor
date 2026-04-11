@@ -18,10 +18,7 @@ export function SubcategoryBar({
 }: SubcategoryBarProps) {
   const params = useParams();
   const pathname = usePathname();
-  const disabledSet = useMemo(
-    () => new Set(disabledSlugs),
-    [disabledSlugs],
-  );
+  const disabledSet = useMemo(() => new Set(disabledSlugs), [disabledSlugs]);
 
   const activeSlug = useMemo(() => {
     const sub = params.subcategory as string | undefined;

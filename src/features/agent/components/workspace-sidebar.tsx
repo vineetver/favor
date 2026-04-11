@@ -1,34 +1,33 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { deleteCohort } from "@features/batch/api";
+import { useCohorts } from "@features/batch/hooks/use-cohorts";
+import type { CohortListItem } from "@features/batch/types";
+import { cn } from "@infra/utils";
+import { QuotaBar } from "@shared/components/quota-bar";
 import { Button } from "@shared/components/ui/button";
 import {
   Collapsible,
-  CollapsibleTrigger,
   CollapsibleContent,
+  CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
-import { cn } from "@infra/utils";
+import { useQuotas } from "@shared/hooks/use-quotas";
 import {
   ChevronRightIcon,
   MessageSquareIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
-
-import { VariantSubmitPanel } from "./variant-submit-panel";
-import { CohortPromptPicker } from "./cohort-prompt-picker";
-import {
-  WorkspaceTree,
-  ResourceViewer,
-  RESOURCE_VIEWER_CLOSED,
-  type ResourceViewerState,
-} from "./workspace-tree";
-import type { CohortListItem } from "@features/batch/types";
-import { deleteCohort } from "@features/batch/api";
-import { useCohorts } from "@features/batch/hooks/use-cohorts";
+import { useCallback, useState } from "react";
 import { useSessions } from "../hooks/use-sessions";
-import { useQuotas } from "@shared/hooks/use-quotas";
-import { QuotaBar } from "@shared/components/quota-bar";
+import { CohortPromptPicker } from "./cohort-prompt-picker";
+import { VariantSubmitPanel } from "./variant-submit-panel";
+import {
+  RESOURCE_VIEWER_CLOSED,
+  ResourceViewer,
+  type ResourceViewerState,
+  WorkspaceTree,
+} from "./workspace-tree";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -130,12 +129,9 @@ export function WorkspaceSidebar({
     null,
   );
 
-  const handleNewCohortConversation = useCallback(
-    (cohort: CohortListItem) => {
-      setSelectedCohort(cohort);
-    },
-    [],
-  );
+  const handleNewCohortConversation = useCallback((cohort: CohortListItem) => {
+    setSelectedCohort(cohort);
+  }, []);
 
   const handleCohortPromptSend = useCallback(
     (message: string) => {
@@ -190,8 +186,7 @@ export function WorkspaceSidebar({
     [onSendMessage, onNewChat],
   );
 
-  const isEmpty =
-    sessions.length === 0 && cohorts.length === 0 && !showSubmit;
+  const isEmpty = sessions.length === 0 && cohorts.length === 0 && !showSubmit;
 
   return (
     <div className={cn("flex h-full flex-col", className)}>

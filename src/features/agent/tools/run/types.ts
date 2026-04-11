@@ -50,12 +50,28 @@ const seedRefSchema = z.union([
 export type SeedRef = z.infer<typeof seedRefSchema>;
 
 const targetIntentSchema = z.enum([
-  "diseases", "drugs", "pathways", "variants",
-  "phenotypes", "tissues", "genes", "proteins", "compounds",
-  "protein_domains", "ccres",
-  "side_effects", "go_terms", "metabolites", "studies", "signals",
-  "drug_interactions", "adverse_effects", "drug_indications",
-  "drug_targets", "drug_metabolism", "drug_response",
+  "diseases",
+  "drugs",
+  "pathways",
+  "variants",
+  "phenotypes",
+  "tissues",
+  "genes",
+  "proteins",
+  "compounds",
+  "protein_domains",
+  "ccres",
+  "side_effects",
+  "go_terms",
+  "metabolites",
+  "studies",
+  "signals",
+  "drug_interactions",
+  "adverse_effects",
+  "drug_indications",
+  "drug_targets",
+  "drug_metabolism",
+  "drug_response",
 ]);
 
 export type TargetIntent = z.infer<typeof targetIntentSchema>;
@@ -92,9 +108,11 @@ const weightSchema = z.object({
 // Pipeline step schema
 // ---------------------------------------------------------------------------
 
-const seedsFilterSchema = z.object({
-  type: z.string().optional(),
-}).optional();
+const seedsFilterSchema = z
+  .object({
+    type: z.string().optional(),
+  })
+  .optional();
 
 const pipelineStepSchema = z.object({
   id: z.string(),
@@ -115,11 +133,15 @@ export type PipelineStep = z.infer<typeof pipelineStepSchema>;
 const featureSpec = z.object({
   numeric: z.array(z.string()).min(1),
   categorical: z.array(z.string()).optional(),
-  transforms: z.array(z.object({
-    type: z.enum(["log1p", "standardize", "min_max_scale"]),
-    field: z.string().optional(),
-    fields: z.array(z.string()).optional(),
-  })).optional(),
+  transforms: z
+    .array(
+      z.object({
+        type: z.enum(["log1p", "standardize", "min_max_scale"]),
+        field: z.string().optional(),
+        fields: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
   missing: z.enum(["median", "mean", "drop"]).optional(),
 });
 
@@ -130,27 +152,107 @@ const binaryTargetSpec = z.object({
   positive_values: z.array(z.string()),
 });
 
-const validationSpec = z.object({
-  split: z.enum(["holdout", "kfold"]),
-  k: z.number().optional(),
-  test_fraction: z.number().optional(),
-  seed: z.number().optional(),
-}).optional();
+const validationSpec = z
+  .object({
+    split: z.enum(["holdout", "kfold"]),
+    k: z.number().optional(),
+    test_fraction: z.number().optional(),
+    seed: z.number().optional(),
+  })
+  .optional();
 
 const analyticsTaskSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("linear_regression"), target: targetSpec, features: featureSpec, validation: validationSpec }),
-  z.object({ type: z.literal("logistic_regression"), target: binaryTargetSpec, features: featureSpec, regularization: z.object({ penalty: z.enum(["l1", "l2", "elasticnet"]), l1_ratio: z.number().optional(), lambda: z.number().optional() }).optional(), validation: validationSpec }),
-  z.object({ type: z.literal("elastic_net"), target: targetSpec, features: featureSpec, l1_ratio: z.number(), lambda: z.number(), validation: validationSpec }),
-  z.object({ type: z.literal("cox_regression"), time_column: z.string(), event_column: z.string(), features: featureSpec }),
-  z.object({ type: z.literal("pca"), features: featureSpec, n_components: z.number().max(50).optional() }),
-  z.object({ type: z.literal("kmeans"), features: featureSpec, k: z.number().min(1).max(50), max_iterations: z.number().optional(), seed: z.number().optional() }),
-  z.object({ type: z.literal("hierarchical_clustering"), features: featureSpec, n_clusters: z.number().min(1).max(50), linkage: z.enum(["ward", "complete", "average", "single"]).optional() }),
-  z.object({ type: z.literal("feature_importance"), target: targetSpec, features: featureSpec, method: z.string().optional(), n_repeats: z.number().optional(), seed: z.number().optional() }),
-  z.object({ type: z.literal("bootstrap_ci"), statistic: z.object({ stat: z.string() }).optional(), columns: z.array(z.string()), n_bootstrap: z.number().max(10000).optional(), confidence: z.number().optional(), seed: z.number().optional() }),
-  z.object({ type: z.literal("permutation_test"), x_column: z.string(), y_column: z.string(), statistic: z.string().optional(), n_permutations: z.number().max(10000).optional(), seed: z.number().optional() }),
-  z.object({ type: z.literal("multiple_testing_correction"), p_value_column: z.string(), method: z.enum(["bh", "bonferroni", "holm"]).optional() }),
-  z.object({ type: z.literal("gwas_qc"), p_value_column: z.string(), effect_size_column: z.string(), se_column: z.string() }),
-  z.object({ type: z.literal("score_model"), model_run_id: z.string(), output_column: z.string().optional() }),
+  z.object({
+    type: z.literal("linear_regression"),
+    target: targetSpec,
+    features: featureSpec,
+    validation: validationSpec,
+  }),
+  z.object({
+    type: z.literal("logistic_regression"),
+    target: binaryTargetSpec,
+    features: featureSpec,
+    regularization: z
+      .object({
+        penalty: z.enum(["l1", "l2", "elasticnet"]),
+        l1_ratio: z.number().optional(),
+        lambda: z.number().optional(),
+      })
+      .optional(),
+    validation: validationSpec,
+  }),
+  z.object({
+    type: z.literal("elastic_net"),
+    target: targetSpec,
+    features: featureSpec,
+    l1_ratio: z.number(),
+    lambda: z.number(),
+    validation: validationSpec,
+  }),
+  z.object({
+    type: z.literal("cox_regression"),
+    time_column: z.string(),
+    event_column: z.string(),
+    features: featureSpec,
+  }),
+  z.object({
+    type: z.literal("pca"),
+    features: featureSpec,
+    n_components: z.number().max(50).optional(),
+  }),
+  z.object({
+    type: z.literal("kmeans"),
+    features: featureSpec,
+    k: z.number().min(1).max(50),
+    max_iterations: z.number().optional(),
+    seed: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal("hierarchical_clustering"),
+    features: featureSpec,
+    n_clusters: z.number().min(1).max(50),
+    linkage: z.enum(["ward", "complete", "average", "single"]).optional(),
+  }),
+  z.object({
+    type: z.literal("feature_importance"),
+    target: targetSpec,
+    features: featureSpec,
+    method: z.string().optional(),
+    n_repeats: z.number().optional(),
+    seed: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal("bootstrap_ci"),
+    statistic: z.object({ stat: z.string() }).optional(),
+    columns: z.array(z.string()),
+    n_bootstrap: z.number().max(10000).optional(),
+    confidence: z.number().optional(),
+    seed: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal("permutation_test"),
+    x_column: z.string(),
+    y_column: z.string(),
+    statistic: z.string().optional(),
+    n_permutations: z.number().max(10000).optional(),
+    seed: z.number().optional(),
+  }),
+  z.object({
+    type: z.literal("multiple_testing_correction"),
+    p_value_column: z.string(),
+    method: z.enum(["bh", "bonferroni", "holm"]).optional(),
+  }),
+  z.object({
+    type: z.literal("gwas_qc"),
+    p_value_column: z.string(),
+    effect_size_column: z.string(),
+    se_column: z.string(),
+  }),
+  z.object({
+    type: z.literal("score_model"),
+    model_run_id: z.string(),
+    output_column: z.string().optional(),
+  }),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -161,7 +263,10 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   // Cohort commands
   z.object({
     command: z.literal("rows"),
-    cohort_id: z.string().optional().describe("Cohort ID (uses active cohort if omitted)"),
+    cohort_id: z
+      .string()
+      .optional()
+      .describe("Cohort ID (uses active cohort if omitted)"),
     select: z.array(z.string()).optional(),
     filters: z.array(cohortFilterSchema).optional(),
     sort: z.string().optional(),
@@ -281,7 +386,9 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     edge_types: z.array(z.string()).optional(),
     top_k: z.number().min(1).optional(),
     // context
-    sections: z.array(z.enum(["summary", "neighbors", "evidence", "ontology"])).optional(),
+    sections: z
+      .array(z.enum(["summary", "neighbors", "evidence", "ontology"]))
+      .optional(),
     context_depth: z.enum(["minimal", "standard", "detailed"]).optional(),
     // aggregate
     metric: z.enum(["count", "avg", "sum", "min", "max"]).optional(),
@@ -300,20 +407,29 @@ export const runCommandSchema = z.discriminatedUnion("command", [
     max_hops: z.number().min(1).optional(),
     limit: z.number().min(1).optional(),
     // patterns (merged from query)
-    description: z.string().optional().describe("Natural language description of the pattern"),
+    description: z
+      .string()
+      .optional()
+      .describe("Natural language description of the pattern"),
     seeds: z.array(seedRefSchema).optional(),
-    pattern: z.array(z.object({
-      var: z.string(),
-      type: z.string().optional(),
-      edge: z.string().optional(),
-      from: z.string().optional(),
-      to: z.string().optional(),
-    })).optional(),
+    pattern: z
+      .array(
+        z.object({
+          var: z.string(),
+          type: z.string().optional(),
+          edge: z.string().optional(),
+          from: z.string().optional(),
+          to: z.string().optional(),
+        }),
+      )
+      .optional(),
     return_vars: z.array(z.string()).optional(),
     filters: z.record(z.unknown()).optional(),
-    select: z.object({
-      includeEvidence: z.boolean().optional(),
-    }).optional(),
+    select: z
+      .object({
+        includeEvidence: z.boolean().optional(),
+      })
+      .optional(),
   }),
 
   // Pipeline — multi-step execution
@@ -327,11 +443,15 @@ export const runCommandSchema = z.discriminatedUnion("command", [
   // Workspace commands
   z.object({
     command: z.literal("pin"),
-    entities: z.array(z.object({
-      type: z.string(),
-      id: z.string(),
-      label: z.string(),
-    })).min(1),
+    entities: z
+      .array(
+        z.object({
+          type: z.string(),
+          id: z.string(),
+          label: z.string(),
+        }),
+      )
+      .min(1),
   }),
   z.object({
     command: z.literal("set_cohort"),
@@ -358,17 +478,17 @@ export interface EntityRef {
   subtitle?: string;
 }
 
-export type { RunResultEnvelope as RunResult } from "./run-result";
-export type {
-  ToolStatus,
-  ToolError,
-  ToolWarning,
-  TraceEntry,
-  Candidate,
-  ResolvedInfo,
-  BudgetsRemaining,
-  NextAction,
-  Repair,
-} from "./run-result";
 export type { ToolErrorCode } from "./error-classify";
 export type { GraphResultData } from "./result-data-types";
+export type {
+  BudgetsRemaining,
+  Candidate,
+  NextAction,
+  Repair,
+  ResolvedInfo,
+  RunResultEnvelope as RunResult,
+  ToolError,
+  ToolStatus,
+  ToolWarning,
+  TraceEntry,
+} from "./run-result";

@@ -6,14 +6,16 @@
  * Phase 5: TraceCollector for observability.
  */
 
-import { agentFetch, AgentToolError } from "../../lib/api-client";
-import type { SeedRef, EntityRef } from "./types";
+import { AgentToolError, agentFetch } from "../../lib/api-client";
 import type { Candidate } from "./run-result";
+import type { EntityRef, SeedRef } from "./types";
 
 const MAX_SUBTITLE_LENGTH = 150;
 function trimSubtitle(s?: string): string | undefined {
   if (!s) return s;
-  return s.length <= MAX_SUBTITLE_LENGTH ? s : `${s.slice(0, MAX_SUBTITLE_LENGTH).trimEnd()}…`;
+  return s.length <= MAX_SUBTITLE_LENGTH
+    ? s
+    : `${s.slice(0, MAX_SUBTITLE_LENGTH).trimEnd()}…`;
 }
 
 interface ResolveResultItem {
@@ -70,9 +72,13 @@ export async function resolveSeedsWithMeta(
 
   // Batch fuzzy labels for a single API call
   const fuzzyLabels: Array<{ index: number; label: string }> = [];
-  const exactRefs: Array<{ index: number; ref: { type: string; id: string } }> = [];
+  const exactRefs: Array<{ index: number; ref: { type: string; id: string } }> =
+    [];
   // Track which resolution index maps to which seed
-  const resolutionIndices: Array<{ seedIndex: number; resolutionIndex: number }> = [];
+  const _resolutionIndices: Array<{
+    seedIndex: number;
+    resolutionIndex: number;
+  }> = [];
 
   for (let i = 0; i < refs.length; i++) {
     const ref = refs[i];
@@ -107,7 +113,10 @@ export async function resolveSeedsWithMeta(
       }
     } else if ("from_artifact" in ref) {
       const artRef = ref as { from_artifact: number; field?: string };
-      const entities = await extractEntitiesFromArtifact(artRef.from_artifact, artRef.field);
+      const entities = await extractEntitiesFromArtifact(
+        artRef.from_artifact,
+        artRef.field,
+      );
       for (const entity of entities) {
         resolutions.push({
           entity,
@@ -119,7 +128,10 @@ export async function resolveSeedsWithMeta(
       }
     } else if ("from_cohort" in ref) {
       const cohortRef = ref as { from_cohort: string; top?: number };
-      const entities = await extractEntitiesFromCohort(cohortRef.from_cohort, cohortRef.top);
+      const entities = await extractEntitiesFromCohort(
+        cohortRef.from_cohort,
+        cohortRef.top,
+      );
       for (const entity of entities) {
         resolutions.push({
           entity,
@@ -134,7 +146,8 @@ export async function resolveSeedsWithMeta(
 
   // Resolve all fuzzy + exact refs in a single batch call
   const queries: string[] = [];
-  const queryMeta: Array<{ type: "fuzzy" | "exact"; originalLabel?: string }> = [];
+  const queryMeta: Array<{ type: "fuzzy" | "exact"; originalLabel?: string }> =
+    [];
 
   for (const { label } of fuzzyLabels) {
     queries.push(normalizeLabel(label));
@@ -147,20 +160,27 @@ export async function resolveSeedsWithMeta(
 
   if (queries.length > 0) {
     try {
-      const resp = await agentFetch<{ data: { results: ResolveResultItem[] } }>("/graph/resolve", {
-        method: "POST",
-        body: { queries },
-      });
+      const resp = await agentFetch<{ data: { results: ResolveResultItem[] } }>(
+        "/graph/resolve",
+        {
+          method: "POST",
+          body: { queries },
+        },
+      );
       const resolveResults = resp.data?.results ?? [];
 
-      const lowConfidenceLabels: Array<{ label: string; resolvedIndex: number }> = [];
+      const lowConfidenceLabels: Array<{
+        label: string;
+        resolvedIndex: number;
+      }> = [];
 
       for (let i = 0; i < resolveResults.length; i++) {
         const r = resolveResults[i];
         if (r.status.toLowerCase() === "matched" && r.entity) {
           const confidence = r.confidence ?? 1.0;
           const meta = queryMeta[i];
-          const isLowConfidence = meta?.type === "fuzzy" && confidence < MIN_CONFIDENCE;
+          const isLowConfidence =
+            meta?.type === "fuzzy" && confidence < MIN_CONFIDENCE;
 
           if (isLowConfidence) {
             lowConfidenceLabels.push({
@@ -190,11 +210,15 @@ export async function resolveSeedsWithMeta(
             if (searchRes) {
               resolutions.push(searchRes);
             } else {
-              console.warn(`[resolve-seeds] Fuzzy label "${label}" unresolved — dropped from seeds`);
+              console.warn(
+                `[resolve-seeds] Fuzzy label "${label}" unresolved — dropped from seeds`,
+              );
               unresolvedLabels.push(label);
             }
           } else if (meta?.type === "exact") {
-            console.warn(`[resolve-seeds] Exact ref "${r.query}" not found in graph — dropped from seeds`);
+            console.warn(
+              `[resolve-seeds] Exact ref "${r.query}" not found in graph — dropped from seeds`,
+            );
             unresolvedLabels.push(r.query);
           }
         }
@@ -205,10 +229,19 @@ export async function resolveSeedsWithMeta(
         await improveLowConfidenceMatches(resolutions, lowConfidenceLabels);
       }
     } catch (err) {
-      const detail = err instanceof AgentToolError ? err.detail : (err instanceof Error ? err.message : String(err));
+      const detail =
+        err instanceof AgentToolError
+          ? err.detail
+          : err instanceof Error
+            ? err.message
+            : String(err);
       console.error("[resolve-seeds] Batch resolve failed:", detail);
       // Surface the failure — don't silently return 0 resolutions
-      throw new AgentToolError(502, `Seed resolution failed: ${detail}`, "Try again or use exact {type, id} seeds.");
+      throw new AgentToolError(
+        502,
+        `Seed resolution failed: ${detail}`,
+        "Try again or use exact {type, id} seeds.",
+      );
     }
   }
 
@@ -344,14 +377,19 @@ async function improveLowConfidenceMatches(
 /**
  * Search with an explicit type constraint via /graph/search?q=...&types=...
  */
-async function searchWithType(label: string, type: string): Promise<SeedResolution | null> {
+async function searchWithType(
+  label: string,
+  type: string,
+): Promise<SeedResolution | null> {
   try {
     const normalized = normalizeLabel(label);
     // Try both the exact node type name and lowercase plural for compatibility
-    const typeVariants = [type, type.toLowerCase() + "s"];
+    const typeVariants = [type, `${type.toLowerCase()}s`];
     for (const typeParam of typeVariants) {
       try {
-        const resp = await agentFetch<{ data: { results: SearchResultItem[] } }>(
+        const resp = await agentFetch<{
+          data: { results: SearchResultItem[] };
+        }>(
           `/graph/search?q=${encodeURIComponent(normalized)}&types=${encodeURIComponent(typeParam)}&limit=3`,
         );
         const top = resp.data?.results?.[0];
@@ -373,10 +411,15 @@ async function searchWithType(label: string, type: string): Promise<SeedResoluti
         // Try next variant
       }
     }
-    console.warn(`[resolve-seeds] searchWithType("${label}", "${type}") found no results`);
+    console.warn(
+      `[resolve-seeds] searchWithType("${label}", "${type}") found no results`,
+    );
     return null;
   } catch (err) {
-    console.warn(`[resolve-seeds] searchWithType("${label}", "${type}") failed:`, err instanceof Error ? err.message : err);
+    console.warn(
+      `[resolve-seeds] searchWithType("${label}", "${type}") failed:`,
+      err instanceof Error ? err.message : err,
+    );
     return null;
   }
 }
@@ -391,7 +434,10 @@ export async function resolveSeedsWithTypeHint(
   expectedType?: string,
   resolvedCache?: Record<string, EntityRef>,
 ): Promise<ResolveResult> {
-  const { resolutions, unresolved } = await resolveSeedsWithMeta(refs, resolvedCache);
+  const { resolutions, unresolved } = await resolveSeedsWithMeta(
+    refs,
+    resolvedCache,
+  );
   if (!expectedType) return { resolutions, unresolved };
 
   const corrected: SeedResolution[] = [];
@@ -422,7 +468,9 @@ async function extractEntitiesFromArtifact(
       return source
         .filter(
           (item): item is { type: string; id: string; label: string } =>
-            item && typeof item.type === "string" && typeof item.id === "string",
+            item &&
+            typeof item.type === "string" &&
+            typeof item.id === "string",
         )
         .slice(0, 10)
         .map((item) => ({
@@ -439,7 +487,13 @@ async function extractEntitiesFromArtifact(
 }
 
 /** Column candidates for entity extraction — tried in order */
-const COHORT_ENTITY_COLUMNS = ["gene", "gene_symbol", "gene_name", "rsid", "variant_id"];
+const COHORT_ENTITY_COLUMNS = [
+  "gene",
+  "gene_symbol",
+  "gene_name",
+  "rsid",
+  "variant_id",
+];
 
 async function extractEntitiesFromCohort(
   cohortId: string,
@@ -460,7 +514,9 @@ async function extractEntitiesFromCohort(
         const names = result.buckets.map((b) => b.key).filter(Boolean);
         if (names.length === 0) continue;
 
-        const resolveResp = await agentFetch<{ data: { results: ResolveResultItem[] } }>("/graph/resolve", {
+        const resolveResp = await agentFetch<{
+          data: { results: ResolveResultItem[] };
+        }>("/graph/resolve", {
           method: "POST",
           body: { queries: names },
         });
@@ -468,16 +524,13 @@ async function extractEntitiesFromCohort(
         const entities = (resolveResp.data?.results ?? [])
           .filter((r) => r.status.toLowerCase() === "matched" && r.entity)
           .map((r) => ({
-            type: r.entity!.type,
-            id: r.entity!.id,
-            label: r.entity!.label,
+            type: r.entity?.type,
+            id: r.entity?.id,
+            label: r.entity?.label,
           }));
 
         if (entities.length > 0) return entities;
-      } catch {
-        // This column doesn't exist — try next
-        continue;
-      }
+      } catch {}
     }
     return [];
   } catch {

@@ -40,13 +40,10 @@ interface UseBatchJobResult {
  * Hook for managing batch job lifecycle: creation, polling, and cancellation.
  * Uses cohort API under the hood, maps to Job type for backward compat.
  */
-export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult {
-  const {
-    onJobCreated,
-    onJobCompleted,
-    onJobFailed,
-    onError,
-  } = options;
+export function useBatchJob(
+  options: UseBatchJobOptions = {},
+): UseBatchJobResult {
+  const { onJobCreated, onJobCompleted, onJobFailed, onError } = options;
 
   const queryClient = useQueryClient();
   const [jobId, setJobId] = useState<string | null>(null);
@@ -61,7 +58,8 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
       onJobCreated?.(data.id);
     },
     onError: (err) => {
-      const jobError = err instanceof Error ? err : new Error("Failed to create job");
+      const jobError =
+        err instanceof Error ? err : new Error("Failed to create job");
       setError(jobError);
       onError?.(jobError);
     },
@@ -69,15 +67,15 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
 
   // Delete/cancel cohort mutation (replaces cancelJob)
   const cancelMutation = useMutation({
-    mutationFn: ({ cohortId }: { cohortId: string }) =>
-      deleteCohort(cohortId),
+    mutationFn: ({ cohortId }: { cohortId: string }) => deleteCohort(cohortId),
     onSuccess: () => {
       if (jobId) {
         queryClient.invalidateQueries({ queryKey: ["batch-job", jobId] });
       }
     },
     onError: (err) => {
-      const cancelError = err instanceof Error ? err : new Error("Failed to cancel job");
+      const cancelError =
+        err instanceof Error ? err : new Error("Failed to cancel job");
       setError(cancelError);
       onError?.(cancelError);
     },
@@ -166,7 +164,9 @@ export function useBatchJob(options: UseBatchJobOptions = {}): UseBatchJobResult
     isCreating: createMutation.isPending,
     isPolling: jobStatusQuery.isFetching && !jobStatusQuery.data?.is_terminal,
     isCancelling: cancelMutation.isPending,
-    error: error || (jobStatusQuery.error instanceof Error ? jobStatusQuery.error : null),
+    error:
+      error ||
+      (jobStatusQuery.error instanceof Error ? jobStatusQuery.error : null),
     reset,
   };
 }

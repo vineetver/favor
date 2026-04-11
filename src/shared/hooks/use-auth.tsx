@@ -2,15 +2,14 @@
 
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from "react";
-
-import { API_BASE } from "@/config/api";
 import { getQueryClient } from "@/app/providers";
+import { API_BASE } from "@/config/api";
 
 interface AuthUser {
   sub: string;
@@ -90,9 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // IndexedDB caches (parquet, DuckDB data) persist across sessions.
     // Fire-and-forget cleanup; the redirect will complete before these finish,
     // but the caches will be gone by the time someone logs back in.
-    import("@features/batch/lib/data-cache").then((m) => m.clearDataCache()).catch(() => {});
-    import("@features/batch/lib/parquet-cache").then((m) => m.clearParquetCache()).catch(() => {});
-    import("@features/batch/hooks/use-duckdb").then((m) => m.destroyDuckDB()).catch(() => {});
+    import("@features/batch/lib/data-cache")
+      .then((m) => m.clearDataCache())
+      .catch(() => {});
+    import("@features/batch/lib/parquet-cache")
+      .then((m) => m.clearParquetCache())
+      .catch(() => {});
+    import("@features/batch/hooks/use-duckdb")
+      .then((m) => m.destroyDuckDB())
+      .catch(() => {});
     window.location.href = `${API_BASE}/auth/logout`;
   }, []);
 

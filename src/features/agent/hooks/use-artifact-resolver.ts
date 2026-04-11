@@ -15,7 +15,8 @@ export function useArtifactResolver() {
     if (cache.current.has(artifactId)) return cache.current.get(artifactId);
 
     // Deduplicate concurrent requests for the same artifact
-    if (inflight.current.has(artifactId)) return inflight.current.get(artifactId);
+    if (inflight.current.has(artifactId))
+      return inflight.current.get(artifactId);
 
     const promise = fetch(`${API_BASE}/agent/artifacts/${artifactId}`, {
       credentials: "include",

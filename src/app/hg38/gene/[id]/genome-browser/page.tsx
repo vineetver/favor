@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
 import { fetchGene } from "@features/gene/api";
 import { BrowserPage } from "@features/genome-browser";
+import { notFound } from "next/navigation";
 
 interface GenomeBrowserPageProps {
   params: Promise<{
@@ -33,12 +33,14 @@ export default async function GenomeBrowserPage({
   const end = gene.end0_excl;
 
   // Add some padding around the gene region (10% on each side)
-  const paddedStart = start !== undefined && end !== undefined
-    ? Math.max(0, start - Math.floor((end - start) * 0.1))
-    : undefined;
-  const paddedEnd = start !== undefined && end !== undefined
-    ? end + Math.floor((end - start) * 0.1)
-    : undefined;
+  const paddedStart =
+    start !== undefined && end !== undefined
+      ? Math.max(0, start - Math.floor((end - start) * 0.1))
+      : undefined;
+  const paddedEnd =
+    start !== undefined && end !== undefined
+      ? end + Math.floor((end - start) * 0.1)
+      : undefined;
 
   return (
     <BrowserPage

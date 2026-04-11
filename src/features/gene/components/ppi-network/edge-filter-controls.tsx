@@ -32,21 +32,21 @@ function EdgeFilterControlsInner({
     (value: number[]) => {
       onChange({ ...filter, minSources: value[0] });
     },
-    [filter, onChange]
+    [filter, onChange],
   );
 
   const handleMinExperimentsChange = useCallback(
     (value: number[]) => {
       onChange({ ...filter, minExperiments: value[0] });
     },
-    [filter, onChange]
+    [filter, onChange],
   );
 
   const handleGreyOutToggle = useCallback(
     (checked: boolean) => {
       onChange({ ...filter, greyOutBelowThreshold: checked });
     },
-    [filter, onChange]
+    [filter, onChange],
   );
 
   const hasActiveFilter = filter.minSources > 0 || filter.minExperiments > 0;
@@ -56,11 +56,15 @@ function EdgeFilterControlsInner({
       <div className={cn("space-y-4", className)}>
         {/* Header */}
         <div className="flex items-center gap-2">
-          <Filter className={cn(
-            "w-4 h-4",
-            hasActiveFilter ? "text-indigo-600" : "text-muted-foreground"
-          )} />
-          <span className="text-sm font-medium text-foreground">Edge Filters</span>
+          <Filter
+            className={cn(
+              "w-4 h-4",
+              hasActiveFilter ? "text-indigo-600" : "text-muted-foreground",
+            )}
+          />
+          <span className="text-sm font-medium text-foreground">
+            Edge Filters
+          </span>
           {hasActiveFilter && (
             <span className="px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded">
               Active
@@ -72,15 +76,17 @@ function EdgeFilterControlsInner({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-muted-foreground">Min. Sources</Label>
+              <Label className="text-xs text-muted-foreground">
+                Min. Sources
+              </Label>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[200px]">
                   <p className="text-xs">
-                    Filter edges by minimum number of supporting databases (1-4).
-                    Higher values show more confident interactions.
+                    Filter edges by minimum number of supporting databases
+                    (1-4). Higher values show more confident interactions.
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -107,7 +113,9 @@ function EdgeFilterControlsInner({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Label className="text-xs text-muted-foreground">Min. Experiments</Label>
+              <Label className="text-xs text-muted-foreground">
+                Min. Experiments
+              </Label>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="w-3 h-3 text-muted-foreground cursor-help" />
@@ -121,7 +129,9 @@ function EdgeFilterControlsInner({
               </Tooltip>
             </div>
             <span className="text-xs font-medium text-foreground tabular-nums">
-              {filter.minExperiments === 0 ? "All" : `${filter.minExperiments}+`}
+              {filter.minExperiments === 0
+                ? "All"
+                : `${filter.minExperiments}+`}
             </span>
           </div>
           <Slider
@@ -141,7 +151,10 @@ function EdgeFilterControlsInner({
         {/* Grey Out Toggle */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-1.5">
-            <Label htmlFor="grey-out-toggle" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="grey-out-toggle"
+              className="text-xs text-muted-foreground"
+            >
               Grey out (vs hide)
             </Label>
             <Tooltip>
@@ -150,8 +163,8 @@ function EdgeFilterControlsInner({
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
                 <p className="text-xs">
-                  When enabled, edges below threshold are greyed out but still visible.
-                  When disabled, they are completely hidden.
+                  When enabled, edges below threshold are greyed out but still
+                  visible. When disabled, they are completely hidden.
                 </p>
               </TooltipContent>
             </Tooltip>

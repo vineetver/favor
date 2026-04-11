@@ -2,14 +2,14 @@
 
 import { memo, useMemo } from "react";
 import {
-  ScatterChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
   Scatter,
+  ScatterChart,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
 import type { QQPlotVizSpec } from "../../viz/types";
 
@@ -69,7 +69,9 @@ export const AgentQQPlot = memo(function AgentQQPlot({
               borderRadius: 8,
               fontSize: 12,
             }}
-            formatter={(value: number | undefined) => value != null ? value.toFixed(3) : ""}
+            formatter={(value: number | undefined) =>
+              value != null ? value.toFixed(3) : ""
+            }
           />
           {/* y=x reference diagonal */}
           <ReferenceLine
@@ -81,7 +83,12 @@ export const AgentQQPlot = memo(function AgentQQPlot({
             strokeDasharray="6 3"
             strokeWidth={1.5}
           />
-          <Scatter data={spec.data} fill={POINT_COLOR} fillOpacity={0.6} r={3} />
+          <Scatter
+            data={spec.data}
+            fill={POINT_COLOR}
+            fillOpacity={0.6}
+            r={3}
+          />
         </ScatterChart>
       </ResponsiveContainer>
     </div>

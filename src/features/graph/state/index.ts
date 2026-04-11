@@ -2,15 +2,15 @@
 export {
   ExplorerProvider,
   useExplorer,
-  useExplorerState,
   useExplorerActions,
   useExplorerSelectors,
+  useExplorerState,
 } from "./explorer-context";
 
 export {
+  type ExplorerAction,
   explorerReducer,
   initialExplorerState,
-  type ExplorerAction,
 } from "./reducer";
 
 export * from "./selectors";

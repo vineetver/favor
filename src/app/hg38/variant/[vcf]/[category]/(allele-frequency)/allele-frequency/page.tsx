@@ -8,14 +8,12 @@ interface AlleleFrequencyPageProps {
     vcf: string;
     category: string;
   }>;
-  
 }
 
 export default async function AlleleFrequencyPage({
   params,
 }: AlleleFrequencyPageProps) {
   const { vcf } = await params;
-  
 
   const result = await fetchVariantWithCookie(vcf);
 

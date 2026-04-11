@@ -1,47 +1,49 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/browser-canvas/track-header.tsx
 // Track header with title and controls
 
-import { GripVertical, Minus, Plus, X } from 'lucide-react'
-import { Button } from '@shared/components/ui/button'
+import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@shared/components/ui/tooltip'
-import { cn } from '@infra/utils'
-import type { ActiveTrack } from '../../types/tracks'
-import { useBrowserActions } from '../../state/browser-context'
+} from "@shared/components/ui/tooltip";
+import { GripVertical, Minus, Plus, X } from "lucide-react";
+import { useBrowserActions } from "../../state/browser-context";
+import type { ActiveTrack } from "../../types/tracks";
 
 type TrackHeaderProps = {
-  track: ActiveTrack
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
-  className?: string
-}
+  track: ActiveTrack;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  className?: string;
+};
 
 export function TrackHeader({
   track,
   dragHandleProps,
   className,
 }: TrackHeaderProps) {
-  const actions = useBrowserActions()
-  const Icon = track.definition.icon
+  const actions = useBrowserActions();
+  const Icon = track.definition.icon;
 
   const handleHeightChange = (delta: number) => {
-    const newHeight = track.height + delta
-    actions.setTrackHeight(track.definition.id, newHeight)
-  }
+    const newHeight = track.height + delta;
+    actions.setTrackHeight(track.definition.id, newHeight);
+  };
 
   const handleRemove = () => {
-    actions.removeTrack(track.definition.id)
-  }
+    actions.removeTrack(track.definition.id);
+  };
 
   return (
-    <div className={cn(
-      "flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         {/* Drag handle */}
         {dragHandleProps && (
@@ -107,5 +109,5 @@ export function TrackHeader({
         </Tooltip>
       </div>
     </div>
-  )
+  );
 }

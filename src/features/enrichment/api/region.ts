@@ -97,8 +97,12 @@ async function fetchGrouped(url: string): Promise<TissueGroupRow[]> {
   return mapGroupRows(res.data);
 }
 
-export async function fetchSignalsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/signals?group_by=tissue_group`);
+export async function fetchSignalsByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/signals?group_by=tissue_group`,
+  );
 }
 
 export async function fetchEnhancersByTissueGroup(
@@ -108,47 +112,89 @@ export async function fetchEnhancersByTissueGroup(
   const params = new URLSearchParams({ group_by: "tissue_group" });
   if (opts.method) params.set("method", opts.method);
   if (opts.target_gene) params.set("target_gene", opts.target_gene);
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`);
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/enhancer-genes?${params}`,
+  );
 }
 
-export async function fetchAseByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/ase?group_by=tissue_group`);
+export async function fetchAseByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/ase?group_by=tissue_group`,
+  );
 }
 
-export async function fetchChromatinByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?group_by=tissue_group`);
+export async function fetchChromatinByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/chromatin-states?group_by=tissue_group`,
+  );
 }
 
-export async function fetchAccessibilityByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility?group_by=tissue_group`);
+export async function fetchAccessibilityByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/accessibility?group_by=tissue_group`,
+  );
 }
 
-export async function fetchLoopsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/regions/${encodeURIComponent(loc)}/loops?group_by=tissue_group`);
+export async function fetchLoopsByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/regions/${encodeURIComponent(loc)}/loops?group_by=tissue_group`,
+  );
 }
 
-export async function fetchQtlsByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/qtls?group_by=tissue_group`);
+export async function fetchQtlsByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/variants/${encodeURIComponent(loc)}/qtls?group_by=tissue_group`,
+  );
 }
 
-export async function fetchChromBpnetByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/chrombpnet?group_by=tissue_group`);
+export async function fetchChromBpnetByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/variants/${encodeURIComponent(loc)}/chrombpnet?group_by=tissue_group`,
+  );
 }
 
-export async function fetchVariantAllelicImbalanceByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/allelic-imbalance?group_by=tissue_group`);
+export async function fetchVariantAllelicImbalanceByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/variants/${encodeURIComponent(loc)}/allelic-imbalance?group_by=tissue_group`,
+  );
 }
 
-export async function fetchCcreLinksByTissueGroup(gene: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links?group_by=tissue_group`);
+export async function fetchCcreLinksByTissueGroup(
+  gene: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/genes/${encodeURIComponent(gene)}/ccre-links?group_by=tissue_group`,
+  );
 }
 
-export async function fetchCcreGeneLinksByTissueGroup(ccreId: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/ccres/${encodeURIComponent(ccreId)}/gene-links?group_by=tissue_group`);
+export async function fetchCcreGeneLinksByTissueGroup(
+  ccreId: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/ccres/${encodeURIComponent(ccreId)}/gene-links?group_by=tissue_group`,
+  );
 }
 
-export async function fetchMethylationByTissueGroup(loc: string): Promise<TissueGroupRow[]> {
-  return fetchGrouped(`${API_BASE}/variants/${encodeURIComponent(loc)}/methylation?group_by=tissue_group`);
+export async function fetchMethylationByTissueGroup(
+  loc: string,
+): Promise<TissueGroupRow[]> {
+  return fetchGrouped(
+    `${API_BASE}/variants/${encodeURIComponent(loc)}/methylation?group_by=tissue_group`,
+  );
 }
 
 // ---------------------------------------------------------------------------

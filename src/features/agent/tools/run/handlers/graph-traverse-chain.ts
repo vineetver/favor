@@ -9,27 +9,38 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef, TraverseStep, TargetIntent } from "../types";
 import {
-  resolveIntentType,
-  findEdgesConnecting,
   canonicalizeIntent,
-  type GraphSchemaResponse,
   type EdgeTypeInfo,
+  findEdgesConnecting,
+  type GraphSchemaResponse,
+  resolveIntentType,
 } from "../intent-aliases";
 import { resolveSeeds, warnPartialResolution } from "../resolve-seeds";
 import {
-  getCachedGraphSchema,
-  TARGET_EDGE_MAP,
-  errorResult,
+  catchToResult,
+  okResult,
+  partialResult,
+  TraceCollector,
+} from "../run-result";
+import type {
+  EntityRef,
+  RunCommand,
+  RunResult,
+  TargetIntent,
+  TraverseStep,
+} from "../types";
+import {
+  applyDefaultKeyFilters,
   edgeTypeAnnotation,
+  errorResult,
+  getCachedGraphSchema,
   humanEdgeLabel,
   humanScoreLabel,
   pickSortField,
-  applyDefaultKeyFilters,
   schemaGuidedRecovery,
+  TARGET_EDGE_MAP,
 } from "./graph";
-import { okResult, partialResult, catchToResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -100,20 +111,29 @@ function annotateIntoSteps(
 
       const targetType = resolveIntentType(canonicalIntent);
       if (!targetType) {
-        tc.warn("unknown_intent", `Step ${i}: unknown intent "${canonicalIntent}"`);
+        tc.warn(
+          "unknown_intent",
+          `Step ${i}: unknown intent "${canonicalIntent}"`,
+        );
         continue;
       }
 
       let found = false;
       for (let d = typeStack.length - 1; d >= 0; d--) {
-        const edges = findEdgesConnecting(schema, typeStack[d], targetType, canonicalIntent);
+        const edges = findEdgesConnecting(
+          schema,
+          typeStack[d],
+          targetType,
+          canonicalIntent,
+        );
         if (edges.length > 0) {
           const edgeType = edges[0].edgeType;
           const sort = pickSortField(schema, edgeType, step.sort);
-          const userFilters = step.filters as Record<string, unknown> | undefined;
-          const { filters: mergedFilters, applied: appliedDefaults } = applyDefaultKeyFilters(
-            schema, edgeType, userFilters,
-          );
+          const userFilters = step.filters as
+            | Record<string, unknown>
+            | undefined;
+          const { filters: mergedFilters, applied: appliedDefaults } =
+            applyDefaultKeyFilters(schema, edgeType, userFilters);
 
           const ann: AnnotatedIntoStep = {
             userStepIndex: i,
@@ -124,13 +144,17 @@ function annotateIntoSteps(
             sourceDepth: d,
             limit: Math.min(step.top ?? 20, 100),
             sort,
-            filters: Object.keys(mergedFilters).length > 0 ? mergedFilters : undefined,
+            filters:
+              Object.keys(mergedFilters).length > 0 ? mergedFilters : undefined,
             overlayOnly: step.overlay ?? undefined,
             allCandidates: edges.length > 1 ? edges : undefined,
           };
           intoSteps.push(ann);
 
-          const defaultsNote = appliedDefaults.length > 0 ? ` [defaults: ${appliedDefaults.join(", ")}]` : "";
+          const defaultsNote =
+            appliedDefaults.length > 0
+              ? ` [defaults: ${appliedDefaults.join(", ")}]`
+              : "";
           tc.add({
             step: `annotateStep_${i}`,
             kind: "decision",
@@ -146,7 +170,10 @@ function annotateIntoSteps(
       }
 
       if (!found) {
-        tc.warn("no_edge", `Step ${i}: no edge ${typeStack.at(-1)}→${targetType}`);
+        tc.warn(
+          "no_edge",
+          `Step ${i}: no edge ${typeStack.at(-1)}→${targetType}`,
+        );
         intoSteps.push({
           userStepIndex: i,
           intent: canonicalIntent,
@@ -158,7 +185,11 @@ function annotateIntoSteps(
       }
     } else if ("enrich" in step) {
       enrichIndices.push(i);
-      tc.add({ step: `annotateStep_${i}`, kind: "decision", message: `enrich: ${step.enrich}` });
+      tc.add({
+        step: `annotateStep_${i}`,
+        kind: "decision",
+        message: `enrich: ${step.enrich}`,
+      });
     }
   }
 
@@ -192,8 +223,12 @@ function buildQuerySteps(
       querySteps.push({
         edgeTypes: [s.edgeType],
         limit: s.limit,
-        sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
-        ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
+        sort:
+          s.sort ??
+          (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
+        ...(s.filters && Object.keys(s.filters).length > 0
+          ? { filters: s.filters }
+          : {}),
         ...(s.overlayOnly ? { overlayOnly: true } : {}),
       });
     } else {
@@ -201,8 +236,12 @@ function buildQuerySteps(
         branch: group.map((s) => ({
           edgeTypes: [s.edgeType],
           limit: s.limit,
-          sort: s.sort ?? (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
-          ...(s.filters && Object.keys(s.filters).length > 0 ? { filters: s.filters } : {}),
+          sort:
+            s.sort ??
+            (s.defaultScoreField ? `-${s.defaultScoreField}` : undefined),
+          ...(s.filters && Object.keys(s.filters).length > 0
+            ? { filters: s.filters }
+            : {}),
           ...(s.overlayOnly ? { overlayOnly: true } : {}),
         })),
       });
@@ -217,8 +256,16 @@ function buildQuerySteps(
 // ---------------------------------------------------------------------------
 
 function collectStepEntities(
-  stepEdges: Array<{ type: string; from: string; to: string; fields?: Record<string, unknown> }>,
-  nodes: Record<string, { entity: EntityRef; fields?: Record<string, unknown> }>,
+  stepEdges: Array<{
+    type: string;
+    from: string;
+    to: string;
+    fields?: Record<string, unknown>;
+  }>,
+  nodes: Record<
+    string,
+    { entity: EntityRef; fields?: Record<string, unknown> }
+  >,
   ann: { targetType: string; defaultScoreField?: string },
 ): ScoredEntity[] {
   const targetEntities: ScoredEntity[] = [];
@@ -227,17 +274,24 @@ function collectStepEntities(
   const scoreField = ann.defaultScoreField;
 
   for (const edge of stepEdges) {
-    const fromType = edge.from.slice(0, Math.max(edge.from.indexOf(":"), 0)) || edge.from;
-    const toType = edge.to.slice(0, Math.max(edge.to.indexOf(":"), 0)) || edge.to;
+    const fromType =
+      edge.from.slice(0, Math.max(edge.from.indexOf(":"), 0)) || edge.from;
+    const toType =
+      edge.to.slice(0, Math.max(edge.to.indexOf(":"), 0)) || edge.to;
     const targetKey =
-      toType === ann.targetType ? edge.to
-      : fromType === ann.targetType ? edge.from
-      : null;
+      toType === ann.targetType
+        ? edge.to
+        : fromType === ann.targetType
+          ? edge.from
+          : null;
     if (!targetKey) continue;
 
     const sourceKey = targetKey === edge.to ? edge.from : edge.to;
     let sources = supportMap.get(targetKey);
-    if (!sources) { sources = new Set(); supportMap.set(targetKey, sources); }
+    if (!sources) {
+      sources = new Set();
+      supportMap.set(targetKey, sources);
+    }
     sources.add(sourceKey);
 
     if (seen.has(targetKey)) continue;
@@ -247,10 +301,10 @@ function collectStepEntities(
     if (!node?.entity) continue;
 
     const f = edge.fields ?? {};
-    const score = (
-      (scoreField ? f[scoreField] : undefined) ??
-      f.overall_score ?? f.score ?? f.evidence_count
-    ) as number | undefined;
+    const score = ((scoreField ? f[scoreField] : undefined) ??
+      f.overall_score ??
+      f.score ??
+      f.evidence_count) as number | undefined;
 
     const edgeProperties: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(f)) {
@@ -301,7 +355,11 @@ async function executeViaQuery(
   if (querySteps.length === 0) return null;
 
   try {
-    tc.add({ step: "batchQuery", kind: "call", message: `POST /graph/query with ${querySteps.length} steps` });
+    tc.add({
+      step: "batchQuery",
+      kind: "call",
+      message: `POST /graph/query with ${querySteps.length} steps`,
+    });
 
     const resp = await agentFetch<{
       data: {
@@ -323,8 +381,14 @@ async function executeViaQuery(
         seeds: [{ type: seed.type, id: seed.id }],
         steps: querySteps,
         limits: {
-          maxNodes: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 2 + 10, 1000),
-          maxEdges: Math.min(intoSteps.reduce((s, a) => s + a.limit, 0) * 3, 5000),
+          maxNodes: Math.min(
+            intoSteps.reduce((s, a) => s + a.limit, 0) * 2 + 10,
+            1000,
+          ),
+          maxEdges: Math.min(
+            intoSteps.reduce((s, a) => s + a.limit, 0) * 3,
+            5000,
+          ),
         },
         mode: "compact",
       },
@@ -343,7 +407,12 @@ async function executeViaQuery(
     const results: StepResult[] = [];
     for (const ann of intoSteps) {
       if (ann.edgeType === "none") {
-        results.push({ step: ann.userStepIndex, intent: ann.intent, edgeType: "none", entities: [] });
+        results.push({
+          step: ann.userStepIndex,
+          intent: ann.intent,
+          edgeType: "none",
+          entities: [],
+        });
         continue;
       }
       const stepEdges = edges.filter((e) => e.type === ann.edgeType);
@@ -364,12 +433,23 @@ async function executeViaQuery(
     // Try schema-guided recovery for 400 errors before falling back
     const recovered = schemaGuidedRecovery(err, schema, tc);
     if (recovered) {
-      tc.add({ step: "batchQueryRecovery", kind: "fallback", message: "Schema-guided recovery applied" });
+      tc.add({
+        step: "batchQueryRecovery",
+        kind: "fallback",
+        message: "Schema-guided recovery applied",
+      });
       // Return null to trigger per-step fallback with corrective info logged
     }
     const msg = err instanceof Error ? err.message : String(err);
-    tc.add({ step: "batchQueryFailed", kind: "fallback", message: `Query failed: ${msg}` });
-    tc.warn("batch_query_failed", `Batch query failed, falling back to per-step: ${msg}`);
+    tc.add({
+      step: "batchQueryFailed",
+      kind: "fallback",
+      message: `Query failed: ${msg}`,
+    });
+    tc.warn(
+      "batch_query_failed",
+      `Batch query failed, falling back to per-step: ${msg}`,
+    );
     return null;
   }
 }
@@ -381,10 +461,14 @@ async function executeViaQuery(
 async function executePerStep(
   seed: EntityRef,
   intoSteps: AnnotatedIntoStep[],
-  schema: GraphSchemaResponse,
+  _schema: GraphSchemaResponse,
   tc: TraceCollector,
 ): Promise<StepResult[]> {
-  tc.add({ step: "perStepFallback", kind: "fallback", message: `Executing ${intoSteps.length} steps individually` });
+  tc.add({
+    step: "perStepFallback",
+    kind: "fallback",
+    message: `Executing ${intoSteps.length} steps individually`,
+  });
 
   const results: StepResult[] = [];
   const entitiesAtDepth = new Map<number, EntityRef[]>();
@@ -401,15 +485,30 @@ async function executePerStep(
       continue;
     }
 
-    const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(0, 10);
+    const stepSeeds = (entitiesAtDepth.get(ann.sourceDepth) ?? [seed]).slice(
+      0,
+      10,
+    );
 
     // Edge cascade: try candidates in preference order, stop at first with results
-    const edgesToTry = ann.allCandidates?.slice(0, 3) ?? [{ edgeType: ann.edgeType, fromType: "", toType: "", propertyCount: 0, defaultScoreField: ann.defaultScoreField }];
+    const edgesToTry = ann.allCandidates?.slice(0, 3) ?? [
+      {
+        edgeType: ann.edgeType,
+        fromType: "",
+        toType: "",
+        propertyCount: 0,
+        defaultScoreField: ann.defaultScoreField,
+      },
+    ];
     let stepResult: StepResult | null = null;
 
     for (const edge of edgesToTry) {
       try {
-        tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "call", message: `ranked-neighbors: ${edge.edgeType}` });
+        tc.add({
+          step: `perStep_${ann.userStepIndex}`,
+          kind: "call",
+          message: `ranked-neighbors: ${edge.edgeType}`,
+        });
 
         const data = await agentFetch<{
           data: {
@@ -439,14 +538,18 @@ async function executePerStep(
           }),
         );
 
-        if (entities.length > 0 || edgesToTry.indexOf(edge) === edgesToTry.length - 1) {
+        if (
+          entities.length > 0 ||
+          edgesToTry.indexOf(edge) === edgesToTry.length - 1
+        ) {
           const annotation = await edgeTypeAnnotation(edge.edgeType);
           stepResult = {
             step: ann.userStepIndex,
             intent: ann.intent,
             edgeType: edge.edgeType,
             edgeDescription: annotation ?? undefined,
-            scoreField: data.meta?.resolved?.scoreField ?? edge.defaultScoreField,
+            scoreField:
+              data.meta?.resolved?.scoreField ?? edge.defaultScoreField,
             entities,
           };
 
@@ -457,19 +560,28 @@ async function executePerStep(
           break;
         }
 
-        tc.add({ step: `perStep_${ann.userStepIndex}`, kind: "fallback", message: `0 via ${edge.edgeType}, trying next` });
+        tc.add({
+          step: `perStep_${ann.userStepIndex}`,
+          kind: "fallback",
+          message: `0 via ${edge.edgeType}, trying next`,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        tc.warn("step_failed", `Step ${ann.userStepIndex} (${ann.intent}/${edge.edgeType}): ${msg}`);
+        tc.warn(
+          "step_failed",
+          `Step ${ann.userStepIndex} (${ann.intent}/${edge.edgeType}): ${msg}`,
+        );
       }
     }
 
-    results.push(stepResult ?? {
-      step: ann.userStepIndex,
-      intent: ann.intent,
-      edgeType: ann.edgeType,
-      entities: [],
-    });
+    results.push(
+      stepResult ?? {
+        step: ann.userStepIndex,
+        intent: ann.intent,
+        edgeType: ann.edgeType,
+        entities: [],
+      },
+    );
   }
 
   return results;
@@ -504,17 +616,29 @@ async function executeEnrichStep(
   const dynamicEdges = findEdgesConnecting(schema, inputType, targetType);
   if (dynamicEdges.length > 0) {
     expectedEdge = dynamicEdges[0].edgeType;
-    tc.add({ step: `enrich_${userStepIndex}`, kind: "decision", message: `Schema edge: ${expectedEdge}` });
+    tc.add({
+      step: `enrich_${userStepIndex}`,
+      kind: "decision",
+      message: `Schema edge: ${expectedEdge}`,
+    });
   } else {
     expectedEdge = TARGET_EDGE_MAP[targetType];
-    tc.add({ step: `enrich_${userStepIndex}`, kind: "fallback", message: `Static map fallback: ${expectedEdge}` });
+    tc.add({
+      step: `enrich_${userStepIndex}`,
+      kind: "fallback",
+      message: `Static map fallback: ${expectedEdge}`,
+    });
   }
 
   if (!expectedEdge) return null;
 
   const annotation = await edgeTypeAnnotation(expectedEdge);
 
-  tc.add({ step: `enrich_${userStepIndex}`, kind: "call", message: `POST /graph/enrichment` });
+  tc.add({
+    step: `enrich_${userStepIndex}`,
+    kind: "call",
+    message: `POST /graph/enrichment`,
+  });
 
   const data = await agentFetch<{
     data: {
@@ -608,21 +732,18 @@ async function executeFallbackInto(
 
     tc.mergeApiWarnings(data.meta?.warnings);
 
-    const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map(
-      (n) => ({
-        ...n.entity,
-        rank: n.rank,
-        score: n.score,
-      }),
-    );
+    const entities: ScoredEntity[] = (data.data?.neighbors ?? []).map((n) => ({
+      ...n.entity,
+      rank: n.rank,
+      score: n.score,
+    }));
 
     return {
       step: userStepIndex,
       intent,
       edgeType: edgeInfo.edgeType,
       edgeDescription: annotation ?? undefined,
-      scoreField:
-        data.meta?.resolved?.scoreField ?? edgeInfo.defaultScoreField,
+      scoreField: data.meta?.resolved?.scoreField ?? edgeInfo.defaultScoreField,
       entities,
     };
   } catch (err) {
@@ -643,7 +764,8 @@ export async function handleTraverseChain(
   const tc = new TraceCollector();
 
   try {
-    if (!cmd.seed) return errorResult("chain mode requires a 'seed' entity.", tc);
+    if (!cmd.seed)
+      return errorResult("chain mode requires a 'seed' entity.", tc);
     if (!cmd.steps?.length)
       return errorResult("chain mode requires at least one step.", tc);
 
@@ -656,7 +778,11 @@ export async function handleTraverseChain(
     const schema = await getCachedGraphSchema();
 
     // Phase 1: Annotate steps — resolve edges and detect backtracks
-    tc.add({ step: "annotateSteps", kind: "decision", message: `Annotating ${cmd.steps.length} steps from ${seed.type}` });
+    tc.add({
+      step: "annotateSteps",
+      kind: "decision",
+      message: `Annotating ${cmd.steps.length} steps from ${seed.type}`,
+    });
     const { intoSteps, enrichIndices } = annotateIntoSteps(
       cmd.steps,
       seed.type,
@@ -669,12 +795,22 @@ export async function handleTraverseChain(
     // picked the wrong edge and downstream steps have a stale frontier —
     // fall back to per-step which handles cascade + depth chaining correctly.
     let intoResults = await executeViaQuery(seed, intoSteps, schema, tc);
-    const needsCascade = intoResults && intoSteps.some(
-      (ann, i) => intoResults![i].entities.length === 0 && ann.allCandidates && ann.allCandidates.length > 1,
-    );
+    const needsCascade =
+      intoResults &&
+      intoSteps.some(
+        (ann, i) =>
+          intoResults?.[i].entities.length === 0 &&
+          ann.allCandidates &&
+          ann.allCandidates.length > 1,
+      );
     if (!intoResults || needsCascade) {
       if (needsCascade) {
-        tc.add({ step: "cascadeFallback", kind: "fallback", message: "Batch has empty steps with alternatives — falling back to per-step cascade" });
+        tc.add({
+          step: "cascadeFallback",
+          kind: "fallback",
+          message:
+            "Batch has empty steps with alternatives — falling back to per-step cascade",
+        });
       }
       intoResults = await executePerStep(seed, intoSteps, schema, tc);
     }
@@ -718,16 +854,25 @@ export async function handleTraverseChain(
     // Build informative summary with human-readable context
     const stepSummaries = allResults.map((r) => {
       const n = r.entities.length;
-      const names = r.entities.slice(0, 3).map((e) => e.label).filter(Boolean);
-      const preview = names.length > 0 ? ` (${names.join(", ")}${n > names.length ? ", …" : ""})` : "";
+      const names = r.entities
+        .slice(0, 3)
+        .map((e) => e.label)
+        .filter(Boolean);
+      const preview =
+        names.length > 0
+          ? ` (${names.join(", ")}${n > names.length ? ", …" : ""})`
+          : "";
       const relationship = humanEdgeLabel(r.edgeType);
-      const scoreInfo = r.scoreField ? `, ranked by ${humanScoreLabel(r.scoreField)}` : "";
+      const scoreInfo = r.scoreField
+        ? `, ranked by ${humanScoreLabel(r.scoreField)}`
+        : "";
       return `Step ${r.step + 1} → ${n} ${r.intent}${preview} — ${relationship}${scoreInfo}`;
     });
 
     // Determine if any steps failed
     const failedSteps = allResults.filter((r) => r.entities.length === 0);
-    const hasPartialFailure = failedSteps.length > 0 && allResults.some((r) => r.entities.length > 0);
+    const hasPartialFailure =
+      failedSteps.length > 0 && allResults.some((r) => r.entities.length > 0);
 
     const resultFn = hasPartialFailure ? partialResult : okResult;
 
@@ -755,7 +900,9 @@ export async function handleTraverseChain(
 }
 
 /** Extract entities from chain result data for pipeline forwarding. */
-export function extractChainEntities(data: Record<string, unknown>): EntityRef[] {
+export function extractChainEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
   const steps = data.steps as Array<{ top?: unknown[] }> | undefined;
   if (!steps) return [];
   // Take entities from last non-empty step
@@ -766,7 +913,11 @@ export function extractChainEntities(data: Record<string, unknown>): EntityRef[]
     for (const e of top) {
       const ent = e as Record<string, unknown>;
       if (ent.type && ent.id && ent.label) {
-        out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+        out.push({
+          type: String(ent.type),
+          id: String(ent.id),
+          label: String(ent.label),
+        });
       }
     }
     return out;

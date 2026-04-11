@@ -64,7 +64,7 @@ export function buildExplorerHref(
 
   for (const key of ARRAY_FIELDS) {
     const v = filters[key];
-    if (v && v.length) params.set(key, v.join(","));
+    if (v?.length) params.set(key, v.join(","));
   }
   for (const key of NUMERIC_FIELDS) {
     const v = filters[key];

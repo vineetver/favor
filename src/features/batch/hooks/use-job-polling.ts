@@ -84,7 +84,10 @@ export function useJobPolling({
         status: statusData.status,
         progress: statusData.progress ?? undefined,
         is_terminal: statusData.is_terminal,
-        poll: { after_ms: statusData.poll_hint_ms ?? 2000, message: "Polling..." },
+        poll: {
+          after_ms: statusData.poll_hint_ms ?? 2000,
+          message: "Polling...",
+        },
         source: "upload",
         attempt: 1,
         created_at: "",
@@ -100,7 +103,11 @@ export function useJobPolling({
   useEffect(() => {
     if (!job || !detail) return;
     if (firedRef.current === job.job_id) return;
-    if (job.state === "COMPLETED" || job.state === "FAILED" || job.state === "CANCELLED") {
+    if (
+      job.state === "COMPLETED" ||
+      job.state === "FAILED" ||
+      job.state === "CANCELLED"
+    ) {
       firedRef.current = job.job_id;
       queryClient.invalidateQueries({ queryKey: ["quotas"] });
       if (job.state === "COMPLETED") onComplete?.(job);

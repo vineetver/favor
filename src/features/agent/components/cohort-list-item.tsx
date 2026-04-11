@@ -1,19 +1,15 @@
 "use client";
 
-import {
-  FlaskConicalIcon,
-  PlusIcon,
-  TrashIcon,
-} from "lucide-react";
+import { formatDate } from "@features/batch/lib/format";
+import type { CohortListItem } from "@features/batch/types";
+import { cn } from "@infra/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { cn } from "@infra/utils";
-import type { CohortListItem } from "@features/batch/types";
-import { formatDate } from "@features/batch/lib/format";
+import { FlaskConicalIcon, PlusIcon, TrashIcon } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +32,10 @@ export function CohortListItem({
   onNewConversation,
   onRemove,
 }: CohortListItemProps) {
-  const isProcessing = cohort.status !== "ready" && cohort.status !== "failed" && cohort.status !== "cancelled";
+  const isProcessing =
+    cohort.status !== "ready" &&
+    cohort.status !== "failed" &&
+    cohort.status !== "cancelled";
 
   return (
     <TooltipProvider delayDuration={300}>

@@ -17,17 +17,9 @@ export type EntityType =
   | "tissues"
   | "cell_types";
 
-export type MatchTier =
-  | "NameExact"
-  | "Prefix"
-  | "FuzzyOrContains"
-  | "Related";
+export type MatchTier = "NameExact" | "Prefix" | "FuzzyOrContains" | "Related";
 
-export type MatchReason =
-  | "name_exact"
-  | "prefix"
-  | "fuzzy"
-  | "pivot";
+export type MatchReason = "name_exact" | "prefix" | "fuzzy" | "pivot";
 
 /** Link counts keyed by entity type or relationship name (dynamic from backend) */
 export type EntityLinks = Record<string, number>;

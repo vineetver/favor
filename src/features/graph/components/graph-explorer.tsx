@@ -1,9 +1,8 @@
 "use client";
 
 import { ExplorerProvider } from "../state";
-import { GraphExplorerView } from "./graph-explorer-view";
 import type { GraphExplorerProps } from "../types/props";
-import { cn } from "@infra/utils";
+import { GraphExplorerView } from "./graph-explorer-view";
 
 /**
  * Generic graph explorer component. Wraps ExplorerProvider + GraphExplorerView.

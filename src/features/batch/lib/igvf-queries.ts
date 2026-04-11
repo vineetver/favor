@@ -36,55 +36,93 @@ export interface DatasetDef {
 
 export const DATASET_DEFS: DatasetDef[] = [
   {
-    id: "base_editing", label: "Base Editing", mode: "within",
-    sigColumn: "either_sig", presenceColumn: "has_be",
+    id: "base_editing",
+    label: "Base Editing",
+    mode: "within",
+    sigColumn: "either_sig",
+    presenceColumn: "has_be",
     sigDescription: "BH-adjusted efflux OR uptake FDR < 0.05",
     zColumn: "efflux_z",
     pvalColumns: { upper: "efflux_neglog_p", lower: "uptake_neglog_p" },
   },
   {
-    id: "encode_mpra", label: "ENCODE MPRA", mode: "within",
-    sigColumn: "encode_mpra_sig", presenceColumn: "has_encode_mpra",
+    id: "encode_mpra",
+    label: "ENCODE MPRA",
+    mode: "within",
+    sigColumn: "encode_mpra_sig",
+    presenceColumn: "has_encode_mpra",
     sigDescription: "MPRA FDR q < 0.05",
-    zColumn: null, pvalColumns: null,
+    zColumn: null,
+    pvalColumns: null,
   },
   {
-    id: "finemapped_glgc", label: "GLGC Finemapped", mode: "enrichment",
-    sigColumn: "has_finemapped_glgc", presenceColumn: "has_finemapped_glgc",
+    id: "finemapped_glgc",
+    label: "GLGC Finemapped",
+    mode: "enrichment",
+    sigColumn: "has_finemapped_glgc",
+    presenceColumn: "has_finemapped_glgc",
     sigDescription: "Finemapped in GLGC (enrichment vs all IGVF variants)",
-    zColumn: null, pvalColumns: null,
+    zColumn: null,
+    pvalColumns: null,
   },
 ];
 
 export interface ForestRow {
   method: string;
-  tp: number; fp: number; fn: number; tn: number;
-  or: number; orLo: number; orHi: number;
-  recall: number; recallLo: number; recallHi: number;
-  precision: number; precisionLo: number; precisionHi: number;
+  tp: number;
+  fp: number;
+  fn: number;
+  tn: number;
+  or: number;
+  orLo: number;
+  orHi: number;
+  recall: number;
+  recallLo: number;
+  recallHi: number;
+  precision: number;
+  precisionLo: number;
+  precisionHi: number;
   significant: boolean;
 }
 
 export interface LogfcRow {
   method: string;
-  meanZ: number; lo: number; hi: number;
+  meanZ: number;
+  lo: number;
+  hi: number;
   n: number;
 }
 
 export interface SummaryRow {
   category: string;
-  total: number; expSig: number; predFunc: number; predSig: number;
-  apc: number; chrombpnet: number; clinvar: number;
-  liver_cv2f: number; cv2f: number;
-  liver_ase: number; ase: number; tland: number;
-  meanDnase: number | null; meanH3k27ac: number | null; meanH3k4me3: number | null;
+  total: number;
+  expSig: number;
+  predFunc: number;
+  predSig: number;
+  apc: number;
+  chrombpnet: number;
+  clinvar: number;
+  liver_cv2f: number;
+  cv2f: number;
+  liver_ase: number;
+  ase: number;
+  tland: number;
+  meanDnase: number | null;
+  meanH3k27ac: number | null;
+  meanH3k4me3: number | null;
 }
 
 export interface UpsetRow {
-  pred_apc: boolean; pred_chrombpnet: boolean; pred_clinvar: boolean;
-  pred_liver_cv2f: boolean; pred_cv2f: boolean;
-  pred_liver_ase: boolean; pred_ase: boolean; pred_liver_tland: boolean;
-  count: number; expSigCount: number;
+  pred_apc: boolean;
+  pred_chrombpnet: boolean;
+  pred_clinvar: boolean;
+  pred_liver_cv2f: boolean;
+  pred_cv2f: boolean;
+  pred_liver_ase: boolean;
+  pred_ase: boolean;
+  pred_liver_tland: boolean;
+  count: number;
+  expSigCount: number;
 }
 
 export interface MiamiPoint {
@@ -112,7 +150,11 @@ export interface PRPoint {
 export interface AfBoxplotRow {
   population: string;
   sigGroup: string;
-  p5: number; q1: number; median: number; q3: number; p95: number;
+  p5: number;
+  q1: number;
+  median: number;
+  q3: number;
+  p95: number;
   n: number;
 }
 
@@ -212,16 +254,16 @@ export interface IgvfReportData {
 export const IGVF_BASELINE = {
   totalVariants: 9830335,
   rates: {
-    pred_overall:    { count: 1362259, rate: 0.138577 },
-    pred_apc:        { count: 368739,  rate: 0.037510 },
-    pred_macie:      { count: 409134,  rate: 0.041620 },
-    pred_clinvar:    { count: 279,     rate: 0.000028 },
-    pred_liver_ase:  { count: 40050,   rate: 0.004074 },
-    pred_ase:        { count: 62264,   rate: 0.006334 },
-    pred_chrombpnet: { count: 149545,  rate: 0.015213 },
-    pred_liver_tland:{ count: 481370,  rate: 0.048968 },
-    pred_liver_cv2f: { count: 246812,  rate: 0.025107 },
-    pred_cv2f:       { count: 228143,  rate: 0.023208 },
+    pred_overall: { count: 1362259, rate: 0.138577 },
+    pred_apc: { count: 368739, rate: 0.03751 },
+    pred_macie: { count: 409134, rate: 0.04162 },
+    pred_clinvar: { count: 279, rate: 0.000028 },
+    pred_liver_ase: { count: 40050, rate: 0.004074 },
+    pred_ase: { count: 62264, rate: 0.006334 },
+    pred_chrombpnet: { count: 149545, rate: 0.015213 },
+    pred_liver_tland: { count: 481370, rate: 0.048968 },
+    pred_liver_cv2f: { count: 246812, rate: 0.025107 },
+    pred_cv2f: { count: 228143, rate: 0.023208 },
   } as Record<string, { count: number; rate: number }>,
 } as const;
 
@@ -238,7 +280,9 @@ const PRED_METHODS = [
   ["cV2F", "pred_cv2f"],
 ] as const;
 
-const UPSET_COLS = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([, c]) => c).join(", ");
+const UPSET_COLS = PRED_METHODS.filter(([, c]) => c !== "pred_overall")
+  .map(([, c]) => c)
+  .join(", ");
 
 // ============================================================================
 // BH FDR correction (Benjamini-Hochberg)
@@ -401,11 +445,20 @@ SELECT _be_idx, efflux_p, uptake_p FROM analysis WHERE has_be ORDER BY _be_idx
 `;
 
 function buildFdrUpdate(
-  rows: Array<{ idx: number; efflux_fdr: number; uptake_fdr: number; either_sig: boolean; pred_overall: boolean }>,
+  rows: Array<{
+    idx: number;
+    efflux_fdr: number;
+    uptake_fdr: number;
+    either_sig: boolean;
+    pred_overall: boolean;
+  }>,
 ): string {
-  const values = rows.map((r) =>
-    `(${r.idx}, ${r.efflux_fdr}, ${r.uptake_fdr}, ${r.either_sig}, ${r.pred_overall})`,
-  ).join(",\n");
+  const values = rows
+    .map(
+      (r) =>
+        `(${r.idx}, ${r.efflux_fdr}, ${r.uptake_fdr}, ${r.either_sig}, ${r.pred_overall})`,
+    )
+    .join(",\n");
 
   return `
     CREATE OR REPLACE TEMP TABLE _fdr AS
@@ -465,25 +518,29 @@ function andWhere(where: string, clause: string): string {
 }
 
 function forestSQL(where: string, sigCol: string): string {
-  return `SELECT method, sort_order, tp, fp, fn, tn FROM (\n` +
-    PRED_METHODS.map(([name, col], i) =>
-      `  SELECT '${name}' as method, ${i} as sort_order,
+  return (
+    `SELECT method, sort_order, tp, fp, fn, tn FROM (\n` +
+    PRED_METHODS.map(
+      ([name, col], i) =>
+        `  SELECT '${name}' as method, ${i} as sort_order,
     count(*) FILTER (WHERE ${col} AND ${sigCol}) as tp,
     count(*) FILTER (WHERE ${col} AND NOT ${sigCol}) as fp,
     count(*) FILTER (WHERE NOT ${col} AND ${sigCol}) as fn,
     count(*) FILTER (WHERE NOT ${col} AND NOT ${sigCol}) as tn
-  FROM analysis ${where}`
+  FROM analysis ${where}`,
     ).join("\n  UNION ALL ") +
-    "\n) sub ORDER BY sort_order";
+    "\n) sub ORDER BY sort_order"
+  );
 }
 
 function logfcSQL(where: string, zCol: string): string {
-  return PRED_METHODS.map(([name, col], i) =>
-    `SELECT '${name}' as method, ${i} as sort_order,
+  return PRED_METHODS.map(
+    ([name, col], i) =>
+      `SELECT '${name}' as method, ${i} as sort_order,
     AVG(${zCol}) FILTER (WHERE ${col}) as mean_z,
     STDDEV(${zCol}) FILTER (WHERE ${col}) as sd_z,
     COUNT(*) FILTER (WHERE ${col}) as n
-  FROM analysis ${where}`
+  FROM analysis ${where}`,
   ).join("\n  UNION ALL ");
 }
 
@@ -515,7 +572,12 @@ FROM analysis ${where}
 GROUP BY ${UPSET_COLS} HAVING count(*) >= 1 ORDER BY n DESC`;
 }
 
-function miamiSQL(where: string, upperCol: string | null, lowerCol: string | null, sigCol: string): string {
+function miamiSQL(
+  where: string,
+  upperCol: string | null,
+  lowerCol: string | null,
+  sigCol: string,
+): string {
   const upper = upperCol ?? "NULL";
   const lower = lowerCol ?? "NULL";
   return `SELECT
@@ -548,14 +610,23 @@ function wilsonCI(x: number, n: number): [number, number] {
   if (n === 0) return [0, 1];
   const z = 1.96;
   const p = x / n;
-  const d = 1 + z * z / n;
-  const c = (p + z * z / (2 * n)) / d;
-  const m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+  const d = 1 + (z * z) / n;
+  const c = (p + (z * z) / (2 * n)) / d;
+  const m = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
   return [Math.max(0, c - m), Math.min(1, c + m)];
 }
 
-function computeOR(method: string, tp: number, fp: number, fn: number, tn: number): ForestRow {
-  const a = tp + 0.5, b = fp + 0.5, c = fn + 0.5, d = tn + 0.5;
+function computeOR(
+  method: string,
+  tp: number,
+  fp: number,
+  fn: number,
+  tn: number,
+): ForestRow {
+  const a = tp + 0.5,
+    b = fp + 0.5,
+    c = fn + 0.5,
+    d = tn + 0.5;
   const or = (a * d) / (b * c);
   const logOR = Math.log(or);
   const se = Math.sqrt(1 / a + 1 / b + 1 / c + 1 / d);
@@ -564,10 +635,22 @@ function computeOR(method: string, tp: number, fp: number, fn: number, tn: numbe
   const [recallLo, recallHi] = wilsonCI(tp, tp + fn);
   const [precisionLo, precisionHi] = wilsonCI(tp, tp + fp);
   return {
-    method, tp, fp, fn, tn, or,
-    orLo: Math.exp(logOR - 1.96 * se), orHi: Math.exp(logOR + 1.96 * se),
-    recall, recallLo, recallHi, precision, precisionLo, precisionHi,
-    significant: Math.exp(logOR - 1.96 * se) > 1 || Math.exp(logOR + 1.96 * se) < 1,
+    method,
+    tp,
+    fp,
+    fn,
+    tn,
+    or,
+    orLo: Math.exp(logOR - 1.96 * se),
+    orHi: Math.exp(logOR + 1.96 * se),
+    recall,
+    recallLo,
+    recallHi,
+    precision,
+    precisionLo,
+    precisionHi,
+    significant:
+      Math.exp(logOR - 1.96 * se) > 1 || Math.exp(logOR + 1.96 * se) < 1,
   };
 }
 
@@ -575,7 +658,11 @@ function computeOR(method: string, tp: number, fp: number, fn: number, tn: numbe
 // Joint logistic regression (IRLS)
 // ============================================================================
 
-function fitJointLogistic(y: boolean[], X: boolean[][], methodNames: string[]): ForestRow[] | null {
+function fitJointLogistic(
+  y: boolean[],
+  X: boolean[][],
+  methodNames: string[],
+): ForestRow[] | null {
   const n = y.length;
   const p = X[0]?.length ?? 0;
   if (n < 30 || p === 0) return null;
@@ -584,35 +671,44 @@ function fitJointLogistic(y: boolean[], X: boolean[][], methodNames: string[]): 
   // Ridge regularization (below) handles quasi-complete separation.
   const MIN_POS = 3;
   const colUsable = Array.from({ length: p }, (_, j) => {
-    let nTrue = 0, nFalse = 0;
+    let nTrue = 0,
+      nFalse = 0;
     for (let i = 0; i < n; i++) {
-      if (X[i][j]) nTrue++; else nFalse++;
+      if (X[i][j]) nTrue++;
+      else nFalse++;
     }
     return nTrue >= MIN_POS && nFalse > 0;
   });
-  const activeIdxs = colUsable.map((v, i) => v ? i : -1).filter(i => i >= 0);
+  const activeIdxs = colUsable
+    .map((v, i) => (v ? i : -1))
+    .filter((i) => i >= 0);
   // Need at least 2 active predictors — with 1, joint = marginal (no value added)
   if (activeIdxs.length < 2) return null;
 
   // Add intercept: design matrix is [1, active_x1, active_x2, ...]
   const cols = activeIdxs.length + 1;
-  const Xm: number[][] = y.map((_, i) => [1, ...activeIdxs.map(j => X[i][j] ? 1 : 0)]);
-  const yv = y.map(v => v ? 1 : 0);
+  const Xm: number[][] = y.map((_, i) => [
+    1,
+    ...activeIdxs.map((j) => (X[i][j] ? 1 : 0)),
+  ]);
+  const yv = y.map((v) => (v ? 1 : 0));
 
   // Initialize coefficients to 0
-  let beta = new Array(cols).fill(0);
+  const beta = new Array(cols).fill(0);
 
   // IRLS iterations
   for (let iter = 0; iter < 25; iter++) {
     // Compute predicted probabilities
-    const mu = Xm.map(row => {
+    const mu = Xm.map((row) => {
       const eta = row.reduce((s, x, j) => s + x * beta[j], 0);
       return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, eta))));
     });
 
     // W = diag(mu * (1 - mu)), z = eta + (y - mu) / (mu * (1-mu))
     // Solve X'WX * delta = X'(y - mu) via normal equations
-    const XtWX: number[][] = Array.from({ length: cols }, () => new Array(cols).fill(0));
+    const XtWX: number[][] = Array.from({ length: cols }, () =>
+      new Array(cols).fill(0),
+    );
     const Xty_mu = new Array(cols).fill(0);
 
     // Ridge penalty λ — N(0, 1/λ) prior on coefficients (skip intercept)
@@ -650,11 +746,13 @@ function fitJointLogistic(y: boolean[], X: boolean[][], methodNames: string[]): 
   }
 
   // Standard errors from inverse of X'WX (Fisher information)
-  const mu = Xm.map(row => {
+  const mu = Xm.map((row) => {
     const eta = row.reduce((s, x, j) => s + x * beta[j], 0);
     return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, eta))));
   });
-  const info: number[][] = Array.from({ length: cols }, () => new Array(cols).fill(0));
+  const info: number[][] = Array.from({ length: cols }, () =>
+    new Array(cols).fill(0),
+  );
   for (let i = 0; i < n; i++) {
     const w = mu[i] * (1 - mu[i]) + 1e-10;
     for (let j = 0; j < cols; j++)
@@ -676,10 +774,20 @@ function fitJointLogistic(y: boolean[], X: boolean[][], methodNames: string[]): 
     if (activePos < 0) {
       // Zero-variance column — no data, OR = 1
       return {
-        method: name, tp: 0, fp: 0, fn: 0, tn: 0,
-        or: 1, orLo: 1, orHi: 1,
-        recall: 0, recallLo: 0, recallHi: 0,
-        precision: 0, precisionLo: 0, precisionHi: 0,
+        method: name,
+        tp: 0,
+        fp: 0,
+        fn: 0,
+        tn: 0,
+        or: 1,
+        orLo: 1,
+        orHi: 1,
+        recall: 0,
+        recallLo: 0,
+        recallHi: 0,
+        precision: 0,
+        precisionLo: 0,
+        precisionHi: 0,
         significant: false,
       };
     }
@@ -688,10 +796,20 @@ function fitJointLogistic(y: boolean[], X: boolean[][], methodNames: string[]): 
     const se = Math.sqrt(Math.max(0, cov[betaIdx][betaIdx]));
     const or = Math.exp(b);
     return {
-      method: name, tp: 0, fp: 0, fn: 0, tn: 0,
-      or, orLo: Math.exp(b - 1.96 * se), orHi: Math.exp(b + 1.96 * se),
-      recall: 0, recallLo: 0, recallHi: 0,
-      precision: 0, precisionLo: 0, precisionHi: 0,
+      method: name,
+      tp: 0,
+      fp: 0,
+      fn: 0,
+      tn: 0,
+      or,
+      orLo: Math.exp(b - 1.96 * se),
+      orHi: Math.exp(b + 1.96 * se),
+      recall: 0,
+      recallLo: 0,
+      recallHi: 0,
+      precision: 0,
+      precisionLo: 0,
+      precisionHi: 0,
       significant: Math.exp(b - 1.96 * se) > 1 || Math.exp(b + 1.96 * se) < 1,
     };
   });
@@ -722,7 +840,10 @@ function solveLinear(A: number[][], b: number[]): number[] | null {
 
 function invertMatrix(A: number[][]): number[][] | null {
   const n = A.length;
-  const aug = A.map((row, i) => [...row, ...Array.from({ length: n }, (_, j) => i === j ? 1 : 0)]);
+  const aug = A.map((row, i) => [
+    ...row,
+    ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
+  ]);
   for (let col = 0; col < n; col++) {
     let maxRow = col;
     for (let row = col + 1; row < n; row++)
@@ -737,14 +858,17 @@ function invertMatrix(A: number[][]): number[][] | null {
       for (let j = 0; j < 2 * n; j++) aug[row][j] -= f * aug[col][j];
     }
   }
-  return aug.map(row => row.slice(n));
+  return aug.map((row) => row.slice(n));
 }
 
 // ============================================================================
 // PR Curve computation
 // ============================================================================
 
-interface PRRawRow { is_sig: boolean; [key: string]: unknown; }
+interface PRRawRow {
+  is_sig: boolean;
+  [key: string]: unknown;
+}
 
 const PR_METHODS: Array<{ name: string; scoreKey: string }> = [
   { name: "aPC", scoreKey: "apc_max_score" },
@@ -766,12 +890,19 @@ function computePRCurves(rows: PRRawRow[]): PRPoint[] {
     scored.sort((a, b) => b.score - a.score);
     const totalPos = scored.filter((s) => s.sig).length;
     if (totalPos === 0) continue;
-    let tp = 0, fp = 0;
+    let tp = 0,
+      fp = 0;
     const step = Math.max(1, Math.floor(scored.length / 50));
     for (let i = 0; i < scored.length; i++) {
-      if (scored[i].sig) tp++; else fp++;
+      if (scored[i].sig) tp++;
+      else fp++;
       if (i % step === 0 || i === scored.length - 1) {
-        points.push({ method: name, threshold: scored[i].score, precision: tp / (tp + fp), recall: tp / totalPos });
+        points.push({
+          method: name,
+          threshold: scored[i].score,
+          precision: tp / (tp + fp),
+          recall: tp / totalPos,
+        });
       }
     }
   }
@@ -831,35 +962,57 @@ function numOrNull(v: unknown): number | null {
 
 function parseUpsetRows(rows: Record<string, unknown>[]): UpsetRow[] {
   return rows.map((r) => ({
-    pred_apc: !!r.pred_apc, pred_chrombpnet: !!r.pred_chrombpnet, pred_clinvar: !!r.pred_clinvar,
-    pred_liver_cv2f: !!r.pred_liver_cv2f, pred_cv2f: !!r.pred_cv2f,
-    pred_liver_ase: !!r.pred_liver_ase, pred_ase: !!r.pred_ase, pred_liver_tland: !!r.pred_liver_tland,
-    count: num(r.n), expSigCount: num(r.n_sig),
+    pred_apc: !!r.pred_apc,
+    pred_chrombpnet: !!r.pred_chrombpnet,
+    pred_clinvar: !!r.pred_clinvar,
+    pred_liver_cv2f: !!r.pred_liver_cv2f,
+    pred_cv2f: !!r.pred_cv2f,
+    pred_liver_ase: !!r.pred_liver_ase,
+    pred_ase: !!r.pred_ase,
+    pred_liver_tland: !!r.pred_liver_tland,
+    count: num(r.n),
+    expSigCount: num(r.n_sig),
   }));
 }
 
 function parseSummaryRows(rows: Record<string, unknown>[]): SummaryRow[] {
   return rows.map((r) => ({
-    category: r.category as string, total: num(r.total), expSig: num(r.exp_sig),
-    predFunc: num(r.pred_func), predSig: num(r.pred_sig), apc: num(r.apc), chrombpnet: num(r.chrombpnet), clinvar: num(r.clinvar),
-    liver_cv2f: num(r.liver_cv2f), cv2f: num(r.cv2f),
-    liver_ase: num(r.liver_ase), ase: num(r.ase), tland: num(r.tland),
-    meanDnase: numOrNull(r.mean_dnase), meanH3k27ac: numOrNull(r.mean_h3k27ac), meanH3k4me3: numOrNull(r.mean_h3k4me3),
+    category: r.category as string,
+    total: num(r.total),
+    expSig: num(r.exp_sig),
+    predFunc: num(r.pred_func),
+    predSig: num(r.pred_sig),
+    apc: num(r.apc),
+    chrombpnet: num(r.chrombpnet),
+    clinvar: num(r.clinvar),
+    liver_cv2f: num(r.liver_cv2f),
+    cv2f: num(r.cv2f),
+    liver_ase: num(r.liver_ase),
+    ase: num(r.ase),
+    tland: num(r.tland),
+    meanDnase: numOrNull(r.mean_dnase),
+    meanH3k27ac: numOrNull(r.mean_h3k27ac),
+    meanH3k4me3: numOrNull(r.mean_h3k4me3),
   }));
 }
 
 function parseMiamiRows(rows: Record<string, unknown>[]): MiamiPoint[] {
   return rows.map((r) => ({
-    chrom: num(r.chrom), position: num(r.position),
-    upper_neglog_p: typeof r.upper_neglog_p === "number" ? r.upper_neglog_p : null,
-    lower_neglog_p: typeof r.lower_neglog_p === "number" ? r.lower_neglog_p : null,
+    chrom: num(r.chrom),
+    position: num(r.position),
+    upper_neglog_p:
+      typeof r.upper_neglog_p === "number" ? r.upper_neglog_p : null,
+    lower_neglog_p:
+      typeof r.lower_neglog_p === "number" ? r.lower_neglog_p : null,
     predicted_functional: !!r.predicted_functional,
     is_sig: !!r.is_sig,
     encode_ccre: (r.encode_ccre as "Promoter" | "Enhancer" | "None") ?? "None",
     exonic_category: (r.exonic_category as string) ?? null,
-    cage_category: (r.cage_category as "Promoter" | "Enhancer" | "Neither") ?? "Neither",
+    cage_category:
+      (r.cage_category as "Promoter" | "Enhancer" | "Neither") ?? "Neither",
     encode_element: (r.encode_element as string) ?? "None",
-    variant_category: (r.variant_category as "Coding" | "Noncoding") ?? "Noncoding",
+    variant_category:
+      (r.variant_category as "Coding" | "Noncoding") ?? "Noncoding",
     genes: Array.isArray(r.genes) ? (r.genes as string[]) : [],
   }));
 }
@@ -874,10 +1027,17 @@ async function buildDatasetReport(
   const sig = def.mode === "within" ? def.sigColumn : def.presenceColumn;
 
   const [
-    forestR, forestBgR,
-    summaryR, summaryCageR,
-    upsetR, upsetCodingR, upsetNoncodingR, upsetSigR,
-    miamiR, geneListR, prRawR,
+    forestR,
+    forestBgR,
+    summaryR,
+    summaryCageR,
+    upsetR,
+    upsetCodingR,
+    upsetNoncodingR,
+    upsetSigR,
+    miamiR,
+    geneListR,
+    prRawR,
     countsR,
     jointDataR,
   ] = await Promise.all([
@@ -889,20 +1049,41 @@ async function buildDatasetReport(
     query(upsetSQL(andWhere(where, "variant_category = 'Coding'"), sig)),
     query(upsetSQL(andWhere(where, "variant_category = 'Noncoding'"), sig)),
     query(upsetSQL(andWhere(where, sig), sig)),
-    query(miamiSQL(where, def.pvalColumns?.upper ?? null, def.pvalColumns?.lower ?? null, sig)),
+    query(
+      miamiSQL(
+        where,
+        def.pvalColumns?.upper ?? null,
+        def.pvalColumns?.lower ?? null,
+        sig,
+      ),
+    ),
     query(geneListSQL(where)),
     query(prRawSQL(where, sig)),
-    query(`SELECT count(*) as n, count(*) FILTER (WHERE ${sig}) as sig FROM analysis ${where}`),
+    query(
+      `SELECT count(*) as n, count(*) FILTER (WHERE ${sig}) as sig FROM analysis ${where}`,
+    ),
     // Fetch data for joint regression
-    query(`SELECT ${sig} as is_sig, ${PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([, c]) => c).join(", ")} FROM analysis ${where}`),
+    query(
+      `SELECT ${sig} as is_sig, ${PRED_METHODS.filter(
+        ([, c]) => c !== "pred_overall",
+      )
+        .map(([, c]) => c)
+        .join(", ")} FROM analysis ${where}`,
+    ),
   ]);
 
   const toForest = (rows: Record<string, unknown>[]) =>
-    rows.map((r) => computeOR(r.method as string, num(r.tp), num(r.fp), num(r.fn), num(r.tn)));
+    rows.map((r) =>
+      computeOR(r.method as string, num(r.tp), num(r.fp), num(r.fn), num(r.tn)),
+    );
 
   // Joint logistic regression
-  const methodNames = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([n]) => n);
-  const methodCols = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([, c]) => c);
+  const methodNames = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(
+    ([n]) => n,
+  );
+  const methodCols = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(
+    ([, c]) => c,
+  );
   const yArr = jointDataR.rows.map((r) => !!r.is_sig);
   const xArr = jointDataR.rows.map((r) => methodCols.map((c) => !!r[c]));
   const jointForest = fitJointLogistic(yArr, xArr, methodNames);
@@ -916,7 +1097,13 @@ async function buildDatasetReport(
       const sd = num(r.sd_z);
       const n = num(r.n, 1);
       const se = sd / Math.sqrt(n);
-      return { method: r.method as string, meanZ: mean, lo: mean - 1.96 * se, hi: mean + 1.96 * se, n };
+      return {
+        method: r.method as string,
+        meanZ: mean,
+        lo: mean - 1.96 * se,
+        hi: mean + 1.96 * se,
+        n,
+      };
     });
   }
 
@@ -1004,9 +1191,9 @@ async function buildCrossDataset(
   query: QueryFn,
   baselineRates: BaselineRate[] | null,
 ): Promise<CrossDatasetData> {
-  const predCountSQL = `SELECT count(*) as total, ${
-    PRED_METHODS.map(([, col]) => `count(*) FILTER (WHERE ${col}) as ${col}`).join(", ")
-  } FROM analysis`;
+  const predCountSQL = `SELECT count(*) as total, ${PRED_METHODS.map(
+    ([, col]) => `count(*) FILTER (WHERE ${col}) as ${col}`,
+  ).join(", ")} FROM analysis`;
   const [dhsR, gwasR, colocR, finemapR, afR, predR] = await Promise.all([
     query(SQL_DHS_SUMMARY),
     query(SQL_GWAS_CONTEXT),
@@ -1033,21 +1220,35 @@ async function buildCrossDataset(
   }));
 
   const cr = colocR.rows[0];
-  const colocSummary: ColocSummaryRow | null = cr && num(cr.total_variants) > 0
-    ? { totalVariants: num(cr.total_variants), totalColocs: num(cr.total_colocs),
-        totalTraits: num(cr.total_traits), totalTissues: num(cr.total_tissues),
-        avgMaxVcp: num(cr.avg_max_vcp) }
-    : null;
+  const colocSummary: ColocSummaryRow | null =
+    cr && num(cr.total_variants) > 0
+      ? {
+          totalVariants: num(cr.total_variants),
+          totalColocs: num(cr.total_colocs),
+          totalTraits: num(cr.total_traits),
+          totalTissues: num(cr.total_tissues),
+          avgMaxVcp: num(cr.avg_max_vcp),
+        }
+      : null;
 
   const finemapSummary: FinemapSummaryRow[] = finemapR.rows.map((r) => ({
-    trait: r.trait as string, n: num(r.n),
-    avgUkbFinemap: numOrNull(r.avg_ukb_finemap), avgUkbSusie: numOrNull(r.avg_ukb_susie),
-    avgBbjFinemap: numOrNull(r.avg_bbj_finemap), avgBbjSusie: numOrNull(r.avg_bbj_susie),
+    trait: r.trait as string,
+    n: num(r.n),
+    avgUkbFinemap: numOrNull(r.avg_ukb_finemap),
+    avgUkbSusie: numOrNull(r.avg_ukb_susie),
+    avgBbjFinemap: numOrNull(r.avg_bbj_finemap),
+    avgBbjSusie: numOrNull(r.avg_bbj_susie),
   }));
 
   const afBoxplot: AfBoxplotRow[] = afR.rows.map((r) => ({
-    population: r.population as string, sigGroup: r.sig_group as string,
-    p5: num(r.p5), q1: num(r.q1), median: num(r.median), q3: num(r.q3), p95: num(r.p95), n: num(r.n),
+    population: r.population as string,
+    sigGroup: r.sig_group as string,
+    p5: num(r.p5),
+    q1: num(r.q1),
+    median: num(r.median),
+    q3: num(r.q3),
+    p95: num(r.p95),
+    n: num(r.n),
   }));
 
   const pr = predR.rows[0] ?? {};
@@ -1055,7 +1256,16 @@ async function buildCrossDataset(
   const cohortPredCounts: Record<string, number> = {};
   for (const [, col] of PRED_METHODS) cohortPredCounts[col] = num(pr[col]);
 
-  return { afBoxplot, dhsSummary, gwasContext, colocSummary, finemapSummary, baselineRates, cohortPredCounts, cohortTotal };
+  return {
+    afBoxplot,
+    dhsSummary,
+    gwasContext,
+    colocSummary,
+    finemapSummary,
+    baselineRates,
+    cohortPredCounts,
+    cohortTotal,
+  };
 }
 
 export async function generateIgvfReport(
@@ -1072,16 +1282,21 @@ export async function generateIgvfReport(
   const uptakeFdr = bhAdjust(rawR.rows.map((r) => num(r.uptake_p, 1)));
 
   const flagsR = await query(`
-    SELECT _be_idx, ${PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([, c]) => c).join(", ")}
+    SELECT _be_idx, ${PRED_METHODS.filter(([, c]) => c !== "pred_overall")
+      .map(([, c]) => c)
+      .join(", ")}
     FROM analysis WHERE has_be ORDER BY _be_idx
   `);
 
-  const predCols = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(([, c]) => c);
+  const predCols = PRED_METHODS.filter(([, c]) => c !== "pred_overall").map(
+    ([, c]) => c,
+  );
   const fdrRows = rawR.rows.map((r, i) => {
     const flags = flagsR.rows[i];
     return {
       idx: num(r._be_idx),
-      efflux_fdr: effluxFdr[i], uptake_fdr: uptakeFdr[i],
+      efflux_fdr: effluxFdr[i],
+      uptake_fdr: uptakeFdr[i],
       either_sig: effluxFdr[i] < 0.05 || uptakeFdr[i] < 0.05,
       pred_overall: predCols.some((c) => !!flags?.[c]),
     };

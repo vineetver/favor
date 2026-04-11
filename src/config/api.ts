@@ -16,7 +16,9 @@ function resolveApiBase(): string {
     );
   }
 
-  return typeof window !== "undefined" ? "/api/v1" : "http://localhost:8000/api/v1";
+  return typeof window !== "undefined"
+    ? "/api/v1"
+    : "http://localhost:8000/api/v1";
 }
 
 export const API_BASE = resolveApiBase();

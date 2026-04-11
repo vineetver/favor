@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { Button } from "@shared/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { useEffect } from "react";
 
 export default function SettingsError({
   error,
@@ -21,7 +21,9 @@ export default function SettingsError({
         <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertCircle className="w-8 h-8 text-destructive" />
         </div>
-        <h2 className="text-xl font-bold text-foreground mb-2">Failed to load settings</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">
+          Failed to load settings
+        </h2>
         <p className="text-sm text-muted-foreground mb-6">
           {error.message || "An unexpected error occurred."}
         </p>

@@ -29,9 +29,7 @@ export default async function DiseasePortfolioPage({
   }
 
   const relations =
-    geneResponse?.relations ??
-    geneResponse?.included?.relations ??
-    undefined;
+    geneResponse?.relations ?? geneResponse?.included?.relations ?? undefined;
   const edges = geneResponse?.edges;
   const geneId = gene.gene_id_versioned?.split(".")[0] || id;
 

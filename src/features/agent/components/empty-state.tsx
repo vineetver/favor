@@ -1,33 +1,33 @@
 "use client";
 
-import { Fragment, useCallback, useMemo, useRef, useState } from "react";
-import {
-  PencilIcon,
-  ArrowRightIcon,
-  ChevronDownIcon,
-  CheckIcon,
-} from "lucide-react";
+import { useTypeahead } from "@features/search/hooks/use-typeahead";
+import type { EntityType } from "@features/search/types/api";
 import { cn } from "@infra/utils";
+import { ConversationEmptyState } from "@shared/components/ai-elements/conversation";
+import { Badge } from "@shared/components/ui/badge";
+import { Button } from "@shared/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@shared/components/ui/command";
+import { Input } from "@shared/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@shared/components/ui/popover";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@shared/components/ui/command";
-import { Input } from "@shared/components/ui/input";
-import { Badge } from "@shared/components/ui/badge";
-import { Button } from "@shared/components/ui/button";
 import { Spinner } from "@shared/components/ui/spinner";
-import { ConversationEmptyState } from "@shared/components/ai-elements/conversation";
-import { useTypeahead } from "@features/search/hooks/use-typeahead";
-import type { EntityType } from "@features/search/types/api";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  PencilIcon,
+} from "lucide-react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Data model
@@ -120,8 +120,7 @@ const PROMPT_CARDS: PromptCardDef[] = [
       { key: "s2", defaultValue: "drug indications" },
       { key: "s3", defaultValue: "adverse effects" },
     ],
-    assemble: (v, steps) =>
-      `Trace ${v.gene} through ${steps.join(" → ")}.`,
+    assemble: (v, steps) => `Trace ${v.gene} through ${steps.join(" → ")}.`,
   },
 
   // ── PGx Drug Metabolism ──
@@ -151,9 +150,7 @@ const PROMPT_CARDS: PromptCardDef[] = [
     outputPromise:
       "cCRE annotations, regulated genes with evidence modality, disease associations.",
     tier: "simple",
-    seeds: [
-      { key: "variant", defaultValue: "rs7412", category: "variant" },
-    ],
+    seeds: [{ key: "variant", defaultValue: "rs7412", category: "variant" }],
     steps: [
       { key: "s1", defaultValue: "cCREs" },
       { key: "s2", defaultValue: "genes" },
@@ -193,13 +190,18 @@ const PROMPT_CARDS: PromptCardDef[] = [
     outputPromise:
       "Disease-gene associations, drugs targeting those genes with clinical phase.",
     tier: "simple",
-    seeds: [{ key: "disease", defaultValue: "Parkinson disease", category: "disease" }],
+    seeds: [
+      {
+        key: "disease",
+        defaultValue: "Parkinson disease",
+        category: "disease",
+      },
+    ],
     steps: [
       { key: "s1", defaultValue: "genes" },
       { key: "s2", defaultValue: "drug targets" },
     ],
-    assemble: (v, steps) =>
-      `Trace ${v.disease} through ${steps.join(" → ")}.`,
+    assemble: (v, steps) => `Trace ${v.disease} through ${steps.join(" → ")}.`,
   },
 
   // ── Drug Safety Comparison ──
@@ -231,18 +233,17 @@ const PROMPT_CARDS: PromptCardDef[] = [
 const QUICK_PROMPTS = [
   {
     label: "Trace TP53 through pathways and diseases",
-    prompt:
-      "Trace TP53 through pathways → diseases.",
+    prompt: "Trace TP53 through pathways → diseases.",
   },
   {
-    label: "Compare Tofacitinib and Baricitinib: shared targets and adverse effects",
+    label:
+      "Compare Tofacitinib and Baricitinib: shared targets and adverse effects",
     prompt:
       "Compare Tofacitinib and Baricitinib: find shared drug targets and shared adverse effects.",
   },
   {
     label: "Trace Alzheimer disease through genes → drugs",
-    prompt:
-      "Trace Alzheimer disease through genes → drug targets.",
+    prompt: "Trace Alzheimer disease through genes → drug targets.",
   },
 ];
 
@@ -278,7 +279,10 @@ function TypeaheadTokenEditor({
   }, [results]);
 
   return (
-    <Command shouldFilter={false} className="rounded-lg border-none shadow-none">
+    <Command
+      shouldFilter={false}
+      className="rounded-lg border-none shadow-none"
+    >
       <CommandInput
         placeholder={`Search ${entityTypes.join(", ")}...`}
         value={query}

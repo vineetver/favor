@@ -4,7 +4,9 @@ interface MousePhenotypeListProps {
   phenotypeString: string | null | undefined;
 }
 
-export function MousePhenotypeList({ phenotypeString }: MousePhenotypeListProps) {
+export function MousePhenotypeList({
+  phenotypeString,
+}: MousePhenotypeListProps) {
   if (!phenotypeString) return null;
 
   const items = phenotypeString
@@ -24,7 +26,9 @@ export function MousePhenotypeList({ phenotypeString }: MousePhenotypeListProps)
   return (
     <div className="flex flex-col gap-1">
       {names.map((name, i) => (
-        <span key={i} className="text-sm text-foreground">{name}</span>
+        <span key={i} className="text-sm text-foreground">
+          {name}
+        </span>
       ))}
     </div>
   );

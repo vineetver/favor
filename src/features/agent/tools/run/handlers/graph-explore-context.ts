@@ -9,10 +9,10 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
 import { resolveSeeds } from "../resolve-seeds";
-import { errorResult, trimEntitySubtitles } from "./graph";
-import { okResult, catchToResult, TraceCollector } from "../run-result";
+import { catchToResult, okResult, TraceCollector } from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
+import { errorResult } from "./graph";
 
 type ExploreCmd = Extract<RunCommand, { command: "explore" }>;
 
@@ -65,7 +65,11 @@ export async function handleExploreContext(
       return errorResult("Could not resolve any seed entities.", tc);
     }
 
-    tc.add({ step: "fetchContext", kind: "call", message: `POST /graph/context for ${resolved.length} entities` });
+    tc.add({
+      step: "fetchContext",
+      kind: "call",
+      message: `POST /graph/context for ${resolved.length} entities`,
+    });
 
     const data = await agentFetch<{
       data: {
@@ -106,7 +110,10 @@ export async function handleExploreContext(
         const neighborSummary = Object.entries(ent.neighbors)
           .filter(([, g]) => g.count > 0)
           .map(([type, g]) => {
-            const topLabels = g.top.slice(0, 3).map((t) => t.entity.label).join(", ");
+            const topLabels = g.top
+              .slice(0, 3)
+              .map((t) => t.entity.label)
+              .join(", ");
             return `${g.count} ${type}${topLabels ? ` (top: ${topLabels})` : ""}`;
           })
           .join("; ");
@@ -121,15 +128,18 @@ export async function handleExploreContext(
       // Ontology
       if (ent.ontology) {
         const onto: string[] = [];
-        if (ent.ontology.parentCount) onto.push(`${ent.ontology.parentCount} parents`);
-        if (ent.ontology.childCount) onto.push(`${ent.ontology.childCount} children`);
+        if (ent.ontology.parentCount)
+          onto.push(`${ent.ontology.parentCount} parents`);
+        if (ent.ontology.childCount)
+          onto.push(`${ent.ontology.childCount} children`);
         if (onto.length) parts.push(`Ontology: ${onto.join(", ")}`);
       }
 
       return parts.join(". ");
     });
 
-    const textSummary = data.data?.textSummary ??
+    const textSummary =
+      data.data?.textSummary ??
       (compactSummaries.length === 1
         ? `Context for ${names}: ${compactSummaries[0]}`
         : `Context for ${names}: ${entities.length} entity profiles`);
@@ -156,18 +166,29 @@ export async function handleExploreContext(
 }
 
 /** Extract entities from context result data for pipeline forwarding. */
-export function extractContextEntities(data: Record<string, unknown>): EntityRef[] {
-  const entities = data.entities as Array<{
-    entity?: Record<string, unknown>;
-    neighbors?: Record<string, { top?: Array<{ entity?: Record<string, unknown> }> }>;
-  }> | undefined;
+export function extractContextEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
+  const entities = data.entities as
+    | Array<{
+        entity?: Record<string, unknown>;
+        neighbors?: Record<
+          string,
+          { top?: Array<{ entity?: Record<string, unknown> }> }
+        >;
+      }>
+    | undefined;
   if (!entities) return [];
   const out: EntityRef[] = [];
   for (const item of entities) {
     // The context entity itself
     const ent = item.entity;
     if (ent?.type && ent.id && ent.label) {
-      out.push({ type: String(ent.type), id: String(ent.id), label: String(ent.label) });
+      out.push({
+        type: String(ent.type),
+        id: String(ent.id),
+        label: String(ent.label),
+      });
     }
     // Top neighbors per type
     if (item.neighbors) {
@@ -175,7 +196,11 @@ export function extractContextEntities(data: Record<string, unknown>): EntityRef
         for (const n of group.top ?? []) {
           const ne = n.entity;
           if (ne?.type && ne.id && ne.label) {
-            out.push({ type: String(ne.type), id: String(ne.id), label: String(ne.label) });
+            out.push({
+              type: String(ne.type),
+              id: String(ne.id),
+              label: String(ne.label),
+            });
           }
         }
       }

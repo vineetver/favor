@@ -11,17 +11,17 @@ import cytoscape, {
 import coseBilkent from "cytoscape-cose-bilkent";
 import { memo, useEffect, useMemo, useRef } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
-import { getHubColor, getHubNodeSize, nodeToData } from "../../utils/ppi-graph-utils";
+import { getClusterColor } from "../../utils/clustering";
 import {
+  getHubColor,
+  getHubNodeSize,
+  nodeToData,
+} from "../../utils/ppi-graph-utils";
+import {
+  DEFAULT_EDGE_FILTER,
   getLayoutOptions,
   type PPICytoscapeGraphProps,
-  type CentralityData,
-  type EdgeFilterState,
-  type EdgeFilterConfig,
-  type ClusterState,
-  DEFAULT_EDGE_FILTER,
 } from "./types";
-import { getClusterColor } from "../../utils/clustering";
 
 // Register the CoSE-Bilkent layout extension
 if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
@@ -97,8 +97,8 @@ const STYLESHEET: StylesheetStyle[] = [
       "curve-style": "bezier",
       opacity: 0.7,
       "target-arrow-shape": "none",
-      "line-color": "#cbd5e1",  // Fallback, overridden by applyEdgeStyles
-      width: 1,                  // Fallback, overridden by applyEdgeStyles
+      "line-color": "#cbd5e1", // Fallback, overridden by applyEdgeStyles
+      width: 1, // Fallback, overridden by applyEdgeStyles
     },
   },
   {
@@ -149,7 +149,7 @@ const STYLESHEET: StylesheetStyle[] = [
   {
     selector: "edge.ppi-edge.filter-greyed",
     style: {
-      "line-color": "#e2e8f0",  // slate-200
+      "line-color": "#e2e8f0", // slate-200
       opacity: 0.3,
       width: 1,
       "z-index": 1,
@@ -160,7 +160,7 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "edge.ppi-edge.filter-hidden",
     style: {
       opacity: 0,
-      "events": "no" as never,
+      events: "no" as never,
     },
   },
   // Context overlay: node halo for shared pathways
@@ -168,7 +168,7 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "node.overlay-pathways",
     style: {
       "border-width": 4,
-      "border-color": "#6366f1",  // indigo-500
+      "border-color": "#6366f1", // indigo-500
       "border-opacity": 0.7,
     },
   },
@@ -177,7 +177,7 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "node.overlay-diseases",
     style: {
       "border-width": 4,
-      "border-color": "#f43f5e",  // rose-500
+      "border-color": "#f43f5e", // rose-500
       "border-opacity": 0.7,
     },
   },
@@ -186,7 +186,7 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "node.hub-hidden",
     style: {
       opacity: 0,
-      "events": "no" as never,
+      events: "no" as never,
     },
   },
   // Cluster visualization styles (8 distinct colors)
@@ -251,7 +251,7 @@ const STYLESHEET: StylesheetStyle[] = [
     selector: "node.cascade-hidden",
     style: {
       opacity: 0,
-      "events": "no" as never,
+      events: "no" as never,
     },
   },
 ];
@@ -328,7 +328,9 @@ function PPICytoscapeGraphInner({
     cy.batch(() => {
       // Clear all highlight classes
       cy.edges().removeClass("selected path-edge path-dimmed");
-      cy.nodes().removeClass("path-node path-dimmed multi-selected shared-interactor");
+      cy.nodes().removeClass(
+        "path-node path-dimmed multi-selected shared-interactor",
+      );
 
       // Selected edge
       if (selectedEdgeId) {
@@ -339,7 +341,10 @@ function PPICytoscapeGraphInner({
       }
 
       // Path highlighting
-      if (pathHighlight && (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)) {
+      if (
+        pathHighlight &&
+        (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)
+      ) {
         cy.nodes().forEach((node) => {
           if (pathHighlight.nodeIds.has(node.id())) {
             node.addClass("path-node");
@@ -517,7 +522,9 @@ function PPICytoscapeGraphInner({
 
     cy.batch(() => {
       // Clear all cluster classes
-      cy.nodes().removeClass("cluster-0 cluster-1 cluster-2 cluster-3 cluster-4 cluster-5 cluster-6 cluster-7 cluster-unclustered");
+      cy.nodes().removeClass(
+        "cluster-0 cluster-1 cluster-2 cluster-3 cluster-4 cluster-5 cluster-6 cluster-7 cluster-unclustered",
+      );
 
       if (clusterState?.enabled && clusterState.clusters.size > 0) {
         // Build a reverse map: nodeId -> clusterIndex
@@ -551,7 +558,7 @@ function PPICytoscapeGraphInner({
             node.addClass("cluster-unclustered");
             node.style({
               "background-color": "#f1f5f9", // slate-100
-              "border-color": "#94a3b8",     // slate-400
+              "border-color": "#94a3b8", // slate-400
             });
           }
         });
@@ -582,8 +589,13 @@ function PPICytoscapeGraphInner({
     cy.nodes().removeClass("cascade-hidden");
 
     // Only apply cascade logic if edgeFilterConfig is provided with hide-cascade
-    if (!edgeFilterConfig || edgeFilterConfig.display !== "hide-cascade") return;
-    if (edgeFilterConfig.minSources === 0 && edgeFilterConfig.minExperiments === 0) return;
+    if (!edgeFilterConfig || edgeFilterConfig.display !== "hide-cascade")
+      return;
+    if (
+      edgeFilterConfig.minSources === 0 &&
+      edgeFilterConfig.minExperiments === 0
+    )
+      return;
 
     // Find nodes connected by visible edges
     const connectedNodes = new Set<string>();
@@ -591,7 +603,8 @@ function PPICytoscapeGraphInner({
 
     cy.edges().forEach((edge) => {
       // Skip edges that are already hidden by filter
-      if (edge.hasClass("filter-greyed") || edge.hasClass("filter-hidden")) return;
+      if (edge.hasClass("filter-greyed") || edge.hasClass("filter-hidden"))
+        return;
 
       const numSources = edge.data("numSources") ?? 0;
       const numExperiments = edge.data("numExperiments") ?? 0;
@@ -636,7 +649,7 @@ function PPICytoscapeGraphInner({
         .map((el) => el.data.id)
         .sort()
         .join(","),
-    [elements]
+    [elements],
   );
 
   // Track previous element count for forced layout re-run on limit change
@@ -653,7 +666,11 @@ function PPICytoscapeGraphInner({
     const elementCountChanged = elements.length !== prevElementCountRef.current;
     prevElementCountRef.current = elements.length;
 
-    const currentIds = cy.nodes().map((n) => n.id()).sort().join(",");
+    const currentIds = cy
+      .nodes()
+      .map((n) => n.id())
+      .sort()
+      .join(",");
 
     // Re-run layout if node IDs changed OR element count changed
     if (currentIds !== elementsKey || elementCountChanged) {

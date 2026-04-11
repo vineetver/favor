@@ -1,12 +1,8 @@
+import { API_BASE } from "@/config/api";
 import type { CcreEntityResponse } from "../types";
 
-import { API_BASE } from "@/config/api";
-
 /** Edge types to fetch for the cCRE detail page */
-const CCRE_EDGE_TYPES = [
-  "CCRE_REGULATES_GENE",
-  "VARIANT_OVERLAPS_CCRE",
-];
+const CCRE_EDGE_TYPES = ["CCRE_REGULATES_GENE", "VARIANT_OVERLAPS_CCRE"];
 
 /**
  * Fetch a cCRE entity from the knowledge graph with edge data and counts.

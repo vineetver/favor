@@ -1,11 +1,14 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import {
+  ep,
   fetchVariantGraph,
   getEdgeRows,
-  ep,
   nb,
 } from "@features/variant/api/variant-graph";
-import { L2GTable, type L2GRow } from "@features/variant/components/graph/l2g-table";
+import {
+  type L2GRow,
+  L2GTable,
+} from "@features/variant/components/graph/l2g-table";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 interface L2GScoresPageProps {

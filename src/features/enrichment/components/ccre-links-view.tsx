@@ -1,31 +1,31 @@
 "use client";
 
-import { cn } from "@infra/utils";
-import { DataSurface } from "@shared/components/ui/data-surface";
-import { Dash } from "@shared/components/ui/dash";
-import { formatTissueName } from "@shared/utils/tissue-format";
-import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
-import {
-  useServerTable,
-  useClientSearchParams,
-  updateClientUrl,
-} from "@shared/hooks";
-import type {
-  ColumnMeta,
-  DimensionConfig,
-} from "@shared/components/ui/data-surface/types";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useMemo, useState } from "react";
 import type {
   CcreLinkRow,
   PaginatedResponse,
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useGeneCcreLinksQuery } from "@features/enrichment/hooks/use-gene-ccre-links-query";
+import { cn } from "@infra/utils";
+import { Dash } from "@shared/components/ui/dash";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type {
+  ColumnMeta,
+  DimensionConfig,
+} from "@shared/components/ui/data-surface/types";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import {
+  updateClientUrl,
+  useClientSearchParams,
+  useServerTable,
+} from "@shared/hooks";
+import { formatTissueName } from "@shared/utils/tissue-format";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useCallback, useMemo, useState } from "react";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Source & method config
@@ -73,9 +73,11 @@ const SCREEN_METHODS = [
 
 const CCRE_LINKS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best Score",
-  metricDescription: "Strongest linkage score across all sources (ChIA-PET, SCREEN, eQTL, CRISPRi) in this tissue group",
+  metricDescription:
+    "Strongest linkage score across all sources (ChIA-PET, SCREEN, eQTL, CRISPRi) in this tissue group",
   countLabel: "Linkages",
-  formatMetric: (v) => (v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3)),
+  formatMetric: (v) =>
+    v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3),
   sqrtScale: true,
   showTopItem: true,
   topItemLabel: "Top cCRE",
@@ -109,7 +111,11 @@ export function CcreLinksView({
   }
 
   return (
-    <CcreLinksDetailView gene={gene} totalCount={totalCount} initialData={initialData} />
+    <CcreLinksDetailView
+      gene={gene}
+      totalCount={totalCount}
+      initialData={initialData}
+    />
   );
 }
 
@@ -155,85 +161,106 @@ function CcreLinksDetailView({
   );
 
   // Columns (closure over openCcreSheet)
-  const activeColumns = useMemo((): ColumnDef<CcreLinkRow, unknown>[] => [
-    {
-      id: "ccre_id",
-      accessorKey: "ccre_id",
-      header: "cCRE",
-      enableSorting: false,
-      meta: { description: "Candidate cis-regulatory element accession" } satisfies ColumnMeta,
-      cell: ({ getValue }) => {
-        const id = getValue() as string;
-        return (
-          <button
-            className="text-xs font-mono text-primary hover:underline cursor-pointer"
-            onClick={() => openCcreSheet(id)}
-          >
-            {id}
-          </button>
-        );
+  const activeColumns = useMemo(
+    (): ColumnDef<CcreLinkRow, unknown>[] => [
+      {
+        id: "ccre_id",
+        accessorKey: "ccre_id",
+        header: "cCRE",
+        enableSorting: false,
+        meta: {
+          description: "Candidate cis-regulatory element accession",
+        } satisfies ColumnMeta,
+        cell: ({ getValue }) => {
+          const id = getValue() as string;
+          return (
+            <button
+              className="text-xs font-mono text-primary hover:underline cursor-pointer"
+              onClick={() => openCcreSheet(id)}
+            >
+              {id}
+            </button>
+          );
+        },
       },
-    },
-    {
-      id: "method",
-      accessorKey: "method",
-      header: "Method",
-      enableSorting: false,
-      meta: { description: "Prediction or experimental method" } satisfies ColumnMeta,
-      cell: ({ getValue }) => (
-        <span className="text-xs text-muted-foreground">
-          {formatMethod(getValue() as string)}
-        </span>
-      ),
-    },
-    {
-      id: "tissue_name",
-      accessorKey: "tissue_name",
-      header: "Tissue",
-      enableSorting: false,
-      meta: { description: "Tissue or cell type where the linkage was observed" } satisfies ColumnMeta,
-      cell: ({ getValue }) => (
-        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
-          {formatTissueName(getValue() as string)}
-        </span>
-      ),
-    },
-    {
-      id: "score",
-      accessorKey: "score",
-      header: "Score",
-      enableSorting: false,
-      meta: { description: "Linkage score (ChIA-PET/SCREEN) or −log₁₀(p) (eQTL)" } satisfies ColumnMeta,
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null;
-        if (v == null) return <Dash />;
-        return (
-          <span className="text-xs tabular-nums text-foreground font-medium">
-            {v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4)}
+      {
+        id: "method",
+        accessorKey: "method",
+        header: "Method",
+        enableSorting: false,
+        meta: {
+          description: "Prediction or experimental method",
+        } satisfies ColumnMeta,
+        cell: ({ getValue }) => (
+          <span className="text-xs text-muted-foreground">
+            {formatMethod(getValue() as string)}
           </span>
-        );
+        ),
       },
-    },
-    {
-      id: "effect_size",
-      accessorKey: "effect_size",
-      header: "Effect (β)",
-      enableSorting: false,
-      meta: { description: "Effect size (CRISPRi or eQTL). Positive = upregulation." } satisfies ColumnMeta,
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null;
-        if (v == null) return <Dash />;
-        return (
-          <span className={cn(
-            "text-xs tabular-nums",
-            v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground",
-          )}>
-            {v > 0 ? "+" : ""}{v.toFixed(3)}
+      {
+        id: "tissue_name",
+        accessorKey: "tissue_name",
+        header: "Tissue",
+        enableSorting: false,
+        meta: {
+          description: "Tissue or cell type where the linkage was observed",
+        } satisfies ColumnMeta,
+        cell: ({ getValue }) => (
+          <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+            {formatTissueName(getValue() as string)}
           </span>
-        );
+        ),
       },
-    },
-  ], [openCcreSheet]);
+      {
+        id: "score",
+        accessorKey: "score",
+        header: "Score",
+        enableSorting: false,
+        meta: {
+          description: "Linkage score (ChIA-PET/SCREEN) or −log₁₀(p) (eQTL)",
+        } satisfies ColumnMeta,
+        cell: ({ getValue }) => {
+          const v = getValue() as number | null;
+          if (v == null) return <Dash />;
+          return (
+            <span className="text-xs tabular-nums text-foreground font-medium">
+              {v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4)}
+            </span>
+          );
+        },
+      },
+      {
+        id: "effect_size",
+        accessorKey: "effect_size",
+        header: "Effect (β)",
+        enableSorting: false,
+        meta: {
+          description:
+            "Effect size (CRISPRi or eQTL). Positive = upregulation.",
+        } satisfies ColumnMeta,
+        cell: ({ getValue }) => {
+          const v = getValue() as number | null;
+          if (v == null) return <Dash />;
+          return (
+            <span
+              className={cn(
+                "text-xs tabular-nums",
+                v > 0
+                  ? "text-emerald-600"
+                  : v < 0
+                    ? "text-destructive"
+                    : "text-muted-foreground",
+              )}
+            >
+              {v > 0 ? "+" : ""}
+              {v.toFixed(3)}
+            </span>
+          );
+        },
+      },
+    ],
+    [openCcreSheet],
+  );
 
   // Method filter — only when ENCODE SCREEN
   const filters = useMemo((): ServerFilterConfig[] => {
@@ -253,9 +280,9 @@ function CcreLinksDetailView({
 
   const hasActiveFilters = Boolean(searchParams.get("method"));
   const liveTotal =
-    pageInfo.totalCount
-    ?? (!pageInfo.hasMore ? pageInfo.count || undefined : undefined)
-    ?? (hasActiveFilters ? undefined : totalCount || undefined);
+    pageInfo.totalCount ??
+    (!pageInfo.hasMore ? pageInfo.count || undefined : undefined) ??
+    (hasActiveFilters ? undefined : totalCount || undefined);
 
   const paginationInfo: ServerPaginationInfo = {
     totalCount: liveTotal,

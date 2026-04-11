@@ -1,11 +1,16 @@
 "use client";
 
+import type { Gene } from "@features/gene/types";
+import {
+  adaptGtexToTissueArray,
+  TISSUE_GROUPS,
+} from "@features/gene/utils/tissue-expression";
 import { cn } from "@infra/utils";
 import {
   BarChart,
   CATEGORICAL_PALETTE,
-  DEFAULT_BAR_COLOR,
   type ChartDataRow,
+  DEFAULT_BAR_COLOR,
 } from "@shared/components/charts";
 import {
   Card,
@@ -13,11 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
-import type { Gene } from "@features/gene/types";
-import {
-  adaptGtexToTissueArray,
-  TISSUE_GROUPS,
-} from "@features/gene/utils/tissue-expression";
 import { useCallback, useMemo, useState } from "react";
 
 const GROUP_PALETTE = [
@@ -65,7 +65,7 @@ function logTransform(value: number) {
 }
 
 function inverseLogTransform(value: number) {
-  return Math.max(Math.pow(10, value) - 1, 0);
+  return Math.max(10 ** value - 1, 0);
 }
 
 function SegmentedControl<T extends string>({
@@ -157,16 +157,13 @@ export function TissueExpressionChart({
     const activeGroups = new Set(limitedRows.map((row) => row.group));
 
     return Object.fromEntries(
-      Object.entries(GROUP_COLORS).filter(([group]) =>
-        activeGroups.has(group),
-      ),
+      Object.entries(GROUP_COLORS).filter(([group]) => activeGroups.has(group)),
     );
   }, [groupMode, limitedRows]);
 
   const formatValue = useCallback(
     (value: number) => {
-      const rawValue =
-        scaleMode === "log" ? inverseLogTransform(value) : value;
+      const rawValue = scaleMode === "log" ? inverseLogTransform(value) : value;
 
       if (!Number.isFinite(rawValue)) return "—";
       return rawValue.toFixed(2);

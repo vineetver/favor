@@ -43,7 +43,9 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
   const [results, setResults] = useState<TypeaheadResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [expandedTypes, setExpandedTypes] = useState<Set<EntityType>>(new Set());
+  const [expandedTypes, setExpandedTypes] = useState<Set<EntityType>>(
+    new Set(),
+  );
   const [expandingType, setExpandingType] = useState<EntityType | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -88,7 +90,8 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
           onResultsRef.current?.(response);
         }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Pivot fetch failed");
+        const error =
+          err instanceof Error ? err : new Error("Pivot fetch failed");
 
         // Don't set error for aborted requests
         if (error.name !== "AbortError") {
@@ -151,7 +154,7 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
           const updatedGroups = prev.groups.map((group) => {
             if (group.entity_type === entityType) {
               const expandedGroup = response.groups.find(
-                (g) => g.entity_type === entityType
+                (g) => g.entity_type === entityType,
               );
               return expandedGroup || group;
             }
@@ -161,7 +164,7 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
           // Recalculate total count
           const newTotalCount = updatedGroups.reduce(
             (sum, g) => sum + g.suggestions.length,
-            0
+            0,
           );
 
           return {
@@ -173,7 +176,8 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
 
         setExpandedTypes((prev) => new Set([...prev, entityType]));
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Fetch more failed");
+        const error =
+          err instanceof Error ? err : new Error("Fetch more failed");
         if (error.name !== "AbortError") {
           console.error("Failed to fetch more for type:", entityType, error);
         }
@@ -181,7 +185,7 @@ export function usePivotExpansion(options: UsePivotExpansionOptions = {}) {
         setExpandingType(null);
       }
     },
-    [anchor, expandedTypes, expandedLimit]
+    [anchor, expandedTypes, expandedLimit],
   );
 
   const clear = useCallback(() => {

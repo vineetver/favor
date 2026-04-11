@@ -5,13 +5,18 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { agentFetch, cohortFetch, AgentToolError } from "../lib/api-client";
+import { AgentToolError, agentFetch, cohortFetch } from "../lib/api-client";
 
 /** Internal columns to filter from schema */
 const INTERNAL_COLUMNS = new Set([
-  "variants_vid", "variants_chrom_id", "variants_position0",
-  "variants_hash30", "variants_pos_bin_1m", "variants_is_hashed",
-  "variants_position", "row_id",
+  "variants_vid",
+  "variants_chrom_id",
+  "variants_position0",
+  "variants_hash30",
+  "variants_pos_bin_1m",
+  "variants_is_hashed",
+  "variants_position",
+  "row_id",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -21,95 +26,159 @@ const INTERNAL_COLUMNS = new Set([
 /** Fields to keep per entity type. Any field not listed is dropped. */
 const ENTITY_KEEP_FIELDS: Record<string, string[]> = {
   Gene: [
-    "gene_symbol", "gene_name", "chromosome", "start_position", "end_position",
-    "strand", "gene_type", "cyto_location", "aliases",
+    "gene_symbol",
+    "gene_name",
+    "chromosome",
+    "start_position",
+    "end_position",
+    "strand",
+    "gene_type",
+    "cyto_location",
+    "aliases",
     // Key identifiers
-    "hgnc_id", "entrez_id", "uniprot_id", "omim_id",
+    "hgnc_id",
+    "entrez_id",
+    "uniprot_id",
+    "omim_id",
     // Scores & flags
-    "essentiality", "depmap_avg_gene_effect", "depmap_is_essential",
-    "tp_is_cancer_driver", "tp_is_membrane", "tp_is_secreted", "tp_has_pocket",
-    "tp_has_ligand", "tp_max_clinical_phase", "tp_genetic_constraint",
-    "tp_tissue_specificity", "tp_tissue_distribution",
-    "dgidb_categories", "is_canonical",
+    "essentiality",
+    "depmap_avg_gene_effect",
+    "depmap_is_essential",
+    "tp_is_cancer_driver",
+    "tp_is_membrane",
+    "tp_is_secreted",
+    "tp_has_pocket",
+    "tp_has_ligand",
+    "tp_max_clinical_phase",
+    "tp_genetic_constraint",
+    "tp_tissue_specificity",
+    "tp_tissue_distribution",
+    "dgidb_categories",
+    "is_canonical",
     // Compact nested (handled specially)
-    "constraint_scores", "go", "pathways", "disease_phenotype",
+    "constraint_scores",
+    "go",
+    "pathways",
+    "disease_phenotype",
   ],
   Drug: [
-    "drug_name", "drug_type", "max_phase", "is_approved", "year_first_approval",
-    "mechanisms_of_action", "action_types", "pharmacologic_classes",
+    "drug_name",
+    "drug_type",
+    "max_phase",
+    "is_approved",
+    "year_first_approval",
+    "mechanisms_of_action",
+    "action_types",
+    "pharmacologic_classes",
     // Key PK
-    "molecular_weight", "half_life", "bioavailability", "oral", "parenteral",
+    "molecular_weight",
+    "half_life",
+    "bioavailability",
+    "oral",
+    "parenteral",
     // Flags
-    "has_been_withdrawn", "black_box_warning", "has_orphan_designation",
-    "is_prodrug", "natural_product",
+    "has_been_withdrawn",
+    "black_box_warning",
+    "has_orphan_designation",
+    "is_prodrug",
+    "natural_product",
     // Key IDs
-    "drugbank_id", "pubchem_cid",
+    "drugbank_id",
+    "pubchem_cid",
     // Counts
-    "num_targets", "num_indications",
+    "num_targets",
+    "num_indications",
     // Display
     "trade_names",
   ],
   Disease: [
-    "disease_name", "is_cancer", "is_rare_disease",
-    "therapeutic_area_names", "primary_anatomical_systems",
-    "disorder_type", "majority_inheritance_mode",
+    "disease_name",
+    "is_cancer",
+    "is_rare_disease",
+    "therapeutic_area_names",
+    "primary_anatomical_systems",
+    "disorder_type",
+    "majority_inheritance_mode",
     // Gene & drug counts
-    "causal_gene_count", "clinical_gene_count", "associated_gene_count",
-    "drug_count", "max_trial_phase",
+    "causal_gene_count",
+    "clinical_gene_count",
+    "associated_gene_count",
+    "drug_count",
+    "max_trial_phase",
     // Clinical classification
-    "gencc_max_classification", "gencc_gene_count",
+    "gencc_max_classification",
+    "gencc_gene_count",
     // Prevalence (compact)
-    "point_prevalence_class", "sex_bias",
+    "point_prevalence_class",
+    "sex_bias",
     // Key IDs
-    "mondo_id", "omim_id", "orphanet_id",
+    "mondo_id",
+    "omim_id",
+    "orphanet_id",
     // Synonyms (capped)
     "synonyms",
   ],
   Variant: [
-    "rsid", "vid", "chromosome", "position", "ref", "alt",
-    "consequence", "gencode_gene_id",
+    "rsid",
+    "vid",
+    "chromosome",
+    "position",
+    "ref",
+    "alt",
+    "consequence",
+    "gencode_gene_id",
     // Functional scores
-    "cadd_phred", "cadd_raw", "linsight", "fathmm_xf", "alphamissense_score",
+    "cadd_phred",
+    "cadd_raw",
+    "linsight",
+    "fathmm_xf",
+    "alphamissense_score",
     // Conservation
-    "phylop_primates", "phylop_mammals", "phylop_vertebrates",
+    "phylop_primates",
+    "phylop_mammals",
+    "phylop_vertebrates",
     // Clinical
-    "clinvar_significance", "clinvar_review_status",
+    "clinvar_significance",
+    "clinvar_review_status",
     // Population frequency
-    "gnomad_af", "gnomad_exome_af", "gnomad_genome_af",
+    "gnomad_af",
+    "gnomad_exome_af",
+    "gnomad_genome_af",
     // Regulatory
-    "ccre_accessions", "ccre_annotations",
+    "ccre_accessions",
+    "ccre_annotations",
   ],
   Phenotype: [
-    "phenotype_name", "phenotype_definition", "ontology_source", "synonyms",
+    "phenotype_name",
+    "phenotype_definition",
+    "ontology_source",
+    "synonyms",
     // Counts (useful for LLM to gauge importance)
-    "disease_count", "gene_count", "gwas_variant_count", "mapped_entity_count",
+    "disease_count",
+    "gene_count",
+    "gwas_variant_count",
+    "mapped_entity_count",
     "is_deprecated",
   ],
-  Pathway: [
-    "pathway_name", "source", "species", "category", "summary",
-  ],
-  GOTerm: [
-    "go_name", "namespace", "definition",
-    "is_obsolete",
-  ],
-  Tissue: [
-    "tissue_name", "source",
-  ],
-  SideEffect: [
-    "side_effect_name", "meddra_concept_type", "source",
-    "synonyms",
-  ],
+  Pathway: ["pathway_name", "source", "species", "category", "summary"],
+  GOTerm: ["go_name", "namespace", "definition", "is_obsolete"],
+  Tissue: ["tissue_name", "source"],
+  SideEffect: ["side_effect_name", "meddra_concept_type", "source", "synonyms"],
   Metabolite: [
-    "metabolite_name", "source", "formula", "molecular_weight",
+    "metabolite_name",
+    "source",
+    "formula",
+    "molecular_weight",
     "synonyms",
   ],
-  cCRE: [
-    "ccre_name", "ccre_type", "chromosome", "start", "end",
-    "source",
-  ],
+  cCRE: ["ccre_name", "ccre_type", "chromosome", "start", "end", "source"],
   Study: [
-    "study_title", "trait_reported", "source", "pubmed_id",
-    "sample_size", "ancestry",
+    "study_title",
+    "trait_reported",
+    "source",
+    "pubmed_id",
+    "sample_size",
+    "ancestry",
   ],
 };
 
@@ -157,7 +226,9 @@ function curateEntityForLLM(
 /** Flatten Gene nested objects to compact representations */
 function curateGeneFields(entity: Record<string, unknown>) {
   // constraint_scores → flatten to key summary values
-  const cs = entity.constraint_scores as Record<string, Record<string, unknown>> | undefined;
+  const cs = entity.constraint_scores as
+    | Record<string, Record<string, unknown>>
+    | undefined;
   if (cs) {
     entity.constraint_scores = {
       loeuf: cs.loeuf?.lof_oe_ci_upper ?? null,
@@ -189,7 +260,10 @@ function curateGeneFields(entity: Record<string, unknown>) {
   const dp = entity.disease_phenotype as Record<string, unknown> | undefined;
   if (dp) {
     entity.disease_phenotype = {
-      mim_disease: truncateText(dp.mim_disease as string | undefined, MAX_FIELD_TEXT),
+      mim_disease: truncateText(
+        dp.mim_disease as string | undefined,
+        MAX_FIELD_TEXT,
+      ),
       hpo_name: truncateText(dp.hpo_name as string | undefined, MAX_FIELD_TEXT),
     };
   }
@@ -208,7 +282,9 @@ function curateDrugFields(entity: Record<string, unknown>) {
   }
   // mechanisms_of_action — cap to 3
   if (Array.isArray(entity.mechanisms_of_action)) {
-    entity.mechanisms_of_action = (entity.mechanisms_of_action as string[]).slice(0, 3);
+    entity.mechanisms_of_action = (
+      entity.mechanisms_of_action as string[]
+    ).slice(0, 3);
   }
 }
 
@@ -231,11 +307,17 @@ function curateUnknownEntity(
   for (const [key, val] of Object.entries(raw)) {
     if (val === null || val === undefined) continue;
     if (
-      key === "label" || key === "name" || key === "title" ||
-      key.endsWith("_name") || key.endsWith("_symbol") ||
-      key === "description" || key === "source" || key === "namespace"
+      key === "label" ||
+      key === "name" ||
+      key === "title" ||
+      key.endsWith("_name") ||
+      key.endsWith("_symbol") ||
+      key === "description" ||
+      key === "source" ||
+      key === "namespace"
     ) {
-      curated[key] = typeof val === "string" ? truncateText(val, MAX_FIELD_TEXT) : val;
+      curated[key] =
+        typeof val === "string" ? truncateText(val, MAX_FIELD_TEXT) : val;
     }
   }
   if (counts) curated._counts = counts;
@@ -243,13 +325,19 @@ function curateUnknownEntity(
 }
 
 /** Truncate a string to maxLen, adding ellipsis */
-function truncateText(s: string | undefined | null, maxLen: number): string | null {
+function truncateText(
+  s: string | undefined | null,
+  maxLen: number,
+): string | null {
   if (!s) return null;
   return s.length <= maxLen ? s : `${s.slice(0, maxLen).trimEnd()}…`;
 }
 
 /** Walk an object and truncate any string values exceeding MAX_FIELD_TEXT */
-function truncateStrings(obj: Record<string, unknown>, maxLen = MAX_FIELD_TEXT) {
+function truncateStrings(
+  obj: Record<string, unknown>,
+  maxLen = MAX_FIELD_TEXT,
+) {
   for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (typeof val === "string" && val.length > maxLen) {
@@ -274,7 +362,11 @@ PATHS:
   graph/schema                  — Graph schema (compact agent view)
   graph/schema/{type}           — Properties for a specific node/edge type`,
   inputSchema: z.object({
-    path: z.string().describe("Resource path (e.g., 'cohort/abc-123/schema', 'entity/Gene/ENSG00000012048')"),
+    path: z
+      .string()
+      .describe(
+        "Resource path (e.g., 'cohort/abc-123/schema', 'entity/Gene/ENSG00000012048')",
+      ),
   }),
   execute: async ({ path }) => {
     try {
@@ -341,13 +433,21 @@ PATHS:
         return await readGraphSchema();
       }
 
-      return { error: true, message: `Unknown path: ${path}`, hint: "Check the path format in the tool description." };
+      return {
+        error: true,
+        message: `Unknown path: ${path}`,
+        hint: "Check the path format in the tool description.",
+      };
     } catch (err) {
       if (err instanceof AgentToolError) return err.toToolResult();
       throw err;
     }
   },
-  toModelOutput: async (opts: { toolCallId: string; input: unknown; output: unknown }) => {
+  toModelOutput: async (opts: {
+    toolCallId: string;
+    input: unknown;
+    output: unknown;
+  }) => {
     const { path } = opts.input as { path: string };
     const parts = path.split("/").filter(Boolean);
     const result = opts.output as Record<string, unknown>;
@@ -387,13 +487,20 @@ async function readCohortSchema(cohortId: string) {
 
   // Filter internal columns
   const columns = Array.isArray(resp.columns)
-    ? (resp.columns as Array<{ name: string; kind: string; role?: string }>)
-        .filter((c) => !INTERNAL_COLUMNS.has(c.name))
+    ? (
+        resp.columns as Array<{ name: string; kind: string; role?: string }>
+      ).filter((c) => !INTERNAL_COLUMNS.has(c.name))
     : [];
 
-  const numeric = columns.filter((c) => c.kind === "numeric").map((c) => c.name);
-  const categorical = columns.filter((c) => c.kind === "categorical").map((c) => c.name);
-  const identity = columns.filter((c) => c.kind === "identity").map((c) => c.name);
+  const numeric = columns
+    .filter((c) => c.kind === "numeric")
+    .map((c) => c.name);
+  const categorical = columns
+    .filter((c) => c.kind === "categorical")
+    .map((c) => c.name);
+  const identity = columns
+    .filter((c) => c.kind === "identity")
+    .map((c) => c.name);
   const array = columns.filter((c) => c.kind === "array").map((c) => c.name);
 
   // Clean available methods — compact for LLM context.
@@ -403,13 +510,19 @@ async function readCohortSchema(cohortId: string) {
   const MAX_ROLE_CANDIDATES = 5;
   const GENERIC_HINT_RE = /^all\s+(numeric|categorical|identity|array)\b/i;
   const methods = Array.isArray(resp.available_methods)
-    ? (resp.available_methods as Array<{
-        method: string;
-        available: boolean;
-        auto_config?: Record<string, unknown>;
-        suggested_columns?: Array<{ param_name: string; candidates: string[]; reason: string }>;
-        [k: string]: unknown;
-      }>)
+    ? (
+        resp.available_methods as Array<{
+          method: string;
+          available: boolean;
+          auto_config?: Record<string, unknown>;
+          suggested_columns?: Array<{
+            param_name: string;
+            candidates: string[];
+            reason: string;
+          }>;
+          [k: string]: unknown;
+        }>
+      )
         .filter((m) => m.available)
         .map((m) => {
           const trimmed: Record<string, unknown> = {
@@ -462,7 +575,9 @@ async function readCohortSample(cohortId: string, limit: number) {
     { method: "POST", body: { limit: Math.min(limit, 100) }, timeout: 60_000 },
   );
   return {
-    rows: Array.isArray(result.rows) ? (result.rows as unknown[]).slice(0, limit) : result.rows,
+    rows: Array.isArray(result.rows)
+      ? (result.rows as unknown[]).slice(0, limit)
+      : result.rows,
     total: result.total,
   };
 }
@@ -500,11 +615,15 @@ async function readEntityProfile(type: string, id: string) {
       data: Record<string, unknown>;
       included?: Record<string, unknown>;
       meta?: Record<string, unknown>;
-    }>(`/graph/${encodeURIComponent(type)}/${encodeURIComponent(id)}?include=counts,edges,rollups`);
+    }>(
+      `/graph/${encodeURIComponent(type)}/${encodeURIComponent(id)}?include=counts,edges,rollups`,
+    );
 
     const counts = resp.included?.counts as Record<string, unknown> | undefined;
     const edges = resp.included?.edges as Record<string, unknown> | undefined;
-    const rollups = resp.included?.rollups as Record<string, unknown> | undefined;
+    const rollups = resp.included?.rollups as
+      | Record<string, unknown>
+      | undefined;
 
     const result: Record<string, unknown> = {
       entity: curateEntityForLLM(type, resp.data ?? {}, counts),
@@ -514,11 +633,15 @@ async function readEntityProfile(type: string, id: string) {
     if (edges && typeof edges === "object") {
       const edgeSummary: Record<string, unknown> = {};
       for (const [edgeType, detail] of Object.entries(edges)) {
-        const d = detail as { count?: number; topNeighbors?: unknown[] } | undefined;
+        const d = detail as
+          | { count?: number; topNeighbors?: unknown[] }
+          | undefined;
         if (d) {
           edgeSummary[edgeType] = {
             count: d.count,
-            ...(d.topNeighbors ? { topNeighbors: (d.topNeighbors as unknown[]).slice(0, 5) } : {}),
+            ...(d.topNeighbors
+              ? { topNeighbors: (d.topNeighbors as unknown[]).slice(0, 5) }
+              : {}),
           };
         }
       }
@@ -571,7 +694,11 @@ async function readVariant(query: string) {
 
   const match = resolveResult.results?.[0];
   if (!match || match.status.toLowerCase() !== "matched" || !match.entity) {
-    return { error: true, message: `Variant not found: ${query}`, hint: "Check variant ID format (rs123, 1-12345-A-T, vid:123)." };
+    return {
+      error: true,
+      message: `Variant not found: ${query}`,
+      hint: "Check variant ID format (rs123, 1-12345-A-T, vid:123).",
+    };
   }
 
   // Fetch full entity profile for the resolved variant
@@ -584,12 +711,16 @@ async function readVariant(query: string) {
 }
 
 async function readGraphSchema() {
-  const resp = await agentFetch<Record<string, unknown>>("/graph/schema?agent_view=true");
+  const resp = await agentFetch<Record<string, unknown>>(
+    "/graph/schema?agent_view=true",
+  );
   return resp;
 }
 
 async function readGraphSchemaType(type: string) {
-  const resp = await agentFetch<{ data: Record<string, unknown> }>(`/graph/schema/properties/${type}`);
+  const resp = await agentFetch<{ data: Record<string, unknown> }>(
+    `/graph/schema/properties/${type}`,
+  );
   return resp.data;
 }
 
@@ -597,7 +728,11 @@ async function readGraphSchemaType(type: string) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function extractQueryParam(path: string, param: string, defaultValue: number): number {
+function extractQueryParam(
+  path: string,
+  param: string,
+  defaultValue: number,
+): number {
   const match = path.match(new RegExp(`[?&]${param}=(\\d+)`));
   return match ? parseInt(match[1], 10) : defaultValue;
 }
@@ -612,7 +747,7 @@ function jsonOut(value: unknown) {
 }
 
 function compactArtifactForModel(data: Record<string, unknown>) {
-  const items = Array.isArray(data.items) ? data.items as unknown[] : [];
+  const items = Array.isArray(data.items) ? (data.items as unknown[]) : [];
   if (items.length <= 5) return jsonOut(data);
 
   return jsonOut({
@@ -658,7 +793,7 @@ function compactRunResultForModel(data: Record<string, unknown>) {
   if (!Array.isArray(charts)) return jsonOut(data);
 
   const compactCharts = charts.map((chart) => {
-    const points = Array.isArray(chart.data) ? chart.data as unknown[] : [];
+    const points = Array.isArray(chart.data) ? (chart.data as unknown[]) : [];
     if (points.length <= 20) return chart;
     return {
       ...chart,

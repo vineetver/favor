@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadEnhancerGenesData } from "@features/enrichment/loaders";
 import { EnhancerGenesView } from "@features/enrichment/components/enhancer-genes-view";
+import { loadEnhancerGenesData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

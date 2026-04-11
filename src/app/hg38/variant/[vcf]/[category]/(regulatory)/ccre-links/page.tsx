@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadCcreGeneLinksData } from "@features/enrichment/loaders";
 import { VariantCcreLinksView } from "@features/enrichment/components/variant-ccre-links-view";
+import { loadCcreGeneLinksData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function VariantCcreLinksPage({

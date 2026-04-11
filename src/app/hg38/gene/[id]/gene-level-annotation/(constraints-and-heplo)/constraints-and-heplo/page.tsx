@@ -8,7 +8,9 @@ interface ConstraintsPageProps {
   }>;
 }
 
-export default async function ConstraintsPage({ params }: ConstraintsPageProps) {
+export default async function ConstraintsPage({
+  params,
+}: ConstraintsPageProps) {
   const { id } = await params;
 
   const geneResponse = await fetchGene(id);

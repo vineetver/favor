@@ -1,24 +1,25 @@
 "use client";
 
-import { cn } from "@infra/utils";
-import { formatTissueName } from "@shared/utils/tissue-format";
-import { DataSurface } from "@shared/components/ui/data-surface";
 import type {
-  ServerFilterConfig,
-  ServerPaginationInfo,
-} from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
+  PaginatedResponse,
+  RegionSummary,
+  SignalRow,
+  TissueGroupRow,
+} from "@features/enrichment/api/region";
+import { useSignalsQuery } from "@features/enrichment/hooks/use-signals-query";
+import { cn } from "@infra/utils";
+import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
-import type { RegionSummary, TissueGroupRow } from "@features/enrichment/api/region";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import { formatTissueName } from "@shared/utils/tissue-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { SignalRow, PaginatedResponse } from "@features/enrichment/api/region";
-import { useSignalsQuery } from "@features/enrichment/hooks/use-signals-query";
-import { tissueFilter } from "./filter-helpers";
 import { CcreDetailSheet } from "./ccre-detail-sheet";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { tissueFilter } from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -26,7 +27,8 @@ import { TissueGroupBackButton } from "./tissue-group-back-button";
 
 const SIGNALS_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Max Z-score",
-  metricDescription: "Strongest epigenomic signal Z-score across all cCREs in this tissue group",
+  metricDescription:
+    "Strongest epigenomic signal Z-score across all cCREs in this tissue group",
   countLabel: "cCREs",
   formatMetric: (v) => v.toFixed(1),
   showTopItem: true,
@@ -93,15 +95,15 @@ function SignalCell({ value }: { value: number | null }) {
 
 /** Full-form labels for cCRE classification codes */
 const CCRE_CLASS_LABELS: Record<string, string> = {
-  "PLS": "Promoter-Like",
-  "pELS": "Proximal Enhancer-Like",
-  "dELS": "Distal Enhancer-Like",
-  "DLS": "Distal Promoter-Like",
+  PLS: "Promoter-Like",
+  pELS: "Proximal Enhancer-Like",
+  dELS: "Distal Enhancer-Like",
+  DLS: "Distal Promoter-Like",
   "CA-CTCF": "Accessible + CTCF",
   "CA-H3K4me3": "Accessible + H3K4me3",
   "CA-TF": "Accessible + TF",
-  "CA": "Accessible Only",
-  "TF": "TF Only",
+  CA: "Accessible Only",
+  TF: "TF Only",
 };
 
 const signalColumns: ColumnDef<SignalRow, unknown>[] = [
@@ -109,13 +111,18 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "ccre_id",
     accessorKey: "ccre_id",
     header: "cCRE",
-    meta: { description: "ENCODE candidate cis-Regulatory Element accession" } satisfies ColumnMeta,
+    meta: {
+      description: "ENCODE candidate cis-Regulatory Element accession",
+    } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ row }) => (
       <div>
-        <span className="font-mono text-xs text-foreground">{row.original.ccre_id}</span>
+        <span className="font-mono text-xs text-foreground">
+          {row.original.ccre_id}
+        </span>
         <span className="block text-[10px] text-muted-foreground tabular-nums">
-          {row.original.start.toLocaleString()}&ndash;{row.original.end.toLocaleString()}
+          {row.original.start.toLocaleString()}&ndash;
+          {row.original.end.toLocaleString()}
         </span>
       </div>
     ),
@@ -125,11 +132,18 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Biosample",
-    meta: { description: "Specific biosample within the tissue group" } satisfies ColumnMeta,
+    meta: {
+      description: "Specific biosample within the tissue group",
+    } satisfies ColumnMeta,
     enableSorting: true,
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground truncate max-w-[200px] block" title={row.original.subtissue_name || row.original.tissue_name}>
-        {formatTissueName(row.original.subtissue_name || row.original.tissue_name)}
+      <span
+        className="text-sm text-muted-foreground truncate max-w-[200px] block"
+        title={row.original.subtissue_name || row.original.tissue_name}
+      >
+        {formatTissueName(
+          row.original.subtissue_name || row.original.tissue_name,
+        )}
       </span>
     ),
   },
@@ -137,16 +151,25 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     id: "ccre_classification",
     accessorKey: "ccre_classification",
     header: "Class",
-    meta: { description: "PLS = Promoter-Like, pELS = Proximal Enhancer-Like, dELS = Distal Enhancer-Like" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "PLS = Promoter-Like, pELS = Proximal Enhancer-Like, dELS = Distal Enhancer-Like",
+    } satisfies ColumnMeta,
     enableSorting: false,
     cell: ({ getValue }) => {
       const val = getValue() as string;
-      if (!val) return <span className="text-muted-foreground/40">&mdash;</span>;
+      if (!val)
+        return <span className="text-muted-foreground/40">&mdash;</span>;
       const fullForm = CCRE_CLASS_LABELS[val];
       return (
         <span className="text-xs text-muted-foreground" title={fullForm ?? val}>
           <span className="font-medium text-foreground">{val}</span>
-          {fullForm && <span className="hidden sm:inline text-muted-foreground"> {fullForm}</span>}
+          {fullForm && (
+            <span className="hidden sm:inline text-muted-foreground">
+              {" "}
+              {fullForm}
+            </span>
+          )}
         </span>
       );
     },
@@ -160,11 +183,11 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
         DNase Z
       </div>
     ),
-    meta: { description: "DNase-seq signal Z-score \u2014 chromatin accessibility" } satisfies ColumnMeta,
+    meta: {
+      description: "DNase-seq signal Z-score \u2014 chromatin accessibility",
+    } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalCell value={getValue() as number | null} />
-    ),
+    cell: ({ getValue }) => <SignalCell value={getValue() as number | null} />,
   },
   {
     id: "atac",
@@ -175,11 +198,11 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
         ATAC Z
       </div>
     ),
-    meta: { description: "ATAC-seq signal Z-score \u2014 chromatin accessibility" } satisfies ColumnMeta,
+    meta: {
+      description: "ATAC-seq signal Z-score \u2014 chromatin accessibility",
+    } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalCell value={getValue() as number | null} />
-    ),
+    cell: ({ getValue }) => <SignalCell value={getValue() as number | null} />,
   },
   {
     id: "ctcf",
@@ -190,11 +213,11 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
         CTCF Z
       </div>
     ),
-    meta: { description: "CTCF ChIP-seq Z-score \u2014 insulator binding" } satisfies ColumnMeta,
+    meta: {
+      description: "CTCF ChIP-seq Z-score \u2014 insulator binding",
+    } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalCell value={getValue() as number | null} />
-    ),
+    cell: ({ getValue }) => <SignalCell value={getValue() as number | null} />,
   },
   {
     id: "h3k27ac",
@@ -205,11 +228,12 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
         H3K27ac Z
       </div>
     ),
-    meta: { description: "H3K27ac ChIP-seq Z-score \u2014 active enhancer/promoter mark" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "H3K27ac ChIP-seq Z-score \u2014 active enhancer/promoter mark",
+    } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalCell value={getValue() as number | null} />
-    ),
+    cell: ({ getValue }) => <SignalCell value={getValue() as number | null} />,
   },
   {
     id: "h3k4me3",
@@ -220,18 +244,21 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
         H3K4me3 Z
       </div>
     ),
-    meta: { description: "H3K4me3 ChIP-seq Z-score \u2014 active promoter mark" } satisfies ColumnMeta,
+    meta: {
+      description: "H3K4me3 ChIP-seq Z-score \u2014 active promoter mark",
+    } satisfies ColumnMeta,
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalCell value={getValue() as number | null} />
-    ),
+    cell: ({ getValue }) => <SignalCell value={getValue() as number | null} />,
   },
   {
     // ID matches API sort_by value
     id: "max_signal",
     accessorKey: "max_signal",
     header: "Max Z",
-    meta: { description: "Maximum Z-score across all available assays for this biosample" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Maximum Z-score across all available assays for this biosample",
+    } satisfies ColumnMeta,
     enableSorting: true,
     cell: ({ getValue }) => {
       const value = getValue() as number | null;
@@ -309,7 +336,9 @@ function TissueSignalsDetailView({
     useSignalsQuery({ loc, initialData });
 
   const hasActiveFilters = Boolean(
-    searchParams.get("tissue") || searchParams.get("tissue_group") || searchParams.get("ccre_class"),
+    searchParams.get("tissue") ||
+      searchParams.get("tissue_group") ||
+      searchParams.get("ccre_class"),
   );
 
   const liveTotal =
@@ -360,7 +389,8 @@ function TissueSignalsDetailView({
                 {row.original.ccre_id}
               </button>
               <span className="block text-[10px] text-muted-foreground tabular-nums">
-                {row.original.start.toLocaleString()}&ndash;{row.original.end.toLocaleString()}
+                {row.original.start.toLocaleString()}&ndash;
+                {row.original.end.toLocaleString()}
               </span>
             </div>
           ),

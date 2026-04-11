@@ -35,13 +35,13 @@ export const geneDataChecks: Record<string, DataCheck> = {
 
   // Disease & Therapeutics — entity fields
   "disease-portfolio": (g, ec) =>
-    hasAny(g.disease_phenotype) || !!g.opentargets?.approved_name ||
+    hasAny(g.disease_phenotype) ||
+    !!g.opentargets?.approved_name ||
     hasEdges(ec, "GENE_ASSOCIATED_WITH_DISEASE"),
   "tractability-and-target-class": (g) =>
     (g.opentargets?.tractability?.length ?? 0) > 0 ||
     (g.opentargets?.target_class?.length ?? 0) > 0,
-  "chemical-probes": (g) =>
-    (g.opentargets?.chemical_probes?.length ?? 0) > 0,
+  "chemical-probes": (g) => (g.opentargets?.chemical_probes?.length ?? 0) > 0,
   tep: (g) => !!g.opentargets?.tep,
   "safety-liabilities": (g) =>
     (g.opentargets?.safety_liabilities?.length ?? 0) > 0,
@@ -52,8 +52,6 @@ export const geneDataChecks: Record<string, DataCheck> = {
     hasEdges(ec, "GENE_ASSOCIATED_WITH_PHENOTYPE"),
   "drug-landscape": (_g, ec) =>
     hasEdges(ec, "DRUG_ACTS_ON_GENE", "DRUG_DISPOSITION_BY_GENE"),
-  pharmacogenomics: (_g, ec) =>
-    hasEdges(ec, "GENE_AFFECTS_DRUG_RESPONSE"),
-  "somatic-alterations": (_g, ec) =>
-    hasEdges(ec, "GENE_ALTERED_IN_DISEASE"),
+  pharmacogenomics: (_g, ec) => hasEdges(ec, "GENE_AFFECTS_DRUG_RESPONSE"),
+  "somatic-alterations": (_g, ec) => hasEdges(ec, "GENE_ALTERED_IN_DISEASE"),
 };

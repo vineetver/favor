@@ -1,5 +1,5 @@
-import { fetchGwasAssociations } from "@features/variant/api/gwas";
 import type { GwasFilterOptions } from "@features/variant/api/gwas";
+import { fetchGwasAssociations } from "@features/variant/api/gwas";
 import { GwasCatalogTable } from "@features/variant/components/gwas-catalog-table";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
@@ -25,9 +25,7 @@ interface GwasCatalogPageProps {
 function parseFilters(
   searchParams: Awaited<GwasCatalogPageProps["searchParams"]>,
 ): GwasFilterOptions {
-  const pageSize = searchParams.page_size
-    ? Number(searchParams.page_size)
-    : 20;
+  const pageSize = searchParams.page_size ? Number(searchParams.page_size) : 20;
   const filters: GwasFilterOptions = { limit: pageSize };
 
   // Add cursor if present (for pagination)

@@ -64,7 +64,7 @@ function aggregateVariants(rows: RegionVariantRow[]): VariantSummary[] {
     }
   }
   return [...map.values()].sort(
-    (a, b) => b.tables.length - a.tables.length || b.count - a.count
+    (a, b) => b.tables.length - a.tables.length || b.count - a.count,
   );
 }
 

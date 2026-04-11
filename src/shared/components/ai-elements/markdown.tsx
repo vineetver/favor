@@ -79,10 +79,16 @@ const NonMemoizedMarkdown = ({ children, showCopy = true }: MarkdownProps) => {
           className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
           aria-label="Copy to clipboard"
         >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
         </Button>
       )}
-      <Streamdown className="ai-summary-content" components={components}>{children}</Streamdown>
+      <Streamdown className="ai-summary-content" components={components}>
+        {children}
+      </Streamdown>
     </div>
   );
 };

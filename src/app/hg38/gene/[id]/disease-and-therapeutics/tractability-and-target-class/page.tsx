@@ -1,14 +1,14 @@
 import { fetchGene } from "@features/gene/api";
 import { cn } from "@infra/utils";
-import { notFound } from "next/navigation";
-import { ExternalLink } from "@shared/components/ui/external-link";
-import { NoDataState } from "@shared/components/ui/error-states";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { NoDataState } from "@shared/components/ui/error-states";
+import { ExternalLink } from "@shared/components/ui/external-link";
+import { notFound } from "next/navigation";
 
 interface TractabilityPageProps {
   params: Promise<{
@@ -30,13 +30,26 @@ type TargetClassItem = {
 
 const MODALITIES = ["SM", "AB", "PR", "OC"] as const;
 const MODALITY_LABELS: Record<string, { short: string; full: string }> = {
-  SM: { short: "Small molecule", full: "Small molecule drugs that bind to target pockets" },
-  AB: { short: "Antibody", full: "Antibody-based therapies targeting cell surface proteins" },
-  PR: { short: "PROTAC", full: "Targeted protein degradation via ubiquitin-proteasome system" },
+  SM: {
+    short: "Small molecule",
+    full: "Small molecule drugs that bind to target pockets",
+  },
+  AB: {
+    short: "Antibody",
+    full: "Antibody-based therapies targeting cell surface proteins",
+  },
+  PR: {
+    short: "PROTAC",
+    full: "Targeted protein degradation via ubiquitin-proteasome system",
+  },
   OC: { short: "Other", full: "Other therapeutic modalities" },
 };
 
-const CLINICAL_CRITERIA = ["Approved Drug", "Advanced Clinical", "Phase 1 Clinical"];
+const CLINICAL_CRITERIA = [
+  "Approved Drug",
+  "Advanced Clinical",
+  "Phase 1 Clinical",
+];
 
 const EVIDENCE_CRITERIA: Record<string, string[]> = {
   SM: [
@@ -79,14 +92,16 @@ const FRIENDLY_LABELS: Record<string, string> = {
   "UniProt SigP or TMHMM": "Has signal peptide or transmembrane domain",
   "GO CC med conf": "Cell surface by Gene Ontology (moderate)",
   "Human Protein Atlas loc": "Localized by Human Protein Atlas",
-  "Literature": "Published evidence",
+  Literature: "Published evidence",
   "UniProt Ubiquitination": "Known ubiquitination sites",
   "Database Ubiquitination": "Database-predicted ubiquitination",
   "Half-life Data": "Protein half-life measured",
   "Small Molecule Binder": "Known small molecule binder",
 };
 
-export default async function TractabilityPage({ params }: TractabilityPageProps) {
+export default async function TractabilityPage({
+  params,
+}: TractabilityPageProps) {
   const { id } = await params;
   const geneResponse = await fetchGene(id);
   const gene = geneResponse?.data;
@@ -117,7 +132,10 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
   };
 
   const getCounts = (modality: string) => {
-    const allCriteria = [...CLINICAL_CRITERIA, ...(EVIDENCE_CRITERIA[modality] || [])];
+    const allCriteria = [
+      ...CLINICAL_CRITERIA,
+      ...(EVIDENCE_CRITERIA[modality] || []),
+    ];
     const supported = allCriteria.filter((c) => getValue(modality, c)).length;
     return { supported, total: allCriteria.length };
   };
@@ -189,7 +207,9 @@ export default async function TractabilityPage({ params }: TractabilityPageProps
                     key={`${item.id}-${item.level}-${index}`}
                     className="inline-flex items-center gap-1.5 rounded bg-muted px-2 py-1 text-[11px]"
                   >
-                    <span className="text-foreground font-medium">{item.label}</span>
+                    <span className="text-foreground font-medium">
+                      {item.label}
+                    </span>
                     <span className="text-muted-foreground">L{item.level}</span>
                   </span>
                 ))}

@@ -1,18 +1,45 @@
 // Gene column configurations
 // Barrel exports for all gene column categories
 
-import { geneInfoAndIdsColumns, geneInfoAndIdsGroup } from "./columns/info-and-ids";
+import {
+  geneAnimalPhenotypeColumns,
+  geneAnimalPhenotypeGroup,
+} from "./columns/animal-phenotype";
+import {
+  geneCancerHallmarksColumns,
+  geneCancerHallmarksGroup,
+} from "./columns/cancer-hallmarks";
+import {
+  geneChemicalProbesColumns,
+  geneChemicalProbesGroup,
+} from "./columns/chemical-probes";
+import {
+  geneConstraintsColumns,
+  geneConstraintsGroup,
+} from "./columns/constraints";
+import {
+  geneExpressionColumns,
+  geneExpressionGroup,
+} from "./columns/expression";
 import { geneFunctionColumns, geneFunctionGroup } from "./columns/function";
-import { geneHumanPhenotypeColumns, geneHumanPhenotypeGroup } from "./columns/human-phenotype";
-import { geneAnimalPhenotypeColumns, geneAnimalPhenotypeGroup } from "./columns/animal-phenotype";
-import { geneExpressionColumns, geneExpressionGroup } from "./columns/expression";
+import {
+  geneHumanPhenotypeColumns,
+  geneHumanPhenotypeGroup,
+} from "./columns/human-phenotype";
+import {
+  geneInfoAndIdsColumns,
+  geneInfoAndIdsGroup,
+} from "./columns/info-and-ids";
 import { genePathwaysColumns, genePathwaysGroup } from "./columns/pathways";
-import { geneConstraintsColumns, geneConstraintsGroup } from "./columns/constraints";
-import { geneTractabilityTargetClassColumns, geneTractabilityTargetClassGroup } from "./columns/tractability-and-target-class";
-import { geneChemicalProbesColumns, geneChemicalProbesGroup } from "./columns/chemical-probes";
-import { geneSafetyLiabilitiesColumns, geneSafetyLiabilitiesGroup } from "./columns/safety-liabilities";
-import { geneCancerHallmarksColumns, geneCancerHallmarksGroup } from "./columns/cancer-hallmarks";
+import {
+  geneSafetyLiabilitiesColumns,
+  geneSafetyLiabilitiesGroup,
+} from "./columns/safety-liabilities";
 import { geneTepColumns, geneTepGroup } from "./columns/tep";
+import {
+  geneTractabilityTargetClassColumns,
+  geneTractabilityTargetClassGroup,
+} from "./columns/tractability-and-target-class";
 
 // Re-export all columns and groups
 export {

@@ -7,7 +7,7 @@ import type { PPIEdge } from "../components/ppi-network/types";
 export function detectCommunities(
   nodeIds: string[],
   edges: PPIEdge[],
-  resolution: number = 1.0
+  resolution: number = 1.0,
 ): Map<string, string[]> {
   // Build adjacency map with edge weights
   const adjacency = new Map<string, Map<string, number>>();
@@ -27,19 +27,26 @@ export function detectCommunities(
     const sourceAdj = adjacency.get(edge.sourceId);
     if (sourceAdj) {
       sourceAdj.set(edge.targetId, weight);
-      nodeDegrees.set(edge.sourceId, (nodeDegrees.get(edge.sourceId) ?? 0) + weight);
+      nodeDegrees.set(
+        edge.sourceId,
+        (nodeDegrees.get(edge.sourceId) ?? 0) + weight,
+      );
     }
 
     // Target -> Source (undirected)
     const targetAdj = adjacency.get(edge.targetId);
     if (targetAdj) {
       targetAdj.set(edge.sourceId, weight);
-      nodeDegrees.set(edge.targetId, (nodeDegrees.get(edge.targetId) ?? 0) + weight);
+      nodeDegrees.set(
+        edge.targetId,
+        (nodeDegrees.get(edge.targetId) ?? 0) + weight,
+      );
     }
   });
 
   // Total edge weight (2m in modularity formula)
-  const totalWeight = edges.reduce((sum, e) => sum + (e.numSources ?? 1), 0) * 2;
+  const totalWeight =
+    edges.reduce((sum, e) => sum + (e.numSources ?? 1), 0) * 2;
 
   // Initial community assignment: each node in its own community
   const communities = new Map<string, string>();
@@ -79,7 +86,11 @@ export function detectCommunities(
 
       communityGains.forEach((edgesToCommunity, community) => {
         // Simplified modularity gain calculation
-        const gain = resolution * edgesToCommunity - (nodeDegree * getCommunityDegree(communities, nodeDegrees, community)) / totalWeight;
+        const gain =
+          resolution * edgesToCommunity -
+          (nodeDegree *
+            getCommunityDegree(communities, nodeDegrees, community)) /
+            totalWeight;
         if (gain > bestGain) {
           bestGain = gain;
           bestCommunity = community;
@@ -100,7 +111,7 @@ export function detectCommunities(
     if (!clusters.has(community)) {
       clusters.set(community, []);
     }
-    clusters.get(community)!.push(nodeId);
+    clusters.get(community)?.push(nodeId);
   });
 
   // Filter out single-node clusters and renumber
@@ -122,7 +133,7 @@ export function detectCommunities(
 function getCommunityDegree(
   communities: Map<string, string>,
   nodeDegrees: Map<string, number>,
-  targetCommunity: string
+  targetCommunity: string,
 ): number {
   let total = 0;
   communities.forEach((community, nodeId) => {
@@ -140,7 +151,7 @@ function getCommunityDegree(
 export function labelPropagation(
   nodeIds: string[],
   edges: PPIEdge[],
-  maxIterations: number = 10
+  maxIterations: number = 10,
 ): Map<string, string[]> {
   // Build adjacency map
   const adjacency = new Map<string, Set<string>>();
@@ -197,7 +208,7 @@ export function labelPropagation(
     if (!clusters.has(label)) {
       clusters.set(label, []);
     }
-    clusters.get(label)!.push(nodeId);
+    clusters.get(label)?.push(nodeId);
   });
 
   // Filter and renumber
@@ -238,7 +249,10 @@ export function getClusterStats(clusters: Map<string, string[]>): {
  * Get cluster color based on cluster index
  * Uses a visually distinct palette
  */
-export function getClusterColor(clusterIndex: number): { background: string; border: string } {
+export function getClusterColor(clusterIndex: number): {
+  background: string;
+  border: string;
+} {
   const colors = [
     { background: "#dbeafe", border: "#3b82f6" }, // blue
     { background: "#dcfce7", border: "#22c55e" }, // green

@@ -1,8 +1,15 @@
 "use client";
 
+import type {
+  PaginatedResponse,
+  TissueGroupRow,
+  VariantAllelicImbalanceRow,
+} from "@features/enrichment/api/region";
+import { useAllelicImbalanceQuery } from "@features/enrichment/hooks/use-allelic-imbalance-query";
 import { cn } from "@infra/utils";
-import { DataSurface } from "@shared/components/ui/data-surface";
 import { Dash } from "@shared/components/ui/dash";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
 import {
   Tooltip,
   TooltipContent,
@@ -10,22 +17,19 @@ import {
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import { VariantCell } from "@shared/components/ui/variant-cell";
-import { formatTissueName, formatPvalue } from "@shared/utils/tissue-format";
-import { tissueGroupFilter, tissueFilter, significantOnlyFilter } from "./filter-helpers";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import { formatPvalue, formatTissueName } from "@shared/utils/tissue-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
-import type {
-  VariantAllelicImbalanceRow,
-  PaginatedResponse,
-  TissueGroupRow,
-} from "@features/enrichment/api/region";
-import { useAllelicImbalanceQuery } from "@features/enrichment/hooks/use-allelic-imbalance-query";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import {
+  significantOnlyFilter,
+  tissueFilter,
+  tissueGroupFilter,
+} from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -112,7 +116,8 @@ function AllelicRatioChart({ data }: AllelicRatioChartProps) {
             Allelic Bias Direction
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Reference allele ratio per mark &times; tissue. Center (0.5) = balanced.
+            Reference allele ratio per mark &times; tissue. Center (0.5) =
+            balanced.
           </p>
         </div>
 
@@ -249,21 +254,33 @@ function AllelicRatioChart({ data }: AllelicRatioChartProps) {
               {/* 0 */}
               <div className="absolute left-0 top-0">
                 <div className="border-l border-border" style={{ height: 4 }} />
-                <span className="text-[10px] tabular-nums text-muted-foreground absolute" style={{ transform: "translateX(-30%)", top: 5 }}>
+                <span
+                  className="text-[10px] tabular-nums text-muted-foreground absolute"
+                  style={{ transform: "translateX(-30%)", top: 5 }}
+                >
                   0
                 </span>
               </div>
               {/* 0.5 */}
-              <div className="absolute left-1/2 top-0" style={{ transform: "translateX(-0.5px)" }}>
+              <div
+                className="absolute left-1/2 top-0"
+                style={{ transform: "translateX(-0.5px)" }}
+              >
                 <div className="border-l border-border" style={{ height: 4 }} />
-                <span className="text-[10px] tabular-nums text-muted-foreground absolute" style={{ transform: "translateX(-50%)", top: 5 }}>
+                <span
+                  className="text-[10px] tabular-nums text-muted-foreground absolute"
+                  style={{ transform: "translateX(-50%)", top: 5 }}
+                >
                   0.5
                 </span>
               </div>
               {/* 1.0 */}
               <div className="absolute right-0 top-0">
                 <div className="border-l border-border" style={{ height: 4 }} />
-                <span className="text-[10px] tabular-nums text-muted-foreground absolute" style={{ transform: "translateX(-70%)", top: 5 }}>
+                <span
+                  className="text-[10px] tabular-nums text-muted-foreground absolute"
+                  style={{ transform: "translateX(-70%)", top: 5 }}
+                >
                   1.0
                 </span>
               </div>
@@ -303,15 +320,24 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "variant_vcf",
     header: "Variant",
     enableSorting: false,
-    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
+    meta: {
+      description: "Variant in VCF notation (chr-pos-ref-alt)",
+    } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <VariantCell
+        vcf={row.original.variant_vcf}
+        position={row.original.position}
+      />
+    ),
   },
   {
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Tissue",
     enableSorting: true,
-    meta: { description: "Tissue or cell type where allelic imbalance was measured" } satisfies ColumnMeta,
+    meta: {
+      description: "Tissue or cell type where allelic imbalance was measured",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[180px] block">
         {formatTissueName(getValue() as string)}
@@ -323,7 +349,9 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "mark",
     header: "Mark",
     enableSorting: false,
-    meta: { description: "Histone modification or assay mark (e.g. H3K27ac, H3K4me3)" } satisfies ColumnMeta,
+    meta: {
+      description: "Histone modification or assay mark (e.g. H3K27ac, H3K4me3)",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const raw = getValue() as string;
       return (
@@ -338,7 +366,10 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "neglog_pvalue",
     header: "-log\u2081\u2080(p)",
     enableSorting: true,
-    meta: { description: "Negative log10 p-value for allelic imbalance. Higher = stronger evidence." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Negative log10 p-value for allelic imbalance. Higher = stronger evidence.",
+    } satisfies ColumnMeta,
     cell: ({ row }) => {
       const val = row.original.neglog_pvalue;
       const maxBar = 10;
@@ -365,7 +396,9 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     id: "p_value",
     header: "p-value",
     enableSorting: false,
-    meta: { description: "Raw p-value for allelic imbalance test" } satisfies ColumnMeta,
+    meta: {
+      description: "Raw p-value for allelic imbalance test",
+    } satisfies ColumnMeta,
     cell: ({ row }) => (
       <span className="text-xs tabular-nums text-muted-foreground">
         {formatPvalue(row.original.neglog_pvalue)}
@@ -377,7 +410,9 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "imbalance_magnitude",
     header: "Magnitude",
     enableSorting: true,
-    meta: { description: "Effect size of allelic imbalance" } satisfies ColumnMeta,
+    meta: {
+      description: "Effect size of allelic imbalance",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
       return (
@@ -392,7 +427,10 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "ref_allele_ratio",
     header: "Ref Ratio",
     enableSorting: false,
-    meta: { description: "Reference allele read ratio. 0.5 = balanced. <0.5 = ALT biased, >0.5 = REF biased." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Reference allele read ratio. 0.5 = balanced. <0.5 = ALT biased, >0.5 = REF biased.",
+    } satisfies ColumnMeta,
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
@@ -405,12 +443,21 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
             <div
               className="absolute top-0 bottom-0 rounded-full bg-primary"
               style={{
-                left: v < 0.5 ? `${v * 100}%` : '50%',
+                left: v < 0.5 ? `${v * 100}%` : "50%",
                 width: `${Math.abs(v - 0.5) * 100}%`,
               }}
             />
           </div>
-          <span className={cn("text-xs tabular-nums", altB ? "text-amber-600" : refB ? "text-blue-600" : "text-muted-foreground")}>
+          <span
+            className={cn(
+              "text-xs tabular-nums",
+              altB
+                ? "text-amber-600"
+                : refB
+                  ? "text-blue-600"
+                  : "text-muted-foreground",
+            )}
+          >
             {v.toFixed(2)}
           </span>
         </div>
@@ -422,9 +469,18 @@ const columns: ColumnDef<VariantAllelicImbalanceRow, unknown>[] = [
     accessorKey: "is_significant",
     header: "Sig.",
     enableSorting: false,
-    meta: { description: "Whether the allelic imbalance passes significance threshold" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Whether the allelic imbalance passes significance threshold",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
-      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
+      <span
+        className={
+          getValue()
+            ? "text-emerald-600 text-xs font-medium"
+            : "text-muted-foreground/40 text-xs"
+        }
+      >
         {getValue() ? "Yes" : "No"}
       </span>
     ),
@@ -459,7 +515,8 @@ function buildFilters(
 
 const ALLELIC_IMBALANCE_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best \u2212log\u2081\u2080(p)",
-  metricDescription: "Strongest allelic imbalance significance across all histone marks in this tissue group",
+  metricDescription:
+    "Strongest allelic imbalance significance across all histone marks in this tissue group",
   countLabel: "Observations",
   formatMetric: (v) => v.toFixed(1),
   sqrtScale: true,
@@ -525,16 +582,13 @@ function AllelicImbalanceDetailView({
     initialData,
   });
 
-  const filters = useMemo(
-    () => buildFilters(tissues, marks),
-    [tissues, marks],
-  );
+  const filters = useMemo(() => buildFilters(tissues, marks), [tissues, marks]);
 
   const hasActiveFilters = Boolean(
     searchParams.get("tissue") ||
-    searchParams.get("tissue_group") ||
-    searchParams.get("mark") ||
-    searchParams.get("significant_only"),
+      searchParams.get("tissue_group") ||
+      searchParams.get("mark") ||
+      searchParams.get("significant_only"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

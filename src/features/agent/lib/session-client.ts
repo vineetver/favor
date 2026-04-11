@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentSession, AgentMessage } from "./agent-api";
+import type { AgentMessage, AgentSession } from "./agent-api";
 import { API_BASE } from "./constants";
 
 async function sessionFetch<T>(
@@ -33,16 +33,12 @@ export async function createSessionClient(
   });
 }
 
-export async function listSessionsClient(
-  limit = 50,
-): Promise<AgentSession[]> {
+export async function listSessionsClient(limit = 50): Promise<AgentSession[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   return sessionFetch<AgentSession[]>(`/agent/sessions?${params}`);
 }
 
-export async function deleteSessionClient(
-  sessionId: string,
-): Promise<void> {
+export async function deleteSessionClient(sessionId: string): Promise<void> {
   await sessionFetch<unknown>(`/agent/sessions/${sessionId}`, {
     method: "DELETE",
   });
@@ -51,9 +47,7 @@ export async function deleteSessionClient(
 export async function listMessagesClient(
   sessionId: string,
 ): Promise<AgentMessage[]> {
-  return sessionFetch<AgentMessage[]>(
-    `/agent/sessions/${sessionId}/messages`,
-  );
+  return sessionFetch<AgentMessage[]>(`/agent/sessions/${sessionId}/messages`);
 }
 
 export type { AgentSession, AgentMessage };

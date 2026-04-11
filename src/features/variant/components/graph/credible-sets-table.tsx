@@ -64,11 +64,7 @@ const credibleSetsColumns = [
     cell: ({ row }) => {
       const t = row.original.reportedTrait;
       const isLead = row.original.isLead;
-      const display = t
-        ? t.length > 52
-          ? `${t.slice(0, 52)}…`
-          : t
-        : null;
+      const display = t ? (t.length > 52 ? `${t.slice(0, 52)}…` : t) : null;
       return (
         <div className="flex items-center gap-1.5 min-w-0">
           {isLead && (
@@ -81,10 +77,7 @@ const credibleSetsColumns = [
             </span>
           )}
           {display && (
-            <span
-              className="text-foreground truncate"
-              title={t ?? undefined}
-            >
+            <span className="text-foreground truncate" title={t ?? undefined}>
               {display}
             </span>
           )}
@@ -190,7 +183,9 @@ const credibleSetsColumns = [
     cell: ({ row }) => {
       const r = row.original.region;
       if (!r) return <span className="text-muted-foreground">—</span>;
-      return <span className="font-mono text-xs text-muted-foreground">{r}</span>;
+      return (
+        <span className="font-mono text-xs text-muted-foreground">{r}</span>
+      );
     },
   }),
 
@@ -210,7 +205,6 @@ const credibleSetsColumns = [
       );
     },
   }),
-
 ];
 
 // ============================================================================

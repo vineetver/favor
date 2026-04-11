@@ -54,7 +54,11 @@ const CategoryAccordion = memo(function CategoryAccordion({
   const colors = getCategoryColor(category.name);
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle} className="border-b border-border last:border-b-0">
+    <Collapsible
+      open={isExpanded}
+      onOpenChange={onToggle}
+      className="border-b border-border last:border-b-0"
+    >
       {/* Category header */}
       <CollapsibleTrigger asChild>
         <button

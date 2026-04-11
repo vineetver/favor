@@ -201,17 +201,11 @@
     },
     {
       "name": "Sequence",
-      "annotations": [
-        "sequence_context_cpg_phred",
-        "sequence_context_gc_phred"
-      ]
+      "annotations": ["sequence_context_cpg_phred", "sequence_context_gc_phred"]
     },
     {
       "name": "Distance",
-      "annotations": [
-        "distance_min_dist_tse",
-        "distance_min_dist_tss"
-      ]
+      "annotations": ["distance_min_dist_tse", "distance_min_dist_tss"]
     },
     {
       "name": "ChromHMM",
@@ -277,16 +271,11 @@
     },
     {
       "name": "ReMap",
-      "annotations": [
-        "remap_overlap_cl",
-        "remap_overlap_tf"
-      ]
+      "annotations": ["remap_overlap_cl", "remap_overlap_tf"]
     },
     {
       "name": "Regulatory",
-      "annotations": [
-        "genehancer_feature_score"
-      ]
+      "annotations": ["genehancer_feature_score"]
     },
     {
       "name": "MutationRate",
@@ -312,10 +301,7 @@
     },
     {
       "name": "PopGen",
-      "annotations": [
-        "nucdiv",
-        "recombination_rate"
-      ]
+      "annotations": ["nucdiv", "recombination_rate"]
     }
   ],
   "all_in_order": [

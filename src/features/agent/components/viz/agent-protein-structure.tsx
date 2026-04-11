@@ -1,11 +1,11 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { ProteinStructureVizSpec } from "../../viz/types";
 
 // ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ const AXIS_GAP = 4; // gap between track bottom and tick top
 /** Pick a "nice" tick step so we get roughly 5–10 ticks. */
 function niceTickStep(length: number): number {
   const rough = length / 8;
-  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const mag = 10 ** Math.floor(Math.log10(rough));
   const normalized = rough / mag;
   if (normalized <= 1) return mag;
   if (normalized <= 2) return 2 * mag;
@@ -182,7 +182,11 @@ const DomainMap = memo(function DomainMap({
                     x={x}
                     y={labelY}
                     textAnchor={
-                      pos === 1 ? "start" : pos === proteinLength ? "end" : "middle"
+                      pos === 1
+                        ? "start"
+                        : pos === proteinLength
+                          ? "end"
+                          : "middle"
                     }
                     className={`fill-muted-foreground ${isEnd ? "text-[10px] font-medium" : "text-[9px]"}`}
                   >
@@ -196,7 +200,10 @@ const DomainMap = memo(function DomainMap({
           {/* Legend — deduplicated by name */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 px-1">
             {legendItems.map((item) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div
+                key={item.name}
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+              >
                 <span
                   className="inline-block size-2.5 rounded-sm shrink-0"
                   style={{ backgroundColor: item.color }}
@@ -255,7 +262,9 @@ const AlphaFoldViewer = memo(function AlphaFoldViewer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<unknown>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -274,7 +283,9 @@ const AlphaFoldViewer = memo(function AlphaFoldViewer({
             `https://alphafold.ebi.ac.uk/api/prediction/${alphafoldId}`,
           );
           if (apiResp.ok) {
-            const entries = (await apiResp.json()) as Array<{ cifUrl?: string }>;
+            const entries = (await apiResp.json()) as Array<{
+              cifUrl?: string;
+            }>;
             cifUrl = entries?.[0]?.cifUrl ?? null;
           }
         } catch {
@@ -291,9 +302,7 @@ const AlphaFoldViewer = memo(function AlphaFoldViewer({
                 cifUrl = url;
                 break;
               }
-            } catch {
-              continue;
-            }
+            } catch {}
           }
         }
 

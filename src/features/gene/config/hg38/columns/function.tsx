@@ -1,13 +1,8 @@
-import type { Gene } from "@features/gene/types";
-import { ExternalLink } from "@shared/components/ui/external-link";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
 import { FunctionDetailView } from "@features/gene/components/function-detail-view";
 import { GoTermsView } from "@features/gene/components/go-terms-view";
 import { SubcellularLocationsView } from "@features/gene/components/subcellular-locations-view";
+import type { Gene } from "@features/gene/types";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -18,9 +13,10 @@ export const geneFunctionColumns = [
     header: "Function Descriptions",
     description: tooltip({
       title: "Function Descriptions",
-      description: "Detailed function descriptions from OpenTargets (curated from multiple sources).",
+      description:
+        "Detailed function descriptions from OpenTargets (curated from multiple sources).",
     }),
-    cell: cell.custom<Gene, any>((descriptions: string[], row: Gene) => {
+    cell: cell.custom<Gene, any>((descriptions: string[], _row: Gene) => {
       if (!descriptions || descriptions.length === 0) return null;
       return <FunctionDetailView descriptions={descriptions} />;
     }),
@@ -54,7 +50,8 @@ export const geneFunctionColumns = [
     header: "HPA Evidence",
     description: tooltip({
       title: "Human Protein Atlas Evidence",
-      description: "Evidence level for protein expression from the Human Protein Atlas.",
+      description:
+        "Evidence level for protein expression from the Human Protein Atlas.",
     }),
     cell: cell.text(),
   }),
@@ -65,7 +62,8 @@ export const geneFunctionColumns = [
     header: "Subcellular Locations",
     description: tooltip({
       title: "Subcellular Locations",
-      description: "Cellular compartments where the protein is found (from UniProt via OpenTargets).",
+      description:
+        "Cellular compartments where the protein is found (from UniProt via OpenTargets).",
     }),
     cell: cell.custom<Gene, any>((locations: Array<Record<string, string>>) => (
       <SubcellularLocationsView locations={locations} />
@@ -78,12 +76,24 @@ export const geneFunctionColumns = [
     header: "Gene Ontology (GO)",
     description: tooltip({
       title: "Gene Ontology Annotations",
-      description: "GO term annotations grouped by Biological Process, Molecular Function, and Cellular Component.",
+      description:
+        "GO term annotations grouped by Biological Process, Molecular Function, and Cellular Component.",
     }),
-    cell: cell.custom<Gene, any>((go: { biological_process?: string; molecular_function?: string; cellular_component?: string }, row: Gene) => (
-      <GoTermsView go={go} goDetailed={row.opentargets?.go} />
-    )),
+    cell: cell.custom<Gene, any>(
+      (
+        go: {
+          biological_process?: string;
+          molecular_function?: string;
+          cellular_component?: string;
+        },
+        row: Gene,
+      ) => <GoTermsView go={go} goDetailed={row.opentargets?.go} />,
+    ),
   }),
 ];
 
-export const geneFunctionGroup = col.group("function", "Function", geneFunctionColumns);
+export const geneFunctionGroup = col.group(
+  "function",
+  "Function",
+  geneFunctionColumns,
+);

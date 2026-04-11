@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadQtlsData } from "@features/enrichment/loaders";
 import { QtlsView } from "@features/enrichment/components/qtls-view";
+import { loadQtlsData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

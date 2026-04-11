@@ -63,7 +63,9 @@ export const AgentHeatmap = memo(function AgentHeatmap({
   return (
     <div className="w-full overflow-x-auto">
       {spec.valueLabel && (
-        <p className="text-[11px] text-muted-foreground mb-1.5">{spec.valueLabel}</p>
+        <p className="text-[11px] text-muted-foreground mb-1.5">
+          {spec.valueLabel}
+        </p>
       )}
       <div className="inline-block">
         {/* Column headers */}
@@ -75,7 +77,7 @@ export const AgentHeatmap = memo(function AgentHeatmap({
               style={{ width: cellSize, minWidth: cellSize }}
               title={col}
             >
-              {col.length > 4 ? col.slice(0, 3) + "\u2026" : col}
+              {col.length > 4 ? `${col.slice(0, 3)}\u2026` : col}
             </div>
           ))}
         </div>
@@ -107,8 +109,13 @@ export const AgentHeatmap = memo(function AgentHeatmap({
         ))}
 
         {/* Legend */}
-        <div className="flex items-center gap-2 mt-2" style={{ marginLeft: labelWidth }}>
-          <span className="text-[10px] text-muted-foreground">{min.toFixed(2)}</span>
+        <div
+          className="flex items-center gap-2 mt-2"
+          style={{ marginLeft: labelWidth }}
+        >
+          <span className="text-[10px] text-muted-foreground">
+            {min.toFixed(2)}
+          </span>
           <div
             className="h-3 rounded-sm"
             style={{
@@ -119,7 +126,9 @@ export const AgentHeatmap = memo(function AgentHeatmap({
                   : "linear-gradient(to right, #ede9fe, #7c3aed)",
             }}
           />
-          <span className="text-[10px] text-muted-foreground">{max.toFixed(2)}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {max.toFixed(2)}
+          </span>
         </div>
       </div>
     </div>

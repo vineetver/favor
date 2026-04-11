@@ -1,6 +1,10 @@
 import type { ElementDefinition } from "cytoscape";
 import type { EntityRef, SubgraphEdge } from "../api";
-import type { PPIEdge, PPIEvidenceSource, PPINode } from "../components/ppi-network/types";
+import type {
+  PPIEdge,
+  PPIEvidenceSource,
+  PPINode,
+} from "../components/ppi-network/types";
 import { getExperimentTier } from "../components/ppi-network/types";
 
 /**
@@ -11,19 +15,33 @@ function getEdgeList(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
   if (typeof value === "object") {
     const record = value as Record<string, unknown>;
-    const candidate = (record.edges ?? record.items ?? record.data ?? record.rows) as unknown;
+    const candidate = (record.edges ??
+      record.items ??
+      record.data ??
+      record.rows) as unknown;
     if (Array.isArray(candidate)) return candidate;
   }
   return [];
 }
 
 // Common PPI database names for synthetic source generation
-const COMMON_SOURCES = ["IntAct", "BioGRID", "STRING", "MINT", "DIP", "HPRD", "Reactome", "KEGG"];
+const COMMON_SOURCES = [
+  "IntAct",
+  "BioGRID",
+  "STRING",
+  "MINT",
+  "DIP",
+  "HPRD",
+  "Reactome",
+  "KEGG",
+];
 
 /**
  * Extract sources from props object
  */
-function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSource[] {
+function extractSourcesFromProps(
+  props: Record<string, unknown>,
+): PPIEvidenceSource[] {
   const sourcesRaw = props.sources ?? props.evidence_sources ?? [];
 
   if (Array.isArray(sourcesRaw)) {
@@ -34,9 +52,14 @@ function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSou
       if (typeof src === "object" && src) {
         const srcObj = src as Record<string, unknown>;
         return {
-          name: String(srcObj.name ?? srcObj.source ?? srcObj.database ?? "Unknown"),
+          name: String(
+            srcObj.name ?? srcObj.source ?? srcObj.database ?? "Unknown",
+          ),
           score: typeof srcObj.score === "number" ? srcObj.score : undefined,
-          experimentCount: typeof srcObj.experiment_count === "number" ? srcObj.experiment_count : undefined,
+          experimentCount:
+            typeof srcObj.experiment_count === "number"
+              ? srcObj.experiment_count
+              : undefined,
         };
       }
       return { name: "Unknown" };
@@ -46,7 +69,10 @@ function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSou
   // Generate synthetic sources based on num_sources if no explicit sources
   const numSources = props.num_sources;
   if (typeof numSources === "number" && numSources > 0) {
-    return COMMON_SOURCES.slice(0, Math.min(numSources, COMMON_SOURCES.length)).map((name) => ({ name }));
+    return COMMON_SOURCES.slice(
+      0,
+      Math.min(numSources, COMMON_SOURCES.length),
+    ).map((name) => ({ name }));
   }
 
   return [];
@@ -55,12 +81,20 @@ function extractSourcesFromProps(props: Record<string, unknown>): PPIEvidenceSou
 /**
  * Extract detection methods from props object
  */
-function extractDetectionMethodsFromProps(props: Record<string, unknown>): string[] {
+function extractDetectionMethodsFromProps(
+  props: Record<string, unknown>,
+): string[] {
   const methodsRaw = props.detection_methods ?? props.methods ?? [];
 
   if (Array.isArray(methodsRaw)) {
     return methodsRaw
-      .map((m) => (typeof m === "string" ? m : typeof m === "object" && m ? String((m as Record<string, unknown>).name ?? m) : null))
+      .map((m) =>
+        typeof m === "string"
+          ? m
+          : typeof m === "object" && m
+            ? String((m as Record<string, unknown>).name ?? m)
+            : null,
+      )
       .filter((m): m is string => Boolean(m));
   }
   return [];
@@ -79,7 +113,9 @@ function extractPubmedIdsFromProps(props: Record<string, unknown>): string[] {
   return [];
 }
 
-function extractPubmedIdsFromFunctionText(props: Record<string, unknown>): string[] {
+function extractPubmedIdsFromFunctionText(
+  props: Record<string, unknown>,
+): string[] {
   // Try structured fields first
   const structured = extractPubmedIdsFromProps(props);
   if (structured.length > 0) return structured;
@@ -102,13 +138,29 @@ function extractPubmedIdsFromFunctionText(props: Record<string, unknown>): strin
  */
 function mergePropsFromLegacy(
   edgeRecord: Record<string, unknown>,
-  linkProps: Record<string, unknown>
+  linkProps: Record<string, unknown>,
 ): Record<string, unknown> {
-  const properties = edgeRecord?.properties as Record<string, unknown> | undefined;
+  const properties = edgeRecord?.properties as
+    | Record<string, unknown>
+    | undefined;
   return {
-    sources: linkProps?.sources ?? linkProps?.evidence_sources ?? edgeRecord?.sources ?? edgeRecord?.evidence_sources ?? properties?.sources,
-    detection_methods: linkProps?.detection_methods ?? linkProps?.methods ?? edgeRecord?.detection_methods ?? edgeRecord?.methods,
-    pubmed_ids: linkProps?.pmids ?? linkProps?.pubmed_ids ?? linkProps?.publications ?? edgeRecord?.pmids ?? edgeRecord?.pubmed_ids,
+    sources:
+      linkProps?.sources ??
+      linkProps?.evidence_sources ??
+      edgeRecord?.sources ??
+      edgeRecord?.evidence_sources ??
+      properties?.sources,
+    detection_methods:
+      linkProps?.detection_methods ??
+      linkProps?.methods ??
+      edgeRecord?.detection_methods ??
+      edgeRecord?.methods,
+    pubmed_ids:
+      linkProps?.pmids ??
+      linkProps?.pubmed_ids ??
+      linkProps?.publications ??
+      edgeRecord?.pmids ??
+      edgeRecord?.pubmed_ids,
     num_sources: linkProps?.num_sources ?? edgeRecord?.num_sources,
   };
 }
@@ -125,7 +177,7 @@ function mergePropsFromLegacy(
  * (num_sources, confidence_scores, sources, pubmed_ids, etc.)
  */
 export function extractPPIEdgesFromSubgraph(
-  seedGeneId: string,
+  _seedGeneId: string,
   nodes: EntityRef[],
   edges: SubgraphEdge[],
 ): PPIEdge[] {
@@ -134,7 +186,9 @@ export function extractPPIEdgesFromSubgraph(
   nodes.forEach((node) => nodeMap.set(node.id, node));
 
   // Filter to only INTERACTS_WITH edges
-  const ppiEdges = edges.filter((edge) => edge.type === "GENE_INTERACTS_WITH_GENE");
+  const ppiEdges = edges.filter(
+    (edge) => edge.type === "GENE_INTERACTS_WITH_GENE",
+  );
 
   return ppiEdges
     .map((edge) => {
@@ -151,12 +205,15 @@ export function extractPPIEdgesFromSubgraph(
       );
 
       const numSources = sources.length || null;
-      const numExperiments = typeof props.evidence_count === "number" ? props.evidence_count : null;
+      const numExperiments =
+        typeof props.evidence_count === "number" ? props.evidence_count : null;
 
       // Build confidence from ot_mi_score and/or string_combined_score (0-1000 → 0-1)
       const confidenceScores: number[] = [];
-      if (typeof props.ot_mi_score === "number") confidenceScores.push(props.ot_mi_score);
-      if (typeof props.string_combined_score === "number") confidenceScores.push(props.string_combined_score / 1000);
+      if (typeof props.ot_mi_score === "number")
+        confidenceScores.push(props.ot_mi_score);
+      if (typeof props.string_combined_score === "number")
+        confidenceScores.push(props.string_combined_score / 1000);
 
       const detectionMethods = extractDetectionMethodsFromProps(props);
       // No structured pubmed_ids in the API — extract from gene function text if present
@@ -178,8 +235,14 @@ export function extractPPIEdgesFromSubgraph(
         pubmedIds,
         // Attach raw props for the detail panel
         _props: props,
-        _confidenceClass: typeof props.confidence_class === "string" ? props.confidence_class : null,
-        _interactionType: typeof props.interaction_type === "string" ? props.interaction_type : null,
+        _confidenceClass:
+          typeof props.confidence_class === "string"
+            ? props.confidence_class
+            : null,
+        _interactionType:
+          typeof props.interaction_type === "string"
+            ? props.interaction_type
+            : null,
       } satisfies PPIEdge;
     })
     .sort((a, b) => {
@@ -189,7 +252,6 @@ export function extractPPIEdgesFromSubgraph(
       return a.targetSymbol.localeCompare(b.targetSymbol);
     });
 }
-
 
 /**
  * Extract PPI edges from legacy API response format
@@ -210,10 +272,16 @@ export function extractPPIEdges(
     // Direct array of edges
     const direct = source.filter(
       (edge) =>
-        (edge as Record<string, unknown>)?.type === "GENE_INTERACTS_WITH_GENE" ||
-        (edge as Record<string, unknown>)?.edge_type === "GENE_INTERACTS_WITH_GENE",
+        (edge as Record<string, unknown>)?.type ===
+          "GENE_INTERACTS_WITH_GENE" ||
+        (edge as Record<string, unknown>)?.edge_type ===
+          "GENE_INTERACTS_WITH_GENE",
     );
-    if (direct.length > 0 && ((direct[0] as Record<string, unknown>)?.neighbor || (direct[0] as Record<string, unknown>)?.score)) {
+    if (
+      direct.length > 0 &&
+      ((direct[0] as Record<string, unknown>)?.neighbor ||
+        (direct[0] as Record<string, unknown>)?.score)
+    ) {
       list = direct;
     } else {
       direct.forEach((entry) => {
@@ -224,9 +292,7 @@ export function extractPPIEdges(
     const record = source as Record<string, unknown>;
     // Look for INTERACTS_WITH key in various formats
     const byType =
-      record.INTERACTS_WITH ||
-      record.interacts_with ||
-      record.Interacts_with;
+      record.INTERACTS_WITH || record.interacts_with || record.Interacts_with;
     if (byType && typeof byType === "object") {
       const byTypeRecord = byType as Record<string, unknown>;
       if (Array.isArray(byTypeRecord.rows)) {
@@ -245,8 +311,15 @@ export function extractPPIEdges(
   return list
     .map((edge, index) => {
       const edgeRecord = edge as Record<string, unknown>;
-      const neighbor = (edgeRecord?.neighbor ?? edgeRecord?.target ?? edgeRecord?.node ?? {}) as Record<string, unknown>;
-      const link = (edgeRecord?.link ?? edgeRecord?.edge ?? edgeRecord?.relation ?? edgeRecord?.props ?? {}) as Record<string, unknown>;
+      const neighbor = (edgeRecord?.neighbor ??
+        edgeRecord?.target ??
+        edgeRecord?.node ??
+        {}) as Record<string, unknown>;
+      const link = (edgeRecord?.link ??
+        edgeRecord?.edge ??
+        edgeRecord?.relation ??
+        edgeRecord?.props ??
+        {}) as Record<string, unknown>;
       const linkProps = (link?.props ?? link ?? {}) as Record<string, unknown>;
 
       const neighborId =
@@ -287,7 +360,8 @@ export function extractPPIEdges(
         linkProps?.confidence_scores ??
         link?.confidence_scores ??
         edgeRecord?.confidence_scores ??
-        (edgeRecord?.properties as Record<string, unknown>)?.confidence_scores ??
+        (edgeRecord?.properties as Record<string, unknown>)
+          ?.confidence_scores ??
         [];
 
       const confidenceScores = Array.isArray(confidenceScoresRaw)
@@ -309,7 +383,8 @@ export function extractPPIEdges(
         targetId: String(neighborId),
         targetSymbol: String(neighborSymbol),
         numSources: typeof numSources === "number" ? numSources : null,
-        numExperiments: typeof numExperiments === "number" ? numExperiments : null,
+        numExperiments:
+          typeof numExperiments === "number" ? numExperiments : null,
         confidenceScores,
         sources,
         detectionMethods,
@@ -330,10 +405,10 @@ export function extractPPIEdges(
  * Using wider range for better visual distinction
  */
 const EDGE_COLORS = {
-  1: "#e2e8f0",  // slate-200 - very light
-  2: "#94a3b8",  // slate-400 - medium
-  3: "#475569",  // slate-600 - dark
-  4: "#1e293b",  // slate-800 - very dark
+  1: "#e2e8f0", // slate-200 - very light
+  2: "#94a3b8", // slate-400 - medium
+  3: "#475569", // slate-600 - dark
+  4: "#1e293b", // slate-800 - very dark
 } as const;
 
 /**
@@ -349,7 +424,10 @@ const EDGE_WIDTHS = {
 /**
  * Get edge styling based on source count
  */
-function getEdgeStyle(numSources: number | null): { width: number; color: string } {
+function getEdgeStyle(numSources: number | null): {
+  width: number;
+  color: string;
+} {
   const sources = Math.max(1, Math.min(numSources ?? 1, 4));
   return {
     width: EDGE_WIDTHS[sources as 1 | 2 | 3 | 4],
@@ -363,11 +441,11 @@ function getEdgeStyle(numSources: number | null): { width: number; color: string
  * More experiments = more intense/saturated color
  */
 const NODE_COLORS = {
-  seed: { background: "#6366f1", border: "#4f46e5" },      // Indigo - query gene (distinct)
-  low: { background: "#e2e8f0", border: "#cbd5e1" },       // Slate-200/300 - 0-5 experiments (muted)
-  moderate: { background: "#fef3c7", border: "#fcd34d" },  // Amber-100/300 - 6-20 experiments (soft warm)
-  good: { background: "#fcd34d", border: "#fbbf24" },      // Amber-300/400 - 21-50 experiments (warm)
-  high: { background: "#f97316", border: "#ea580c" },      // Orange-500/600 - 51+ experiments (intense)
+  seed: { background: "#6366f1", border: "#4f46e5" }, // Indigo - query gene (distinct)
+  low: { background: "#e2e8f0", border: "#cbd5e1" }, // Slate-200/300 - 0-5 experiments (muted)
+  moderate: { background: "#fef3c7", border: "#fcd34d" }, // Amber-100/300 - 6-20 experiments (soft warm)
+  good: { background: "#fcd34d", border: "#fbbf24" }, // Amber-300/400 - 21-50 experiments (warm)
+  high: { background: "#f97316", border: "#ea580c" }, // Orange-500/600 - 51+ experiments (intense)
 } as const;
 
 /**
@@ -415,7 +493,9 @@ export function transformToCytoscapeElements(
           numSources: edge.numSources,
           numExperiments: edge.numExperiments,
           confidenceScores: edge.confidenceScores,
-          backgroundColor: isSeed ? NODE_COLORS.seed.background : colors.background,
+          backgroundColor: isSeed
+            ? NODE_COLORS.seed.background
+            : colors.background,
           borderColor: isSeed ? NODE_COLORS.seed.border : colors.border,
           nodeSize: isSeed ? 48 : 36,
         },
@@ -434,7 +514,9 @@ export function transformToCytoscapeElements(
           numSources: edge.numSources,
           numExperiments: edge.numExperiments,
           confidenceScores: edge.confidenceScores,
-          backgroundColor: isSeed ? NODE_COLORS.seed.background : colors.background,
+          backgroundColor: isSeed
+            ? NODE_COLORS.seed.background
+            : colors.background,
           borderColor: isSeed ? NODE_COLORS.seed.border : colors.border,
           nodeSize: isSeed ? 48 : 36,
         },
@@ -487,8 +569,12 @@ export function nodeToData(nodeData: Record<string, unknown>): PPINode {
     id: String(nodeData.id ?? ""),
     label: String(nodeData.label ?? "Unknown"),
     isSeed: Boolean(nodeData.isSeed),
-    numSources: typeof nodeData.numSources === "number" ? nodeData.numSources : null,
-    numExperiments: typeof nodeData.numExperiments === "number" ? nodeData.numExperiments : null,
+    numSources:
+      typeof nodeData.numSources === "number" ? nodeData.numSources : null,
+    numExperiments:
+      typeof nodeData.numExperiments === "number"
+        ? nodeData.numExperiments
+        : null,
     confidenceScores,
   };
 }
@@ -498,8 +584,10 @@ export function nodeToData(nodeData: Record<string, unknown>): PPINode {
  */
 export function getConfidenceDescription(numSources: number | null): string {
   if (numSources === null) return "Unknown confidence";
-  if (numSources >= 5) return "High confidence - supported by multiple independent databases";
-  if (numSources >= 2) return "Medium confidence - corroborated by multiple sources";
+  if (numSources >= 5)
+    return "High confidence - supported by multiple independent databases";
+  if (numSources >= 2)
+    return "Medium confidence - corroborated by multiple sources";
   return "Low confidence - limited supporting evidence";
 }
 
@@ -520,16 +608,19 @@ export function formatConfidenceScore(scores: number[]): string {
  * Hub color gradient: blue (0%) → orange (50%) → red (100%)
  * Uses percentile for coloring to show relative importance
  */
-export function getHubColor(percentile: number): { background: string; border: string } {
+export function getHubColor(percentile: number): {
+  background: string;
+  border: string;
+} {
   // Clamp percentile to 0-100
   const p = Math.max(0, Math.min(100, percentile));
 
   if (p < 50) {
     // Blue to Orange gradient (0-50%)
     const ratio = p / 50;
-    const r = Math.round(59 + (234 - 59) * ratio);  // 59 → 234
+    const r = Math.round(59 + (234 - 59) * ratio); // 59 → 234
     const g = Math.round(130 + (179 - 130) * ratio); // 130 → 179
-    const b = Math.round(246 + (8 - 246) * ratio);   // 246 → 8
+    const b = Math.round(246 + (8 - 246) * ratio); // 246 → 8
     return {
       background: `rgb(${r}, ${g}, ${b})`,
       border: `rgb(${Math.round(r * 0.85)}, ${Math.round(g * 0.85)}, ${Math.round(b * 0.85)})`,
@@ -538,8 +629,8 @@ export function getHubColor(percentile: number): { background: string; border: s
     // Orange to Red gradient (50-100%)
     const ratio = (p - 50) / 50;
     const r = Math.round(234 + (220 - 234) * ratio); // 234 → 220
-    const g = Math.round(179 + (38 - 179) * ratio);  // 179 → 38
-    const b = Math.round(8 + (38 - 8) * ratio);      // 8 → 38
+    const g = Math.round(179 + (38 - 179) * ratio); // 179 → 38
+    const b = Math.round(8 + (38 - 8) * ratio); // 8 → 38
     return {
       background: `rgb(${r}, ${g}, ${b})`,
       border: `rgb(${Math.round(r * 0.85)}, ${Math.round(g * 0.85)}, ${Math.round(b * 0.85)})`,
@@ -565,12 +656,12 @@ export function getHubNodeSize(degreeTotal: number, maxDegree: number): number {
  * Format hub score for display
  */
 export function formatHubScore(hubScore: number): string {
-  return (hubScore * 100).toFixed(1) + "%";
+  return `${(hubScore * 100).toFixed(1)}%`;
 }
 
 /**
  * Format percentile for display
  */
 export function formatPercentile(percentile: number): string {
-  return percentile.toFixed(0) + "th";
+  return `${percentile.toFixed(0)}th`;
 }

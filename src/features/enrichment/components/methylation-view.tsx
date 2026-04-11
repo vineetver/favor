@@ -1,25 +1,29 @@
 "use client";
 
-import { cn } from "@infra/utils";
-import { DataSurface } from "@shared/components/ui/data-surface";
-import { Dash } from "@shared/components/ui/dash";
-import { VariantCell } from "@shared/components/ui/variant-cell";
-import { formatTissueName, formatPvalue } from "@shared/utils/tissue-format";
-import { tissueGroupFilter, tissueFilter, significantOnlyFilter } from "./filter-helpers";
-import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
-import { useServerTable, useClientSearchParams } from "@shared/hooks";
-import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
 import type {
   MethylationRow,
   PaginatedResponse,
   TissueGroupRow,
 } from "@features/enrichment/api/region";
 import { useMethylationQuery } from "@features/enrichment/hooks/use-methylation-query";
-import { TissueGroupSummary } from "./tissue-group-summary";
-import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { cn } from "@infra/utils";
+import { Dash } from "@shared/components/ui/dash";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { VariantCell } from "@shared/components/ui/variant-cell";
+import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
+import { useClientSearchParams, useServerTable } from "@shared/hooks";
+import { formatPvalue, formatTissueName } from "@shared/utils/tissue-format";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
+import {
+  significantOnlyFilter,
+  tissueFilter,
+  tissueGroupFilter,
+} from "./filter-helpers";
 import { TissueGroupBackButton } from "./tissue-group-back-button";
+import type { TissueGroupMetricConfig } from "./tissue-group-summary";
+import { TissueGroupSummary } from "./tissue-group-summary";
 
 // ---------------------------------------------------------------------------
 // Columns
@@ -31,15 +35,24 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "variant_vcf",
     header: "Variant",
     enableSorting: false,
-    meta: { description: "Variant in VCF notation (chr-pos-ref-alt)" } satisfies ColumnMeta,
-    cell: ({ row }) => <VariantCell vcf={row.original.variant_vcf} position={row.original.position} />,
+    meta: {
+      description: "Variant in VCF notation (chr-pos-ref-alt)",
+    } satisfies ColumnMeta,
+    cell: ({ row }) => (
+      <VariantCell
+        vcf={row.original.variant_vcf}
+        position={row.original.position}
+      />
+    ),
   },
   {
     id: "tissue_name",
     accessorKey: "tissue_name",
     header: "Tissue",
     enableSorting: true,
-    meta: { description: "Tissue or cell type where methylation was measured" } satisfies ColumnMeta,
+    meta: {
+      description: "Tissue or cell type where methylation was measured",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground truncate max-w-[180px] block">
         {formatTissueName(getValue() as string)}
@@ -51,7 +64,10 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "neglog_pvalue",
     header: "-log\u2081\u2080(p)",
     enableSorting: true,
-    meta: { description: "Negative log10 p-value for differential methylation. Higher = stronger evidence." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Negative log10 p-value for differential methylation. Higher = stronger evidence.",
+    } satisfies ColumnMeta,
     cell: ({ row }) => {
       const val = row.original.neglog_pvalue;
       const maxBar = 10;
@@ -78,7 +94,9 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     id: "p_value",
     header: "p-value",
     enableSorting: false,
-    meta: { description: "Raw p-value for differential methylation test" } satisfies ColumnMeta,
+    meta: {
+      description: "Raw p-value for differential methylation test",
+    } satisfies ColumnMeta,
     cell: ({ row }) => (
       <span className="text-xs tabular-nums text-muted-foreground">
         {formatPvalue(row.original.neglog_pvalue)}
@@ -90,15 +108,25 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "methylation_diff",
     header: "Meth. Diff",
     enableSorting: true,
-    meta: { description: "Difference in methylation between alleles. Positive = ref allele hypermethylated." } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Difference in methylation between alleles. Positive = ref allele hypermethylated.",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number;
       return (
-        <span className={cn(
-          "text-xs tabular-nums",
-          v > 0 ? "text-emerald-600" : v < 0 ? "text-destructive" : "text-muted-foreground",
-        )}>
-          {v > 0 ? "+" : ""}{v.toFixed(3)}
+        <span
+          className={cn(
+            "text-xs tabular-nums",
+            v > 0
+              ? "text-emerald-600"
+              : v < 0
+                ? "text-destructive"
+                : "text-muted-foreground",
+          )}
+        >
+          {v > 0 ? "+" : ""}
+          {v.toFixed(3)}
         </span>
       );
     },
@@ -108,11 +136,17 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "methylation_allele1",
     header: "Allele 1",
     enableSorting: false,
-    meta: { description: "Methylation level for allele 1 (reference)" } satisfies ColumnMeta,
+    meta: {
+      description: "Methylation level for allele 1 (reference)",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
-      return <span className="text-xs tabular-nums text-muted-foreground">{v.toFixed(3)}</span>;
+      return (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {v.toFixed(3)}
+        </span>
+      );
     },
   },
   {
@@ -120,11 +154,17 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "methylation_allele2",
     header: "Allele 2",
     enableSorting: false,
-    meta: { description: "Methylation level for allele 2 (alternate)" } satisfies ColumnMeta,
+    meta: {
+      description: "Methylation level for allele 2 (alternate)",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => {
       const v = getValue() as number | null;
       if (v == null) return <Dash />;
-      return <span className="text-xs tabular-nums text-muted-foreground">{v.toFixed(3)}</span>;
+      return (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {v.toFixed(3)}
+        </span>
+      );
     },
   },
   {
@@ -132,9 +172,18 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
     accessorKey: "is_significant",
     header: "Sig.",
     enableSorting: false,
-    meta: { description: "Whether differential methylation passes significance threshold" } satisfies ColumnMeta,
+    meta: {
+      description:
+        "Whether differential methylation passes significance threshold",
+    } satisfies ColumnMeta,
     cell: ({ getValue }) => (
-      <span className={getValue() ? "text-emerald-600 text-xs font-medium" : "text-muted-foreground/40 text-xs"}>
+      <span
+        className={
+          getValue()
+            ? "text-emerald-600 text-xs font-medium"
+            : "text-muted-foreground/40 text-xs"
+        }
+      >
         {getValue() ? "Yes" : "No"}
       </span>
     ),
@@ -146,11 +195,7 @@ const columns: ColumnDef<MethylationRow, unknown>[] = [
 // ---------------------------------------------------------------------------
 
 function buildFilters(tissues: string[]): ServerFilterConfig[] {
-  return [
-    tissueGroupFilter(),
-    tissueFilter(tissues),
-    significantOnlyFilter(),
-  ];
+  return [tissueGroupFilter(), tissueFilter(tissues), significantOnlyFilter()];
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +204,8 @@ function buildFilters(tissues: string[]): ServerFilterConfig[] {
 
 const METHYLATION_GROUP_CONFIG: TissueGroupMetricConfig = {
   metricLabel: "Best \u2212log\u2081\u2080(p)",
-  metricDescription: "Strongest differential methylation significance in this tissue group",
+  metricDescription:
+    "Strongest differential methylation significance in this tissue group",
   countLabel: "Observations",
   formatMetric: (v) => v.toFixed(1),
   sqrtScale: true,
@@ -221,15 +267,12 @@ function MethylationDetailView({
     initialData,
   });
 
-  const filters = useMemo(
-    () => buildFilters(tissues),
-    [tissues],
-  );
+  const filters = useMemo(() => buildFilters(tissues), [tissues]);
 
   const hasActiveFilters = Boolean(
     searchParams.get("tissue") ||
-    searchParams.get("tissue_group") ||
-    searchParams.get("significant_only"),
+      searchParams.get("tissue_group") ||
+      searchParams.get("significant_only"),
   );
   const liveTotal =
     pageInfo.totalCount ?? (hasActiveFilters ? undefined : totalCount);

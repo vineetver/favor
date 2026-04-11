@@ -1,16 +1,15 @@
 "use client";
 
-import { Button } from "@shared/components/ui/button";
-import { Card, CardContent } from "@shared/components/ui/card";
 import {
   BatchApiError,
   deleteCohort,
   getCohort,
-  listCohorts,
   JobDetailView,
+  listCohorts,
   useJobPolling,
 } from "@features/batch";
-import type { Job } from "@features/batch";
+import { Button } from "@shared/components/ui/button";
+import { Card, CardContent } from "@shared/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,

@@ -1,9 +1,5 @@
 import type { Gene } from "@features/gene/types";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -529,4 +525,8 @@ export const geneExpressionColumns = [
   }),
 ];
 
-export const geneExpressionGroup = col.group("expression", "Expression", geneExpressionColumns);
+export const geneExpressionGroup = col.group(
+  "expression",
+  "Expression",
+  geneExpressionColumns,
+);

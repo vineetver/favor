@@ -27,7 +27,8 @@ export default function VariantError({ error, reset }: ErrorProps) {
         </h2>
 
         <p className="text-sm text-muted-foreground mb-6">
-          {error.message || "An unexpected error occurred while loading the variant page."}
+          {error.message ||
+            "An unexpected error occurred while loading the variant page."}
         </p>
 
         {error.digest && (
@@ -37,17 +38,12 @@ export default function VariantError({ error, reset }: ErrorProps) {
         )}
 
         <div className="flex gap-3 justify-center">
-          <Button
-            variant="secondary"
-            onClick={() => window.location.reload()}
-          >
+          <Button variant="secondary" onClick={() => window.location.reload()}>
             <RefreshCw className="w-4 h-4" />
             Reload Page
           </Button>
 
-          <Button onClick={reset}>
-            Try Again
-          </Button>
+          <Button onClick={reset}>Try Again</Button>
         </div>
       </div>
     </div>

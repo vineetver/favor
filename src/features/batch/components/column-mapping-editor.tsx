@@ -56,9 +56,17 @@ function SourceBadge({ source }: { source: string }) {
     alias: { label: "Alias", className: "bg-blue-100 text-blue-700" },
     custom: { label: "Custom", className: "bg-amber-100 text-amber-700" },
   };
-  const entry = config[source] ?? { label: source, className: "bg-muted text-muted-foreground" };
+  const entry = config[source] ?? {
+    label: source,
+    className: "bg-muted text-muted-foreground",
+  };
   return (
-    <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium", entry.className)}>
+    <span
+      className={cn(
+        "inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium",
+        entry.className,
+      )}
+    >
       {entry.label}
     </span>
   );
@@ -76,7 +84,12 @@ function KindBadge({ kind }: { kind: string }) {
     array: "bg-amber-100 text-amber-700",
   };
   return (
-    <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium", config[kind] || "bg-muted text-muted-foreground")}>
+    <span
+      className={cn(
+        "inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium",
+        config[kind] || "bg-muted text-muted-foreground",
+      )}
+    >
       {kind}
     </span>
   );
@@ -89,7 +102,11 @@ function KindBadge({ kind }: { kind: string }) {
 function ConfidenceIndicator({ confidence }: { confidence: number }) {
   const pct = Math.round(confidence * 100);
   const variant =
-    pct >= 90 ? "text-emerald-600" : pct >= 70 ? "text-amber-600" : "text-rose-600";
+    pct >= 90
+      ? "text-emerald-600"
+      : pct >= 70
+        ? "text-amber-600"
+        : "text-rose-600";
 
   return (
     <span className={cn("text-xs font-medium", variant)}>
@@ -135,20 +152,25 @@ export function ColumnMappingEditor({
 
   const hasOverrides = Object.keys(overrides).length > 0;
 
-  const handleOverride = useCallback((original: string, canonical: string) => {
-    setOverrides((prev) => {
-      const next = { ...prev };
-      // Find the original suggestion
-      const suggestion = typedValidation.suggested_column_map.find((m) => m.original === original);
-      if (suggestion && canonical === suggestion.canonical) {
-        // Remove override if reverting to original
-        delete next[original];
-      } else {
-        next[original] = canonical;
-      }
-      return next;
-    });
-  }, [typedValidation.suggested_column_map]);
+  const handleOverride = useCallback(
+    (original: string, canonical: string) => {
+      setOverrides((prev) => {
+        const next = { ...prev };
+        // Find the original suggestion
+        const suggestion = typedValidation.suggested_column_map.find(
+          (m) => m.original === original,
+        );
+        if (suggestion && canonical === suggestion.canonical) {
+          // Remove override if reverting to original
+          delete next[original];
+        } else {
+          next[original] = canonical;
+        }
+        return next;
+      });
+    },
+    [typedValidation.suggested_column_map],
+  );
 
   const handleReset = useCallback(() => {
     setOverrides({});
@@ -220,7 +242,8 @@ export function ColumnMappingEditor({
           <TableBody>
             {finalColumnMap.map((mapping) => {
               const isOverridden = overrides[mapping.original] !== undefined;
-              const samples = sampleValuesByOriginal.get(mapping.original) ?? [];
+              const samples =
+                sampleValuesByOriginal.get(mapping.original) ?? [];
 
               return (
                 <TableRow
@@ -236,14 +259,20 @@ export function ColumnMappingEditor({
                   <TableCell>
                     <Select
                       value={mapping.canonical}
-                      onValueChange={(val) => handleOverride(mapping.original, val)}
+                      onValueChange={(val) =>
+                        handleOverride(mapping.original, val)
+                      }
                     >
                       <SelectTrigger className="h-7 text-xs font-mono">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {canonicalOptions.map((name) => (
-                          <SelectItem key={name} value={name} className="text-xs font-mono">
+                          <SelectItem
+                            key={name}
+                            value={name}
+                            className="text-xs font-mono"
+                          >
                             {name}
                           </SelectItem>
                         ))}
@@ -271,7 +300,8 @@ export function ColumnMappingEditor({
         {/* Variant key strategy */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Key className="w-3.5 h-3.5" />
-          Variant key: {getVariantKeyStrategyLabel(typedValidation.variant_key_strategy)}
+          Variant key:{" "}
+          {getVariantKeyStrategyLabel(typedValidation.variant_key_strategy)}
           {typedValidation.variant_key_columns.length > 0 && (
             <span className="font-mono">
               ({typedValidation.variant_key_columns.join(", ")})

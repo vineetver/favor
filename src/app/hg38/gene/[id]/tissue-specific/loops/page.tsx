@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadLoopsData } from "@features/enrichment/loaders";
 import { LoopsView } from "@features/enrichment/components/loops-view";
+import { loadLoopsData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

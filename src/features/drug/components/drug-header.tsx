@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { cn } from "@infra/utils";
 import {
   Breadcrumb,
@@ -8,6 +7,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@shared/components/ui/breadcrumb";
+import { Fragment } from "react";
 import type { GraphDrug } from "../types";
 
 interface DrugHeaderProps {
@@ -26,8 +26,9 @@ function getPhaseLabel(phase?: number): string | null {
 
 function titleCase(s: string): string {
   if (s !== s.toUpperCase() || s.length <= 3) return s;
-  return s.replace(/\b\w+/g, (w) =>
-    w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+  return s.replace(
+    /\b\w+/g,
+    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
   );
 }
 
@@ -111,8 +112,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
           >
-            DrugBank:{" "}
-            <span className="font-mono">{drug.drugbank_id}</span>
+            DrugBank: <span className="font-mono">{drug.drugbank_id}</span>
           </a>
         )}
         {drug.pubchem_cid && (
@@ -122,8 +122,7 @@ export function DrugHeader({ drug }: DrugHeaderProps) {
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
           >
-            PubChem:{" "}
-            <span className="font-mono">{drug.pubchem_cid}</span>
+            PubChem: <span className="font-mono">{drug.pubchem_cid}</span>
           </a>
         )}
         {drug.cas_number && (

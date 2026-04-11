@@ -209,29 +209,93 @@ type CategoryColor = { bg: string; border: string; text: string };
  * Key matching is case-insensitive and prefix-matched.
  */
 const SEMANTIC_COLORS: Array<{ match: string; color: CategoryColor }> = [
-  { match: "disease", color: { bg: "#fee2e2", border: "#dc2626", text: "#7f1d1d" } },           // red
-  { match: "immune", color: { bg: "#d1fae5", border: "#10b981", text: "#065f46" } },             // emerald
-  { match: "signal transduction", color: { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" } }, // blue
-  { match: "cell cycle", color: { bg: "#fce7f3", border: "#ec4899", text: "#9d174d" } },          // pink
-  { match: "dna repair", color: { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" } },          // amber
-  { match: "dna replication", color: { bg: "#fed7aa", border: "#f97316", text: "#9a3412" } },     // orange
-  { match: "metabolism", color: { bg: "#fef08a", border: "#facc15", text: "#854d0e" } },           // yellow
-  { match: "gene expression", color: { bg: "#d9f99d", border: "#84cc16", text: "#3f6212" } },     // lime
-  { match: "developmental", color: { bg: "#ccfbf1", border: "#14b8a6", text: "#115e59" } },       // teal
-  { match: "hemostasis", color: { bg: "#fda4af", border: "#fb7185", text: "#be123c" } },           // rose
-  { match: "neuronal", color: { bg: "#f3e8ff", border: "#a855f7", text: "#6b21a8" } },            // purple
-  { match: "chromatin", color: { bg: "#e0e7ff", border: "#6366f1", text: "#3730a3" } },           // indigo
-  { match: "transport", color: { bg: "#bae6fd", border: "#0ea5e9", text: "#075985" } },           // sky
-  { match: "autophagy", color: { bg: "#67e8f9", border: "#06b6d4", text: "#0e7490" } },           // cyan
-  { match: "muscle", color: { bg: "#c4b5fd", border: "#8b5cf6", text: "#5b21b6" } },              // violet
-  { match: "protein", color: { bg: "#fdba74", border: "#fb923c", text: "#9a3412" } },             // tangerine
-  { match: "reproduction", color: { bg: "#f0abfc", border: "#d946ef", text: "#86198f" } },        // fuchsia
-  { match: "sensory", color: { bg: "#86efac", border: "#22c55e", text: "#166534" } },              // green
-  { match: "extracellular", color: { bg: "#a5f3fc", border: "#22d3ee", text: "#0891b2" } },       // aqua
-  { match: "circadian", color: { bg: "#c7d2fe", border: "#818cf8", text: "#4338ca" } },           // periwinkle
+  {
+    match: "disease",
+    color: { bg: "#fee2e2", border: "#dc2626", text: "#7f1d1d" },
+  }, // red
+  {
+    match: "immune",
+    color: { bg: "#d1fae5", border: "#10b981", text: "#065f46" },
+  }, // emerald
+  {
+    match: "signal transduction",
+    color: { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" },
+  }, // blue
+  {
+    match: "cell cycle",
+    color: { bg: "#fce7f3", border: "#ec4899", text: "#9d174d" },
+  }, // pink
+  {
+    match: "dna repair",
+    color: { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" },
+  }, // amber
+  {
+    match: "dna replication",
+    color: { bg: "#fed7aa", border: "#f97316", text: "#9a3412" },
+  }, // orange
+  {
+    match: "metabolism",
+    color: { bg: "#fef08a", border: "#facc15", text: "#854d0e" },
+  }, // yellow
+  {
+    match: "gene expression",
+    color: { bg: "#d9f99d", border: "#84cc16", text: "#3f6212" },
+  }, // lime
+  {
+    match: "developmental",
+    color: { bg: "#ccfbf1", border: "#14b8a6", text: "#115e59" },
+  }, // teal
+  {
+    match: "hemostasis",
+    color: { bg: "#fda4af", border: "#fb7185", text: "#be123c" },
+  }, // rose
+  {
+    match: "neuronal",
+    color: { bg: "#f3e8ff", border: "#a855f7", text: "#6b21a8" },
+  }, // purple
+  {
+    match: "chromatin",
+    color: { bg: "#e0e7ff", border: "#6366f1", text: "#3730a3" },
+  }, // indigo
+  {
+    match: "transport",
+    color: { bg: "#bae6fd", border: "#0ea5e9", text: "#075985" },
+  }, // sky
+  {
+    match: "autophagy",
+    color: { bg: "#67e8f9", border: "#06b6d4", text: "#0e7490" },
+  }, // cyan
+  {
+    match: "muscle",
+    color: { bg: "#c4b5fd", border: "#8b5cf6", text: "#5b21b6" },
+  }, // violet
+  {
+    match: "protein",
+    color: { bg: "#fdba74", border: "#fb923c", text: "#9a3412" },
+  }, // tangerine
+  {
+    match: "reproduction",
+    color: { bg: "#f0abfc", border: "#d946ef", text: "#86198f" },
+  }, // fuchsia
+  {
+    match: "sensory",
+    color: { bg: "#86efac", border: "#22c55e", text: "#166534" },
+  }, // green
+  {
+    match: "extracellular",
+    color: { bg: "#a5f3fc", border: "#22d3ee", text: "#0891b2" },
+  }, // aqua
+  {
+    match: "circadian",
+    color: { bg: "#c7d2fe", border: "#818cf8", text: "#4338ca" },
+  }, // periwinkle
 ];
 
-const OTHER_COLOR: CategoryColor = { bg: "#f1f5f9", border: "#94a3b8", text: "#475569" };
+const OTHER_COLOR: CategoryColor = {
+  bg: "#f1f5f9",
+  border: "#94a3b8",
+  text: "#475569",
+};
 
 /** Fallback palette for categories that don't match any semantic rule */
 const FALLBACK_PALETTE: CategoryColor[] = [
@@ -355,7 +419,17 @@ export interface PathwayCategorySidebarProps {
 export type DiseaseEnrichmentState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "loaded"; data: { totalDiseases: number; diseases: Array<{ disease: { id: string; name: string }; geneCount: number; genes: Array<{ id: string; symbol: string }> }> } }
+  | {
+      status: "loaded";
+      data: {
+        totalDiseases: number;
+        diseases: Array<{
+          disease: { id: string; name: string };
+          geneCount: number;
+          genes: Array<{ id: string; symbol: string }>;
+        }>;
+      };
+    }
   | { status: "error"; error: string };
 
 export interface PathwayDetailPanelProps {
@@ -387,8 +461,7 @@ function inferPathwaySource(pathwayId: string): PathwaySource {
   if (pathwayId.startsWith("R-HSA-") || pathwayId.startsWith("R-"))
     return "Reactome";
   if (pathwayId.startsWith("WP")) return "WikiPathways";
-  if (pathwayId.startsWith("hsa") || pathwayId.startsWith("map"))
-    return "KEGG";
+  if (pathwayId.startsWith("hsa") || pathwayId.startsWith("map")) return "KEGG";
   if (pathwayId.startsWith("SMP")) return "SMPDB";
   return "ConsensusPathDB";
 }
@@ -499,7 +572,7 @@ export function buildHierarchicalCategories(
     if (!parentToChildren.has(edge.parentId)) {
       parentToChildren.set(edge.parentId, new Set());
     }
-    parentToChildren.get(edge.parentId)!.add(edge.childId);
+    parentToChildren.get(edge.parentId)?.add(edge.childId);
   }
 
   // Create pathway lookup

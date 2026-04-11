@@ -1,6 +1,11 @@
 import { cn } from "@infra/utils";
 
-export type BadgeVariant = "positive" | "negative" | "warning" | "neutral" | "primary";
+export type BadgeVariant =
+  | "positive"
+  | "negative"
+  | "warning"
+  | "neutral"
+  | "primary";
 
 const BADGE_VARIANTS: Record<BadgeVariant, string> = {
   positive: "bg-success/10 text-success border-success/20",
@@ -16,13 +21,17 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-export function StatusBadge({ variant, children, className }: StatusBadgeProps) {
+export function StatusBadge({
+  variant,
+  children,
+  className,
+}: StatusBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-md border px-2 py-0.5 text-caption font-semibold",
         BADGE_VARIANTS[variant],
-        className
+        className,
       )}
     >
       {children}
@@ -40,7 +49,7 @@ export function Chip({ children, className }: ChipProps) {
     <span
       className={cn(
         "inline-flex items-center rounded-md border border-border bg-background px-2.5 py-1 text-caption font-medium",
-        className
+        className,
       )}
     >
       {children}
@@ -62,7 +71,7 @@ export function LinkChip({ href, children, className }: LinkChipProps) {
       rel="noopener noreferrer"
       className={cn(
         "inline-flex items-center rounded-md border border-border bg-muted px-2.5 py-1 text-caption font-medium text-primary hover:bg-muted/80 transition-colors",
-        className
+        className,
       )}
     >
       {children}

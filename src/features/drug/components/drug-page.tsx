@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
 import { cn } from "@infra/utils";
+import { Badge } from "@shared/components/ui/badge";
+import { Button } from "@shared/components/ui/button";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import { MoleculeViewer } from "@shared/components/ui/molecule-viewer";
 import {
@@ -16,16 +16,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Badge } from "@shared/components/ui/badge";
-import { Button } from "@shared/components/ui/button";
-import { Copy, Info } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type {
-  GraphDrug,
-  EdgeCounts,
-  EdgeRelations,
-  EdgeRow,
-} from "../types";
+import { Copy, Info } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import type { EdgeCounts, EdgeRelations, EdgeRow, GraphDrug } from "../types";
 
 // ============================================================================
 // Props
@@ -65,7 +60,7 @@ function nb<T = unknown>(row: EdgeRow, key: string): T {
 
 function phaseLabel(phase: unknown): string {
   const n = Number(phase);
-  if (phase == null || isNaN(n)) return "—";
+  if (phase == null || Number.isNaN(n)) return "—";
   if (n === 4) return "Phase IV";
   if (n >= 3) return "Phase III";
   if (n >= 2) return "Phase II";
@@ -183,18 +178,14 @@ function ProfileTab({ drug }: { drug: GraphDrug }) {
                 <span className="inline-flex items-center gap-1">
                   <span className="text-muted-foreground">MW</span>
                   <Hint text="Molecular weight in Daltons" />
-                  <span className="font-mono">
-                    {drug.molecular_weight} Da
-                  </span>
+                  <span className="font-mono">{drug.molecular_weight} Da</span>
                 </span>
               )}
               {drug.inchi_key && (
                 <span className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">InChIKey</span>
                   <Hint text="Unique molecular hash for cross-database lookups" />
-                  <span className="font-mono text-xs">
-                    {drug.inchi_key}
-                  </span>
+                  <span className="font-mono text-xs">{drug.inchi_key}</span>
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -226,9 +217,7 @@ function ProfileTab({ drug }: { drug: GraphDrug }) {
               <span className="inline-flex items-center gap-1">
                 <span className="text-muted-foreground">MW</span>
                 <Hint text="Molecular weight in Daltons" />
-                <span className="font-mono">
-                  {drug.molecular_weight} Da
-                </span>
+                <span className="font-mono">{drug.molecular_weight} Da</span>
               </span>
             )}
             {drug.inchi_key && (
@@ -409,7 +398,7 @@ function transformTargets(rows: EdgeRow[]): TargetRow[] {
           : null,
       isPrimary: Boolean(ep(r, "is_primary_target")),
       confidence: String(ep(r, "confidence_class") ?? ""),
-      sources: (ep<string[]>(r, "sources") ?? []),
+      sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
       receptorFamily: String(ep(r, "receptor_family") ?? ""),
     }))
@@ -574,7 +563,7 @@ function transformIndications(rows: EdgeRow[]): IndicationRow[] {
           : null,
       ttdStatus: String(ep(r, "ttd_clinical_status") ?? ""),
       confidence: String(ep(r, "confidence_class") ?? ""),
-      sources: (ep<string[]>(r, "sources") ?? []),
+      sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
       isCancer: Boolean(nb(r, "is_cancer")),
       isRare: Boolean(nb(r, "is_rare")),
@@ -695,7 +684,7 @@ function transformDisposition(rows: EdgeRow[]): DispositionRow[] {
       dispositionType: String(ep(r, "disposition_type") ?? ""),
       devLevel: String(ep(r, "target_development_level") ?? ""),
       confidence: String(ep(r, "confidence_class") ?? ""),
-      sources: (ep<string[]>(r, "sources") ?? []),
+      sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
     }))
     .sort((a, b) => b.evidenceCount - a.evidenceCount);
@@ -739,9 +728,7 @@ const dispositionColumns: ColumnDef<DispositionRow>[] = [
     ),
     enableSorting: true,
     cell: ({ row }) =>
-      row.original.devLevel
-        ? row.original.devLevel.replace(/_/g, " ")
-        : "—",
+      row.original.devLevel ? row.original.devLevel.replace(/_/g, " ") : "—",
   },
   {
     id: "confidence",
@@ -802,7 +789,7 @@ function transformGeneResponse(rows: EdgeRow[]): GeneResponseRow[] {
       bestEvidenceLevel: String(ep(r, "best_evidence_level") ?? ""),
       fdaCompanion: Boolean(ep(r, "fda_companion_test")),
       confidence: String(ep(r, "confidence_class") ?? ""),
-      sources: (ep<string[]>(r, "sources") ?? []),
+      sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
     }))
     .sort((a, b) => {
@@ -931,9 +918,7 @@ function transformAdverseEffects(rows: EdgeRow[]): AdverseEffectRow[] {
   return rows
     .map((r, i) => ({
       id: `ae-${i}`,
-      sideEffectName: String(
-        ep(r, "side_effect_name") ?? nb(r, "name") ?? "",
-      ),
+      sideEffectName: String(ep(r, "side_effect_name") ?? nb(r, "name") ?? ""),
       effectType: String(ep(r, "effect_type") ?? ""),
       fdaReportCount:
         ep(r, "fda_report_count") != null
@@ -944,7 +929,7 @@ function transformAdverseEffects(rows: EdgeRow[]): AdverseEffectRow[] {
           ? Number(ep(r, "fda_signal_strength"))
           : null,
       confidence: String(ep(r, "confidence_class") ?? ""),
-      sources: (ep<string[]>(r, "sources") ?? []),
+      sources: ep<string[]>(r, "sources") ?? [],
       evidenceCount: Number(ep(r, "evidence_count") ?? 0),
     }))
     .sort((a, b) => (b.fdaReportCount ?? 0) - (a.fdaReportCount ?? 0));
@@ -1051,7 +1036,7 @@ function transformInteractions(rows: EdgeRow[]): InteractionRow[] {
       drugId: r.neighbor.id,
       severity: String(ep(r, "severity") ?? ""),
       description: String(ep(r, "interaction_description") ?? ""),
-      interactionClasses: (ep<string[]>(r, "interaction_classes") ?? []),
+      interactionClasses: ep<string[]>(r, "interaction_classes") ?? [],
       confidence: String(ep(r, "confidence_class") ?? ""),
       source: String(ep(r, "source") ?? ""),
     }))
@@ -1114,8 +1099,7 @@ const interactionColumns: ColumnDef<InteractionRow>[] = [
     id: "interactionClasses",
     accessorKey: "interactionClasses",
     header: "Classes",
-    cell: ({ row }) =>
-      row.original.interactionClasses.join(", ") || "—",
+    cell: ({ row }) => row.original.interactionClasses.join(", ") || "—",
   },
   {
     id: "confidence",
@@ -1150,37 +1134,25 @@ export function DrugPage({ drug, counts, relations }: DrugPageProps) {
   );
   const indications = useMemo(
     () =>
-      transformIndications(
-        getRows(relations, "DRUG_INDICATED_FOR_DISEASE"),
-      ),
+      transformIndications(getRows(relations, "DRUG_INDICATED_FOR_DISEASE")),
     [relations],
   );
   const disposition = useMemo(
-    () =>
-      transformDisposition(
-        getRows(relations, "DRUG_DISPOSITION_BY_GENE"),
-      ),
+    () => transformDisposition(getRows(relations, "DRUG_DISPOSITION_BY_GENE")),
     [relations],
   );
   const geneResponse = useMemo(
     () =>
-      transformGeneResponse(
-        getRows(relations, "GENE_AFFECTS_DRUG_RESPONSE"),
-      ),
+      transformGeneResponse(getRows(relations, "GENE_AFFECTS_DRUG_RESPONSE")),
     [relations],
   );
   const adverseEffects = useMemo(
     () =>
-      transformAdverseEffects(
-        getRows(relations, "DRUG_HAS_ADVERSE_EFFECT"),
-      ),
+      transformAdverseEffects(getRows(relations, "DRUG_HAS_ADVERSE_EFFECT")),
     [relations],
   );
   const interactions = useMemo(
-    () =>
-      transformInteractions(
-        getRows(relations, "DRUG_INTERACTS_WITH_DRUG"),
-      ),
+    () => transformInteractions(getRows(relations, "DRUG_INTERACTS_WITH_DRUG")),
     [relations],
   );
 
@@ -1214,16 +1186,9 @@ export function DrugPage({ drug, counts, relations }: DrugPageProps) {
   ];
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={setActiveTab}
-      className="mt-2"
-    >
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
       <div className="border-b border-border overflow-x-auto">
-        <TabsList
-          variant="line"
-          className="w-full justify-start p-0 h-auto"
-        >
+        <TabsList variant="line" className="w-full justify-start p-0 h-auto">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.value}

@@ -1,3 +1,4 @@
+import { API_BASE } from "@/config/api";
 import type {
   IntervalScoreRequest,
   IntervalScoreResult,
@@ -11,7 +12,6 @@ import type {
   VariantTrackResult,
 } from "./types";
 
-import { API_BASE } from "@/config/api";
 const PREDICT_BASE = `${API_BASE}/predict`;
 const POLL_INTERVAL_MS = 10_000;
 
@@ -103,7 +103,10 @@ async function fetchPrediction<T>(
     await abortableSleep(POLL_INTERVAL_MS, signal);
     let poll: Response;
     try {
-      poll = await fetch(resolvePollUrl(job.poll_url), { credentials: "include", signal });
+      poll = await fetch(resolvePollUrl(job.poll_url), {
+        credentials: "include",
+        signal,
+      });
     } catch (e) {
       if (signal?.aborted) throw e; // let React Query handle abort
       throw new Error("Lost connection to AlphaGenome service");
@@ -146,7 +149,7 @@ async function fetchPrediction<T>(
   const ct = artifact.headers.get("content-type") ?? "";
   if (ct.includes("gzip") || ct === "application/octet-stream") {
     const ds = new DecompressionStream("gzip");
-    const decompressed = new Response(artifact.body!.pipeThrough(ds));
+    const decompressed = new Response(artifact.body?.pipeThrough(ds));
     const data = await readJson<T>(decompressed);
     return { data, cached };
   }

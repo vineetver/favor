@@ -1,4 +1,10 @@
+export type { ResourceKind, ResourceViewerState } from "./resource-viewer";
+export { RESOURCE_VIEWER_CLOSED, ResourceViewer } from "./resource-viewer";
+export type {
+  FolderNode,
+  LeafNode,
+  NodeKind,
+  TreeAction,
+  TreeNode,
+} from "./types";
 export { WorkspaceTree } from "./workspace-tree";
-export { ResourceViewer, RESOURCE_VIEWER_CLOSED } from "./resource-viewer";
-export type { ResourceViewerState, ResourceKind } from "./resource-viewer";
-export type { TreeNode, FolderNode, LeafNode, TreeAction, NodeKind } from "./types";

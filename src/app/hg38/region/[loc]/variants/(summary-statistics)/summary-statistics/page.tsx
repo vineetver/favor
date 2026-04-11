@@ -1,5 +1,5 @@
-import { fetchRegionVariantStatistics } from "@features/region/api/region-statistics";
 import { VariantSummaryStatistics } from "@features/gene/components/variant-summary-statistics";
+import { fetchRegionVariantStatistics } from "@features/region/api/region-statistics";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 
@@ -7,7 +7,9 @@ interface RegionSummaryPageProps {
   params: Promise<{ loc: string }>;
 }
 
-export default async function RegionSummaryPage({ params }: RegionSummaryPageProps) {
+export default async function RegionSummaryPage({
+  params,
+}: RegionSummaryPageProps) {
   const loc = decodeURIComponent((await params).loc);
   const region = parseRegion(loc);
   if (!region) notFound();

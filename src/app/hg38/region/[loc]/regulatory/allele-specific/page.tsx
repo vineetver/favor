@@ -1,5 +1,5 @@
-import { loadAseData } from "@features/enrichment/loaders";
 import { AseView } from "@features/enrichment/components/ase-view";
+import { loadAseData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

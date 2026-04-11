@@ -1,36 +1,36 @@
 "use client";
 
-import { cn } from "@infra/utils";
-import { createColumns } from "@infra/table/column-builder";
-import type { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@shared/components/ui/button";
-import { DataSurface } from "@shared/components/ui/data-surface";
-import { apcColumns } from "@features/variant/config/hg38/columns/shared";
-import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
-import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
-import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
-import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
 import { basicColumns } from "@features/variant/config/hg38/columns/basic";
+import { clinvarColumns } from "@features/variant/config/hg38/columns/clinvar";
 import { functionalClassColumns } from "@features/variant/config/hg38/columns/functional-class";
 import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
+import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
+import { apcColumns } from "@features/variant/config/hg38/columns/shared";
+import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
+import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
+import { createColumns } from "@infra/table/column-builder";
+import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as ReTooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip as ReTooltip,
-  ResponsiveContainer,
 } from "recharts";
 import { useDuckDB } from "../hooks/use-duckdb";
 import {
-  generateReportData,
   AF_BINS,
   AF_COLORS,
   type AfByFunctionRow,
   type ChartSlice,
+  generateReportData,
   type PrioritizedVariant,
   type RankedItem,
   type ReportData,
@@ -75,11 +75,19 @@ const TOOLTIP_STYLE = {
 // Chart Sub-Components
 // ============================================================================
 
-function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+function SectionHeading({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
   return (
     <div className="mb-5">
       <h2 className="text-base font-semibold text-foreground">{title}</h2>
-      {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+      {subtitle && (
+        <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+      )}
     </div>
   );
 }
@@ -88,7 +96,13 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
  * Compact breakdown — colored dot + label + inline proportion bar + count.
  * Replaces donuts for categorical distributions where text is sufficient.
  */
-function ProportionList({ data, total }: { data: ChartSlice[]; total: number }) {
+function ProportionList({
+  data,
+  total,
+}: {
+  data: ChartSlice[];
+  total: number;
+}) {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
   return (
     <div className="space-y-2">
@@ -99,15 +113,24 @@ function ProportionList({ data, total }: { data: ChartSlice[]; total: number }) 
           <div key={item.name}>
             <div className="flex items-center justify-between text-sm mb-0.5">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: item.fill }}
+                />
                 <span className="text-foreground truncate">{item.name}</span>
               </div>
               <span className="text-muted-foreground tabular-nums shrink-0 ml-3">
-                {item.value.toLocaleString()} <span className="text-muted-foreground/60">({pct.toFixed(0)}%)</span>
+                {item.value.toLocaleString()}{" "}
+                <span className="text-muted-foreground/60">
+                  ({pct.toFixed(0)}%)
+                </span>
               </span>
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${barPct}%`, backgroundColor: item.fill }} />
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${barPct}%`, backgroundColor: item.fill }}
+              />
             </div>
           </div>
         );
@@ -158,8 +181,16 @@ function StackedAfChart({ data }: { data: AfByFunctionRow[] }) {
 
   return (
     <ResponsiveContainer width="100%" height={340}>
-      <BarChart data={data} margin={{ left: 10, right: 10, top: 8, bottom: 40 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={T.grid} horizontal={true} vertical={false} />
+      <BarChart
+        data={data}
+        margin={{ left: 10, right: 10, top: 8, bottom: 40 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke={T.grid}
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
           dataKey="category"
           tick={{ fontSize: 11, fill: T.fg }}
@@ -175,7 +206,14 @@ function StackedAfChart({ data }: { data: AfByFunctionRow[] }) {
           tickLine={false}
           domain={[0, 1]}
           tickFormatter={(v: number) => v.toFixed(1)}
-          label={{ value: "Proportion", angle: -90, position: "insideLeft", offset: -2, fontSize: 11, fill: T.muted }}
+          label={{
+            value: "Proportion",
+            angle: -90,
+            position: "insideLeft",
+            offset: -2,
+            fontSize: 11,
+            fill: T.muted,
+          }}
         />
         <ReTooltip
           contentStyle={TOOLTIP_STYLE}
@@ -205,7 +243,12 @@ function StackedAfChart({ data }: { data: AfByFunctionRow[] }) {
 function FacetedBoxPlots({ panels }: { panels: ScoreByRegulatoryPanel[] }) {
   // Filter out panels where no box has meaningful spread (IQR ≈ 0 across all categories)
   const informative = panels.filter((p) =>
-    p.boxes.some((b) => b.q1 != null && b.q3 != null && Math.abs((b.q3 ?? 0) - (b.q1 ?? 0)) > 0.5),
+    p.boxes.some(
+      (b) =>
+        b.q1 != null &&
+        b.q3 != null &&
+        Math.abs((b.q3 ?? 0) - (b.q1 ?? 0)) > 0.5,
+    ),
   );
   if (informative.length === 0) return null;
 
@@ -230,7 +273,9 @@ function FacetedBoxPlots({ panels }: { panels: ScoreByRegulatoryPanel[] }) {
         if (validBoxes.length === 0) return null;
 
         const allVals = validBoxes.flatMap((b) =>
-          [b.p5, b.q1, b.median, b.q3, b.p95].filter((v): v is number => v != null),
+          [b.p5, b.q1, b.median, b.q3, b.p95].filter(
+            (v): v is number => v != null,
+          ),
         );
         const yMax = Math.ceil(Math.max(...allVals, 1) / 5) * 5;
         const yScale = (v: number | null) => {
@@ -242,9 +287,20 @@ function FacetedBoxPlots({ panels }: { panels: ScoreByRegulatoryPanel[] }) {
 
         return (
           <div key={panel.score}>
-            <svg viewBox={`0 0 ${panelW} ${panelH}`} className="w-full" style={{ maxWidth: panelW }}>
+            <svg
+              viewBox={`0 0 ${panelW} ${panelH}`}
+              className="w-full"
+              style={{ maxWidth: panelW }}
+            >
               {/* Panel title */}
-              <text x={panelW / 2} y={18} textAnchor="middle" fontSize={13} fontWeight={600} style={{ fill: panel.color }}>
+              <text
+                x={panelW / 2}
+                y={18}
+                textAnchor="middle"
+                fontSize={13}
+                fontWeight={600}
+                style={{ fill: panel.color }}
+              >
                 {panel.score}
               </text>
               {/* Y gridlines */}
@@ -253,25 +309,81 @@ function FacetedBoxPlots({ panels }: { panels: ScoreByRegulatoryPanel[] }) {
                 const gy = yScale(val);
                 return (
                   <g key={i}>
-                    <line x1={padL} y1={gy} x2={panelW - padR} y2={gy} stroke={T.grid} strokeDasharray="2 2" />
-                    <text x={padL - 6} y={gy + 3} textAnchor="end" fontSize={10} style={{ fill: T.muted }}>{fmt(val)}</text>
+                    <line
+                      x1={padL}
+                      y1={gy}
+                      x2={panelW - padR}
+                      y2={gy}
+                      stroke={T.grid}
+                      strokeDasharray="2 2"
+                    />
+                    <text
+                      x={padL - 6}
+                      y={gy + 3}
+                      textAnchor="end"
+                      fontSize={10}
+                      style={{ fill: T.muted }}
+                    >
+                      {fmt(val)}
+                    </text>
                   </g>
                 );
               })}
-              <text x={padL - 6} y={yScale(0) + 3} textAnchor="end" fontSize={10} style={{ fill: T.muted }}>0</text>
+              <text
+                x={padL - 6}
+                y={yScale(0) + 3}
+                textAnchor="end"
+                fontSize={10}
+                style={{ fill: T.muted }}
+              >
+                0
+              </text>
               {/* Y axis */}
-              <line x1={padL} y1={padT} x2={padL} y2={padT + plotH} stroke={T.axis} />
+              <line
+                x1={padL}
+                y1={padT}
+                x2={padL}
+                y2={padT + plotH}
+                stroke={T.axis}
+              />
               {/* X axis */}
-              <line x1={padL} y1={padT + plotH} x2={panelW - padR} y2={padT + plotH} stroke={T.axis} />
+              <line
+                x1={padL}
+                y1={padT + plotH}
+                x2={panelW - padR}
+                y2={padT + plotH}
+                stroke={T.axis}
+              />
 
               {validBoxes.map((box, j) => {
                 const cx = padL + j * colW + colW / 2;
                 return (
                   <g key={box.category}>
                     {/* Whisker */}
-                    <line x1={cx} y1={yScale(box.p95)} x2={cx} y2={yScale(box.p5)} stroke={T.muted} strokeWidth={1} />
-                    <line x1={cx - 8} y1={yScale(box.p5)} x2={cx + 8} y2={yScale(box.p5)} stroke={T.muted} strokeWidth={1} />
-                    <line x1={cx - 8} y1={yScale(box.p95)} x2={cx + 8} y2={yScale(box.p95)} stroke={T.muted} strokeWidth={1} />
+                    <line
+                      x1={cx}
+                      y1={yScale(box.p95)}
+                      x2={cx}
+                      y2={yScale(box.p5)}
+                      stroke={T.muted}
+                      strokeWidth={1}
+                    />
+                    <line
+                      x1={cx - 8}
+                      y1={yScale(box.p5)}
+                      x2={cx + 8}
+                      y2={yScale(box.p5)}
+                      stroke={T.muted}
+                      strokeWidth={1}
+                    />
+                    <line
+                      x1={cx - 8}
+                      y1={yScale(box.p95)}
+                      x2={cx + 8}
+                      y2={yScale(box.p95)}
+                      stroke={T.muted}
+                      strokeWidth={1}
+                    />
                     {/* IQR box */}
                     <rect
                       x={cx - boxW / 2}
@@ -354,7 +466,9 @@ function KeyTakeaways({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div className="rounded-lg border border-border bg-card p-4 mb-6">
-      <h3 className="text-sm font-semibold text-foreground mb-2">Key Findings</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-2">
+        Key Findings
+      </h3>
       <ul className="space-y-1.5">
         {items.map((item, i) => (
           <li key={i} className="flex gap-2 text-sm text-muted-foreground">
@@ -442,7 +556,13 @@ export function JobAnalyticsReport({
   filename: _filename,
   className,
 }: JobAnalyticsReportProps) {
-  const { query, loadParquet, isLoading: dbLoading, isReady, error: dbError } = useDuckDB();
+  const {
+    query,
+    loadParquet,
+    isLoading: dbLoading,
+    isReady,
+    error: dbError,
+  } = useDuckDB();
 
   type ReportLoadState =
     | { type: "init" }
@@ -464,12 +584,20 @@ export function JobAnalyticsReport({
         setState({ type: "ready", report });
       })
       .catch((err) => {
-        setState({ type: "error", message: err instanceof Error ? err.message : "Failed to load data" });
+        setState({
+          type: "error",
+          message: err instanceof Error ? err.message : "Failed to load data",
+        });
       });
   }, [isReady, dataUrl, loadParquet, jobId, query]);
 
   // Loading
-  if (dbLoading || state.type === "init" || state.type === "loading_data" || state.type === "generating") {
+  if (
+    dbLoading ||
+    state.type === "init" ||
+    state.type === "loading_data" ||
+    state.type === "generating"
+  ) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20">
         <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
@@ -491,9 +619,19 @@ export function JobAnalyticsReport({
         <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
           <AlertCircle className="w-6 h-6 text-rose-600" />
         </div>
-        <p className="text-sm font-semibold text-foreground mb-2">Report generation failed</p>
-        <p className="text-sm text-muted-foreground max-w-md mb-4">{state.type === "error" ? state.message : dbError}</p>
-        <Button variant="outline" onClick={() => { loadStartedRef.current = false; setState({ type: "init" }); }}>
+        <p className="text-sm font-semibold text-foreground mb-2">
+          Report generation failed
+        </p>
+        <p className="text-sm text-muted-foreground max-w-md mb-4">
+          {state.type === "error" ? state.message : dbError}
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            loadStartedRef.current = false;
+            setState({ type: "init" });
+          }}
+        >
           <RefreshCw className="w-4 h-4" />
           Retry
         </Button>
@@ -506,7 +644,9 @@ export function JobAnalyticsReport({
   const s = report.summary;
 
   return (
-    <div className={cn("max-w-5xl mx-auto space-y-10 print:max-w-none", className)}>
+    <div
+      className={cn("max-w-5xl mx-auto space-y-10 print:max-w-none", className)}
+    >
       {/* ================================================================ */}
       {/* Executive Summary */}
       {/* ================================================================ */}
@@ -515,18 +655,50 @@ export function JobAnalyticsReport({
           <div className="text-4xl font-bold text-foreground tabular-nums">
             {report.totalVariants.toLocaleString()}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">variants analyzed</div>
+          <div className="text-sm text-muted-foreground mt-1">
+            variants analyzed
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
-          <Metric label="ClinVar P/LP" value={s.clinvarPLP.count} pct={s.clinvarPLP.pct} accent={s.clinvarPLP.count > 0 ? "rose" : undefined} />
-          <Metric label="Ultra-rare (AF < 0.1%)" value={s.ultraRare.count} pct={s.ultraRare.pct} />
-          <Metric label="High-impact (top 1%)" value={s.highImpact.count} pct={s.highImpact.pct} />
-          <Metric label="COSMIC hits" value={s.cosmicHits} accent={s.cosmicHits > 0 ? "amber" : undefined} />
-          <Metric label="Splice-disrupting" value={s.spliceHigh} accent={s.spliceHigh > 0 ? "amber" : undefined} />
-          <Metric label="Regulatory active" value={s.regulatoryActive.count} pct={s.regulatoryActive.pct} />
+          <Metric
+            label="ClinVar P/LP"
+            value={s.clinvarPLP.count}
+            pct={s.clinvarPLP.pct}
+            accent={s.clinvarPLP.count > 0 ? "rose" : undefined}
+          />
+          <Metric
+            label="Ultra-rare (AF < 0.1%)"
+            value={s.ultraRare.count}
+            pct={s.ultraRare.pct}
+          />
+          <Metric
+            label="High-impact (top 1%)"
+            value={s.highImpact.count}
+            pct={s.highImpact.pct}
+          />
+          <Metric
+            label="COSMIC hits"
+            value={s.cosmicHits}
+            accent={s.cosmicHits > 0 ? "amber" : undefined}
+          />
+          <Metric
+            label="Splice-disrupting"
+            value={s.spliceHigh}
+            accent={s.spliceHigh > 0 ? "amber" : undefined}
+          />
+          <Metric
+            label="Regulatory active"
+            value={s.regulatoryActive.count}
+            pct={s.regulatoryActive.pct}
+          />
           {s.qcPassPct !== null && (
-            <Metric label="QC PASS rate" value={Math.round(s.qcPassPct)} pct={s.qcPassPct} accent={s.qcPassPct >= 95 ? "primary" : "amber"} />
+            <Metric
+              label="QC PASS rate"
+              value={Math.round(s.qcPassPct)}
+              pct={s.qcPassPct}
+              accent={s.qcPassPct >= 95 ? "primary" : "amber"}
+            />
           )}
         </div>
 
@@ -548,7 +720,10 @@ export function JobAnalyticsReport({
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                   Genomic Region
                 </h3>
-                <ProportionList data={report.regionType} total={report.totalVariants} />
+                <ProportionList
+                  data={report.regionType}
+                  total={report.totalVariants}
+                />
               </div>
             )}
             {report.consequence.length > 0 && (
@@ -556,7 +731,10 @@ export function JobAnalyticsReport({
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                   Exonic Consequence
                 </h3>
-                <ProportionList data={report.consequence} total={report.consequence.reduce((s, d) => s + d.value, 0)} />
+                <ProportionList
+                  data={report.consequence}
+                  total={report.consequence.reduce((s, d) => s + d.value, 0)}
+                />
               </div>
             )}
           </div>
@@ -578,7 +756,8 @@ export function JobAnalyticsReport({
               Allele Frequency by Functional Category
             </h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Normalized AF composition within each functional class — enrichment of rare variants signals purifying selection
+              Normalized AF composition within each functional class —
+              enrichment of rare variants signals purifying selection
             </p>
             <StackedAfChart data={report.afByFunction} />
           </div>
@@ -590,13 +769,15 @@ export function JobAnalyticsReport({
               Score Distributions by Regulatory Context
             </h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Variants in regulatory regions (CAGE, GeneHancer) vs. non-regulatory — higher scores indicate functional constraint
+              Variants in regulatory regions (CAGE, GeneHancer) vs.
+              non-regulatory — higher scores indicate functional constraint
             </p>
             <FacetedBoxPlots panels={report.scoresByRegulatory} />
           </div>
         )}
 
-        {(report.topGenes.length > 0 || report.geneHancerTargets.length > 0) && (
+        {(report.topGenes.length > 0 ||
+          report.geneHancerTargets.length > 0) && (
           <div>
             <h3 className="text-sm font-medium text-foreground mb-4">
               Gene Variant Distribution
@@ -640,10 +821,18 @@ export function JobAnalyticsReport({
                 </h3>
                 <div className="space-y-1.5">
                   {report.clinvarSignificance.map((item) => (
-                    <div key={item.name} className="flex items-center gap-2 text-sm">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: item.fill }}
+                      />
                       <span className="text-foreground">{item.name}</span>
-                      <span className="text-muted-foreground tabular-nums ml-auto">{item.value.toLocaleString()}</span>
+                      <span className="text-muted-foreground tabular-nums ml-auto">
+                        {item.value.toLocaleString()}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -656,14 +845,27 @@ export function JobAnalyticsReport({
                 </h3>
                 <div className="space-y-1.5">
                   {report.clinvarReviewStatus.map((item) => {
-                    const pct = report.totalWithClinvar > 0 ? (item.value / report.totalWithClinvar) * 100 : 0;
+                    const pct =
+                      report.totalWithClinvar > 0
+                        ? (item.value / report.totalWithClinvar) * 100
+                        : 0;
                     return (
-                      <div key={item.name} className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
-                        <span className="text-foreground truncate">{item.name}</span>
+                      <div
+                        key={item.name}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: item.fill }}
+                        />
+                        <span className="text-foreground truncate">
+                          {item.name}
+                        </span>
                         <span className="text-muted-foreground tabular-nums ml-auto shrink-0">
                           {item.value.toLocaleString()}
-                          <span className="text-muted-foreground/60 ml-1">({pct.toFixed(0)}%)</span>
+                          <span className="text-muted-foreground/60 ml-1">
+                            ({pct.toFixed(0)}%)
+                          </span>
                         </span>
                       </div>
                     );
@@ -739,8 +941,8 @@ export function JobAnalyticsReport({
       {/* ================================================================ */}
       <footer className="pt-6 border-t border-border text-xs text-muted-foreground print:mt-8">
         <p>
-          Data sources: ClinVar, gnomAD v4, BRAVO, AlphaMissense, ENCODE cCRE, COSMIC. Build:
-          GRCh38/hg38.
+          Data sources: ClinVar, gnomAD v4, BRAVO, AlphaMissense, ENCODE cCRE,
+          COSMIC. Build: GRCh38/hg38.
         </p>
       </footer>
     </div>

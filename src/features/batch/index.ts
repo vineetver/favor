@@ -1,8 +1,32 @@
 // API
 export * from "./api";
-
-// Types
-export * from "./types";
+// Components
+export {
+  BatchWizard,
+  CancelledJobCard,
+  CancelRequestedJobCard,
+  ColumnMappingEditor,
+  CompletedJobCard,
+  DedupStats,
+  EtaDisplay,
+  FailedJobCard,
+  JobAnalytics,
+  JobAnalyticsReport,
+  type JobConfig,
+  JobConfiguration,
+  // State-specific job cards
+  JobDetailView,
+  JobProgressCard,
+  JobsDashboard,
+  PendingJobCard,
+  // Pipeline and progress components
+  ProcessingPipeline,
+  RunningJobCard,
+  StatCard,
+  type StatCardVariant,
+  UploadDropzone,
+  ValidationSummary,
+} from "./components";
 
 // Config
 export * from "./config";
@@ -12,34 +36,7 @@ export * from "./constants";
 
 // Hooks
 export * from "./hooks";
-
-// Components
-export {
-  BatchWizard,
-  UploadDropzone,
-  ValidationSummary,
-  JobConfiguration,
-  type JobConfig,
-  ColumnMappingEditor,
-  JobProgressCard,
-  JobsDashboard,
-  JobAnalytics,
-  JobAnalyticsReport,
-  StatCard,
-  type StatCardVariant,
-  // State-specific job cards
-  JobDetailView,
-  PendingJobCard,
-  RunningJobCard,
-  CancelRequestedJobCard,
-  CompletedJobCard,
-  FailedJobCard,
-  CancelledJobCard,
-  // Pipeline and progress components
-  ProcessingPipeline,
-  EtaDisplay,
-  DedupStats,
-} from "./components";
-
 // Lib
 export * from "./lib/format";
+// Types
+export * from "./types";

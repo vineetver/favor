@@ -1,5 +1,5 @@
 import type { EdgeType } from "../types/edge";
-import type { GraphSchema, EdgeTypeStats } from "../types/schema";
+import type { EdgeTypeStats, GraphSchema } from "../types/schema";
 
 // =============================================================================
 // Schema Map — O(1) lookup by edge type
@@ -135,25 +135,33 @@ export function collectEdgeTypesFromSteps(steps: StepLike[]): EdgeType[] {
  * Only adds `sort` when a valid sort string is resolved; never sets `sort: undefined`.
  */
 export function injectSortFields<
-  T extends { edgeTypes: (EdgeType | string)[]; sort?: string; branch?: undefined } | { branch: Array<{ edgeTypes: (EdgeType | string)[]; sort?: string }> },
->(
-  steps: T[],
-  schemaMap: EdgeTypeStatsMap,
-): T[] {
+  T extends
+    | { edgeTypes: (EdgeType | string)[]; sort?: string; branch?: undefined }
+    | { branch: Array<{ edgeTypes: (EdgeType | string)[]; sort?: string }> },
+>(steps: T[], schemaMap: EdgeTypeStatsMap): T[] {
   return steps.map((step) => {
     if ("branch" in step && step.branch) {
       return {
         ...step,
         branch: step.branch.map((sub) => {
           if (sub.sort) return sub; // already has a sort
-          const resolved = resolveSortField(sub.edgeTypes[0] as EdgeType, schemaMap);
+          const resolved = resolveSortField(
+            sub.edgeTypes[0] as EdgeType,
+            schemaMap,
+          );
           return resolved ? { ...sub, sort: resolved } : sub;
         }),
       } as T;
     }
-    const flatStep = step as { edgeTypes: (EdgeType | string)[]; sort?: string };
+    const flatStep = step as {
+      edgeTypes: (EdgeType | string)[];
+      sort?: string;
+    };
     if (flatStep.sort) return step; // already has a sort
-    const resolved = resolveSortField(flatStep.edgeTypes[0] as EdgeType, schemaMap);
-    return resolved ? { ...step, sort: resolved } as T : step;
+    const resolved = resolveSortField(
+      flatStep.edgeTypes[0] as EdgeType,
+      schemaMap,
+    );
+    return resolved ? ({ ...step, sort: resolved } as T) : step;
   });
 }

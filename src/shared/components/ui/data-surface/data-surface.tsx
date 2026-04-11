@@ -30,7 +30,6 @@ import { TableContent } from "./table-content";
 import type {
   ColumnMeta,
   DataSurfaceProps,
-  ServerSortProps,
   TransposedRow,
   ViewMode,
   VisualizationProps,
@@ -83,7 +82,9 @@ export function DataSurface<TData, TValue>({
   // Client-only sorting (used when no serverSort). Server-driven sorting is derived below.
   const [localSorting, setLocalSorting] = React.useState<SortingState>(() => {
     if (defaultSort) {
-      return [{ id: defaultSort.column, desc: defaultSort.direction === "desc" }];
+      return [
+        { id: defaultSort.column, desc: defaultSort.direction === "desc" },
+      ];
     }
     return [];
   });
@@ -310,7 +311,9 @@ export function DataSurface<TData, TValue>({
     getSortedRowModel: serverSort ? undefined : getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     // Only use client pagination if NOT in server pagination mode
-    getPaginationRowModel: serverPagination ? undefined : getPaginationRowModel(),
+    getPaginationRowModel: serverPagination
+      ? undefined
+      : getPaginationRowModel(),
     initialState: {
       pagination: serverPagination
         ? undefined
@@ -439,13 +442,18 @@ export function DataSurface<TData, TValue>({
       )}
 
       {/* Control Bar — only render when there's something to show */}
-      {(searchable || filterable || (showViewSwitch && !!Visualization) || filterChips.length > 0) && (
+      {(searchable ||
+        filterable ||
+        (showViewSwitch && !!Visualization) ||
+        filterChips.length > 0) && (
         <ControlBar
           searchPlaceholder={searchPlaceholder}
           searchValue={searchValue}
           onSearchChange={searchable ? handleSearch : undefined}
           showSearch={searchable}
-          onFilterClick={filterable ? () => setFilterDrawerOpen(true) : undefined}
+          onFilterClick={
+            filterable ? () => setFilterDrawerOpen(true) : undefined
+          }
           hasActiveFilters={hasFilters}
           filterChips={filterChips}
           onRemoveFilterChip={onRemoveFilterChip}

@@ -50,7 +50,10 @@ export default async function PathwayLeverageMapPage({
   const participatingPathwayIds = new Set<string>();
 
   for (const edge of edges) {
-    if (edge.type === "GENE_PARTICIPATES_IN_PATHWAY" && edge.from.id === geneId) {
+    if (
+      edge.type === "GENE_PARTICIPATES_IN_PATHWAY" &&
+      edge.from.id === geneId
+    ) {
       const pathwayId = edge.to.id;
       participatingPathwayIds.add(pathwayId);
 

@@ -2,10 +2,10 @@ import { fetchGene } from "@features/gene/api";
 import { GeneHeader } from "@features/gene/components/header/gene-header";
 import { geneDataChecks } from "@features/gene/config/hg38/data-availability";
 import { GENE_NAVIGATION_CONFIG } from "@features/gene/config/hg38/navigation";
-import { getDisabledSlugs } from "@shared/utils/data-availability";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
+import { getDisabledSlugs } from "@shared/utils/data-availability";
 import { notFound } from "next/navigation";
 
 interface DiseaseTherapeuticsLayoutProps {
@@ -39,7 +39,8 @@ export default async function DiseaseTherapeuticsLayout({
   }
 
   const edgeCounts = (geneResponse?.included?.counts ??
-    geneResponse?.counts ?? {}) as Record<string, number>;
+    geneResponse?.counts ??
+    {}) as Record<string, number>;
   const disabledSlugs = getDisabledSlugs(gene, geneDataChecks, edgeCounts);
 
   return (

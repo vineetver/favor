@@ -28,7 +28,10 @@ interface ChartRow {
 }
 
 // Stable default references — avoids new objects on every render that break useMemo deps
-const DEFAULT_COLOR_SCHEME: ColorScheme = { type: "single", color: DEFAULT_BAR_COLOR };
+const DEFAULT_COLOR_SCHEME: ColorScheme = {
+  type: "single",
+  color: DEFAULT_BAR_COLOR,
+};
 const DEFAULT_EXCLUDE_IDS: string[] = [];
 const DEFAULT_VALUE_FORMATTER = (v: number) => v.toFixed(3);
 
@@ -41,7 +44,9 @@ function BarChartTooltipContent({
   payload?: Array<{ payload: ChartRow }>;
   valueFormatter: (v: number) => string;
 }) {
-  return <BarChartTooltip active={active} payload={payload} valueFormatter={fmt} />;
+  return (
+    <BarChartTooltip active={active} payload={payload} valueFormatter={fmt} />
+  );
 }
 
 // Stable rotated tick component — avoids inline function in XAxis tick prop

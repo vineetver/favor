@@ -2,11 +2,7 @@
 
 import { cn } from "@infra/utils";
 import { ExternalLink } from "@shared/components/ui/external-link";
-import {
-  Network,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { Network, TrendingUp, Users } from "lucide-react";
 import { memo } from "react";
 import type { CentralityData } from "./types";
 
@@ -34,7 +30,9 @@ function PPIHubPanelInner({
       <div className={cn("border-t border-border bg-background", className)}>
         <div className="px-6 py-3 border-b border-border bg-muted flex items-center gap-2">
           <Network className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Network Importance</span>
+          <span className="text-sm font-medium text-foreground">
+            Network Importance
+          </span>
         </div>
         <div className="px-6 py-4">
           <div className="animate-pulse space-y-3">
@@ -64,7 +62,9 @@ function PPIHubPanelInner({
       <div className="px-6 py-4 space-y-5">
         {/* Gene summary - like edge summary */}
         <div className="flex items-center gap-2 text-lg">
-          <span className="font-semibold text-primary">{seedCentrality.entity.label}</span>
+          <span className="font-semibold text-primary">
+            {seedCentrality.entity.label}
+          </span>
           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
             Seed Gene
           </span>
@@ -96,7 +96,11 @@ function PPIHubPanelInner({
               Rank
             </div>
             <div className="text-xl font-semibold text-foreground">
-              {seedCentrality.percentile.total >= 90 ? "Hub" : seedCentrality.percentile.total >= 70 ? "High" : "Normal"}
+              {seedCentrality.percentile.total >= 90
+                ? "Hub"
+                : seedCentrality.percentile.total >= 70
+                  ? "High"
+                  : "Normal"}
             </div>
           </div>
         </div>
@@ -104,10 +108,14 @@ function PPIHubPanelInner({
         {/* Insight text */}
         <div className="text-sm text-muted-foreground">
           This gene has more interactions than{" "}
-          <span className="font-semibold text-foreground">{seedCentrality.percentile.total.toFixed(0)}%</span>{" "}
+          <span className="font-semibold text-foreground">
+            {seedCentrality.percentile.total.toFixed(0)}%
+          </span>{" "}
           of genes in the network
           {seedCentrality.percentile.total >= 90 && (
-            <span className="text-warning">, suggesting it may be a hub protein involved in multiple pathways</span>
+            <span className="text-warning">
+              , suggesting it may be a hub protein involved in multiple pathways
+            </span>
           )}
           .
         </div>

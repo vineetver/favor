@@ -7,7 +7,7 @@ import { ArrowUpRight, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { siteConfig } from "@/config/site";
-import { NAV_ITEMS, type NavItem, MORE_ITEMS } from "./nav-items";
+import { MORE_ITEMS, NAV_ITEMS, type NavItem } from "./nav-items";
 import { PageNavDrawer } from "./page-nav-drawer";
 
 interface MobileDrawerProps {
@@ -134,11 +134,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
             {/* Main Navigation */}
             <div className="px-4 py-6 space-y-1">
               {NAV_ITEMS.map((item) => (
-                <MobileNavLink
-                  key={item.label}
-                  item={item}
-                  onClose={onClose}
-                />
+                <MobileNavLink key={item.label} item={item} onClose={onClose} />
               ))}
 
               {/* More Section */}

@@ -1,12 +1,11 @@
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
-import type { EntityType } from "../types/entity";
-import type { EdgeType } from "../types/edge";
-import type { InitialSubgraphData } from "../types/props";
-import type { NodeKey, EdgeKey } from "../types/keys";
+import { type GraphQueryResponse, parseTypeId } from "../api";
 import type { SeedEntity } from "../config/explorer-config";
-import { makeNodeKey, makeEdgeKey } from "../types/keys";
+import type { EdgeType } from "../types/edge";
+import type { EntityType } from "../types/entity";
+import { makeEdgeKey, makeNodeKey } from "../types/keys";
+import type { ExplorerEdge, ExplorerNode } from "../types/node";
+import type { InitialSubgraphData } from "../types/props";
 import { createEdgeId } from "./keys";
-import { parseTypeId, type GraphQueryResponse } from "../api";
 
 /**
  * Hydrate from InitialSubgraphData (server-side serialized format)
@@ -86,8 +85,12 @@ export function hydrateSubgraphData(
     const edgeId = createEdgeId(edgeType, apiEdge.fromId, apiEdge.toId);
     const fromNode = nodes.get(apiEdge.fromId);
     const toNode = nodes.get(apiEdge.toId);
-    const sourceKey = fromNode?.key ?? makeNodeKey((fromNode?.type ?? seed.type) as EntityType, apiEdge.fromId);
-    const targetKey = toNode?.key ?? makeNodeKey((toNode?.type ?? seed.type) as EntityType, apiEdge.toId);
+    const sourceKey =
+      fromNode?.key ??
+      makeNodeKey((fromNode?.type ?? seed.type) as EntityType, apiEdge.fromId);
+    const targetKey =
+      toNode?.key ??
+      makeNodeKey((toNode?.type ?? seed.type) as EntityType, apiEdge.toId);
     const edgeKey = makeEdgeKey(edgeType, sourceKey, targetKey);
 
     edges.set(edgeId, {
@@ -151,7 +154,8 @@ export function hydrateQueryResponse(
       const fromD = depths.get(fromId);
       const toD = depths.get(toId);
       if (fromD !== undefined && toD === undefined) depths.set(toId, fromD + 1);
-      else if (toD !== undefined && fromD === undefined) depths.set(fromId, toD + 1);
+      else if (toD !== undefined && fromD === undefined)
+        depths.set(fromId, toD + 1);
     }
   }
 
@@ -164,8 +168,13 @@ export function hydrateQueryResponse(
       const toId = edge.toParsed.id;
       const fromD = depths.get(fromId);
       const toD = depths.get(toId);
-      if (fromD !== undefined && toD === undefined) { depths.set(toId, fromD + 1); changed = true; }
-      else if (toD !== undefined && fromD === undefined) { depths.set(fromId, toD + 1); changed = true; }
+      if (fromD !== undefined && toD === undefined) {
+        depths.set(toId, fromD + 1);
+        changed = true;
+      } else if (toD !== undefined && fromD === undefined) {
+        depths.set(fromId, toD + 1);
+        changed = true;
+      }
     }
   }
 
@@ -219,8 +228,10 @@ export function hydrateQueryResponse(
     const edgeId = createEdgeId(edgeType, fromId, toId);
     const fromNode = nodes.get(fromId);
     const toNode = nodes.get(toId);
-    const sourceKey = fromNode?.key ?? makeNodeKey(edge.fromParsed.type as EntityType, fromId);
-    const targetKey = toNode?.key ?? makeNodeKey(edge.toParsed.type as EntityType, toId);
+    const sourceKey =
+      fromNode?.key ?? makeNodeKey(edge.fromParsed.type as EntityType, fromId);
+    const targetKey =
+      toNode?.key ?? makeNodeKey(edge.toParsed.type as EntityType, toId);
     const edgeKey = makeEdgeKey(edgeType, sourceKey, targetKey);
 
     edges.set(edgeId, {

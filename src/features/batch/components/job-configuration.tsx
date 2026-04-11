@@ -59,7 +59,9 @@ export function JobConfiguration({
   const emailId = useId();
 
   // Enrichment state
-  const [selectedAnalyses, setSelectedAnalyses] = useState<Set<string>>(new Set());
+  const [selectedAnalyses, setSelectedAnalyses] = useState<Set<string>>(
+    new Set(),
+  );
   const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
   const [tissue, setTissue] = useState("");
 
@@ -132,8 +134,12 @@ export function JobConfiguration({
         variantCount={typedValidation.row_count_estimate}
         selectedAnalyses={selectedAnalyses}
         selectedTables={selectedTables}
-        onToggleAnalysis={(name) => setSelectedAnalyses((prev) => toggleSet(prev, name))}
-        onToggleTable={(table) => setSelectedTables((prev) => toggleSet(prev, table))}
+        onToggleAnalysis={(name) =>
+          setSelectedAnalyses((prev) => toggleSet(prev, name))
+        }
+        onToggleTable={(table) =>
+          setSelectedTables((prev) => toggleSet(prev, table))
+        }
         tissue={tissue}
         onTissueChange={setTissue}
         disabled={isSubmitting}

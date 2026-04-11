@@ -1,9 +1,8 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import {
   fetchAccessibilityByTissueGroup,
   fetchAseByTissueGroup,
-  fetchChromBpnetByTissueGroup,
   fetchChromatinByTissueGroup,
+  fetchChromBpnetByTissueGroup,
   fetchEnhancersByTissueGroup,
   fetchLoopsByTissueGroup,
   fetchQtlsByTissueGroup,
@@ -12,12 +11,13 @@ import {
   fetchTargetGenes,
   fetchVariantAllelicImbalanceByTissueGroup,
 } from "@features/enrichment/api/region";
-import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
-import {
-  TissueEvidenceSummary,
-  type TissueEvidenceData,
-} from "@features/enrichment/components/tissue-evidence-summary";
 import { TargetGenesView } from "@features/enrichment/components/target-genes-view";
+import {
+  type TissueEvidenceData,
+  TissueEvidenceSummary,
+} from "@features/enrichment/components/tissue-evidence-summary";
+import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 interface OverviewPageProps {
@@ -67,7 +67,9 @@ export default async function VariantRegulatoryOverviewPage({
     fetchAseByTissueGroup(loc).catch(catchEmpty("ase")),
     fetchQtlsByTissueGroup(loc).catch(catchEmpty("qtls")),
     fetchChromBpnetByTissueGroup(loc).catch(catchEmpty("chrombpnet")),
-    fetchVariantAllelicImbalanceByTissueGroup(loc).catch(catchEmpty("allelicImbalance")),
+    fetchVariantAllelicImbalanceByTissueGroup(loc).catch(
+      catchEmpty("allelicImbalance"),
+    ),
     fetchCrisprByTissueGroup(loc).catch(catchEmpty("crispr")),
     fetchRegionSummary(loc).catch(catchNull("regionSummary")),
     fetchTargetGenes(ref, 50).catch(catchEmpty("targetGenes")),

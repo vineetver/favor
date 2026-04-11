@@ -1,18 +1,17 @@
-import type { ReactNode } from "react";
-import { 
-  isValidNumber,
-  isValidString,
-  isValidArray,
-  roundNumber,
-  formatScientific,
-  splitText,
+import {
   cleanText,
-  truncateText,
-  parseStringToNumber,
-  getConstraintScore,
+  formatChromosomeLocation,
   formatExternalId,
   formatGeneSymbol,
-  formatChromosomeLocation
+  formatScientific,
+  getConstraintScore,
+  isValidArray,
+  isValidNumber,
+  isValidString,
+  parseStringToNumber,
+  roundNumber,
+  splitText,
+  truncateText,
 } from "@shared/utils";
 
 // Re-export commonly used utilities for gene feature
@@ -29,5 +28,5 @@ export {
   getConstraintScore,
   formatExternalId,
   formatGeneSymbol,
-  formatChromosomeLocation
+  formatChromosomeLocation,
 };

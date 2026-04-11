@@ -41,7 +41,7 @@ function PathwayDetailPanelInner({
   const uniqueSharedGenes =
     enrichment.status === "loaded"
       ? Array.from(
-          new Map(enrichment.data.sharedGenes.map((g) => [g.id, g])).values()
+          new Map(enrichment.data.sharedGenes.map((g) => [g.id, g])).values(),
         )
       : [];
 
@@ -54,7 +54,10 @@ function PathwayDetailPanelInner({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:max-w-[450px] overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-[400px] sm:max-w-[450px] overflow-y-auto"
+      >
         <SheetHeader className="pb-4 border-b border-border">
           <div className="flex items-center gap-2 mb-1">
             <div
@@ -85,7 +88,9 @@ function PathwayDetailPanelInner({
         </SheetHeader>
 
         {/* Evidence Stats Grid */}
-        {(pathway.numSources || pathway.numExperiments || pathway.confidenceScore) && (
+        {(pathway.numSources ||
+          pathway.numExperiments ||
+          pathway.confidenceScore) && (
           <div className="py-4 border-b border-border">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Evidence
@@ -150,7 +155,9 @@ function PathwayDetailPanelInner({
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-muted-foreground">Total genes in pathway</span>
+                  <span className="text-sm text-muted-foreground">
+                    Total genes in pathway
+                  </span>
                   <span className="text-lg font-semibold text-foreground">
                     {enrichment.data.geneCount}
                   </span>
@@ -193,7 +200,8 @@ function PathwayDetailPanelInner({
             )}
 
             {/* Hierarchy context */}
-            {(enrichment.data.parentPathway || enrichment.data.childPathways.length > 0) && (
+            {(enrichment.data.parentPathway ||
+              enrichment.data.childPathways.length > 0) && (
               <div className="pt-3 border-t border-border">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Pathway Hierarchy
@@ -208,9 +216,14 @@ function PathwayDetailPanelInner({
                 )}
                 {enrichment.data.childPathways.length > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    <span className="text-muted-foreground">Sub-pathways: </span>
+                    <span className="text-muted-foreground">
+                      Sub-pathways:{" "}
+                    </span>
                     <span className="text-foreground">
-                      {enrichment.data.childPathways.slice(0, 3).map((c) => c.name).join(", ")}
+                      {enrichment.data.childPathways
+                        .slice(0, 3)
+                        .map((c) => c.name)
+                        .join(", ")}
                       {enrichment.data.childPathways.length > 3 &&
                         ` and ${enrichment.data.childPathways.length - 3} more`}
                     </span>
@@ -241,7 +254,9 @@ function PathwayDetailPanelInner({
               {diseaseEnrichment.status === "loading" && (
                 <div className="flex items-center gap-2 py-3 text-muted-foreground">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span className="text-xs">Loading disease associations...</span>
+                  <span className="text-xs">
+                    Loading disease associations...
+                  </span>
                 </div>
               )}
 
@@ -251,71 +266,71 @@ function PathwayDetailPanelInner({
                 </div>
               )}
 
-              {diseaseEnrichment.status === "loaded" && (
-                <>
-                  {diseaseEnrichment.data.diseases.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No disease associations found for genes in this pathway.
+              {diseaseEnrichment.status === "loaded" &&
+                (diseaseEnrichment.data.diseases.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No disease associations found for genes in this pathway.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {diseaseEnrichment.data.totalDiseases} diseases associated
+                      with pathway genes
                     </p>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {diseaseEnrichment.data.totalDiseases} diseases associated with pathway genes
-                      </p>
-                      {displayedDiseases.map((assoc) => (
-                        <div
-                          key={assoc.disease.id}
-                          className="bg-destructive/5 rounded-lg p-2.5 border border-destructive/20"
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-sm font-medium text-foreground">
-                              {assoc.disease.name}
-                            </span>
-                            <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">
-                              {assoc.geneCount} gene{assoc.geneCount > 1 ? "s" : ""}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {assoc.genes.slice(0, 5).map((gene) => (
-                              <span
-                                key={gene.id}
-                                className="text-xs text-destructive"
-                              >
-                                {gene.symbol}
-                              </span>
-                            ))}
-                            {assoc.geneCount > 5 && (
-                              <span className="text-xs text-muted-foreground">
-                                +{assoc.geneCount - 5}
-                              </span>
-                            )}
-                          </div>
+                    {displayedDiseases.map((assoc) => (
+                      <div
+                        key={assoc.disease.id}
+                        className="bg-destructive/5 rounded-lg p-2.5 border border-destructive/20"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-sm font-medium text-foreground">
+                            {assoc.disease.name}
+                          </span>
+                          <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">
+                            {assoc.geneCount} gene
+                            {assoc.geneCount > 1 ? "s" : ""}
+                          </span>
                         </div>
-                      ))}
-                      {diseaseEnrichment.data.diseases.length > 5 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowAllDiseases(!showAllDiseases)}
-                          className="w-full text-xs h-7 text-muted-foreground"
-                        >
-                          {showAllDiseases ? (
-                            <>
-                              <ChevronUp className="w-3.5 h-3.5 mr-1" />
-                              Show Less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-3.5 h-3.5 mr-1" />
-                              Show {diseaseEnrichment.data.diseases.length - 5} More
-                            </>
+                        <div className="flex flex-wrap gap-1">
+                          {assoc.genes.slice(0, 5).map((gene) => (
+                            <span
+                              key={gene.id}
+                              className="text-xs text-destructive"
+                            >
+                              {gene.symbol}
+                            </span>
+                          ))}
+                          {assoc.geneCount > 5 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{assoc.geneCount - 5}
+                            </span>
                           )}
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+                        </div>
+                      </div>
+                    ))}
+                    {diseaseEnrichment.data.diseases.length > 5 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAllDiseases(!showAllDiseases)}
+                        className="w-full text-xs h-7 text-muted-foreground"
+                      >
+                        {showAllDiseases ? (
+                          <>
+                            <ChevronUp className="w-3.5 h-3.5 mr-1" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3.5 h-3.5 mr-1" />
+                            Show {diseaseEnrichment.data.diseases.length - 5}{" "}
+                            More
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         )}

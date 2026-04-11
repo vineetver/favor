@@ -1,35 +1,55 @@
-import type { ExplorerNode, ExplorerEdge, InspectorMode } from "../types/node";
-import type { GraphFilters } from "../types/filters";
 import type { EdgeType } from "../types/edge";
-import type { ProvenanceEvent } from "../types/provenance";
-import type { TemplateResultData } from "../types/template-results";
-import { DEFAULT_SELECTION } from "../types/node";
+import type { GraphFilters } from "../types/filters";
 import { DEFAULT_FILTERS } from "../types/filters";
+import type { ExplorerEdge, ExplorerNode, InspectorMode } from "../types/node";
+import { DEFAULT_SELECTION } from "../types/node";
+import type { ProvenanceEvent } from "../types/provenance";
 import type {
+  AsyncOperation,
+  ExplorerLayoutType,
   ExplorerState,
   GraphData,
-  ViewMode,
-  ExplorerLayoutType,
   TemplateId,
-  AsyncOperation,
+  ViewMode,
 } from "../types/state";
+import type { TemplateResultData } from "../types/template-results";
 
 // =============================================================================
 // ACTION TYPES
 // =============================================================================
 
 export type ExplorerAction =
-  | { type: "HYDRATE_INITIAL"; graph: GraphData; templateId: TemplateId; provenance: ProvenanceEvent }
+  | {
+      type: "HYDRATE_INITIAL";
+      graph: GraphData;
+      templateId: TemplateId;
+      provenance: ProvenanceEvent;
+    }
   | { type: "SWITCH_TEMPLATE_START"; templateId: TemplateId }
-  | { type: "SWITCH_TEMPLATE_SUCCESS"; graph: GraphData; templateEdgeTypes: Set<EdgeType>; provenance: ProvenanceEvent }
+  | {
+      type: "SWITCH_TEMPLATE_SUCCESS";
+      graph: GraphData;
+      templateEdgeTypes: Set<EdgeType>;
+      provenance: ProvenanceEvent;
+    }
   | { type: "SWITCH_TEMPLATE_ERROR"; error: string }
   | { type: "SET_TEMPLATE_RESULTS"; results: TemplateResultData | null }
   | { type: "EXPAND_START"; nodeId: string; label: string }
-  | { type: "EXPAND_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
+  | {
+      type: "EXPAND_SUCCESS";
+      nodes: Map<string, ExplorerNode>;
+      edges: Map<string, ExplorerEdge>;
+      provenance: ProvenanceEvent;
+    }
   | { type: "EXPAND_ERROR"; error: string }
   | { type: "DISMISS_EXPANSION_ERROR" }
   | { type: "VARIANT_TRAIL_START"; nodeId: string }
-  | { type: "VARIANT_TRAIL_SUCCESS"; nodes: Map<string, ExplorerNode>; edges: Map<string, ExplorerEdge>; provenance: ProvenanceEvent }
+  | {
+      type: "VARIANT_TRAIL_SUCCESS";
+      nodes: Map<string, ExplorerNode>;
+      edges: Map<string, ExplorerEdge>;
+      provenance: ProvenanceEvent;
+    }
   | { type: "VARIANT_TRAIL_ERROR"; error: string }
   | { type: "DISMISS_ERROR" }
   | { type: "REMOVE_NODE"; nodeId: string }
@@ -63,12 +83,14 @@ function stampProvenance(
   return result;
 }
 
-
 // =============================================================================
 // REDUCER
 // =============================================================================
 
-export function explorerReducer(state: ExplorerState, action: ExplorerAction): ExplorerState {
+export function explorerReducer(
+  state: ExplorerState,
+  action: ExplorerAction,
+): ExplorerState {
   switch (action.type) {
     case "HYDRATE_INITIAL": {
       // Stamp all initial nodes and edges with the provenance event
@@ -82,7 +104,10 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         status: "ready",
         graph: { ...action.graph, provenance },
         selection: DEFAULT_SELECTION,
-        filters: { ...DEFAULT_FILTERS, edgeTypes: new Set(DEFAULT_FILTERS.edgeTypes) },
+        filters: {
+          ...DEFAULT_FILTERS,
+          edgeTypes: new Set(DEFAULT_FILTERS.edgeTypes),
+        },
         layout: "cose-bilkent",
         viewMode: "graph",
         activeTemplate: action.templateId,
@@ -90,13 +115,15 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         leftDrawerOpen: true,
         inspectorMode: "closed",
         async: asyncOp,
-
       };
     }
 
     case "SWITCH_TEMPLATE_START": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "switching_template", targetTemplateId: action.templateId };
+      const asyncOp: AsyncOperation = {
+        type: "switching_template",
+        targetTemplateId: action.templateId,
+      };
       return {
         ...state,
         activeTemplate: action.templateId,
@@ -104,7 +131,6 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         selection: DEFAULT_SELECTION,
         inspectorMode: "closed",
         async: asyncOp,
-
       };
     }
 
@@ -121,20 +147,25 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         graph: { ...action.graph, provenance },
         filters: {
           ...state.filters,
-          edgeTypes: new Set([...state.filters.edgeTypes, ...action.templateEdgeTypes]),
+          edgeTypes: new Set([
+            ...state.filters.edgeTypes,
+            ...action.templateEdgeTypes,
+          ]),
         },
         async: asyncOp,
-
       };
     }
 
     case "SWITCH_TEMPLATE_ERROR": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "error", operation: "switching_template", message: action.error };
+      const asyncOp: AsyncOperation = {
+        type: "error",
+        operation: "switching_template",
+        message: action.error,
+      };
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -148,11 +179,14 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
 
     case "EXPAND_START": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "expanding", nodeId: action.nodeId, label: action.label };
+      const asyncOp: AsyncOperation = {
+        type: "expanding",
+        nodeId: action.nodeId,
+        label: action.label,
+      };
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -193,17 +227,19 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           provenance,
         },
         async: asyncOp,
-
       };
     }
 
     case "EXPAND_ERROR": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "error", operation: "expanding", message: action.error };
+      const asyncOp: AsyncOperation = {
+        type: "error",
+        operation: "expanding",
+        message: action.error,
+      };
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -213,17 +249,18 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
     case "VARIANT_TRAIL_START": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "running_variant_trail", nodeId: action.nodeId };
+      const asyncOp: AsyncOperation = {
+        type: "running_variant_trail",
+        nodeId: action.nodeId,
+      };
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -263,17 +300,19 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
           provenance,
         },
         async: asyncOp,
-
       };
     }
 
     case "VARIANT_TRAIL_ERROR": {
       if (state.status !== "ready") return state;
-      const asyncOp: AsyncOperation = { type: "error", operation: "running_variant_trail", message: action.error };
+      const asyncOp: AsyncOperation = {
+        type: "error",
+        operation: "running_variant_trail",
+        message: action.error,
+      };
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -283,7 +322,6 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         async: asyncOp,
-
       };
     }
 
@@ -297,7 +335,10 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       const removedEdgeIds: string[] = [];
       const newEdges = new Map(state.graph.edges);
       newEdges.forEach((edge, edgeId) => {
-        if (edge.sourceId === action.nodeId || edge.targetId === action.nodeId) {
+        if (
+          edge.sourceId === action.nodeId ||
+          edge.targetId === action.nodeId
+        ) {
           newEdges.delete(edgeId);
           removedEdgeIds.push(edgeId);
         }
@@ -316,12 +357,20 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       } else if (selection.type === "multi") {
         const newIds = new Set(selection.nodeIds);
         newIds.delete(action.nodeId);
-        selection = newIds.size === 0 ? DEFAULT_SELECTION : { type: "multi", nodeIds: newIds };
+        selection =
+          newIds.size === 0
+            ? DEFAULT_SELECTION
+            : { type: "multi", nodeIds: newIds };
       }
 
       return {
         ...state,
-        graph: { ...state.graph, nodes: newNodes, edges: newEdges, provenance: newProvenance },
+        graph: {
+          ...state.graph,
+          nodes: newNodes,
+          edges: newEdges,
+          provenance: newProvenance,
+        },
         selection,
       };
     }
@@ -332,7 +381,8 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         ...state,
         selection: { type: "node", nodeId: action.nodeId, node: action.node },
         // Auto-peek when selecting if inspector is closed
-        inspectorMode: state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
+        inspectorMode:
+          state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
       };
     }
 
@@ -341,7 +391,8 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       return {
         ...state,
         selection: { type: "edge", edgeId: action.edgeId, edge: action.edge },
-        inspectorMode: state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
+        inspectorMode:
+          state.inspectorMode === "closed" ? "peek" : state.inspectorMode,
       };
     }
 
@@ -365,7 +416,10 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       if (prev.type === "node" && prev.nodeId !== action.nodeId) {
         return {
           ...state,
-          selection: { type: "multi", nodeIds: new Set([prev.nodeId, action.nodeId]) },
+          selection: {
+            type: "multi",
+            nodeIds: new Set([prev.nodeId, action.nodeId]),
+          },
         };
       }
 
@@ -381,7 +435,8 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
         ...state,
         selection: DEFAULT_SELECTION,
         // Auto-close when in peek mode
-        inspectorMode: state.inspectorMode === "peek" ? "closed" : state.inspectorMode,
+        inspectorMode:
+          state.inspectorMode === "peek" ? "closed" : state.inspectorMode,
       };
     }
 
@@ -398,17 +453,26 @@ export function explorerReducer(state: ExplorerState, action: ExplorerAction): E
       } else {
         newEdgeTypes.add(action.edgeType);
       }
-      return { ...state, filters: { ...state.filters, edgeTypes: newEdgeTypes } };
+      return {
+        ...state,
+        filters: { ...state.filters, edgeTypes: newEdgeTypes },
+      };
     }
 
     case "SET_ALL_EDGE_TYPES": {
       if (state.status !== "ready") return state;
-      return { ...state, filters: { ...state.filters, edgeTypes: action.edgeTypes } };
+      return {
+        ...state,
+        filters: { ...state.filters, edgeTypes: action.edgeTypes },
+      };
     }
 
     case "CLEAR_ALL_EDGE_TYPES": {
       if (state.status !== "ready") return state;
-      return { ...state, filters: { ...state.filters, edgeTypes: new Set<EdgeType>() } };
+      return {
+        ...state,
+        filters: { ...state.filters, edgeTypes: new Set<EdgeType>() },
+      };
     }
 
     case "SET_LAYOUT": {

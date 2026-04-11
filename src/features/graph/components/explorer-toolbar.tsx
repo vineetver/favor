@@ -1,18 +1,8 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shared/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@shared/components/ui/popover";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +11,19 @@ import {
   DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { Label } from "@shared/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@shared/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shared/components/ui/select";
 import { Slider } from "@shared/components/ui/slider";
-import { Checkbox } from "@shared/components/ui/checkbox";
-import { cn } from "@infra/utils";
 import {
   ArrowLeft,
   ChevronRight,
@@ -38,18 +38,22 @@ import {
   SplitSquareVertical,
 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
-import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
-import { EDGE_TYPE_CONFIG } from "../types/edge";
-import { displayEntityType } from "../utils/display-names";
-import { isBranchStep } from "../config/lenses";
+import type {
+  ExplorerConfig,
+  ExplorerTemplate,
+  SeedEntity,
+} from "../config/explorer-config";
 import type { ExplorerLayoutType } from "../config/layout";
-import type { ViewMode, TemplateId } from "../types/state";
-import type { GraphFilters } from "../types/filters";
-import type { GraphSchema } from "../types/schema";
-import type { EdgeType } from "../types/edge";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
-import type { SeedEntity, ExplorerConfig, ExplorerTemplate } from "../config/explorer-config";
+import { EXPLORER_LAYOUT_OPTIONS } from "../config/layout";
 import type { QueryStep } from "../config/lenses";
+import { isBranchStep } from "../config/lenses";
+import type { EdgeType } from "../types/edge";
+import { EDGE_TYPE_CONFIG } from "../types/edge";
+import type { GraphFilters } from "../types/filters";
+import type { ExplorerEdge, ExplorerNode } from "../types/node";
+import type { GraphSchema } from "../types/schema";
+import type { TemplateId, ViewMode } from "../types/state";
+import { displayEntityType } from "../utils/display-names";
 
 // =============================================================================
 // Props
@@ -60,7 +64,10 @@ export interface ExplorerToolbarProps {
   config: ExplorerConfig;
   schema: GraphSchema | null | undefined;
   activeTemplate: TemplateId;
-  onTemplateChange: (id: TemplateId, opts?: { extraSteps?: QueryStep[]; stepLimit?: number }) => void;
+  onTemplateChange: (
+    id: TemplateId,
+    opts?: { extraSteps?: QueryStep[]; stepLimit?: number },
+  ) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   layout: ExplorerLayoutType;
@@ -79,13 +86,22 @@ export interface ExplorerToolbarProps {
 // View Toggle
 // =============================================================================
 
-function ViewToggle({ viewMode, onViewModeChange }: { viewMode: ViewMode; onViewModeChange: (m: ViewMode) => void }) {
+function ViewToggle({
+  viewMode,
+  onViewModeChange,
+}: {
+  viewMode: ViewMode;
+  onViewModeChange: (m: ViewMode) => void;
+}) {
   return (
     <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
       <Button
         variant="ghost"
         size="sm"
-        className={cn("h-7 px-2", viewMode === "graph" && "bg-background shadow-sm")}
+        className={cn(
+          "h-7 px-2",
+          viewMode === "graph" && "bg-background shadow-sm",
+        )}
         onClick={() => onViewModeChange("graph")}
         title="Graph View"
       >
@@ -94,7 +110,10 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: ViewMode; onView
       <Button
         variant="ghost"
         size="sm"
-        className={cn("h-7 px-2", viewMode === "list" && "bg-background shadow-sm")}
+        className={cn(
+          "h-7 px-2",
+          viewMode === "list" && "bg-background shadow-sm",
+        )}
         onClick={() => onViewModeChange("list")}
         title="List View"
       >
@@ -103,7 +122,10 @@ function ViewToggle({ viewMode, onViewModeChange }: { viewMode: ViewMode; onView
       <Button
         variant="ghost"
         size="sm"
-        className={cn("h-7 px-2", viewMode === "split" && "bg-background shadow-sm")}
+        className={cn(
+          "h-7 px-2",
+          viewMode === "split" && "bg-background shadow-sm",
+        )}
         onClick={() => onViewModeChange("split")}
         title="Split View"
       >
@@ -160,7 +182,13 @@ function ExportDropdown({
 
   const handleExportEdgesCsv = useCallback(() => {
     if (!edges) return;
-    const header = ["type", "source_id", "target_id", "num_sources", "num_experiments"];
+    const header = [
+      "type",
+      "source_id",
+      "target_id",
+      "num_sources",
+      "num_experiments",
+    ];
     const rows = Array.from(edges.values()).map((e) => [
       escapeCsvField(e.type),
       escapeCsvField(e.sourceId),
@@ -192,7 +220,11 @@ function ExportDropdown({
         fields: e.fields,
       })),
     };
-    downloadFile(`${seedLabel}_subgraph.json`, JSON.stringify(data, null, 2), "application/json");
+    downloadFile(
+      `${seedLabel}_subgraph.json`,
+      JSON.stringify(data, null, 2),
+      "application/json",
+    );
   }, [nodes, edges, seedLabel]);
 
   const nodeCount = nodes?.size ?? 0;
@@ -201,16 +233,26 @@ function ExportDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 gap-1.5 text-muted-foreground"
+        >
           <Download className="w-3.5 h-3.5" />
           <span className="text-xs">Export</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem onClick={handleExportNodesCsv} disabled={nodeCount === 0}>
+        <DropdownMenuItem
+          onClick={handleExportNodesCsv}
+          disabled={nodeCount === 0}
+        >
           Nodes as CSV ({nodeCount})
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleExportEdgesCsv} disabled={edgeCount === 0}>
+        <DropdownMenuItem
+          onClick={handleExportEdgesCsv}
+          disabled={edgeCount === 0}
+        >
           Edges as CSV ({edgeCount})
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -235,9 +277,18 @@ interface AddHopPopoverProps {
   disabled: boolean;
 }
 
-function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClearHops, disabled }: AddHopPopoverProps) {
+function AddHopPopover({
+  config,
+  extraHops,
+  templateStepCount,
+  onAddHop,
+  onClearHops,
+  disabled,
+}: AddHopPopoverProps) {
   const [open, setOpen] = useState(false);
-  const [selectedEdgeTypes, setSelectedEdgeTypes] = useState<Set<EdgeType>>(new Set());
+  const [selectedEdgeTypes, setSelectedEdgeTypes] = useState<Set<EdgeType>>(
+    new Set(),
+  );
   const [direction, setDirection] = useState<"in" | "out" | "both">("both");
   const [limit, setLimit] = useState(20);
 
@@ -291,12 +342,17 @@ function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClear
         <PopoverContent align="start" className="w-80 p-3">
           <div className="space-y-3">
             <div>
-              <Label className="text-xs font-medium text-foreground mb-1.5 block">Edge Types</Label>
+              <Label className="text-xs font-medium text-foreground mb-1.5 block">
+                Edge Types
+              </Label>
               <div className="max-h-40 overflow-y-auto space-y-1 border border-border rounded-md p-2">
                 {availableEdgeTypes.slice(0, 30).map((et) => {
                   const cfg = EDGE_TYPE_CONFIG[et];
                   return (
-                    <label key={et} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                    <label
+                      key={et}
+                      className="flex items-center gap-2 py-0.5 cursor-pointer"
+                    >
                       <Checkbox
                         checked={selectedEdgeTypes.has(et)}
                         onCheckedChange={(checked) => {
@@ -310,7 +366,9 @@ function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClear
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: cfg.color }}
                       />
-                      <span className="text-xs text-foreground truncate">{cfg.label}</span>
+                      <span className="text-xs text-foreground truncate">
+                        {cfg.label}
+                      </span>
                     </label>
                   );
                 })}
@@ -318,7 +376,9 @@ function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClear
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-foreground mb-1.5 block">Direction</Label>
+              <Label className="text-xs font-medium text-foreground mb-1.5 block">
+                Direction
+              </Label>
               <div className="flex items-center gap-1">
                 {(["out", "in", "both"] as const).map((d) => (
                   <Button
@@ -327,11 +387,15 @@ function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClear
                     size="sm"
                     className={cn(
                       "h-7 px-3 text-xs flex-1",
-                      direction === d && "bg-background shadow-sm"
+                      direction === d && "bg-background shadow-sm",
                     )}
                     onClick={() => setDirection(d)}
                   >
-                    {d === "out" ? "Outgoing" : d === "in" ? "Incoming" : "Both"}
+                    {d === "out"
+                      ? "Outgoing"
+                      : d === "in"
+                        ? "Incoming"
+                        : "Both"}
                   </Button>
                 ))}
               </div>
@@ -339,8 +403,12 @@ function AddHopPopover({ config, extraHops, templateStepCount, onAddHop, onClear
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <Label className="text-xs font-medium text-foreground">Limit</Label>
-                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{limit}</span>
+                <Label className="text-xs font-medium text-foreground">
+                  Limit
+                </Label>
+                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {limit}
+                </span>
               </div>
               <Slider
                 value={[limit]}
@@ -389,7 +457,13 @@ interface ScoreFilterProps {
   disabled: boolean;
 }
 
-function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disabled }: ScoreFilterProps) {
+function ScoreFilter({
+  schema,
+  activeTemplate,
+  filters,
+  onFiltersChange,
+  disabled,
+}: ScoreFilterProps) {
   const scoreThreshold = filters.scoreThreshold;
   // Determine the common score field from the template's edge types
   const scoreField = useMemo(() => {
@@ -431,7 +505,9 @@ function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disable
 
   if (!scoreField) return null;
 
-  const displayName = scoreField.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const displayName = scoreField
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   const hasThreshold = scoreThreshold !== null;
 
   return (
@@ -442,7 +518,7 @@ function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disable
           size="sm"
           className={cn(
             "h-7 px-2 gap-1 text-xs",
-            hasThreshold && "border-primary/30 bg-primary/5 text-foreground"
+            hasThreshold && "border-primary/30 bg-primary/5 text-foreground",
           )}
           disabled={disabled}
         >
@@ -458,7 +534,9 @@ function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disable
       <PopoverContent align="start" className="w-64 p-3">
         <div className="space-y-3">
           <div>
-            <Label className="text-xs font-medium text-foreground">{displayName} Threshold</Label>
+            <Label className="text-xs font-medium text-foreground">
+              {displayName} Threshold
+            </Label>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Minimum score to include edges
             </p>
@@ -473,11 +551,13 @@ function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disable
             </div>
             <Slider
               value={[scoreThreshold ?? 0]}
-              onValueChange={([v]) => onFiltersChange({
-                ...filters,
-                scoreThreshold: v > 0 ? v : null,
-                scoreField: v > 0 ? scoreField : null,
-              })}
+              onValueChange={([v]) =>
+                onFiltersChange({
+                  ...filters,
+                  scoreThreshold: v > 0 ? v : null,
+                  scoreField: v > 0 ? scoreField : null,
+                })
+              }
               min={0}
               max={1}
               step={0.05}
@@ -488,7 +568,13 @@ function ScoreFilter({ schema, activeTemplate, filters, onFiltersChange, disable
               variant="ghost"
               size="sm"
               className="w-full h-7 text-xs"
-              onClick={() => onFiltersChange({ ...filters, scoreThreshold: null, scoreField: null })}
+              onClick={() =>
+                onFiltersChange({
+                  ...filters,
+                  scoreThreshold: null,
+                  scoreField: null,
+                })
+              }
             >
               Clear threshold
             </Button>
@@ -516,14 +602,24 @@ function MinSourcesFilter({
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 px-2 gap-1 text-xs" disabled={disabled}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 gap-1 text-xs"
+            disabled={disabled}
+          >
             Min sources
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-52 p-3">
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-foreground">Minimum Evidence Sources</Label>
-            <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+            <Label className="text-xs font-medium text-foreground">
+              Minimum Evidence Sources
+            </Label>
+            <Select
+              value={String(value)}
+              onValueChange={(v) => onChange(Number(v))}
+            >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -583,17 +679,18 @@ function ExplorerToolbarInner({
 
   const currentTemplate = useMemo(
     () => config.templates.find((t) => t.id === activeTemplate),
-    [config.templates, activeTemplate]
+    [config.templates, activeTemplate],
   );
 
   // Helper to build opts from current toolbar state
   const buildOpts = useCallback(
     (overrides?: { hops?: QueryStep[]; limit?: number }) => {
-      const hops = overrides?.hops ?? (extraHops.length > 0 ? extraHops : undefined);
+      const hops =
+        overrides?.hops ?? (extraHops.length > 0 ? extraHops : undefined);
       const limit = overrides?.limit ?? stepLimit;
       return { extraSteps: hops, stepLimit: limit };
     },
-    [extraHops, stepLimit]
+    [extraHops, stepLimit],
   );
 
   const handleAddHop = useCallback(
@@ -602,7 +699,7 @@ function ExplorerToolbarInner({
       setExtraHops(newHops);
       onTemplateChange(activeTemplate, buildOpts({ hops: newHops }));
     },
-    [extraHops, activeTemplate, onTemplateChange, buildOpts]
+    [extraHops, activeTemplate, onTemplateChange, buildOpts],
   );
 
   const handleClearHops = useCallback(() => {
@@ -615,14 +712,14 @@ function ExplorerToolbarInner({
       setStepLimit(value);
       onTemplateChange(activeTemplate, buildOpts({ limit: value }));
     },
-    [activeTemplate, onTemplateChange, buildOpts]
+    [activeTemplate, onTemplateChange, buildOpts],
   );
 
   const handleMinSourcesChange = useCallback(
     (value: number) => {
       onFiltersChange({ ...filters, minSources: value });
     },
-    [filters, onFiltersChange]
+    [filters, onFiltersChange],
   );
 
   const handleReset = useCallback(() => {
@@ -646,7 +743,11 @@ function ExplorerToolbarInner({
             className="h-7 w-7 p-0 flex-shrink-0"
             onClick={onToggleLeftDrawer}
           >
-            {leftDrawerOpen ? <PanelLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {leftDrawerOpen ? (
+              <PanelLeft className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
           </Button>
 
           <a
@@ -660,10 +761,16 @@ function ExplorerToolbarInner({
           <span className="text-muted-foreground/40">/</span>
 
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-xs text-muted-foreground">{displayEntityType(seed.type)}:</span>
-            <span className="text-sm font-semibold text-foreground truncate">{seed.label}</span>
+            <span className="text-xs text-muted-foreground">
+              {displayEntityType(seed.type)}:
+            </span>
+            <span className="text-sm font-semibold text-foreground truncate">
+              {seed.label}
+            </span>
             <ChevronRight className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-            <span className="text-xs text-muted-foreground flex-shrink-0">Network</span>
+            <span className="text-xs text-muted-foreground flex-shrink-0">
+              Network
+            </span>
           </div>
 
           {isExpanding && (
@@ -677,7 +784,10 @@ function ExplorerToolbarInner({
         <div className="flex items-center gap-2 flex-shrink-0">
           <ExportDropdown nodes={nodes} edges={edges} seedLabel={seed.label} />
 
-          <Select value={layout} onValueChange={(v) => onLayoutChange(v as ExplorerLayoutType)}>
+          <Select
+            value={layout}
+            onValueChange={(v) => onLayoutChange(v as ExplorerLayoutType)}
+          >
             <SelectTrigger className="h-7 w-[120px] text-xs border-0 bg-transparent">
               <SelectValue />
             </SelectTrigger>
@@ -698,8 +808,14 @@ function ExplorerToolbarInner({
       <div className="flex items-center gap-2 px-3 py-1.5 bg-background">
         {/* Step Limit */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground flex-shrink-0">Limit:</span>
-          <Select value={String(stepLimit)} onValueChange={(v) => handleStepLimitChange(Number(v))} disabled={isExpanding}>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            Limit:
+          </span>
+          <Select
+            value={String(stepLimit)}
+            onValueChange={(v) => handleStepLimitChange(Number(v))}
+            disabled={isExpanding}
+          >
             <SelectTrigger className="h-7 w-[72px] text-xs">
               <SelectValue />
             </SelectTrigger>

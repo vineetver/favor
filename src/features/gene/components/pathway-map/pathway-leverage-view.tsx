@@ -29,16 +29,15 @@ import {
   type EnrichmentState,
   EXPANSION_LEVEL_OPTIONS,
   type ExpansionLevel,
-  getExpansionConfig,
   type GraphNode,
+  getExpansionConfig,
   groupPathwaysByCategory,
   PATHWAY_LAYOUT_OPTIONS,
+  PATHWAY_SORT_OPTIONS,
   type PathwayLayoutType,
-  PATHWAY_LIMIT_OPTIONS,
   type PathwayLeverageViewProps,
   type PathwayNode,
   type PathwaySelection,
-  PATHWAY_SORT_OPTIONS,
   type PathwaySortOption,
 } from "./types";
 
@@ -59,7 +58,7 @@ interface GraphContainerProps {
   onNodeClick: (node: GraphNode) => void;
   onNodeHover: (
     node: PathwayNode | null,
-    position: { x: number; y: number } | null
+    position: { x: number; y: number } | null,
   ) => void;
 }
 
@@ -105,14 +104,17 @@ function PathwayLeverageViewInner({
   const [viewMode, setViewMode] = useState<ViewMode>("graph");
   const [layout, setLayout] = useState<PathwayLayoutType>("cose-bilkent");
   const [sortOption, setSortOption] = useState<PathwaySortOption>("relevance");
-  const [expansionLevel, setExpansionLevel] = useState<ExpansionLevel>("standard");
+  const [expansionLevel, setExpansionLevel] =
+    useState<ExpansionLevel>("standard");
 
   // Derive limit from expansion level
   const expansionConfig = getExpansionConfig(expansionLevel);
   const limit = String(expansionConfig.nodeLimit);
 
   // Selection state - discriminated union
-  const [selection, setSelection] = useState<PathwaySelection>({ type: "none" });
+  const [selection, setSelection] = useState<PathwaySelection>({
+    type: "none",
+  });
 
   // Hover state
   const [hoveredPathway, setHoveredPathway] = useState<PathwayNode | null>(
@@ -136,9 +138,10 @@ function PathwayLeverageViewInner({
   });
 
   // Disease enrichment state (lazy loaded on demand)
-  const [diseaseEnrichment, setDiseaseEnrichment] = useState<DiseaseEnrichmentState>({
-    status: "idle",
-  });
+  const [diseaseEnrichment, setDiseaseEnrichment] =
+    useState<DiseaseEnrichmentState>({
+      status: "idle",
+    });
 
   // Sort pathways based on selected sort option
   const sortedPathways = useMemo(() => {
@@ -377,7 +380,8 @@ function PathwayLeverageViewInner({
               {seedGeneSymbol}
               {limitedPathways.length < pathways.length && (
                 <span className="text-muted-foreground">
-                  {" "}({expansionLevel} view: {limitedPathways.length})
+                  {" "}
+                  ({expansionLevel} view: {limitedPathways.length})
                 </span>
               )}
             </p>

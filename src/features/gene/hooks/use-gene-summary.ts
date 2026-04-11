@@ -76,35 +76,32 @@ export function useGeneSummary({
 
       switch (response.status) {
         case "completed":
-          queryClient.setQueryData<GeneSummaryState>(
-            ["gene-summary", geneId],
-            { status: "completed", summary: response.content! },
-          );
+          queryClient.setQueryData<GeneSummaryState>(["gene-summary", geneId], {
+            status: "completed",
+            summary: response.content!,
+          });
           return;
 
         case "failed":
-          queryClient.setQueryData<GeneSummaryState>(
-            ["gene-summary", geneId],
-            { status: "failed", error: response.error ?? "Generation failed" },
-          );
+          queryClient.setQueryData<GeneSummaryState>(["gene-summary", geneId], {
+            status: "failed",
+            error: response.error ?? "Generation failed",
+          });
           return;
 
         case "pending":
-          queryClient.setQueryData<GeneSummaryState>(
-            ["gene-summary", geneId],
-            { status: "pending", requestId: response.request_id },
-          );
+          queryClient.setQueryData<GeneSummaryState>(["gene-summary", geneId], {
+            status: "pending",
+            requestId: response.request_id,
+          });
           break;
 
         case "generating":
-          queryClient.setQueryData<GeneSummaryState>(
-            ["gene-summary", geneId],
-            {
-              status: "generating",
-              requestId: response.request_id,
-              estimatedSeconds: response.estimated_seconds ?? undefined,
-            },
-          );
+          queryClient.setQueryData<GeneSummaryState>(["gene-summary", geneId], {
+            status: "generating",
+            requestId: response.request_id,
+            estimatedSeconds: response.estimated_seconds ?? undefined,
+          });
           break;
       }
 

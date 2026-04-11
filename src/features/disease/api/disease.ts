@@ -1,6 +1,5 @@
-import type { DiseaseEntityResponse } from "../types";
-
 import { API_BASE } from "@/config/api";
+import type { DiseaseEntityResponse } from "../types";
 
 /** Edge types to fetch for the disease detail page */
 const DISEASE_EDGE_TYPES = [

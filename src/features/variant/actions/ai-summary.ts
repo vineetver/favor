@@ -1,7 +1,7 @@
 "use server";
 
-import { API_BASE } from "@/config/api";
 import { cookies } from "next/headers";
+import { API_BASE } from "@/config/api";
 
 async function getAuthCookie(): Promise<string> {
   const cookieStore = await cookies();
@@ -75,8 +75,13 @@ export async function generateVariantSummary(params: {
 }): Promise<GenerateResponse> {
   const cookie = await getAuthCookie();
 
-  if (typeof params.prompt !== "string" || params.prompt.length > MAX_PROMPT_LENGTH) {
-    throw new Error(`Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`);
+  if (
+    typeof params.prompt !== "string" ||
+    params.prompt.length > MAX_PROMPT_LENGTH
+  ) {
+    throw new Error(
+      `Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`,
+    );
   }
   if (typeof params.vcf !== "string" || params.vcf.length > 64) {
     throw new Error("Invalid vcf identifier");

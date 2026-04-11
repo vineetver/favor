@@ -2,7 +2,12 @@
 
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@shared/components/ui/card";
 import { Progress } from "@shared/components/ui/progress";
 import { StatusBadge } from "@shared/components/ui/status-badge";
 import {
@@ -12,7 +17,6 @@ import {
   Clock,
   Copy,
   Download,
-  ExternalLink,
   FileText,
   Loader2,
   MessageSquareText,
@@ -20,11 +24,15 @@ import {
   StopCircle,
   XCircle,
 } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ERROR_RECOVERY_CONFIG } from "../constants";
 import { useTick } from "../hooks/use-tick";
-import { ERROR_RECOVERY_CONFIG, JOB_STATE_CONFIG } from "../constants";
-import { formatBytes, formatDuration, formatNumber, formatTime } from "../lib/format";
+import {
+  formatBytes,
+  formatDuration,
+  formatNumber,
+  formatTime,
+} from "../lib/format";
 import type {
   JobCancelled,
   JobCancelRequested,
@@ -75,11 +83,11 @@ function LiveDuration({
   completedAt?: string;
 }) {
   // Uses a single global interval shared across all LiveDuration instances
-  const tick = useTick();
+  const _tick = useTick();
   const duration = useMemo(
     () => formatDuration(startedAt, completedAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick drives re-compute for live durations
-    [startedAt, completedAt, completedAt ? 0 : tick],
+    [startedAt, completedAt],
   );
 
   return <span>{duration}</span>;
@@ -107,7 +115,12 @@ export function PendingJobCard({
   className,
 }: PendingJobCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -130,7 +143,9 @@ export function PendingJobCard({
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
             <Clock className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-foreground">Waiting in queue</p>
+          <p className="text-sm font-medium text-foreground">
+            Waiting in queue
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
             Your job will start processing shortly
           </p>
@@ -191,17 +206,23 @@ export function RunningJobCard({
 
   // Annotation stats (always available once past RESOLVING)
   const totalProcessed = progress.fetched || 0;
-  const foundPercent = totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
-  const notFoundPercent = totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
-  const errorPercent = totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
+  const foundPercent =
+    totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
+  const notFoundPercent =
+    totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
+  const errorPercent =
+    totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
 
   // Enrichment progress (only during ENRICHING)
   const packsTotal = progress.packs_total ?? 0;
   const packsCompleted = progress.packs_completed ?? 0;
-  const enrichmentPercent = packsTotal > 0 ? (packsCompleted / packsTotal) * 100 : 0;
+  const enrichmentPercent =
+    packsTotal > 0 ? (packsCompleted / packsTotal) * 100 : 0;
 
   // Display percent: enrichment progress during ENRICHING, annotation otherwise
-  const displayPercent = isEnriching ? enrichmentPercent : (progress.percent ?? 0);
+  const _displayPercent = isEnriching
+    ? enrichmentPercent
+    : (progress.percent ?? 0);
 
   const getProgressLabel = () => {
     switch (progress.stage) {
@@ -219,7 +240,12 @@ export function RunningJobCard({
   };
 
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -247,13 +273,17 @@ export function RunningJobCard({
             <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-xs font-medium text-emerald-800">Annotation complete</span>
+                <span className="text-xs font-medium text-emerald-800">
+                  Annotation complete
+                </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-emerald-700 ml-5.5">
                 <span>{formatNumber(progress.found)} found</span>
                 <span>{formatNumber(progress.not_found)} not found</span>
                 {progress.errors > 0 && (
-                  <span className="text-destructive">{formatNumber(progress.errors)} errors</span>
+                  <span className="text-destructive">
+                    {formatNumber(progress.errors)} errors
+                  </span>
                 )}
               </div>
             </div>
@@ -268,7 +298,10 @@ export function RunningJobCard({
                   {packsCompleted}/{packsTotal} packs
                 </span>
               </div>
-              <Progress value={Math.min(100, enrichmentPercent)} className="h-2" />
+              <Progress
+                value={Math.min(100, enrichmentPercent)}
+                className="h-2"
+              />
             </div>
           </>
         ) : (
@@ -283,7 +316,10 @@ export function RunningJobCard({
                   {Math.min(100, Math.round(progress.percent ?? 0))}%
                 </span>
               </div>
-              <Progress value={Math.min(100, progress.percent ?? 0)} className="h-2" />
+              <Progress
+                value={Math.min(100, progress.percent ?? 0)}
+                className="h-2"
+              />
             </div>
 
             {/* Stats grid */}
@@ -372,7 +408,12 @@ export function CancelRequestedJobCard({
   className,
 }: CancelRequestedJobCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-amber-200 py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-amber-200 py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-amber-200 px-6 py-4 bg-amber-50/50">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -395,7 +436,9 @@ export function CancelRequestedJobCard({
           <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
             <Loader2 className="w-6 h-6 text-amber-600 animate-spin" />
           </div>
-          <p className="text-sm font-medium text-amber-800">Cancellation in progress</p>
+          <p className="text-sm font-medium text-amber-800">
+            Cancellation in progress
+          </p>
           <p className="text-xs text-amber-600 mt-1">
             Please wait while the job is being stopped
           </p>
@@ -434,12 +477,20 @@ export function CompletedJobCard({
 
   // Calculate stat percentages
   const totalProcessed = progress.found + progress.not_found + progress.errors;
-  const foundPercent = totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
-  const notFoundPercent = totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
-  const errorPercent = totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
+  const foundPercent =
+    totalProcessed > 0 ? (progress.found / totalProcessed) * 100 : 0;
+  const notFoundPercent =
+    totalProcessed > 0 ? (progress.not_found / totalProcessed) * 100 : 0;
+  const errorPercent =
+    totalProcessed > 0 ? (progress.errors / totalProcessed) * 100 : 0;
 
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -466,9 +517,12 @@ export function CompletedJobCard({
                 <Download className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-900">Results Ready</p>
+                <p className="text-sm font-semibold text-emerald-900">
+                  Results Ready
+                </p>
                 <p className="text-xs text-emerald-600 mt-0.5">
-                  {output.bytes_human || formatBytes(output.bytes)} Parquet format
+                  {output.bytes_human || formatBytes(output.bytes)} Parquet
+                  format
                 </p>
               </div>
             </div>
@@ -507,7 +561,9 @@ export function CompletedJobCard({
           <div className="flex items-center gap-4">
             <span>Completed: {formatTime(job.completed_at)}</span>
             <span className="font-medium">
-              Duration: {job.timing.total_human || formatDuration(job.started_at, job.completed_at)}
+              Duration:{" "}
+              {job.timing.total_human ||
+                formatDuration(job.started_at, job.completed_at)}
             </span>
           </div>
           {progress.total_rows != null && (
@@ -524,20 +580,35 @@ export function CompletedJobCard({
       <CardFooter className="border-t border-border px-6 py-4 bg-muted/50">
         <div className="flex items-center justify-between w-full gap-3">
           {onDownloadManifest && (
-            <Button type="button" variant="ghost" size="sm" onClick={onDownloadManifest}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onDownloadManifest}
+            >
               <FileText className="w-4 h-4" />
               Manifest
             </Button>
           )}
           <div className="flex items-center gap-2 ml-auto">
             {onOpenAgent && (
-              <Button type="button" variant="outline" size="sm" onClick={onOpenAgent}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenAgent}
+              >
                 <MessageSquareText className="w-4 h-4" />
                 Open in AI Agent
               </Button>
             )}
             {onOpenAnalytics && (
-              <Button type="button" variant="outline" size="sm" onClick={onOpenAnalytics}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenAnalytics}
+              >
                 <ArrowUpRight className="w-4 h-4" />
                 Open Analytics
               </Button>
@@ -580,7 +651,12 @@ export function FailedJobCard({
   };
 
   return (
-    <Card className={cn("overflow-hidden border border-rose-200 py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-rose-200 py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-rose-200 px-6 py-4 bg-rose-50/50">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -604,7 +680,9 @@ export function FailedJobCard({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-rose-800">{recovery.title}</p>
+              <p className="text-sm font-semibold text-rose-800">
+                {recovery.title}
+              </p>
               <p className="text-sm text-rose-700 mt-1">
                 {job.error_message || recovery.description}
               </p>
@@ -677,7 +755,12 @@ export function CancelledJobCard({
   className,
 }: CancelledJobCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -700,7 +783,9 @@ export function CancelledJobCard({
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
             <StopCircle className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-foreground">Job was cancelled</p>
+          <p className="text-sm font-medium text-foreground">
+            Job was cancelled
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
             Cancelled at {formatTime(job.completed_at)}
           </p>

@@ -1,16 +1,16 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
-import { BarChart } from "@shared/components/charts";
-import type { ChartDataRow, ColorScheme } from "@shared/components/charts";
 import { NODE_TYPE_COLORS } from "@features/graph/config/styling";
+import type { ChartDataRow, ColorScheme } from "@shared/components/charts";
+import { BarChart } from "@shared/components/charts";
+import { memo, useCallback, useMemo } from "react";
 import type { BarChartVizSpec } from "../../viz/types";
 
 /** Build a categorical color map from entity types present in data */
-function buildColorScheme(
-  data: BarChartVizSpec["data"],
-): ColorScheme {
-  const types = new Set(data.map((d) => d.category).filter(Boolean) as string[]);
+function buildColorScheme(data: BarChartVizSpec["data"]): ColorScheme {
+  const types = new Set(
+    data.map((d) => d.category).filter(Boolean) as string[],
+  );
   if (types.size < 2) return { type: "single", color: "#8b5cf6" };
 
   const colors: Record<string, string> = {};
@@ -21,7 +21,11 @@ function buildColorScheme(
   return { type: "categorical", colors };
 }
 
-export const AgentBarChart = memo(function AgentBarChart({ spec }: { spec: BarChartVizSpec }) {
+export const AgentBarChart = memo(function AgentBarChart({
+  spec,
+}: {
+  spec: BarChartVizSpec;
+}) {
   const chartData = useMemo<ChartDataRow[]>(
     () =>
       spec.data.map((d) => ({

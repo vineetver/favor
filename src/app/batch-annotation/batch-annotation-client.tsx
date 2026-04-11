@@ -1,9 +1,13 @@
 "use client";
 
 import { BatchWizard } from "@features/batch";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@shared/components/ui/collapsible";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@shared/components/ui/collapsible";
 
 export function BatchAnnotationClient() {
   return (
@@ -55,7 +59,12 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
         <thead>
           <tr className="bg-muted/50">
             {headers.map((h) => (
-              <th key={h} className="text-left py-2 px-3 font-semibold text-foreground">{h}</th>
+              <th
+                key={h}
+                className="text-left py-2 px-3 font-semibold text-foreground"
+              >
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
@@ -63,7 +72,9 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
           {rows.map((row, i) => (
             <tr key={i} className="border-t border-border">
               {row.map((cell, j) => (
-                <td key={j} className="py-2 px-3 text-muted-foreground">{cell}</td>
+                <td key={j} className="py-2 px-3 text-muted-foreground">
+                  {cell}
+                </td>
               ))}
             </tr>
           ))}
@@ -104,7 +115,8 @@ function FileFormatHelp() {
             ]}
           />
           <p className="text-xs text-muted-foreground mt-2">
-            If no format hint is provided, the system auto-detects by inspecting delimiters in the first line.
+            If no format hint is provided, the system auto-detects by inspecting
+            delimiters in the first line.
           </p>
 
           {/* Variant key types */}
@@ -113,27 +125,51 @@ function FileFormatHelp() {
             headers={["Key type", "Example", "Description"]}
             rows={[
               ["rsID", "rs1234567", "dbSNP reference SNP ID"],
-              ["VCF notation", "1-10001-A-T", "CHROM-POS-REF-ALT (separators -, :, or / accepted)"],
+              [
+                "VCF notation",
+                "1-10001-A-T",
+                "CHROM-POS-REF-ALT (separators -, :, or / accepted)",
+              ],
               ["VID", "vid:12345678", "Internal variant ID"],
             ]}
           />
           <p className="text-xs text-muted-foreground mt-2">
-            Mixed key types within a single file are supported but may be slower to process.
+            Mixed key types within a single file are supported but may be slower
+            to process.
           </p>
 
           {/* Column detection */}
           <SectionTitle>Column detection</SectionTitle>
           <p className="text-xs text-muted-foreground mb-3">
-            For multi-column files, the system automatically identifies columns by name. Recognized aliases:
+            For multi-column files, the system automatically identifies columns
+            by name. Recognized aliases:
           </p>
           <div className="space-y-1.5 bg-muted/30 rounded-lg p-3">
-            <AliasGroup label="Chromosome" aliases="chr, chrom, #CHROM, contig" />
-            <AliasGroup label="Position" aliases="pos, bp, base_pair_location" />
-            <AliasGroup label="Reference" aliases="ref, reference, reference_allele" />
-            <AliasGroup label="Alternate" aliases="alt, alternate, alternate_allele" />
-            <AliasGroup label="Effect allele" aliases="a1, ea, allele1, effectallele" />
+            <AliasGroup
+              label="Chromosome"
+              aliases="chr, chrom, #CHROM, contig"
+            />
+            <AliasGroup
+              label="Position"
+              aliases="pos, bp, base_pair_location"
+            />
+            <AliasGroup
+              label="Reference"
+              aliases="ref, reference, reference_allele"
+            />
+            <AliasGroup
+              label="Alternate"
+              aliases="alt, alternate, alternate_allele"
+            />
+            <AliasGroup
+              label="Effect allele"
+              aliases="a1, ea, allele1, effectallele"
+            />
             <AliasGroup label="Other allele" aliases="a2, oa, nea, allele2" />
-            <AliasGroup label="Variant ID" aliases="rsid, snp, snpid, marker, variant_id" />
+            <AliasGroup
+              label="Variant ID"
+              aliases="rsid, snp, snpid, marker, variant_id"
+            />
             <AliasGroup label="P-value" aliases="pvalue, p, pval, p.value" />
             <AliasGroup label="Beta" aliases="beta, effect, b, estimate" />
             <AliasGroup label="Std error" aliases="se, stderr, std_err" />
@@ -142,7 +178,10 @@ function FileFormatHelp() {
             <AliasGroup label="Sample size" aliases="n, sample_size, n_total" />
             <AliasGroup label="PIP" aliases="pip, posterior_prob" />
             <AliasGroup label="Log BF" aliases="log_bf, logbf, bf" />
-            <AliasGroup label="Credible set" aliases="cs_id, credible_set, cs" />
+            <AliasGroup
+              label="Credible set"
+              aliases="cs_id, credible_set, cs"
+            />
           </div>
 
           {/* Data types */}
@@ -150,25 +189,56 @@ function FileFormatHelp() {
           <MiniTable
             headers={["Data type", "Required columns", "Description"]}
             rows={[
-              ["GWAS summary stats", "p-value, beta, SE, chrom, pos (≥4)", "Standard GWAS results"],
-              ["Credible set", "PIP, credible set ID, chrom, pos (≥3)", "Fine-mapping credible sets"],
-              ["Fine-mapping", "PIP, log BF, chrom, pos (≥3)", "Fine-mapping output"],
-              ["Variant list", "Variant ID column (rsID / VID / VCF)", "Simple list of variants"],
+              [
+                "GWAS summary stats",
+                "p-value, beta, SE, chrom, pos (≥4)",
+                "Standard GWAS results",
+              ],
+              [
+                "Credible set",
+                "PIP, credible set ID, chrom, pos (≥3)",
+                "Fine-mapping credible sets",
+              ],
+              [
+                "Fine-mapping",
+                "PIP, log BF, chrom, pos (≥3)",
+                "Fine-mapping output",
+              ],
+              [
+                "Variant list",
+                "Variant ID column (rsID / VID / VCF)",
+                "Simple list of variants",
+              ],
             ]}
           />
           <p className="text-xs text-muted-foreground mt-2">
-            If detection confidence is below 80%, you&apos;ll be asked to confirm the detected type.
+            If detection confidence is below 80%, you&apos;ll be asked to
+            confirm the detected type.
           </p>
 
           {/* Resolution strategies */}
           <SectionTitle>Variant resolution</SectionTitle>
           <div className="space-y-1.5 text-xs text-muted-foreground">
-            <p><span className="font-medium text-foreground">1. CHROM + POS + REF + ALT</span> — fastest, most accurate</p>
-            <p><span className="font-medium text-foreground">2. rsID</span> — requires database lookup, slightly slower</p>
-            <p><span className="font-medium text-foreground">3. CHROM + POS only</span> — least specific, may match multiple variants</p>
+            <p>
+              <span className="font-medium text-foreground">
+                1. CHROM + POS + REF + ALT
+              </span>{" "}
+              — fastest, most accurate
+            </p>
+            <p>
+              <span className="font-medium text-foreground">2. rsID</span> —
+              requires database lookup, slightly slower
+            </p>
+            <p>
+              <span className="font-medium text-foreground">
+                3. CHROM + POS only
+              </span>{" "}
+              — least specific, may match multiple variants
+            </p>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Tip: files with ref and alt allele columns resolve faster than rsID-only files.
+            Tip: files with ref and alt allele columns resolve faster than
+            rsID-only files.
           </p>
 
           {/* Limits */}

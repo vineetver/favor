@@ -1,10 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  PaginatedResponse,
+  SignalRow,
+} from "@features/enrichment/api/region";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import type { SignalRow, PaginatedResponse } from "@features/enrichment/api/region";
+import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Fetch

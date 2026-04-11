@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { ExternalLink } from "@shared/components/ui/external-link";
+import type { Metadata } from "next";
 import { DatasetTabs } from "./dataset-tabs";
 
 export const metadata: Metadata = {

@@ -1,5 +1,5 @@
-import { loadChromBpnetData } from "@features/enrichment/loaders";
 import { ChromBpnetView } from "@features/enrichment/components/chrombpnet-view";
+import { loadChromBpnetData } from "@features/enrichment/loaders";
 import { parseRegion } from "@features/region/utils/parse-region";
 import { notFound } from "next/navigation";
 

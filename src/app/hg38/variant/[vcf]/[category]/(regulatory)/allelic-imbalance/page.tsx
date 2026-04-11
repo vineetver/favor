@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadAllelicImbalanceData } from "@features/enrichment/loaders";
 import { AllelicImbalanceView } from "@features/enrichment/components/allelic-imbalance-view";
+import { loadAllelicImbalanceData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function VariantAllelicImbalancePage({
@@ -19,10 +19,5 @@ export default async function VariantAllelicImbalancePage({
   const ref = result.selected.variant_vcf;
   const data = await loadAllelicImbalanceData(ref, tissueGroup);
 
-  return (
-    <AllelicImbalanceView
-      ref_id={ref}
-      {...data}
-    />
-  );
+  return <AllelicImbalanceView ref_id={ref} {...data} />;
 }

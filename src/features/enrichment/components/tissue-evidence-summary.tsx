@@ -1,8 +1,10 @@
 "use client";
 
+import type {
+  RegionSummary,
+  TissueGroupRow,
+} from "@features/enrichment/api/region";
 import { cn } from "@infra/utils";
-import type { RegionSummary, TissueGroupRow } from "@features/enrichment/api/region";
-import { formatCount, fmtScore } from "@shared/utils/tissue-format";
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
 import {
@@ -11,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { fmtScore, formatCount } from "@shared/utils/tissue-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -101,11 +104,18 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
     if (!t) {
       t = {
         tissue_name: name,
-        signals: null, chromatin: null, enhancers: null,
-        accessibility: null, loops: null, ase: null,
-        qtls: null, chrombpnet: null, variantAllelicImbalance: null,
+        signals: null,
+        chromatin: null,
+        enhancers: null,
+        accessibility: null,
+        loops: null,
+        ase: null,
+        qtls: null,
+        chrombpnet: null,
+        variantAllelicImbalance: null,
         crisprEssentiality: null,
-        convergence: 0, score: 0,
+        convergence: 0,
+        score: 0,
       };
       map.set(name, t);
     }
@@ -119,14 +129,27 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
   for (const r of data.loops) get(r.tissue_name).loops = r;
   for (const r of data.ase) get(r.tissue_name).ase = r;
   if (data.qtls?.length) for (const r of data.qtls) get(r.tissue_name).qtls = r;
-  if (data.chrombpnet?.length) for (const r of data.chrombpnet) get(r.tissue_name).chrombpnet = r;
-  if (data.variantAllelicImbalance?.length) for (const r of data.variantAllelicImbalance) get(r.tissue_name).variantAllelicImbalance = r;
-  if (data.crisprEssentiality?.length) for (const r of data.crisprEssentiality) get(r.tissue_name).crisprEssentiality = r;
+  if (data.chrombpnet?.length)
+    for (const r of data.chrombpnet) get(r.tissue_name).chrombpnet = r;
+  if (data.variantAllelicImbalance?.length)
+    for (const r of data.variantAllelicImbalance)
+      get(r.tissue_name).variantAllelicImbalance = r;
+  if (data.crisprEssentiality?.length)
+    for (const r of data.crisprEssentiality)
+      get(r.tissue_name).crisprEssentiality = r;
 
   for (const t of map.values()) {
     t.convergence = [
-      t.signals, t.chromatin, t.enhancers, t.accessibility, t.loops, t.ase,
-      t.qtls, t.chrombpnet, t.variantAllelicImbalance, t.crisprEssentiality,
+      t.signals,
+      t.chromatin,
+      t.enhancers,
+      t.accessibility,
+      t.loops,
+      t.ase,
+      t.qtls,
+      t.chrombpnet,
+      t.variantAllelicImbalance,
+      t.crisprEssentiality,
     ].filter(Boolean).length;
     t.score =
       (t.signals?.max_value ?? 0) +
@@ -150,13 +173,25 @@ function buildTissueEvidence(data: TissueEvidenceData): TissueEvidence[] {
 
 type Strength = "strong" | "moderate" | "low";
 
-function classifyValue(value: number, strong: number, moderate: number): Strength {
+function classifyValue(
+  value: number,
+  strong: number,
+  moderate: number,
+): Strength {
   if (value >= strong) return "strong";
   if (value >= moderate) return "moderate";
   return "low";
 }
 
-function StrengthCell({ strength, label, detail }: { strength: Strength; label: string; detail: string }) {
+function StrengthCell({
+  strength,
+  label,
+  detail,
+}: {
+  strength: Strength;
+  label: string;
+  detail: string;
+}) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -182,7 +217,9 @@ function StrengthCell({ strength, label, detail }: { strength: Strength; label: 
             </span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs max-w-xs">{detail}</TooltipContent>
+        <TooltipContent side="top" className="text-xs max-w-xs">
+          {detail}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -206,7 +243,7 @@ function ConvergenceDots({ tissue }: { tissue: TissueEvidence }) {
                   key={i}
                   className={cn(
                     "w-1.5 h-1.5 rounded-full transition-colors",
-                    i < count ? "bg-primary" : "bg-border"
+                    i < count ? "bg-primary" : "bg-border",
                   )}
                 />
               ))}
@@ -217,7 +254,9 @@ function ConvergenceDots({ tissue }: { tissue: TissueEvidence }) {
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs min-w-[160px]">
-          <p className="font-medium mb-1">{count} of {TOTAL_EVIDENCE_TYPES} data types</p>
+          <p className="font-medium mb-1">
+            {count} of {TOTAL_EVIDENCE_TYPES} data types
+          </p>
           {EVIDENCE_TYPES.map(({ key, label }, i) => (
             <p key={key} className={cn("pl-1", !present[i] && "opacity-30")}>
               {present[i] ? "✓" : "–"} {label}
@@ -233,7 +272,11 @@ function ConvergenceDots({ tissue }: { tissue: TissueEvidence }) {
 // Column definitions
 // ---------------------------------------------------------------------------
 
-const nullsLast: ColumnDef<TissueEvidence>["sortingFn"] = (rowA, rowB, colId) => {
+const nullsLast: ColumnDef<TissueEvidence>["sortingFn"] = (
+  rowA,
+  rowB,
+  colId,
+) => {
   const a = rowA.getValue<number | null>(colId);
   const b = rowB.getValue<number | null>(colId);
   if (a == null && b == null) return 0;
@@ -249,9 +292,14 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       accessorKey: "tissue_name",
       header: "Tissue",
       enableSorting: true,
-      meta: { description: "Tissue group aggregated across all biosamples. Click a row to see details and links to individual data views." },
+      meta: {
+        description:
+          "Tissue group aggregated across all biosamples. Click a row to see details and links to individual data views.",
+      },
       cell: ({ row }) => (
-        <span className="text-sm font-medium text-foreground">{row.original.tissue_name}</span>
+        <span className="text-sm font-medium text-foreground">
+          {row.original.tissue_name}
+        </span>
       ),
     },
     {
@@ -260,29 +308,49 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       header: "Evidence",
       enableSorting: true,
       sortDescFirst: true,
-      meta: { description: "Number of independent data types (out of 10) with regulatory evidence in this tissue. More evidence types = higher confidence." },
+      meta: {
+        description:
+          "Number of independent data types (out of 10) with regulatory evidence in this tissue. More evidence types = higher confidence.",
+      },
       cell: ({ row }) => <ConvergenceDots tissue={row.original} />,
     },
     {
       id: "signals",
       accessorFn: (r) => r.signals?.max_value ?? null,
       header: "cCRE Activity",
-      meta: { description: "Epigenomic signal strength at candidate regulatory elements (cCREs). Strong = Z-score ≥ 5, Moderate = 3–5, Low = < 3." },
+      meta: {
+        description:
+          "Epigenomic signal strength at candidate regulatory elements (cCREs). Strong = Z-score ≥ 5, Moderate = 3–5, Low = < 3.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const s = row.original.signals;
         if (!s) return <Dash />;
         const strength = classifyValue(s.max_value, 5, 3);
-        const label = strength === "strong" ? "High activity" : strength === "moderate" ? "Active" : "Low";
-        return <StrengthCell strength={strength} label={label} detail={`Z-score ${s.max_value.toFixed(1)} across ${formatCount(s.count)} regulatory elements`} />;
+        const label =
+          strength === "strong"
+            ? "High activity"
+            : strength === "moderate"
+              ? "Active"
+              : "Low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`Z-score ${s.max_value.toFixed(1)} across ${formatCount(s.count)} regulatory elements`}
+          />
+        );
       },
     },
     {
       id: "chromatin",
       accessorFn: (r) => (r.chromatin ? r.chromatin.count : null),
       header: "Chromatin",
-      meta: { description: "Dominant chromatin state from the Roadmap 25-state model. Shows whether this region acts as a promoter, enhancer, or is repressed in this tissue." },
+      meta: {
+        description:
+          "Dominant chromatin state from the Roadmap 25-state model. Shows whether this region acts as a promoter, enhancer, or is repressed in this tissue.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
@@ -290,18 +358,23 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
         if (!c) return <Dash />;
         const state = c.top_item ?? "unknown";
         const color = STATE_COLORS[state] ?? "#9ca3af";
-        const displayLabel = STATE_LABELS[state] ?? state.charAt(0).toUpperCase() + state.slice(1);
+        const displayLabel =
+          STATE_LABELS[state] ?? state.charAt(0).toUpperCase() + state.slice(1);
         return (
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center gap-1.5 text-xs cursor-default text-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
                   {displayLabel}
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs max-w-xs">
-                {formatCount(c.count)} chromatin segments annotated as {state} in this tissue
+                {formatCount(c.count)} chromatin segments annotated as {state}{" "}
+                in this tissue
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -312,126 +385,234 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
       id: "accessibility",
       accessorFn: (r) => r.accessibility?.max_value ?? null,
       header: "Accessibility",
-      meta: { description: "ATAC-seq/DNase accessibility peaks — open DNA accessible to transcription factors. Strong = ≥ 10× enrichment, Moderate = 5–10×, Low = < 5×." },
+      meta: {
+        description:
+          "ATAC-seq/DNase accessibility peaks — open DNA accessible to transcription factors. Strong = ≥ 10× enrichment, Moderate = 5–10×, Low = < 5×.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const a = row.original.accessibility;
         if (!a) return <Dash />;
         const strength = classifyValue(a.max_value, 10, 5);
-        const label = strength === "strong" ? "Highly open" : strength === "moderate" ? "Open" : "Low";
-        return <StrengthCell strength={strength} label={label} detail={`${a.max_value.toFixed(1)}× enrichment over background across ${a.count} peaks`} />;
+        const label =
+          strength === "strong"
+            ? "Highly open"
+            : strength === "moderate"
+              ? "Open"
+              : "Low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`${a.max_value.toFixed(1)}× enrichment over background across ${a.count} peaks`}
+          />
+        );
       },
     },
     {
       id: "enhancers",
       accessorFn: (r) => r.enhancers?.max_value ?? null,
       header: "Enhancer Links",
-      meta: { description: "Enhancer-gene prediction confidence (ABC, EPIraction, EpiMap, RE2G). Strong = score ≥ 0.3, Moderate = 0.015–0.3, Low = < 0.015." },
+      meta: {
+        description:
+          "Enhancer-gene prediction confidence (ABC, EPIraction, EpiMap, RE2G). Strong = score ≥ 0.3, Moderate = 0.015–0.3, Low = < 0.015.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const e = row.original.enhancers;
         if (!e) return <Dash />;
         const strength = classifyValue(e.max_value, 0.3, 0.015);
-        const label = strength === "strong" ? "Strong link" : strength === "moderate" ? "Linked" : "Weak";
-        return <StrengthCell strength={strength} label={label} detail={`Best score ${fmtScore(e.max_value)} across ${e.count} enhancer predictions`} />;
+        const label =
+          strength === "strong"
+            ? "Strong link"
+            : strength === "moderate"
+              ? "Linked"
+              : "Weak";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`Best score ${fmtScore(e.max_value)} across ${e.count} enhancer predictions`}
+          />
+        );
       },
     },
     {
       id: "loops",
       accessorFn: (r) => r.loops?.count ?? null,
       header: "Loops",
-      meta: { description: "Chromatin loops (Hi-C / ChIA-PET) — physical 3D contacts connecting this gene to distant regulatory elements." },
+      meta: {
+        description:
+          "Chromatin loops (Hi-C / ChIA-PET) — physical 3D contacts connecting this gene to distant regulatory elements.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const l = row.original.loops;
         if (!l) return <Dash />;
-        const strength: Strength = l.count >= 5 ? "strong" : l.count >= 2 ? "moderate" : "low";
+        const strength: Strength =
+          l.count >= 5 ? "strong" : l.count >= 2 ? "moderate" : "low";
         const label = `${l.count} loop${l.count !== 1 ? "s" : ""}`;
-        return <StrengthCell strength={strength} label={label} detail={`${l.count} chromatin loop${l.count !== 1 ? "s" : ""} connecting this gene to distant regulatory elements`} />;
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`${l.count} chromatin loop${l.count !== 1 ? "s" : ""} connecting this gene to distant regulatory elements`}
+          />
+        );
       },
     },
     {
       id: "ase",
       accessorFn: (r) => r.ase?.max_value ?? null,
       header: "Allelic Activity",
-      meta: { description: "Allele-specific epigenomic activity at regulatory elements (cCREs). Tests whether one allele shows stronger regulatory signal than the other." },
+      meta: {
+        description:
+          "Allele-specific epigenomic activity at regulatory elements (cCREs). Tests whether one allele shows stronger regulatory signal than the other.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const a = row.original.ase;
         if (!a) return <Dash />;
         const strength = classifyValue(a.max_value, 3, 1.3);
-        const label = strength === "strong" ? "Significant" : strength === "moderate" ? "Suggestive" : "Not sig.";
-        return <StrengthCell strength={strength} label={label} detail={`−log₁₀(p) = ${a.max_value.toFixed(1)} across ${a.count} observations${a.significant ? `, ${a.significant} significant` : ""}`} />;
+        const label =
+          strength === "strong"
+            ? "Significant"
+            : strength === "moderate"
+              ? "Suggestive"
+              : "Not sig.";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`−log₁₀(p) = ${a.max_value.toFixed(1)} across ${a.count} observations${a.significant ? `, ${a.significant} significant` : ""}`}
+          />
+        );
       },
     },
     {
       id: "qtls",
       accessorFn: (r) => r.qtls?.max_value ?? null,
       header: "Expression QTLs",
-      meta: { description: "eQTL/sQTL associations linking variants to gene expression changes in this tissue (GTEx, eQTL Catalogue, etc.)." },
+      meta: {
+        description:
+          "eQTL/sQTL associations linking variants to gene expression changes in this tissue (GTEx, eQTL Catalogue, etc.).",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const q = row.original.qtls;
         if (!q) return <Dash />;
         const strength = classifyValue(q.max_value, 8, 3);
-        const label = strength === "strong" ? "Highly sig." : strength === "moderate" ? "Significant" : `${formatCount(q.count)} hits`;
-        return <StrengthCell strength={strength} label={label} detail={`${q.count.toLocaleString()} QTL associations, best −log₁₀(p) = ${q.max_value.toFixed(1)}${q.significant ? `, ${q.significant} genome-wide significant` : ""}`} />;
+        const label =
+          strength === "strong"
+            ? "Highly sig."
+            : strength === "moderate"
+              ? "Significant"
+              : `${formatCount(q.count)} hits`;
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`${q.count.toLocaleString()} QTL associations, best −log₁₀(p) = ${q.max_value.toFixed(1)}${q.significant ? `, ${q.significant} genome-wide significant` : ""}`}
+          />
+        );
       },
     },
     {
       id: "chrombpnet",
       accessorFn: (r) => r.chrombpnet?.max_value ?? null,
       header: "Deep Learning",
-      meta: { description: "ChromBPNet deep learning predictions of how variants affect chromatin accessibility in this tissue." },
+      meta: {
+        description:
+          "ChromBPNet deep learning predictions of how variants affect chromatin accessibility in this tissue.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const c = row.original.chrombpnet;
         if (!c) return <Dash />;
         const strength = classifyValue(c.max_value, 4, 2);
-        const label = strength === "strong" ? "Strong effect" : strength === "moderate" ? "Moderate" : `${c.count} pred.`;
-        return <StrengthCell strength={strength} label={label} detail={`${c.count.toLocaleString()} ChromBPNet variant effect predictions in this tissue`} />;
+        const label =
+          strength === "strong"
+            ? "Strong effect"
+            : strength === "moderate"
+              ? "Moderate"
+              : `${c.count} pred.`;
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`${c.count.toLocaleString()} ChromBPNet variant effect predictions in this tissue`}
+          />
+        );
       },
     },
     {
       id: "variantAllelicImbalance",
       accessorFn: (r) => r.variantAllelicImbalance?.max_value ?? null,
       header: "Histone Imbal.",
-      meta: { description: "ENTEx histone modification allelic imbalance. Tests whether histone marks (e.g. H3K27ac) differ between alleles at variant positions." },
+      meta: {
+        description:
+          "ENTEx histone modification allelic imbalance. Tests whether histone marks (e.g. H3K27ac) differ between alleles at variant positions.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const v = row.original.variantAllelicImbalance;
         if (!v) return <Dash />;
         const strength = classifyValue(v.max_value, 3, 1.3);
-        const label = strength === "strong" ? "Significant" : strength === "moderate" ? "Suggestive" : "Not sig.";
-        return <StrengthCell strength={strength} label={label} detail={`−log₁₀(p) = ${v.max_value.toFixed(1)} across ${v.count} observations${v.significant ? `, ${v.significant} significant` : ""}`} />;
+        const label =
+          strength === "strong"
+            ? "Significant"
+            : strength === "moderate"
+              ? "Suggestive"
+              : "Not sig.";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={label}
+            detail={`−log₁₀(p) = ${v.max_value.toFixed(1)} across ${v.count} observations${v.significant ? `, ${v.significant} significant` : ""}`}
+          />
+        );
       },
     },
     {
       id: "crisprEssentiality",
-      accessorFn: (r) => r.crisprEssentiality ? (r.crisprEssentiality.significant ?? 0) / Math.max(r.crisprEssentiality.count, 1) : null,
+      accessorFn: (r) =>
+        r.crisprEssentiality
+          ? (r.crisprEssentiality.significant ?? 0) /
+            Math.max(r.crisprEssentiality.count, 1)
+          : null,
       header: () => (
         <span className="flex flex-col leading-tight">
           <span>Essentiality</span>
           <span>CRISPR</span>
         </span>
       ),
-      meta: { description: "CRISPR essentiality grouped by tissue. Shows fraction of cell lines in that tissue group where gene knockout is lethal." },
+      meta: {
+        description:
+          "CRISPR essentiality grouped by tissue. Shows fraction of cell lines in that tissue group where gene knockout is lethal.",
+      },
       enableSorting: true,
       sortingFn: nullsLast,
       cell: ({ row }) => {
         const c = row.original.crisprEssentiality;
         if (!c) return <Dash />;
         const sig = c.significant ?? 0;
-        const pct = Math.round(sig / Math.max(c.count, 1) * 100);
-        const strength: Strength = pct >= 50 ? "strong" : pct >= 20 ? "moderate" : "low";
-        return <StrengthCell strength={strength} label={`${sig}/${c.count}`} detail={`Essential in ${sig} of ${c.count} cell lines (${pct}%) in ${row.original.tissue_name}`} />;
+        const pct = Math.round((sig / Math.max(c.count, 1)) * 100);
+        const strength: Strength =
+          pct >= 50 ? "strong" : pct >= 20 ? "moderate" : "low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={`${sig}/${c.count}`}
+            detail={`Essential in ${sig} of ${c.count} cell lines (${pct}%) in ${row.original.tissue_name}`}
+          />
+        );
       },
     },
   ];
@@ -441,78 +622,131 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
 // Expanded detail panel
 // ---------------------------------------------------------------------------
 
-function TissueDetail({ tissue, basePath }: { tissue: TissueEvidence; basePath: string }) {
+function TissueDetail({
+  tissue,
+  basePath,
+}: {
+  tissue: TissueEvidence;
+  basePath: string;
+}) {
   const tg = encodeURIComponent(tissue.tissue_name);
 
   const cards: { label: string; slug: string; lines: string[] }[] = [];
 
   if (tissue.signals)
-    cards.push({ label: "cCRE Activity", slug: "tissue-signals", lines: [
-      `${formatCount(tissue.signals.count)} regulatory elements`,
-      `Max Z-score: ${tissue.signals.max_value.toFixed(1)}`,
-      tissue.signals.top_item ? `Top cCRE: ${tissue.signals.top_item}` : "",
-    ] });
+    cards.push({
+      label: "cCRE Activity",
+      slug: "tissue-signals",
+      lines: [
+        `${formatCount(tissue.signals.count)} regulatory elements`,
+        `Max Z-score: ${tissue.signals.max_value.toFixed(1)}`,
+        tissue.signals.top_item ? `Top cCRE: ${tissue.signals.top_item}` : "",
+      ],
+    });
   if (tissue.chromatin)
-    cards.push({ label: "Chromatin States", slug: "chromatin-states", lines: [
-      `${formatCount(tissue.chromatin.count)} annotated segments`,
-      `Dominant: ${tissue.chromatin.top_item ?? "\u2014"}`,
-    ] });
+    cards.push({
+      label: "Chromatin States",
+      slug: "chromatin-states",
+      lines: [
+        `${formatCount(tissue.chromatin.count)} annotated segments`,
+        `Dominant: ${tissue.chromatin.top_item ?? "\u2014"}`,
+      ],
+    });
   if (tissue.enhancers)
-    cards.push({ label: "Enhancer Links", slug: "enhancer-genes", lines: [
-      `${tissue.enhancers.count} predictions`,
-      `Best score: ${tissue.enhancers.max_value.toFixed(3)}`,
-    ] });
+    cards.push({
+      label: "Enhancer Links",
+      slug: "enhancer-genes",
+      lines: [
+        `${tissue.enhancers.count} predictions`,
+        `Best score: ${tissue.enhancers.max_value.toFixed(3)}`,
+      ],
+    });
   if (tissue.accessibility)
-    cards.push({ label: "Accessibility", slug: "accessibility", lines: [
-      `${tissue.accessibility.count} peaks`,
-      `Best: ${tissue.accessibility.max_value.toFixed(1)}\u00d7 enrichment`,
-    ] });
+    cards.push({
+      label: "Accessibility",
+      slug: "accessibility",
+      lines: [
+        `${tissue.accessibility.count} peaks`,
+        `Best: ${tissue.accessibility.max_value.toFixed(1)}\u00d7 enrichment`,
+      ],
+    });
   if (tissue.loops)
-    cards.push({ label: "Chromatin Loops", slug: "loops", lines: [
-      `${tissue.loops.count} loop${tissue.loops.count !== 1 ? "s" : ""}`,
-      tissue.loops.top_item ?? "",
-    ] });
+    cards.push({
+      label: "Chromatin Loops",
+      slug: "loops",
+      lines: [
+        `${tissue.loops.count} loop${tissue.loops.count !== 1 ? "s" : ""}`,
+        tissue.loops.top_item ?? "",
+      ],
+    });
   if (tissue.ase)
-    cards.push({ label: "Allelic Activity", slug: "allele-specific", lines: [
-      `${tissue.ase.count} tested${tissue.ase.significant ? `, ${tissue.ase.significant} significant` : ""}`,
-      `Best \u2212log\u2081\u2080(p): ${tissue.ase.max_value.toFixed(1)}`,
-    ] });
+    cards.push({
+      label: "Allelic Activity",
+      slug: "allele-specific",
+      lines: [
+        `${tissue.ase.count} tested${tissue.ase.significant ? `, ${tissue.ase.significant} significant` : ""}`,
+        `Best \u2212log\u2081\u2080(p): ${tissue.ase.max_value.toFixed(1)}`,
+      ],
+    });
   if (tissue.qtls)
-    cards.push({ label: "Expression QTLs", slug: "qtls", lines: [
-      `${tissue.qtls.count} associations${tissue.qtls.significant ? `, ${tissue.qtls.significant} significant` : ""}`,
-      `Best \u2212log\u2081\u2080(p): ${tissue.qtls.max_value.toFixed(1)}`,
-      tissue.qtls.top_item ? `Top gene: ${tissue.qtls.top_item}` : "",
-    ] });
+    cards.push({
+      label: "Expression QTLs",
+      slug: "qtls",
+      lines: [
+        `${tissue.qtls.count} associations${tissue.qtls.significant ? `, ${tissue.qtls.significant} significant` : ""}`,
+        `Best \u2212log\u2081\u2080(p): ${tissue.qtls.max_value.toFixed(1)}`,
+        tissue.qtls.top_item ? `Top gene: ${tissue.qtls.top_item}` : "",
+      ],
+    });
   if (tissue.chrombpnet)
-    cards.push({ label: "ChromBPNet", slug: "chrombpnet", lines: [
-      `${tissue.chrombpnet.count} predictions`,
-    ] });
+    cards.push({
+      label: "ChromBPNet",
+      slug: "chrombpnet",
+      lines: [`${tissue.chrombpnet.count} predictions`],
+    });
   if (tissue.variantAllelicImbalance)
-    cards.push({ label: "Histone Imbalance", slug: "allele-specific", lines: [
-      `${tissue.variantAllelicImbalance.count} observations${tissue.variantAllelicImbalance.significant ? `, ${tissue.variantAllelicImbalance.significant} significant` : ""}`,
-      `Best \u2212log\u2081\u2080(p): ${tissue.variantAllelicImbalance.max_value.toFixed(1)}`,
-    ] });
+    cards.push({
+      label: "Histone Imbalance",
+      slug: "allele-specific",
+      lines: [
+        `${tissue.variantAllelicImbalance.count} observations${tissue.variantAllelicImbalance.significant ? `, ${tissue.variantAllelicImbalance.significant} significant` : ""}`,
+        `Best \u2212log\u2081\u2080(p): ${tissue.variantAllelicImbalance.max_value.toFixed(1)}`,
+      ],
+    });
   if (tissue.crisprEssentiality) {
     const sig = tissue.crisprEssentiality.significant ?? 0;
     const total = tissue.crisprEssentiality.count;
-    const pct = Math.round(sig / Math.max(total, 1) * 100);
-    cards.push({ label: "CRISPR Essentiality", slug: "perturbation", lines: [
-      `Essential in ${sig} of ${total} cell lines (${pct}%)`,
-    ] });
+    const pct = Math.round((sig / Math.max(total, 1)) * 100);
+    cards.push({
+      label: "CRISPR Essentiality",
+      slug: "perturbation",
+      lines: [`Essential in ${sig} of ${total} cell lines (${pct}%)`],
+    });
   }
 
   return (
     <div className="py-3">
       <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-sm font-medium text-foreground">{tissue.tissue_name}</span>
-        <span className="text-xs text-muted-foreground">{tissue.convergence}/{TOTAL_EVIDENCE_TYPES} evidence types</span>
+        <span className="text-sm font-medium text-foreground">
+          {tissue.tissue_name}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {tissue.convergence}/{TOTAL_EVIDENCE_TYPES} evidence types
+        </span>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-lg border border-border bg-card px-3 py-2.5">
-            <span className="text-xs font-medium text-foreground">{c.label}</span>
+          <div
+            key={c.label}
+            className="rounded-lg border border-border bg-card px-3 py-2.5"
+          >
+            <span className="text-xs font-medium text-foreground">
+              {c.label}
+            </span>
             {c.lines.filter(Boolean).map((l, i) => (
-              <p key={i} className="text-xs text-muted-foreground mt-0.5">{l}</p>
+              <p key={i} className="text-xs text-muted-foreground mt-0.5">
+                {l}
+              </p>
             ))}
             <Link
               href={`${basePath}/${c.slug}?tissue_group=${tg}`}
@@ -548,8 +782,12 @@ export function TissueEvidenceSummary({ evidence, summary, basePath }: Props) {
 
   const subtitle = [
     `${all.length} tissue groups ranked by evidence convergence`,
-    totalRecords != null ? `\u00b7 ${formatCount(totalRecords)} total records` : null,
-  ].filter(Boolean).join(" ");
+    totalRecords != null
+      ? `\u00b7 ${formatCount(totalRecords)} total records`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <DataSurface
@@ -563,7 +801,9 @@ export function TissueEvidenceSummary({ evidence, summary, basePath }: Props) {
       exportable
       exportFilename="tissue-evidence"
       emptyMessage="No tissue-specific regulatory evidence found for this gene."
-      renderExpandedRow={(tissue) => <TissueDetail tissue={tissue} basePath={basePath} />}
+      renderExpandedRow={(tissue) => (
+        <TissueDetail tissue={tissue} basePath={basePath} />
+      )}
     />
   );
 }

@@ -15,12 +15,12 @@
 //     state changes; otherwise next/dynamic re-evaluates and we lose the
 //     mounted Gosling instance.
 
-'use client'
+"use client";
 
-import dynamic from 'next/dynamic'
-import { Skeleton } from '@shared/components/ui/skeleton'
-import type { ComponentType } from 'react'
-import type { GoslingSpec } from 'gosling.js'
+import { Skeleton } from "@shared/components/ui/skeleton";
+import type { GoslingSpec } from "gosling.js";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 
 // Loading placeholder that matches the canvas footprint so the layout
 // doesn't jump when Gosling finishes loading.
@@ -32,19 +32,28 @@ function GoslingPlaceholder() {
       <Skeleton className="h-5 w-32 mt-2" />
       <Skeleton className="h-32 w-full" />
     </div>
-  )
+  );
 }
 
 type GoslingComponentProps = {
-  spec: GoslingSpec
-  padding?: number
+  spec: GoslingSpec;
+  padding?: number;
   /**
    * Gosling theme name. Defaults to 'light' — passing this explicitly avoids
    * a black PIXI canvas if Gosling fails to resolve a default theme under
    * React 19 + alpha.9.
    */
-  theme?: 'light' | 'dark' | 'warm' | 'jbrowse' | 'ucsc' | 'washu' | 'ggplot' | 'excel' | 'ensembl'
-}
+  theme?:
+    | "light"
+    | "dark"
+    | "warm"
+    | "jbrowse"
+    | "ucsc"
+    | "washu"
+    | "ggplot"
+    | "excel"
+    | "ensembl";
+};
 
 /**
  * Client-only Gosling renderer. Imported once at module load — the
@@ -52,11 +61,12 @@ type GoslingComponentProps = {
  */
 export const GoslingMount = dynamic<GoslingComponentProps>(
   () =>
-    import('gosling.js').then(
-      mod => mod.GoslingComponent as unknown as ComponentType<GoslingComponentProps>
+    import("gosling.js").then(
+      (mod) =>
+        mod.GoslingComponent as unknown as ComponentType<GoslingComponentProps>,
     ),
   {
     ssr: false,
     loading: () => <GoslingPlaceholder />,
-  }
-)
+  },
+);

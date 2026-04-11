@@ -156,9 +156,7 @@ function ViewSwitch({
         variant={value === "table" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => onChange("table")}
-        className={cn(
-          value === "table" && "bg-background shadow-sm",
-        )}
+        className={cn(value === "table" && "bg-background shadow-sm")}
       >
         <TableIcon className="w-4 h-4" />
         Table
@@ -167,9 +165,7 @@ function ViewSwitch({
         variant={value === "chart" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => onChange("chart")}
-        className={cn(
-          value === "chart" && "bg-background shadow-sm",
-        )}
+        className={cn(value === "chart" && "bg-background shadow-sm")}
       >
         <BarChart3 className="w-4 h-4" />
         Chart

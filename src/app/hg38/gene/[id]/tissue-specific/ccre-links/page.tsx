@@ -1,9 +1,9 @@
-import { fetchGene } from "@features/gene/api";
 import {
   fetchCcreLinks,
   fetchCcreLinksByTissueGroup,
 } from "@features/enrichment/api/region";
 import { CcreLinksView } from "@features/enrichment/components/ccre-links-view";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 interface CcreLinksPageProps {

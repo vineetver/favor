@@ -5,7 +5,9 @@
 
 // Type guards for validation
 export function isValidNumber(value: unknown): value is number {
-  return typeof value === "number" && !isNaN(value) && isFinite(value);
+  return (
+    typeof value === "number" && !Number.isNaN(value) && Number.isFinite(value)
+  );
 }
 
 export function isValidString(value: unknown): value is string {
@@ -83,7 +85,10 @@ export function formatTime(dateString: string): string {
 }
 
 /** Elapsed duration between two ISO timestamps: "2m 30s", "1h 5m" */
-export function formatDuration(startedAt: string, completedAt?: string): string {
+export function formatDuration(
+  startedAt: string,
+  completedAt?: string,
+): string {
   const start = new Date(startedAt).getTime();
   const end = completedAt ? new Date(completedAt).getTime() : Date.now();
   const seconds = Math.floor((end - start) / 1000);
@@ -107,14 +112,14 @@ export function formatCount(n: number): string {
 /** Convert −log10(p) back to a display p-value string */
 export function formatPvalue(neglogp: number): string {
   if (neglogp <= 0) return "1";
-  const p = Math.pow(10, -neglogp);
+  const p = 10 ** -neglogp;
   if (p < 0.001) return p.toExponential(1);
   return p.toFixed(3);
 }
 
 // String utilities
 export function splitText(text: string, separator: string = ";"): string[] {
-  return text.split(separator).filter(item => item.trim().length > 0);
+  return text.split(separator).filter((item) => item.trim().length > 0);
 }
 
 export function cleanText(text: string): string {
@@ -123,7 +128,7 @@ export function cleanText(text: string): string {
 
 export function truncateText(text: string, maxLength: number = 50): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + "...";
+  return `${text.substring(0, maxLength - 3)}...`;
 }
 
 // Safe value conversion utilities
@@ -137,8 +142,20 @@ export function parseStringToNumber(value: string): number | null {
 export function parseStringToBoolean(value: string): boolean | null {
   if (!isValidString(value)) return null;
   const cleaned = value.trim().toLowerCase();
-  if (cleaned === "true" || cleaned === "yes" || cleaned === "y" || cleaned === "1") return true;
-  if (cleaned === "false" || cleaned === "no" || cleaned === "n" || cleaned === "0") return false;
+  if (
+    cleaned === "true" ||
+    cleaned === "yes" ||
+    cleaned === "y" ||
+    cleaned === "1"
+  )
+    return true;
+  if (
+    cleaned === "false" ||
+    cleaned === "no" ||
+    cleaned === "n" ||
+    cleaned === "0"
+  )
+    return false;
   return null;
 }
 
@@ -146,13 +163,13 @@ export function parseStringToBoolean(value: string): boolean | null {
 export function safeNestedAccess<T>(
   obj: unknown,
   path: string,
-  defaultValue: T | null = null
+  defaultValue: T | null = null,
 ): T | null {
-  const keys = path.split('.');
+  const keys = path.split(".");
   let current: unknown = obj;
 
   for (const key of keys) {
-    if (current == null || typeof current !== 'object') {
+    if (current == null || typeof current !== "object") {
       return defaultValue;
     }
     current = (current as Record<string, unknown>)[key];
@@ -164,8 +181,8 @@ export function safeNestedAccess<T>(
 // Constraint score accessors for gene data
 export function getConstraintScore(
   gene: unknown,
-  category: 'loeuf' | 'posterior' | 'shet' | 'damage' | 'gnomad',
-  field: string
+  category: "loeuf" | "posterior" | "shet" | "damage" | "gnomad",
+  field: string,
 ): unknown {
   return safeNestedAccess(gene, `constraint_scores.${category}.${field}`);
 }
@@ -181,17 +198,21 @@ export function formatGeneSymbol(symbol: string): string {
   return symbol.trim().toUpperCase();
 }
 
-export function formatChromosomeLocation(chr: string, start?: number, end?: number): string {
+export function formatChromosomeLocation(
+  chr: string,
+  start?: number,
+  end?: number,
+): string {
   if (!isValidString(chr)) return "";
-  
-  let location = chr.startsWith('chr') ? chr : `chr${chr}`;
-  
+
+  let location = chr.startsWith("chr") ? chr : `chr${chr}`;
+
   if (isValidNumber(start)) {
     location += `:${start.toLocaleString()}`;
     if (isValidNumber(end)) {
       location += `-${end.toLocaleString()}`;
     }
   }
-  
+
   return location;
 }

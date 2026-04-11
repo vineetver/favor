@@ -1,15 +1,15 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import {
+  type EdgeRow,
+  ep,
   fetchVariantGraph,
   getEdgeRows,
-  ep,
   nb,
-  type EdgeRow,
 } from "@features/variant/api/variant-graph";
 import {
-  PharmacogenomicsTable,
   type PharmacogenomicsRow,
+  PharmacogenomicsTable,
 } from "@features/variant/components/graph/pharmacogenomics-table";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 // ============================================================================

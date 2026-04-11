@@ -60,7 +60,10 @@ export function contextUtilization(
   steps: StepData[],
   systemPromptLength?: number,
 ): number {
-  return Math.min(1, estimateFullContext(steps, systemPromptLength) / AVAILABLE_BUDGET);
+  return Math.min(
+    1,
+    estimateFullContext(steps, systemPromptLength) / AVAILABLE_BUDGET,
+  );
 }
 
 /** True when context exceeds 75% of the budget */

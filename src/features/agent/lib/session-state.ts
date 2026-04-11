@@ -2,8 +2,8 @@
  * Session state management — fetch, update, and apply deltas.
  */
 
-import { agentFetch, AgentToolError } from "./api-client";
 import type { EntityRef, RunResult } from "../tools/run/types";
+import { AgentToolError, agentFetch } from "./api-client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -89,13 +89,10 @@ export async function updateSessionState(
   version: number,
   state: SessionState,
 ): Promise<{ version: number }> {
-  return agentFetch<{ version: number }>(
-    `/agent/sessions/${sessionId}/state`,
-    {
-      method: "PUT",
-      body: { expected_version: version, state },
-    },
-  );
+  return agentFetch<{ version: number }>(`/agent/sessions/${sessionId}/state`, {
+    method: "PUT",
+    body: { expected_version: version, state },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -107,13 +104,10 @@ export async function patchSessionState(
   patch: Partial<SessionState>,
   expectedVersion: number,
 ): Promise<{ version: number }> {
-  return agentFetch<{ version: number }>(
-    `/agent/sessions/${sessionId}/state`,
-    {
-      method: "PATCH",
-      body: { delta: patch, expected_version: expectedVersion },
-    },
-  );
+  return agentFetch<{ version: number }>(`/agent/sessions/${sessionId}/state`, {
+    method: "PATCH",
+    body: { delta: patch, expected_version: expectedVersion },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -132,14 +126,17 @@ export function applyStateDelta(
       next.schema_digest = null;
     }
     next.active_cohort_id = delta.active_cohort_id || null;
-    next.mode = (next.pinned_entities?.length ?? 0) > 0 ? "mixed" : next.active_cohort_id ? "cohort" : "graph";
+    next.mode =
+      (next.pinned_entities?.length ?? 0) > 0
+        ? "mixed"
+        : next.active_cohort_id
+          ? "cohort"
+          : "graph";
   }
 
   if (delta.pinned_entities?.length) {
     const pinned = next.pinned_entities ?? [];
-    const existing = new Set(
-      pinned.map((e) => `${e.type}:${e.id}`),
-    );
+    const existing = new Set(pinned.map((e) => `${e.type}:${e.id}`));
     const updated = [...pinned];
     for (const entity of delta.pinned_entities) {
       const key = `${entity.type}:${entity.id}`;
@@ -202,7 +199,9 @@ export function stateToPromptSnippet(state: SessionState): string {
     );
 
     if (!state.schema_digest) {
-      lines.push("⚠ Schema not loaded for this cohort. Call State to refresh before running cohort commands.");
+      lines.push(
+        "⚠ Schema not loaded for this cohort. Call State to refresh before running cohort commands.",
+      );
     } else if (state.schema_digest) {
       const numericCols = (state.schema_digest.columns ?? [])
         .filter((c) => c.kind === "numeric")
@@ -210,18 +209,26 @@ export function stateToPromptSnippet(state: SessionState): string {
       const categoricalCols = (state.schema_digest.columns ?? [])
         .filter((c) => c.kind === "categorical")
         .map((c) => c.name);
-      if (numericCols.length > 0) lines.push(`Numeric columns: ${numericCols.join(", ")}`);
-      if (categoricalCols.length > 0) lines.push(`Categorical columns: ${categoricalCols.join(", ")}`);
+      if (numericCols.length > 0)
+        lines.push(`Numeric columns: ${numericCols.join(", ")}`);
+      if (categoricalCols.length > 0)
+        lines.push(`Categorical columns: ${categoricalCols.join(", ")}`);
       if (state.schema_digest.available_methods?.length > 0) {
-        lines.push(`Available analytics: ${state.schema_digest.available_methods.join(", ")}`);
+        lines.push(
+          `Available analytics: ${state.schema_digest.available_methods.join(", ")}`,
+        );
       }
       // Row count hint for analytics feasibility
       if (state.cohort_row_count != null && state.cohort_row_count < 20) {
-        lines.push(`⚠ Low row count (${state.cohort_row_count}) — analytics may be unreliable. Prefer rows/groupby.`);
+        lines.push(
+          `⚠ Low row count (${state.cohort_row_count}) — analytics may be unreliable. Prefer rows/groupby.`,
+        );
       }
     }
   } else {
-    lines.push("Active cohort: none — cohort commands (rows, groupby, analytics) are UNAVAILABLE. Use graph commands or ask user to upload/select a cohort.");
+    lines.push(
+      "Active cohort: none — cohort commands (rows, groupby, analytics) are UNAVAILABLE. Use graph commands or ask user to upload/select a cohort.",
+    );
   }
 
   // --- Pinned entities — usable as seeds without re-resolving ---

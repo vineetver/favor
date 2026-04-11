@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadAccessibilityData } from "@features/enrichment/loaders";
 import { AccessibilityView } from "@features/enrichment/components/accessibility-view";
+import { loadAccessibilityData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

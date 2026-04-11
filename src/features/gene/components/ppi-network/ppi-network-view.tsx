@@ -12,27 +12,37 @@ import { DimensionSelector } from "@shared/components/ui/data-surface/dimension-
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
-import { Filter, GitMerge, Layers, Network, Route, Settings2, Zap } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@shared/components/ui/popover";
-import Link from "next/link";
-import { memo, useMemo, useState, useCallback } from "react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@shared/components/ui/sheet";
-import type { EntityRef, SubgraphEdge } from "../../api";
+import { Filter, GitMerge, Route, Settings2 } from "lucide-react";
+import Link from "next/link";
+import { memo, useCallback, useMemo, useState } from "react";
+import {
+  useCentralityQuery,
+  useTopHubs,
+} from "../../hooks/use-centrality-query";
+import { useContextOverlayQuery } from "../../hooks/use-context-overlay-query";
+import { detectCommunities, labelPropagation } from "../../utils/clustering";
 import {
   createEdgeMap,
   extractPPIEdges,
   extractPPIEdgesFromSubgraph,
   transformToCytoscapeElements,
 } from "../../utils/ppi-graph-utils";
+import { ClusterControls } from "./cluster-controls";
+import { ContextOverlaySelector } from "./context-overlay-selector";
+import { EdgeFilterControls } from "./edge-filter-controls";
+import { HubModeToggle } from "./hub-mode-toggle";
+import { PPIClusterLegend } from "./ppi-cluster-legend";
 import { PPICytoscapeGraph } from "./ppi-cytoscape-graph";
 import { PPIEdgeDetailPanel } from "./ppi-edge-detail-panel";
 import { PPIHubPanel } from "./ppi-hub-panel";
@@ -40,29 +50,21 @@ import { PPILegend } from "./ppi-legend";
 import { PPINodeTooltip } from "./ppi-node-tooltip";
 import { PPIPathFinder } from "./ppi-path-finder";
 import { PPISharedInteractors } from "./ppi-shared-interactors";
-import { EdgeFilterControls } from "./edge-filter-controls";
-import { ContextOverlaySelector } from "./context-overlay-selector";
-import { ClusterControls } from "./cluster-controls";
-import { HubModeToggle } from "./hub-mode-toggle";
-import { PPIClusterLegend } from "./ppi-cluster-legend";
-import { useCentralityQuery, useTopHubs } from "../../hooks/use-centrality-query";
-import { useContextOverlayQuery } from "../../hooks/use-context-overlay-query";
-import { detectCommunities, labelPropagation } from "../../utils/clustering";
 import {
-  COLOR_MODE_OPTIONS,
-  DEFAULT_CLUSTER_STATE,
-  DEFAULT_EDGE_FILTER,
-  DEFAULT_HUB_MODE,
-  LAYOUT_OPTIONS,
-  LIMIT_OPTIONS,
   type ActivePanel,
   type CentralityData,
   type ClusterState,
+  COLOR_MODE_OPTIONS,
   type ColorMode,
   type ContextOverlay,
+  DEFAULT_CLUSTER_STATE,
+  DEFAULT_EDGE_FILTER,
+  DEFAULT_HUB_MODE,
   type EdgeFilterState,
   type HubModeState,
+  LAYOUT_OPTIONS,
   type LayoutType,
+  LIMIT_OPTIONS,
   type OverlayData,
   type PathHighlight,
   type PPIEdge,
@@ -78,22 +80,33 @@ interface NodeDetailSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const NodeDetailSheet = memo(function NodeDetailSheet({ node, open, onOpenChange }: NodeDetailSheetProps) {
+const NodeDetailSheet = memo(function NodeDetailSheet({
+  node,
+  open,
+  onOpenChange,
+}: NodeDetailSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[420px] sm:w-[480px] overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-[420px] sm:w-[480px] overflow-y-auto"
+      >
         {node && (
           <>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <span className="text-lg font-semibold text-foreground">{node.label}</span>
+                <span className="text-lg font-semibold text-foreground">
+                  {node.label}
+                </span>
                 {node.isSeed && (
                   <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
                     Seed
                   </span>
                 )}
               </SheetTitle>
-              <div className="text-xs font-mono text-muted-foreground">{node.id}</div>
+              <div className="text-xs font-mono text-muted-foreground">
+                {node.id}
+              </div>
             </SheetHeader>
 
             <div className="space-y-6 pt-6">
@@ -107,7 +120,9 @@ const NodeDetailSheet = memo(function NodeDetailSheet({ node, open, onOpenChange
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Experiments</div>
+                    <div className="text-xs text-muted-foreground">
+                      Experiments
+                    </div>
                     <div className="text-xl font-semibold text-foreground">
                       {node.numExperiments ?? "N/A"}
                     </div>
@@ -128,7 +143,8 @@ const NodeDetailSheet = memo(function NodeDetailSheet({ node, open, onOpenChange
                     View full gene page for {node.label}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Variants, regulatory elements, expression, pathways, and more
+                    Variants, regulatory elements, expression, pathways, and
+                    more
                   </div>
                 </Link>
               </div>
@@ -190,7 +206,10 @@ interface GraphContainerProps {
   hubMode?: HubModeState;
   clusterState?: ClusterState;
   onNodeClick: (node: PPINode) => void;
-  onNodeHover: (node: PPINode | null, position: { x: number; y: number } | null) => void;
+  onNodeHover: (
+    node: PPINode | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   onEdgeClick: (edgeId: string, position: { x: number; y: number }) => void;
 }
 
@@ -242,7 +261,7 @@ const GraphContainer = memo(function GraphContainer({
       {clusterState?.enabled && clusterState.clusters.size > 0 && (
         <PPIClusterLegend
           clusterState={clusterState}
-          totalNodes={elements.filter(el => !el.data.source).length}
+          totalNodes={elements.filter((el) => !el.data.source).length}
         />
       )}
       {/* Hint for interactions */}
@@ -268,7 +287,10 @@ export function PPINetworkView({
   const [limit, setLimit] = useState("100");
   const [layout, setLayout] = useState<LayoutType>("cose-bilkent");
   const [hoveredNode, setHoveredNode] = useState<PPINode | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Selection state - discriminated union: only one selection type at a time
   const [selection, setSelection] = useState<Selection>({ type: "none" });
@@ -277,32 +299,52 @@ export function PPINetworkView({
   const [colorMode, setColorMode] = useState<ColorMode>("experiments");
 
   // Path Discovery state
-  const [pathHighlight, setPathHighlight] = useState<PathHighlight | null>(null);
+  const [pathHighlight, setPathHighlight] = useState<PathHighlight | null>(
+    null,
+  );
 
   // Panel state - only one panel can be open at a time
   const [activePanel, setActivePanel] = useState<ActivePanel>("none");
 
   // Shared Interactors state
-  const [selectedGeneIds, setSelectedGeneIds] = useState<Set<string>>(new Set());
-  const [sharedInteractorIds, setSharedInteractorIds] = useState<Set<string>>(new Set());
+  const [selectedGeneIds, setSelectedGeneIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [sharedInteractorIds, setSharedInteractorIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Edge Filter state
-  const [edgeFilter, setEdgeFilter] = useState<EdgeFilterState>(DEFAULT_EDGE_FILTER);
+  const [edgeFilter, setEdgeFilter] =
+    useState<EdgeFilterState>(DEFAULT_EDGE_FILTER);
 
   // Hub Mode state
   const [hubMode, setHubMode] = useState<HubModeState>(DEFAULT_HUB_MODE);
 
   // Cluster state
-  const [clusterState, setClusterState] = useState<ClusterState>(DEFAULT_CLUSTER_STATE);
+  const [clusterState, setClusterState] = useState<ClusterState>(
+    DEFAULT_CLUSTER_STATE,
+  );
 
   // Extract and limit PPI edges - memoized with stable dependencies
   // Prefer subgraph data (EntityRef format) when available, fall back to legacy format
   const allEdges = useMemo(() => {
     if (subgraphNodes && subgraphEdges && subgraphEdges.length > 0) {
-      return extractPPIEdgesFromSubgraph(seedGeneId, subgraphNodes, subgraphEdges);
+      return extractPPIEdgesFromSubgraph(
+        seedGeneId,
+        subgraphNodes,
+        subgraphEdges,
+      );
     }
     return extractPPIEdges(seedGeneId, seedGeneSymbol, relations, edges);
-  }, [seedGeneId, seedGeneSymbol, subgraphNodes, subgraphEdges, relations, edges]);
+  }, [
+    seedGeneId,
+    seedGeneSymbol,
+    subgraphNodes,
+    subgraphEdges,
+    relations,
+    edges,
+  ]);
 
   const limitedEdges = useMemo(() => {
     const limitNum = parseInt(limit, 10);
@@ -311,7 +353,10 @@ export function PPINetworkView({
 
   // Compute max experiments for slider range
   const maxExperiments = useMemo(() => {
-    return allEdges.reduce((max, edge) => Math.max(max, edge.numExperiments ?? 0), 0);
+    return allEdges.reduce(
+      (max, edge) => Math.max(max, edge.numExperiments ?? 0),
+      0,
+    );
   }, [allEdges]);
 
   // Compute neighbor IDs for context overlay hook
@@ -361,7 +406,6 @@ export function PPINetworkView({
   // Get selected edge ID for graph highlighting
   const selectedEdgeId = selection.type === "edge" ? selection.edgeId : null;
 
-
   // Transform to Cytoscape elements - memoized
   const elements = useMemo(
     () =>
@@ -401,7 +445,6 @@ export function PPINetworkView({
     return genes;
   }, [selectedGeneIds, seedGeneId, seedGeneSymbol, limitedEdges]);
 
-
   // Stable layout change handler
   const handleLayoutChange = useCallback((value: string) => {
     setLayout(value as LayoutType);
@@ -433,7 +476,10 @@ export function PPINetworkView({
         label: "Color by",
         value: colorMode,
         onChange: handleColorModeChange,
-        options: COLOR_MODE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+        options: COLOR_MODE_OPTIONS.map((o) => ({
+          value: o.value,
+          label: o.label,
+        })),
         presentation: "dropdown",
       },
     ],
@@ -477,31 +523,37 @@ export function PPINetworkView({
   );
 
   // Hub panel handlers
-  const handleHubClick = useCallback((geneId: string) => {
-    // Find the node in the graph and select it
-    const edge = limitedEdges.find((e) => e.targetId === geneId);
-    if (edge) {
-      setSelection({
-        type: "node",
-        node: {
-          id: edge.targetId,
-          label: edge.targetSymbol,
-          isSeed: false,
-          numSources: edge.numSources,
-          numExperiments: edge.numExperiments,
-          confidenceScores: edge.confidenceScores,
-        },
-      });
-    }
-  }, [limitedEdges]);
+  const handleHubClick = useCallback(
+    (geneId: string) => {
+      // Find the node in the graph and select it
+      const edge = limitedEdges.find((e) => e.targetId === geneId);
+      if (edge) {
+        setSelection({
+          type: "node",
+          node: {
+            id: edge.targetId,
+            label: edge.targetSymbol,
+            isSeed: false,
+            numSources: edge.numSources,
+            numExperiments: edge.numExperiments,
+            confidenceScores: edge.confidenceScores,
+          },
+        });
+      }
+    },
+    [limitedEdges],
+  );
 
   // Path finder handlers
-  const handlePathHighlight = useCallback((nodeIds: string[], edgeIds: string[]) => {
-    setPathHighlight({
-      nodeIds: new Set(nodeIds),
-      edgeIds: new Set(edgeIds),
-    });
-  }, []);
+  const handlePathHighlight = useCallback(
+    (nodeIds: string[], edgeIds: string[]) => {
+      setPathHighlight({
+        nodeIds: new Set(nodeIds),
+        edgeIds: new Set(edgeIds),
+      });
+    },
+    [],
+  );
 
   const handleClearPath = useCallback(() => {
     setPathHighlight(null);
@@ -531,9 +583,10 @@ export function PPINetworkView({
   // Clustering handler
   const handleRunClustering = useCallback(() => {
     const nodeIds = [seedGeneId, ...neighborIds];
-    const clusters = clusterState.algorithm === "louvain"
-      ? detectCommunities(nodeIds, limitedEdges)
-      : labelPropagation(nodeIds, limitedEdges);
+    const clusters =
+      clusterState.algorithm === "louvain"
+        ? detectCommunities(nodeIds, limitedEdges)
+        : labelPropagation(nodeIds, limitedEdges);
     setClusterState((prev) => ({ ...prev, clusters }));
   }, [seedGeneId, neighborIds, limitedEdges, clusterState.algorithm]);
 
@@ -566,7 +619,10 @@ export function PPINetworkView({
           <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3 border-b border-border bg-muted/50">
             <div className="flex flex-wrap items-center gap-4">
               {dimensions.map((dim, index) => (
-                <div key={`${dim.label}-${index}`} className="flex items-center gap-4">
+                <div
+                  key={`${dim.label}-${index}`}
+                  className="flex items-center gap-4"
+                >
                   {index > 0 && <div className="h-5 w-px bg-border" />}
                   <DimensionSelector
                     label={dim.label}
@@ -594,13 +650,18 @@ export function PPINetworkView({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={edgeFilter.minSources > 0 || edgeFilter.minExperiments > 0 ? "default" : "outline"}
+                    variant={
+                      edgeFilter.minSources > 0 || edgeFilter.minExperiments > 0
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     className="h-8"
                   >
                     <Filter className="w-4 h-4 mr-1.5" />
                     Filter
-                    {(edgeFilter.minSources > 0 || edgeFilter.minExperiments > 0) && (
+                    {(edgeFilter.minSources > 0 ||
+                      edgeFilter.minExperiments > 0) && (
                       <span className="ml-1.5 px-1.5 py-0.5 bg-white/20 rounded text-xs">
                         Active
                       </span>
@@ -620,7 +681,11 @@ export function PPINetworkView({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={clusterState.enabled || hubMode.showHubsOnly ? "default" : "outline"}
+                    variant={
+                      clusterState.enabled || hubMode.showHubsOnly
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     className="h-8"
                   >
@@ -721,14 +786,18 @@ export function PPINetworkView({
       <PPIEdgeDetailPanel
         edge={selectedEdge}
         open={selection.type === "edge"}
-        onOpenChange={(open) => { if (!open) setSelection({ type: "none" }); }}
+        onOpenChange={(open) => {
+          if (!open) setSelection({ type: "none" });
+        }}
       />
 
       {/* Node Detail Sheet */}
       <NodeDetailSheet
         node={selectedNode}
         open={selection.type === "node"}
-        onOpenChange={(open) => { if (!open) setSelection({ type: "none" }); }}
+        onOpenChange={(open) => {
+          if (!open) setSelection({ type: "none" });
+        }}
       />
 
       {/* Tooltip - only re-renders when hover state changes */}
@@ -747,7 +816,9 @@ export function PPINetworkView({
       {/* Shared Interactors Sheet */}
       <PPISharedInteractors
         open={activePanel === "sharedInteractors"}
-        onOpenChange={(open) => setActivePanel(open ? "sharedInteractors" : "none")}
+        onOpenChange={(open) =>
+          setActivePanel(open ? "sharedInteractors" : "none")
+        }
         selectedGenes={selectedGenesList}
         onRemoveGene={handleRemoveGene}
         onClearSelection={handleClearSelection}

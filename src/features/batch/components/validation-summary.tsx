@@ -1,12 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Zap } from "lucide-react";
 import {
   formatNumber,
   getDataTypeLabel,
@@ -41,7 +36,9 @@ function StatusHeader({
           <XCircle className="w-4 h-4 text-rose-600" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-rose-800">Validation Failed</h3>
+          <h3 className="text-sm font-semibold text-rose-800">
+            Validation Failed
+          </h3>
           <p className="text-sm text-rose-600 mt-0.5">
             Please fix the errors below and try again
           </p>
@@ -57,7 +54,9 @@ function StatusHeader({
           <AlertTriangle className="w-4 h-4 text-amber-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-amber-800">Ready with warnings</h3>
+          <h3 className="text-sm font-semibold text-amber-800">
+            Ready with warnings
+          </h3>
           <p className="text-sm text-amber-600 mt-0.5">
             {filename && <span className="font-medium">{filename}</span>}
             {filename && " — "}Review the warnings below before continuing
@@ -73,7 +72,9 @@ function StatusHeader({
         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-emerald-800">File validated</h3>
+        <h3 className="text-sm font-semibold text-emerald-800">
+          File validated
+        </h3>
         <p className="text-sm text-emerald-600 mt-0.5">
           {filename && <span className="font-medium">{filename}</span>}
           {filename && " — "}Ready to configure processing options
@@ -100,7 +101,11 @@ export function ValidationSummary({
   return (
     <div className={cn("space-y-4", className)}>
       {/* Status Header */}
-      <StatusHeader ok={typedValidation.ok} needsAttention={needsAttention} filename={filename} />
+      <StatusHeader
+        ok={typedValidation.ok}
+        needsAttention={needsAttention}
+        filename={filename}
+      />
 
       {/* Errors */}
       {!typedValidation.ok && hasErrors && (
@@ -128,7 +133,9 @@ export function ValidationSummary({
             </span>
             {typedValidation.variant_key_strategy !== "none" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                {getVariantKeyStrategyLabel(typedValidation.variant_key_strategy)}
+                {getVariantKeyStrategyLabel(
+                  typedValidation.variant_key_strategy,
+                )}
               </span>
             )}
           </div>
@@ -146,7 +153,13 @@ export function ValidationSummary({
             <StatCard
               value={`${Math.round(typedValidation.confidence * 100)}%`}
               label="Confidence"
-              variant={typedValidation.confidence >= 0.9 ? "positive" : typedValidation.confidence >= 0.7 ? "warning" : "negative"}
+              variant={
+                typedValidation.confidence >= 0.9
+                  ? "positive"
+                  : typedValidation.confidence >= 0.7
+                    ? "warning"
+                    : "negative"
+              }
             />
           </div>
 
@@ -154,21 +167,31 @@ export function ValidationSummary({
           {typedValidation.schema_preview.length > 0 && (
             <div className="rounded-lg border border-border overflow-hidden">
               <div className="px-3 py-2 bg-muted border-b border-border">
-                <span className="text-xs font-medium text-muted-foreground">Schema preview</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Schema preview
+                </span>
               </div>
               <div className="p-3 bg-background max-h-64 overflow-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">Column</th>
-                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">Kind</th>
-                      <th className="text-left py-1 font-medium text-muted-foreground">Samples</th>
+                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">
+                        Column
+                      </th>
+                      <th className="text-left py-1 pr-3 font-medium text-muted-foreground">
+                        Kind
+                      </th>
+                      <th className="text-left py-1 font-medium text-muted-foreground">
+                        Samples
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {typedValidation.schema_preview.slice(0, 10).map((col) => (
                       <tr key={col.original_name} className="hover:bg-muted">
-                        <td className="py-1 pr-3 font-mono text-foreground">{col.original_name}</td>
+                        <td className="py-1 pr-3 font-mono text-foreground">
+                          {col.original_name}
+                        </td>
                         <td className="py-1 pr-3">
                           <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
                             {col.kind}
@@ -197,8 +220,12 @@ export function ValidationSummary({
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
                   <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                   <div className="text-sm text-amber-700">
-                    <span className="font-medium">Low confidence ({Math.round(typedValidation.confidence * 100)}%):</span>{" "}
-                    Auto-detection is uncertain. Please review the column mapping.
+                    <span className="font-medium">
+                      Low confidence (
+                      {Math.round(typedValidation.confidence * 100)}%):
+                    </span>{" "}
+                    Auto-detection is uncertain. Please review the column
+                    mapping.
                   </div>
                 </div>
               )}

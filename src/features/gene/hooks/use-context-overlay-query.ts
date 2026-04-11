@@ -3,7 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { fetchIntersection } from "../api";
-import type { ContextOverlay, OverlayData } from "../components/ppi-network/types";
+import type {
+  ContextOverlay,
+  OverlayData,
+} from "../components/ppi-network/types";
 
 interface UseContextOverlayQueryOptions {
   seedGeneId: string;
@@ -38,7 +41,7 @@ export function useContextOverlayQuery({
   // Sort neighbor IDs for stable query key
   const sortedNeighborIds = useMemo(
     () => [...neighborIds].sort(),
-    [neighborIds]
+    [neighborIds],
   );
 
   // Determine edge type based on overlay type
@@ -76,7 +79,7 @@ export function useContextOverlayQuery({
               {
                 direction: "out",
                 limit: 5, // Reduced from 20 - only need count + preview
-              }
+              },
             );
 
             if (result?.data?.sharedNeighbors) {
@@ -90,7 +93,7 @@ export function useContextOverlayQuery({
               };
             }
             return null;
-          })
+          }),
         );
 
         results.forEach((data) => {

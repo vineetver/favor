@@ -32,9 +32,7 @@ export default async function DrugLandscapePage({
   }
 
   const relations =
-    geneResponse?.relations ??
-    geneResponse?.included?.relations ??
-    undefined;
+    geneResponse?.relations ?? geneResponse?.included?.relations ?? undefined;
   const edges = geneResponse?.edges;
 
   return (

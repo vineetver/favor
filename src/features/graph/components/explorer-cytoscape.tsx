@@ -12,10 +12,10 @@ import coseBilkent from "cytoscape-cose-bilkent";
 import dagre from "cytoscape-dagre";
 import { memo, useEffect, useMemo, useRef } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
-import type { ExplorerCytoscapeProps } from "../types/props";
-import type { ExplorerNode, ExplorerEdge } from "../types/node";
 import { getExplorerLayoutOptions } from "../config/layout";
 import { NODE_TYPE_COLORS } from "../config/styling";
+import type { ExplorerEdge, ExplorerNode } from "../types/node";
+import type { ExplorerCytoscapeProps } from "../types/props";
 
 // Register layout extensions
 if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
@@ -359,7 +359,8 @@ function dataToNode(data: Record<string, unknown>): ExplorerNode {
     depth: typeof data.depth === "number" ? data.depth : 0,
     degree: typeof data.degree === "number" ? data.degree : undefined,
     hubScore: typeof data.hubScore === "number" ? data.hubScore : undefined,
-    percentile: typeof data.percentile === "number" ? data.percentile : undefined,
+    percentile:
+      typeof data.percentile === "number" ? data.percentile : undefined,
   };
 }
 
@@ -367,14 +368,21 @@ function dataToEdge(data: Record<string, unknown>): ExplorerEdge {
   return {
     id: String(data.id ?? ""),
     key: "" as ExplorerEdge["key"],
-    type: String(data.type ?? "ASSOCIATED_WITH_DISEASE") as ExplorerEdge["type"],
+    type: String(
+      data.type ?? "ASSOCIATED_WITH_DISEASE",
+    ) as ExplorerEdge["type"],
     sourceId: String(data.source ?? ""),
     targetId: String(data.target ?? ""),
     sourceKey: "" as ExplorerEdge["sourceKey"],
     targetKey: "" as ExplorerEdge["targetKey"],
-    numSources: typeof data.numSources === "number" ? data.numSources : undefined,
-    numExperiments: typeof data.numExperiments === "number" ? data.numExperiments : undefined,
-    fields: typeof data.fields === "object" && data.fields !== null ? data.fields as Record<string, unknown> : undefined,
+    numSources:
+      typeof data.numSources === "number" ? data.numSources : undefined,
+    numExperiments:
+      typeof data.numExperiments === "number" ? data.numExperiments : undefined,
+    fields:
+      typeof data.fields === "object" && data.fields !== null
+        ? (data.fields as Record<string, unknown>)
+        : undefined,
   };
 }
 
@@ -384,7 +392,9 @@ function dataToEdge(data: Record<string, unknown>): ExplorerEdge {
 
 function clearHoverClasses(cy: Core) {
   cy.batch(() => {
-    cy.elements().removeClass("hover-source hover-neighbor hover-highlight hover-dimmed");
+    cy.elements().removeClass(
+      "hover-source hover-neighbor hover-highlight hover-dimmed",
+    );
   });
 }
 
@@ -485,14 +495,30 @@ function ExplorerCytoscapeInner({
     };
   }, []);
 
-  useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
-  useEffect(() => { onNodeHoverRef.current = onNodeHover; }, [onNodeHover]);
-  useEffect(() => { onEdgeClickRef.current = onEdgeClick; }, [onEdgeClick]);
-  useEffect(() => { onEdgeHoverRef.current = onEdgeHover; }, [onEdgeHover]);
-  useEffect(() => { onNodeDoubleClickRef.current = onNodeDoubleClick; }, [onNodeDoubleClick]);
-  useEffect(() => { onBackgroundClickRef.current = onBackgroundClick; }, [onBackgroundClick]);
-  useEffect(() => { selectedNodeIdsRef.current = selectedNodeIds; }, [selectedNodeIds]);
-  useEffect(() => { selectedEdgeIdRef.current = selectedEdgeId; }, [selectedEdgeId]);
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick;
+  }, [onNodeClick]);
+  useEffect(() => {
+    onNodeHoverRef.current = onNodeHover;
+  }, [onNodeHover]);
+  useEffect(() => {
+    onEdgeClickRef.current = onEdgeClick;
+  }, [onEdgeClick]);
+  useEffect(() => {
+    onEdgeHoverRef.current = onEdgeHover;
+  }, [onEdgeHover]);
+  useEffect(() => {
+    onNodeDoubleClickRef.current = onNodeDoubleClick;
+  }, [onNodeDoubleClick]);
+  useEffect(() => {
+    onBackgroundClickRef.current = onBackgroundClick;
+  }, [onBackgroundClick]);
+  useEffect(() => {
+    selectedNodeIdsRef.current = selectedNodeIds;
+  }, [selectedNodeIds]);
+  useEffect(() => {
+    selectedEdgeIdRef.current = selectedEdgeId;
+  }, [selectedEdgeId]);
 
   // Selection highlighting: dims non-related nodes/edges when something is selected
   useEffect(() => {
@@ -538,7 +564,10 @@ function ExplorerCytoscapeInner({
     cy.nodes().removeClass("path-node path-dimmed");
     cy.edges().removeClass("path-edge path-dimmed");
 
-    if (pathHighlight && (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)) {
+    if (
+      pathHighlight &&
+      (pathHighlight.nodeIds.size > 0 || pathHighlight.edgeIds.size > 0)
+    ) {
       cy.nodes().forEach((node) => {
         if (pathHighlight.nodeIds.has(node.id())) {
           node.addClass("path-node");
@@ -576,7 +605,7 @@ function ExplorerCytoscapeInner({
         .map((el) => el.data.id)
         .sort()
         .join(","),
-    [elements]
+    [elements],
   );
 
   const prevElementCountRef = useRef(elements.length);
@@ -586,7 +615,11 @@ function ExplorerCytoscapeInner({
     const cy = cyRef.current;
     if (cy.destroyed()) return;
 
-    const currentElementIds = cy.elements().map((el) => el.id()).sort().join(",");
+    const currentElementIds = cy
+      .elements()
+      .map((el) => el.id())
+      .sort()
+      .join(",");
     const elementCountChanged = elements.length !== prevElementCountRef.current;
     prevElementCountRef.current = elements.length;
 
@@ -679,7 +712,10 @@ function ExplorerCytoscapeInner({
     });
 
     cy.on("mouseout", "node", () => {
-      if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
       restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
       onNodeHoverRef.current?.(null, null);
     });
@@ -711,7 +747,10 @@ function ExplorerCytoscapeInner({
     });
 
     cy.on("mouseout", "edge", () => {
-      if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
       restoreSelectionHighlight(cy, selectedNodeIdsRef, selectedEdgeIdRef);
       onEdgeHoverRef.current?.(null, null);
     });

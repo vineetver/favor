@@ -18,7 +18,9 @@ interface HomologuesTableProps {
 export function HomologuesTable({ homologues }: HomologuesTableProps) {
   if (!homologues || homologues.length === 0) return null;
 
-  const sorted = [...homologues].sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99));
+  const sorted = [...homologues].sort(
+    (a, b) => (a.priority ?? 99) - (b.priority ?? 99),
+  );
 
   return (
     <div className="flex flex-col gap-1">

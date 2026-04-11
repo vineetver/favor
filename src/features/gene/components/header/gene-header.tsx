@@ -1,6 +1,7 @@
 "use client";
 
 import type { Gene } from "@features/gene/types";
+import { ShareButton } from "@shared/components/share-button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,7 +10,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@shared/components/ui/breadcrumb";
-import { ShareButton } from "@shared/components/share-button";
 
 interface GeneHeaderProps {
   gene: Gene;

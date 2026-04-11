@@ -160,9 +160,11 @@ class TextBuilder<TData> {
   capitalize(): this {
     this.transforms.push((str) =>
       str
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ')
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" "),
     );
     return this;
   }
@@ -190,9 +192,9 @@ class TextBuilder<TData> {
     this.transforms.push((str) => {
       const parts = str.split(separator);
       if (index !== undefined) {
-        return parts[index] ?? '';
+        return parts[index] ?? "";
       }
-      return parts.filter(Boolean).join(', ');
+      return parts.filter(Boolean).join(", ");
     });
     return this;
   }
@@ -217,7 +219,7 @@ class TextBuilder<TData> {
   }
 
   /** Allow using the builder directly as a cell renderer */
-  [Symbol.for('tanstack.cell')]() {
+  [Symbol.for("tanstack.cell")]() {
     return this.build();
   }
 }
@@ -239,9 +241,11 @@ export const cell = {
       if (isEmpty(v)) return EMPTY;
       const str = String(v);
       return str
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
     };
   },
 
@@ -278,7 +282,7 @@ export const cell = {
       if (index !== undefined) {
         return parts[index] ?? EMPTY;
       }
-      return parts.filter(Boolean).join(', ');
+      return parts.filter(Boolean).join(", ");
     };
   },
 
@@ -360,10 +364,7 @@ export const cell = {
   },
 
   /** Presence badge - shows "Yes" if any truthy value exists, "-" if empty */
-  presence<TData>(
-    presentLabel = "Yes",
-    presentColor: BadgeColor = "green",
-  ) {
+  presence<TData>(presentLabel = "Yes", presentColor: BadgeColor = "green") {
     return ({ getValue }: CellContext<TData, unknown>) => {
       const v = getValue();
       if (isEmpty(v)) return EMPTY;

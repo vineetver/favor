@@ -1,9 +1,13 @@
-import type { ExplorerNode, ExplorerEdge, ExplorerSelection, InspectorMode } from "./node";
-import type { GraphFilters } from "./filters";
-import type { NodeKey } from "./keys";
-import type { ProvenanceEvent } from "./provenance";
-import type { ExplorerLayoutType } from "../config/layout";
 import type { TemplateId } from "../config/explorer-config";
+import type { ExplorerLayoutType } from "../config/layout";
+import type { GraphFilters } from "./filters";
+import type {
+  ExplorerEdge,
+  ExplorerNode,
+  ExplorerSelection,
+  InspectorMode,
+} from "./node";
+import type { ProvenanceEvent } from "./provenance";
 import type { TemplateResultData } from "./template-results";
 
 // =============================================================================
@@ -42,7 +46,6 @@ export type AsyncOperation =
   | { type: "running_variant_trail"; nodeId: string }
   | { type: "error"; operation: string; message: string };
 
-
 // =============================================================================
 // Explorer State (Discriminated Union)
 // =============================================================================
@@ -63,6 +66,6 @@ export type ExplorerState =
       async: AsyncOperation;
     };
 
+export type { TemplateId } from "../config/explorer-config";
 // Re-export for convenience (canonical definitions in config/)
 export type { ExplorerLayoutType } from "../config/layout";
-export type { TemplateId } from "../config/explorer-config";

@@ -1,13 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
-import { useClientSearchParams } from "@shared/hooks";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef } from "react";
 import type {
   CcreGeneLinkRow,
   PaginatedResponse,
 } from "@features/enrichment/api/region";
+import { useClientSearchParams } from "@shared/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef } from "react";
+import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -87,7 +87,8 @@ export function useCcreGeneLinksQuery({
   const query = useQuery({
     queryKey: ["ccre-gene-links", ccreId, filters],
     queryFn: () => fetchCcreGeneLinksClient(ccreId, filters),
-    placeholderData: (prev: PaginatedResponse<CcreGeneLinkRow> | undefined) => prev,
+    placeholderData: (prev: PaginatedResponse<CcreGeneLinkRow> | undefined) =>
+      prev,
     staleTime: 5 * 60 * 1000,
     ...(isFirstMount.current && initialData ? { initialData } : {}),
   });

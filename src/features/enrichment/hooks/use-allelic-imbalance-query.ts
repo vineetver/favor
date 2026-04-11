@@ -1,13 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
+import type {
+  PaginatedResponse,
+  VariantAllelicImbalanceRow,
+} from "@features/enrichment/api/region";
 import { useClientSearchParams } from "@shared/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
-import type {
-  VariantAllelicImbalanceRow,
-  PaginatedResponse,
-} from "@features/enrichment/api/region";
+import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -89,7 +89,9 @@ export function useAllelicImbalanceQuery({
   const query = useQuery({
     queryKey: ["allelic-imbalance", ref, filters],
     queryFn: () => fetchAllelicImbalanceClient(ref, filters),
-    placeholderData: (prev: PaginatedResponse<VariantAllelicImbalanceRow> | undefined) => prev,
+    placeholderData: (
+      prev: PaginatedResponse<VariantAllelicImbalanceRow> | undefined,
+    ) => prev,
     staleTime: 5 * 60 * 1000,
     ...(isFirstMount.current && initialData ? { initialData } : {}),
   });

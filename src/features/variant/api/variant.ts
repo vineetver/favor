@@ -1,4 +1,8 @@
-import type { Variant, VariantSingleResponse, AmbiguousVariantResponse } from "@features/variant/types";
+import type {
+  AmbiguousVariantResponse,
+  Variant,
+  VariantSingleResponse,
+} from "@features/variant/types";
 import { fetchOrNull } from "@infra/api";
 
 import { API_BASE } from "@/config/api";
@@ -29,7 +33,9 @@ export interface VariantFetchResult {
 /**
  * Check if response is ambiguous variant response
  */
-function isAmbiguousResponse(response: unknown): response is AmbiguousVariantResponse {
+function isAmbiguousResponse(
+  response: unknown,
+): response is AmbiguousVariantResponse {
   return (
     typeof response === "object" &&
     response !== null &&

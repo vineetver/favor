@@ -2,16 +2,16 @@
 // Barrel export for genome browser utilities
 
 export {
-  parseRegion,
+  centerOn,
   formatRegion,
   formatRegionSize,
   formatRegionWithSize,
-  zoomIn,
-  zoomOut,
+  type ParseResult,
   panLeft,
   panRight,
-  centerOn,
+  parseRegion,
   parseRegionParam,
   parseTracksParam,
-  type ParseResult,
-} from './region-parser'
+  zoomIn,
+  zoomOut,
+} from "./region-parser";

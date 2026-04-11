@@ -70,7 +70,7 @@ export function AlphaGenomeRegionView({
     });
   }, [selectedModalities, width]);
 
-  const regionLabel = interval
+  const _regionLabel = interval
     ? `${chrWithPrefix}:${interval.start.toLocaleString()}-${interval.end.toLocaleString()}`
     : `${chrWithPrefix}:${start.toLocaleString()}-${end.toLocaleString()}`;
 
@@ -160,7 +160,14 @@ export function AlphaGenomeRegionView({
       )}
 
       {/* Results */}
-      {data && <RegionTrackResults data={data} variantPosition={variantPosition} intervalStart={interval?.start} intervalEnd={interval?.end} />}
+      {data && (
+        <RegionTrackResults
+          data={data}
+          variantPosition={variantPosition}
+          intervalStart={interval?.start}
+          intervalEnd={interval?.end}
+        />
+      )}
     </section>
   );
 }
@@ -178,12 +185,18 @@ function RegionTrackResults({
 }) {
   // Compute variant index within the track values array
   const variantIndex = useMemo(() => {
-    if (variantPosition == null || intervalStart == null || intervalEnd == null) return undefined;
-    if (variantPosition < intervalStart || variantPosition > intervalEnd) return undefined;
-    const firstTrack = data.modalities[0] ? (data[data.modalities[0]] as TrackData | undefined) : undefined;
+    if (variantPosition == null || intervalStart == null || intervalEnd == null)
+      return undefined;
+    if (variantPosition < intervalStart || variantPosition > intervalEnd)
+      return undefined;
+    const firstTrack = data.modalities[0]
+      ? (data[data.modalities[0]] as TrackData | undefined)
+      : undefined;
     if (!firstTrack?.values?.length) return undefined;
-    const numPositions = firstTrack.values[0]?.length ?? firstTrack.values.length;
-    const frac = (variantPosition - intervalStart) / (intervalEnd - intervalStart);
+    const numPositions =
+      firstTrack.values[0]?.length ?? firstTrack.values.length;
+    const frac =
+      (variantPosition - intervalStart) / (intervalEnd - intervalStart);
     return Math.round(frac * numPositions);
   }, [variantPosition, intervalStart, intervalEnd, data]);
 
@@ -238,7 +251,9 @@ function RegionModalityGroup({
         {variantIndex != null && (
           <div
             className="absolute top-0 bottom-0 w-px border-l border-dashed border-red-500/60 z-10 pointer-events-none"
-            style={{ left: `${(variantIndex / (track.values[0]?.length || 1)) * 100}%` }}
+            style={{
+              left: `${(variantIndex / (track.values[0]?.length || 1)) * 100}%`,
+            }}
           />
         )}
 

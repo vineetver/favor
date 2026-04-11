@@ -1,59 +1,67 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/track-selector/track-selector.tsx
 // Left panel for track selection
 
-import { useState, useMemo } from 'react'
-import { Badge } from '@shared/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
-import { Skeleton } from '@shared/components/ui/skeleton'
-import { cn } from '@infra/utils'
-import { useBrowserState, useVisibleTrackCount } from '../../state/browser-context'
-import { getTracksGroupedByCategory, getAllTracks } from '../../tracks/registry'
-import type { StaticTrack, TrackCategory } from '../../types/tracks'
-import { SearchTracks } from './search-tracks'
-import { CategoryList } from './category-list'
-import { TissueSelector } from './tissue-selector'
-import { CollectionsList } from './collections-list'
+import { cn } from "@infra/utils";
+import { Badge } from "@shared/components/ui/badge";
+import { Skeleton } from "@shared/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { useMemo, useState } from "react";
+import {
+  useBrowserState,
+  useVisibleTrackCount,
+} from "../../state/browser-context";
+import {
+  getAllTracks,
+  getTracksGroupedByCategory,
+} from "../../tracks/registry";
+import type { StaticTrack, TrackCategory } from "../../types/tracks";
+import { CategoryList } from "./category-list";
+import { CollectionsList } from "./collections-list";
+import { SearchTracks } from "./search-tracks";
+import { TissueSelector } from "./tissue-selector";
 
 type TrackSelectorProps = {
-  className?: string
-}
+  className?: string;
+};
 
 // Cached registry slices — these never change at runtime, so we lift them
 // out of the component entirely. Otherwise every render re-creates the Map.
-const ALL_TRACKS_GROUPED = getTracksGroupedByCategory()
-const ALL_TRACKS_COUNT = getAllTracks().length
+const ALL_TRACKS_GROUPED = getTracksGroupedByCategory();
+const ALL_TRACKS_COUNT = getAllTracks().length;
 
 export function TrackSelector({ className }: TrackSelectorProps) {
-  const state = useBrowserState()
-  const visibleCount = useVisibleTrackCount()
-  const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'individual' | 'collections'>('individual')
+  const state = useBrowserState();
+  const visibleCount = useVisibleTrackCount();
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"individual" | "collections">(
+    "individual",
+  );
 
   // Filter tracks based on search
   const filteredTracksGrouped = useMemo(() => {
-    if (!search.trim()) return ALL_TRACKS_GROUPED
+    if (!search.trim()) return ALL_TRACKS_GROUPED;
 
-    const searchLower = search.toLowerCase()
-    const filtered = new Map<TrackCategory, StaticTrack[]>()
+    const searchLower = search.toLowerCase();
+    const filtered = new Map<TrackCategory, StaticTrack[]>();
 
     for (const [category, tracks] of ALL_TRACKS_GROUPED) {
       const matchingTracks = tracks.filter(
-        track =>
+        (track) =>
           track.name.toLowerCase().includes(searchLower) ||
-          track.description.toLowerCase().includes(searchLower)
-      )
+          track.description.toLowerCase().includes(searchLower),
+      );
       if (matchingTracks.length > 0) {
-        filtered.set(category, matchingTracks)
+        filtered.set(category, matchingTracks);
       }
     }
 
-    return filtered
-  }, [search])
+    return filtered;
+  }, [search]);
 
-  if (state.status === 'idle') {
-    return <TrackSelectorSkeleton className={className} />
+  if (state.status === "idle") {
+    return <TrackSelectorSkeleton className={className} />;
   }
 
   return (
@@ -73,7 +81,10 @@ export function TrackSelector({ className }: TrackSelectorProps) {
 
       {/* Tab toggle: Individual / Collections */}
       <div className="px-4 pb-2">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'individual' | 'collections')}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "individual" | "collections")}
+        >
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="individual">Individual</TabsTrigger>
             <TabsTrigger value="collections">Collections</TabsTrigger>
@@ -83,7 +94,7 @@ export function TrackSelector({ className }: TrackSelectorProps) {
 
       {/* Content — grows naturally with the page, no inner scroll cap */}
       <div className="p-2">
-        {activeTab === 'individual' ? (
+        {activeTab === "individual" ? (
           <>
             {/* Category list */}
             <CategoryList tracks={filteredTracksGrouped} />
@@ -103,7 +114,7 @@ export function TrackSelector({ className }: TrackSelectorProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function TrackSelectorSkeleton({ className }: { className?: string }) {
@@ -125,7 +136,7 @@ function TrackSelectorSkeleton({ className }: { className?: string }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export { TrackSelectorSkeleton }
+export { TrackSelectorSkeleton };

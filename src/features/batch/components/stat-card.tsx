@@ -1,7 +1,12 @@
 import { cn } from "@infra/utils";
 import type { LucideIcon } from "lucide-react";
 
-export type StatCardVariant = "default" | "positive" | "warning" | "negative" | "primary";
+export type StatCardVariant =
+  | "default"
+  | "positive"
+  | "warning"
+  | "negative"
+  | "primary";
 
 interface StatCardProps {
   value: string | number;
@@ -15,7 +20,10 @@ interface StatCardProps {
   className?: string;
 }
 
-const VARIANT_STYLES: Record<StatCardVariant, { container: string; value: string }> = {
+const VARIANT_STYLES: Record<
+  StatCardVariant,
+  { container: string; value: string }
+> = {
   default: {
     container: "bg-muted border-border",
     value: "text-foreground",
@@ -48,7 +56,8 @@ export function StatCard({
   className,
 }: StatCardProps) {
   const styles = VARIANT_STYLES[variant];
-  const displayValue = typeof value === "number" ? value.toLocaleString() : value;
+  const displayValue =
+    typeof value === "number" ? value.toLocaleString() : value;
 
   return (
     <div className={cn("p-4 rounded-xl border", styles.container, className)}>
@@ -60,16 +69,28 @@ export function StatCard({
           </span>
         </div>
       )}
-      <div className={cn("text-xl font-bold", Icon ? "text-2xl" : "text-center", styles.value)}>
+      <div
+        className={cn(
+          "text-xl font-bold",
+          Icon ? "text-2xl" : "text-center",
+          styles.value,
+        )}
+      >
         {displayValue}
       </div>
       {!Icon && (
         <div className="text-xs text-muted-foreground mt-1 text-center">
           {label}
-          {percentage && <span className="ml-1 text-muted-foreground/70">({percentage})</span>}
+          {percentage && (
+            <span className="ml-1 text-muted-foreground/70">
+              ({percentage})
+            </span>
+          )}
         </div>
       )}
-      {subValue && <div className="text-xs text-muted-foreground mt-1">{subValue}</div>}
+      {subValue && (
+        <div className="text-xs text-muted-foreground mt-1">{subValue}</div>
+      )}
     </div>
   );
 }

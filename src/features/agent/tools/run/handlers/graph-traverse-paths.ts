@@ -4,9 +4,14 @@
  */
 
 import { agentFetch } from "../../../lib/api-client";
-import type { RunCommand, RunResult, EntityRef } from "../types";
+import {
+  catchToResult,
+  emptyResult,
+  okResult,
+  TraceCollector,
+} from "../run-result";
+import type { EntityRef, RunCommand, RunResult } from "../types";
 import { errorResult, getCachedGraphSchema, humanEdgeLabel } from "./graph";
-import { okResult, emptyResult, catchToResult, TraceCollector } from "../run-result";
 
 type TraverseCmd = Extract<RunCommand, { command: "traverse" }>;
 
@@ -17,7 +22,10 @@ export async function handleTraversePaths(
 
   try {
     if (!cmd.from || !cmd.to) {
-      return errorResult("paths mode requires 'from' and 'to' entity refs (format: 'Type:ID').", tc);
+      return errorResult(
+        "paths mode requires 'from' and 'to' entity refs (format: 'Type:ID').",
+        tc,
+      );
     }
 
     const params = new URLSearchParams();
@@ -26,7 +34,11 @@ export async function handleTraversePaths(
     params.set("maxHops", String(Math.min(cmd.max_hops ?? 3, 5)));
     params.set("limit", String(Math.min(cmd.limit ?? 5, 50)));
 
-    tc.add({ step: "fetchPaths", kind: "call", message: `GET /graph/paths from=${cmd.from} to=${cmd.to}` });
+    tc.add({
+      step: "fetchPaths",
+      kind: "call",
+      message: `GET /graph/paths from=${cmd.from} to=${cmd.to}`,
+    });
 
     const [data, schema] = await Promise.all([
       agentFetch<{
@@ -59,35 +71,37 @@ export async function handleTraversePaths(
     // Collect unique edge types used across all paths
     const usedEdgeTypes = new Set<string>();
 
-    const paths = (data.data.paths ?? []).slice(0, cmd.limit ?? 5).map((p, idx) => {
-      for (const edge of p.edges) {
-        if (Array.isArray(edge) && typeof edge[0] === "string") {
-          usedEdgeTypes.add(edge[0]);
-        }
-      }
-
-      return {
-        rank: idx + 1,
-        length: p.nodes.length - 1,
-        pathText: p.text,
-        nodes: p.nodes.map((nodeKey) => {
-          const row = nodesMap[nodeKey];
-          if (!row) {
-            const colonIdx = nodeKey.indexOf(":");
-            return {
-              type: colonIdx > 0 ? nodeKey.slice(0, colonIdx) : "Unknown",
-              id: colonIdx > 0 ? nodeKey.slice(colonIdx + 1) : nodeKey,
-              label: nodeKey,
-            };
+    const paths = (data.data.paths ?? [])
+      .slice(0, cmd.limit ?? 5)
+      .map((p, idx) => {
+        for (const edge of p.edges) {
+          if (Array.isArray(edge) && typeof edge[0] === "string") {
+            usedEdgeTypes.add(edge[0]);
           }
-          return {
-            type: (row[typeIdx] as string) ?? "Unknown",
-            id: (row[idIdx] as string) ?? nodeKey,
-            label: (row[labelIdx] as string) ?? nodeKey,
-          };
-        }),
-      };
-    });
+        }
+
+        return {
+          rank: idx + 1,
+          length: p.nodes.length - 1,
+          pathText: p.text,
+          nodes: p.nodes.map((nodeKey) => {
+            const row = nodesMap[nodeKey];
+            if (!row) {
+              const colonIdx = nodeKey.indexOf(":");
+              return {
+                type: colonIdx > 0 ? nodeKey.slice(0, colonIdx) : "Unknown",
+                id: colonIdx > 0 ? nodeKey.slice(colonIdx + 1) : nodeKey,
+                label: nodeKey,
+              };
+            }
+            return {
+              type: (row[typeIdx] as string) ?? "Unknown",
+              id: (row[idIdx] as string) ?? nodeKey,
+              label: (row[labelIdx] as string) ?? nodeKey,
+            };
+          }),
+        };
+      });
 
     if (paths.length === 0) {
       return emptyResult({
@@ -95,8 +109,24 @@ export async function handleTraversePaths(
         data: { _mode: "paths" as const },
         tc,
         next_actions: [
-          { tool: "Run", args: { command: "traverse", from: cmd.from, to: cmd.to, max_hops: Math.min((cmd.max_hops ?? 3) + 1, 5) }, reason: "Increase max_hops to search deeper" },
-          { tool: "Run", args: { command: "explore", seeds: [{ label: cmd.from?.split(":")[1] ?? cmd.from }] }, reason: "Check entity context to verify both entities exist" },
+          {
+            tool: "Run",
+            args: {
+              command: "traverse",
+              from: cmd.from,
+              to: cmd.to,
+              max_hops: Math.min((cmd.max_hops ?? 3) + 1, 5),
+            },
+            reason: "Increase max_hops to search deeper",
+          },
+          {
+            tool: "Run",
+            args: {
+              command: "explore",
+              seeds: [{ label: cmd.from?.split(":")[1] ?? cmd.from }],
+            },
+            reason: "Check entity context to verify both entities exist",
+          },
         ],
       });
     }
@@ -116,15 +146,17 @@ export async function handleTraversePaths(
     const annotationLines = Object.entries(edgeAnnotations).map(
       ([label, { description }]) => `${label}: ${description}`,
     );
-    const textSummary = annotationLines.length > 0
-      ? `${baseSummary}\n\nRelationship types in these paths:\n${annotationLines.join("\n")}`
-      : baseSummary;
+    const textSummary =
+      annotationLines.length > 0
+        ? `${baseSummary}\n\nRelationship types in these paths:\n${annotationLines.join("\n")}`
+        : baseSummary;
 
     return okResult({
       text_summary: textSummary,
       data: {
         _mode: "paths" as const,
-        _method: "Shortest path search through the knowledge graph. Each path shows a chain of entities connected by typed relationships.",
+        _method:
+          "Shortest path search through the knowledge graph. Each path shows a chain of entities connected by typed relationships.",
         from: data.data.from,
         to: data.data.to,
         edgeAnnotations,
@@ -140,14 +172,22 @@ export async function handleTraversePaths(
 }
 
 /** Extract entities from paths result data for pipeline forwarding. */
-export function extractPathEntities(data: Record<string, unknown>): EntityRef[] {
-  const paths = data.paths as Array<{ nodes?: Array<Record<string, unknown>> }> | undefined;
+export function extractPathEntities(
+  data: Record<string, unknown>,
+): EntityRef[] {
+  const paths = data.paths as
+    | Array<{ nodes?: Array<Record<string, unknown>> }>
+    | undefined;
   if (!paths) return [];
   const out: EntityRef[] = [];
   for (const p of paths) {
     for (const node of p.nodes ?? []) {
       if (node.type && node.id && node.label) {
-        out.push({ type: String(node.type), id: String(node.id), label: String(node.label) });
+        out.push({
+          type: String(node.type),
+          id: String(node.id),
+          label: String(node.label),
+        });
       }
     }
   }

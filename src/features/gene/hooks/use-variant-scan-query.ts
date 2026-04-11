@@ -6,11 +6,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import {
   ARRAY_FIELDS,
-  NUMERIC_FIELDS,
-  SORTABLE_COLUMNS,
   fetchVariantScan,
+  NUMERIC_FIELDS,
   nextSearchParamsToUrlSearchParams,
   parseVariantScanFiltersFromUrl,
+  SORTABLE_COLUMNS,
   type VariantScanFilterOptions,
 } from "../api/variant-scan";
 

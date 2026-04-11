@@ -1,9 +1,5 @@
 import type { Gene } from "@features/gene/types";
-import {
-  cell,
-  createColumns,
-  tooltip,
-} from "@infra/table/column-builder";
+import { cell, createColumns, tooltip } from "@infra/table/column-builder";
 
 const col = createColumns<Gene>();
 
@@ -52,11 +48,7 @@ export const geneTepColumns = [
     cell: cell.custom<Gene, any>((url: string) => {
       if (!url) return null;
       return (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={url} target="_blank" rel="noopener noreferrer">
           View TEP
         </a>
       );
@@ -71,44 +63,38 @@ export const geneTepColumns = [
       description:
         "Complete Target Enabling Package information including description, therapeutic area, and access to resources.",
     }),
-    cell: cell.custom<Gene, any>((tep: {
-      targetFromSourceId: string;
-      description: string;
-      therapeuticArea: string;
-      url: string;
-    }) => {
-      if (!tep) return null;
+    cell: cell.custom<Gene, any>(
+      (tep: {
+        targetFromSourceId: string;
+        description: string;
+        therapeuticArea: string;
+        url: string;
+      }) => {
+        if (!tep) return null;
 
-      return (
-        <div>
-          {tep.targetFromSourceId && (
-            <div>Target ID: {tep.targetFromSourceId}</div>
-          )}
+        return (
+          <div>
+            {tep.targetFromSourceId && (
+              <div>Target ID: {tep.targetFromSourceId}</div>
+            )}
 
-          {tep.therapeuticArea && (
-            <div>Therapeutic Area: {tep.therapeuticArea}</div>
-          )}
+            {tep.therapeuticArea && (
+              <div>Therapeutic Area: {tep.therapeuticArea}</div>
+            )}
 
-          {tep.description && (
-            <div>
-              Description: {tep.description}
-            </div>
-          )}
+            {tep.description && <div>Description: {tep.description}</div>}
 
-          {tep.url && (
-            <div>
-              <a
-                href={tep.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Full TEP
-              </a>
-            </div>
-          )}
-        </div>
-      );
-    }),
+            {tep.url && (
+              <div>
+                <a href={tep.url} target="_blank" rel="noopener noreferrer">
+                  View Full TEP
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      },
+    ),
   }),
 ];
 

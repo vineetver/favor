@@ -27,20 +27,19 @@ export const variantDataChecks: Record<string, DataCheck> = {
   // Pathogenicity & Scores
   "protein-function": (v) =>
     hasAny(v.main?.protein_predictions) || hasAny(v.dbnsfp),
-  "protein-structure": (v) =>
-    (v.alphamissense?.predictions?.length ?? 0) > 0,
+  "protein-structure": (v) => (v.alphamissense?.predictions?.length ?? 0) > 0,
   conservation: (v) => hasAny(v.main?.conservation),
-  "splice-ai": (v) => !!v.gnomad_exome?.functional?.spliceai_ds_max || !!v.gnomad_genome?.functional?.spliceai_ds_max,
+  "splice-ai": (v) =>
+    !!v.gnomad_exome?.functional?.spliceai_ds_max ||
+    !!v.gnomad_genome?.functional?.spliceai_ds_max,
 
   // Regulatory & Epigenetics
   epigenetics: (v) => hasAny(v.epigenetic_phred) || hasAny(v.main?.encode),
   "chromatin-state": (v) => hasAny(v.main?.chromhmm),
-  "transcription-factors": (v) =>
-    !!v.main?.remap?.overlap_tf || hasAny(v.cage),
+  "transcription-factors": (v) => !!v.main?.remap?.overlap_tf || hasAny(v.cage),
 
   // Population Genetics
-  "allele-frequency": (v) =>
-    hasAny(v.gnomad_exome) || hasAny(v.gnomad_genome),
+  "allele-frequency": (v) => hasAny(v.gnomad_exome) || hasAny(v.gnomad_genome),
   "local-nucleotide-diversity": (v) =>
     hasAny(v.apc) && !!v.apc?.local_nucleotide_diversity,
   "expected-rate-of-de-novo-mutation": (v) => hasAny(v.mutation_rate),

@@ -7,11 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@shared/components/ui/sheet";
-import {
-  Database,
-  FileText,
-  FlaskConical,
-} from "lucide-react";
+import { Database, FileText, FlaskConical } from "lucide-react";
 import { memo } from "react";
 import { formatConfidenceScore } from "../../utils/ppi-graph-utils";
 import type { PPIEdge } from "./types";
@@ -22,17 +18,28 @@ interface PPIEdgeDetailPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function PPIEdgeDetailPanelInner({ edge, open, onOpenChange }: PPIEdgeDetailPanelProps) {
+function PPIEdgeDetailPanelInner({
+  edge,
+  open,
+  onOpenChange,
+}: PPIEdgeDetailPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[420px] sm:w-[480px] overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-[420px] sm:w-[480px] overflow-y-auto"
+      >
         {edge && (
           <>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2 text-lg">
-                <span className="font-semibold text-indigo-600">{edge.sourceSymbol}</span>
+                <span className="font-semibold text-indigo-600">
+                  {edge.sourceSymbol}
+                </span>
                 <span className="text-muted-foreground">⟷</span>
-                <span className="font-semibold text-foreground">{edge.targetSymbol}</span>
+                <span className="font-semibold text-foreground">
+                  {edge.targetSymbol}
+                </span>
               </SheetTitle>
             </SheetHeader>
 
@@ -90,10 +97,14 @@ function PPIEdgeDetailPanelInner({ edge, open, onOpenChange }: PPIEdgeDetailPane
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-sm text-foreground">
-                      Average: <span className="font-semibold">{formatConfidenceScore(edge.confidenceScores)}</span>
+                      Average:{" "}
+                      <span className="font-semibold">
+                        {formatConfidenceScore(edge.confidenceScores)}
+                      </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      ({edge.confidenceScores.length} score{edge.confidenceScores.length !== 1 ? "s" : ""})
+                      ({edge.confidenceScores.length} score
+                      {edge.confidenceScores.length !== 1 ? "s" : ""})
                     </div>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { fetchRegionSummary } from "@features/enrichment/api/region";
-import { RegionNavBar } from "@features/enrichment/components/region-nav-bar";
 import type { NavGroup } from "@features/enrichment/components/region-nav-bar";
+import { RegionNavBar } from "@features/enrichment/components/region-nav-bar";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 // ---------------------------------------------------------------------------

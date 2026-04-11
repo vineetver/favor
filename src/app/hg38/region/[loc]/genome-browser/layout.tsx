@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
 import { RegionHeader } from "@features/region/components/region-header";
-import { parseRegion } from "@features/region/utils/parse-region";
 import { REGION_NAVIGATION_CONFIG } from "@features/region/config/navigation";
+import { parseRegion } from "@features/region/utils/parse-region";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
+import { notFound } from "next/navigation";
 
 interface GenomeBrowserLayoutProps {
   children: React.ReactNode;

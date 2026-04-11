@@ -2,11 +2,14 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 // Validate API URL — reject non-http(s) protocols to prevent SSRF via misconfiguration
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const apiUrl =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 try {
   const parsed = new URL(apiUrl);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error(`NEXT_PUBLIC_API_URL must use http or https, got: ${parsed.protocol}`);
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must use http or https, got: ${parsed.protocol}`,
+    );
   }
 } catch (err) {
   if (err instanceof TypeError) {

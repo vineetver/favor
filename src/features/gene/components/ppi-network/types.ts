@@ -35,9 +35,9 @@ export const DEFAULT_EDGE_FILTER_CONFIG: EdgeFilterConfig = {
  * @deprecated Use EdgeFilterConfig instead
  */
 export interface EdgeFilterState {
-  minSources: number;        // 0-4, default 0
-  minExperiments: number;    // 0+, default 0
-  greyOutBelowThreshold: boolean;  // default true (grey out vs hide)
+  minSources: number; // 0-4, default 0
+  minExperiments: number; // 0+, default 0
+  greyOutBelowThreshold: boolean; // default true (grey out vs hide)
 }
 
 /**
@@ -79,7 +79,7 @@ export function toEdgeFilterConfig(state: EdgeFilterState): EdgeFilterConfig {
 /**
  * Type of context overlay for interactors
  */
-export type ContextOverlay = 'none' | 'shared-pathways' | 'shared-diseases';
+export type ContextOverlay = "none" | "shared-pathways" | "shared-diseases";
 
 /**
  * Overlay data for a node showing shared context
@@ -107,7 +107,11 @@ export interface ContextOverlayState {
 export type OverlayState =
   | { status: "off" }
   | { status: "loading"; type: "pathways" | "diseases" }
-  | { status: "loaded"; type: "pathways" | "diseases"; data: Map<string, OverlayData> }
+  | {
+      status: "loaded";
+      type: "pathways" | "diseases";
+      data: Map<string, OverlayData>;
+    }
   | { status: "error"; type: "pathways" | "diseases"; message: string };
 
 /**
@@ -126,7 +130,7 @@ export const CONTEXT_OVERLAY_OPTIONS = [
 /**
  * Available path finding recipes
  */
-export type PathRecipe = 'ppi-only' | 'mechanism' | 'therapeutic';
+export type PathRecipe = "ppi-only" | "mechanism" | "therapeutic";
 
 /**
  * Path recipe configuration
@@ -139,23 +143,31 @@ export interface PathRecipeConfig {
 }
 
 export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
-  'ppi-only': {
-    label: 'PPI Only',
-    description: 'Protein-protein interactions only',
-    edgeTypes: ['GENE_INTERACTS_WITH_GENE'],
-    nodeTypes: ['Gene'],
+  "ppi-only": {
+    label: "PPI Only",
+    description: "Protein-protein interactions only",
+    edgeTypes: ["GENE_INTERACTS_WITH_GENE"],
+    nodeTypes: ["Gene"],
   },
-  'mechanism': {
-    label: 'Mechanism',
-    description: 'Include pathways and biological processes',
-    edgeTypes: ['GENE_INTERACTS_WITH_GENE', 'GENE_PARTICIPATES_IN_PATHWAY', 'PATHWAY_PART_OF_PATHWAY'],
-    nodeTypes: ['Gene', 'Pathway'],
+  mechanism: {
+    label: "Mechanism",
+    description: "Include pathways and biological processes",
+    edgeTypes: [
+      "GENE_INTERACTS_WITH_GENE",
+      "GENE_PARTICIPATES_IN_PATHWAY",
+      "PATHWAY_PART_OF_PATHWAY",
+    ],
+    nodeTypes: ["Gene", "Pathway"],
   },
-  'therapeutic': {
-    label: 'Therapeutic',
-    description: 'Find drug-mediated paths between genes',
-    edgeTypes: ['DRUG_ACTS_ON_GENE', 'GENE_AFFECTS_DRUG_RESPONSE', 'DRUG_INDICATED_FOR_DISEASE'],
-    nodeTypes: ['Gene', 'Drug', 'Disease'],
+  therapeutic: {
+    label: "Therapeutic",
+    description: "Find drug-mediated paths between genes",
+    edgeTypes: [
+      "DRUG_ACTS_ON_GENE",
+      "GENE_AFFECTS_DRUG_RESPONSE",
+      "DRUG_INDICATED_FOR_DISEASE",
+    ],
+    nodeTypes: ["Gene", "Drug", "Disease"],
   },
 };
 
@@ -166,7 +178,7 @@ export const PATH_RECIPES: Record<PathRecipe, PathRecipeConfig> = {
 /**
  * Supported clustering algorithms
  */
-export type ClusterAlgorithm = 'louvain' | 'label-propagation';
+export type ClusterAlgorithm = "louvain" | "label-propagation";
 
 /**
  * Cluster state for community detection
@@ -174,7 +186,7 @@ export type ClusterAlgorithm = 'louvain' | 'label-propagation';
 export interface ClusterState {
   enabled: boolean;
   algorithm: ClusterAlgorithm;
-  clusters: Map<string, string[]>;  // clusterId -> nodeIds
+  clusters: Map<string, string[]>; // clusterId -> nodeIds
   collapsedClusters: Set<string>;
 }
 
@@ -183,7 +195,7 @@ export interface ClusterState {
  */
 export const DEFAULT_CLUSTER_STATE: ClusterState = {
   enabled: false,
-  algorithm: 'louvain',
+  algorithm: "louvain",
   clusters: new Map(),
   collapsedClusters: new Set(),
 };
@@ -197,7 +209,7 @@ export const DEFAULT_CLUSTER_STATE: ClusterState = {
  */
 export interface HubModeState {
   showHubsOnly: boolean;
-  hubThreshold: number;  // percentile, e.g., 90 = top 10%
+  hubThreshold: number; // percentile, e.g., 90 = top 10%
 }
 
 /**
@@ -229,14 +241,18 @@ export const DEFAULT_FEATURE_MODE: FeatureMode = { type: "none" };
 /**
  * Helper to check if hub focus is active
  */
-export function isHubFocusActive(mode: FeatureMode): mode is { type: "hubFocus"; threshold: number } {
+export function isHubFocusActive(
+  mode: FeatureMode,
+): mode is { type: "hubFocus"; threshold: number } {
   return mode.type === "hubFocus";
 }
 
 /**
  * Helper to check if clustering is active
  */
-export function isClusteringActive(mode: FeatureMode): mode is { type: "clustering"; algorithm: ClusterAlgorithm } {
+export function isClusteringActive(
+  mode: FeatureMode,
+): mode is { type: "clustering"; algorithm: ClusterAlgorithm } {
   return mode.type === "clustering";
 }
 
@@ -278,7 +294,11 @@ export interface CentralityData {
 export type CentralityState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "loaded"; data: Map<string, CentralityData>; seedCentrality: CentralityData | null }
+  | {
+      status: "loaded";
+      data: Map<string, CentralityData>;
+      seedCentrality: CentralityData | null;
+    }
   | { status: "error"; error: string };
 
 /**
@@ -463,7 +483,10 @@ export interface PPICytoscapeGraphProps {
   layout: LayoutType;
   seedGeneId?: string;
   onNodeClick?: (node: PPINode, event?: MouseEvent) => void;
-  onNodeHover?: (node: PPINode | null, position: { x: number; y: number } | null) => void;
+  onNodeHover?: (
+    node: PPINode | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   onEdgeClick?: (edgeId: string, position: { x: number; y: number }) => void;
   selectedEdgeId?: string | null;
   /** Color mode for node visualization */
@@ -498,7 +521,12 @@ export interface PPINetworkViewProps {
   seedGeneId: string;
   seedGeneSymbol: string;
   /** Subgraph nodes in EntityRef format (preferred) */
-  subgraphNodes?: Array<{ type: string; id: string; label: string; subtitle?: string }>;
+  subgraphNodes?: Array<{
+    type: string;
+    id: string;
+    label: string;
+    subtitle?: string;
+  }>;
   /** Subgraph edges (TraverseEdge format from subgraph API with includeProps: true) */
   subgraphEdges?: Array<{
     type: string;
@@ -539,8 +567,8 @@ export interface PPINodeTooltipProps {
  * Experiment count thresholds for node coloring
  */
 export const EXPERIMENT_THRESHOLDS = {
-  HIGH: 51,    // 51+ experiments
-  GOOD: 21,    // 21-50 experiments
+  HIGH: 51, // 51+ experiments
+  GOOD: 21, // 21-50 experiments
   MODERATE: 6, // 6-20 experiments
   // 0-5 = low
 } as const;
@@ -548,7 +576,9 @@ export const EXPERIMENT_THRESHOLDS = {
 /**
  * Get experiment tier based on number of experiments
  */
-export function getExperimentTier(numExperiments: number | null): "low" | "moderate" | "good" | "high" {
+export function getExperimentTier(
+  numExperiments: number | null,
+): "low" | "moderate" | "good" | "high" {
   if (numExperiments === null || numExperiments <= 5) return "low";
   if (numExperiments <= 20) return "moderate";
   if (numExperiments <= 50) return "good";

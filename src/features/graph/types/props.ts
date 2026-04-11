@@ -1,13 +1,20 @@
 import type { ElementDefinition } from "cytoscape";
-import type { EntityType } from "./entity";
+import type {
+  ExplorerConfig,
+  ExplorerTemplate,
+  ExternalLinkConfig,
+  SeedEntity,
+} from "../config/explorer-config";
+import type {
+  ConnectionsDrilldownData,
+  ConnectionsStatus,
+} from "./connections";
 import type { EdgeType } from "./edge";
-import type { ExplorerNode, ExplorerEdge, ExplorerSelection } from "./node";
+import type { EntityType } from "./entity";
+import type { ExplorerEdge, ExplorerNode, ExplorerSelection } from "./node";
 import type { ProvenanceEvent } from "./provenance";
 import type { GraphSchema, GraphStats } from "./schema";
 import type { ExplorerLayoutType, TemplateId } from "./state";
-import type { ConnectionsDrilldownData, ConnectionsStatus } from "./connections";
-import type { SeedEntity, ExplorerConfig, ExplorerTemplate, ExternalLinkConfig } from "../config/explorer-config";
-import type { TemplateResultData } from "./template-results";
 
 // =============================================================================
 // Serialized Data (JSON-safe, for server → client)
@@ -74,9 +81,18 @@ export interface ExplorerCytoscapeProps {
   elements: ElementDefinition[];
   layout: ExplorerLayoutType;
   onNodeClick?: (node: ExplorerNode, event?: MouseEvent) => void;
-  onNodeHover?: (node: ExplorerNode | null, position: { x: number; y: number } | null) => void;
-  onEdgeClick?: (edge: ExplorerEdge, position: { x: number; y: number }) => void;
-  onEdgeHover?: (edge: ExplorerEdge | null, position: { x: number; y: number } | null) => void;
+  onNodeHover?: (
+    node: ExplorerNode | null,
+    position: { x: number; y: number } | null,
+  ) => void;
+  onEdgeClick?: (
+    edge: ExplorerEdge,
+    position: { x: number; y: number },
+  ) => void;
+  onEdgeHover?: (
+    edge: ExplorerEdge | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   onNodeDoubleClick?: (node: ExplorerNode) => void;
   onBackgroundClick?: () => void;
   selectedNodeIds?: Set<string>;

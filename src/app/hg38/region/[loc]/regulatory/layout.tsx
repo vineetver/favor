@@ -1,8 +1,8 @@
 import { fetchRegionSummary } from "@features/enrichment/api/region";
 import { RegionNavBar } from "@features/enrichment/components/region-nav-bar";
 import { RegionHeader } from "@features/region/components/region-header";
-import { parseRegion } from "@features/region/utils/parse-region";
 import { REGION_NAVIGATION_CONFIG } from "@features/region/config/navigation";
+import { parseRegion } from "@features/region/utils/parse-region";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationTabs } from "@shared/components/navigation/navigation-tabs";
 import { notFound } from "next/navigation";

@@ -4,7 +4,9 @@ interface SubcellularLocationsViewProps {
   locations: Array<Record<string, string>> | null | undefined;
 }
 
-export function SubcellularLocationsView({ locations }: SubcellularLocationsViewProps) {
+export function SubcellularLocationsView({
+  locations,
+}: SubcellularLocationsViewProps) {
   if (!locations || locations.length === 0) return null;
 
   return (

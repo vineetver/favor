@@ -1,7 +1,7 @@
 import {
   fetchAccessibilityByTissueGroup,
-  fetchChromatinByTissueGroup,
   fetchCcreLinksByTissueGroup,
+  fetchChromatinByTissueGroup,
   fetchEnhancersByTissueGroup,
   fetchLoopsByTissueGroup,
   fetchRegionSummary,
@@ -31,19 +31,27 @@ export default async function GeneLLMSummaryPage({
     ? `${gene.chromosome}-${gene.start_position}-${gene.end_position}`
     : null;
 
-  const [regionSummary, signals, chromatin, enhancers, accessibility, loops, ccreLinks, crispr] =
-    loc
-      ? await Promise.all([
-          fetchRegionSummary(loc).catch(() => null),
-          fetchSignalsByTissueGroup(loc).catch(() => []),
-          fetchChromatinByTissueGroup(loc).catch(() => []),
-          fetchEnhancersByTissueGroup(loc).catch(() => []),
-          fetchAccessibilityByTissueGroup(loc).catch(() => []),
-          fetchLoopsByTissueGroup(loc).catch(() => []),
-          fetchCcreLinksByTissueGroup(gene!.gene_symbol).catch(() => []),
-          fetchCrisprByTissueGroup(loc).catch(() => []),
-        ])
-      : [null, [], [], [], [], [], [], []];
+  const [
+    regionSummary,
+    signals,
+    chromatin,
+    enhancers,
+    accessibility,
+    loops,
+    ccreLinks,
+    crispr,
+  ] = loc
+    ? await Promise.all([
+        fetchRegionSummary(loc).catch(() => null),
+        fetchSignalsByTissueGroup(loc).catch(() => []),
+        fetchChromatinByTissueGroup(loc).catch(() => []),
+        fetchEnhancersByTissueGroup(loc).catch(() => []),
+        fetchAccessibilityByTissueGroup(loc).catch(() => []),
+        fetchLoopsByTissueGroup(loc).catch(() => []),
+        fetchCcreLinksByTissueGroup(gene?.gene_symbol).catch(() => []),
+        fetchCrisprByTissueGroup(loc).catch(() => []),
+      ])
+    : [null, [], [], [], [], [], [], []];
 
   const context = buildGeneContext({
     regionSummary,

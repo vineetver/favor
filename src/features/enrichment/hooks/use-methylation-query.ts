@@ -1,13 +1,13 @@
 "use client";
 
-import { API_BASE } from "@/config/api";
-import { useClientSearchParams } from "@shared/hooks";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef } from "react";
 import type {
   MethylationRow,
   PaginatedResponse,
 } from "@features/enrichment/api/region";
+import { useClientSearchParams } from "@shared/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef } from "react";
+import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -85,7 +85,8 @@ export function useMethylationQuery({
   const query = useQuery({
     queryKey: ["methylation", ref, filters],
     queryFn: () => fetchMethylationClient(ref, filters),
-    placeholderData: (prev: PaginatedResponse<MethylationRow> | undefined) => prev,
+    placeholderData: (prev: PaginatedResponse<MethylationRow> | undefined) =>
+      prev,
     staleTime: 5 * 60 * 1000,
     ...(isFirstMount.current && initialData ? { initialData } : {}),
   });

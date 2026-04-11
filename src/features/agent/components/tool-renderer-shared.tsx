@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import { MessageResponse } from "@shared/components/ai-elements/message";
 import { Badge } from "@shared/components/ui/badge";
 import {
@@ -8,6 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
 import { ChevronDownIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,7 +43,13 @@ export function StatCard({
   );
 }
 
-export function StatRow({ label, value }: { label: string; value: number | string }) {
+export function StatRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
   return (
     <div className="flex items-center justify-between text-xs">
       <span className="text-muted-foreground">{label}</span>
@@ -72,9 +77,7 @@ export function TextSummaryWithData({
           <ChevronDownIcon className="size-3 transition-transform duration-200 group-data-[state=open]/raw:rotate-180" />
           <span className="font-medium">View raw data</span>
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-2">
-          {children}
-        </CollapsibleContent>
+        <CollapsibleContent className="mt-2">{children}</CollapsibleContent>
       </Collapsible>
     </div>
   );

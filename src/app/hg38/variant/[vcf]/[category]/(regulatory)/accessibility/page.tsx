@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadAccessibilityData } from "@features/enrichment/loaders";
 import { AccessibilityView } from "@features/enrichment/components/accessibility-view";
+import { loadAccessibilityData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

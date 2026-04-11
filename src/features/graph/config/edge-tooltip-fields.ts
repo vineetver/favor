@@ -247,18 +247,14 @@ export const EDGE_TOOLTIP_FIELDS: Record<EdgeType, TooltipField[]> = {
   ],
 
   // ── Trait (Entity) hierarchy ───────────────────────────────────────────
-  ENTITY_HIERARCHY: [
-    { key: "distance", label: "Distance", format: "number" },
-  ],
+  ENTITY_HIERARCHY: [{ key: "distance", label: "Distance", format: "number" }],
   ENTITY_CLOSURE: [
     { key: "distance", label: "Distance", format: "number" },
     { key: "relationship_type", label: "Relation" },
   ],
 
   // ── GO hierarchy ───────────────────────────────────────────────────────
-  GO_HIERARCHY: [
-    { key: "distance", label: "Distance", format: "number" },
-  ],
+  GO_HIERARCHY: [{ key: "distance", label: "Distance", format: "number" }],
   GO_CLOSURE: [
     { key: "distance", label: "Distance", format: "number" },
     { key: "relationship_type", label: "Relation" },
@@ -338,7 +334,10 @@ export function getTooltipFields(
 /**
  * Format a field value for tooltip display.
  */
-export function formatTooltipValue(value: unknown, format?: TooltipField["format"]): string {
+export function formatTooltipValue(
+  value: unknown,
+  format?: TooltipField["format"],
+): string {
   if (value === null || value === undefined) return "\u2014";
 
   switch (format) {

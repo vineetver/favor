@@ -1,8 +1,7 @@
 "use client";
 
-import { cn } from "@infra/utils";
 import type { TissueGroupRow } from "@features/enrichment/api/region";
-import { formatCount, formatTissueName } from "@shared/utils/tissue-format";
+import { cn } from "@infra/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -10,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import { updateClientUrl } from "@shared/hooks";
+import { formatCount, formatTissueName } from "@shared/utils/tissue-format";
 import { ChevronRight } from "lucide-react";
 import { useCallback } from "react";
 
@@ -62,10 +62,12 @@ export function TissueGroupSummary({
     updateClientUrl(`${window.location.pathname}?${params}`, true);
   }, []);
 
-  const rawMaxMetric = cfg.metricCeiling ?? Math.max(...data.map((r) => r.max_value), 1);
+  const rawMaxMetric =
+    cfg.metricCeiling ?? Math.max(...data.map((r) => r.max_value), 1);
   const maxMetric = cfg.sqrtScale ? Math.sqrt(rawMaxMetric) : rawMaxMetric;
   const maxCount = Math.max(...data.map((r) => r.count), 1);
-  const scaleMetric = (v: number) => (cfg.sqrtScale ? Math.sqrt(v) : v) / maxMetric;
+  const scaleMetric = (v: number) =>
+    (cfg.sqrtScale ? Math.sqrt(v) : v) / maxMetric;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -78,8 +80,10 @@ export function TissueGroupSummary({
         </div>
 
         {/* Column labels */}
-        <div className="grid items-center gap-3 px-5 py-2 border-b border-border text-xs text-muted-foreground"
-          style={{ gridTemplateColumns: columnTemplate(cfg) }}>
+        <div
+          className="grid items-center gap-3 px-5 py-2 border-b border-border text-xs text-muted-foreground"
+          style={{ gridTemplateColumns: columnTemplate(cfg) }}
+        >
           <span>Tissue Group</span>
           {!cfg.hideMetric && (
             <Tooltip>
@@ -92,7 +96,9 @@ export function TissueGroupSummary({
             </Tooltip>
           )}
           <span className="text-right">{cfg.countLabel}</span>
-          {cfg.showSignificant && <span className="text-right">Significant</span>}
+          {cfg.showSignificant && (
+            <span className="text-right">Significant</span>
+          )}
           {cfg.showTopItem && <span>{cfg.topItemLabel ?? "Top Item"}</span>}
           <span />
         </div>
@@ -120,7 +126,10 @@ export function TissueGroupSummary({
                       className="h-full rounded-full bg-primary transition-all"
                       style={{
                         width: `${Math.max(scaleMetric(row.max_value) * 100, 2)}%`,
-                        opacity: Math.max(0.25, Math.min(scaleMetric(row.max_value), 0.85)),
+                        opacity: Math.max(
+                          0.25,
+                          Math.min(scaleMetric(row.max_value), 0.85),
+                        ),
                       }}
                     />
                   </div>
@@ -145,11 +154,17 @@ export function TissueGroupSummary({
 
               {/* Significant */}
               {cfg.showSignificant && (
-                <span className={cn(
-                  "text-xs tabular-nums text-right",
-                  (row.significant ?? 0) > 0 ? "text-emerald-600 font-medium" : "text-muted-foreground/40",
-                )}>
-                  {row.significant != null ? row.significant.toLocaleString() : "\u2014"}
+                <span
+                  className={cn(
+                    "text-xs tabular-nums text-right",
+                    (row.significant ?? 0) > 0
+                      ? "text-emerald-600 font-medium"
+                      : "text-muted-foreground/40",
+                  )}
+                >
+                  {row.significant != null
+                    ? row.significant.toLocaleString()
+                    : "\u2014"}
                 </span>
               )}
 

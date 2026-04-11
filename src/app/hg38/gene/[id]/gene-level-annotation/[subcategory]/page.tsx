@@ -1,6 +1,6 @@
+import { fetchGene } from "@features/gene/api";
 import { CategoryDetailView } from "@shared/components/ui/category-detail-view";
 import { notFound } from "next/navigation";
-import { fetchGene } from "@features/gene/api";
 
 interface GeneSubcategoryPageProps {
   params: Promise<{
@@ -9,7 +9,9 @@ interface GeneSubcategoryPageProps {
   }>;
 }
 
-export default async function GeneSubcategoryPage({ params }: GeneSubcategoryPageProps) {
+export default async function GeneSubcategoryPage({
+  params,
+}: GeneSubcategoryPageProps) {
   const { id, subcategory } = await params;
 
   const geneResponse = await fetchGene(id);

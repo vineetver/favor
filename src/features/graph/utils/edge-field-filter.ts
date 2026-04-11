@@ -6,7 +6,12 @@ import type { SchemaPropertyMeta } from "../api";
 
 /** Check if a value is empty (null, undefined, empty string, empty array). */
 function isEmpty(v: unknown): boolean {
-  return v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+  return (
+    v === null ||
+    v === undefined ||
+    v === "" ||
+    (Array.isArray(v) && v.length === 0)
+  );
 }
 
 /**

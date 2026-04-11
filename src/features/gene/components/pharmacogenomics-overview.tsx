@@ -7,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
-import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
-import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
-import { TooltipProvider } from "@shared/components/ui/tooltip";
 import { Tip } from "@shared/components/ui/tip";
+import { TooltipProvider } from "@shared/components/ui/tooltip";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -51,7 +51,10 @@ type PgxEdge = {
 // Labels & helpers
 // ---------------------------------------------------------------------------
 
-const EVIDENCE_LEVELS: Record<string, { label: string; tip: string; color: string; rank: number }> = {
+const EVIDENCE_LEVELS: Record<
+  string,
+  { label: string; tip: string; color: string; rank: number }
+> = {
   A: {
     label: "Level A",
     tip: "Validated association — supported by an approved therapy or established clinical guidelines.",
@@ -140,8 +143,7 @@ function extractPgxEdges(relations: unknown, edges?: unknown): PgxEdge[] {
 
   const record = source as Record<string, unknown>;
   const byType =
-    record.GENE_AFFECTS_DRUG_RESPONSE ??
-    record.gene_affects_drug_response;
+    record.GENE_AFFECTS_DRUG_RESPONSE ?? record.gene_affects_drug_response;
 
   let rows: any[] = [];
   if (byType && typeof byType === "object") {
@@ -162,21 +164,34 @@ function extractPgxEdges(relations: unknown, edges?: unknown): PgxEdge[] {
 
     parsed.push({
       id: `${rawId}_${idx}`,
-      drugName: String(props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown"),
-      drugSubtitle: typeof neighbor?.subtitle === "string" ? neighbor.subtitle : null,
+      drugName: String(
+        props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown",
+      ),
+      drugSubtitle:
+        typeof neighbor?.subtitle === "string" ? neighbor.subtitle : null,
       evidenceOrigin: props.evidence_origin ?? null,
-      cancerTypes: Array.isArray(props.cancer_types) ? props.cancer_types.filter(Boolean) : [],
-      variantNames: Array.isArray(props.variant_names) ? props.variant_names.filter(Boolean) : [],
-      hgvsExpressions: Array.isArray(props.hgvs_expressions) ? props.hgvs_expressions.filter(Boolean) : [],
-      evidenceStatements: Array.isArray(props.evidence_statements) ? props.evidence_statements.filter(Boolean) : [],
+      cancerTypes: Array.isArray(props.cancer_types)
+        ? props.cancer_types.filter(Boolean)
+        : [],
+      variantNames: Array.isArray(props.variant_names)
+        ? props.variant_names.filter(Boolean)
+        : [],
+      hgvsExpressions: Array.isArray(props.hgvs_expressions)
+        ? props.hgvs_expressions.filter(Boolean)
+        : [],
+      evidenceStatements: Array.isArray(props.evidence_statements)
+        ? props.evidence_statements.filter(Boolean)
+        : [],
       ampCategory: props.amp_category ?? null,
       bestEvidenceLevel: props.best_evidence_level ?? null,
       fdaCompanionTest: props.fda_companion_test === true,
-      evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : 0,
+      evidenceCount:
+        typeof props.evidence_count === "number" ? props.evidence_count : 0,
       confidenceClass: props.confidence_class ?? null,
       pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
       sources: Array.isArray(props.sources) ? props.sources : [],
-      nccnGuideline: typeof props.nccn_guideline === "string" ? props.nccn_guideline : null,
+      nccnGuideline:
+        typeof props.nccn_guideline === "string" ? props.nccn_guideline : null,
     });
   }
 
@@ -188,7 +203,9 @@ function extractPgxEdges(relations: unknown, edges?: unknown): PgxEdge[] {
     const existing = merged.get(key);
     if (!existing) {
       // Title-case the name for display consistency
-      edge.drugName = edge.drugName.charAt(0).toUpperCase() + edge.drugName.slice(1).toLowerCase();
+      edge.drugName =
+        edge.drugName.charAt(0).toUpperCase() +
+        edge.drugName.slice(1).toLowerCase();
       merged.set(key, edge);
       continue;
     }
@@ -198,25 +215,39 @@ function extractPgxEdges(relations: unknown, edges?: unknown): PgxEdge[] {
     if (nRank > eRank) existing.bestEvidenceLevel = edge.bestEvidenceLevel;
     existing.evidenceCount += edge.evidenceCount;
     if (edge.fdaCompanionTest) existing.fdaCompanionTest = true;
-    existing.cancerTypes = [...new Set([...existing.cancerTypes, ...edge.cancerTypes])];
-    existing.variantNames = [...new Set([...existing.variantNames, ...edge.variantNames])];
-    existing.hgvsExpressions = [...new Set([...existing.hgvsExpressions, ...edge.hgvsExpressions])];
-    existing.evidenceStatements = [...existing.evidenceStatements, ...edge.evidenceStatements];
-    existing.pubmedIds = [...new Set([...existing.pubmedIds, ...edge.pubmedIds])];
+    existing.cancerTypes = [
+      ...new Set([...existing.cancerTypes, ...edge.cancerTypes]),
+    ];
+    existing.variantNames = [
+      ...new Set([...existing.variantNames, ...edge.variantNames]),
+    ];
+    existing.hgvsExpressions = [
+      ...new Set([...existing.hgvsExpressions, ...edge.hgvsExpressions]),
+    ];
+    existing.evidenceStatements = [
+      ...existing.evidenceStatements,
+      ...edge.evidenceStatements,
+    ];
+    existing.pubmedIds = [
+      ...new Set([...existing.pubmedIds, ...edge.pubmedIds]),
+    ];
     existing.sources = [...new Set([...existing.sources, ...edge.sources])];
-    if (!existing.nccnGuideline && edge.nccnGuideline) existing.nccnGuideline = edge.nccnGuideline;
-    if (!existing.ampCategory && edge.ampCategory) existing.ampCategory = edge.ampCategory;
-    if (!existing.evidenceOrigin && edge.evidenceOrigin) existing.evidenceOrigin = edge.evidenceOrigin;
-    if (!existing.drugSubtitle && edge.drugSubtitle) existing.drugSubtitle = edge.drugSubtitle;
+    if (!existing.nccnGuideline && edge.nccnGuideline)
+      existing.nccnGuideline = edge.nccnGuideline;
+    if (!existing.ampCategory && edge.ampCategory)
+      existing.ampCategory = edge.ampCategory;
+    if (!existing.evidenceOrigin && edge.evidenceOrigin)
+      existing.evidenceOrigin = edge.evidenceOrigin;
+    if (!existing.drugSubtitle && edge.drugSubtitle)
+      existing.drugSubtitle = edge.drugSubtitle;
   }
 
-  return Array.from(merged.values())
-    .sort((a, b) => {
-      const aRank = EVIDENCE_LEVELS[a.bestEvidenceLevel ?? ""]?.rank ?? 0;
-      const bRank = EVIDENCE_LEVELS[b.bestEvidenceLevel ?? ""]?.rank ?? 0;
-      const diff = bRank - aRank;
-      return diff !== 0 ? diff : b.evidenceCount - a.evidenceCount;
-    });
+  return Array.from(merged.values()).sort((a, b) => {
+    const aRank = EVIDENCE_LEVELS[a.bestEvidenceLevel ?? ""]?.rank ?? 0;
+    const bRank = EVIDENCE_LEVELS[b.bestEvidenceLevel ?? ""]?.rank ?? 0;
+    const diff = bRank - aRank;
+    return diff !== 0 ? diff : b.evidenceCount - a.evidenceCount;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -235,44 +266,65 @@ export function PharmacogenomicsOverview({
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const pgxEdges = useMemo(() => extractPgxEdges(relations, edges), [relations, edges]);
+  const pgxEdges = useMemo(
+    () => extractPgxEdges(relations, edges),
+    [relations, edges],
+  );
 
   const originOptions = useMemo(() => {
     const origins = new Set<string>();
-    pgxEdges.forEach((d) => { if (d.evidenceOrigin) origins.add(d.evidenceOrigin); });
+    pgxEdges.forEach((d) => {
+      if (d.evidenceOrigin) origins.add(d.evidenceOrigin);
+    });
     return [{ value: "all", label: "All" }].concat(
-      Array.from(origins).sort().map((o) => ({
-        value: o,
-        label: ORIGIN_LABELS[o]?.label ?? o.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      })),
+      Array.from(origins)
+        .sort()
+        .map((o) => ({
+          value: o,
+          label:
+            ORIGIN_LABELS[o]?.label ??
+            o.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        })),
     );
   }, [pgxEdges]);
 
   const levelOptions = useMemo(() => {
     const levels = new Set<string>();
-    pgxEdges.forEach((d) => { if (d.bestEvidenceLevel) levels.add(d.bestEvidenceLevel); });
+    pgxEdges.forEach((d) => {
+      if (d.bestEvidenceLevel) levels.add(d.bestEvidenceLevel);
+    });
     return [{ value: "all", label: "All" }].concat(
-      Array.from(levels).sort().map((l) => ({
-        value: l,
-        label: EVIDENCE_LEVELS[l]?.label ?? `Level ${l}`,
-      })),
+      Array.from(levels)
+        .sort()
+        .map((l) => ({
+          value: l,
+          label: EVIDENCE_LEVELS[l]?.label ?? `Level ${l}`,
+        })),
     );
   }, [pgxEdges]);
 
   const dimensions = useMemo<DimensionConfig[]>(
     () => [
-      ...(originOptions.length > 2 ? [{
-        label: "Evidence type",
-        value: originFilter,
-        onChange: setOriginFilter,
-        options: originOptions,
-      }] : []),
-      ...(levelOptions.length > 2 ? [{
-        label: "Min level",
-        value: levelFilter,
-        onChange: setLevelFilter,
-        options: levelOptions,
-      }] : []),
+      ...(originOptions.length > 2
+        ? [
+            {
+              label: "Evidence type",
+              value: originFilter,
+              onChange: setOriginFilter,
+              options: originOptions,
+            },
+          ]
+        : []),
+      ...(levelOptions.length > 2
+        ? [
+            {
+              label: "Min level",
+              value: levelFilter,
+              onChange: setLevelFilter,
+              options: levelOptions,
+            },
+          ]
+        : []),
       {
         label: "Sort",
         value: sortMode,
@@ -291,7 +343,8 @@ export function PharmacogenomicsOverview({
     const query = search.trim().toLowerCase();
 
     return pgxEdges.filter((d) => {
-      if (originFilter !== "all" && d.evidenceOrigin !== originFilter) return false;
+      if (originFilter !== "all" && d.evidenceOrigin !== originFilter)
+        return false;
       if (levelFilter !== "all") {
         const minRank = EVIDENCE_LEVELS[levelFilter]?.rank ?? 0;
         const dRank = EVIDENCE_LEVELS[d.bestEvidenceLevel ?? ""]?.rank ?? 0;
@@ -310,12 +363,16 @@ export function PharmacogenomicsOverview({
 
   const sorted = useMemo(() => {
     const items = [...filtered];
-    if (sortMode === "alpha") return items.sort((a, b) => a.drugName.localeCompare(b.drugName));
+    if (sortMode === "alpha")
+      return items.sort((a, b) => a.drugName.localeCompare(b.drugName));
     return items; // already sorted by evidence level
   }, [filtered, sortMode]);
 
   useEffect(() => {
-    if (sorted.length === 0) { setSelectedId(null); return; }
+    if (sorted.length === 0) {
+      setSelectedId(null);
+      return;
+    }
     if (!selectedId || !sorted.some((d) => d.id === selectedId)) {
       setSelectedId(sorted[0].id);
     }
@@ -347,8 +404,8 @@ export function PharmacogenomicsOverview({
               <div className="text-xs text-muted-foreground">
                 {filtered.length === pgxEdges.length
                   ? `${pgxEdges.length} drug-response associations`
-                  : `${filtered.length} of ${pgxEdges.length} associations`
-                } for {geneSymbol ?? "this gene"}
+                  : `${filtered.length} of ${pgxEdges.length} associations`}{" "}
+                for {geneSymbol ?? "this gene"}
               </div>
             </div>
             <div className="relative w-56">
@@ -402,17 +459,25 @@ export function PharmacogenomicsOverview({
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             {level && (
                               <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", level.color)} />
+                                <span
+                                  className={cn(
+                                    "h-1.5 w-1.5 rounded-full shrink-0",
+                                    level.color,
+                                  )}
+                                />
                                 {level.label}
                               </span>
                             )}
                             {d.fdaCompanionTest && (
-                              <span className="text-[10px] text-emerald-600 font-medium">FDA Dx</span>
+                              <span className="text-[10px] text-emerald-600 font-medium">
+                                FDA Dx
+                              </span>
                             )}
                             {d.variantNames.length > 0 && (
                               <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
                                 {d.variantNames[0]}
-                                {d.variantNames.length > 1 && ` +${d.variantNames.length - 1}`}
+                                {d.variantNames.length > 1 &&
+                                  ` +${d.variantNames.length - 1}`}
                               </span>
                             )}
                           </div>
@@ -420,7 +485,8 @@ export function PharmacogenomicsOverview({
                         <div className="flex items-center gap-1 shrink-0">
                           {d.evidenceOrigin && (
                             <span className="text-[10px] text-muted-foreground">
-                              {ORIGIN_LABELS[d.evidenceOrigin]?.label ?? d.evidenceOrigin}
+                              {ORIGIN_LABELS[d.evidenceOrigin]?.label ??
+                                d.evidenceOrigin}
                             </span>
                           )}
                         </div>
@@ -434,7 +500,9 @@ export function PharmacogenomicsOverview({
             {/* ── Detail Panel ── */}
             <div>
               <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-                <span className="text-[11px] font-medium text-muted-foreground">Details</span>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Details
+                </span>
               </div>
               <div className="px-5 py-5 max-h-[600px] overflow-y-auto">
                 {!selected && (
@@ -451,24 +519,45 @@ export function PharmacogenomicsOverview({
                         {selected.drugName}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {selected.bestEvidenceLevel && EVIDENCE_LEVELS[selected.bestEvidenceLevel] && (
-                          <Tip content={EVIDENCE_LEVELS[selected.bestEvidenceLevel].tip}>
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <span className={cn("h-2 w-2 rounded-full shrink-0", EVIDENCE_LEVELS[selected.bestEvidenceLevel].color)} />
-                              {EVIDENCE_LEVELS[selected.bestEvidenceLevel].label}
-                            </span>
-                          </Tip>
-                        )}
-                        {selected.evidenceOrigin && ORIGIN_LABELS[selected.evidenceOrigin] && (
-                          <Tip content={ORIGIN_LABELS[selected.evidenceOrigin].tip}>
-                            <span className="text-xs text-muted-foreground">
-                              {ORIGIN_LABELS[selected.evidenceOrigin].label}
-                            </span>
-                          </Tip>
-                        )}
+                        {selected.bestEvidenceLevel &&
+                          EVIDENCE_LEVELS[selected.bestEvidenceLevel] && (
+                            <Tip
+                              content={
+                                EVIDENCE_LEVELS[selected.bestEvidenceLevel].tip
+                              }
+                            >
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full shrink-0",
+                                    EVIDENCE_LEVELS[selected.bestEvidenceLevel]
+                                      .color,
+                                  )}
+                                />
+                                {
+                                  EVIDENCE_LEVELS[selected.bestEvidenceLevel]
+                                    .label
+                                }
+                              </span>
+                            </Tip>
+                          )}
+                        {selected.evidenceOrigin &&
+                          ORIGIN_LABELS[selected.evidenceOrigin] && (
+                            <Tip
+                              content={
+                                ORIGIN_LABELS[selected.evidenceOrigin].tip
+                              }
+                            >
+                              <span className="text-xs text-muted-foreground">
+                                {ORIGIN_LABELS[selected.evidenceOrigin].label}
+                              </span>
+                            </Tip>
+                          )}
                         {selected.fdaCompanionTest && (
                           <Tip content="An FDA-approved companion diagnostic test exists for this drug-gene pair.">
-                            <span className="text-xs text-emerald-600 font-medium">FDA companion Dx</span>
+                            <span className="text-xs text-emerald-600 font-medium">
+                              FDA companion Dx
+                            </span>
                           </Tip>
                         )}
                       </div>
@@ -476,19 +565,24 @@ export function PharmacogenomicsOverview({
 
                     {/* ─ Key metrics ─ */}
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
-                      {selected.ampCategory && AMP_TIERS[selected.ampCategory] && (
-                        <div>
-                          <Tip content={AMP_TIERS[selected.ampCategory].tip}>
-                            <span className="text-[11px] text-muted-foreground">AMP/ASCO/CAP</span>
-                          </Tip>
-                          <div className="text-sm font-semibold text-foreground">
-                            {AMP_TIERS[selected.ampCategory].label}
+                      {selected.ampCategory &&
+                        AMP_TIERS[selected.ampCategory] && (
+                          <div>
+                            <Tip content={AMP_TIERS[selected.ampCategory].tip}>
+                              <span className="text-[11px] text-muted-foreground">
+                                AMP/ASCO/CAP
+                              </span>
+                            </Tip>
+                            <div className="text-sm font-semibold text-foreground">
+                              {AMP_TIERS[selected.ampCategory].label}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                       {selected.evidenceCount > 0 && (
                         <div>
-                          <span className="text-[11px] text-muted-foreground">Evidence records</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Evidence records
+                          </span>
                           <div className="text-sm font-semibold text-foreground tabular-nums">
                             {selected.evidenceCount}
                           </div>
@@ -564,17 +658,22 @@ export function PharmacogenomicsOverview({
                           </span>
                         </Tip>
                         <div className="space-y-2">
-                          {selected.evidenceStatements.slice(0, 3).map((stmt, i) => (
-                            <p
-                              key={i}
-                              className="text-[12px] text-muted-foreground leading-relaxed pl-3 border-l-2 border-border"
-                            >
-                              {stmt.length > 300 ? `${stmt.slice(0, 300)}...` : stmt}
-                            </p>
-                          ))}
+                          {selected.evidenceStatements
+                            .slice(0, 3)
+                            .map((stmt, i) => (
+                              <p
+                                key={i}
+                                className="text-[12px] text-muted-foreground leading-relaxed pl-3 border-l-2 border-border"
+                              >
+                                {stmt.length > 300
+                                  ? `${stmt.slice(0, 300)}...`
+                                  : stmt}
+                              </p>
+                            ))}
                           {selected.evidenceStatements.length > 3 && (
                             <p className="text-[11px] text-muted-foreground">
-                              +{selected.evidenceStatements.length - 3} more evidence statements
+                              +{selected.evidenceStatements.length - 3} more
+                              evidence statements
                             </p>
                           )}
                         </div>
@@ -589,7 +688,9 @@ export function PharmacogenomicsOverview({
                             NCCN guideline
                           </span>
                         </Tip>
-                        <p className="text-[13px] text-foreground">{selected.nccnGuideline}</p>
+                        <p className="text-[13px] text-foreground">
+                          {selected.nccnGuideline}
+                        </p>
                       </div>
                     )}
 

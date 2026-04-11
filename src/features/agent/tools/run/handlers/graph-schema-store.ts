@@ -42,8 +42,14 @@ type EnrichFn = (schema: GraphSchemaResponse) => void;
  * resets on cold starts (safe fallback). Graph schema is shared, not user-specific. */
 class SchemaStore {
   private full: { data: GraphSchemaResponse; ts: number } | null = null;
-  private view: { data: AgentViewSchema | null; ts: number } = { data: null, ts: 0 };
-  private edgeProps = new Map<string, { fields: EdgePropertyMeta[]; ts: number }>();
+  private view: { data: AgentViewSchema | null; ts: number } = {
+    data: null,
+    ts: 0,
+  };
+  private edgeProps = new Map<
+    string,
+    { fields: EdgePropertyMeta[]; ts: number }
+  >();
   private enrichFn: EnrichFn | null = null;
 
   setEnrichFn(fn: EnrichFn): void {
@@ -51,10 +57,13 @@ class SchemaStore {
   }
 
   async getFull(portal?: string): Promise<GraphSchemaResponse> {
-    const key = portal ?? "default";
-    if (this.full && Date.now() - this.full.ts < CACHE_TTL) return this.full.data;
+    const _key = portal ?? "default";
+    if (this.full && Date.now() - this.full.ts < CACHE_TTL)
+      return this.full.data;
 
-    const resp = await agentFetch<{ data: GraphSchemaResponse }>("/graph/schema");
+    const resp = await agentFetch<{ data: GraphSchemaResponse }>(
+      "/graph/schema",
+    );
     const schema = resp.data;
     this.full = { data: schema, ts: Date.now() };
 
@@ -71,49 +80,85 @@ class SchemaStore {
     }
     try {
       const resp = await agentFetch<{
-        nodes: Record<string, {
-          aliases?: string[];
-          highRoiFields?: Record<string, {
-            type?: string; hint?: string; better?: string;
-            thresholds?: Record<string, string>;
-          }>;
-        }>;
-        edges: Record<string, {
-          from?: string; to?: string;
-          briefing?: string;
-          defaultSort?: string;
-          sortStrategies?: Array<{ field: string; label?: string }>;
-          keyFilters?: Array<{ field: string; op: string; value: unknown; priority: number; label?: string }>;
-          highRoiFields?: Record<string, {
-            type?: string; hint?: string; better?: string;
-            thresholds?: Record<string, string>;
-          }>;
-        }>;
+        nodes: Record<
+          string,
+          {
+            aliases?: string[];
+            highRoiFields?: Record<
+              string,
+              {
+                type?: string;
+                hint?: string;
+                better?: string;
+                thresholds?: Record<string, string>;
+              }
+            >;
+          }
+        >;
+        edges: Record<
+          string,
+          {
+            from?: string;
+            to?: string;
+            briefing?: string;
+            defaultSort?: string;
+            sortStrategies?: Array<{ field: string; label?: string }>;
+            keyFilters?: Array<{
+              field: string;
+              op: string;
+              value: unknown;
+              priority: number;
+              label?: string;
+            }>;
+            highRoiFields?: Record<
+              string,
+              {
+                type?: string;
+                hint?: string;
+                better?: string;
+                thresholds?: Record<string, string>;
+              }
+            >;
+          }
+        >;
         meta?: unknown;
       }>("/graph/schema?agent_view=true");
 
       const nodeTypes = Object.keys(resp.nodes);
 
       const DOMAIN_MAP: Record<string, string> = {
-        GENE_ASSOCIATED_WITH_DISEASE: "disease", GENE_ALTERED_IN_DISEASE: "disease",
-        DISEASE_HAS_PHENOTYPE: "disease", GENE_ASSOCIATED_WITH_PHENOTYPE: "disease",
+        GENE_ASSOCIATED_WITH_DISEASE: "disease",
+        GENE_ALTERED_IN_DISEASE: "disease",
+        DISEASE_HAS_PHENOTYPE: "disease",
+        GENE_ASSOCIATED_WITH_PHENOTYPE: "disease",
         GENE_ASSOCIATED_WITH_ENTITY: "disease",
-        DRUG_ACTS_ON_GENE: "drug", DRUG_DISPOSITION_BY_GENE: "drug",
-        GENE_AFFECTS_DRUG_RESPONSE: "drug", DRUG_INDICATED_FOR_DISEASE: "drug",
-        DRUG_HAS_ADVERSE_EFFECT: "drug", DRUG_INTERACTS_WITH_DRUG: "drug",
-        DRUG_PAIR_CAUSES_SIDE_EFFECT: "drug", VARIANT_ASSOCIATED_WITH_DRUG: "drug",
-        VARIANT_LINKED_TO_SIDE_EFFECT: "drug", GENE_ASSOCIATED_WITH_SIDE_EFFECT: "drug",
-        VARIANT_IMPLIES_GENE: "variant", VARIANT_AFFECTS_GENE: "variant",
+        DRUG_ACTS_ON_GENE: "drug",
+        DRUG_DISPOSITION_BY_GENE: "drug",
+        GENE_AFFECTS_DRUG_RESPONSE: "drug",
+        DRUG_INDICATED_FOR_DISEASE: "drug",
+        DRUG_HAS_ADVERSE_EFFECT: "drug",
+        DRUG_INTERACTS_WITH_DRUG: "drug",
+        DRUG_PAIR_CAUSES_SIDE_EFFECT: "drug",
+        VARIANT_ASSOCIATED_WITH_DRUG: "drug",
+        VARIANT_LINKED_TO_SIDE_EFFECT: "drug",
+        GENE_ASSOCIATED_WITH_SIDE_EFFECT: "drug",
+        VARIANT_IMPLIES_GENE: "variant",
+        VARIANT_AFFECTS_GENE: "variant",
         VARIANT_ASSOCIATED_WITH_STUDY: "variant",
         VARIANT_ASSOCIATED_WITH_TRAIT__Disease: "variant",
         VARIANT_ASSOCIATED_WITH_TRAIT__Phenotype: "variant",
         VARIANT_ASSOCIATED_WITH_TRAIT__Entity: "variant",
-        SIGNAL_IMPLIES_GENE: "variant", SIGNAL_HAS_VARIANT: "variant",
-        GENE_PARTICIPATES_IN_PATHWAY: "pathway", GENE_ANNOTATED_WITH_GO_TERM: "pathway",
-        GENE_HAS_PROTEIN_DOMAIN: "pathway", PATHWAY_CONTAINS_METABOLITE: "pathway",
+        SIGNAL_IMPLIES_GENE: "variant",
+        SIGNAL_HAS_VARIANT: "variant",
+        GENE_PARTICIPATES_IN_PATHWAY: "pathway",
+        GENE_ANNOTATED_WITH_GO_TERM: "pathway",
+        GENE_HAS_PROTEIN_DOMAIN: "pathway",
+        PATHWAY_CONTAINS_METABOLITE: "pathway",
         GENE_EXPRESSED_IN_TISSUE: "expression",
-        CCRE_REGULATES_GENE: "regulatory", VARIANT_OVERLAPS_CCRE: "regulatory",
-        GENE_INTERACTS_WITH_GENE: "interaction", GENE_PARALOG_OF_GENE: "interaction",
+        CCRE_REGULATES_GENE: "regulatory",
+        VARIANT_OVERLAPS_CCRE: "regulatory",
+        GENE_INTERACTS_WITH_GENE: "interaction",
+        GENE_PARALOG_OF_GENE: "interaction",
       };
 
       const edgeDomains: Record<string, Record<string, unknown>> = {};
@@ -145,7 +190,10 @@ class SchemaStore {
         edgeDomains[domain][k] = entry;
       }
 
-      const viewData: AgentViewSchema = { nodes: nodeTypes, edges: edgeDomains };
+      const viewData: AgentViewSchema = {
+        nodes: nodeTypes,
+        edges: edgeDomains,
+      };
       this.view = { data: viewData, ts: Date.now() };
       return viewData;
     } catch {

@@ -1,22 +1,16 @@
 "use client";
 
 import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { API_BASE } from "@/config/api";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_BASE } from "@/config/api";
 
-export { domainColor, assignDomainColors } from "./colors";
+export { assignDomainColors, domainColor } from "./colors";
 export type { ProteinDomain, ProteinStructureViewProps } from "./types";
+
 import type { ProteinDomain, ProteinStructureViewProps } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,7 +28,7 @@ const MARKER_HEIGHT = 46;
 
 function niceTickStep(length: number): number {
   const rough = length / 8;
-  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const mag = 10 ** Math.floor(Math.log10(rough));
   const normalized = rough / mag;
   if (normalized <= 1) return mag;
   if (normalized <= 2) return 2 * mag;
@@ -44,10 +38,26 @@ function niceTickStep(length: number): number {
 
 /** Three-letter → one-letter amino acid codes */
 const AA3_TO_1: Record<string, string> = {
-  ALA: "A", ARG: "R", ASN: "N", ASP: "D", CYS: "C",
-  GLN: "Q", GLU: "E", GLY: "G", HIS: "H", ILE: "I",
-  LEU: "L", LYS: "K", MET: "M", PHE: "F", PRO: "P",
-  SER: "S", THR: "T", TRP: "W", TYR: "Y", VAL: "V",
+  ALA: "A",
+  ARG: "R",
+  ASN: "N",
+  ASP: "D",
+  CYS: "C",
+  GLN: "Q",
+  GLU: "E",
+  GLY: "G",
+  HIS: "H",
+  ILE: "I",
+  LEU: "L",
+  LYS: "K",
+  MET: "M",
+  PHE: "F",
+  PRO: "P",
+  SER: "S",
+  THR: "T",
+  TRP: "W",
+  TYR: "Y",
+  VAL: "V",
 };
 
 const DomainMap = memo(function DomainMap({
@@ -202,7 +212,10 @@ const DomainMap = memo(function DomainMap({
         }
         return;
       }
-      const resi = Math.max(1, Math.min(proteinLength, Math.round(mouseX / scale) + 1));
+      const resi = Math.max(
+        1,
+        Math.min(proteinLength, Math.round(mouseX / scale) + 1),
+      );
       if (resi !== hoverResi) {
         setHoverResi(resi);
         highlightResidue(resi);
@@ -256,35 +269,37 @@ const DomainMap = memo(function DomainMap({
             />
 
             {/* Domain blocks — render largest first so smaller domains appear on top */}
-            {[...domains].sort((a, b) => (b.end - b.start) - (a.end - a.start)).map((d, i) => {
-              const x = PADDING_X + (d.start - 1) * scale;
-              const w = Math.max((d.end - d.start + 1) * scale, 2);
-              return (
-                <Tooltip key={`${d.id}-${d.start}-${i}`}>
-                  <TooltipTrigger asChild>
-                    <rect
-                      x={x}
-                      y={trackTop}
-                      width={w}
-                      height={TRACK_HEIGHT}
-                      rx={3}
-                      fill={d.color}
-                      className="cursor-crosshair transition-opacity hover:opacity-80"
-                      style={{ pointerEvents: "all" }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <div className="space-y-0.5">
-                      <p className="font-medium">{d.name}</p>
-                      <p>
-                        Residues {d.start}–{d.end}
-                      </p>
-                      {d.type && <p>Type: {d.type}</p>}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+            {[...domains]
+              .sort((a, b) => b.end - b.start - (a.end - a.start))
+              .map((d, i) => {
+                const x = PADDING_X + (d.start - 1) * scale;
+                const w = Math.max((d.end - d.start + 1) * scale, 2);
+                return (
+                  <Tooltip key={`${d.id}-${d.start}-${i}`}>
+                    <TooltipTrigger asChild>
+                      <rect
+                        x={x}
+                        y={trackTop}
+                        width={w}
+                        height={TRACK_HEIGHT}
+                        rx={3}
+                        fill={d.color}
+                        className="cursor-crosshair transition-opacity hover:opacity-80"
+                        style={{ pointerEvents: "all" }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <div className="space-y-0.5">
+                        <p className="font-medium">{d.name}</p>
+                        <p>
+                          Residues {d.start}–{d.end}
+                        </p>
+                        {d.type && <p>Type: {d.type}</p>}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
 
             {/* Hover position indicator */}
             {hoverResi != null && (
@@ -551,8 +566,7 @@ const AlphaFoldViewer = memo(function AlphaFoldViewer({
           const atoms = viewer.selectedAtoms({ resi: variantPosition });
           if (atoms.length > 0) {
             const ca =
-              atoms.find((a: { atom: string }) => a.atom === "CA") ??
-              atoms[0];
+              atoms.find((a: { atom: string }) => a.atom === "CA") ?? atoms[0];
             viewer.addLabel(label, {
               position: { x: ca.x, y: ca.y + 2, z: ca.z + 2 },
               backgroundColor: "#16a34a",

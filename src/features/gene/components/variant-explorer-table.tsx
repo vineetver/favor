@@ -287,7 +287,10 @@ const VARIANT_FILTERS: ServerFilterConfig[] = [
       { value: "Likely_pathogenic", label: "Likely Pathogenic" },
       { value: "Pathogenic/Likely_pathogenic", label: "Path/Likely Path" },
       { value: "Uncertain_significance", label: "Uncertain" },
-      { value: "Conflicting_classifications_of_pathogenicity", label: "Conflicting" },
+      {
+        value: "Conflicting_classifications_of_pathogenicity",
+        label: "Conflicting",
+      },
       { value: "Likely_benign", label: "Likely Benign" },
       { value: "Benign", label: "Benign" },
       { value: "Benign/Likely_benign", label: "Benign/Likely Benign" },
@@ -307,9 +310,18 @@ const VARIANT_FILTERS: ServerFilterConfig[] = [
     options: [
       { value: "practice_guideline", label: "Practice Guideline (4★)" },
       { value: "reviewed_by_expert_panel", label: "Expert Panel (3★)" },
-      { value: "criteria_provided,_multiple_submitters,_no_conflicts", label: "Multi Submitter (2★)" },
-      { value: "criteria_provided,_single_submitter", label: "Single Submitter (1★)" },
-      { value: "criteria_provided,_conflicting_classifications", label: "Conflicting (1★)" },
+      {
+        value: "criteria_provided,_multiple_submitters,_no_conflicts",
+        label: "Multi Submitter (2★)",
+      },
+      {
+        value: "criteria_provided,_single_submitter",
+        label: "Single Submitter (1★)",
+      },
+      {
+        value: "criteria_provided,_conflicting_classifications",
+        label: "Conflicting (1★)",
+      },
       { value: "no_assertion_criteria_provided", label: "No Criteria (0★)" },
       { value: "no_classification_provided", label: "No Classification" },
     ],
@@ -432,14 +444,15 @@ export function VariantExplorerTable({
   } = useVariantScanQuery({
     gene,
     region,
-    initialData: initialData.length > 0
-      ? {
-          data: initialData,
-          hasMore: initialPaginationInfo?.hasMore ?? false,
-          nextCursor: initialPaginationInfo?.currentCursor ?? null,
-          totalCount: initialPaginationInfo?.totalCount,
-        }
-      : undefined,
+    initialData:
+      initialData.length > 0
+        ? {
+            data: initialData,
+            hasMore: initialPaginationInfo?.hasMore ?? false,
+            nextCursor: initialPaginationInfo?.currentCursor ?? null,
+            totalCount: initialPaginationInfo?.totalCount,
+          }
+        : undefined,
   });
 
   const data = queryData.length > 0 ? queryData : initialData;

@@ -34,7 +34,7 @@ function formatPValue(pval: number | null): string {
   if (pval === 0) return "0";
   if (pval >= 0.01) return pval.toFixed(4);
   const exp = Math.floor(Math.log10(Math.abs(pval)));
-  const mantissa = pval / Math.pow(10, exp);
+  const mantissa = pval / 10 ** exp;
   return `${mantissa.toFixed(2)}×10${toSuperscript(exp)}`;
 }
 
@@ -78,15 +78,12 @@ export const gwasCatalogColumns = [
     header: "Risk Allele",
     description: tooltip({
       title: "Risk Allele",
-      description:
-        "The allele associated with increased risk or trait value.",
+      description: "The allele associated with increased risk or trait value.",
     }),
     cell: ({ row }) => {
       const val = row.original.riskAllele;
       if (!val) return "-";
-      return (
-        <span className="font-mono font-medium text-rose-600">{val}</span>
-      );
+      return <span className="font-mono font-medium text-rose-600">{val}</span>;
     },
   }),
 
@@ -117,7 +114,11 @@ export const gwasCatalogColumns = [
       if (!val) return "-";
       const freq = parseFloat(val);
       if (Number.isNaN(freq)) return val;
-      return <span className="font-mono text-sm tabular-nums">{freq.toFixed(3)}</span>;
+      return (
+        <span className="font-mono text-sm tabular-nums">
+          {freq.toFixed(3)}
+        </span>
+      );
     },
   }),
 
@@ -138,9 +139,7 @@ export const gwasCatalogColumns = [
       }
       const { num, sign } = parsed;
       const strong = Math.abs(num) >= 1;
-      const colorClass = strong
-        ? "text-rose-600"
-        : "text-muted-foreground";
+      const colorClass = strong ? "text-rose-600" : "text-muted-foreground";
       const arrow = sign > 0 ? "▲" : sign < 0 ? "▼" : "→";
       return (
         <span className={`font-mono text-sm tabular-nums ${colorClass}`}>
@@ -167,7 +166,10 @@ export const gwasCatalogColumns = [
         <span className="font-mono text-sm tabular-nums">
           {formatPValue(pval)}
           {stars && (
-            <span className="text-rose-500 ml-0.5" title="Genome-wide significant">
+            <span
+              className="text-rose-500 ml-0.5"
+              title="Genome-wide significant"
+            >
               {stars}
             </span>
           )}
@@ -219,7 +221,8 @@ export const gwasCatalogColumns = [
     header: "Study",
     description: tooltip({
       title: "Study First Author",
-      description: "First author of the GWAS study that reported this association.",
+      description:
+        "First author of the GWAS study that reported this association.",
     }),
     cell: ({ row }) => {
       const val = row.original.firstAuthor;

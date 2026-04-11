@@ -12,12 +12,12 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@shared/components/ui/popover";
-import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
 
@@ -201,11 +201,7 @@ function GeneHancerCell({ value }: { value: GeneHancer | null | undefined }) {
               +{rest}
             </button>
           </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            className="w-56 p-0"
-          >
+          <PopoverContent side="bottom" align="start" className="w-56 p-0">
             <div className="px-3 py-2 border-b border-border">
               <p className="text-xs font-semibold text-foreground">
                 GeneHancer targets

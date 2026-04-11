@@ -23,8 +23,8 @@
   --accent: oklch(0.92 0 0);
   --accent-foreground: oklch(0.14 0 0);
   --destructive: oklch(0.57 0.23 29.21);
-  --border: oklch(0.90 0 0);
-  --input: oklch(0.90 0 0);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
   --ring: oklch(0.5 0.13 293.77);
   --chart-1: oklch(0.61 0.21 279.42);
   --chart-2: oklch(0.72 0.15 157.67);
@@ -41,10 +41,10 @@
   --sidebar-ring: oklch(0.56 0.11 228.27);
 
   /* Typography semantic colors (slate palette) */
-  --text-primary: oklch(0.129 0.042 264.695);   /* slate-900 - headings */
+  --text-primary: oklch(0.129 0.042 264.695); /* slate-900 - headings */
   --text-secondary: oklch(0.554 0.046 257.417); /* slate-500 - body */
-  --text-muted: oklch(0.704 0.04 256.788);      /* slate-400 - labels */
-  --text-caption: oklch(0.704 0.04 256.788);    /* slate-400 - captions */
+  --text-muted: oklch(0.704 0.04 256.788); /* slate-400 - labels */
+  --text-caption: oklch(0.704 0.04 256.788); /* slate-400 - captions */
 
   --font-sans: Geist, Geist Fallback, sans-serif;
   --font-serif: Nunito, sans-serif;
@@ -422,22 +422,53 @@
    Print / Export PDF
    ============================================================================ */
 @media print {
-  @page { size: A4 landscape; margin: 10mm; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   /* Only protect charts/tables/SVG from splitting — let sections flow across pages */
-  .js-plotly-plot, svg, table { break-inside: avoid; }
+  .js-plotly-plot,
+  svg,
+  table {
+    break-inside: avoid;
+  }
   /* Hide non-report chrome */
-  nav, header, aside, [data-sidebar] { display: none !important; }
+  nav,
+  header,
+  aside,
+  [data-sidebar] {
+    display: none;
+  }
   /* Full width */
-  .max-w-5xl { max-width: none; }
+  .max-w-5xl {
+    max-width: none;
+  }
   /* Tighten spacing — avoid blank half-pages */
-  .space-y-10 > * + * { margin-top: 0.5rem; }
-  .space-y-8 > * + * { margin-top: 0.25rem; }
-  .space-y-12 > * + * { margin-top: 0.75rem; }
+  .space-y-10 > * + * {
+    margin-top: 0.5rem;
+  }
+  .space-y-8 > * + * {
+    margin-top: 0.25rem;
+  }
+  .space-y-12 > * + * {
+    margin-top: 0.75rem;
+  }
   /* Cards — strip chrome to reclaim space */
-  .rounded-lg.border.bg-card { padding: 0.25rem; border: none; }
+  .rounded-lg.border.bg-card {
+    padding: 0.25rem;
+    border: none;
+  }
   /* Section titles */
-  h2, h3 { margin-bottom: 0.25rem; }
+  h2,
+  h3 {
+    margin-bottom: 0.25rem;
+  }
   /* Reduce Plotly chart heights to prevent oversized charts dominating pages */
-  .js-plotly-plot .plot-container { max-height: 280px; }
+  .js-plotly-plot .plot-container {
+    max-height: 280px;
+  }
 }

@@ -18,9 +18,14 @@ import {
   StopCircle,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useTick } from "../hooks/use-tick";
 import { JOB_STATE_CONFIG } from "../constants";
-import { formatBytes, formatDuration, formatNumber, formatTime } from "../lib/format";
+import { useTick } from "../hooks/use-tick";
+import {
+  formatBytes,
+  formatDuration,
+  formatNumber,
+  formatTime,
+} from "../lib/format";
 import type { Job, JobProgress } from "../types";
 import { StatCard } from "./stat-card";
 
@@ -89,11 +94,11 @@ function LiveDuration({
   startedAt: string;
   completedAt?: string;
 }) {
-  const tick = useTick();
+  const _tick = useTick();
   const duration = useMemo(
     () => formatDuration(startedAt, completedAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [startedAt, completedAt, completedAt ? 0 : tick],
+    [startedAt, completedAt],
   );
 
   return <span>{duration}</span>;
@@ -166,7 +171,12 @@ export function JobProgressCard({
   };
 
   return (
-    <Card className={cn("overflow-hidden border border-border py-0 gap-0", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border border-border py-0 gap-0",
+        className,
+      )}
+    >
       {/* Header */}
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
@@ -192,7 +202,10 @@ export function JobProgressCard({
           </div>
           <StatusBadge variant={stateConfig.variant}>
             <StateIcon
-              className={cn("w-3.5 h-3.5 mr-1", stateConfig.animate && "animate-spin")}
+              className={cn(
+                "w-3.5 h-3.5 mr-1",
+                stateConfig.animate && "animate-spin",
+              )}
             />
             {stateConfig.label}
           </StatusBadge>
@@ -206,7 +219,9 @@ export function JobProgressCard({
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-rose-800">Job Failed</p>
+                <p className="text-sm font-semibold text-rose-800">
+                  Job Failed
+                </p>
                 <p className="text-sm text-rose-700 mt-1">{error_message}</p>
               </div>
             </div>
@@ -218,7 +233,11 @@ export function JobProgressCard({
           <div className="space-y-4">
             {/* Processing Status - no spinner here, status badge in header already shows running state */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className={isRunning ? "font-medium" : "font-semibold text-foreground"}>
+              <span
+                className={
+                  isRunning ? "font-medium" : "font-semibold text-foreground"
+                }
+              >
                 {getProgressDisplay()}
               </span>
             </div>
@@ -248,33 +267,26 @@ export function JobProgressCard({
         {/* Timing Info */}
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
           <div className="flex items-center gap-4">
-            {started_at && (
-              <span>
-                Started: {formatTime(started_at)}
-              </span>
-            )}
-            {completed_at && (
-              <span>
-                Completed: {formatTime(completed_at)}
-              </span>
-            )}
+            {started_at && <span>Started: {formatTime(started_at)}</span>}
+            {completed_at && <span>Completed: {formatTime(completed_at)}</span>}
           </div>
           <div className="flex items-center gap-4">
             {(timing?.total_human || started_at) && (
               <span className="font-medium">
                 Duration:{" "}
-                {timing?.total_human ?? (
-                  started_at && (
+                {timing?.total_human ??
+                  (started_at && (
                     <LiveDuration
                       startedAt={started_at}
                       completedAt={completed_at}
                     />
-                  )
-                )}
+                  ))}
               </span>
             )}
             {output && (
-              <span>Output: {output.bytes_human ?? formatBytes(output.bytes)}</span>
+              <span>
+                Output: {output.bytes_human ?? formatBytes(output.bytes)}
+              </span>
             )}
           </div>
         </div>
@@ -289,7 +301,9 @@ export function JobProgressCard({
                     <Download className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-emerald-800">Results Ready</p>
+                    <p className="text-sm font-medium text-emerald-800">
+                      Results Ready
+                    </p>
                     <p className="text-xs text-emerald-600">
                       {output.bytes_human || formatBytes(output.bytes)}
                     </p>
@@ -308,8 +322,12 @@ export function JobProgressCard({
               <div className="p-4 bg-muted rounded-xl border border-border">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Manifest File</p>
-                    <p className="text-xs text-muted-foreground">Job metadata and checksums</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Manifest File
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Job metadata and checksums
+                    </p>
                   </div>
                   <Button
                     type="button"

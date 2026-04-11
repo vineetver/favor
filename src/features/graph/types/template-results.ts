@@ -1,5 +1,5 @@
-import type { ExplorerNode, ExplorerEdge } from "./node";
 import type { EntityType } from "./entity";
+import type { ExplorerEdge, ExplorerNode } from "./node";
 
 // =============================================================================
 // Template Result Types — ranked entity results from template queries

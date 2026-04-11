@@ -1,9 +1,9 @@
 "use client";
 
 import { Skeleton } from "@shared/components/ui/skeleton";
-import type { FolderNode, TreeNode } from "./types";
-import { TreeNodeRow, PROCESSING_STATUSES } from "./tree-node-row";
 import { TreeContextMenu } from "./tree-context-menu";
+import { TreeNodeRow } from "./tree-node-row";
+import type { FolderNode, TreeNode } from "./types";
 import { useCohortChildren } from "./use-cohort-children";
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,10 @@ function LazyFolder({
       {isExpanded && (
         <div>
           {isLoading ? (
-            <div className="space-y-1 py-1" style={{ paddingLeft: (node.depth + 1) * 12 + 8 }}>
+            <div
+              className="space-y-1 py-1"
+              style={{ paddingLeft: (node.depth + 1) * 12 + 8 }}
+            >
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-5 w-20" />
             </div>
@@ -82,7 +85,11 @@ export interface TreeCallbacks {
   onNewConversation?: (cohortId: string) => void;
   onDelete?: (cohortId: string) => void;
   /** Open the resource viewer for schema/sample leaves */
-  onOpenResource?: (kind: "schema" | "sample", cohortId: string, cohortLabel: string) => void;
+  onOpenResource?: (
+    kind: "schema" | "sample",
+    cohortId: string,
+    cohortLabel: string,
+  ) => void;
 }
 
 interface TreeBranchProps {
@@ -104,15 +111,10 @@ export function TreeBranch({
   return (
     <>
       {nodes.map((node) => {
-        const folder =
-          "children" in node && node.children !== undefined;
+        const folder = "children" in node && node.children !== undefined;
 
         // Lazy folder: needs data fetching
-        if (
-          folder &&
-          node.children === "lazy" &&
-          parentCohortId
-        ) {
+        if (folder && node.children === "lazy" && parentCohortId) {
           return (
             <LazyFolder
               key={node.id}
@@ -130,8 +132,7 @@ export function TreeBranch({
           const isExpanded = expanded.has(node.id);
 
           // Detect processing status for cohort nodes
-          const isProcessing =
-            node.kind === "cohort" && false; // Handled by parent via status
+          const isProcessing = node.kind === "cohort" && false; // Handled by parent via status
 
           return (
             <div key={node.id}>

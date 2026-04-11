@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { RequireAuth } from "@shared/components/require-auth";
 import { SettingsClient } from "@features/settings/components/settings-client";
+import { RequireAuth } from "@shared/components/require-auth";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Settings | FAVOR",

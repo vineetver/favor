@@ -2,18 +2,26 @@
  * Analytics command handlers: analytics, analytics.poll, viz
  */
 
+import type { AnalyticsChartData } from "../../../lib/api-client";
 import {
   cohortFetch,
-  pollAnalyticsRun,
   fetchAnalyticsChart,
+  pollAnalyticsRun,
 } from "../../../lib/api-client";
-import type { AnalyticsChartData } from "../../../lib/api-client";
+import {
+  catchToResult,
+  errorResult,
+  okResult,
+  TraceCollector,
+} from "../run-result";
 // Note: handleViz uses cohortFetch directly to support max_points param
 import type { RunCommand, RunResult } from "../types";
-import { errorResult, catchToResult, okResult, TraceCollector } from "../run-result";
 
 /** Regression types that can auto-fallback to elastic_net on fit failure */
-const FALLBACK_TO_ELASTIC_NET = new Set(["linear_regression", "logistic_regression"]);
+const FALLBACK_TO_ELASTIC_NET = new Set([
+  "linear_regression",
+  "logistic_regression",
+]);
 
 /** Submit an analytics task, poll for completion, and fetch charts */
 async function submitAndPoll(
@@ -22,7 +30,11 @@ async function submitAndPoll(
   method: string,
   tc: TraceCollector,
 ): Promise<RunResult> {
-  tc.add({ step: "submitAnalytics", kind: "call", message: `POST /cohorts/${cohortId}/analytics/run` });
+  tc.add({
+    step: "submitAnalytics",
+    kind: "call",
+    message: `POST /cohorts/${cohortId}/analytics/run`,
+  });
 
   const submitResp = await cohortFetch<{
     run_id: string;
@@ -36,7 +48,11 @@ async function submitAndPoll(
 
   const { run_id } = submitResp;
 
-  tc.add({ step: "pollAnalytics", kind: "call", message: `Polling run ${run_id}` });
+  tc.add({
+    step: "pollAnalytics",
+    kind: "call",
+    message: `Polling run ${run_id}`,
+  });
   const result = await pollAnalyticsRun(cohortId, run_id);
 
   if (result.status === "failed") {
@@ -61,7 +77,9 @@ async function submitAndPoll(
       }
     }),
   );
-  const charts = chartResults.filter((c): c is AnalyticsChartData => c !== null);
+  const charts = chartResults.filter(
+    (c): c is AnalyticsChartData => c !== null,
+  );
 
   return okResult({
     text_summary: result.summary ?? `${method} completed`,
@@ -83,13 +101,21 @@ export async function handleAnalytics(
 ): Promise<RunResult> {
   const cohortId = cmd.cohort_id ?? activeCohortId;
   if (!cohortId) {
-    return errorResult({ message: "No active cohort. Use set_cohort first.", code: "no_cohort" });
+    return errorResult({
+      message: "No active cohort. Use set_cohort first.",
+      code: "no_cohort",
+    });
   }
 
   const tc = new TraceCollector();
 
   try {
-    const result = await submitAndPoll(cohortId, cmd.params as Record<string, unknown>, cmd.method, tc);
+    const result = await submitAndPoll(
+      cohortId,
+      cmd.params as Record<string, unknown>,
+      cmd.method,
+      tc,
+    );
 
     // Auto-fallback: if linear/logistic regression fails (singular matrix from sparse data),
     // retry as elastic_net with default regularization — regularization handles collinearity.
@@ -98,7 +124,11 @@ export async function handleAnalytics(
       result.error?.code === "analytics_failed" &&
       FALLBACK_TO_ELASTIC_NET.has(cmd.method)
     ) {
-      tc.add({ step: "fallback", kind: "fallback", message: `${cmd.method} failed — retrying as elastic_net` });
+      tc.add({
+        step: "fallback",
+        kind: "fallback",
+        message: `${cmd.method} failed — retrying as elastic_net`,
+      });
       const fallbackTask = {
         ...(cmd.params as Record<string, unknown>),
         type: "elastic_net",
@@ -120,7 +150,11 @@ export async function handleAnalyticsPoll(
   const tc = new TraceCollector();
 
   try {
-    tc.add({ step: "pollAnalytics", kind: "call", message: `Polling run ${cmd.run_id}` });
+    tc.add({
+      step: "pollAnalytics",
+      kind: "call",
+      message: `Polling run ${cmd.run_id}`,
+    });
     const result = await pollAnalyticsRun(cmd.cohort_id, cmd.run_id);
 
     if (result.status === "failed") {
@@ -136,7 +170,11 @@ export async function handleAnalyticsPoll(
     const chartResults = await Promise.all(
       chartSpecs.map(async (chart) => {
         try {
-          return await fetchAnalyticsChart(cmd.cohort_id, cmd.run_id, chart.chart_id);
+          return await fetchAnalyticsChart(
+            cmd.cohort_id,
+            cmd.run_id,
+            chart.chart_id,
+          );
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           tc.warn("chart_fetch_failed", `Chart ${chart.chart_id}: ${msg}`);
@@ -144,7 +182,9 @@ export async function handleAnalyticsPoll(
         }
       }),
     );
-    const charts = chartResults.filter((c): c is AnalyticsChartData => c !== null);
+    const charts = chartResults.filter(
+      (c): c is AnalyticsChartData => c !== null,
+    );
 
     return okResult({
       text_summary: result.summary ?? `Run ${cmd.run_id}: ${result.status}`,
@@ -169,8 +209,14 @@ export async function handleViz(
   const tc = new TraceCollector();
 
   try {
-    const maxPointsParam = cmd.max_points ? `&max_points=${cmd.max_points}` : "";
-    tc.add({ step: "fetchViz", kind: "call", message: `GET viz chart ${cmd.chart_id}${maxPointsParam ? ` (max_points=${cmd.max_points})` : ""}` });
+    const maxPointsParam = cmd.max_points
+      ? `&max_points=${cmd.max_points}`
+      : "";
+    tc.add({
+      step: "fetchViz",
+      kind: "call",
+      message: `GET viz chart ${cmd.chart_id}${maxPointsParam ? ` (max_points=${cmd.max_points})` : ""}`,
+    });
 
     const vizUrl = `/cohorts/${encodeURIComponent(cmd.cohort_id)}/analytics/runs/${encodeURIComponent(cmd.run_id)}/viz?chart_id=${encodeURIComponent(cmd.chart_id)}${maxPointsParam}`;
     const chartData = await cohortFetch<AnalyticsChartData>(vizUrl);

@@ -71,18 +71,22 @@ function ToggleCard({
         </div>
       )}
 
-      <p className={cn(
-        "text-sm font-medium leading-tight pr-6",
-        overLimit ? "text-muted-foreground" : "text-foreground",
-      )}>
+      <p
+        className={cn(
+          "text-sm font-medium leading-tight pr-6",
+          overLimit ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
         {label}
       </p>
 
       {description && (
-        <p className={cn(
-          "text-xs text-muted-foreground leading-relaxed",
-          !selected && !overLimit && "line-clamp-2",
-        )}>
+        <p
+          className={cn(
+            "text-xs text-muted-foreground leading-relaxed",
+            !selected && !overLimit && "line-clamp-2",
+          )}
+        >
           {description}
         </p>
       )}
@@ -151,9 +155,7 @@ export function EnrichmentPicker({
       <div>
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">
-            Enrichment
-          </h3>
+          <h3 className="text-sm font-semibold text-foreground">Enrichment</h3>
           <span className="text-xs text-muted-foreground">optional</span>
         </div>
         <p className="text-xs text-muted-foreground mt-1 ml-6">

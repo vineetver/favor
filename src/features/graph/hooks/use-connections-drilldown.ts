@@ -1,26 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { EdgeType } from "../types/edge";
-import type { ExplorerEdge } from "../types/node";
-import type { EntityType } from "../types/entity";
+import {
+  type ConnectionsEdgeItem,
+  extractEdgeFields,
+  fetchConnections,
+  fetchEdgePage,
+  type SchemaPropertyMeta,
+} from "../api";
 import type {
   ConnectionsDrilldownData,
   ConnectionsEdgeGroup,
   ConnectionsStatus,
 } from "../types/connections";
-import {
-  fetchConnections,
-  fetchEdgePage,
-  extractEdgeFields,
-  type ConnectionsEdgeItem,
-  type SchemaPropertyMeta,
-} from "../api";
-import { makeNodeKey, makeEdgeKey } from "../types/keys";
+import type { EdgeType } from "../types/edge";
+import type { EntityType } from "../types/entity";
+import { makeEdgeKey, makeNodeKey } from "../types/keys";
+import type { ExplorerEdge } from "../types/node";
 import { createEdgeId } from "../utils/keys";
+
 // TODO — remove when backend drops clinvar_annotation edges from VARIANT_IMPLIES_GENE
 const isSuppressed = (type: string, fields: Record<string, unknown>) =>
-  type === "VARIANT_IMPLIES_GENE" && fields.implication_mode === "clinvar_annotation";
+  type === "VARIANT_IMPLIES_GENE" &&
+  fields.implication_mode === "clinvar_annotation";
 
 interface UseConnectionsDrilldownOptions {
   sourceId: string | null;
@@ -38,7 +40,11 @@ interface UseConnectionsDrilldownResult {
   retry: () => void;
 }
 
-interface EntityRef { type: string; id: string; label: string }
+interface EntityRef {
+  type: string;
+  id: string;
+  label: string;
+}
 
 /**
  * Convert a backend edge item into an ExplorerEdge.
@@ -131,7 +137,9 @@ function mergeEdges(
         return { ...le, fields: { ...le.fields, ...be.fields } };
       })
       .filter((e) => !isSuppressed(edgeType, e.fields ?? {}));
-    const newBackendEdges = hydratedBackend.filter((e) => !localEdgeIds.has(e.id));
+    const newBackendEdges = hydratedBackend.filter(
+      (e) => !localEdgeIds.has(e.id),
+    );
 
     // Local edges first (enriched), then new backend edges
     const mergedEdges = [...enrichedLocal, ...newBackendEdges];
@@ -253,13 +261,21 @@ export function useConnectionsDrilldown({
       // Use response-level from/to (richer labels) when available, else use request params
       const respFrom = response.data?.from ?? pairFrom;
       const respTo = response.data?.to ?? pairTo;
-      const groups = mergeEdges(localEdges, response.data?.connections ?? [], respFrom, respTo, response.fieldMeta);
+      const groups = mergeEdges(
+        localEdges,
+        response.data?.connections ?? [],
+        respFrom,
+        respTo,
+        response.fieldMeta,
+      );
       setData({ sourceId, targetId, groups });
       setStatus("ready");
     } catch (err) {
       if (pairRef.current !== pairKey) return;
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Failed to load connections");
+      setError(
+        err instanceof Error ? err.message : "Failed to load connections",
+      );
     }
   }, [sourceId, targetId, sourceType, targetType, localEdges]);
 
@@ -324,7 +340,9 @@ export function useConnectionsDrilldown({
                 return {
                   ...prev,
                   groups: prev.groups.map((g) =>
-                    g.type === edgeType ? { ...g, pageStatus: "error" as const } : g,
+                    g.type === edgeType
+                      ? { ...g, pageStatus: "error" as const }
+                      : g,
                   ),
                 };
               });
@@ -333,8 +351,16 @@ export function useConnectionsDrilldown({
           }
 
           const existingIds = new Set(group.edges.map((e) => e.id));
-          const pageFrom = response.data.from ?? { type: sourceType!, id: sourceId!, label: sourceId! };
-          const pageTo = response.data.to ?? { type: targetType!, id: targetId!, label: targetId! };
+          const pageFrom = response.data.from ?? {
+            type: sourceType!,
+            id: sourceId!,
+            label: sourceId!,
+          };
+          const pageTo = response.data.to ?? {
+            type: targetType!,
+            id: targetId!,
+            label: targetId!,
+          };
           const newEdges = response.data.edges
             .map((e) => hydrateConnectionEdge(e, pageFrom, pageTo, edgeType))
             .filter((e) => !existingIds.has(e.id));
@@ -367,7 +393,9 @@ export function useConnectionsDrilldown({
               return {
                 ...prev,
                 groups: prev.groups.map((g) =>
-                  g.type === edgeType ? { ...g, pageStatus: "error" as const } : g,
+                  g.type === edgeType
+                    ? { ...g, pageStatus: "error" as const }
+                    : g,
                 ),
               };
             });

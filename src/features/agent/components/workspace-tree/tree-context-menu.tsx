@@ -15,7 +15,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { TreeNode, TreeAction, NodeKind } from "./types";
+import type { NodeKind, TreeAction, TreeNode } from "./types";
 
 // ---------------------------------------------------------------------------
 // Action configuration per node kind
@@ -46,7 +46,11 @@ interface TreeContextMenuProps {
   onViewInChat?: (path: string) => void;
   onNewConversation?: (cohortId: string) => void;
   onDelete?: (cohortId: string) => void;
-  onOpenResource?: (kind: "schema" | "sample", cohortId: string, cohortLabel: string) => void;
+  onOpenResource?: (
+    kind: "schema" | "sample",
+    cohortId: string,
+    cohortLabel: string,
+  ) => void;
   children: React.ReactNode;
 }
 
@@ -79,7 +83,11 @@ export function TreeContextMenu({
           // Extract cohort ID from path: "cohort/{id}/schema" or "cohort/{id}/sample"
           const parts = node.path.split("/");
           const cohortId = parts[1] ?? "";
-          onOpenResource(node.kind as "schema" | "sample", cohortId, cohortId.slice(0, 8));
+          onOpenResource(
+            node.kind as "schema" | "sample",
+            cohortId,
+            cohortId.slice(0, 8),
+          );
         } else {
           onViewInChat?.(`Show me ${node.path}`);
         }

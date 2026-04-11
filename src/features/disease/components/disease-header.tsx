@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { cn } from "@infra/utils";
 import {
   Breadcrumb,
@@ -8,6 +7,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@shared/components/ui/breadcrumb";
+import { Fragment } from "react";
 import type { GraphDisease } from "../types";
 
 interface DiseaseHeaderProps {
@@ -16,8 +16,9 @@ interface DiseaseHeaderProps {
 
 function titleCase(s: string): string {
   if (s !== s.toLowerCase() && s !== s.toUpperCase()) return s;
-  return s.replace(/\b\w+/g, (w) =>
-    w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+  return s.replace(
+    /\b\w+/g,
+    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
   );
 }
 
@@ -55,7 +56,7 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
     xrefs.push({
       label: "EFO",
       id: disease.efo_id,
-      href: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes/${encodeURIComponent("http://www.ebi.ac.uk/efo/" + disease.efo_id)}`,
+      href: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes/${encodeURIComponent(`http://www.ebi.ac.uk/efo/${disease.efo_id}`)}`,
     });
   }
   if (disease.omim_id) {
@@ -133,13 +134,11 @@ export function DiseaseHeader({ disease }: DiseaseHeaderProps) {
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors"
               >
-                {xref.label}:{" "}
-                <span className="font-mono">{xref.id}</span>
+                {xref.label}: <span className="font-mono">{xref.id}</span>
               </a>
             ) : (
               <span key={xref.label}>
-                {xref.label}:{" "}
-                <span className="font-mono">{xref.id}</span>
+                {xref.label}: <span className="font-mono">{xref.id}</span>
               </span>
             ),
           )}

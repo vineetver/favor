@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadChromatinStatesData } from "@features/enrichment/loaders";
 import { ChromatinStatesView } from "@features/enrichment/components/chromatin-states-view";
+import { loadChromatinStatesData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

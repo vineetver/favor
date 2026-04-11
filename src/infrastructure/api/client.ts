@@ -8,7 +8,11 @@ export async function fetchJson<T>(
   url: string,
   options: FetchOptions = {},
 ): Promise<T> {
-  const { revalidate = DEFAULT_REVALIDATE, timeout = DEFAULT_TIMEOUT, headers = {} } = options;
+  const {
+    revalidate = DEFAULT_REVALIDATE,
+    timeout = DEFAULT_TIMEOUT,
+    headers = {},
+  } = options;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);

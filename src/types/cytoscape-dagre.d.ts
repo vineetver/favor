@@ -32,7 +32,10 @@ declare module "cytoscape-dagre" {
     /** Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h } */
     boundingBox?: cytoscape.BoundingBox12 | cytoscape.BoundingBoxWH;
     /** A function that applies a transform to the final node position */
-    transform?: (node: cytoscape.NodeSingular, position: cytoscape.Position) => cytoscape.Position;
+    transform?: (
+      node: cytoscape.NodeSingular,
+      position: cytoscape.Position,
+    ) => cytoscape.Position;
     /** Whether to transition the node positions */
     ready?: () => void;
     /** Callback on layoutstop */

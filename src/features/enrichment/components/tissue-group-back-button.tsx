@@ -1,7 +1,7 @@
 "use client";
 
+import { updateClientUrl, useClientSearchParams } from "@shared/hooks";
 import { ArrowLeft } from "lucide-react";
-import { useClientSearchParams, updateClientUrl } from "@shared/hooks";
 import { useCallback } from "react";
 
 /**

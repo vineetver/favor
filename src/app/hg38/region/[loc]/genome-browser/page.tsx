@@ -6,7 +6,9 @@ interface GenomeBrowserPageProps {
   params: Promise<{ loc: string }>;
 }
 
-export default async function GenomeBrowserPage({ params }: GenomeBrowserPageProps) {
+export default async function GenomeBrowserPage({
+  params,
+}: GenomeBrowserPageProps) {
   const loc = decodeURIComponent((await params).loc);
   const region = parseRegion(loc);
   if (!region) notFound();
@@ -18,11 +20,7 @@ export default async function GenomeBrowserPage({ params }: GenomeBrowserPagePro
   const paddedEnd = region.end + Math.floor(span * 0.1);
 
   return (
-    <BrowserPage
-      chromosome={chromosome}
-      start={paddedStart}
-      end={paddedEnd}
-    />
+    <BrowserPage chromosome={chromosome} start={paddedStart} end={paddedEnd} />
   );
 }
 

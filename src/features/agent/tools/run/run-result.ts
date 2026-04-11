@@ -6,7 +6,7 @@
  */
 
 import { AgentToolError } from "../../lib/api-client";
-import { type ToolErrorCode, classifyApiError } from "./error-classify";
+import { classifyApiError, type ToolErrorCode } from "./error-classify";
 import type { NextAction, Repair } from "./recovery";
 
 // Re-export for consumers
@@ -103,7 +103,11 @@ export class TraceCollector {
 
   /** Record a warning */
   warn(code: string, message: string, details?: unknown): void {
-    this.warnings.push({ code, message, ...(details !== undefined ? { details } : {}) });
+    this.warnings.push({
+      code,
+      message,
+      ...(details !== undefined ? { details } : {}),
+    });
   }
 
   /** Record a candidate for disambiguation */
@@ -149,7 +153,12 @@ export interface RunResultEnvelope {
   state_delta: {
     active_cohort_id?: string;
     new_artifact_ids?: number[];
-    pinned_entities?: Array<{ type: string; id: string; label: string; subtitle?: string }>;
+    pinned_entities?: Array<{
+      type: string;
+      id: string;
+      label: string;
+      subtitle?: string;
+    }>;
     active_job_ids?: string[];
     derived_cohorts?: Array<{ id: string; label?: string; row_count: number }>;
   };
@@ -195,14 +204,18 @@ export function okResult(opts: OkOpts): RunResultEnvelope {
     state_delta: opts.state_delta ?? {},
     ...(opts.artifacts?.length ? { artifacts: opts.artifacts } : {}),
     ...(opts.next_reads?.length ? { next_reads: opts.next_reads } : {}),
-    ...(opts.incomplete ? { incomplete: true, next_cursor: opts.next_cursor } : {}),
+    ...(opts.incomplete
+      ? { incomplete: true, next_cursor: opts.next_cursor }
+      : {}),
     ...(opts.repairs?.length ? { repairs: opts.repairs } : {}),
     ...(opts.next_actions?.length ? { next_actions: opts.next_actions } : {}),
     ...(opts.tc?.trace.length ? { trace: opts.tc.trace } : {}),
     ...(opts.tc?.warnings.length ? { warnings: opts.tc.warnings } : {}),
     ...(opts.tc?.candidates.length ? { candidates: opts.tc.candidates } : {}),
     ...(opts.resolved_info ? { resolved_info: opts.resolved_info } : {}),
-    ...(opts.budgets_remaining ? { budgets_remaining: opts.budgets_remaining } : {}),
+    ...(opts.budgets_remaining
+      ? { budgets_remaining: opts.budgets_remaining }
+      : {}),
   };
 }
 
@@ -264,7 +277,10 @@ export function emptyResult(opts: {
 }
 
 /** Convert an AgentToolError or unknown error into an errorResult */
-export function catchToResult(err: unknown, tc?: TraceCollector): RunResultEnvelope {
+export function catchToResult(
+  err: unknown,
+  tc?: TraceCollector,
+): RunResultEnvelope {
   if (err instanceof AgentToolError) {
     const classified = classifyApiError(err.status, err.detail);
     return errorResult({

@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { DataSurface } from "@shared/components/ui/data-surface";
 import {
   Badge,
   categories,
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { DataSurface } from "@shared/components/ui/data-surface";
+import Link from "next/link";
 
 // =============================================================================
 // Row type

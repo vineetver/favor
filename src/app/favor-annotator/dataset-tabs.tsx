@@ -1,13 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@shared/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -16,7 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@shared/components/ui/table";
-import { essential, full, type DatasetGroup } from "./datasets";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@shared/components/ui/tabs";
+import { Download } from "lucide-react";
+import { type DatasetGroup, essential, full } from "./datasets";
 
 function DatasetTable({ dataset }: { dataset: DatasetGroup[] }) {
   return (
@@ -57,7 +57,7 @@ function DatasetTable({ dataset }: { dataset: DatasetGroup[] }) {
                 </a>
               </TableCell>
             </TableRow>
-          ))
+          )),
         )}
       </TableBody>
     </Table>

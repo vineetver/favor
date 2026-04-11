@@ -1,13 +1,15 @@
-import { notFound } from "next/navigation";
 import { fetchCcreEntity } from "@features/ccre/api/ccre";
 import { BrowserPage } from "@features/genome-browser";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 interface CcreBrowserPageProps {
   params: Promise<{ ccre_id: string }>;
 }
 
-export default async function CcreBrowserPage({ params }: CcreBrowserPageProps) {
+export default async function CcreBrowserPage({
+  params,
+}: CcreBrowserPageProps) {
   const { ccre_id } = await params;
 
   const response = await fetchCcreEntity(ccre_id);
@@ -22,16 +24,11 @@ export default async function CcreBrowserPage({ params }: CcreBrowserPageProps) 
   const start = Math.max(0, ccre.start_position - padding);
   const end = ccre.end_position + padding;
 
-  return (
-    <BrowserPage
-      chromosome={chromosome}
-      start={start}
-      end={end}
-    />
-  );
+  return <BrowserPage chromosome={chromosome} start={start} end={end} />;
 }
 
 export const metadata: Metadata = {
   title: "Genome Browser | cCRE",
-  description: "Interactive genome browser centered on a candidate cis-regulatory element",
+  description:
+    "Interactive genome browser centered on a candidate cis-regulatory element",
 };

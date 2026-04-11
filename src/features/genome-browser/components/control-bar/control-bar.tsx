@@ -1,50 +1,52 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/control-bar/control-bar.tsx
 // Compact control bar with navigation and zoom controls
 
+import { cn } from "@infra/utils";
+import { Skeleton } from "@shared/components/ui/skeleton";
+import { TooltipProvider } from "@shared/components/ui/tooltip";
 import {
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react'
-import { Skeleton } from '@shared/components/ui/skeleton'
-import { TooltipProvider } from '@shared/components/ui/tooltip'
-import { cn } from '@infra/utils'
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import {
   useBrowserActions,
   useBrowserRegion,
   useCanZoomIn,
   useCanZoomOut,
   useVisibleTrackCount,
-} from '../../state/browser-context'
-import { RegionDisplay } from '../shared/region-display'
-import { ToolbarButton } from '../shared/toolbar-button'
-import type { GenomicRegion } from '../../types/state'
+} from "../../state/browser-context";
+import type { GenomicRegion } from "../../types/state";
+import { RegionDisplay } from "../shared/region-display";
+import { ToolbarButton } from "../shared/toolbar-button";
 
 type ControlBarProps = {
-  className?: string
-  initialRegion?: GenomicRegion
-}
+  className?: string;
+  initialRegion?: GenomicRegion;
+};
 
 export function ControlBar({ className, initialRegion }: ControlBarProps) {
-  const region = useBrowserRegion()
-  const actions = useBrowserActions()
-  const canZoomIn = useCanZoomIn()
-  const canZoomOut = useCanZoomOut()
-  const visibleCount = useVisibleTrackCount()
+  const region = useBrowserRegion();
+  const actions = useBrowserActions();
+  const canZoomIn = useCanZoomIn();
+  const canZoomOut = useCanZoomOut();
+  const visibleCount = useVisibleTrackCount();
 
   if (!region) {
-    return <ControlBarSkeleton className={className} />
+    return <ControlBarSkeleton className={className} />;
   }
 
   return (
-    <div className={cn(
-      "flex items-center justify-between px-4 py-2 border-b border-border bg-card",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-2 border-b border-border bg-card",
+        className,
+      )}
+    >
       <RegionDisplay region={region} />
 
       <div className="flex items-center gap-1">
@@ -89,15 +91,17 @@ export function ControlBar({ className, initialRegion }: ControlBarProps) {
         <span>{visibleCount} tracks</span>
       </div>
     </div>
-  )
+  );
 }
 
 function ControlBarSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn(
-      "flex items-center justify-between px-4 py-2 border-b border-border bg-card",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-2 border-b border-border bg-card",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         <Skeleton className="h-4 w-4" />
         <div className="flex flex-col gap-1">
@@ -112,7 +116,7 @@ function ControlBarSkeleton({ className }: { className?: string }) {
       </div>
       <Skeleton className="h-4 w-16" />
     </div>
-  )
+  );
 }
 
-export { ControlBarSkeleton }
+export { ControlBarSkeleton };

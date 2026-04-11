@@ -384,12 +384,14 @@ function normalizeBlock(block: ScorerBlock): (number | null)[][] {
   if (block.quantile_scores) return block.quantile_scores;
   const flat = block.raw_scores
     .flat()
-    .filter((v): v is number => v != null && !isNaN(v));
+    .filter((v): v is number => v != null && !Number.isNaN(v));
   if (flat.length === 0) return block.raw_scores;
   const maxAbs = Math.max(...flat.map(Math.abs));
   if (maxAbs === 0) return block.raw_scores;
   return block.raw_scores.map((row) =>
-    row.map((v) => (v == null || isNaN(v) ? null : Math.abs(v) / maxAbs)),
+    row.map((v) =>
+      v == null || Number.isNaN(v) ? null : Math.abs(v) / maxAbs,
+    ),
   );
 }
 
@@ -453,7 +455,7 @@ function deduplicateAndSort(
 // ─── Color ────────────────────────────────────────────────────
 
 function cellColor(v: number | null): string {
-  if (v == null || isNaN(v) || v < 0.02) return "transparent";
+  if (v == null || Number.isNaN(v) || v < 0.02) return "transparent";
   const t = Math.max(0, Math.min(1, v));
   return `rgb(${Math.round(250 - t * 126)},${Math.round(250 - t * 192)},${Math.round(250 - t * 13)})`;
 }
@@ -560,8 +562,12 @@ function ScorerGroupSection({
     <section className={isFirst ? "" : "mt-8 pt-7 border-t border-border"}>
       {!hideHeader && (
         <>
-          <h3 className="text-sm font-semibold text-foreground">{group.title}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{group.question}</p>
+          <h3 className="text-sm font-semibold text-foreground">
+            {group.title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {group.question}
+          </p>
         </>
       )}
 
@@ -1028,32 +1034,32 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
                         <p className="font-medium">
                           {rowLabel} × {g.name}
                         </p>
-                        {cell!.trackIdx != null &&
+                        {cell?.trackIdx != null &&
                           g.trackIndices.length > 1 && (
                             <p>
-                              Top: {block.tracks[cell!.trackIdx].biosample_name}
+                              Top: {block.tracks[cell?.trackIdx].biosample_name}
                             </p>
                           )}
                         {hasQuantile &&
-                          cell!.trackIdx != null &&
-                          block.quantile_scores?.[cell!.rowIdx]?.[
-                            cell!.trackIdx
+                          cell?.trackIdx != null &&
+                          block.quantile_scores?.[cell?.rowIdx]?.[
+                            cell?.trackIdx
                           ] != null && (
                             <p>
                               Quantile:{" "}
                               {formatQuantile(
-                                block.quantile_scores![cell!.rowIdx][
-                                  cell!.trackIdx
+                                block.quantile_scores?.[cell?.rowIdx][
+                                  cell?.trackIdx
                                 ],
                               )}
                             </p>
                           )}
                         <p>
                           Raw:{" "}
-                          {cell!.trackIdx != null
+                          {cell?.trackIdx != null
                             ? formatScore(
-                                block.raw_scores[cell!.rowIdx]?.[
-                                  cell!.trackIdx
+                                block.raw_scores[cell?.rowIdx]?.[
+                                  cell?.trackIdx
                                 ] ?? 0,
                               )
                             : "—"}
@@ -1070,7 +1076,7 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
                     >
                       <CellBreakdownContent
                         block={block}
-                        rowIdx={cell!.rowIdx}
+                        rowIdx={cell?.rowIdx}
                         trackIndices={g.trackIndices}
                         geneName={rowLabel}
                         groupName={g.name}

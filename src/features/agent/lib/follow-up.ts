@@ -15,18 +15,18 @@
 // keep this module as the single point of contact for the storage key
 // shape so it stays trivially auditable.
 
-const STORAGE_PREFIX = 'agent:follow-up:'
+const STORAGE_PREFIX = "agent:follow-up:";
 
 export type SummarySeed = {
   /** Discriminator for the entity the summary describes. */
-  readonly kind: 'variant' | 'gene'
+  readonly kind: "variant" | "gene";
   /** Canonical identifier (e.g. "17-43057062-T-TG" or "ENSG00000012048"). */
-  readonly id: string
+  readonly id: string;
   /** Human-friendly label shown in the seed message ("BRCA1", "rs12345"). */
-  readonly displayName: string
+  readonly displayName: string;
   /** The rendered markdown the user just read. */
-  readonly summary: string
-}
+  readonly summary: string;
+};
 
 /**
  * Stash a seed in sessionStorage and return its one-time UUID handle.
@@ -34,16 +34,16 @@ export type SummarySeed = {
  * caller should fall back to a plain navigation in that case.
  */
 export function stashFollowUp(seed: SummarySeed): string | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === "undefined") return null;
   try {
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
     window.sessionStorage.setItem(
       `${STORAGE_PREFIX}${id}`,
-      JSON.stringify(seed)
-    )
-    return id
+      JSON.stringify(seed),
+    );
+    return id;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -52,24 +52,24 @@ export function stashFollowUp(seed: SummarySeed): string | null {
  * doesn't exist, has been consumed already, or is malformed.
  */
 export function consumeFollowUp(id: string): SummarySeed | null {
-  if (typeof window === 'undefined') return null
-  const key = `${STORAGE_PREFIX}${id}`
-  const raw = window.sessionStorage.getItem(key)
-  if (!raw) return null
-  window.sessionStorage.removeItem(key)
+  if (typeof window === "undefined") return null;
+  const key = `${STORAGE_PREFIX}${id}`;
+  const raw = window.sessionStorage.getItem(key);
+  if (!raw) return null;
+  window.sessionStorage.removeItem(key);
   try {
-    const parsed = JSON.parse(raw) as SummarySeed
+    const parsed = JSON.parse(raw) as SummarySeed;
     if (
-      (parsed.kind !== 'variant' && parsed.kind !== 'gene') ||
-      typeof parsed.id !== 'string' ||
-      typeof parsed.displayName !== 'string' ||
-      typeof parsed.summary !== 'string'
+      (parsed.kind !== "variant" && parsed.kind !== "gene") ||
+      typeof parsed.id !== "string" ||
+      typeof parsed.displayName !== "string" ||
+      typeof parsed.summary !== "string"
     ) {
-      return null
+      return null;
     }
-    return parsed
+    return parsed;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -86,20 +86,20 @@ export function consumeFollowUp(id: string): SummarySeed | null {
  */
 export function buildFollowUpMessage(
   seed: SummarySeed,
-  userQuestion?: string
+  userQuestion?: string,
 ): string {
-  const label = seed.kind === 'variant' ? 'variant' : 'gene'
-  const trimmedQuestion = userQuestion?.trim()
+  const label = seed.kind === "variant" ? "variant" : "gene";
+  const trimmedQuestion = userQuestion?.trim();
   const tail = trimmedQuestion
     ? trimmedQuestion
-    : 'Help me explore this further — what aspects are most worth digging into?'
+    : "Help me explore this further — what aspects are most worth digging into?";
   return [
     `I just read the AI summary of ${label} **${seed.displayName}** (\`${seed.id}\`). Here's what it said:`,
-    '',
+    "",
     seed.summary,
-    '',
-    '---',
-    '',
+    "",
+    "---",
+    "",
     tail,
-  ].join('\n')
+  ].join("\n");
 }

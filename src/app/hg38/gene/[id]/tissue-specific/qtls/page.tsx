@@ -1,6 +1,6 @@
-import { fetchGene } from "@features/gene/api";
-import { loadQtlsData } from "@features/enrichment/loaders";
 import { QtlsView } from "@features/enrichment/components/qtls-view";
+import { loadQtlsData } from "@features/enrichment/loaders";
+import { fetchGene } from "@features/gene/api";
 import { notFound } from "next/navigation";
 
 export default async function Page({

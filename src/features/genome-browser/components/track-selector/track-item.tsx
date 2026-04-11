@@ -1,23 +1,23 @@
-'use client'
+"use client";
 
 // src/features/genome-browser/components/track-selector/track-item.tsx
 // Individual track toggle item
 
+import { cn } from "@infra/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@shared/components/ui/tooltip'
-import { cn } from '@infra/utils'
-import type { StaticTrack, DynamicTrack } from '../../types/tracks'
-import { TrackCheckbox } from '../shared/track-checkbox'
+} from "@shared/components/ui/tooltip";
+import type { DynamicTrack, StaticTrack } from "../../types/tracks";
+import { TrackCheckbox } from "../shared/track-checkbox";
 
 type TrackItemProps = {
-  track: StaticTrack | DynamicTrack
-  isActive: boolean
-  onToggle: () => void
-  className?: string
-}
+  track: StaticTrack | DynamicTrack;
+  isActive: boolean;
+  onToggle: () => void;
+  className?: string;
+};
 
 export function TrackItem({
   track,
@@ -33,9 +33,9 @@ export function TrackItem({
           tabIndex={0}
           onClick={onToggle}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              onToggle()
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle();
             }
           }}
           className={cn(
@@ -43,7 +43,7 @@ export function TrackItem({
             isActive
               ? "bg-primary/10 text-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            className
+            className,
           )}
         >
           <TrackCheckbox checked={isActive} />
@@ -55,5 +55,5 @@ export function TrackItem({
         <p className="text-muted-foreground text-xs">{track.description}</p>
       </TooltipContent>
     </Tooltip>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import type { EntityType } from "./entity";
 import type { EdgeType } from "./edge";
+import type { EntityType } from "./entity";
 
 // =============================================================================
 // Fetch State (Generic Discriminated Union)
@@ -61,7 +61,9 @@ export interface GraphSchema {
 }
 
 /** Extract plain EntityType[] from the rich NodeTypeStats array. */
-export function getNodeTypeNames(schema: GraphSchema | null | undefined): EntityType[] {
+export function getNodeTypeNames(
+  schema: GraphSchema | null | undefined,
+): EntityType[] {
   if (!schema?.nodeTypes) return [];
   return schema.nodeTypes.map((nt) => nt.nodeType);
 }

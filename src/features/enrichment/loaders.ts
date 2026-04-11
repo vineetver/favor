@@ -11,12 +11,11 @@ import {
   fetchAseByTissueGroup,
   fetchCcreGeneLinks,
   fetchCcreGeneLinksByTissueGroup,
-  fetchCcreLinksByTissueGroup,
-  fetchChromBpnet,
-  fetchChromBpnetByTissueGroup,
   fetchChromatinByTissueGroup,
   fetchChromatinStateFacets,
   fetchChromatinStates,
+  fetchChromBpnet,
+  fetchChromBpnetByTissueGroup,
   fetchEnhancerGeneFacets,
   fetchEnhancerGenes,
   fetchEnhancersByTissueGroup,
@@ -45,12 +44,23 @@ const noFacets = { facets: [] as string[], count: 0 };
 export async function loadTissueSignalsData(loc: string, tissueGroup?: string) {
   const [groupedData, tissueFacets, classFacets, summary, initialData] =
     await Promise.all([
-      !tissueGroup ? fetchSignalsByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
-      tissueGroup ? fetchSignalFacets(loc, "tissue_name").catch(() => noFacets) : Promise.resolve(noFacets),
-      tissueGroup ? fetchSignalFacets(loc, "ccre_classification").catch(() => noFacets) : Promise.resolve(noFacets),
+      !tissueGroup
+        ? fetchSignalsByTissueGroup(loc).catch(() => [])
+        : Promise.resolve([]),
+      tissueGroup
+        ? fetchSignalFacets(loc, "tissue_name").catch(() => noFacets)
+        : Promise.resolve(noFacets),
+      tissueGroup
+        ? fetchSignalFacets(loc, "ccre_classification").catch(() => noFacets)
+        : Promise.resolve(noFacets),
       fetchRegionSummary(loc).catch(() => null),
       tissueGroup
-        ? fetchSignals(loc, { tissue_group: tissueGroup, sort_by: "max_signal", sort_dir: "desc", limit: 25 }).catch(() => null)
+        ? fetchSignals(loc, {
+            tissue_group: tissueGroup,
+            sort_by: "max_signal",
+            sort_dir: "desc",
+            limit: 25,
+          }).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -68,15 +78,29 @@ export async function loadTissueSignalsData(loc: string, tissueGroup?: string) {
 // Chromatin States
 // ---------------------------------------------------------------------------
 
-export async function loadChromatinStatesData(loc: string, tissueGroup?: string) {
+export async function loadChromatinStatesData(
+  loc: string,
+  tissueGroup?: string,
+) {
   const [groupedData, tissueFacets, categoryFacets, summary, initialData] =
     await Promise.all([
-      !tissueGroup ? fetchChromatinByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
-      tissueGroup ? fetchChromatinStateFacets(loc, "tissue_name").catch(() => noFacets) : Promise.resolve(noFacets),
-      tissueGroup ? fetchChromatinStateFacets(loc, "state_category").catch(() => noFacets) : Promise.resolve(noFacets),
+      !tissueGroup
+        ? fetchChromatinByTissueGroup(loc).catch(() => [])
+        : Promise.resolve([]),
+      tissueGroup
+        ? fetchChromatinStateFacets(loc, "tissue_name").catch(() => noFacets)
+        : Promise.resolve(noFacets),
+      tissueGroup
+        ? fetchChromatinStateFacets(loc, "state_category").catch(() => noFacets)
+        : Promise.resolve(noFacets),
       fetchRegionSummary(loc).catch(() => null),
       tissueGroup
-        ? fetchChromatinStates(loc, { tissue_group: tissueGroup, sort_by: "position", sort_dir: "asc", limit: 25 }).catch(() => null)
+        ? fetchChromatinStates(loc, {
+            tissue_group: tissueGroup,
+            sort_by: "position",
+            sort_dir: "asc",
+            limit: 25,
+          }).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -97,15 +121,24 @@ export async function loadChromatinStatesData(loc: string, tissueGroup?: string)
 
 export async function loadAccessibilityData(loc: string, tissueGroup?: string) {
   const [groupedData, summary, initialData] = await Promise.all([
-    !tissueGroup ? fetchAccessibilityByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchAccessibilityByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     fetchRegionSummary(loc).catch(() => null),
     tissueGroup
-      ? fetchAccessibility(loc, { tissue_group: tissueGroup, sort_by: "max_signal", sort_dir: "desc", limit: 100 }).catch(() => null)
+      ? fetchAccessibility(loc, {
+          tissue_group: tissueGroup,
+          sort_by: "max_signal",
+          sort_dir: "desc",
+          limit: 100,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
   return {
-    tissues: initialData ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort() : [],
+    tissues: initialData
+      ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
+      : [],
     totalCount: summary?.counts.accessibility_peaks ?? 0,
     regionCoords: summary?.region ?? "",
     initialData: initialData ?? undefined,
@@ -121,12 +154,24 @@ export async function loadAccessibilityData(loc: string, tissueGroup?: string) {
 export async function loadEnhancerGenesData(loc: string, tissueGroup?: string) {
   const [groupedData, geneFacets, tissueFacets, summary, initialData] =
     await Promise.all([
-      !tissueGroup ? fetchEnhancersByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
-      tissueGroup ? fetchEnhancerGeneFacets(loc, "gene_symbol").catch(() => noFacets) : Promise.resolve(noFacets),
-      tissueGroup ? fetchEnhancerGeneFacets(loc, "tissue_name").catch(() => noFacets) : Promise.resolve(noFacets),
+      !tissueGroup
+        ? fetchEnhancersByTissueGroup(loc).catch(() => [])
+        : Promise.resolve([]),
+      tissueGroup
+        ? fetchEnhancerGeneFacets(loc, "gene_symbol").catch(() => noFacets)
+        : Promise.resolve(noFacets),
+      tissueGroup
+        ? fetchEnhancerGeneFacets(loc, "tissue_name").catch(() => noFacets)
+        : Promise.resolve(noFacets),
       fetchRegionSummary(loc).catch(() => null),
       tissueGroup
-        ? fetchEnhancerGenes(loc, { tissue_group: tissueGroup, method: "abc", sort_by: "score", sort_dir: "desc", limit: 25 }).catch(() => null)
+        ? fetchEnhancerGenes(loc, {
+            tissue_group: tissueGroup,
+            method: "abc",
+            sort_by: "score",
+            sort_dir: "desc",
+            limit: 25,
+          }).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -146,16 +191,28 @@ export async function loadEnhancerGenesData(loc: string, tissueGroup?: string) {
 
 export async function loadLoopsData(loc: string, tissueGroup?: string) {
   const [groupedData, summary, initialData] = await Promise.all([
-    !tissueGroup ? fetchLoopsByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchLoopsByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     fetchRegionSummary(loc).catch(() => null),
     tissueGroup
-      ? fetchLoops(loc, { tissue_group: tissueGroup, limit: 100 }).catch(() => null)
+      ? fetchLoops(loc, { tissue_group: tissueGroup, limit: 100 }).catch(
+          () => null,
+        )
       : Promise.resolve(null),
   ]);
 
-  const tissues = initialData ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort() : [];
+  const tissues = initialData
+    ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
+    : [];
   const assays = initialData
-    ? [...new Set(initialData.data.flatMap((r) => r.assay_type.split(",").map((a) => a.trim())))].sort()
+    ? [
+        ...new Set(
+          initialData.data.flatMap((r) =>
+            r.assay_type.split(",").map((a) => a.trim()),
+          ),
+        ),
+      ].sort()
     : [];
 
   return {
@@ -175,15 +232,26 @@ export async function loadLoopsData(loc: string, tissueGroup?: string) {
 
 export async function loadAseData(loc: string, tissueGroup?: string) {
   const [groupedData, summary, initialData] = await Promise.all([
-    !tissueGroup ? fetchAseByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchAseByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     fetchRegionSummary(loc).catch(() => null),
     tissueGroup
-      ? fetchAse(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 100 }).catch(() => null)
+      ? fetchAse(loc, {
+          tissue_group: tissueGroup,
+          sort_by: "neglog_pvalue",
+          sort_dir: "desc",
+          limit: 100,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
-  const tissues = initialData ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort() : [];
-  const assays = initialData ? [...new Set(initialData.data.map((r) => r.assay))].sort() : [];
+  const tissues = initialData
+    ? [...new Set(initialData.data.map((r) => r.tissue_name))].sort()
+    : [];
+  const assays = initialData
+    ? [...new Set(initialData.data.map((r) => r.assay))].sort()
+    : [];
 
   return {
     tissues,
@@ -199,16 +267,34 @@ export async function loadAseData(loc: string, tissueGroup?: string) {
 // QTLs
 // ---------------------------------------------------------------------------
 
-export async function loadQtlsData(loc: string, tissueGroup?: string, source = "gtex") {
+export async function loadQtlsData(
+  loc: string,
+  tissueGroup?: string,
+  source = "gtex",
+) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchQtlsByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchQtlsByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     tissueGroup
-      ? fetchQtls(loc, { tissue_group: tissueGroup, source, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      ? fetchQtls(loc, {
+          tissue_group: tissueGroup,
+          source,
+          sort_by: "neglog_pvalue",
+          sort_dir: "desc",
+          limit: 25,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
   const genes = initialData
-    ? ([...new Set(initialData.data.map((r) => r.gene_symbol).filter(Boolean))] as string[]).sort()
+    ? (
+        [
+          ...new Set(
+            initialData.data.map((r) => r.gene_symbol).filter(Boolean),
+          ),
+        ] as string[]
+      ).sort()
     : [];
 
   return {
@@ -225,9 +311,16 @@ export async function loadQtlsData(loc: string, tissueGroup?: string, source = "
 
 export async function loadChromBpnetData(loc: string, tissueGroup?: string) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchChromBpnetByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchChromBpnetByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     tissueGroup
-      ? fetchChromBpnet(loc, { tissue_group: tissueGroup, sort_by: "combined_score", sort_dir: "desc", limit: 25 }).catch(() => null)
+      ? fetchChromBpnet(loc, {
+          tissue_group: tissueGroup,
+          sort_by: "combined_score",
+          sort_dir: "desc",
+          limit: 25,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
@@ -276,16 +369,25 @@ export async function loadTissueScoresData(loc: string) {
 // cCRE Gene Links (variant cCRE → genes)
 // ---------------------------------------------------------------------------
 
-export async function loadCcreGeneLinksData(ccreId: string, tissueGroup?: string) {
+export async function loadCcreGeneLinksData(
+  ccreId: string,
+  tissueGroup?: string,
+) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchCcreGeneLinksByTissueGroup(ccreId).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchCcreGeneLinksByTissueGroup(ccreId).catch(() => [])
+      : Promise.resolve([]),
     tissueGroup
-      ? fetchCcreGeneLinks(ccreId, { tissue_group: tissueGroup, limit: 50 }).catch(() => null)
+      ? fetchCcreGeneLinks(ccreId, {
+          tissue_group: tissueGroup,
+          limit: 50,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
   return {
-    totalCount: initialData?.page_info?.total_count ?? initialData?.page_info?.count ?? 0,
+    totalCount:
+      initialData?.page_info?.total_count ?? initialData?.page_info?.count ?? 0,
     initialData: initialData ?? undefined,
     groupedData,
   };
@@ -295,11 +397,21 @@ export async function loadCcreGeneLinksData(ccreId: string, tissueGroup?: string
 // Allelic Imbalance (variant-level, tissue-group-first)
 // ---------------------------------------------------------------------------
 
-export async function loadAllelicImbalanceData(loc: string, tissueGroup?: string) {
+export async function loadAllelicImbalanceData(
+  loc: string,
+  tissueGroup?: string,
+) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchVariantAllelicImbalanceByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     tissueGroup
-      ? fetchVariantAllelicImbalance(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      ? fetchVariantAllelicImbalance(loc, {
+          tissue_group: tissueGroup,
+          sort_by: "neglog_pvalue",
+          sort_dir: "desc",
+          limit: 25,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 
@@ -325,9 +437,16 @@ export async function loadAllelicImbalanceData(loc: string, tissueGroup?: string
 
 export async function loadMethylationData(loc: string, tissueGroup?: string) {
   const [groupedData, initialData] = await Promise.all([
-    !tissueGroup ? fetchMethylationByTissueGroup(loc).catch(() => []) : Promise.resolve([]),
+    !tissueGroup
+      ? fetchMethylationByTissueGroup(loc).catch(() => [])
+      : Promise.resolve([]),
     tissueGroup
-      ? fetchMethylation(loc, { tissue_group: tissueGroup, sort_by: "neglog_pvalue", sort_dir: "desc", limit: 25 }).catch(() => null)
+      ? fetchMethylation(loc, {
+          tissue_group: tissueGroup,
+          sort_by: "neglog_pvalue",
+          sort_dir: "desc",
+          limit: 25,
+        }).catch(() => null)
       : Promise.resolve(null),
   ]);
 

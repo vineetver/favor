@@ -1,6 +1,6 @@
-import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
-import { loadEnhancerGenesData } from "@features/enrichment/loaders";
 import { EnhancerGenesView } from "@features/enrichment/components/enhancer-genes-view";
+import { loadEnhancerGenesData } from "@features/enrichment/loaders";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";
 
 export default async function Page({

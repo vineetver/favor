@@ -7,22 +7,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@shared/components/ui/card";
+import { ConfidenceDots } from "@shared/components/ui/confidence-dots";
+import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
+import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
-import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
-import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { ScoreBar } from "@shared/components/ui/score-bar";
+import { Tip } from "@shared/components/ui/tip";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
-import { Tip } from "@shared/components/ui/tip";
-import { ConfidenceDots } from "@shared/components/ui/confidence-dots";
-import { ScoreBar } from "@shared/components/ui/score-bar";
-import { Search, ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,7 +75,10 @@ type DiseaseEdge = {
 // Human-readable lookups
 // ---------------------------------------------------------------------------
 
-const LINK_STRENGTH: Record<string, { label: string; tip: string; dot: string }> = {
+const LINK_STRENGTH: Record<
+  string,
+  { label: string; tip: string; dot: string }
+> = {
   causal: {
     label: "Causal",
     tip: "This gene is an established cause of this disease, confirmed by expert review (e.g. ClinGen, OMIM).",
@@ -93,23 +96,24 @@ const LINK_STRENGTH: Record<string, { label: string; tip: string; dot: string }>
   },
 };
 
-const CONFIDENCE: Record<string, { label: string; tip: string; dots: number }> = {
-  high: {
-    label: "High confidence",
-    tip: "Multiple independent sources confirm this link with high confidence.",
-    dots: 3,
-  },
-  medium: {
-    label: "Moderate confidence",
-    tip: "Supported by some evidence, but not yet confirmed by multiple high-quality sources.",
-    dots: 2,
-  },
-  low: {
-    label: "Low confidence",
-    tip: "Based on limited evidence. Requires further validation.",
-    dots: 1,
-  },
-};
+const CONFIDENCE: Record<string, { label: string; tip: string; dots: number }> =
+  {
+    high: {
+      label: "High confidence",
+      tip: "Multiple independent sources confirm this link with high confidence.",
+      dots: 3,
+    },
+    medium: {
+      label: "Moderate confidence",
+      tip: "Supported by some evidence, but not yet confirmed by multiple high-quality sources.",
+      dots: 2,
+    },
+    low: {
+      label: "Low confidence",
+      tip: "Based on limited evidence. Requires further validation.",
+      dots: 1,
+    },
+  };
 
 const VALIDITY_LABELS: Record<string, string> = {
   Definitive: "Confirmed cause",
@@ -135,7 +139,10 @@ const INHERITANCE_LABELS: Record<string, string> = {
   IC: "Isolated cases",
 };
 
-const EVIDENCE_TYPE_LABELS: Record<keyof EvidenceScores, { label: string; tip: string }> = {
+const EVIDENCE_TYPE_LABELS: Record<
+  keyof EvidenceScores,
+  { label: string; tip: string }
+> = {
   genetic_association: {
     label: "Genetic studies",
     tip: "Evidence from GWAS and other genetic association studies linking variants in this gene to the disease.",
@@ -190,7 +197,10 @@ const SYSTEM_LABELS: Record<string, string> = {
 };
 
 function systemLabel(raw: string): string {
-  return SYSTEM_LABELS[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    SYSTEM_LABELS[raw] ??
+    raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 
 function inheritanceLabel(raw: string): string {
@@ -226,7 +236,9 @@ function formatScore(value: number | null) {
 
 /** Evidence score bars — thin, muted, proportional. */
 function EvidenceBreakdown({ scores }: { scores: EvidenceScores }) {
-  const entries = (Object.entries(scores) as [keyof EvidenceScores, number | null][])
+  const entries = (
+    Object.entries(scores) as [keyof EvidenceScores, number | null][]
+  )
     .filter(([, v]) => v !== null && v > 0)
     .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
 
@@ -269,7 +281,10 @@ function EvidenceBreakdown({ scores }: { scores: EvidenceScores }) {
 // Data extraction
 // ---------------------------------------------------------------------------
 
-function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[] {
+function extractDiseaseEdges(
+  relations: unknown,
+  edges?: unknown,
+): DiseaseEdge[] {
   const source = relations ?? edges;
   if (!source || typeof source !== "object") return [];
 
@@ -298,10 +313,21 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
 
       return {
         id: String(id),
-        label: String(neighbor?.disease_name ?? neighbor?.name ?? neighbor?.label ?? "Unknown disease"),
-        description: typeof neighbor?.description === "string" ? neighbor.description : null,
+        label: String(
+          neighbor?.disease_name ??
+            neighbor?.name ??
+            neighbor?.label ??
+            "Unknown disease",
+        ),
+        description:
+          typeof neighbor?.description === "string"
+            ? neighbor.description
+            : null,
         otScore: typeof props.ot_score === "number" ? props.ot_score : null,
-        evidenceCount: typeof props.evidence_count === "number" ? props.evidence_count : null,
+        evidenceCount:
+          typeof props.evidence_count === "number"
+            ? props.evidence_count
+            : null,
         causalityLevel: props.causality_level ?? null,
         confidenceClass: props.confidence_class ?? null,
         sources: Array.isArray(props.sources) ? props.sources : [],
@@ -321,12 +347,25 @@ function extractDiseaseEdges(relations: unknown, edges?: unknown): DiseaseEdge[]
         pubmedIds: Array.isArray(props.pubmed_ids) ? props.pubmed_ids : [],
         isCancer: neighbor?.is_cancer === true,
         isRare: neighbor?.is_rare_disease === true,
-        primaryAnatomicalSystems: Array.isArray(neighbor?.primary_anatomical_systems)
-          ? neighbor.primary_anatomical_systems : [],
-        causalGeneCount: typeof neighbor?.causal_gene_count === "number" ? neighbor.causal_gene_count : null,
-        associatedGeneCount: typeof neighbor?.associated_gene_count === "number" ? neighbor.associated_gene_count : null,
-        drugCount: typeof neighbor?.drug_count === "number" ? neighbor.drug_count : null,
-        maxTrialPhase: typeof neighbor?.max_trial_phase === "number" ? neighbor.max_trial_phase : null,
+        primaryAnatomicalSystems: Array.isArray(
+          neighbor?.primary_anatomical_systems,
+        )
+          ? neighbor.primary_anatomical_systems
+          : [],
+        causalGeneCount:
+          typeof neighbor?.causal_gene_count === "number"
+            ? neighbor.causal_gene_count
+            : null,
+        associatedGeneCount:
+          typeof neighbor?.associated_gene_count === "number"
+            ? neighbor.associated_gene_count
+            : null,
+        drugCount:
+          typeof neighbor?.drug_count === "number" ? neighbor.drug_count : null,
+        maxTrialPhase:
+          typeof neighbor?.max_trial_phase === "number"
+            ? neighbor.max_trial_phase
+            : null,
         synonyms: Array.isArray(neighbor?.synonyms) ? neighbor.synonyms : [],
       };
     })
@@ -371,18 +410,24 @@ export function DiseasePortfolioOverview({
     const areas = new Set<string>();
     diseases.forEach((d) => areas.add(pickArea(d.primaryAnatomicalSystems)));
     return [{ value: "all", label: "All" }].concat(
-      Array.from(areas).sort().map((a) => ({ value: a, label: a })),
+      Array.from(areas)
+        .sort()
+        .map((a) => ({ value: a, label: a })),
     );
   }, [diseases]);
 
   const linkOptions = useMemo(() => {
     const levels = new Set<string>();
-    diseases.forEach((d) => { if (d.causalityLevel) levels.add(d.causalityLevel); });
+    diseases.forEach((d) => {
+      if (d.causalityLevel) levels.add(d.causalityLevel);
+    });
     return [{ value: "all", label: "All" }].concat(
-      Array.from(levels).sort().map((l) => ({
-        value: l,
-        label: LINK_STRENGTH[l]?.label ?? l,
-      })),
+      Array.from(levels)
+        .sort()
+        .map((l) => ({
+          value: l,
+          label: LINK_STRENGTH[l]?.label ?? l,
+        })),
     );
   }, [diseases]);
 
@@ -430,7 +475,7 @@ export function DiseasePortfolioOverview({
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, scoreFilter, linkFilter, areaFilter, sortMode]);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -439,7 +484,11 @@ export function DiseasePortfolioOverview({
     return diseases.filter((d) => {
       if (minScore !== null && (d.otScore ?? -1) < minScore) return false;
       if (linkFilter !== "all" && d.causalityLevel !== linkFilter) return false;
-      if (areaFilter !== "all" && pickArea(d.primaryAnatomicalSystems) !== areaFilter) return false;
+      if (
+        areaFilter !== "all" &&
+        pickArea(d.primaryAnatomicalSystems) !== areaFilter
+      )
+        return false;
       if (query.length > 0) {
         const matches =
           d.label.toLowerCase().includes(query) ||
@@ -453,7 +502,8 @@ export function DiseasePortfolioOverview({
 
   const sorted = useMemo(() => {
     const items = [...filtered];
-    if (sortMode === "alpha") return items.sort((a, b) => a.label.localeCompare(b.label));
+    if (sortMode === "alpha")
+      return items.sort((a, b) => a.label.localeCompare(b.label));
     if (sortMode === "evidence-desc") {
       return items.sort((a, b) => {
         const diff = (b.evidenceCount ?? -1) - (a.evidenceCount ?? -1);
@@ -467,7 +517,10 @@ export function DiseasePortfolioOverview({
   }, [filtered, sortMode]);
 
   // Slice for progressive rendering
-  const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const visible = useMemo(
+    () => sorted.slice(0, visibleCount),
+    [sorted, visibleCount],
+  );
   const hasMore = sorted.length > visibleCount;
 
   const grouped = useMemo(() => {
@@ -475,13 +528,16 @@ export function DiseasePortfolioOverview({
     visible.forEach((d) => {
       const area = pickArea(d.primaryAnatomicalSystems);
       if (!map.has(area)) map.set(area, []);
-      map.get(area)!.push(d);
+      map.get(area)?.push(d);
     });
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [visible]);
 
   useEffect(() => {
-    if (sorted.length === 0) { setSelectedId(null); return; }
+    if (sorted.length === 0) {
+      setSelectedId(null);
+      return;
+    }
     if (!selectedId || !sorted.some((d) => d.id === selectedId)) {
       setSelectedId(sorted[0].id);
     }
@@ -517,8 +573,8 @@ export function DiseasePortfolioOverview({
               <div className="text-xs text-muted-foreground">
                 {filtered.length === diseases.length
                   ? `${diseases.length} associations`
-                  : `${filtered.length} of ${diseases.length} associations`
-                } for {geneSymbol ?? geneId}
+                  : `${filtered.length} of ${diseases.length} associations`}{" "}
+                for {geneSymbol ?? geneId}
               </div>
             </div>
             <div className="relative w-56">
@@ -553,7 +609,9 @@ export function DiseasePortfolioOverview({
                     <div className="px-5 py-1.5 border-b border-border bg-muted sticky top-0 z-10">
                       <span className="text-[11px] font-medium text-muted-foreground">
                         {area}
-                        <span className="ml-1 text-muted-foreground/60">{items.length}</span>
+                        <span className="ml-1 text-muted-foreground/60">
+                          {items.length}
+                        </span>
                       </span>
                     </div>
                     {items.map((d) => {
@@ -600,7 +658,9 @@ export function DiseasePortfolioOverview({
             {/* ── Detail Panel ── */}
             <div>
               <div className="px-5 py-1.5 border-b border-border bg-muted/60">
-                <span className="text-[11px] font-medium text-muted-foreground">Details</span>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Details
+                </span>
               </div>
               <div className="px-5 py-5 max-h-[600px] overflow-y-auto">
                 {!selected && (
@@ -617,27 +677,48 @@ export function DiseasePortfolioOverview({
                         {selected.label}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {selected.causalityLevel && LINK_STRENGTH[selected.causalityLevel] && (
-                          <Tip content={LINK_STRENGTH[selected.causalityLevel].tip}>
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <span className={cn("h-2 w-2 rounded-full shrink-0", LINK_STRENGTH[selected.causalityLevel].dot)} />
-                              {LINK_STRENGTH[selected.causalityLevel].label}
-                            </span>
-                          </Tip>
-                        )}
-                        {selected.confidenceClass && CONFIDENCE[selected.confidenceClass] && (
-                          <Tip content={CONFIDENCE[selected.confidenceClass].tip}>
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <ConfidenceDots count={CONFIDENCE[selected.confidenceClass].dots} />
-                              {CONFIDENCE[selected.confidenceClass].label}
-                            </span>
-                          </Tip>
-                        )}
+                        {selected.causalityLevel &&
+                          LINK_STRENGTH[selected.causalityLevel] && (
+                            <Tip
+                              content={
+                                LINK_STRENGTH[selected.causalityLevel].tip
+                              }
+                            >
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full shrink-0",
+                                    LINK_STRENGTH[selected.causalityLevel].dot,
+                                  )}
+                                />
+                                {LINK_STRENGTH[selected.causalityLevel].label}
+                              </span>
+                            </Tip>
+                          )}
+                        {selected.confidenceClass &&
+                          CONFIDENCE[selected.confidenceClass] && (
+                            <Tip
+                              content={CONFIDENCE[selected.confidenceClass].tip}
+                            >
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ConfidenceDots
+                                  count={
+                                    CONFIDENCE[selected.confidenceClass].dots
+                                  }
+                                />
+                                {CONFIDENCE[selected.confidenceClass].label}
+                              </span>
+                            </Tip>
+                          )}
                         {selected.isCancer && (
-                          <span className="text-xs text-red-500/80">Cancer</span>
+                          <span className="text-xs text-red-500/80">
+                            Cancer
+                          </span>
                         )}
                         {selected.isRare && (
-                          <span className="text-xs text-violet-500/80">Rare disease</span>
+                          <span className="text-xs text-violet-500/80">
+                            Rare disease
+                          </span>
                         )}
                       </div>
                     </div>
@@ -646,43 +727,55 @@ export function DiseasePortfolioOverview({
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                       <div>
                         <Tip content="Overall association score from Open Targets (0–1). Higher means more and stronger evidence across all data types.">
-                          <span className="text-[11px] text-muted-foreground">Score</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Score
+                          </span>
                         </Tip>
-                        <div className="text-sm font-semibold text-foreground tabular-nums">{formatScore(selected.otScore)}</div>
+                        <div className="text-sm font-semibold text-foreground tabular-nums">
+                          {formatScore(selected.otScore)}
+                        </div>
                       </div>
                       <div>
                         <Tip content="Total number of individual evidence items supporting this gene–disease link across all databases.">
-                          <span className="text-[11px] text-muted-foreground">Evidence</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Evidence
+                          </span>
                         </Tip>
                         <div className="text-sm font-semibold text-foreground tabular-nums">
                           {selected.evidenceCount?.toLocaleString() ?? "—"}
                         </div>
                       </div>
-                      {selected.drugCount !== null && selected.drugCount > 0 && (
-                        <div>
-                          <Tip content="Number of drugs that target this gene and are used or tested for this disease.">
-                            <span className="text-[11px] text-muted-foreground">Drugs</span>
-                          </Tip>
-                          <div className="text-sm font-semibold text-foreground tabular-nums">
-                            {selected.drugCount.toLocaleString()}
-                            {selected.maxTrialPhase !== null && (
-                              <span className="text-[11px] text-muted-foreground font-normal ml-1">
-                                {trialPhaseLabel(selected.maxTrialPhase)}
+                      {selected.drugCount !== null &&
+                        selected.drugCount > 0 && (
+                          <div>
+                            <Tip content="Number of drugs that target this gene and are used or tested for this disease.">
+                              <span className="text-[11px] text-muted-foreground">
+                                Drugs
                               </span>
-                            )}
+                            </Tip>
+                            <div className="text-sm font-semibold text-foreground tabular-nums">
+                              {selected.drugCount.toLocaleString()}
+                              {selected.maxTrialPhase !== null && (
+                                <span className="text-[11px] text-muted-foreground font-normal ml-1">
+                                  {trialPhaseLabel(selected.maxTrialPhase)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {selected.causalGeneCount !== null && selected.causalGeneCount > 0 && (
-                        <div>
-                          <Tip content="Number of genes with confirmed causal links to this disease.">
-                            <span className="text-[11px] text-muted-foreground">Causal genes</span>
-                          </Tip>
-                          <div className="text-sm font-semibold text-foreground tabular-nums">
-                            {selected.causalGeneCount.toLocaleString()}
+                        )}
+                      {selected.causalGeneCount !== null &&
+                        selected.causalGeneCount > 0 && (
+                          <div>
+                            <Tip content="Number of genes with confirmed causal links to this disease.">
+                              <span className="text-[11px] text-muted-foreground">
+                                Causal genes
+                              </span>
+                            </Tip>
+                            <div className="text-sm font-semibold text-foreground tabular-nums">
+                              {selected.causalGeneCount.toLocaleString()}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
 
                     {/* ─ Description ─ */}
@@ -693,7 +786,10 @@ export function DiseasePortfolioOverview({
                     )}
 
                     {/* ─ Gene–disease validity ─ */}
-                    {(selected.clingenClassification || selected.genccClassification || selected.modeOfInheritance || selected.civicEvidenceType) && (
+                    {(selected.clingenClassification ||
+                      selected.genccClassification ||
+                      selected.modeOfInheritance ||
+                      selected.civicEvidenceType) && (
                       <div className="space-y-2">
                         <Tip content="Expert classifications of how strongly this gene is linked to this disease and how the disease is inherited.">
                           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -704,33 +800,49 @@ export function DiseasePortfolioOverview({
                           {selected.clingenClassification && (
                             <div>
                               <Tip content="ClinGen is an NIH-funded expert panel that curates gene–disease relationships. Their classifications range from Confirmed cause to Refuted.">
-                                <span className="text-[11px] text-muted-foreground">ClinGen panel</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  ClinGen panel
+                                </span>
                               </Tip>
-                              <div className="text-[13px] text-foreground">{validityLabel(selected.clingenClassification)}</div>
+                              <div className="text-[13px] text-foreground">
+                                {validityLabel(selected.clingenClassification)}
+                              </div>
                             </div>
                           )}
                           {selected.genccClassification && (
                             <div>
                               <Tip content="GenCC aggregates gene–disease classifications from multiple international curation efforts.">
-                                <span className="text-[11px] text-muted-foreground">GenCC consensus</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  GenCC consensus
+                                </span>
                               </Tip>
-                              <div className="text-[13px] text-foreground">{validityLabel(selected.genccClassification)}</div>
+                              <div className="text-[13px] text-foreground">
+                                {validityLabel(selected.genccClassification)}
+                              </div>
                             </div>
                           )}
                           {selected.modeOfInheritance && (
                             <div>
                               <Tip content="How this disease is passed from parents to children. For example, autosomal dominant means one copy of the altered gene is sufficient to cause disease.">
-                                <span className="text-[11px] text-muted-foreground">Inheritance</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  Inheritance
+                                </span>
                               </Tip>
-                              <div className="text-[13px] text-foreground">{inheritanceLabel(selected.modeOfInheritance)}</div>
+                              <div className="text-[13px] text-foreground">
+                                {inheritanceLabel(selected.modeOfInheritance)}
+                              </div>
                             </div>
                           )}
                           {selected.civicEvidenceType && (
                             <div>
                               <Tip content="CIViC provides community-curated clinical relevance annotations for this gene–disease link.">
-                                <span className="text-[11px] text-muted-foreground">Clinical relevance</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  Clinical relevance
+                                </span>
                               </Tip>
-                              <div className="text-[13px] text-foreground">{selected.civicEvidenceType}</div>
+                              <div className="text-[13px] text-foreground">
+                                {selected.civicEvidenceType}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -738,7 +850,9 @@ export function DiseasePortfolioOverview({
                     )}
 
                     {/* ─ Evidence breakdown ─ */}
-                    {Object.values(selected.evidenceScores).some((v) => v !== null && v > 0) && (
+                    {Object.values(selected.evidenceScores).some(
+                      (v) => v !== null && v > 0,
+                    ) && (
                       <div className="space-y-2">
                         <Tip content="Breakdown of the overall association score by evidence type. Each bar shows how strong the evidence is from that data source (0–1 scale).">
                           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -798,7 +912,10 @@ export function DiseasePortfolioOverview({
                         <p className="text-[13px] text-muted-foreground leading-relaxed">
                           {selected.synonyms.slice(0, 6).join(", ")}
                           {selected.synonyms.length > 6 && (
-                            <span className="text-[11px]"> +{selected.synonyms.length - 6} more</span>
+                            <span className="text-[11px]">
+                              {" "}
+                              +{selected.synonyms.length - 6} more
+                            </span>
                           )}
                         </p>
                       </div>

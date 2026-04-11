@@ -51,11 +51,26 @@ function EnrichmentTooltip({
 
 // Stable tooltip ref — defined outside component to avoid re-creation on every render
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function EnrichmentTooltipContent({ active, payload }: { active?: boolean; payload?: readonly any[] }) {
-  return <EnrichmentTooltip active={active} payload={payload as Array<{ payload: ChartRow }>} />;
+function EnrichmentTooltipContent({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: readonly any[];
+}) {
+  return (
+    <EnrichmentTooltip
+      active={active}
+      payload={payload as Array<{ payload: ChartRow }>}
+    />
+  );
 }
 
-export const AgentEnrichmentPlot = memo(function AgentEnrichmentPlot({ spec }: { spec: EnrichmentVizSpec }) {
+export const AgentEnrichmentPlot = memo(function AgentEnrichmentPlot({
+  spec,
+}: {
+  spec: EnrichmentVizSpec;
+}) {
   const chartData = useMemo<ChartRow[]>(
     () =>
       [...spec.data]
@@ -63,7 +78,7 @@ export const AgentEnrichmentPlot = memo(function AgentEnrichmentPlot({ spec }: {
         .map((d) => ({
           ...d,
           // Truncate long labels for y-axis
-          label: d.label.length > 40 ? d.label.slice(0, 37) + "..." : d.label,
+          label: d.label.length > 40 ? `${d.label.slice(0, 37)}...` : d.label,
         })),
     [spec.data],
   );
@@ -79,7 +94,11 @@ export const AgentEnrichmentPlot = memo(function AgentEnrichmentPlot({ spec }: {
         margin={{ top: 4, right: 40, left: 20, bottom: 4 }}
         barCategoryGap="20%"
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal stroke="var(--border)" />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          horizontal
+          stroke="var(--border)"
+        />
         <XAxis
           type="number"
           domain={[0, "auto"]}
