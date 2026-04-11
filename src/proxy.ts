@@ -26,10 +26,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Protected pages → redirect to home
+  // Protected pages → redirect to home with return path
   const url = request.nextUrl.clone();
   url.pathname = "/";
   url.searchParams.set("login", "required");
+  url.searchParams.set("return_to", pathname);
   return NextResponse.redirect(url);
 }
 

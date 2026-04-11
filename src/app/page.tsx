@@ -1,8 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { UniversalSearch } from "@features/search";
 import { ArrowUpRight, FileText, UploadCloud } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { useAuth } from "@shared/hooks";
 
 // Stats data
 const stats = [
@@ -12,6 +16,23 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+
+  useEffect(() => {
+    if (searchParams.get("login") === "required") {
+      const returnTo = searchParams.get("return_to") ?? "/";
+      toast("Sign in required", {
+        description: "You need to sign in to access that page.",
+        action: {
+          label: "Sign in",
+          onClick: () => login(window.location.origin + returnTo),
+        },
+      });
+      // Clean up URL
+      window.history.replaceState({}, "", "/");
+    }
+  }, [searchParams, login]);
   return (
     <div className="min-h-screen relative overflow-hidden text-foreground selection:bg-purple-100 selection:text-purple-900">
       {/* Background Decor */}
