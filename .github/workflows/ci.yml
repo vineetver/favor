@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [beta]
+  pull_request:
+    branches: [beta]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, Typecheck, Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Biome check (informational)
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: TypeScript check
+        run: pnpm exec tsc --noEmit
+
+      - name: Next.js build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
