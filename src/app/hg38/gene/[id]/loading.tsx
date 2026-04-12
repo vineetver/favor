@@ -12,15 +12,15 @@ export default function GeneLoading() {
         </div>
         {/* Category tabs */}
         <div className="flex gap-4 border-b border-border pb-2 mb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-6 w-28" />
+          {Array.from({ length: 5 }, (_, i) => `gene-tab-${i}`).map((k) => (
+            <Skeleton key={k} className="h-6 w-28" />
           ))}
         </div>
         {/* Sub-navigation sidebar + content */}
         <div className="flex gap-8">
           <div className="hidden lg:block w-52 space-y-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-7 w-full rounded-md" />
+            {Array.from({ length: 8 }, (_, i) => `gene-nav-${i}`).map((k) => (
+              <Skeleton key={k} className="h-7 w-full rounded-md" />
             ))}
           </div>
           <div className="flex-1 space-y-6">

@@ -13,15 +13,15 @@ export default function PhenotypeLoading() {
         </div>
         {/* Tabs skeleton */}
         <div className="flex gap-4 border-b border-border pb-2 mb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-6 w-24" />
+          {Array.from({ length: 5 }, (_, i) => `phe-tab-${i}`).map((k) => (
+            <Skeleton key={k} className="h-6 w-24" />
           ))}
         </div>
         {/* Content skeleton */}
         <div className="space-y-6 pt-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-lg" />
+            {Array.from({ length: 3 }, (_, i) => `phe-tile-${i}`).map((k) => (
+              <Skeleton key={k} className="h-20 rounded-lg" />
             ))}
           </div>
           <Skeleton className="h-16 w-full max-w-3xl rounded-lg" />

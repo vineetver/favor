@@ -48,7 +48,9 @@ export default async function GeneLLMSummaryPage({
         fetchEnhancersByTissueGroup(loc).catch(() => []),
         fetchAccessibilityByTissueGroup(loc).catch(() => []),
         fetchLoopsByTissueGroup(loc).catch(() => []),
-        fetchCcreLinksByTissueGroup(gene?.gene_symbol).catch(() => []),
+        gene?.gene_symbol
+          ? fetchCcreLinksByTissueGroup(gene.gene_symbol).catch(() => [])
+          : Promise.resolve([]),
         fetchCrisprByTissueGroup(loc).catch(() => []),
       ])
     : [null, [], [], [], [], [], [], []];

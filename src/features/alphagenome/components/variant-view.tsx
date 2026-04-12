@@ -208,8 +208,8 @@ function TracksSection({ parsed }: { parsed: ParsedVcf }) {
             First predictions can take 1-10 minutes. Subsequent requests for the
             same variant are instant.
           </p>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded" />
+          {Array.from({ length: 3 }, (_, i) => `skeleton-${i}`).map((k) => (
+            <Skeleton key={k} className="h-20 w-full rounded" />
           ))}
         </div>
       )}
@@ -294,7 +294,7 @@ function formatCoord(pos: number): string {
 function GenomicRuler({
   start,
   end,
-  variantPos,
+  variantPos: _variantPos,
 }: {
   start: number;
   end: number;
@@ -308,8 +308,8 @@ function GenomicRuler({
 
   return (
     <div className="flex items-center justify-between py-1.5 px-2 text-[10px] tabular-nums text-muted-foreground">
-      {positions.map((pos, i) => (
-        <span key={i}>{formatCoord(pos)}</span>
+      {positions.map((pos) => (
+        <span key={pos}>{formatCoord(pos)}</span>
       ))}
     </div>
   );
@@ -378,7 +378,7 @@ function ModalityTrackGroup({
 
         {refTrack.tracks.slice(0, displayCount).map((meta, idx) => (
           <TrackChart
-            key={idx}
+            key={`${meta.biosample_name}-${idx}`}
             label={meta.biosample_name}
             refValues={refByTrack[idx]}
             altValues={altByTrack[idx]}
@@ -388,6 +388,7 @@ function ModalityTrackGroup({
 
       {trackCount > 5 && !showAll && (
         <button
+          type="button"
           onClick={() => setShowAll(true)}
           className="text-xs text-primary hover:underline mt-2"
         >

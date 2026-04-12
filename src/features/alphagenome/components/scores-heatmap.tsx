@@ -216,7 +216,12 @@ function groupScorers(scorers: ScorerBlock[]): ScorerGroup[] {
   const map = new Map<string, ScorerBlock[]>();
   for (const b of scorers) {
     const cat = scorerCategory(b.scorer);
-    (map.get(cat) ?? (map.set(cat, []), map.get(cat)!)).push(b);
+    let list = map.get(cat);
+    if (!list) {
+      list = [];
+      map.set(cat, list);
+    }
+    list.push(b);
   }
   return Array.from(map.entries())
     .map(([cat, blocks]) => ({ id: cat, ...GROUP_META[cat], blocks }))
@@ -310,11 +315,11 @@ function GroupSummary({ blocks }: { blocks: ScorerBlock[] }) {
     <div className="mt-3">
       <p className="text-[11px] text-muted-foreground mb-1">Top signals</p>
       <div className="flex flex-col gap-0.5">
-        {hits.map((hit, i) => {
+        {hits.map((hit) => {
           const mag = hitMagnitude(hit, hits);
           const barW = Math.max(3, Math.round(mag * 40));
           return (
-            <Tooltip key={i}>
+            <Tooltip key={`${hit.tissue}-${hit.scorer}-${hit.gene ?? ""}`}>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1.5 text-xs cursor-help">
                   <span className="text-foreground shrink-0">{hit.tissue}</span>
@@ -372,7 +377,12 @@ function buildTissueGroups(tracks: ScoreTrack[]): TissueGroupData[] {
   const map = new Map<string, number[]>();
   for (let i = 0; i < tracks.length; i++) {
     const g = inferGroup(tracks[i]);
-    (map.get(g) ?? (map.set(g, []), map.get(g)!)).push(i);
+    let list = map.get(g);
+    if (!list) {
+      list = [];
+      map.set(g, list);
+    }
+    list.push(i);
   }
   return Array.from(map.entries()).map(([name, trackIndices]) => ({
     name,
@@ -421,10 +431,15 @@ function deduplicateAndSort(
   max: number,
 ) {
   const map = new Map<string, number[]>();
-  for (let i = 0; i < labels.length; i++)
-    (map.get(labels[i]) ?? (map.set(labels[i], []), map.get(labels[i])!)).push(
-      i,
-    );
+  for (let i = 0; i < labels.length; i++) {
+    const key = labels[i];
+    let list = map.get(key);
+    if (!list) {
+      list = [];
+      map.set(key, list);
+    }
+    list.push(i);
+  }
 
   const rows: { label: string; cells: CellInfo[]; max: number }[] = [];
   for (const [name, indices] of map) {
@@ -704,8 +719,8 @@ function ScorerGroupContent({ blocks }: { blocks: ScorerBlock[] }) {
     <div className="space-y-5">
       {compact.length > 1 && <CombinedScorerView blocks={compact} />}
       {compact.length === 1 && <TissueHeatmap block={compact[0]} />}
-      {full.map((block, idx) => (
-        <TissueHeatmap key={idx} block={block} />
+      {full.map((block) => (
+        <TissueHeatmap key={block.scorer} block={block} />
       ))}
     </div>
   );
@@ -747,9 +762,12 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
       if (block.rows.length > 0) {
         for (let r = 0; r < block.rows.length; r++) {
           const name = block.rows[r].gene_name;
-          (
-            geneRows.get(name) ?? (geneRows.set(name, []), geneRows.get(name)!)
-          ).push(r);
+          let list = geneRows.get(name);
+          if (!list) {
+            list = [];
+            geneRows.set(name, list);
+          }
+          list.push(r);
         }
       } else {
         geneRows.set(
@@ -833,8 +851,8 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
             />
           ))}
 
-          {rows.map((row, ri) => (
-            <Fragment key={ri}>
+          {rows.map((row) => (
+            <Fragment key={row.label}>
               <div
                 className="flex items-center pr-3 text-xs text-foreground truncate"
                 title={row.label}
@@ -847,7 +865,7 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
                 const hasSignal = score != null && score.norm > 0.01;
                 if (!hasSignal) {
                   return (
-                    <div key={`${ri}-${g.name}`} className="p-[1px]">
+                    <div key={`${row.label}-${g.name}`} className="p-[1px]">
                       <div
                         className="w-full h-full rounded-[2px]"
                         style={{ backgroundColor: color }}
@@ -856,7 +874,7 @@ function CombinedScorerView({ blocks }: { blocks: ScorerBlock[] }) {
                   );
                 }
                 return (
-                  <Popover key={`${ri}-${g.name}`}>
+                  <Popover key={`${row.label}-${g.name}`}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <PopoverTrigger asChild>
@@ -993,7 +1011,8 @@ function TissueHeatmap({ block }: { block: ScorerBlock }) {
           })}
 
           {labels.map((rowLabel, ri) => (
-            <Fragment key={ri}>
+            // biome-ignore lint/suspicious/noArrayIndexKey: labels can repeat, row position is the stable identity within this heatmap
+            <Fragment key={`${rowLabel}-${ri}`}>
               {hasGeneLabels && (
                 <div
                   className="flex items-center pr-3 text-xs text-foreground truncate"

@@ -264,7 +264,8 @@ function DiseaseList({
   return (
     <div className="space-y-0.5">
       {formattedDiseases.map((disease, i) => (
-        <div key={i}>{disease}</div>
+        // biome-ignore lint/suspicious/noArrayIndexKey: disease names may repeat, order is stable from parent data
+        <div key={`${disease}-${i}`}>{disease}</div>
       ))}
     </div>
   );
@@ -292,11 +293,19 @@ function ClinicalSignificancePairs({
   return (
     <div className="space-y-1">
       {pairs.map(({ id, significance, raw }, i) => {
-        if (!significance) return <div key={i}>{raw.replace(/_/g, " ")}</div>;
+        if (!significance)
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: raw strings may repeat, row position is the stable key within this variant list
+            <div key={`${raw}-${i}`}>{raw.replace(/_/g, " ")}</div>
+          );
 
         const color = clinicalSignificance.getColor(significance);
         return (
-          <div key={i} className="flex items-center gap-2">
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: same-variant pairs may repeat, row position is stable
+            key={`${id}-${significance}-${i}`}
+            className="flex items-center gap-2"
+          >
             <span className="text-muted-foreground font-mono">{id}:</span>
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[color]}`}
@@ -334,12 +343,17 @@ function _DatabaseEntries({
       {entries.map(({ database, id, raw }, i) => {
         if (!id)
           return (
-            <div key={i} className="font-mono">
+            // biome-ignore lint/suspicious/noArrayIndexKey: raw entries can repeat
+            <div key={`${raw}-${i}`} className="font-mono">
               {raw}
             </div>
           );
         return (
-          <div key={i} className="flex items-center gap-1.5">
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: database/id may repeat across entries
+            key={`${database}-${id}-${i}`}
+            className="flex items-center gap-1.5"
+          >
             <span className="text-muted-foreground font-medium">
               {database}:
             </span>
@@ -385,11 +399,11 @@ function OriginBadge({ value }: { value: string | number }) {
 
     return (
       <div className="flex flex-wrap gap-1">
-        {origins.map((origin, i) => {
+        {origins.map((origin) => {
           const color = alleleOrigin.getColor(origin);
           return (
             <span
-              key={i}
+              key={origin}
               className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium capitalize ${BADGE_COLORS[color]}`}
             >
               {origin.replace(/[_-]/g, " ")}

@@ -201,7 +201,7 @@ function toManhattan(points: MiamiPoint[], mode: MiamiMode): ManhattanPoint[] {
     return {
       chrom: pt.chrom,
       position: pt.position,
-      value: pt.upper_neglog_p!,
+      value: pt.upper_neglog_p ?? 0,
       color,
       symbol,
       group,
@@ -250,6 +250,7 @@ function Clickable({
     return <span className={className}>{value.toLocaleString()}</span>;
   return (
     <button
+      type="button"
       onClick={() => onClick({ label, sql })}
       className={cn(
         "text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/60 cursor-pointer",
@@ -275,6 +276,7 @@ function SegmentedControl<T extends string>({
       {options.map((opt) => (
         <button
           key={opt.value}
+          type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
             "px-3 py-1 text-xs font-medium rounded-md transition-colors",
@@ -438,11 +440,13 @@ function SummaryTable({
           >
             {canClick ? (
               <button
+                type="button"
                 onClick={() => {
-                  const colCond = filterFn(filterCtx?.sigColumn);
+                  if (!filterCtx) return;
+                  const colCond = filterFn(filterCtx.sigColumn);
                   const catCond = isTotals
                     ? ""
-                    : `${filterCtx?.categoryColumn} = '${row.category}'`;
+                    : `${filterCtx.categoryColumn} = '${row.category}'`;
                   onFilterClick?.({
                     label: `${isTotals ? "All" : row.category} — ${col.l}`,
                     sql: [filterCtx?.baseWhere, catCond, colCond]
@@ -636,7 +640,10 @@ function UpsetPlot({
       viewBox={`0 0 ${W} ${H}`}
       className="w-full"
       style={{ maxWidth: Math.min(W, 960) }}
+      role="img"
+      aria-label="Upset plot of annotation-method intersections"
     >
+      <title>Upset plot of annotation-method intersections</title>
       <line
         x1={padL - 10}
         y1={padT - barMaxH - 16}
@@ -702,9 +709,9 @@ function UpsetPlot({
           </g>
         );
       })}
-      {methods.map((_, i) => (
+      {methods.map((m, i) => (
         <line
-          key={i}
+          key={m.key}
           x1={padL - 10}
           y1={padT + i * rowH + rowH / 2}
           x2={W - 8}
@@ -724,11 +731,15 @@ function UpsetPlot({
           inter.count > 0
             ? Math.round((100 * inter.expSigCount) / inter.count)
             : 0;
+        const interKey = methods
+          .map((m) => (inter[m.key as keyof UpsetRow] ? "1" : "0"))
+          .join("");
         return (
           <SvgTip
-            key={ci}
+            key={interKey}
             content={`${inter.count} variants\n${inter.expSigCount} exp. significant (${sigPct}%)${onFilterClick ? "\nClick to view" : ""}`}
           >
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: SVG <g> cannot be a button; interaction is decorative, full data also exposed in the table */}
             <g
               style={{ cursor: onFilterClick ? "pointer" : "default" }}
               onClick={
@@ -844,7 +855,6 @@ function UpsetPlot({
 // ============================================================================
 
 function AfBoxplot({ data }: { data: AfBoxplotRow[] }) {
-  if (data.length === 0) return null;
   const groups = useMemo(
     () => [...new Set(data.map((r) => r.sigGroup))].sort(),
     [data],
@@ -868,6 +878,7 @@ function AfBoxplot({ data }: { data: AfBoxplotRow[] }) {
       };
     });
   }, [data, groups]);
+  if (data.length === 0) return null;
   return (
     <Plot
       data={traces}
@@ -936,7 +947,7 @@ function GeneZoom({ miami, gene }: { miami: MiamiPoint[]; gene: string }) {
             type: "scatter" as const,
             mode: "markers" as const,
             x: pts.map((p) => p.position),
-            y: pts.map((p) => p.upper_neglog_p!),
+            y: pts.map((p) => p.upper_neglog_p ?? 0),
             marker: {
               color: colors,
               size: sizes,
@@ -1014,7 +1025,7 @@ function GeneZoom({ miami, gene }: { miami: MiamiPoint[]; gene: string }) {
 
 function DatasetReportView({
   report: dr,
-  totalVariants,
+  totalVariants: _totalVariants,
   onFilterClick,
 }: {
   report: DatasetReport;
@@ -1323,6 +1334,7 @@ function DatasetReportView({
             {dr.geneList.map((gene) => (
               <button
                 key={gene}
+                type="button"
                 onClick={() =>
                   setSelectedGene(selectedGene === gene ? null : gene)
                 }
@@ -1340,6 +1352,7 @@ function DatasetReportView({
           {selectedGene && <GeneZoom miami={dr.miami} gene={selectedGene} />}
           {selectedGene && onFilterClick && (
             <button
+              type="button"
               onClick={() =>
                 onFilterClick({
                   label: `Variants in ${selectedGene}`,
@@ -1381,6 +1394,7 @@ function CohortOverview({
         <div className="text-center">
           {onFilterClick ? (
             <button
+              type="button"
               onClick={() =>
                 onFilterClick({ label: "All variants", sql: "TRUE" })
               }
@@ -1450,6 +1464,7 @@ function CohortOverview({
                 </span>
                 {n > 0 && onFilterClick ? (
                   <button
+                    type="button"
                     onClick={() =>
                       onFilterClick({
                         label: `${def.label} variants`,
@@ -1837,6 +1852,7 @@ function CrossDatasetContext({
                       <td className="py-1.5 px-2 text-right tabular-nums">
                         {cohortN > 0 && onFilterClick ? (
                           <button
+                            type="button"
                             onClick={() =>
                               onFilterClick({
                                 label: `${b.method.replace("pred_", "")} variants`,
@@ -2045,11 +2061,11 @@ export function IgvfLipidReport({
 
   const activeReport = activeDataset ? report.reports[activeDataset] : null;
   const datasetLabels = report.availableDatasets.map((id) => {
-    const def = DATASET_DEFS.find((d) => d.id === id)!;
+    const def = DATASET_DEFS.find((d) => d.id === id);
     const r = report.reports[id];
     return {
       value: id,
-      label: `${def.label} (${(r?.variantCount ?? 0).toLocaleString()})`,
+      label: `${def?.label ?? id} (${(r?.variantCount ?? 0).toLocaleString()})`,
     };
   });
 
@@ -2072,10 +2088,10 @@ export function IgvfLipidReport({
         <h2 className="text-base font-semibold text-foreground mb-4">
           Per-Dataset Analysis
         </h2>
-        {report.availableDatasets.length > 1 && (
+        {report.availableDatasets.length > 1 && activeDataset && (
           <div className="mb-6 print:hidden">
             <SegmentedControl
-              value={activeDataset!}
+              value={activeDataset}
               onChange={setSelectedDataset}
               options={datasetLabels}
             />
@@ -2094,8 +2110,8 @@ export function IgvfLipidReport({
         <div className="hidden print:block space-y-12">
           {report.availableDatasets.map((id) => {
             const r = report.reports[id];
-            const def = DATASET_DEFS.find((d) => d.id === id)!;
-            if (!r) return null;
+            const def = DATASET_DEFS.find((d) => d.id === id);
+            if (!r || !def) return null;
             return (
               <div key={id}>
                 <h3 className="text-sm font-semibold text-foreground mb-4 border-b border-border pb-2">

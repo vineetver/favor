@@ -18,8 +18,8 @@ function formatSynonyms(items: Array<Record<string, string>>): React.ReactNode {
   if (labels.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      {labels.map((l, i) => (
-        <span key={i}>{l}</span>
+      {labels.map((l) => (
+        <span key={l}>{l}</span>
       ))}
     </div>
   );
@@ -33,7 +33,7 @@ export const geneInfoAndIdsColumns = [
       title: "Name Synonyms",
       description: "Alternative gene names from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+    cell: cell.custom<Gene, Array<Record<string, string>>>((synonyms) =>
       formatSynonyms(synonyms),
     ),
   }),
@@ -46,7 +46,7 @@ export const geneInfoAndIdsColumns = [
       description:
         "Alternative gene names and symbols from multiple sources (OpenTargets).",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+    cell: cell.custom<Gene, Array<Record<string, string>>>((synonyms) =>
       formatSynonyms(synonyms),
     ),
   }),
@@ -58,7 +58,7 @@ export const geneInfoAndIdsColumns = [
       title: "Symbol Synonyms",
       description: "Alternative gene symbols from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((synonyms: Array<Record<string, string>>) =>
+    cell: cell.custom<Gene, Array<Record<string, string>>>((synonyms) =>
       formatSynonyms(synonyms),
     ),
   }),
@@ -70,7 +70,7 @@ export const geneInfoAndIdsColumns = [
       title: "Obsolete Symbols",
       description: "Previously used gene symbols that are now obsolete.",
     }),
-    cell: cell.custom<Gene, any>((obsolete: Array<Record<string, string>>) =>
+    cell: cell.custom<Gene, Array<Record<string, string>>>((obsolete) =>
       formatSynonyms(obsolete),
     ),
   }),
@@ -82,16 +82,20 @@ export const geneInfoAndIdsColumns = [
       title: "Canonical Transcript",
       description: "The canonical transcript for this gene from OpenTargets.",
     }),
-    cell: cell.custom<Gene, any>((transcript: Record<string, any>) => {
+    cell: cell.custom<Gene, Record<string, unknown>>((transcript) => {
       if (!transcript) return null;
-      const start = transcript.start ?? transcript["`start`"];
-      const end = transcript.end ?? transcript["`end`"];
+      const start = (transcript.start ?? transcript["`start`"]) as
+        | number
+        | undefined;
+      const end = (transcript.end ?? transcript["`end`"]) as number | undefined;
       return (
         <div className="space-y-0.5">
-          <span className="font-medium text-foreground">{transcript.id}</span>
+          <span className="font-medium text-foreground">
+            {String(transcript.id ?? "")}
+          </span>
           <p className="text-xs text-muted-foreground">
-            {transcript.chromosome}:{start?.toLocaleString()}-
-            {end?.toLocaleString()} ({transcript.strand})
+            {String(transcript.chromosome ?? "")}:{start?.toLocaleString()}-
+            {end?.toLocaleString()} ({String(transcript.strand ?? "")})
           </p>
         </div>
       );

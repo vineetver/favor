@@ -7,8 +7,8 @@ export default function AgentLoading() {
       <div className="hidden md:flex flex-col w-64 border-r border-border p-4 gap-3">
         <Skeleton className="h-9 w-full rounded-lg" />
         <div className="space-y-1.5 mt-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-full rounded-md" />
+          {Array.from({ length: 6 }, (_, i) => `agent-nav-${i}`).map((k) => (
+            <Skeleton key={k} className="h-8 w-full rounded-md" />
           ))}
         </div>
       </div>

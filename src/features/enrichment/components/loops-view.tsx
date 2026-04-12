@@ -126,7 +126,10 @@ function LoopArcDiagram({
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
             className="w-full"
             style={{ maxHeight: 240 }}
+            role="img"
+            aria-label="Chromatin loops overview"
           >
+            <title>Chromatin loops overview</title>
             {/* Coordinate ruler */}
             <line
               x1={0}
@@ -214,6 +217,7 @@ function LoopArcDiagram({
               return (
                 <Tooltip key={loop.origIdx}>
                   <TooltipTrigger asChild>
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: SVG <path> cannot have a role; tooltip makes data reachable via keyboard on the row list below */}
                     <path
                       d={d}
                       fill="none"
@@ -256,7 +260,10 @@ function LoopArcDiagram({
               const a2x1 = scale(loop.anchor2_start);
               const a2x2 = scale(loop.anchor2_end);
               return (
-                <g key={`anchors-${i}`}>
+                // biome-ignore lint/suspicious/noArrayIndexKey: LoopRow has no stable id; list order is stable per render
+                <g
+                  key={`anchors-${loop.anchor1_start}-${loop.anchor2_start}-${i}`}
+                >
                   <rect
                     x={a1x1}
                     y={TRACK_Y - 3}
@@ -477,8 +484,8 @@ function LoopsDetailView({
   totalCount,
   regionCoords,
   initialData,
-  summary,
-  basePath,
+  summary: _summary,
+  basePath: _basePath,
 }: Omit<LoopsViewProps, "groupedData">) {
   const searchParams = useClientSearchParams();
 

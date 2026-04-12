@@ -102,8 +102,8 @@ export function categories(items: Category[]) {
         <div className="space-y-2 text-left">
           <div>{intro}</div>
           <div className="space-y-1.5 text-sm">
-            {items.map((item, i) => (
-              <div key={i} className="flex items-start gap-2">
+            {items.map((item) => (
+              <div key={item.label} className="flex items-start gap-2">
                 <span
                   className={cn(
                     "w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0",
@@ -150,78 +150,6 @@ export function Badge({
       {children}
     </span>
   );
-}
-
-/** Chainable text transformer builder */
-class TextBuilder<TData> {
-  private transforms: Array<(str: string) => string> = [];
-
-  /** Capitalize first letter of each word */
-  capitalize(): this {
-    this.transforms.push((str) =>
-      str
-        .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        )
-        .join(" "),
-    );
-    return this;
-  }
-
-  /** Uppercase */
-  upper(): this {
-    this.transforms.push((str) => str.toUpperCase());
-    return this;
-  }
-
-  /** Lowercase */
-  lower(): this {
-    this.transforms.push((str) => str.toLowerCase());
-    return this;
-  }
-
-  /** Trim whitespace */
-  trim(): this {
-    this.transforms.push((str) => str.trim());
-    return this;
-  }
-
-  /** Split string and optionally get specific part */
-  split(separator: string, index?: number): this {
-    this.transforms.push((str) => {
-      const parts = str.split(separator);
-      if (index !== undefined) {
-        return parts[index] ?? "";
-      }
-      return parts.filter(Boolean).join(", ");
-    });
-    return this;
-  }
-
-  /** Replace text */
-  replace(search: string | RegExp, replacement: string): this {
-    this.transforms.push((str) => str.replace(search, replacement));
-    return this;
-  }
-
-  /** Build the final cell renderer */
-  private build() {
-    return ({ getValue }: CellContext<TData, unknown>) => {
-      const v = getValue();
-      if (isEmpty(v)) return EMPTY;
-      let result = String(v);
-      for (const transform of this.transforms) {
-        result = transform(result);
-      }
-      return result;
-    };
-  }
-
-  /** Allow using the builder directly as a cell renderer */
-  [Symbol.for("tanstack.cell")]() {
-    return this.build();
-  }
 }
 
 export const cell = {
@@ -602,8 +530,8 @@ export function tooltip(props: {
       </p>
       {props.guides && props.guides.length > 0 && (
         <ul className="list-disc list-inside space-y-1 text-sm">
-          {props.guides.map((g, i) => (
-            <li key={i}>
+          {props.guides.map((g) => (
+            <li key={g.threshold}>
               <strong>{g.threshold}:</strong> {g.meaning}
             </li>
           ))}
@@ -611,8 +539,8 @@ export function tooltip(props: {
       )}
       {props.categories && (
         <div className="space-y-1.5 text-sm">
-          {props.categories.items.map((item, i) => (
-            <div key={i} className="flex items-start gap-2">
+          {props.categories.items.map((item) => (
+            <div key={item.label} className="flex items-start gap-2">
               <span
                 className={cn(
                   "w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0",

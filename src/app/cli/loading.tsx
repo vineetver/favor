@@ -10,9 +10,9 @@ export default function CLILoading() {
           <Skeleton className="h-12 w-72 mx-auto rounded-lg mt-6" />
         </div>
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 5 }, (_, i) => `cli-card-${i}`).map((k) => (
             <div
-              key={i}
+              key={k}
               className="rounded-xl border border-border p-5 space-y-3"
             >
               <Skeleton className="h-5 w-32" />

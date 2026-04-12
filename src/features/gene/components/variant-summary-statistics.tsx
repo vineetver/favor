@@ -784,17 +784,20 @@ function VariantScoringFingerprint({
             {group.label}
           </h4>
           <ul className="space-y-0.5">
-            {group.rows.map((row) => (
-              <FingerprintBar
-                key={row.label}
-                row={row}
-                onClick={
-                  row.filters
-                    ? () => router.push(buildExplorerHref(scope, row.filters!))
-                    : undefined
-                }
-              />
-            ))}
+            {group.rows.map((row) => {
+              const filters = row.filters;
+              return (
+                <FingerprintBar
+                  key={row.label}
+                  row={row}
+                  onClick={
+                    filters
+                      ? () => router.push(buildExplorerHref(scope, filters))
+                      : undefined
+                  }
+                />
+              );
+            })}
           </ul>
         </section>
       ))}
@@ -1221,7 +1224,7 @@ export function VariantSummaryStatistics({
     [counts],
   );
 
-  if (!stats) {
+  if (!stats || !counts) {
     const label = scope.kind === "gene" ? scope.geneSymbol : scope.loc;
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -1263,7 +1266,7 @@ export function VariantSummaryStatistics({
           scope={scope}
           filters={{ variant_class: ["indel"] }}
         />
-        <ClinicalInterestTile counts={counts!} scope={scope} />
+        <ClinicalInterestTile counts={counts} scope={scope} />
         <DrillTile
           label="Actionable"
           value={fmt(get(counts, "scoreActionable"))}
@@ -1294,14 +1297,14 @@ export function VariantSummaryStatistics({
           title="Where in the genome"
           subtitle="Larger tile = more variants. Click to filter."
         >
-          <LocationTreemap counts={counts!} scope={scope} />
+          <LocationTreemap counts={counts} scope={scope} />
         </ChartCard>
 
         <ChartCard
           title="How rare"
           subtitle="Rare-heavy shapes point to selection. Click a bar to filter."
         >
-          <FrequencySpectrum counts={counts!} scope={scope} />
+          <FrequencySpectrum counts={counts} scope={scope} />
         </ChartCard>
       </div>
 
@@ -1313,7 +1316,7 @@ export function VariantSummaryStatistics({
               title="Coding effect"
               subtitle="Each row split SNV (purple) vs indel (cyan). Click to filter."
             >
-              <ConsequenceChart counts={counts!} scope={scope} />
+              <ConsequenceChart counts={counts} scope={scope} />
             </ChartCard>
           )}
 
@@ -1322,7 +1325,7 @@ export function VariantSummaryStatistics({
               title="Clinical significance"
               subtitle="Pathogenic right, benign left. Click a band to filter."
             >
-              <ClinvarDiverging counts={counts!} scope={scope} />
+              <ClinvarDiverging counts={counts} scope={scope} />
             </ChartCard>
           )}
         </div>
@@ -1335,7 +1338,7 @@ export function VariantSummaryStatistics({
           subtitle="Fraction of variants each tool flags. Click a row to filter."
         >
           <VariantScoringFingerprint
-            counts={counts!}
+            counts={counts}
             total={total}
             scope={scope}
           />

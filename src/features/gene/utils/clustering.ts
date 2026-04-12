@@ -50,7 +50,7 @@ export function detectCommunities(
 
   // Initial community assignment: each node in its own community
   const communities = new Map<string, string>();
-  nodeIds.forEach((id) => communities.set(id, id));
+  for (const id of nodeIds) communities.set(id, id);
 
   // Iterative optimization
   let improved = true;
@@ -65,16 +65,25 @@ export function detectCommunities(
     const shuffledNodes = [...nodeIds].sort(() => Math.random() - 0.5);
 
     for (const nodeId of shuffledNodes) {
-      const currentCommunity = communities.get(nodeId)!;
-      const nodeNeighbors = adjacency.get(nodeId)!;
-      const nodeDegree = nodeDegrees.get(nodeId)!;
+      const currentCommunity = communities.get(nodeId);
+      const nodeNeighbors = adjacency.get(nodeId);
+      const nodeDegree = nodeDegrees.get(nodeId);
+      if (
+        currentCommunity == null ||
+        nodeNeighbors == null ||
+        nodeDegree == null
+      )
+        continue;
 
       // Calculate modularity gain for moving to each neighbor's community
       const communityGains = new Map<string, number>();
 
       nodeNeighbors.forEach((weight, neighborId) => {
-        const neighborCommunity = communities.get(neighborId)!;
-        if (neighborCommunity !== currentCommunity) {
+        const neighborCommunity = communities.get(neighborId);
+        if (
+          neighborCommunity != null &&
+          neighborCommunity !== currentCommunity
+        ) {
           const currentGain = communityGains.get(neighborCommunity) ?? 0;
           communityGains.set(neighborCommunity, currentGain + weight);
         }
@@ -155,7 +164,7 @@ export function labelPropagation(
 ): Map<string, string[]> {
   // Build adjacency map
   const adjacency = new Map<string, Set<string>>();
-  nodeIds.forEach((id) => adjacency.set(id, new Set()));
+  for (const id of nodeIds) adjacency.set(id, new Set());
 
   edges.forEach((edge) => {
     adjacency.get(edge.sourceId)?.add(edge.targetId);
@@ -164,7 +173,7 @@ export function labelPropagation(
 
   // Initialize labels: each node has its own label
   const labels = new Map<string, string>();
-  nodeIds.forEach((id) => labels.set(id, id));
+  for (const id of nodeIds) labels.set(id, id);
 
   // Iterate until convergence or max iterations
   for (let iter = 0; iter < maxIterations; iter++) {
@@ -172,19 +181,22 @@ export function labelPropagation(
     const shuffledNodes = [...nodeIds].sort(() => Math.random() - 0.5);
 
     for (const nodeId of shuffledNodes) {
-      const neighbors = adjacency.get(nodeId)!;
-      if (neighbors.size === 0) continue;
+      const neighbors = adjacency.get(nodeId);
+      if (!neighbors || neighbors.size === 0) continue;
 
       // Count label frequencies among neighbors
       const labelCounts = new Map<string, number>();
       neighbors.forEach((neighbor) => {
-        const label = labels.get(neighbor)!;
+        const label = labels.get(neighbor);
+        if (label == null) return;
         labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
       });
 
       // Find most frequent label
       let maxCount = 0;
-      let maxLabel = labels.get(nodeId)!;
+      const currentLabel = labels.get(nodeId);
+      if (currentLabel == null) continue;
+      let maxLabel = currentLabel;
       labelCounts.forEach((count, label) => {
         if (count > maxCount) {
           maxCount = count;

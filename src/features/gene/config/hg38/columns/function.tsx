@@ -16,7 +16,7 @@ export const geneFunctionColumns = [
       description:
         "Detailed function descriptions from OpenTargets (curated from multiple sources).",
     }),
-    cell: cell.custom<Gene, any>((descriptions: string[], _row: Gene) => {
+    cell: cell.custom<Gene, string[]>((descriptions) => {
       if (!descriptions || descriptions.length === 0) return null;
       return <FunctionDetailView descriptions={descriptions} />;
     }),
@@ -30,13 +30,17 @@ export const geneFunctionColumns = [
       title: "Protein Class",
       description: "Protein classification from the Human Protein Atlas.",
     }),
-    cell: cell.custom<Gene, any>((str: string) => (
+    cell: cell.custom<Gene, string>((str) => (
       <div className="flex flex-col gap-1">
         {str
           .split(",")
           .filter(Boolean)
           .map((item, index) => (
-            <span key={index} className="text-sm text-foreground capitalize">
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: protein-class tokens may repeat
+              key={`${item}-${index}`}
+              className="text-sm text-foreground capitalize"
+            >
               {item.trim()}
             </span>
           ))}
@@ -65,7 +69,7 @@ export const geneFunctionColumns = [
       description:
         "Cellular compartments where the protein is found (from UniProt via OpenTargets).",
     }),
-    cell: cell.custom<Gene, any>((locations: Array<Record<string, string>>) => (
+    cell: cell.custom<Gene, Array<Record<string, string>>>((locations) => (
       <SubcellularLocationsView locations={locations} />
     )),
   }),
@@ -79,16 +83,14 @@ export const geneFunctionColumns = [
       description:
         "GO term annotations grouped by Biological Process, Molecular Function, and Cellular Component.",
     }),
-    cell: cell.custom<Gene, any>(
-      (
-        go: {
-          biological_process?: string;
-          molecular_function?: string;
-          cellular_component?: string;
-        },
-        row: Gene,
-      ) => <GoTermsView go={go} goDetailed={row.opentargets?.go} />,
-    ),
+    cell: cell.custom<
+      Gene,
+      {
+        biological_process?: string;
+        molecular_function?: string;
+        cellular_component?: string;
+      }
+    >((go, row) => <GoTermsView go={go} goDetailed={row.opentargets?.go} />),
   }),
 ];
 

@@ -9,18 +9,20 @@ export default function JobsLoading() {
         {/* Table skeleton */}
         <div className="rounded-xl border border-border">
           <div className="flex gap-4 p-4 border-b border-border">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-4 w-24" />
+            {Array.from({ length: 5 }, (_, i) => `hdr-${i}`).map((k) => (
+              <Skeleton key={k} className="h-4 w-24" />
             ))}
           </div>
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 5 }, (_, i) => `row-${i}`).map((rowKey) => (
             <div
-              key={i}
+              key={rowKey}
               className="flex gap-4 p-4 border-b border-border last:border-0"
             >
-              {Array.from({ length: 5 }).map((_, j) => (
-                <Skeleton key={j} className="h-4 w-24" />
-              ))}
+              {Array.from({ length: 5 }, (_, j) => `${rowKey}-c${j}`).map(
+                (cellKey) => (
+                  <Skeleton key={cellKey} className="h-4 w-24" />
+                ),
+              )}
             </div>
           ))}
         </div>

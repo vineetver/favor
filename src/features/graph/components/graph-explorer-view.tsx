@@ -586,7 +586,8 @@ function GraphExplorerViewInner({
           const newEdges = new Map<string, ExplorerEdge>();
 
           for (const response of successResponses) {
-            for (const [, nodeData] of Object.entries(response?.data.nodes)) {
+            if (!response?.data) continue;
+            for (const [, nodeData] of Object.entries(response.data.nodes)) {
               const entity = nodeData.entity;
               const nodeType = entity.type as EntityType;
               const nodeKey = makeNodeKey(nodeType, entity.id);
@@ -608,7 +609,7 @@ function GraphExplorerViewInner({
               }
             }
 
-            for (const apiEdge of response?.data.edges) {
+            for (const apiEdge of response.data.edges) {
               const edgeType = apiEdge.type as EdgeType;
               const fromId = parseTypeId(apiEdge.from).id;
               const toId = parseTypeId(apiEdge.to).id;

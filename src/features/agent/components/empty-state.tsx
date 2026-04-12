@@ -455,6 +455,7 @@ function EditableSeedToken({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
+        {/* biome-ignore lint/a11y/useSemanticElements: Badge renders a span by design; Popover asChild requires a single element, so we keep role=button */}
         <Badge
           variant="ghost"
           role="button"
@@ -509,6 +510,7 @@ function EditableStepToken({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
+        {/* biome-ignore lint/a11y/useSemanticElements: Badge renders a span by design; Popover asChild requires a single element, so we keep role=button */}
         <Badge
           variant="ghost"
           role="button"
@@ -658,6 +660,7 @@ function PromptCard({
                   →
                 </span>
               )}
+              {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop reorder handle; keyboard alternative is the edit popover on the token itself */}
               <span
                 draggable={stepOrder.length > 1}
                 onDragStart={(e) => {
@@ -730,6 +733,7 @@ function PromptCard({
         </span>
 
         {/* Edit — appears on hover, stops propagation */}
+        {/* biome-ignore lint/a11y/useSemanticElements: nested inside an outer <button>; real <button> would be invalid HTML here */}
         <span
           role="button"
           tabIndex={0}
@@ -796,6 +800,7 @@ export function EmptyState({ onSelect }: { onSelect: (text: string) => void }) {
           {QUICK_PROMPTS.map((p) => (
             <button
               key={p.label}
+              type="button"
               onClick={() => onSelect(p.prompt)}
               className={cn(
                 "px-3.5 py-2 rounded-full text-[12px] text-muted-foreground/60",

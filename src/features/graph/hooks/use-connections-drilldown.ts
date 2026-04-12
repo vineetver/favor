@@ -304,6 +304,10 @@ export function useConnectionsDrilldown({
   const loadMoreEdges = useCallback(
     (edgeType: EdgeType) => {
       if (!data || !sourceId || !targetId || !sourceType || !targetType) return;
+      const localSourceId = sourceId;
+      const localTargetId = targetId;
+      const localSourceType = sourceType;
+      const localTargetType = targetType;
 
       const group = data.groups.find((g) => g.type === edgeType);
       if (!group || !group.nextCursor || group.pageStatus === "loading") return;
@@ -352,14 +356,14 @@ export function useConnectionsDrilldown({
 
           const existingIds = new Set(group.edges.map((e) => e.id));
           const pageFrom = response.data.from ?? {
-            type: sourceType!,
-            id: sourceId!,
-            label: sourceId!,
+            type: localSourceType,
+            id: localSourceId,
+            label: localSourceId,
           };
           const pageTo = response.data.to ?? {
-            type: targetType!,
-            id: targetId!,
-            label: targetId!,
+            type: localTargetType,
+            id: localTargetId,
+            label: localTargetId,
           };
           const newEdges = response.data.edges
             .map((e) => hydrateConnectionEdge(e, pageFrom, pageTo, edgeType))

@@ -12,44 +12,44 @@ export const geneCancerHallmarksColumns = [
       description:
         "Cancer hallmarks associated with this gene based on literature evidence. These represent fundamental capabilities acquired during cancer development.",
     }),
-    cell: cell.custom<Gene, any>(
-      (
-        hallmarks: Array<{
-          pmid: number;
-          description: string;
-          impact: string;
-          label: string;
-        }>,
-      ) => {
-        if (!hallmarks || hallmarks.length === 0) return null;
+    cell: cell.custom<
+      Gene,
+      Array<{
+        pmid: number;
+        description: string;
+        impact: string;
+        label: string;
+      }>
+    >((hallmarks) => {
+      if (!hallmarks || hallmarks.length === 0) return null;
 
-        return (
-          <div>
-            {hallmarks.map((hallmark, index) => (
-              <div key={index}>
-                <div>{hallmark.label}</div>
+      return (
+        <div>
+          {hallmarks.map((hallmark, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: hallmark list has no stable id; same label/pmid may recur
+            <div key={`${hallmark.label}-${hallmark.pmid ?? ""}-${index}`}>
+              <div>{hallmark.label}</div>
 
-                {hallmark.impact && <div>Impact: {hallmark.impact}</div>}
+              {hallmark.impact && <div>Impact: {hallmark.impact}</div>}
 
-                {hallmark.description && <div>{hallmark.description}</div>}
+              {hallmark.description && <div>{hallmark.description}</div>}
 
-                {hallmark.pmid && (
-                  <div>
-                    <a
-                      href={`https://pubmed.ncbi.nlm.nih.gov/${hallmark.pmid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      PubMed: {hallmark.pmid}
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        );
-      },
-    ),
+              {hallmark.pmid && (
+                <div>
+                  <a
+                    href={`https://pubmed.ncbi.nlm.nih.gov/${hallmark.pmid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    PubMed: {hallmark.pmid}
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }),
   }),
 
   col.accessor("cancer_attributes", {
@@ -60,41 +60,43 @@ export const geneCancerHallmarksColumns = [
       description:
         "Additional cancer-related attributes and characteristics associated with this gene.",
     }),
-    cell: cell.custom<Gene, any>(
-      (
-        attributes: Array<{
-          pmid: number;
-          description: string;
-          attribute_name: string;
-        }>,
-      ) => {
-        if (!attributes || attributes.length === 0) return null;
+    cell: cell.custom<
+      Gene,
+      Array<{
+        pmid: number;
+        description: string;
+        attribute_name: string;
+      }>
+    >((attributes) => {
+      if (!attributes || attributes.length === 0) return null;
 
-        return (
-          <div>
-            {attributes.map((attribute, index) => (
-              <div key={index}>
-                <div>{attribute.attribute_name}</div>
+      return (
+        <div>
+          {attributes.map((attribute, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: attribute list has no stable id
+            <div
+              key={`${attribute.attribute_name}-${attribute.pmid ?? ""}-${index}`}
+            >
+              <div>{attribute.attribute_name}</div>
 
-                {attribute.description && <div>{attribute.description}</div>}
+              {attribute.description && <div>{attribute.description}</div>}
 
-                {attribute.pmid && (
-                  <div>
-                    <a
-                      href={`https://pubmed.ncbi.nlm.nih.gov/${attribute.pmid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      PubMed: {attribute.pmid}
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        );
-      },
-    ),
+              {attribute.pmid && (
+                <div>
+                  <a
+                    href={`https://pubmed.ncbi.nlm.nih.gov/${attribute.pmid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    PubMed: {attribute.pmid}
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }),
   }),
 ];
 

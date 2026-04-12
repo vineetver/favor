@@ -521,13 +521,18 @@ async function extractEntitiesFromCohort(
           body: { queries: names },
         });
 
-        const entities = (resolveResp.data?.results ?? [])
-          .filter((r) => r.status.toLowerCase() === "matched" && r.entity)
-          .map((r) => ({
-            type: r.entity?.type,
-            id: r.entity?.id,
-            label: r.entity?.label,
-          }));
+        const entities: EntityRef[] = (resolveResp.data?.results ?? [])
+          .flatMap((r) =>
+            r.status.toLowerCase() === "matched" && r.entity
+              ? [
+                  {
+                    type: r.entity.type,
+                    id: r.entity.id,
+                    label: r.entity.label,
+                  },
+                ]
+              : [],
+          );
 
         if (entities.length > 0) return entities;
       } catch {}

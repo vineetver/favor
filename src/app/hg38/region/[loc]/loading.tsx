@@ -12,8 +12,8 @@ export default function RegionLoading() {
         </div>
         {/* Category tabs */}
         <div className="flex gap-4 border-b border-border pb-2 mb-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-6 w-28" />
+          {Array.from({ length: 4 }, (_, i) => `tab-${i}`).map((k) => (
+            <Skeleton key={k} className="h-6 w-28" />
           ))}
         </div>
         {/* Content area */}
