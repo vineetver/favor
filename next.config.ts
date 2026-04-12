@@ -19,6 +19,9 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  experimental: {
+    scrollRestoration: true,
+  },
   // @duckdb/duckdb-wasm still needs to be external for SSR to avoid Worker
   // issues. gosling.js used to live here too, but the import is wrapped in
   // next/dynamic({ ssr: false }) so the SSR bundle never touches it, and
