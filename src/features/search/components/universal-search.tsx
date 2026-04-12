@@ -642,7 +642,7 @@ export function UniversalSearch() {
         <div className="relative">
           <Combobox
             value={null}
-            onChange={(val) => val && handleSelectSuggestion(val)}
+            onChange={() => {}}
           >
             <div className="relative flex flex-col sm:flex-row items-center bg-card p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-card/80 ring-1 ring-border">
               <div className="bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0">
