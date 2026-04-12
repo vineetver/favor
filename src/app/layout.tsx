@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@shared/components/layout/footer";
 import { Navbar } from "@shared/components/layout/navbar";
+import { ScrollToTop } from "@shared/components/scroll-to-top";
 import { GoogleAnalytics } from "@shared/components/ui/google-analytics";
 import { Toaster } from "@shared/components/ui/sonner";
 import { Providers } from "@/app/providers";
@@ -35,6 +36,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <ScrollToTop />
           <Navbar />
           <main className="mt-16 flex-1">{children}</main>
           <Footer />
