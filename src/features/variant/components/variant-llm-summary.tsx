@@ -8,6 +8,10 @@ import {
   type VariantPromptContext,
 } from "@features/variant/utils/build-variant-prompt";
 import { LLMSummaryCard } from "@shared/components/llm-summary-card";
+import { Button } from "@shared/components/ui/button";
+import { Card } from "@shared/components/ui/card";
+import { useAuth } from "@shared/hooks";
+import { LogIn, Sparkles } from "lucide-react";
 import { useCallback, useMemo } from "react";
 
 interface VariantLLMSummaryProps {
@@ -23,6 +27,7 @@ export function VariantLLMSummary({
   context,
   modelId = "gpt-4o-mini",
 }: VariantLLMSummaryProps) {
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const askFollowUp = useAskFollowUp();
 
   const prompt = useMemo(
@@ -34,6 +39,7 @@ export function VariantLLMSummary({
     vcf: variant.variant_vcf,
     prompt,
     modelId,
+    enabled: isAuthenticated,
   });
 
   const onAskFollowUp = useCallback(() => {
@@ -45,6 +51,33 @@ export function VariantLLMSummary({
       summary: state.summary,
     });
   }, [askFollowUp, state, variant.variant_vcf]);
+
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <Card className="gap-0 py-0">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-border">
+          <span className="text-sm text-muted-foreground font-medium">
+            Powered by FAVOR-GPT
+          </span>
+        </div>
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <p className="text-base font-medium text-foreground mb-1">
+            Sign in to generate AI summary
+          </p>
+          <p className="text-sm text-muted-foreground max-w-sm mb-5">
+            LLM-powered variant summaries are available to signed-in users.
+          </p>
+          <Button onClick={() => login()} size="sm" className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Sign in
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <LLMSummaryCard

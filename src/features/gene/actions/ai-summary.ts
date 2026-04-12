@@ -53,7 +53,7 @@ export async function getGeneSummary(
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
+    if (response.status === 404 || response.status === 401) {
       return { data: null };
     }
     throw new Error(`Failed to fetch AI text: ${response.status}`);

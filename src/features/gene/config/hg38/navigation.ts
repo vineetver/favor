@@ -11,7 +11,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "Function", slug: "function" },
       { text: "Expression", slug: "expression" },
       { text: "Protein Structure", slug: "protein-structure" },
-      { text: "Pathways", slug: "pathways" },
 
       { text: "Human Phenotype", slug: "human-phenotype" },
       { text: "Animal Phenotype", slug: "animal-phenotype" },
@@ -40,7 +39,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "Function", slug: "function" },
           { text: "Expression", slug: "expression" },
           { text: "Protein Structure", slug: "protein-structure" },
-          { text: "Pathways", slug: "pathways" },
           {
             text: "Constraints and Haploinsufficiency",
             slug: "constraints-and-heplo",
