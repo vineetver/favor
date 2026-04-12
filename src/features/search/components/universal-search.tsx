@@ -762,6 +762,7 @@ export function UniversalSearch() {
                           <div className="text-sm">Searching...</div>
                         </div>
                       ) : groupedTypeaheadSuggestions.length === 0 &&
+                        !bestMatch &&
                         query.trim() !== "" ? (
                         <div className="py-8 px-6 text-center text-muted-foreground">
                           <div className="text-sm">No results found</div>
