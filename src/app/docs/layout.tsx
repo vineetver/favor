@@ -31,7 +31,7 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
           <aside
             id="docs-toc-slot"
             aria-label="On this page"
-            className="hidden xl:block w-48 shrink-0"
+            className="hidden lg:block w-48 shrink-0"
           />
         </div>
       </div>

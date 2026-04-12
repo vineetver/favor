@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @source "../node_modules/streamdown/dist/index.js";
+@source "./docs/**/*.tsx";
 
 @theme {
   /* ============================================================================

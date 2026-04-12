@@ -14,7 +14,7 @@
 .mcp.json
 
 # personal notes / api references (not public)
-docs/
+/docs/
 
 # testing
 /coverage
