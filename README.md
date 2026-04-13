@@ -16,7 +16,7 @@
 
 ---
 
-Web frontend for [FAVOR](https://favor.genohub.org), an AI-first whole-genome variant functional annotation platform covering WGS, single-cell, and multi-omics datasets to accelerate drug discovery and disease association through fast variant interpretation.
+Web frontend for [FAVOR](https://favor-beta.genohub.org), an AI-first whole-genome variant functional annotation platform covering WGS, single-cell, and multi-omics datasets to accelerate drug discovery and disease association through fast variant interpretation.
 
 ## Quick Start
 
