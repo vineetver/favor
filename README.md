@@ -18,6 +18,34 @@
 
 Web frontend for [FAVOR](https://favor-beta.genohub.org), an AI-first whole-genome variant functional annotation platform covering WGS, single-cell, and multi-omics datasets to accelerate drug discovery and disease association through fast variant interpretation.
 
+## Features
+
+### Scale and visualization
+- **Genome-wide browsing at 8.9B-variant scale** — Gosling.js + HiGlass tile servers stream zoomable tracks across the entire human genome with no client-side aggregation
+- **In-browser SQL over parquet** — DuckDB WASM runs queries on cohort files client-side, no server round-trips for millions of rows
+- **Server-side tables** — TanStack Table wired to backend pagination, sorting, filtering, and column selection for variant and cohort datasets
+- **Interactive knowledge graphs** — Cytoscape and XYFlow render variant-gene-disease-drug relationships as navigable graphs
+- **Statistical and locus plots** — Manhattan, QQ, tissue heatmaps, allele-frequency distributions via Plotly and Recharts
+
+### Search and discovery
+- **Universal search** across variants, genes, diseases, drugs, and studies with typeahead and intent routing
+- **Variant detail pages** — annotation, GWAS, gnomAD population ancestry, per-tissue QTLs, ChromBPNet scores, allelic imbalance, methylation
+- **Gene detail pages** — variant scanning, summary statistics, pathway and drug-target lookups
+- **Disease and drug pages** — Open Targets GraphQL integration, evidence summaries
+- **Regulatory genomics** — cCRE, QTL, enhancer-gene links, chromatin states, loops, perturbation data (CRISPR / Perturb-seq / MAVE)
+
+### AI and agent workflows
+- **AI agent workspace** — graph-aware multi-turn LLM agent with tool use, cohort context, and persistent memory
+- **AI entity summaries** — on-demand LLM summaries for variants, genes, and diseases, streamed via SSE
+- **Multi-model support** — OpenAI and DeepSeek, switchable per session
+- **Async job orchestration** — AlphaGenome variant prediction with submit-and-poll and progress tracking
+
+### Platform
+- **Batch annotation** — authenticated cohort upload, parquet validation, column derivation, analytics runs, tissue-specific enrichment packs
+- **Authenticated workflows** — cookie-based auth, quota display, personal API keys, authenticated SSE proxy for streaming
+- **Shareable URL state** — deep links that round-trip for genome browser coordinates, search, and agent sessions
+- **Type-safe API layer** — feature-isolated clients, responses parsed at the boundary into branded types
+
 ## Quick Start
 
 **Prerequisites:** Node.js 22+, [pnpm](https://pnpm.io/)
@@ -42,50 +70,16 @@ To get an API key: go to [favor-beta.genohub.org](https://favor-beta.genohub.org
 pnpm dev   # http://localhost:3000
 ```
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Dev server with hot reload |
-| `pnpm build` | Production build |
-| `pnpm start` | Serve the production build |
-| `pnpm lint` | Biome check |
-| `pnpm format` | Biome auto-format |
-
-## Project Structure
-
-```
-src/
-├── app/                  Routes + local API (chat, AI text stream)
-├── features/             Domain modules (search, variant, gene, disease,
-│                         drug, enrichment, batch, agent, etc.)
-├── shared/               Reusable UI components and hooks
-├── infrastructure/       API clients (OpenTargets, AI text)
-└── config/               App-level config
-```
-
-Import aliases: `@/*` → `src/*`, `@features/*`, `@shared/*`, `@infra/*`.
-
 ## Stack
 
 Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui, TanStack Query, AI SDK (OpenAI + DeepSeek), Cytoscape, XYFlow, Gosling.js, DuckDB WASM, Plotly, Recharts.
 
 ## Deployment
 
-Deployed on Vercel:
-
 | Environment | URL | Branch |
 |-------------|-----|--------|
 | Beta | [favor-beta.genohub.org](https://favor-beta.genohub.org) | `beta` |
 | Production | [favor.genohub.org](https://favor.genohub.org) | `master` |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Security
-
-See [SECURITY.md](SECURITY.md).
 
 ## Citation
 
