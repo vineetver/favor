@@ -22,8 +22,12 @@ export const metadata: Metadata = {
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const stats = [
-  { value: "8.9B", label: "DNA variants", detail: "SNVs and indels across GRCh38" },
+const _stats = [
+  {
+    value: "8.9B",
+    label: "DNA variants",
+    detail: "SNVs and indels across GRCh38",
+  },
   { value: "232", label: "Annotations per variant" },
   { value: "~100ms", label: "API P99", detail: "Over the wire" },
   { value: "120", label: "API endpoints" },
@@ -86,7 +90,8 @@ const components = [
   {
     name: "Storage layer",
     body: "A Parquet lake on object storage is the source of truth. Several serving engines sit in front of it as materialized views, each tuned for one access pattern: point lookup, columnar scan, full-text, vector similarity, graph traversal, and a transactional path for user data.",
-    built: "RocksDB, ClickHouse, Kuzu, PostgreSQL, Elasticsearch, Parquet, Roaring bitmaps",
+    built:
+      "RocksDB, ClickHouse, Kuzu, PostgreSQL, Elasticsearch, Parquet, Roaring bitmaps",
   },
   {
     name: "Batch workers",
@@ -111,7 +116,8 @@ const rationale = [
     body: "Point lookup, columnar scan, full-text search, and graph traversal are four different storage problems. Each engine owns the one it is good at. Running several engines is the price we pay for keeping each one simple.",
   },
   {
-    title: "Rust where latency matters, Python and TypeScript where iteration matters",
+    title:
+      "Rust where latency matters, Python and TypeScript where iteration matters",
     body: "The API and the CLI are Rust. The web platform is TypeScript. The agents are Python and TypeScript. Each language is used where it earns its keep.",
   },
   {
@@ -140,7 +146,11 @@ export default function ArchitectureDocsPage() {
               { value: "8.9B", label: "Genetic variants" },
               { value: "232", label: "Annotations each" },
               { value: "<10ms", label: "Lookup latency" },
-              { value: "25x", label: "Data compression", detail: "30TB to 1.2TB" },
+              {
+                value: "25x",
+                label: "Data compression",
+                detail: "30TB to 1.2TB",
+              },
             ]}
           />
         </div>
@@ -152,8 +162,8 @@ export default function ArchitectureDocsPage() {
           <h2 id="access-patterns">Access patterns</h2>
           <p>
             FAVOR is not one system with one shape of query. It is a small
-            collection of engines, each built for one access pattern.
-            These are the patterns the platform has to serve.
+            collection of engines, each built for one access pattern. These are
+            the patterns the platform has to serve.
           </p>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -176,10 +186,10 @@ export default function ArchitectureDocsPage() {
         <Prose>
           <h2 id="components">Components and boundaries</h2>
           <p>
-            The platform is a handful of components with strict rules about
-            what each one is allowed to talk to. The rules matter more than
-            any single component: they are what keep failures local and what
-            let any one part be rewritten without touching the others.
+            The platform is a handful of components with strict rules about what
+            each one is allowed to talk to. The rules matter more than any
+            single component: they are what keep failures local and what let any
+            one part be rewritten without touching the others.
           </p>
         </Prose>
         <div className="mt-4 space-y-3">
@@ -226,11 +236,11 @@ export default function ArchitectureDocsPage() {
         <Prose>
           <h2 id="stability">Stability</h2>
           <p>
-            The public API, portal URLs, documented annotation columns,
-            and the release notes are the stability contract. Everything
-            on this page describes current internals. Components can be
-            renamed, merged, split, or replaced as the platform grows. For
-            user-visible changes, read the{" "}
+            The public API, portal URLs, documented annotation columns, and the
+            release notes are the stability contract. Everything on this page
+            describes current internals. Components can be renamed, merged,
+            split, or replaced as the platform grows. For user-visible changes,
+            read the{" "}
             <Link
               href="/docs/release-notes"
               className="text-primary hover:underline"

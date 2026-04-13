@@ -25,9 +25,8 @@ export default function ReleaseNotesPage() {
         </h1>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
           A single log of every user-visible change across FAVOR. Each release
-          covers the web portal, the annotation database, the CLI, the
-          research agent, the batch pipeline, search, and the public API.
-          Newest first.
+          covers the web portal, the annotation database, the CLI, the research
+          agent, the batch pipeline, search, and the public API. Newest first.
         </p>
       </div>
 

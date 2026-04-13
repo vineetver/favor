@@ -640,10 +640,7 @@ export function UniversalSearch() {
         <div className="absolute -inset-1 bg-linear-to-r from-purple-200 to-indigo-200 rounded-[28px] blur-xl opacity-40 group-hover:opacity-60 transition duration-500"></div>
 
         <div className="relative">
-          <Combobox
-            value={null}
-            onChange={() => {}}
-          >
+          <Combobox value={null} onChange={() => {}}>
             <div className="relative flex flex-col sm:flex-row items-center bg-card p-2.5 rounded-3xl shadow-2xl shadow-border/50 border border-card/80 ring-1 ring-border">
               <div className="bg-muted rounded-2xl p-1 m-1 sm:mr-4 shrink-0">
                 <div className="px-4 py-3 rounded-xl text-sm font-semibold text-foreground bg-background shadow-sm">

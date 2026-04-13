@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@infra/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@infra/utils";
 import {
   DOCS_NAV_GROUPS,
   type DocsNavGroup,

@@ -1,7 +1,7 @@
 "use client";
 
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
-import { ChevronRight, ChevronDown } from "lucide-react";
 
 interface FlowStep {
   label: string;

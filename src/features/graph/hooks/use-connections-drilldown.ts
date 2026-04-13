@@ -19,7 +19,7 @@ import { makeEdgeKey, makeNodeKey } from "../types/keys";
 import type { ExplorerEdge } from "../types/node";
 import { createEdgeId } from "../utils/keys";
 
-// TODO — remove when backend drops clinvar_annotation edges from VARIANT_IMPLIES_GENE
+// Suppress clinvar_annotation edges from VARIANT_IMPLIES_GENE
 const isSuppressed = (type: string, fields: Record<string, unknown>) =>
   type === "VARIANT_IMPLIES_GENE" &&
   fields.implication_mode === "clinvar_annotation";

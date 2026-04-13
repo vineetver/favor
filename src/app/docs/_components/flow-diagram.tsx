@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
+import { motion } from "motion/react";
+import type { ReactNode } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  FlowNode                                                                   */
@@ -59,13 +59,24 @@ export function FlowNode({
 /*  FlowConnector                                                              */
 /* -------------------------------------------------------------------------- */
 
-export function FlowConnector({ label, artifact }: { label?: string; artifact?: string }) {
+export function FlowConnector({
+  label,
+  artifact,
+}: {
+  label?: string;
+  artifact?: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-0.5 py-1">
       <div className="w-px h-4 bg-border" />
       {label && (
         <span className="inline-flex px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground border border-border">
-          {label}{artifact && <span className="text-muted-foreground/70 ml-1.5">&rarr; {artifact}</span>}
+          {label}
+          {artifact && (
+            <span className="text-muted-foreground/70 ml-1.5">
+              &rarr; {artifact}
+            </span>
+          )}
         </span>
       )}
       <ChevronDown className="w-4 h-4 text-muted-foreground" />

@@ -72,7 +72,7 @@ Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui, TanStack Query, A
 
 ## Deployment
 
-Deployed on Vercel under the `linlab` team:
+Deployed on Vercel:
 
 | Environment | URL | Branch |
 |-------------|-----|--------|

@@ -1,13 +1,13 @@
 "use client";
 
-import { motion } from "motion/react";
-import { ChevronDown } from "lucide-react";
 import { cn } from "@infra/utils";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
+import { motion } from "motion/react";
 import { useState } from "react";
 
 export function TechCard({
@@ -79,7 +79,9 @@ export function TechCard({
                 type="button"
                 className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
               >
-                {expanded ? "Show less" : `${details.length - headlineCount} more ops`}
+                {expanded
+                  ? "Show less"
+                  : `${details.length - headlineCount} more ops`}
                 <ChevronDown
                   className={cn(
                     "w-3 h-3 transition-transform",

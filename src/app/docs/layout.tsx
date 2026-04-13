@@ -1,7 +1,7 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { DocsSidebar } from "./_components/docs-sidebar";
 import { DOCS_NAV_ITEMS } from "./_lib/nav";
-import Link from "next/link";
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
   return (

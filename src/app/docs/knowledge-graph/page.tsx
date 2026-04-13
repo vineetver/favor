@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Prose, Callout } from "../_components/doc-primitives";
+import { Callout, Prose } from "../_components/doc-primitives";
 import { DocsToc, type TocItem } from "../_components/docs-toc";
 
 const TOC_ITEMS: TocItem[] = [
@@ -26,8 +26,7 @@ export default function KnowledgeGraphDocsPage() {
           <h1>Knowledge Graph</h1>
           <p>
             A biomedical network of genes, diseases, drugs, variants, and the
-            relationships that connect them, assembled from published
-            databases.
+            relationships that connect them, assembled from published databases.
           </p>
         </Prose>
 
@@ -43,11 +42,11 @@ export default function KnowledgeGraphDocsPage() {
         <Prose>
           <h2 id="what-it-is">What it is</h2>
           <p>
-            A single connected structure where every node is a real
-            biological entity and every edge is a claim from a published
-            source. The point of the graph is that you can take a question
-            that normally needs three databases, a spreadsheet, and a careful
-            read of five papers, and answer it with one query.
+            A single connected structure where every node is a real biological
+            entity and every edge is a claim from a published source. The point
+            of the graph is that you can take a question that normally needs
+            three databases, a spreadsheet, and a careful read of five papers,
+            and answer it with one query.
           </p>
           <p>
             Everything in the graph is read only. The graph is rebuilt from
@@ -61,8 +60,8 @@ export default function KnowledgeGraphDocsPage() {
           <h2 id="what-lives-in-it">What lives in it</h2>
           <p>
             The exact set of entity and relationship types depends on the
-            current data release. The shape you can count on is a graph
-            covering these domains.
+            current data release. The shape you can count on is a graph covering
+            these domains.
           </p>
         </Prose>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -123,15 +122,15 @@ export default function KnowledgeGraphDocsPage() {
               publishes.
             </li>
             <li>
-              <strong>What kind of claim it is.</strong> The edge type tells
-              you whether the link is an association, a causal claim, a
+              <strong>What kind of claim it is.</strong> The edge type tells you
+              whether the link is an association, a causal claim, a
               co-membership, or a simple containment.
             </li>
           </ul>
           <p>
-            Because every edge is scored and traceable, two callers can walk
-            the same path and still disagree on whether to trust it, and
-            both are right to do so. The graph gives you the evidence.
+            Because every edge is scored and traceable, two callers can walk the
+            same path and still disagree on whether to trust it, and both are
+            right to do so. The graph gives you the evidence.
           </p>
         </Prose>
       </section>
@@ -139,9 +138,7 @@ export default function KnowledgeGraphDocsPage() {
       <section>
         <Prose>
           <h2 id="how-to-query">How queries work</h2>
-          <p>
-            There are three kinds of queries you can run against the graph.
-          </p>
+          <p>There are three kinds of queries you can run against the graph.</p>
         </Prose>
         <div className="mt-4 space-y-3">
           {[
@@ -170,34 +167,33 @@ export default function KnowledgeGraphDocsPage() {
           ))}
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          The AI agent uses all three kinds of queries under the hood. When
-          you ask a research question in natural language, it picks the
-          shape of query that fits.
+          The AI agent uses all three kinds of queries under the hood. When you
+          ask a research question in natural language, it picks the shape of
+          query that fits.
         </p>
       </section>
 
       <section>
         <Prose>
           <h2 id="what-it-powers">What it powers</h2>
-          <p>
-            The same graph sits behind several surfaces of the platform.
-          </p>
+          <p>The same graph sits behind several surfaces of the platform.</p>
           <ul>
             <li>
               <strong>Entity pages.</strong> Every gene, disease, drug, and
               variant page is a rendered slice of the graph or some part of it.
             </li>
             <li>
-              <strong>Search.</strong> Search uses the graph to return matches 
+              <strong>Search.</strong> Search uses the graph to return matches
               and their context.
             </li>
             <li>
-              <strong>AI agent.</strong> The agent runs scored traversals, so it reasons over structured evidence.
+              <strong>AI agent.</strong> The agent runs scored traversals, so it
+              reasons over structured evidence.
             </li>
             <li>
               <strong>Variant lists.</strong> When you run enrichment on a
-              variant list, the graph is what tells you which genes, diseases, and drugs are
-              connected to the variants in your list.
+              variant list, the graph is what tells you which genes, diseases,
+              and drugs are connected to the variants in your list.
             </li>
           </ul>
         </Prose>

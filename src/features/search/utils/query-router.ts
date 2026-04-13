@@ -61,11 +61,6 @@ export function getRouteForQuery(
       };
 
     case "gene":
-      // TODO: Implement gene routing
-      // return {
-      //   path: `/gene/${encodeURIComponent(parsed.normalized)}`,
-      //   shouldPreload: false,
-      // };
       return null;
 
     case "disease":
@@ -75,7 +70,6 @@ export function getRouteForQuery(
       };
 
     case "pathway":
-      // TODO: Implement pathway routing
       return null;
 
     default:

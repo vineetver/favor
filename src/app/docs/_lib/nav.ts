@@ -51,13 +51,13 @@ export const DOCS_NAV_GROUPS: DocsNavGroup[] = [
  * Flat list for the mobile pill bar. Contextual groups are excluded so
  * casual pages stay clean, matching the sidebar behaviour on desktop.
  */
-export const DOCS_NAV_ITEMS: DocsNavItem[] = DOCS_NAV_GROUPS
-  .filter((g) => !g.contextual)
-  .flatMap((g) => g.items);
+export const DOCS_NAV_ITEMS: DocsNavItem[] = DOCS_NAV_GROUPS.filter(
+  (g) => !g.contextual,
+).flatMap((g) => g.items);
 
 /** All hrefs belonging to contextual groups, used to decide when to reveal them. */
 export const CONTEXTUAL_HREFS: Set<string> = new Set(
-  DOCS_NAV_GROUPS
-    .filter((g) => g.contextual)
-    .flatMap((g) => g.items.map((i) => i.href)),
+  DOCS_NAV_GROUPS.filter((g) => g.contextual).flatMap((g) =>
+    g.items.map((i) => i.href),
+  ),
 );

@@ -183,9 +183,6 @@ export function useDuckDB(): UseDuckDBResult {
         if (cached) {
           arrayBuffer = cached;
           fromCache = true;
-          console.log(
-            `[DuckDB] Loaded Parquet from cache (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`,
-          );
         } else {
           const response = await fetch(url);
           if (!response.ok) {
@@ -195,9 +192,6 @@ export function useDuckDB(): UseDuckDBResult {
           }
 
           arrayBuffer = await response.arrayBuffer();
-          console.log(
-            `[DuckDB] Fetched Parquet from network (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`,
-          );
 
           // Store in cache with stable key (don't await - do it in background)
           setCachedData(effectiveCacheKey, arrayBuffer).catch((err) => {
@@ -254,7 +248,6 @@ export function useDuckDB(): UseDuckDBResult {
   // Clear the data cache
   const clearCache = useCallback(async () => {
     await clearDataCache();
-    console.log("[DuckDB] Data cache cleared");
   }, []);
 
   // Execute SQL query

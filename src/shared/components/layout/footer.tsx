@@ -75,7 +75,10 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="text-lg font-bold tracking-tight text-foreground">
+            <Link
+              href="/"
+              className="text-lg font-bold tracking-tight text-foreground"
+            >
               FAVOR
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xs">

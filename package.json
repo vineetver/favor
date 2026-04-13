@@ -2,6 +2,15 @@
   "name": "favor",
   "version": "0.1.0",
   "private": true,
+  "description": "Web frontend for FAVOR, an AI-first whole-genome variant functional annotation platform",
+  "homepage": "https://favor.genohub.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vineetver/favor.git"
+  },
+  "bugs": "https://github.com/vineetver/favor/issues",
+  "license": "GPL-3.0",
+  "author": "Vineet Verma",
   "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "next dev",
@@ -42,7 +51,6 @@
     "cytoscape-cose-bilkent": "^4.1.0",
     "cytoscape-dagre": "^2.5.0",
     "gosling.js": "2.0.0-alpha.9",
-    "install": "^0.13.0",
     "lucide-react": "^0.555.0",
     "motion": "^12.34.2",
     "nanoid": "^5.1.6",

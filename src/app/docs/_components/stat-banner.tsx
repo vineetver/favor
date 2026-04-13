@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
 import { cn } from "@infra/utils";
+import { motion } from "motion/react";
 
 interface Stat {
   value: string;
@@ -21,8 +21,7 @@ export function StatBanner({ stats }: { stats: Stat[] }) {
             transition={{ delay: i * 0.08, duration: 0.4 }}
             className={cn(
               "flex-1 text-center px-2 sm:px-4",
-              i > 0 &&
-                "sm:border-l sm:border-border",
+              i > 0 && "sm:border-l sm:border-border",
             )}
           >
             <p className="text-stat-value !text-3xl sm:!text-4xl md:!text-5xl">
@@ -30,7 +29,9 @@ export function StatBanner({ stats }: { stats: Stat[] }) {
             </p>
             <p className="text-stat-label mt-1">{stat.label}</p>
             {stat.detail && (
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{stat.detail}</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                {stat.detail}
+              </p>
             )}
           </motion.div>
         ))}

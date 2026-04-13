@@ -1,9 +1,9 @@
 "use client";
 
-import { memo, useCallback, useRef } from "react";
 import cytoscape from "cytoscape";
-import CytoscapeComponent from "react-cytoscapejs";
 import coseBilkent from "cytoscape-cose-bilkent";
+import { memo, useCallback, useRef } from "react";
+import CytoscapeComponent from "react-cytoscapejs";
 
 if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
   cytoscape.use(coseBilkent);
@@ -13,24 +13,29 @@ if (typeof cytoscape("layout", "cose-bilkent") === "undefined") {
 /*  Schema — module-level const                                        */
 /* ------------------------------------------------------------------ */
 
-const NODE_META: Record<string, { bg: string; border: string; label: string }> = {
-  Gene:          { bg: "#dbeafe", border: "#3b82f6", label: "Gene" },
-  Variant:       { bg: "#fef3c7", border: "#f59e0b", label: "Variant" },
-  Disease:       { bg: "#fee2e2", border: "#ef4444", label: "Disease" },
-  Drug:          { bg: "#d1fae5", border: "#10b981", label: "Drug" },
-  Phenotype:     { bg: "#fae8ff", border: "#d946ef", label: "Phenotype" },
-  Signal:        { bg: "#e0e7ff", border: "#6366f1", label: "Signal" },
-  Study:         { bg: "#e0f2fe", border: "#0284c7", label: "Study" },
-  Entity:        { bg: "#fce7f3", border: "#ec4899", label: "Entity" },
-  Pathway:       { bg: "#ede9fe", border: "#8b5cf6", label: "Pathway" },
-  GOTerm:        { bg: "#dcfce7", border: "#16a34a", label: "GO Term" },
-  Tissue:        { bg: "#ccfbf1", border: "#14b8a6", label: "Tissue" },
-  ProteinDomain: { bg: "#ede9fe", border: "#7c3aed", label: "Protein Domain" },
-  SideEffect:    { bg: "#fef9c3", border: "#ca8a04", label: "Side Effect" },
-  cCRE:          { bg: "#cffafe", border: "#0891b2", label: "cCRE" },
-  Metabolite:    { bg: "#fce7f3", border: "#db2777", label: "Metabolite" },
-  CellType:      { bg: "#dbeafe", border: "#2563eb", label: "Cell Type" },
-};
+const NODE_META: Record<string, { bg: string; border: string; label: string }> =
+  {
+    Gene: { bg: "#dbeafe", border: "#3b82f6", label: "Gene" },
+    Variant: { bg: "#fef3c7", border: "#f59e0b", label: "Variant" },
+    Disease: { bg: "#fee2e2", border: "#ef4444", label: "Disease" },
+    Drug: { bg: "#d1fae5", border: "#10b981", label: "Drug" },
+    Phenotype: { bg: "#fae8ff", border: "#d946ef", label: "Phenotype" },
+    Signal: { bg: "#e0e7ff", border: "#6366f1", label: "Signal" },
+    Study: { bg: "#e0f2fe", border: "#0284c7", label: "Study" },
+    Entity: { bg: "#fce7f3", border: "#ec4899", label: "Entity" },
+    Pathway: { bg: "#ede9fe", border: "#8b5cf6", label: "Pathway" },
+    GOTerm: { bg: "#dcfce7", border: "#16a34a", label: "GO Term" },
+    Tissue: { bg: "#ccfbf1", border: "#14b8a6", label: "Tissue" },
+    ProteinDomain: {
+      bg: "#ede9fe",
+      border: "#7c3aed",
+      label: "Protein Domain",
+    },
+    SideEffect: { bg: "#fef9c3", border: "#ca8a04", label: "Side Effect" },
+    cCRE: { bg: "#cffafe", border: "#0891b2", label: "cCRE" },
+    Metabolite: { bg: "#fce7f3", border: "#db2777", label: "Metabolite" },
+    CellType: { bg: "#dbeafe", border: "#2563eb", label: "Cell Type" },
+  };
 
 interface SchemaEdge {
   from: string;
@@ -41,54 +46,229 @@ interface SchemaEdge {
 
 const SCHEMA_EDGES: SchemaEdge[] = [
   // Disease genetics
-  { from: "Gene", to: "Disease", label: "associated with", sources: ["OpenTargets", "PharmGKB", "GWAS Catalog", "OMIM", "Orphanet"] },
-  { from: "Gene", to: "Disease", label: "altered in", sources: ["TCGA", "COSMIC", "cBioPortal"] },
-  { from: "Variant", to: "Disease", label: "associated with", sources: ["GWAS Catalog"] },
-  { from: "Disease", to: "Phenotype", label: "has phenotype", sources: ["HPO", "OMIM", "Orphanet"] },
+  {
+    from: "Gene",
+    to: "Disease",
+    label: "associated with",
+    sources: ["OpenTargets", "PharmGKB", "GWAS Catalog", "OMIM", "Orphanet"],
+  },
+  {
+    from: "Gene",
+    to: "Disease",
+    label: "altered in",
+    sources: ["TCGA", "COSMIC", "cBioPortal"],
+  },
+  {
+    from: "Variant",
+    to: "Disease",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Disease",
+    to: "Phenotype",
+    label: "has phenotype",
+    sources: ["HPO", "OMIM", "Orphanet"],
+  },
   { from: "Gene", to: "Phenotype", label: "associated with", sources: ["HPO"] },
-  { from: "Variant", to: "Phenotype", label: "associated with", sources: ["GWAS Catalog"] },
+  {
+    from: "Variant",
+    to: "Phenotype",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
 
   // Pharmacogenomics
-  { from: "Drug", to: "Gene", label: "acts on", sources: ["OpenTargets", "ChEMBL", "DrugCentral"] },
-  { from: "Drug", to: "Gene", label: "disposition by", sources: ["PharmGKB", "DrugCentral"] },
-  { from: "Gene", to: "Drug", label: "affects response", sources: ["PharmGKB"] },
-  { from: "Variant", to: "Drug", label: "associated with", sources: ["OpenTargets", "PharmGKB"] },
-  { from: "Drug", to: "Disease", label: "indicated for", sources: ["OpenTargets", "ChEMBL"] },
-  { from: "Drug", to: "Drug", label: "interacts with", sources: ["ChEMBL", "DrugCentral"] },
-  { from: "Drug", to: "SideEffect", label: "adverse effect", sources: ["OnSIDES", "OFFSIDES", "DrugCentral"] },
-  { from: "Drug", to: "SideEffect", label: "pair causes", sources: ["TWOSIDES"] },
-  { from: "Gene", to: "SideEffect", label: "associated with", sources: ["PharmGKB"] },
-  { from: "Variant", to: "SideEffect", label: "linked to", sources: ["PharmGKB"] },
+  {
+    from: "Drug",
+    to: "Gene",
+    label: "acts on",
+    sources: ["OpenTargets", "ChEMBL", "DrugCentral"],
+  },
+  {
+    from: "Drug",
+    to: "Gene",
+    label: "disposition by",
+    sources: ["PharmGKB", "DrugCentral"],
+  },
+  {
+    from: "Gene",
+    to: "Drug",
+    label: "affects response",
+    sources: ["PharmGKB"],
+  },
+  {
+    from: "Variant",
+    to: "Drug",
+    label: "associated with",
+    sources: ["OpenTargets", "PharmGKB"],
+  },
+  {
+    from: "Drug",
+    to: "Disease",
+    label: "indicated for",
+    sources: ["OpenTargets", "ChEMBL"],
+  },
+  {
+    from: "Drug",
+    to: "Drug",
+    label: "interacts with",
+    sources: ["ChEMBL", "DrugCentral"],
+  },
+  {
+    from: "Drug",
+    to: "SideEffect",
+    label: "adverse effect",
+    sources: ["OnSIDES", "OFFSIDES", "DrugCentral"],
+  },
+  {
+    from: "Drug",
+    to: "SideEffect",
+    label: "pair causes",
+    sources: ["TWOSIDES"],
+  },
+  {
+    from: "Gene",
+    to: "SideEffect",
+    label: "associated with",
+    sources: ["PharmGKB"],
+  },
+  {
+    from: "Variant",
+    to: "SideEffect",
+    label: "linked to",
+    sources: ["PharmGKB"],
+  },
 
   // Functional biology
-  { from: "Gene", to: "Pathway", label: "participates in", sources: ["Reactome", "ConsensusPathDB"] },
+  {
+    from: "Gene",
+    to: "Pathway",
+    label: "participates in",
+    sources: ["Reactome", "ConsensusPathDB"],
+  },
   { from: "Gene", to: "GOTerm", label: "annotated with", sources: ["GOA"] },
-  { from: "Gene", to: "ProteinDomain", label: "has domain", sources: ["InterPro"] },
-  { from: "Gene", to: "Tissue", label: "expressed in", sources: ["GTEx", "HPA"] },
-  { from: "Pathway", to: "Metabolite", label: "contains", sources: ["Reactome", "ChEBI"] },
+  {
+    from: "Gene",
+    to: "ProteinDomain",
+    label: "has domain",
+    sources: ["InterPro"],
+  },
+  {
+    from: "Gene",
+    to: "Tissue",
+    label: "expressed in",
+    sources: ["GTEx", "HPA"],
+  },
+  {
+    from: "Pathway",
+    to: "Metabolite",
+    label: "contains",
+    sources: ["Reactome", "ChEBI"],
+  },
 
   // GWAS provenance
-  { from: "Study", to: "Disease", label: "investigates", sources: ["GWAS Catalog"] },
-  { from: "Study", to: "Phenotype", label: "investigates", sources: ["GWAS Catalog"] },
-  { from: "Study", to: "Entity", label: "investigates", sources: ["GWAS Catalog"] },
-  { from: "Signal", to: "Disease", label: "associated with", sources: ["GWAS Catalog"] },
-  { from: "Signal", to: "Phenotype", label: "associated with", sources: ["GWAS Catalog"] },
-  { from: "Signal", to: "Entity", label: "associated with", sources: ["GWAS Catalog"] },
-  { from: "Signal", to: "Variant", label: "has variant", sources: ["GWAS Catalog"] },
-  { from: "Signal", to: "Gene", label: "implies gene", sources: ["OpenTargets L2G"] },
-  { from: "Variant", to: "Study", label: "reported in", sources: ["GWAS Catalog"] },
-  { from: "Variant", to: "Entity", label: "associated with", sources: ["GWAS Catalog"] },
-  { from: "Gene", to: "Entity", label: "associated with", sources: ["GWAS Catalog"] },
+  {
+    from: "Study",
+    to: "Disease",
+    label: "investigates",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Study",
+    to: "Phenotype",
+    label: "investigates",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Study",
+    to: "Entity",
+    label: "investigates",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Signal",
+    to: "Disease",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Signal",
+    to: "Phenotype",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Signal",
+    to: "Entity",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Signal",
+    to: "Variant",
+    label: "has variant",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Signal",
+    to: "Gene",
+    label: "implies gene",
+    sources: ["OpenTargets L2G"],
+  },
+  {
+    from: "Variant",
+    to: "Study",
+    label: "reported in",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Variant",
+    to: "Entity",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
+  {
+    from: "Gene",
+    to: "Entity",
+    label: "associated with",
+    sources: ["GWAS Catalog"],
+  },
 
   // Regulatory
   { from: "Variant", to: "cCRE", label: "overlaps", sources: ["ENCODE v4"] },
-  { from: "cCRE", to: "Gene", label: "regulates", sources: ["ENCODE", "GTEx eQTL"] },
-  { from: "Variant", to: "Gene", label: "implies", sources: ["ClinVar", "OpenTargets", "GWAS Catalog"] },
-  { from: "Variant", to: "Gene", label: "affects", sources: ["GENCODE", "ENCODE", "COSMIC"] },
+  {
+    from: "cCRE",
+    to: "Gene",
+    label: "regulates",
+    sources: ["ENCODE", "GTEx eQTL"],
+  },
+  {
+    from: "Variant",
+    to: "Gene",
+    label: "implies",
+    sources: ["ClinVar", "OpenTargets", "GWAS Catalog"],
+  },
+  {
+    from: "Variant",
+    to: "Gene",
+    label: "affects",
+    sources: ["GENCODE", "ENCODE", "COSMIC"],
+  },
 
   // Molecular interactions
-  { from: "Gene", to: "Gene", label: "interacts with", sources: ["BioGRID", "IntAct", "STRING", "Reactome"] },
-  { from: "Gene", to: "Gene", label: "paralog of", sources: ["Ensembl Compara"] },
+  {
+    from: "Gene",
+    to: "Gene",
+    label: "interacts with",
+    sources: ["BioGRID", "IntAct", "STRING", "Reactome"],
+  },
+  {
+    from: "Gene",
+    to: "Gene",
+    label: "paralog of",
+    sources: ["Ensembl Compara"],
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -320,58 +500,61 @@ export const SchemaNetworkGraph = memo(function SchemaNetworkGraph() {
     if (el) el.style.display = "none";
   };
 
-  const handleCy = useCallback((cy: cytoscape.Core) => {
-    cy.layout({
-      name: "cose-bilkent",
-      animate: false,
-      nodeDimensionsIncludeLabels: true,
-      idealEdgeLength: 150,
-      nodeRepulsion: 10000,
-      edgeElasticity: 0.08,
-      gravity: 0.3,
-      gravityRange: 5,
-      fit: true,
-      padding: 50,
-      randomize: true,
-      numIter: 3000,
-    } as cytoscape.LayoutOptions).run();
+  const handleCy = useCallback(
+    (cy: cytoscape.Core) => {
+      cy.layout({
+        name: "cose-bilkent",
+        animate: false,
+        nodeDimensionsIncludeLabels: true,
+        idealEdgeLength: 150,
+        nodeRepulsion: 10000,
+        edgeElasticity: 0.08,
+        gravity: 0.3,
+        gravityRange: 5,
+        fit: true,
+        padding: 50,
+        randomize: true,
+        numIter: 3000,
+      } as cytoscape.LayoutOptions).run();
 
-    // Node hover
-    cy.on("mouseover", "node", (evt) => {
-      const node = evt.target;
-      const nodeId = node.data("id") as string;
-      showTooltip(NODE_TOOLTIPS[nodeId] || "");
+      // Node hover
+      cy.on("mouseover", "node", (evt) => {
+        const node = evt.target;
+        const nodeId = node.data("id") as string;
+        showTooltip(NODE_TOOLTIPS[nodeId] || "");
 
-      const connected = node.connectedEdges();
-      const neighbors = connected.connectedNodes();
-      cy.elements().addClass("dimmed");
-      node.removeClass("dimmed").addClass("seed-highlight");
-      connected.removeClass("dimmed").addClass("highlighted");
-      neighbors.removeClass("dimmed").addClass("highlighted");
-    });
+        const connected = node.connectedEdges();
+        const neighbors = connected.connectedNodes();
+        cy.elements().addClass("dimmed");
+        node.removeClass("dimmed").addClass("seed-highlight");
+        connected.removeClass("dimmed").addClass("highlighted");
+        neighbors.removeClass("dimmed").addClass("highlighted");
+      });
 
-    cy.on("mouseout", "node", () => {
-      hideTooltip();
-      cy.elements().removeClass("dimmed highlighted seed-highlight");
-    });
+      cy.on("mouseout", "node", () => {
+        hideTooltip();
+        cy.elements().removeClass("dimmed highlighted seed-highlight");
+      });
 
-    // Edge hover
-    cy.on("mouseover", "edge", (evt) => {
-      const edge = evt.target;
-      const edgeId = edge.data("id") as string;
-      showTooltip(EDGE_TOOLTIPS[edgeId] || "");
+      // Edge hover
+      cy.on("mouseover", "edge", (evt) => {
+        const edge = evt.target;
+        const edgeId = edge.data("id") as string;
+        showTooltip(EDGE_TOOLTIPS[edgeId] || "");
 
-      cy.elements().addClass("dimmed");
-      edge.removeClass("dimmed").addClass("edge-focus");
-      edge.source().removeClass("dimmed").addClass("highlighted");
-      edge.target().removeClass("dimmed").addClass("highlighted");
-    });
+        cy.elements().addClass("dimmed");
+        edge.removeClass("dimmed").addClass("edge-focus");
+        edge.source().removeClass("dimmed").addClass("highlighted");
+        edge.target().removeClass("dimmed").addClass("highlighted");
+      });
 
-    cy.on("mouseout", "edge", () => {
-      hideTooltip();
-      cy.elements().removeClass("dimmed highlighted edge-focus");
-    });
-  }, []);
+      cy.on("mouseout", "edge", () => {
+        hideTooltip();
+        cy.elements().removeClass("dimmed highlighted edge-focus");
+      });
+    },
+    [hideTooltip, showTooltip],
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -404,7 +587,9 @@ export const SchemaNetworkGraph = memo(function SchemaNetworkGraph() {
                 className="w-2.5 h-2.5 rounded-full border-[1.5px]"
                 style={{ backgroundColor: e.bg, borderColor: e.border }}
               />
-              <span className="text-[11px] text-muted-foreground">{e.label}</span>
+              <span className="text-[11px] text-muted-foreground">
+                {e.label}
+              </span>
             </div>
           ))}
         </div>

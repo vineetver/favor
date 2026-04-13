@@ -521,8 +521,8 @@ async function extractEntitiesFromCohort(
           body: { queries: names },
         });
 
-        const entities: EntityRef[] = (resolveResp.data?.results ?? [])
-          .flatMap((r) =>
+        const entities: EntityRef[] = (resolveResp.data?.results ?? []).flatMap(
+          (r) =>
             r.status.toLowerCase() === "matched" && r.entity
               ? [
                   {
@@ -532,7 +532,7 @@ async function extractEntitiesFromCohort(
                   },
                 ]
               : [],
-          );
+        );
 
         if (entities.length > 0) return entities;
       } catch {}

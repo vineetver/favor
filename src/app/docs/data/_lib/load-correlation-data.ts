@@ -7,8 +7,8 @@
 
 import {
   CATEGORY_DISPLAY,
-  prettifyAnnotation,
   type CategoryDisplay,
+  prettifyAnnotation,
 } from "./correlation-display";
 
 /* ------------------------------------------------------------------ */
@@ -70,9 +70,9 @@ interface MetaEntry {
 /* ------------------------------------------------------------------ */
 
 const EXCLUDED_CATEGORIES = new Set([
-  "AlleleFrequency",   // population frequencies, not functional
-  "FilteringAF",       // gnomAD filtering AFs
-  "GnomadFunctional",  // gnomAD's bundled scores (pangolin, revel, spliceai)
+  "AlleleFrequency", // population frequencies, not functional
+  "FilteringAF", // gnomAD filtering AFs
+  "GnomadFunctional", // gnomAD's bundled scores (pangolin, revel, spliceai)
 ]);
 
 const FALLBACK_COLOR = "#71717a"; // zinc-500
@@ -101,9 +101,14 @@ export async function loadCorrelationData(): Promise<CorrelationData> {
     import("@duckdb/duckdb-wasm"),
   ]);
 
-  if (!orderRes.ok) throw new Error(`Failed to fetch annotation_order.json: ${orderRes.status}`);
-  if (!metaRes.ok) throw new Error(`Failed to fetch annotation_meta.json: ${metaRes.status}`);
-  if (!parquetRes.ok) throw new Error(`Failed to fetch parquet: ${parquetRes.status}`);
+  if (!orderRes.ok)
+    throw new Error(
+      `Failed to fetch annotation_order.json: ${orderRes.status}`,
+    );
+  if (!metaRes.ok)
+    throw new Error(`Failed to fetch annotation_meta.json: ${metaRes.status}`);
+  if (!parquetRes.ok)
+    throw new Error(`Failed to fetch parquet: ${parquetRes.status}`);
 
   const [orderJSON, metaJSON, parquetBuf] = await Promise.all([
     orderRes.json() as Promise<OrderJSON>,
@@ -178,7 +183,8 @@ export async function loadCorrelationData(): Promise<CorrelationData> {
   const yCol = result.getChild("annotation_y");
   const rCol = result.getChild("pearson_r");
 
-  if (!xCol || !yCol || !rCol) throw new Error("Parquet missing expected columns");
+  if (!xCol || !yCol || !rCol)
+    throw new Error("Parquet missing expected columns");
 
   for (let row = 0; row < result.numRows; row++) {
     const x = xCol.get(row) as string;

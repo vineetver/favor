@@ -47,9 +47,7 @@ function formatDate(iso: string): string {
   });
 }
 
-function groupByArea(
-  changes: ChangeEntry[],
-): Map<ChangeArea, ChangeEntry[]> {
+function groupByArea(changes: ChangeEntry[]): Map<ChangeArea, ChangeEntry[]> {
   const groups = new Map<ChangeArea, ChangeEntry[]>();
   for (const change of changes) {
     const bucket = groups.get(change.area) ?? [];

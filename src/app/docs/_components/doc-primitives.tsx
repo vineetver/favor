@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { cn } from "@infra/utils";
-import { Info, AlertTriangle, Lightbulb } from "lucide-react";
+import { AlertTriangle, Info, Lightbulb } from "lucide-react";
+import type { ReactNode } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  Prose                                                                      */
@@ -50,9 +50,7 @@ const calloutVariants = {
   warning: {
     border: "border-l-amber-500",
     bg: "bg-amber-500/5",
-    icon: (
-      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-    ),
+    icon: <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />,
   },
   tip: {
     border: "border-l-emerald-500",
@@ -72,13 +70,7 @@ export function Callout({
 }) {
   const v = calloutVariants[variant];
   return (
-    <div
-      className={cn(
-        "rounded-lg border-l-4 px-4 py-3 my-4",
-        v.border,
-        v.bg,
-      )}
-    >
+    <div className={cn("rounded-lg border-l-4 px-4 py-3 my-4", v.border, v.bg)}>
       <div className="flex gap-2.5">
         {v.icon}
         <div className="min-w-0">
