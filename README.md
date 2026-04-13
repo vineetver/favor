@@ -22,8 +22,8 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org), an AI-first whole-geno
 
 ### Scale and visualization
 - **Genome-wide browsing at 8.9B-variant scale** — Gosling.js + HiGlass tile servers stream zoomable tracks across the entire human genome with no client-side aggregation
-- **In-browser SQL over parquet** — DuckDB WASM runs queries on cohort files client-side, no server round-trips for millions of rows
-- **Server-side tables** — TanStack Table wired to backend pagination, sorting, filtering, and column selection for variant and cohort datasets
+- **In-browser SQL over parquet** — DuckDB WASM runs queries on variant list files client-side, no server round-trips for millions of rows
+- **Server-side tables** — TanStack Table wired to backend pagination, sorting, filtering, and column selection for variant and variant list datasets
 - **Interactive knowledge graphs** — Cytoscape and XYFlow render variant-gene-disease-drug relationships as navigable graphs
 - **Statistical and locus plots** — Manhattan, QQ, tissue heatmaps, allele-frequency distributions via Plotly and Recharts
 
@@ -35,13 +35,13 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org), an AI-first whole-geno
 - **Regulatory genomics** — cCRE, QTL, enhancer-gene links, chromatin states, loops, perturbation data (CRISPR / Perturb-seq / MAVE)
 
 ### AI and agent workflows
-- **AI agent workspace** — graph-aware multi-turn LLM agent with tool use, cohort context, and persistent memory
+- **AI agent workspace** — graph-aware multi-turn LLM agent with tool use, variant list context, and persistent memory
 - **AI entity summaries** — on-demand LLM summaries for variants, genes, and diseases, streamed via SSE
 - **Multi-model support** — OpenAI and DeepSeek, switchable per session
 - **Async job orchestration** — AlphaGenome variant prediction with submit-and-poll and progress tracking
 
 ### Platform
-- **Batch annotation** — authenticated cohort upload, parquet validation, column derivation, analytics runs, tissue-specific enrichment packs
+- **Batch annotation** — authenticated variant list upload, parquet validation, column derivation, analytics runs, tissue-specific enrichment packs
 - **Authenticated workflows** — cookie-based auth, quota display, personal API keys, authenticated SSE proxy for streaming
 - **Shareable URL state** — deep links that round-trip for genome browser coordinates, search, and agent sessions
 - **Type-safe API layer** — feature-isolated clients, responses parsed at the boundary into branded types
