@@ -28,7 +28,7 @@ Examples of unacceptable behavior:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team at [vineetxverma@gmail.com](mailto:vineetxverma@gmail.com).
+reported to the project team at [favor@genohub.org](mailto:favor@genohub.org).
 All complaints will be reviewed and investigated.
 
 ## Attribution
