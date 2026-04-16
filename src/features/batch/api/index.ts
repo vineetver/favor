@@ -671,28 +671,25 @@ export interface CohortShare {
   created_at: string;
   expires_at: string | null;
   revoked_at: string | null;
-  scope: string;
   last_used_at: string | null;
   token_prefix: string;
-  created_by_user_id?: string;
+  label?: string | null;
 }
 
 export interface CreateShareRequest {
   /** 1..=90; backend enforces max 90d. Omit for backend default. */
   expires_in_days?: number;
+  /** Free-form label shown in the owner's share list. */
+  label?: string;
 }
 
 export interface CreateShareResponse {
   share_id: string;
   /** Raw token — `favor_share_<64 hex>`. Returned exactly once, never retrievable. */
   token: string;
-  cohort_id: string;
+  token_prefix: string;
   expires_at: string;
-  scope: string;
-}
-
-export interface ListSharesResponse {
-  shares: CohortShare[];
+  label?: string | null;
 }
 
 /**
@@ -717,17 +714,17 @@ export async function createCohortShare(
 }
 
 /**
- * List active and historical shares for a cohort. No raw tokens — the backend
- * returns only `token_prefix` for display.
+ * List active and historical shares for a cohort. Backend returns a bare
+ * array (not wrapped). No raw tokens — only `token_prefix` for display.
  */
 export async function listCohortShares(
   cohortId: string,
-): Promise<ListSharesResponse> {
+): Promise<CohortShare[]> {
   return fetch(
     `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/shares`,
     withAuth(),
   ).then((res) =>
-    handleResponse<ListSharesResponse>(res, `/cohorts/${cohortId}/shares`),
+    handleResponse<CohortShare[]>(res, `/cohorts/${cohortId}/shares`),
   );
 }
 

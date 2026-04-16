@@ -155,8 +155,8 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
         body: "This link is malformed or the token is unrecognized. Double-check the URL you were sent.",
       },
       SHARE_SCOPE: {
-        title: "Not allowed on this link",
-        body: "This share link doesn't grant access to the resource you're trying to view.",
+        title: "Link doesn't cover this page",
+        body: "This share link is valid but isn't scoped to this cohort. Double-check the URL the owner sent you, or ask them to generate a new link.",
       },
     };
     const { title, body } = copy[shareErrorCode];

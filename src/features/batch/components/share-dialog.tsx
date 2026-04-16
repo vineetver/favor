@@ -17,6 +17,7 @@ import {
   Check,
   Copy,
   Loader2,
+  RefreshCw,
   Share2,
   Trash2,
 } from "lucide-react";
@@ -30,6 +31,11 @@ import {
   listCohortShares,
   revokeCohortShare,
 } from "../api";
+import {
+  getShareToken,
+  removeShareToken,
+  saveShareToken,
+} from "../lib/share-token-storage";
 
 interface ShareDialogProps {
   cohortId: string;
@@ -43,13 +49,20 @@ function buildShareUrl(cohortId: string, token: string): string {
   return `${window.location.origin}/batch-annotation/jobs/${encodeURIComponent(cohortId)}/analytics?share=${token}`;
 }
 
-/** Row in the existing-shares list. Never receives the raw token — only the prefix. */
+/**
+ * Row in the existing-shares list. Gets the full token only for shares the
+ * owner minted on this browser (resolved via localStorage by share_id) —
+ * backend never re-emits it. Without the full token the row can only be
+ * revoked, not re-copied.
+ */
 function ShareRow({
   share,
+  cohortId,
   onRevoke,
   isRevoking,
 }: {
   share: CohortShare;
+  cohortId: string;
   onRevoke: (id: string) => void;
   isRevoking: boolean;
 }) {
@@ -66,14 +79,47 @@ function ShareRow({
         ? `Expires ${new Date(share.expires_at).toLocaleDateString()}`
         : "No expiry";
 
+  const storedToken = active ? getShareToken(share.share_id) : null;
+  const [rowCopied, setRowCopied] = useState(false);
+
+  const handleRowCopy = useCallback(async () => {
+    if (!storedToken) return;
+    try {
+      await navigator.clipboard.writeText(
+        buildShareUrl(cohortId, storedToken),
+      );
+      setRowCopied(true);
+      toast.success("Share link copied");
+      setTimeout(() => setRowCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  }, [storedToken, cohortId]);
+
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-mono text-foreground truncate">
           {share.token_prefix}…
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">{statusLabel}</p>
       </div>
+      {active && storedToken && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleRowCopy}
+          title="Copy share URL"
+        >
+          {rowCopied ? (
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
+          Copy
+        </Button>
+      )}
       {active && (
         <Button
           type="button"
@@ -111,16 +157,24 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
     queryKey: sharesKey,
     queryFn: () => listCohortShares(cohortId),
     enabled: open,
-    staleTime: 10_000,
+    // Always hit the server when the dialog opens — creating/revoking from
+    // other tabs should never stale-cache this list.
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const createMutation = useMutation({
     mutationFn: () =>
       createCohortShare(cohortId, { expires_in_days: expiresInDays }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
+      // Persist the raw token so the owner can re-copy the URL from the list
+      // after closing the dialog. Cleared on revoke and on logout.
+      saveShareToken(res.share_id, res.token);
       setCreated(res);
       setCopied(false);
-      queryClient.invalidateQueries({ queryKey: sharesKey });
+      // Explicit refetch (not just invalidate) so the list reflects the
+      // new share before the user sees the URL panel.
+      await queryClient.refetchQueries({ queryKey: sharesKey });
     },
     onError: (err) => {
       const message =
@@ -135,7 +189,8 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
 
   const revokeMutation = useMutation({
     mutationFn: (shareId: string) => revokeCohortShare(cohortId, shareId),
-    onSuccess: () => {
+    onSuccess: (_data, shareId) => {
+      removeShareToken(shareId);
       toast.success("Share link revoked");
       queryClient.invalidateQueries({ queryKey: sharesKey });
     },
@@ -170,7 +225,28 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
     }
   }, []);
 
-  const shares = listQuery.data?.shares ?? [];
+  const serverShares = listQuery.data ?? [];
+  // Pin the just-created share to the top if the backend list hasn't surfaced
+  // it yet (read-after-write lag). Lets the user revoke immediately instead
+  // of being stuck on "No share links yet."
+  const shares = useMemo<CohortShare[]>(() => {
+    if (!created) return serverShares;
+    if (serverShares.some((s) => s.share_id === created.share_id)) {
+      return serverShares;
+    }
+    const pending: CohortShare = {
+      share_id: created.share_id,
+      cohort_id: cohortId,
+      created_at: new Date().toISOString(),
+      expires_at: created.expires_at,
+      revoked_at: null,
+      last_used_at: null,
+      token_prefix: created.token_prefix,
+      label: created.label ?? null,
+    };
+    return [pending, ...serverShares];
+  }, [created, serverShares, cohortId]);
+
   const activeShares = shares.filter(
     (s) =>
       !s.revoked_at &&
@@ -195,10 +271,49 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {created ? (
-          <div className="space-y-3">
-            <div className="rounded-md border border-border bg-muted/30 p-3">
-              <Label className="text-xs font-medium">Share URL</Label>
+        <div className="space-y-4">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Label htmlFor="expires-in-days" className="text-xs">
+                Expires in (days, max {MAX_DAYS})
+              </Label>
+              <Input
+                id="expires-in-days"
+                type="number"
+                min={1}
+                max={MAX_DAYS}
+                value={expiresInDays}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) {
+                    setExpiresInDays(
+                      Math.max(1, Math.min(MAX_DAYS, Math.floor(n))),
+                    );
+                  }
+                }}
+                className="mt-1.5"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Share2 className="w-4 h-4" />
+              )}
+              Create link
+            </Button>
+          </div>
+
+          {/* Raw token appears inline once, alongside the list. Keeping the
+              list visible lets the user confirm the new row landed in it and
+              revoke without closing/reopening the dialog. */}
+          {created && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <Label className="text-xs font-medium">New share URL</Label>
               <div className="mt-1.5 flex items-center gap-2">
                 <Input
                   readOnly
@@ -223,89 +338,70 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
               <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <span>
-                  This is the only time you&apos;ll see the full URL. Copy it
-                  now — you can revoke it later from this dialog.
+                  Copy it now — this is the only time the full URL is shown.
+                  You can revoke it below.
                 </span>
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCreated(null)}
-              className="w-full"
-            >
-              Done
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label htmlFor="expires-in-days" className="text-xs">
-                  Expires in (days, max {MAX_DAYS})
-                </Label>
-                <Input
-                  id="expires-in-days"
-                  type="number"
-                  min={1}
-                  max={MAX_DAYS}
-                  value={expiresInDays}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (Number.isFinite(n)) {
-                      setExpiresInDays(
-                        Math.max(1, Math.min(MAX_DAYS, Math.floor(n))),
-                      );
-                    }
-                  }}
-                  className="mt-1.5"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={() => createMutation.mutate()}
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Share2 className="w-4 h-4" />
-                )}
-                Create link
-              </Button>
-            </div>
+          )}
 
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-muted-foreground">
                 Active share links{" "}
                 {activeShares.length > 0 && `(${activeShares.length})`}
               </p>
-              {listQuery.isLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : shares.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">
-                  No share links yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {shares.map((s) => (
-                    <ShareRow
-                      key={s.share_id}
-                      share={s}
-                      onRevoke={revokeMutation.mutate}
-                      isRevoking={
-                        revokeMutation.isPending &&
-                        revokeMutation.variables === s.share_id
-                      }
-                    />
-                  ))}
-                </div>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => listQuery.refetch()}
+                disabled={listQuery.isFetching}
+                className="h-6 px-2 text-xs text-muted-foreground"
+                title="Refresh list"
+              >
+                <RefreshCw
+                  className={`w-3 h-3 ${listQuery.isFetching ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </Button>
             </div>
+            {listQuery.isLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : listQuery.isError ? (
+              <p className="text-xs text-destructive py-2 flex items-start gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  Couldn&apos;t load existing share links
+                  {listQuery.error instanceof BatchApiError
+                    ? `: ${listQuery.error.message}`
+                    : "."}
+                </span>
+              </p>
+            ) : shares.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">
+                No share links yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {shares.map((s) => (
+                  <ShareRow
+                    key={s.share_id}
+                    share={s}
+                    cohortId={cohortId}
+                    onRevoke={revokeMutation.mutate}
+                    isRevoking={
+                      revokeMutation.isPending &&
+                      revokeMutation.variables === s.share_id
+                    }
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -98,6 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     import("@features/batch/hooks/use-duckdb")
       .then((m) => m.destroyDuckDB())
       .catch(() => {});
+    // Wipe locally cached raw share tokens — they grant read access to the
+    // previous user's cohorts and must not survive into the next session.
+    import("@features/batch/lib/share-token-storage")
+      .then((m) => m.clearAllShareTokens())
+      .catch(() => {});
     window.location.href = `${API_BASE}/auth/logout`;
   }, []);
 
