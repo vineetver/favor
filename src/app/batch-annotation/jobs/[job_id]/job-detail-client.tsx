@@ -330,7 +330,13 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
             onCancel={job.can_cancel ? handleCancel : undefined}
             onDownload={job.state === "COMPLETED" ? handleDownload : undefined}
             onDownloadManifest={
-              job.state === "COMPLETED" ? handleDownloadManifest : undefined
+              // Only expose the manifest button if the backend actually
+              // provided a manifest URL. The contract is optional — most
+              // cohorts don't have one, and a button that silently does
+              // nothing is worse than no button.
+              job.state === "COMPLETED" && job.output?.manifest_url
+                ? handleDownloadManifest
+                : undefined
             }
             onOpenAnalytics={
               job.state === "COMPLETED" ? handleOpenAnalytics : undefined

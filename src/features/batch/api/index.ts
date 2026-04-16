@@ -47,8 +47,53 @@ export class BatchApiError extends Error {
 }
 
 // ============================================================================
+// Share-link Error Codes
+// ============================================================================
+
+export type ShareErrorCode =
+  | "SHARE_REVOKED"
+  | "SHARE_EXPIRED"
+  | "SHARE_INVALID"
+  | "SHARE_SCOPE";
+
+/**
+ * Extract the share-link error code from a thrown error, if present.
+ * Backend returns `{ code: "share_revoked" | ... }` on 403 from the share
+ * middleware. Normalized to uppercase and narrowed to the known set.
+ */
+export function getShareErrorCode(err: unknown): ShareErrorCode | null {
+  if (!(err instanceof BatchApiError)) return null;
+  const details = err.details as
+    | { code?: string; error?: { code?: string } }
+    | undefined;
+  const raw = details?.code ?? details?.error?.code;
+  if (!raw || typeof raw !== "string") return null;
+  const code = raw.toUpperCase();
+  if (
+    code === "SHARE_REVOKED" ||
+    code === "SHARE_EXPIRED" ||
+    code === "SHARE_INVALID" ||
+    code === "SHARE_SCOPE"
+  ) {
+    return code;
+  }
+  return null;
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Build a RequestInit with cookie credentials and, optionally, the share
+ * token header. Use on any request that may be hit with a share token; the
+ * session cookie is still required (share token does not stand alone).
+ */
+function withAuth(init: RequestInit = {}, shareToken?: string): RequestInit {
+  const headers = new Headers(init.headers);
+  if (shareToken) headers.set("X-Share-Token", shareToken);
+  return { ...init, credentials: "include", headers };
+}
 
 function _getContentType(filename: string): string {
   const ext = filename.toLowerCase().split(".").pop();
@@ -192,10 +237,20 @@ export async function uploadFile(
     });
 
     const form = new FormData();
-    form.append("file", file);
+    // Sanitize multipart filename. The browser sets Content-Disposition
+    // `filename="..."` from File.name as-is; some upstream parsers choke on
+    // spaces and punctuation, producing cryptic "multipart/form-data parse
+    // error" 400s even though the body is well-formed. Original file bytes
+    // are unchanged — only the metadata label is replaced.
+    const safeName =
+      file.name.replace(/[^\w.\-]+/g, "_").replace(/^_+|_+$/g, "") || "upload";
+    form.append("file", file, safeName);
 
     xhr.open("POST", `${API_BASE}/cohorts/upload`);
     xhr.withCredentials = true;
+    // Do NOT call xhr.setRequestHeader("Content-Type", …). The browser sets
+    // `multipart/form-data; boundary=…` itself when you send a FormData body;
+    // setting it manually strips the boundary and breaks parsing.
     xhr.send(form);
   });
 }
@@ -246,6 +301,7 @@ export async function validateTypedCohort(
 export async function getCohortFiles(
   id: string,
   tenantId?: string,
+  shareToken?: string,
 ): Promise<CohortFilesResponse> {
   const params = new URLSearchParams();
   if (tenantId) params.set("tenant_id", tenantId);
@@ -253,9 +309,7 @@ export async function getCohortFiles(
   return withRetry(() =>
     fetch(
       `${API_BASE}/cohorts/${encodeURIComponent(id)}/files${qs ? `?${qs}` : ""}`,
-      {
-        credentials: "include",
-      },
+      withAuth({}, shareToken),
     ).then((res) =>
       handleResponse<CohortFilesResponse>(res, `/cohorts/${id}/files`),
     ),
@@ -373,14 +427,16 @@ export async function listCohorts(opts?: {
 export async function getCohort(
   id: string,
   includeUrls = false,
+  shareToken?: string,
 ): Promise<CohortDetail> {
   const params = new URLSearchParams();
   if (includeUrls) params.set("include_urls", "true");
   const qs = params.toString();
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}${qs ? `?${qs}` : ""}`, {
-      credentials: "include",
-    }).then((res) => handleResponse<CohortDetail>(res, `/cohorts/${id}`)),
+    fetch(
+      `${API_BASE}/cohorts/${id}${qs ? `?${qs}` : ""}`,
+      withAuth({}, shareToken),
+    ).then((res) => handleResponse<CohortDetail>(res, `/cohorts/${id}`)),
   );
 }
 
@@ -389,9 +445,10 @@ export async function getCohort(
  */
 export async function getCohortStatus(
   id: string,
+  shareToken?: string,
 ): Promise<CohortStatusResponse> {
   return withRetry(() =>
-    fetch(`${API_BASE}/cohorts/${id}/status`, { credentials: "include" }).then(
+    fetch(`${API_BASE}/cohorts/${id}/status`, withAuth({}, shareToken)).then(
       (res) =>
         handleResponse<CohortStatusResponse>(res, `/cohorts/${id}/status`),
     ),
@@ -602,4 +659,92 @@ export async function getCohortSampleClient(
       handleResponse<CohortRowsResponse>(res, `/cohorts/${id}/rows`),
     ),
   );
+}
+
+// ============================================================================
+// Cross-tenant Share Links
+// ============================================================================
+
+export interface CohortShare {
+  share_id: string;
+  cohort_id: string;
+  created_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  scope: string;
+  last_used_at: string | null;
+  token_prefix: string;
+  created_by_user_id?: string;
+}
+
+export interface CreateShareRequest {
+  /** 1..=90; backend enforces max 90d. Omit for backend default. */
+  expires_in_days?: number;
+}
+
+export interface CreateShareResponse {
+  share_id: string;
+  /** Raw token — `favor_share_<64 hex>`. Returned exactly once, never retrievable. */
+  token: string;
+  cohort_id: string;
+  expires_at: string;
+  scope: string;
+}
+
+export interface ListSharesResponse {
+  shares: CohortShare[];
+}
+
+/**
+ * Create a new share link for a cohort. Owner-only; requires cohort to be
+ * in a terminal state (backend returns 409 otherwise). Raw token appears
+ * in the response exactly once — surface it immediately and do not persist.
+ */
+export async function createCohortShare(
+  cohortId: string,
+  request: CreateShareRequest = {},
+): Promise<CreateShareResponse> {
+  return fetch(
+    `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/shares`,
+    withAuth({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }),
+  ).then((res) =>
+    handleResponse<CreateShareResponse>(res, `/cohorts/${cohortId}/shares`),
+  );
+}
+
+/**
+ * List active and historical shares for a cohort. No raw tokens — the backend
+ * returns only `token_prefix` for display.
+ */
+export async function listCohortShares(
+  cohortId: string,
+): Promise<ListSharesResponse> {
+  return fetch(
+    `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/shares`,
+    withAuth(),
+  ).then((res) =>
+    handleResponse<ListSharesResponse>(res, `/cohorts/${cohortId}/shares`),
+  );
+}
+
+/**
+ * Revoke a share link (soft-delete). Subsequent share-token requests for
+ * this share_id will return 403 SHARE_REVOKED.
+ */
+export async function revokeCohortShare(
+  cohortId: string,
+  shareId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/shares/${encodeURIComponent(shareId)}`,
+    withAuth({ method: "DELETE" }),
+  );
+  // DELETE is idempotent — 204 or 404 are both acceptable terminal states.
+  if (!res.ok && res.status !== 404) {
+    await handleResponse(res, `/cohorts/${cohortId}/shares/${shareId}`);
+  }
 }

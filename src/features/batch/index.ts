@@ -38,5 +38,6 @@ export * from "./constants";
 export * from "./hooks";
 // Lib
 export * from "./lib/format";
+export { ShareTokenProvider, useShareToken } from "./lib/share-token-context";
 // Types
 export * from "./types";

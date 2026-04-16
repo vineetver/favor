@@ -84,14 +84,17 @@ export function formatTime(dateString: string): string {
   });
 }
 
-/** Elapsed duration between two ISO timestamps: "2m 30s", "1h 5m" */
+/** Elapsed duration between two ISO timestamps: "2m 30s", "1h 5m". Returns "—" for invalid inputs. */
 export function formatDuration(
   startedAt: string,
   completedAt?: string,
 ): string {
+  if (!startedAt) return "—";
   const start = new Date(startedAt).getTime();
+  if (!Number.isFinite(start)) return "—";
   const end = completedAt ? new Date(completedAt).getTime() : Date.now();
-  const seconds = Math.floor((end - start) / 1000);
+  if (!Number.isFinite(end)) return "—";
+  const seconds = Math.max(0, Math.floor((end - start) / 1000));
 
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);

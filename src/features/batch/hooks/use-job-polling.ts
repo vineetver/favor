@@ -9,6 +9,12 @@ import { cohortDetailToJob } from "../types";
 interface UseJobPollingOptions {
   jobId: string | null;
   enabled?: boolean;
+  /**
+   * Share-link token for cross-tenant read access. When set, forwarded as
+   * `X-Share-Token` on the status + detail calls. Query keys are namespaced
+   * by token so an owner and shared viewer never collide in the cache.
+   */
+  shareToken?: string | null;
   onComplete?: (job: Job) => void;
   onFailed?: (job: Job) => void;
 }
@@ -37,15 +43,19 @@ interface UseJobPollingResult {
 export function useJobPolling({
   jobId,
   enabled = true,
+  shareToken,
   onComplete,
   onFailed,
 }: UseJobPollingOptions): UseJobPollingResult {
   const queryClient = useQueryClient();
+  const token = shareToken ?? undefined;
+  // Namespace cache keys so an owner and a share-scope viewer never share rows.
+  const scope = token ? "shared" : "owner";
 
   // Phase 1: Lightweight status polling
   const statusQuery = useQuery({
-    queryKey: ["cohort-status", jobId],
-    queryFn: () => getCohortStatus(jobId!),
+    queryKey: ["cohort-status", jobId, scope],
+    queryFn: () => getCohortStatus(jobId!, token),
     enabled: enabled && !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -61,10 +71,11 @@ export function useJobPolling({
 
   // Phase 2: Full detail — fetched once when terminal (for output URLs, timing, etc.)
   const detailQuery = useQuery({
-    queryKey: ["cohort-detail", jobId],
-    queryFn: () => getCohort(jobId!, true),
+    queryKey: ["cohort-detail", jobId, scope],
+    queryFn: () => getCohort(jobId!, true, token),
     enabled: enabled && !!jobId && isTerminal,
-    staleTime: 5 * 60 * 1000, // 5 min — presigned URLs are valid for 1hr
+    // Share-token viewers get short-TTL presigned URLs — refetch sooner.
+    staleTime: token ? 60 * 1000 : 5 * 60 * 1000,
     gcTime: 0,
   });
 
@@ -116,9 +127,13 @@ export function useJobPolling({
   }, [job, detail, onComplete, onFailed, queryClient]);
 
   const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["cohort-status", jobId] });
-    queryClient.invalidateQueries({ queryKey: ["cohort-detail", jobId] });
-  }, [queryClient, jobId]);
+    queryClient.invalidateQueries({
+      queryKey: ["cohort-status", jobId, scope],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["cohort-detail", jobId, scope],
+    });
+  }, [queryClient, jobId, scope]);
 
   return {
     job: job ?? null,

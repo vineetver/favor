@@ -1,4 +1,6 @@
+import { ShareTokenProvider } from "@features/batch";
 import { RequireAuth } from "@shared/components/require-auth";
+import { Suspense } from "react";
 import { AnalyticsClient } from "./analytics-client";
 
 interface AnalyticsPageProps {
@@ -9,7 +11,12 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
   const { job_id } = await params;
   return (
     <RequireAuth>
-      <AnalyticsClient jobId={job_id} />
+      {/* ShareTokenProvider uses useSearchParams, which needs a Suspense boundary. */}
+      <Suspense fallback={null}>
+        <ShareTokenProvider>
+          <AnalyticsClient jobId={job_id} />
+        </ShareTokenProvider>
+      </Suspense>
     </RequireAuth>
   );
 }

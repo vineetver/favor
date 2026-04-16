@@ -228,8 +228,16 @@ export function RunningJobCard({
     switch (progress.stage) {
       case "Resolving":
         return `${formatNumber(progress.rows_resolved)} rows`;
-      case "Processing":
-        return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants`;
+      case "Processing": {
+        // Backend's `fetched` counts rows processed (including duplicates),
+        // not distinct variants — so the right denominator is total_rows.
+        // Fall back to fetched-only if total_rows is unknown.
+        const total = progress.total_rows ?? 0;
+        if (total > 0) {
+          return `${formatNumber(progress.fetched)} / ${formatNumber(total)} rows`;
+        }
+        return `${formatNumber(progress.fetched)} rows processed`;
+      }
       case "Enriching":
         return progress.current_pack
           ? `Enriching: ${progress.current_pack}`

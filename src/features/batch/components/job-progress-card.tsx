@@ -161,8 +161,14 @@ export function JobProgressCard({
     switch (progress.stage) {
       case "Resolving":
         return `${formatNumber(progress.rows_resolved)} rows resolved`;
-      case "Processing":
-        return `${formatNumber(progress.fetched)} / ${formatNumber(progress.unique_vids ?? 0)} variants processed`;
+      case "Processing": {
+        // Backend's `fetched` is a row counter (duplicates included), so
+        // pair it with total_rows, not unique_vids.
+        const total = progress.total_rows ?? 0;
+        return total > 0
+          ? `${formatNumber(progress.fetched)} / ${formatNumber(total)} rows processed`
+          : `${formatNumber(progress.fetched)} rows processed`;
+      }
       case "Enriching":
         return `Enriching${progress.current_pack ? `: ${progress.current_pack}` : ""} (${progress.packs_completed ?? 0}/${progress.packs_total ?? 0})`;
       default:

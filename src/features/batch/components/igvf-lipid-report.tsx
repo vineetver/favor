@@ -1913,7 +1913,11 @@ type IgvfLoadState =
   | { type: "error"; message: string }
   | { type: "ready"; report: IgvfReportData };
 
-function useIgvfData(cohortId: string, dataUrl: string) {
+function useIgvfData(
+  cohortId: string,
+  dataUrl: string,
+  shareToken?: string | null,
+) {
   const {
     query,
     loadParquet,
@@ -1931,7 +1935,11 @@ function useIgvfData(cohortId: string, dataUrl: string) {
       await loadParquet(dataUrl, "variants", `cohort:${cohortId}:data`);
 
       setState({ type: "loading", stage: "fetching_urls" });
-      const files = await getCohortFiles(cohortId);
+      const files = await getCohortFiles(
+        cohortId,
+        undefined,
+        shareToken ?? undefined,
+      );
 
       setState({ type: "loading", stage: "loading_enrichment" });
       const loaded: Array<{ label: string; rows: number }> = [];
@@ -1973,7 +1981,7 @@ function useIgvfData(cohortId: string, dataUrl: string) {
         message: err instanceof Error ? err.message : "Failed",
       });
     }
-  }, [isReady, cohortId, dataUrl, loadParquet, query]);
+  }, [isReady, cohortId, dataUrl, shareToken, loadParquet, query]);
 
   useEffect(() => {
     if (isReady && !loadStartedRef.current) {
@@ -2000,15 +2008,18 @@ function useIgvfData(cohortId: string, dataUrl: string) {
 export function IgvfLipidReport({
   cohortId,
   dataUrl,
+  shareToken,
   className,
 }: {
   cohortId: string;
   dataUrl: string;
+  shareToken?: string | null;
   className?: string;
 }) {
   const { report, isLoading, stage, error, retry, query } = useIgvfData(
     cohortId,
     dataUrl,
+    shareToken,
   );
   const [selectedDataset, setSelectedDataset] = useState<DatasetId | null>(
     null,

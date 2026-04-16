@@ -97,9 +97,19 @@ export function Footer() {
             &copy; 2023–{currentYear} Harvard T.H. Chan School of Public Health.
             All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Lin Lab, Department of Biostatistics
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-xs text-muted-foreground">
+              Lin Lab, Department of Biostatistics
+            </p>
+            <a
+              href="https://github.com/vineetver/favor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </div>
     </footer>
