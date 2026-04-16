@@ -6,8 +6,6 @@ import { functionalClassColumns } from "@features/variant/config/hg38/columns/fu
 import { integrativeColumns } from "@features/variant/config/hg38/columns/integrative";
 import { proteinFunctionColumns } from "@features/variant/config/hg38/columns/protein-function";
 import { apcColumns } from "@features/variant/config/hg38/columns/shared";
-import { somaticMutationColumns } from "@features/variant/config/hg38/columns/somatic-mutation";
-import { spliceAiColumns } from "@features/variant/config/hg38/columns/splice-ai";
 import { createColumns } from "@infra/table/column-builder";
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
@@ -19,6 +17,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip as ReTooltip,
   XAxis,
@@ -167,6 +166,63 @@ function RankedList({ data }: { data: RankedItem[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * Allele-frequency rarity spectrum — bar chart across AF bins.
+ * First-pass orientation before diving into functional cross-tabs.
+ */
+function AfSpectrumChart({
+  data,
+  total,
+}: {
+  data: ChartSlice[];
+  total: number;
+}) {
+  if (data.length === 0 || total === 0) return null;
+  const chartData = data.map((d) => ({
+    bin: d.name,
+    count: d.value,
+    pct: (d.value / total) * 100,
+    fill: d.fill,
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart
+        data={chartData}
+        margin={{ left: 10, right: 10, top: 8, bottom: 24 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke={T.grid} vertical={false} />
+        <XAxis
+          dataKey="bin"
+          tick={{ fontSize: 11, fill: T.fg }}
+          axisLine={{ stroke: T.axis }}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: T.muted }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v: number) => v.toLocaleString()}
+        />
+        <ReTooltip
+          contentStyle={TOOLTIP_STYLE}
+          formatter={(v: number | undefined, _name, item) => {
+            const pct = (item?.payload as { pct?: number })?.pct ?? 0;
+            return [
+              `${(v ?? 0).toLocaleString()} (${pct.toFixed(1)}%)`,
+              "variants",
+            ];
+          }}
+        />
+        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+          {chartData.map((d) => (
+            <Cell key={d.bin} fill={d.fill} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -515,35 +571,24 @@ const geneColumn = col.accessor("gene", {
   },
 });
 
+/**
+ * 10 focused columns only — score + ID + gene + region context + clinical
+ * evidence + protein-impact + the most-cited integrative scores + AF.
+ * Adding more columns inflates the table without improving decisions.
+ */
 const prioritizedVariantColumns: ColumnDef<PrioritizedVariant>[] = [
   scoreColumn,
-  basicColumns[0] as ColumnDef<PrioritizedVariant>,
-  basicColumns[1] as ColumnDef<PrioritizedVariant>,
+  basicColumns[0] as ColumnDef<PrioritizedVariant>, // variant_vcf
+  basicColumns[1] as ColumnDef<PrioritizedVariant>, // rsID
   geneColumn,
-  functionalClassColumns[1] as ColumnDef<PrioritizedVariant>,
-  functionalClassColumns[3] as ColumnDef<PrioritizedVariant>,
-  clinvarColumns[0] as ColumnDef<PrioritizedVariant>,
-  clinvarColumns[2] as ColumnDef<PrioritizedVariant>,
-  clinvarColumns[4] as ColumnDef<PrioritizedVariant>,
-  proteinFunctionColumns[1] as ColumnDef<PrioritizedVariant>,
-  proteinFunctionColumns[2] as ColumnDef<PrioritizedVariant>,
-  proteinFunctionColumns[3] as ColumnDef<PrioritizedVariant>,
-  basicColumns[4] as ColumnDef<PrioritizedVariant>,
-  basicColumns[2] as ColumnDef<PrioritizedVariant>,
-  basicColumns[7] as ColumnDef<PrioritizedVariant>,
-  basicColumns[6] as ColumnDef<PrioritizedVariant>,
-  basicColumns[5] as ColumnDef<PrioritizedVariant>,
-  functionalClassColumns[4] as ColumnDef<PrioritizedVariant>,
-  functionalClassColumns[5] as ColumnDef<PrioritizedVariant>,
-  functionalClassColumns[6] as ColumnDef<PrioritizedVariant>,
-  integrativeColumns[10] as ColumnDef<PrioritizedVariant>,
-  integrativeColumns[11] as ColumnDef<PrioritizedVariant>,
-  apcColumns.proteinFunction as ColumnDef<PrioritizedVariant>,
-  apcColumns.conservation as ColumnDef<PrioritizedVariant>,
-  apcColumns.epigeneticsActive as ColumnDef<PrioritizedVariant>,
-  spliceAiColumns[0] as ColumnDef<PrioritizedVariant>,
-  somaticMutationColumns[0] as ColumnDef<PrioritizedVariant>,
-  somaticMutationColumns[1] as ColumnDef<PrioritizedVariant>,
+  functionalClassColumns[1] as ColumnDef<PrioritizedVariant>, // genomic region category
+  functionalClassColumns[3] as ColumnDef<PrioritizedVariant>, // exonic category
+  clinvarColumns[0] as ColumnDef<PrioritizedVariant>, // clnsig
+  clinvarColumns[2] as ColumnDef<PrioritizedVariant>, // clndn (disease)
+  proteinFunctionColumns[1] as ColumnDef<PrioritizedVariant>, // AlphaMissense class (am_class) — index 0 is aPC protein fn
+  apcColumns.proteinFunction as ColumnDef<PrioritizedVariant>, // aPC protein fn
+  integrativeColumns[3] as ColumnDef<PrioritizedVariant>, // CADD PHRED
+  basicColumns[7] as ColumnDef<PrioritizedVariant>, // gnomAD Genome AF
 ];
 
 // ============================================================================
@@ -645,10 +690,10 @@ export function JobAnalyticsReport({
 
   return (
     <div
-      className={cn("max-w-5xl mx-auto space-y-10 print:max-w-none", className)}
+      className={cn("max-w-5xl mx-auto space-y-12 print:max-w-none", className)}
     >
       {/* ================================================================ */}
-      {/* Executive Summary */}
+      {/* Overview — cohort size, headline metrics, key findings            */}
       {/* ================================================================ */}
       <section>
         <div className="text-center mb-6">
@@ -660,7 +705,7 @@ export function JobAnalyticsReport({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <Metric
             label="ClinVar P/LP"
             value={s.clinvarPLP.count}
@@ -678,41 +723,25 @@ export function JobAnalyticsReport({
             pct={s.highImpact.pct}
           />
           <Metric
-            label="COSMIC hits"
-            value={s.cosmicHits}
-            accent={s.cosmicHits > 0 ? "amber" : undefined}
-          />
-          <Metric
-            label="Splice-disrupting"
-            value={s.spliceHigh}
-            accent={s.spliceHigh > 0 ? "amber" : undefined}
-          />
-          <Metric
             label="Regulatory active"
             value={s.regulatoryActive.count}
             pct={s.regulatoryActive.pct}
           />
-          {s.qcPassPct !== null && (
-            <Metric
-              label="QC PASS rate"
-              value={Math.round(s.qcPassPct)}
-              pct={s.qcPassPct}
-              accent={s.qcPassPct >= 95 ? "primary" : "amber"}
-            />
-          )}
         </div>
 
         <KeyTakeaways items={report.takeaways} />
       </section>
 
       {/* ================================================================ */}
-      {/* Variant Classification */}
+      {/* Variant Landscape — where variants sit + how rare they are        */}
       {/* ================================================================ */}
-      {(report.regionType.length > 0 || report.consequence.length > 0) && (
+      {(report.regionType.length > 0 ||
+        report.consequence.length > 0 ||
+        report.afSpectrum.length > 0) && (
         <section>
           <SectionHeading
-            title="Variant Classification"
-            subtitle="Genomic region and exonic consequence breakdown"
+            title="Variant Landscape"
+            subtitle="Genomic context and allele-frequency distribution — orients the rest of the report."
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {report.regionType.length > 0 && (
@@ -738,71 +767,95 @@ export function JobAnalyticsReport({
               </div>
             )}
           </div>
+          {report.afSpectrum.length > 0 && (
+            <div className="mt-10">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                Allele-Frequency Spectrum
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Rarity distribution across the cohort (max AF over gnomAD exome
+                / genome / BRAVO).
+              </p>
+              <AfSpectrumChart
+                data={report.afSpectrum}
+                total={report.totalVariants}
+              />
+            </div>
+          )}
         </section>
       )}
 
       {/* ================================================================ */}
-      {/* Functional Analysis */}
+      {/* Functional Constraint — purifying selection + regulatory signal   */}
       {/* ================================================================ */}
-      <section className="space-y-10">
-        <SectionHeading
-          title="Functional Analysis"
-          subtitle="Cross-tabulations and score distributions revealing biological constraint and regulatory enrichment"
-        />
+      {(report.afByFunction.length > 0 ||
+        report.scoresByRegulatory.length > 0) && (
+        <section className="space-y-10">
+          <SectionHeading
+            title="Functional Constraint"
+            subtitle="How rare-variant enrichment and annotation scores vary across functional and regulatory contexts."
+          />
 
-        {report.afByFunction.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-foreground mb-1">
-              Allele Frequency by Functional Category
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Normalized AF composition within each functional class —
-              enrichment of rare variants signals purifying selection
-            </p>
-            <StackedAfChart data={report.afByFunction} />
-          </div>
-        )}
-
-        {report.scoresByRegulatory.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-foreground mb-1">
-              Score Distributions by Regulatory Context
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Variants in regulatory regions (CAGE, GeneHancer) vs.
-              non-regulatory — higher scores indicate functional constraint
-            </p>
-            <FacetedBoxPlots panels={report.scoresByRegulatory} />
-          </div>
-        )}
-
-        {(report.topGenes.length > 0 ||
-          report.geneHancerTargets.length > 0) && (
-          <div>
-            <h3 className="text-sm font-medium text-foreground mb-4">
-              Gene Variant Distribution
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {report.topGenes.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-3">
-                    Top Genes by Variant Count
-                  </h4>
-                  <RankedList data={report.topGenes} />
-                </div>
-              )}
-              {report.geneHancerTargets.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-3">
-                    GeneHancer Regulatory Targets
-                  </h4>
-                  <RankedList data={report.geneHancerTargets} />
-                </div>
-              )}
+          {report.afByFunction.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-foreground mb-1">
+                Rare-variant enrichment by functional category
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Within each category, proportion of variants falling into each
+                AF bin. A tall rare/ultra-rare stack on pLoF and Missense is the
+                hallmark of purifying selection.
+              </p>
+              <StackedAfChart data={report.afByFunction} />
             </div>
+          )}
+
+          {report.scoresByRegulatory.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-foreground mb-1">
+                Annotation scores by regulatory context
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Score distributions stratified by regulatory overlap (CAGE
+                promoter / enhancer, GeneHancer, none). Higher boxes in
+                regulatory contexts suggest the score picks up functional signal
+                beyond coding sequences.
+              </p>
+              <FacetedBoxPlots panels={report.scoresByRegulatory} />
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* Gene Burden — which genes carry the most variants                 */}
+      {/* ================================================================ */}
+      {(report.topGenes.length > 0 || report.geneHancerTargets.length > 0) && (
+        <section>
+          <SectionHeading
+            title="Gene Burden"
+            subtitle="Top genes by variant count and GeneHancer regulatory targeting."
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {report.topGenes.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  Top Genes by Variant Count
+                </h3>
+                <RankedList data={report.topGenes} />
+              </div>
+            )}
+            {report.geneHancerTargets.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  GeneHancer Regulatory Targets
+                </h3>
+                <RankedList data={report.geneHancerTargets} />
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* ================================================================ */}
       {/* Clinical Evidence */}

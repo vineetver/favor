@@ -531,18 +531,16 @@ const SQL = {
       AND lower(variants.genecode.consequence) LIKE '%nonsynonymous%'
   `,
 
+  /**
+   * Selects the FULL variant struct + priority score so table columns that
+   * accessor-dive into nested fields (`row.dbsnp?.rsid`, `row.clinvar?.clnsig`,
+   * `row.genecode?.genes`, etc.) have the data they need. An earlier version
+   * of this query selected flat aliases only and broke every nested-accessor
+   * column in the priority table.
+   */
   prioritizedVariants: `
     SELECT
-      variants.chromosome,
-      variants.position,
-      variants.variant_vcf,
-      variants.genecode.consequence,
-      variants.clinvar.clnsig[1] as clnsig,
-      variants.clinvar.clndn[1] as clndn,
-      variants.cosmic.gene as cosmic_gene,
-      variants.cosmic.sample_count as cosmic_count,
-      variants.alphamissense.max_pathogenicity as am_score,
-      variants.main.cadd.phred as cadd,
+      variants.*,
       (
         CASE WHEN len(list_filter(variants.clinvar.clnsig, x -> x IS NOT NULL AND x != '')) > 0 THEN 1000 ELSE 0 END +
         CASE WHEN variants.cosmic.sample_count > 0 THEN 200 ELSE 0 END +
