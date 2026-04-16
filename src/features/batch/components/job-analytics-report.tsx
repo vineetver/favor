@@ -693,18 +693,9 @@ export function JobAnalyticsReport({
       className={cn("max-w-5xl mx-auto space-y-12 print:max-w-none", className)}
     >
       {/* ================================================================ */}
-      {/* Overview — cohort size, headline metrics, key findings            */}
+      {/* Overview — headline metrics, key findings                         */}
       {/* ================================================================ */}
       <section>
-        <div className="text-center mb-6">
-          <div className="text-4xl font-bold text-foreground tabular-nums">
-            {report.totalVariants.toLocaleString()}
-          </div>
-          <div className="text-sm text-muted-foreground mt-1">
-            variants analyzed
-          </div>
-        </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <Metric
             label="ClinVar P/LP"
