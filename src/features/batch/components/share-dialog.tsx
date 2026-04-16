@@ -85,9 +85,7 @@ function ShareRow({
   const handleRowCopy = useCallback(async () => {
     if (!storedToken) return;
     try {
-      await navigator.clipboard.writeText(
-        buildShareUrl(cohortId, storedToken),
-      );
+      await navigator.clipboard.writeText(buildShareUrl(cohortId, storedToken));
       setRowCopied(true);
       toast.success("Share link copied");
       setTimeout(() => setRowCopied(false), 2000);
@@ -338,8 +336,8 @@ export function ShareDialog({ cohortId }: ShareDialogProps) {
               <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <span>
-                  Copy it now — this is the only time the full URL is shown.
-                  You can revoke it below.
+                  Copy it now — this is the only time the full URL is shown. You
+                  can revoke it below.
                 </span>
               </p>
             </div>
