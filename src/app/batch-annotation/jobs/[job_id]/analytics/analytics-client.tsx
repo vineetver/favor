@@ -18,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
+import { useAuth } from "@shared/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -29,9 +30,11 @@ import {
   FlaskConical,
   Link2Off,
   Loader2,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 /**
  * Helper to get output from completed jobs
@@ -85,11 +88,17 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("report");
   const shareToken = useShareToken();
   const isSharedView = !!shareToken;
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+  // Gate the cohort queries on auth resolution. If we let them fire while
+  // unauthenticated they'll 401 and the global handler hard-redirects to
+  // login — bypassing the signup CTA we want to show share-link visitors.
+  const dataEnabled = !authLoading && isAuthenticated;
 
   // Poll for job status to get output URL
   const { job, isLoading, error } = useJobPolling({
     jobId,
     shareToken,
+    enabled: dataEnabled,
   });
 
   // Fetch cohort detail with fresh presigned URLs (include_urls=true).
@@ -102,9 +111,16 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
       shareToken ? "shared" : "owner",
     ],
     queryFn: () => getCohort(jobId, true, shareToken ?? undefined),
-    enabled: job?.state === "COMPLETED",
+    enabled: dataEnabled && job?.state === "COMPLETED",
     staleTime: 0,
   });
+
+  const handleSignUp = useCallback(() => {
+    login(window.location.href, { signup: true });
+  }, [login]);
+  const handleSignIn = useCallback(() => {
+    login(window.location.href);
+  }, [login]);
 
   const shareErrorCode: ShareErrorCode | null = getShareErrorCode(error);
 
@@ -114,6 +130,70 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
 
   // Use fresh URL from cohort detail — NOT from polling cache which may have expired
   const freshDataUrl = cohortDetail?.output?.url;
+
+  // While auth resolves we hold off on rendering anything decisive — the
+  // unauth CTA below depends on knowing whether the user is signed in, and
+  // the data queries are gated on the same signal.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden text-foreground">
+        <div className="fixed inset-0 -z-10 pointer-events-none">
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
+        </div>
+        <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-4xl mx-auto">
+          <Card className="border border-border py-0 gap-0">
+            <CardContent className="flex flex-col items-center justify-center text-center py-16">
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Unauthenticated visitor on a shared link → invite them to create an
+  // account (or sign in) instead of letting the API 401 force a generic
+  // login redirect. The return_to round-trips through Auth0 so they land
+  // back on this exact share URL after authenticating.
+  if (!isAuthenticated && isSharedView) {
+    return (
+      <div className="min-h-screen relative overflow-hidden text-foreground">
+        <div className="fixed inset-0 -z-10 pointer-events-none">
+          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[150px] mix-blend-multiply opacity-60" />
+          <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-multiply opacity-60" />
+        </div>
+
+        <main className="relative z-10 pt-24 pb-32 px-6 sm:px-8 lg:px-12 max-w-md mx-auto">
+          <Card className="border border-border py-0 gap-0">
+            <CardContent className="flex flex-col items-center text-center py-12 px-8">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                <BarChart3 className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Sign in to view this report
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                Someone shared a Favor cohort with you. Create a free account or
+                sign in to open the analytics — we&apos;ll bring you right back
+                here.
+              </p>
+              <div className="flex flex-col w-full gap-2">
+                <Button type="button" onClick={handleSignUp}>
+                  <UserPlus className="w-4 h-4" />
+                  Create free account
+                </Button>
+                <Button type="button" variant="outline" onClick={handleSignIn}>
+                  <LogIn className="w-4 h-4" />
+                  Sign in
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoading && !job) {

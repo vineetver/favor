@@ -18,11 +18,21 @@ interface AuthUser {
   picture?: string;
 }
 
+interface LoginOptions {
+  /**
+   * Hint to the upstream identity provider that the user wants to sign up
+   * rather than sign in. Forwarded as `screen_hint=signup` to the backend's
+   * `/auth/login`, which passes it through to Auth0. Harmless no-op until
+   * the backend wires the param through — Auth0 just shows the default tab.
+   */
+  signup?: boolean;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (returnTo?: string) => void;
+  login: (returnTo?: string, options?: LoginOptions) => void;
   logout: () => void;
 }
 
@@ -68,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tryFetchAuth();
   }, []);
 
-  const login = useCallback((returnTo?: string) => {
+  const login = useCallback((returnTo?: string, options?: LoginOptions) => {
     const target = returnTo ?? window.location.href;
     // Validate return URL is same-origin to prevent open redirect
     let safeReturn: string;
@@ -78,7 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       safeReturn = "/";
     }
-    window.location.href = `${API_BASE}/auth/login?return_to=${encodeURIComponent(safeReturn)}`;
+    const params = new URLSearchParams({ return_to: safeReturn });
+    if (options?.signup) params.set("screen_hint", "signup");
+    window.location.href = `${API_BASE}/auth/login?${params.toString()}`;
   }, []);
 
   const logout = useCallback(() => {
